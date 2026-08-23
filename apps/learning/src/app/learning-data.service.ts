@@ -67,6 +67,14 @@ export interface SubmitResult extends RunResult {
   progress: LessonProgress;
 }
 
+/** Raised when the learner has not enrolled in the course they are working in. */
+export class NotEnrolledError extends Error {
+  constructor(readonly offeringId: string) {
+    super('Enrol to start.');
+    this.name = 'NotEnrolledError';
+  }
+}
+
 /** Raised when a save needs a session the visitor does not have. */
 export class NotSignedInError extends Error {
   constructor() {
@@ -141,11 +149,25 @@ export class LearningDataService {
         code,
       })
       .pipe(
-        catchError((error: HttpErrorResponse) =>
-          error.status === 401
-            ? throwError(() => new NotSignedInError())
-            : throwError(() => error)
-        )
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 401)
+            return throwError(() => new NotSignedInError());
+          // 409 carries the offering the learner needs to enrol in, so the
+          // page can ask rather than just reporting that it did not work.
+          if (error.status === 409) {
+            const offeringId =
+              (error.error as { offeringId?: string })?.offeringId ?? '';
+            return throwError(() => new NotEnrolledError(offeringId));
+          }
+          return throwError(() => error);
+        })
       );
+  }
+
+  /** Enrols the signed-in learner in an offering. */
+  enrol(offeringId: string): Observable<{ offeringId: string }> {
+    return this.http.post<{ offeringId: string }>('/api/learning/enrolments', {
+      offeringId,
+    });
   }
 }

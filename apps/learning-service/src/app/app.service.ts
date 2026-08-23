@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import {
   Attempt,
   Enrolment,
+  NOT_ENROLLED,
+  NotEnrolledPayload,
   Evaluation,
   LessonProgress,
   ProgramTrack,
@@ -148,9 +151,13 @@ export class AppService {
     // signal that anyone is taking anything, and it's forgeable by anyone
     // who knows a lessonId.
     if (!enrolment || enrolment.status !== 'active') {
-      throw new Error(
-        `Profile ${profileId} must be enrolled in offering ${offeringId} before recording progress on lesson ${progress.lessonId}`
-      );
+      // A payload rather than a message, so the gateway can answer 409 and
+      // the client can offer to enrol instead of showing a failure.
+      throw new RpcException({
+        code: NOT_ENROLLED,
+        offeringId,
+        lessonId: progress.lessonId,
+      } satisfies NotEnrolledPayload);
     }
     return await this.repository.saveProgress(
       profileId,
@@ -267,12 +274,6 @@ export class AppService {
       );
     if (!lesson)
       throw new Error(`Exercise ${activityId} is not attached to a lesson`);
-    // Working an exercise in a course is how someone takes that course, so
-    // the first submission enrols them. saveProgress stays strict and refuses
-    // progress without an enrolment; this is what makes sure there is one,
-    // rather than making a learner find an enrol button before they can start.
-    await this.enrol(profileId, await this.findOfferingIdForLesson(lesson.id));
-
     const previous = (await this.getProgress(profileId)).find(
       (item) => item.lessonId === lesson.id
     );

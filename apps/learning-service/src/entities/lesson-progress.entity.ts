@@ -11,16 +11,15 @@ export class LessonProgressEntity {
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Column({ type: 'uuid' }) userId!: string;
   /**
-   * The learning-scoped profile this progress belongs to.
+   * The learner this belongs to, and the enrolment that entitles them to it.
    *
-   * Nullable because rows written before profiles and enrolments existed in
-   * this app cannot be safely attributed to one after the fact; they stay in
-   * the table as an orphaned historical record rather than being deleted or
-   * guessed at. Every row written going forward has this set, and a row must
-   * also have a matching enrolment before it can be created.
+   * Both are required. A migration deletes the rows that predate enrolment
+   * rather than backfilling them, because the profiles live in another
+   * service and inventing enrolments would fabricate a record of people
+   * taking courses they never took.
    */
-  @Column({ type: 'uuid', nullable: true }) profileId!: string | null;
-  @Column({ type: 'uuid', nullable: true }) enrolmentId!: string | null;
+  @Column({ type: 'uuid' }) profileId!: string;
+  @Column({ type: 'uuid' }) enrolmentId!: string;
   @Column({ type: 'varchar', length: 192 }) lessonId!: string;
   @Column({ type: 'boolean', default: false }) completed!: boolean;
   @Column({ type: 'jsonb', default: () => "'[]'" })

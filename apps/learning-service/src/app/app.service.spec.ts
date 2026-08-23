@@ -10,6 +10,7 @@ import {
   ProgramTrack,
   sampleProgramTracks,
   tutorialExercises,
+  NOT_ENROLLED,
 } from '@optimistic-tanuki/learning-domain';
 import { randomUUID } from 'crypto';
 
@@ -264,7 +265,7 @@ describe('AppService', () => {
           completedExerciseIds: [],
           points: 0,
         })
-      ).rejects.toThrow(/enrolled/);
+      ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
     });
 
     it('saves progress once the profile is enrolled in the owning offering', async () => {
@@ -295,7 +296,7 @@ describe('AppService', () => {
           completedExerciseIds: [],
           points: 0,
         })
-      ).rejects.toThrow(/enrolled/);
+      ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
     });
 
     it("lists only a profile's own enrolments", async () => {
@@ -308,12 +309,10 @@ describe('AppService', () => {
     });
   });
 
-  // Submitting an exercise is how someone starts a course. If that required
-  // an enrol call first, the Submit button would simply fail for every new
-  // learner, which is exactly what happened when enrolment landed.
-  describe('enrolling by starting work', () => {
-    // The runner is a separate service over HTTP. What is under test here is
-    // the enrolment side effect, not the sandbox, so the run is stubbed.
+  // Enrolment is explicit. Taking a course is a decision, and pressing
+  // Submit is not that decision, so an unenrolled learner is refused rather
+  // than quietly signed up.
+  describe('enrolment is required before submitting', () => {
     beforeEach(() => {
       global.fetch = jest.fn().mockResolvedValue({
         json: async () => ({
@@ -330,45 +329,45 @@ describe('AppService', () => {
       (global.fetch as unknown as jest.Mock | undefined)?.mockRestore?.();
     });
 
-    it('enrols a learner on their first submission', async () => {
-      const exercise = tutorialExercises.find(
-        (candidate) => candidate.languageId === 'go'
-      )!;
+    const goExercise = () =>
+      tutorialExercises.find((candidate) => candidate.languageId === 'go')!;
 
-      const before = await service.listEnrolments('profile-new');
-      expect(before).toEqual([]);
+    it('refuses a submission from a learner who has not enrolled', async () => {
+      await expect(
+        service.submitExercise('profile-new', 'user-new', goExercise().id, '')
+      ).rejects.toBeDefined();
 
-      await service.submitExercise(
-        'profile-new',
-        'user-new',
-        exercise.id,
-        exercise.starterCode
-      );
-
-      const after = await service.listEnrolments('profile-new');
-      expect(after).toHaveLength(1);
-      expect(after[0].status).toBe('active');
+      expect(await service.listEnrolments('profile-new')).toEqual([]);
     });
 
-    it('does not enrol a second time on a later submission', async () => {
-      const exercise = tutorialExercises.find(
-        (candidate) => candidate.languageId === 'go'
-      )!;
+    it('does not enrol anyone as a side effect of submitting', async () => {
+      await service
+        .submitExercise('profile-side', 'user-side', goExercise().id, '')
+        .catch(() => undefined);
 
-      await service.submitExercise(
-        'profile-twice',
-        'user-twice',
+      expect(await service.listEnrolments('profile-side')).toEqual([]);
+    });
+
+    it('accepts the submission once the learner has enrolled', async () => {
+      const exercise = goExercise();
+      const offeringId = (await service.listPrograms())
+        .flatMap((track) => track.offerings)
+        .find((offering) =>
+          offering.modules
+            .flatMap((module) => module.lessons)
+            .some((lesson) => lesson.slug === exercise.lessonSlug)
+        )!.id;
+
+      await service.enrol('profile-keen', offeringId);
+
+      const result = await service.submitExercise(
+        'profile-keen',
+        'user-keen',
         exercise.id,
         ''
       );
-      await service.submitExercise(
-        'profile-twice',
-        'user-twice',
-        exercise.id,
-        ''
-      );
 
-      expect(await service.listEnrolments('profile-twice')).toHaveLength(1);
+      expect(result.progress).toBeDefined();
     });
   });
 });

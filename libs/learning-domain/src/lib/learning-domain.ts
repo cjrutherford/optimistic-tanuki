@@ -323,6 +323,29 @@ export const EnrolmentSchema = z.object({
 });
 export type Enrolment = z.infer<typeof EnrolmentSchema>;
 
+/**
+ * Refusing an action because the learner has not enrolled.
+ *
+ * Enrolment is deliberately explicit: taking a course is a decision, not a
+ * side effect of pressing a button. The client needs to tell this apart from
+ * a genuine failure so it can offer to enrol instead of showing an error.
+ */
+export const NOT_ENROLLED = 'NOT_ENROLLED';
+
+export interface NotEnrolledPayload {
+  code: typeof NOT_ENROLLED;
+  offeringId: string;
+  lessonId?: string;
+}
+
+export function isNotEnrolled(value: unknown): value is NotEnrolledPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { code?: unknown }).code === NOT_ENROLLED
+  );
+}
+
 export const CreditLedgerEntrySchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),

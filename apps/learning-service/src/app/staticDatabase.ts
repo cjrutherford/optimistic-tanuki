@@ -10,6 +10,7 @@ import { LessonProgress1770000000001 } from '../migrations/1770000000001-lesson-
 import { EvaluationRecordedBy1770000000002 } from '../migrations/1770000000002-evaluation-recorded-by';
 import { Enrolment1770000000003 } from '../migrations/1770000000003-enrolment';
 import { LessonProgressProfile1770000000004 } from '../migrations/1770000000004-lesson-progress-profile';
+import { ProgressRequiresEnrolment1770000000005 } from '../migrations/1770000000005-progress-requires-enrolment';
 
 const config = {
   type: 'postgres' as const,
@@ -32,6 +33,7 @@ const config = {
     EvaluationRecordedBy1770000000002,
     Enrolment1770000000003,
     LessonProgressProfile1770000000004,
+    ProgressRequiresEnrolment1770000000005,
   ],
   synchronize: false,
   logging: true,

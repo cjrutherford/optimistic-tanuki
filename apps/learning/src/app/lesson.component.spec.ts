@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { LessonComponent } from './lesson.component';
 import {
   Exercise,
   LearningDataService,
   LessonProgress,
+  NotEnrolledError,
   NotSignedInError,
   SubmitResult,
 } from './learning-data.service';
@@ -51,6 +52,7 @@ function setup(
     submit: jest.fn(() => of(submitResult)),
     // The nested layout renders its own nav from this.
     dashboard: jest.fn(() => of([])),
+    enrol: jest.fn(() => of({ offeringId: 'go-foundations-100-core' })),
     ...overrides,
   };
 
@@ -90,6 +92,9 @@ type Handlers = {
   run(exercise: Exercise): void;
   submit(exercise: Exercise): void;
   revealHint(exercise: Exercise): void;
+  enrolThenRetry(exercise: Exercise, offeringId: string): void;
+  enrolling: Record<string, boolean>;
+  enrolError: Record<string, string>;
   onCodeChange(exercise: Exercise, next: string): void;
   resetCode(exercise: Exercise): void;
   isEdited(exercise: Exercise): boolean;
@@ -345,5 +350,73 @@ describe('LessonComponent', () => {
 
     expect(page.results['go-b-01'].errors).toEqual(['runner unreachable']);
     expect(page.results['go-b-01'].needsSignIn).toBeUndefined();
+  });
+
+  // Enrolment is explicit, so a learner who has not enrolled is asked rather
+  // than told it failed. Having asked, they should not have to press Submit a
+  // second time for a decision they just made.
+  describe('enrolment', () => {
+    const refuse = () =>
+      jest.fn(() =>
+        throwError(() => new NotEnrolledError('go-foundations-100-core'))
+      );
+
+    it('asks the learner to enrol instead of reporting a failure', () => {
+      const { component } = setup({ submit: refuse() });
+      const page = component as Handlers;
+
+      page.submit(exercise);
+
+      expect(page.results['go-b-01'].needsEnrolmentIn).toBe(
+        'go-foundations-100-core'
+      );
+      expect(page.results['go-b-01'].errors).toEqual([]);
+    });
+
+    it('enrols and then submits the work they already asked to submit', () => {
+      const { component, data } = setup({ submit: refuse() });
+      const page = component as Handlers;
+
+      page.submit(exercise);
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+
+      expect(data.enrol).toHaveBeenCalledWith('go-foundations-100-core');
+      expect(data.submit).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores a second click while the first enrolment is in flight', () => {
+      const { component, data } = setup({
+        submit: refuse(),
+        enrol: jest.fn(() => new Subject()),
+      });
+      const page = component as Handlers;
+
+      page.submit(exercise);
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+
+      expect(data.enrol).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the invitation on screen when enrolling fails', () => {
+      const { component } = setup({
+        submit: refuse(),
+        enrol: jest.fn(() =>
+          throwError(() => new Error('Enrolment is closed'))
+        ),
+      });
+      const page = component as Handlers;
+
+      page.submit(exercise);
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+
+      expect(page.enrolError['go-foundations-100-core']).toBe(
+        'Enrolment is closed'
+      );
+      expect(page.enrolling['go-foundations-100-core']).toBe(false);
+      expect(page.results['go-b-01'].needsEnrolmentIn).toBe(
+        'go-foundations-100-core'
+      );
+    });
   });
 });

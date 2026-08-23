@@ -100,6 +100,7 @@
       "@optimistic-tanuki/learning-domain": [
         "libs/learning-domain/src/index.ts"
       ],
+      "@optimistic-tanuki/learning-ui": ["libs/learning-ui/src/index.ts"],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/message-ui/*": ["libs/message-ui/src/lib/*"],

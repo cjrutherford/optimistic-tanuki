@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -13,6 +14,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { isNotEnrolled } from '@optimistic-tanuki/learning-domain';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
@@ -146,17 +148,38 @@ export class LearningController {
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.SubmitExercise },
-        {
-          userId: req.user.userId,
-          profileId,
-          activityId,
-          code: body.code,
-        }
+    // A learner who has not enrolled gets a conflict naming the offering, so
+    // the client can offer to enrol rather than reporting a failure.
+    return await this.asConflictWhenNotEnrolled(
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.SubmitExercise },
+          {
+            userId: req.user.userId,
+            profileId,
+            activityId,
+            code: body.code,
+          }
+        )
       )
     );
+  }
+
+  /**
+   * Turns the service's not-enrolled refusal into a 409 carrying the offering.
+   *
+   * Enrolment is explicit on purpose: taking a course is a decision, not a
+   * side effect of pressing Submit. The client needs to tell this apart from
+   * a real failure, and a bare 500 would not let it.
+   */
+  private async asConflictWhenNotEnrolled<T>(work: Promise<T>): Promise<T> {
+    try {
+      return await work;
+    } catch (error) {
+      const payload = (error as { error?: unknown })?.error ?? error;
+      if (isNotEnrolled(payload)) throw new ConflictException(payload);
+      throw error;
+    }
   }
 
   @UseGuards(AuthGuard)

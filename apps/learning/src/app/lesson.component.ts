@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
+import { EnrolmentGateComponent } from '@optimistic-tanuki/learning-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
 import { LessonMarkdownService } from './lesson-markdown.service';
 import { CodeEditorComponent } from './code-editor.component';
@@ -12,6 +13,7 @@ import { Diagnostic, parseCompilerErrors } from './code-diagnostics';
 import {
   Exercise,
   LearningDataService,
+  NotEnrolledError,
   NotSignedInError,
 } from './learning-data.service';
 
@@ -24,6 +26,8 @@ interface ExerciseOutcome {
   needsSignIn?: boolean;
   /** Which action needed the session, so the message fits what was tried. */
   needsSignInFor?: 'run' | 'submit';
+  /** Set when the learner has to enrol before this exercise will accept work. */
+  needsEnrolmentIn?: string;
 }
 
 @Component({
@@ -37,6 +41,7 @@ interface ExerciseOutcome {
     ButtonComponent,
     BadgeComponent,
     CodeEditorComponent,
+    EnrolmentGateComponent,
   ],
   template: `<learning-layout
     ><ng-container *ngIf="vm$ | async as vm"
@@ -137,7 +142,14 @@ interface ExerciseOutcome {
               [class.fail]="result.passed === false"
               role="status"
             >
-              @if (result.needsSignIn && result.needsSignInFor === 'run') {
+              @if (result.needsEnrolmentIn; as offeringId) {
+              <otlearn-enrolment-gate
+                [busy]="enrolling[offeringId] ?? false"
+                [error]="enrolError[offeringId] ?? ''"
+                (enrol)="enrolThenRetry(exercise, offeringId)"
+              ></otlearn-enrolment-gate>
+              } @else if (result.needsSignIn && result.needsSignInFor === 'run')
+              {
               <p class="verdict">Sign in to run code.</p>
               <p class="detail">
                 Executing code needs a session so it can be attributed to you.
@@ -523,6 +535,8 @@ export class LessonComponent {
   protected code: Record<string, string> = {};
   protected results: Record<string, ExerciseOutcome> = {};
   protected diagnostics: Record<string, Diagnostic[]> = {};
+  protected enrolling: Record<string, boolean> = {};
+  protected enrolError: Record<string, string> = {};
   protected busy: Record<string, boolean> = {};
 
   readonly trackId = this.route.snapshot.paramMap.get('trackId')!;
@@ -622,6 +636,31 @@ export class LessonComponent {
   }
 
   /**
+   * Enrols, then runs the submission the learner already asked for.
+   *
+   * They pressed Submit and got asked to enrol. Making them press Submit again
+   * afterwards would be a second ask for a decision they just made.
+   */
+  protected enrolThenRetry(exercise: Exercise, offeringId: string): void {
+    if (this.enrolling[offeringId]) return;
+    this.enrolling[offeringId] = true;
+    this.enrolError[offeringId] = '';
+
+    this.data.enrol(offeringId).subscribe({
+      next: () => {
+        this.enrolling[offeringId] = false;
+        delete this.results[exercise.id];
+        this.progressReload$.next();
+        this.submit(exercise);
+      },
+      error: (error: Error) => {
+        this.enrolling[offeringId] = false;
+        this.enrolError[offeringId] = error?.message ?? 'Could not enrol';
+      },
+    });
+  }
+
+  /**
    * Output to show under a result. Joining lives here rather than in the
    * template because the template is a tagged string, so an escape like \n
    * would already be a real newline by the time Angular parsed it.
@@ -661,6 +700,14 @@ export class LessonComponent {
   ): void {
     this.busy[exercise.id] = false;
     this.diagnostics[exercise.id] = [];
+    if (error instanceof NotEnrolledError) {
+      this.results[exercise.id] = {
+        output: '',
+        errors: [],
+        needsEnrolmentIn: error.offeringId,
+      };
+      return;
+    }
     if (error instanceof NotSignedInError) {
       this.results[exercise.id] = {
         output: '',
