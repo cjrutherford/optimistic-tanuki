@@ -5,12 +5,16 @@ import { AppService } from './app.service';
 import { LearningRepository, LEARNING_REPOSITORY } from './learning.repository';
 import {
   Attempt,
+  buildDraftProgramTrack,
+  DraftOfferingInput,
   Enrolment,
   Evaluation,
   LessonProgress,
+  OfferingOwnership,
   ProgramTrack,
   sampleProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
+import { OfferingContentPatch } from './learning.repository';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -23,6 +27,7 @@ class InMemoryLearningRepository implements LearningRepository {
     LessonProgress & { userId: string; profileId: string }
   >();
   private readonly enrolments = new Map<string, Enrolment>();
+  private readonly ownerships = new Map<string, OfferingOwnership>();
 
   listPrograms() {
     return this.programs;
@@ -97,6 +102,64 @@ class InMemoryLearningRepository implements LearningRepository {
   }
   getEnrolment(profileId: string, offeringId: string) {
     return this.enrolments.get(`${profileId}:${offeringId}`);
+  }
+  createOffering(
+    ownerProfileId: string,
+    offeringId: string,
+    input: DraftOfferingInput
+  ) {
+    const track = buildDraftProgramTrack(offeringId, input);
+    this.programs.push(track);
+    const ownership: OfferingOwnership = {
+      offeringId,
+      ownerProfileId,
+      coEditorProfileIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.ownerships.set(offeringId, ownership);
+    return { track, ownership };
+  }
+  updateOfferingContent(offeringId: string, patch: OfferingContentPatch) {
+    const index = this.programs.findIndex((track) => track.id === offeringId);
+    if (index === -1) throw new Error(`Unknown offering: ${offeringId}`);
+    const track = this.programs[index];
+    const updated: ProgramTrack = {
+      ...track,
+      ...(patch.displayName !== undefined
+        ? { displayName: patch.displayName }
+        : {}),
+      offerings: track.offerings.map((offering) =>
+        offering.id === offeringId
+          ? {
+              ...offering,
+              ...(patch.displayName !== undefined
+                ? { displayName: patch.displayName }
+                : {}),
+              ...(patch.description !== undefined
+                ? { description: patch.description }
+                : {}),
+            }
+          : offering
+      ),
+    };
+    this.programs[index] = updated;
+    return updated;
+  }
+  deleteOffering(offeringId: string) {
+    const index = this.programs.findIndex((track) => track.id === offeringId);
+    if (index !== -1) this.programs.splice(index, 1);
+    this.ownerships.delete(offeringId);
+  }
+  getOwnership(offeringId: string) {
+    return this.ownerships.get(offeringId);
+  }
+  setCoEditors(offeringId: string, coEditorProfileIds: string[]) {
+    const existing = this.ownerships.get(offeringId);
+    if (!existing) throw new Error(`No ownership for offering: ${offeringId}`);
+    const updated = { ...existing, coEditorProfileIds };
+    this.ownerships.set(offeringId, updated);
+    return updated;
   }
 }
 

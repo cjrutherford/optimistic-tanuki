@@ -2,11 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import {
   Attempt,
+  DraftOfferingInput,
   Enrolment,
   NOT_ENROLLED,
   NotEnrolledPayload,
   Evaluation,
   LessonProgress,
+  OfferingOwnership,
   ProgramTrack,
   publicExercise,
   rollUpCompletedLessons,
@@ -19,6 +21,7 @@ import {
   CreateAttemptInput,
   LEARNING_REPOSITORY,
   LearningRepository,
+  OfferingContentPatch,
   RecordEvaluationInput,
 } from './learning.repository';
 
@@ -330,5 +333,44 @@ export class AppService {
     }
 
     return evaluation;
+  }
+
+  /**
+   * Authorization already happened at the gateway before this was called;
+   * the service trusts the caller the same way submitAttempt trusts the
+   * userId it is given. offeringId is generated here rather than accepted
+   * from the caller, so an author cannot collide with or hijack an existing
+   * offering id by guessing it.
+   */
+  async createOffering(
+    ownerProfileId: string,
+    input: DraftOfferingInput
+  ): Promise<{ track: ProgramTrack; ownership: OfferingOwnership }> {
+    const offeringId = randomUUID();
+    return this.repository.createOffering(ownerProfileId, offeringId, input);
+  }
+
+  async updateOffering(
+    offeringId: string,
+    patch: OfferingContentPatch
+  ): Promise<ProgramTrack> {
+    return this.repository.updateOfferingContent(offeringId, patch);
+  }
+
+  async deleteOffering(offeringId: string): Promise<void> {
+    await this.repository.deleteOffering(offeringId);
+  }
+
+  async getOfferingOwnership(
+    offeringId: string
+  ): Promise<OfferingOwnership | undefined> {
+    return this.repository.getOwnership(offeringId);
+  }
+
+  async setCoEditors(
+    offeringId: string,
+    coEditorProfileIds: string[]
+  ): Promise<OfferingOwnership> {
+    return this.repository.setCoEditors(offeringId, coEditorProfileIds);
   }
 }

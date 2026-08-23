@@ -13,6 +13,7 @@ import { CreditLedgerEntryEntity } from '../entities/credit-ledger-entry.entity'
 import { ProgramTrackEntity } from '../entities/program-track.entity';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 import { EnrolmentEntity } from '../entities/enrolment.entity';
+import { OfferingOwnershipEntity } from '../entities/offering-ownership.entity';
 import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 
@@ -63,6 +64,11 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(EnrolmentEntity),
       useFactory: (ds: DataSource) => ds.getRepository(EnrolmentEntity),
+      inject: ['LEARNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(OfferingOwnershipEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(OfferingOwnershipEntity),
       inject: ['LEARNING_CONNECTION'],
     },
   ],

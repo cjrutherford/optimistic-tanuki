@@ -84,4 +84,61 @@ describe('LearningProfileResolver', () => {
     await expect(resolver.resolveProfileId('')).rejects.toThrow();
     expect(profileClient.send).not.toHaveBeenCalled();
   });
+
+  describe('opting in as a course author', () => {
+    it('grants learning_course_designer through the same role-lookup path as learning_learner', async () => {
+      permissionsClient.send
+        .mockReturnValueOnce(
+          of({ id: 'role-designer', appScope: { id: 'scope-learning' } })
+        )
+        .mockReturnValueOnce(of({ id: 'assignment-1' }));
+
+      await resolver.optInAsAuthor('profile-1');
+
+      expect(permissionsClient.send).toHaveBeenCalledWith(
+        { cmd: RoleCommands.GetByName },
+        { name: 'learning_course_designer', appScope: 'learning' }
+      );
+      expect(permissionsClient.send).toHaveBeenCalledWith(
+        { cmd: RoleCommands.Assign },
+        {
+          roleId: 'role-designer',
+          profileId: 'profile-1',
+          appScopeId: 'scope-learning',
+        }
+      );
+    });
+
+    // The permissions service itself treats re-assigning an already-held
+    // role as a no-op (roles.service.assignRole returns the existing
+    // assignment rather than erroring). This just proves the resolver keeps
+    // calling the same idempotent path on a second opt-in instead of guarding
+    // client-side and silently doing nothing.
+    it('does not throw when opting in a second time', async () => {
+      permissionsClient.send.mockReturnValue(
+        of({ id: 'role-designer', appScope: { id: 'scope-learning' } })
+      );
+
+      await resolver.optInAsAuthor('profile-1');
+      await expect(
+        resolver.optInAsAuthor('profile-1')
+      ).resolves.toBeUndefined();
+    });
+
+    it('reports course-designer status from the learning-scoped role list', async () => {
+      permissionsClient.send.mockReturnValue(
+        of([{ role: { name: 'learning_course_designer' } }])
+      );
+
+      await expect(resolver.isCourseDesigner('profile-1')).resolves.toBe(true);
+    });
+
+    it('reports false when the role is absent', async () => {
+      permissionsClient.send.mockReturnValue(
+        of([{ role: { name: 'learning_learner' } }])
+      );
+
+      await expect(resolver.isCourseDesigner('profile-1')).resolves.toBe(false);
+    });
+  });
 });

@@ -1,22 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Attempt,
+  buildDraftProgramTrack,
+  DraftOfferingInput,
   Enrolment,
   Evaluation,
+  OfferingOwnership,
   ProgramTrack,
 } from '@optimistic-tanuki/learning-domain';
 import { AttemptEntity } from '../entities/attempt.entity';
 import { EvaluationEntity } from '../entities/evaluation.entity';
 import { ProgramTrackEntity } from '../entities/program-track.entity';
-import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
+import {
+  LEARNING_REPOSITORY,
+  LearningRepository,
+  OfferingContentPatch,
+} from './learning.repository';
 import {
   tutorialProgramTracks,
   LessonProgress,
 } from '@optimistic-tanuki/learning-domain';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 import { EnrolmentEntity } from '../entities/enrolment.entity';
+import { OfferingOwnershipEntity } from '../entities/offering-ownership.entity';
 
 export { LEARNING_REPOSITORY };
 
@@ -32,17 +40,149 @@ export class TypeOrmLearningRepository implements LearningRepository {
     @InjectRepository(LessonProgressEntity)
     private readonly lessonProgressRepo: Repository<LessonProgressEntity>,
     @InjectRepository(EnrolmentEntity)
-    private readonly enrolmentRepo: Repository<EnrolmentEntity>
+    private readonly enrolmentRepo: Repository<EnrolmentEntity>,
+    @InjectRepository(OfferingOwnershipEntity)
+    private readonly offeringOwnershipRepo: Repository<OfferingOwnershipEntity>
   ) {}
 
+  /**
+   * The built-in catalog is a baseline, not a fallback. It used to disappear
+   * the moment anything was stored, because the old code treated a non-empty
+   * table as a full replacement for the four shipped tracks and then, on top
+   * of that, filtered out anything without an upstream repositoryUrl, which
+   * is exactly what an authored track looks like. That combination emptied
+   * the catalog the first time anyone authored a course.
+   *
+   * Built-ins and stored tracks are merged by id instead. A stored row shadows
+   * a built-in with the same id (an edit), and anything else stored is added
+   * alongside the built-ins rather than replacing them.
+   */
   async listPrograms(): Promise<ProgramTrack[]> {
     const rows = await this.programTrackRepo.find();
-    if (rows.length === 0) {
-      return tutorialProgramTracks;
+    const merged = new Map<string, ProgramTrack>();
+    for (const track of tutorialProgramTracks) merged.set(track.id, track);
+    for (const row of rows) {
+      merged.set(row.trackId, row.data as unknown as ProgramTrack);
     }
-    return rows
-      .map((row) => row.data as unknown as ProgramTrack)
-      .filter((track) => track.source?.repositoryUrl);
+    return [...merged.values()];
+  }
+
+  async createOffering(
+    ownerProfileId: string,
+    offeringId: string,
+    input: DraftOfferingInput
+  ): Promise<{ track: ProgramTrack; ownership: OfferingOwnership }> {
+    const track = buildDraftProgramTrack(offeringId, input);
+
+    // One unit of work. A course saved without its ownership row would be
+    // editable by nobody except an admin, because authorization denies any
+    // action on an offering with no owner.
+    const savedOwnership = await this.programTrackRepo.manager.transaction(
+      async (manager) => {
+        await manager.save(
+          manager.create(ProgramTrackEntity, {
+            trackId: track.id,
+            displayName: track.displayName,
+            data: track as unknown as Record<string, unknown>,
+          })
+        );
+        return await manager.save(
+          manager.create(OfferingOwnershipEntity, {
+            offeringId,
+            ownerProfileId,
+            coEditorProfileIds: [],
+          })
+        );
+      }
+    );
+
+    return { track, ownership: this.toOwnershipDomain(savedOwnership) };
+  }
+
+  async updateOfferingContent(
+    offeringId: string,
+    patch: OfferingContentPatch
+  ): Promise<ProgramTrack> {
+    const trackEntity = await this.programTrackRepo.findOne({
+      where: { trackId: offeringId },
+    });
+    if (!trackEntity) {
+      throw new NotFoundException(`Unknown offering: ${offeringId}`);
+    }
+    const track = trackEntity.data as unknown as ProgramTrack;
+    const offeringIndex = track.offerings.findIndex(
+      (offering) => offering.id === offeringId
+    );
+    if (offeringIndex === -1) {
+      throw new NotFoundException(`Unknown offering: ${offeringId}`);
+    }
+    const offering = track.offerings[offeringIndex];
+    const updatedOffering = {
+      ...offering,
+      ...(patch.displayName !== undefined
+        ? { displayName: patch.displayName }
+        : {}),
+      ...(patch.description !== undefined
+        ? { description: patch.description }
+        : {}),
+    };
+    const updatedTrack: ProgramTrack = {
+      ...track,
+      ...(patch.displayName !== undefined
+        ? { displayName: patch.displayName }
+        : {}),
+      offerings: track.offerings.map((existing, index) =>
+        index === offeringIndex ? updatedOffering : existing
+      ),
+    };
+    trackEntity.data = updatedTrack as unknown as Record<string, unknown>;
+    trackEntity.displayName = updatedTrack.displayName;
+    await this.programTrackRepo.save(trackEntity);
+    return updatedTrack;
+  }
+
+  async deleteOffering(offeringId: string): Promise<void> {
+    await this.programTrackRepo.delete({ trackId: offeringId });
+    await this.offeringOwnershipRepo.delete({ offeringId });
+  }
+
+  async getOwnership(
+    offeringId: string
+  ): Promise<OfferingOwnership | undefined> {
+    const entity = await this.offeringOwnershipRepo.findOne({
+      where: { offeringId },
+    });
+    return entity ? this.toOwnershipDomain(entity) : undefined;
+  }
+
+  async setCoEditors(
+    offeringId: string,
+    coEditorProfileIds: string[]
+  ): Promise<OfferingOwnership> {
+    const entity = await this.offeringOwnershipRepo.findOne({
+      where: { offeringId },
+    });
+    if (!entity) {
+      throw new NotFoundException(
+        `No ownership record for offering: ${offeringId}`
+      );
+    }
+    entity.coEditorProfileIds = coEditorProfileIds;
+    return this.toOwnershipDomain(
+      await this.offeringOwnershipRepo.save(entity)
+    );
+  }
+
+  private toOwnershipDomain(
+    entity: OfferingOwnershipEntity
+  ): OfferingOwnership {
+    return {
+      offeringId: entity.offeringId,
+      ownerProfileId: entity.ownerProfileId,
+      coEditorProfileIds: entity.coEditorProfileIds,
+      createdAt: entity.createdAt.toISOString(),
+      updatedAt: entity.updatedAt.toISOString(),
+    };
   }
 
   async createAttempt(input: Attempt): Promise<Attempt> {

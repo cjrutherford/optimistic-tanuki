@@ -11,10 +11,12 @@ import { LearningController } from './learning.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
+import { OfferingAuthorizationService } from './offering-authorization.service';
 
 describe('LearningController', () => {
   let client: jest.Mocked<ClientProxy>;
   let profiles: jest.Mocked<LearningProfileResolver>;
+  let offeringAuthorization: jest.Mocked<OfferingAuthorizationService>;
   let controller: LearningController;
 
   beforeEach(() => {
@@ -25,9 +27,19 @@ describe('LearningController', () => {
 
     profiles = {
       resolveProfileId: jest.fn().mockResolvedValue('profile-1'),
+      optInAsAuthor: jest.fn().mockResolvedValue(undefined),
+      isCourseDesigner: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<LearningProfileResolver>;
 
-    controller = new LearningController(client, profiles);
+    offeringAuthorization = {
+      authorize: jest.fn().mockResolvedValue(true),
+    } as unknown as jest.Mocked<OfferingAuthorizationService>;
+
+    controller = new LearningController(
+      client,
+      profiles,
+      offeringAuthorization
+    );
   });
 
   describe('me/progress', () => {
@@ -73,6 +85,12 @@ describe('LearningController', () => {
         LearningController.prototype.enrol,
         LearningController.prototype.withdraw,
         LearningController.prototype.getMyEnrolments,
+        LearningController.prototype.optInAsAuthor,
+        LearningController.prototype.getAuthorStatus,
+        LearningController.prototype.createOffering,
+        LearningController.prototype.updateOffering,
+        LearningController.prototype.deleteOffering,
+        LearningController.prototype.setCoEditors,
       ]) {
         expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual(
           expect.arrayContaining([AuthGuard])
@@ -99,6 +117,11 @@ describe('LearningController', () => {
         LearningController.prototype.enrol,
         LearningController.prototype.withdraw,
         LearningController.prototype.getMyEnrolments,
+        LearningController.prototype.optInAsAuthor,
+        LearningController.prototype.createOffering,
+        LearningController.prototype.updateOffering,
+        LearningController.prototype.deleteOffering,
+        LearningController.prototype.setCoEditors,
       ]) {
         expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).not.toBe(true);
       }
@@ -263,6 +286,160 @@ describe('LearningController', () => {
         { profileId: 'profile-1' }
       );
       expect(result).toEqual([{ id: 'enrolment-1' }]);
+    });
+  });
+
+  describe('opting in to author', () => {
+    it('grants the designer role through the resolved profile and reports opted-in', async () => {
+      const result = await controller.optInAsAuthor({
+        user: { userId: 'user-1' },
+      });
+
+      expect(profiles.resolveProfileId).toHaveBeenCalledWith('user-1');
+      expect(profiles.optInAsAuthor).toHaveBeenCalledWith('profile-1');
+      expect(result).toEqual({ isCourseDesigner: true });
+    });
+
+    it('is safe to call twice, since the resolver treats re-granting as a no-op', async () => {
+      await controller.optInAsAuthor({ user: { userId: 'user-1' } });
+      await expect(
+        controller.optInAsAuthor({ user: { userId: 'user-1' } })
+      ).resolves.toEqual({ isCourseDesigner: true });
+      expect(profiles.optInAsAuthor).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports the caller status for a UI to branch on', async () => {
+      profiles.isCourseDesigner.mockResolvedValue(true);
+
+      const result = await controller.getAuthorStatus({
+        user: { userId: 'user-1' },
+      });
+
+      expect(result).toEqual({ isCourseDesigner: true });
+    });
+  });
+
+  describe('offering authoring routes', () => {
+    it('creates an offering once the authorization service allows it', async () => {
+      client.send.mockReturnValue(
+        of({
+          track: { id: 'offering-1' },
+          ownership: { ownerProfileId: 'profile-1' },
+        })
+      );
+
+      await controller.createOffering(
+        { displayName: 'Intro to Watercolor', subjectId: 'art' },
+        { user: { userId: 'user-1', profileId: 'global-profile-1' } }
+      );
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        'global-profile-1',
+        'create'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.CreateOffering },
+        {
+          profileId: 'profile-1',
+          input: { displayName: 'Intro to Watercolor', subjectId: 'art' },
+        }
+      );
+    });
+
+    it('refuses to create an offering when the authorization service denies it', async () => {
+      offeringAuthorization.authorize.mockResolvedValue(false);
+
+      await expect(
+        controller.createOffering(
+          { displayName: 'Intro to Watercolor', subjectId: 'art' },
+          { user: { userId: 'user-1' } }
+        )
+      ).rejects.toThrow();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('checks ownership-scoped authorization before updating an offering', async () => {
+      client.send.mockReturnValue(of({ id: 'offering-1' }));
+
+      await controller.updateOffering(
+        'offering-1',
+        { displayName: 'New title' },
+        { user: { userId: 'user-1' } }
+      );
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        undefined,
+        'update',
+        'offering-1'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.UpdateOffering },
+        { offeringId: 'offering-1', patch: { displayName: 'New title' } }
+      );
+    });
+
+    it('refuses to update an offering when the authorization service denies it', async () => {
+      offeringAuthorization.authorize.mockResolvedValue(false);
+
+      await expect(
+        controller.updateOffering(
+          'offering-1',
+          { displayName: 'New title' },
+          { user: { userId: 'user-1' } }
+        )
+      ).rejects.toThrow();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('deletes an offering only once authorization allows it', async () => {
+      client.send.mockReturnValue(of({ ok: true }));
+
+      await controller.deleteOffering('offering-1', {
+        user: { userId: 'user-1' },
+      });
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        undefined,
+        'delete',
+        'offering-1'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.DeleteOffering },
+        { offeringId: 'offering-1' }
+      );
+    });
+
+    it('refuses to delete an offering when the authorization service denies it', async () => {
+      offeringAuthorization.authorize.mockResolvedValue(false);
+
+      await expect(
+        controller.deleteOffering('offering-1', { user: { userId: 'user-1' } })
+      ).rejects.toThrow();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('gates co-editor management the same way as delete', async () => {
+      client.send.mockReturnValue(of({ ok: true }));
+
+      await controller.setCoEditors(
+        'offering-1',
+        { coEditorProfileIds: ['profile-2'] },
+        { user: { userId: 'user-1' } }
+      );
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        undefined,
+        'manageCoEditors',
+        'offering-1'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.SetCoEditors },
+        { offeringId: 'offering-1', coEditorProfileIds: ['profile-2'] }
+      );
     });
   });
 });

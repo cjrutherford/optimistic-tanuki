@@ -1,12 +1,19 @@
 import {
   Attempt,
+  DraftOfferingInput,
   Enrolment,
   Evaluation,
   LessonProgress,
+  OfferingOwnership,
   ProgramTrack,
 } from '@optimistic-tanuki/learning-domain';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
+
+export interface OfferingContentPatch {
+  displayName?: string;
+  description?: string;
+}
 
 export type CreateAttemptInput = Omit<
   Attempt,
@@ -42,4 +49,23 @@ export interface LearningRepository {
     profileId: string,
     offeringId: string
   ): Promise<Enrolment | undefined> | Enrolment | undefined;
+  createOffering(
+    ownerProfileId: string,
+    offeringId: string,
+    input: DraftOfferingInput
+  ):
+    | Promise<{ track: ProgramTrack; ownership: OfferingOwnership }>
+    | { track: ProgramTrack; ownership: OfferingOwnership };
+  updateOfferingContent(
+    offeringId: string,
+    patch: OfferingContentPatch
+  ): Promise<ProgramTrack> | ProgramTrack;
+  deleteOffering(offeringId: string): Promise<void> | void;
+  getOwnership(
+    offeringId: string
+  ): Promise<OfferingOwnership | undefined> | OfferingOwnership | undefined;
+  setCoEditors(
+    offeringId: string,
+    coEditorProfileIds: string[]
+  ): Promise<OfferingOwnership> | OfferingOwnership;
 }

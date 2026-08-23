@@ -9,6 +9,7 @@ import {
 
 const LEARNING_APP_SCOPE = 'learning';
 const LEARNING_LEARNER_ROLE = 'learning_learner';
+const LEARNING_COURSE_DESIGNER_ROLE = 'learning_course_designer';
 
 interface LearningProfile {
   id: string;
@@ -77,22 +78,63 @@ export class LearningProfileResolver {
       )
     )) as LearningProfile;
 
-    await this.grantLearnerRole(created.id);
+    await this.grantRole(created.id, LEARNING_LEARNER_ROLE);
 
     return created.id;
   }
 
-  private async grantLearnerRole(profileId: string): Promise<void> {
+  /**
+   * Grants learning_course_designer to a profile that has asked to author.
+   *
+   * This is the only place that role is ever granted: nothing about
+   * resolving or creating a profile hands it out implicitly, and there is no
+   * second path that reaches it. Re-assigning an already-held role is
+   * idempotent on the permissions service side (roles.service.assignRole
+   * returns the existing assignment instead of erroring), so opting in twice
+   * is a no-op here rather than a failure.
+   */
+  async optInAsAuthor(profileId: string): Promise<void> {
+    await this.grantRole(profileId, LEARNING_COURSE_DESIGNER_ROLE);
+  }
+
+  async isCourseDesigner(profileId: string): Promise<boolean> {
+    const roles = await this.getLearningRoles(profileId);
+    return roles.some(
+      (assignment) => assignment.role?.name === LEARNING_COURSE_DESIGNER_ROLE
+    );
+  }
+
+  async getLearningRoles(
+    profileId: string
+  ): Promise<Array<{ role?: { name?: string } }>> {
+    try {
+      return (await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScope: LEARNING_APP_SCOPE }
+        )
+      )) as Array<{ role?: { name?: string } }>;
+    } catch (error) {
+      this.logger.warn(
+        `Failed to read learning roles for profile ${profileId}: ${
+          (error as Error)?.message
+        }`
+      );
+      return [];
+    }
+  }
+
+  private async grantRole(profileId: string, roleName: string): Promise<void> {
     try {
       const role = await firstValueFrom(
         this.permissionsClient.send(
           { cmd: RoleCommands.GetByName },
-          { name: LEARNING_LEARNER_ROLE, appScope: LEARNING_APP_SCOPE }
+          { name: roleName, appScope: LEARNING_APP_SCOPE }
         )
       );
       if (!role) {
         this.logger.warn(
-          `${LEARNING_LEARNER_ROLE} role not found; profile ${profileId} created without a role`
+          `${roleName} role not found; profile ${profileId} not granted it`
         );
         return;
       }
@@ -108,10 +150,10 @@ export class LearningProfileResolver {
       );
     } catch (error) {
       // A failed role grant should not block someone from using the site; it
-      // just means they start without learning_learner until an admin fixes
-      // it. Mirrors how profile.service.ts treats a failed role copy.
+      // just means they start without the role until an admin fixes it.
+      // Mirrors how profile.service.ts treats a failed role copy.
       this.logger.warn(
-        `Failed to grant ${LEARNING_LEARNER_ROLE} to profile ${profileId}: ${
+        `Failed to grant ${roleName} to profile ${profileId}: ${
           (error as Error)?.message
         }`
       );

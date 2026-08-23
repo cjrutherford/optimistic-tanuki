@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Inject,
   Param,
@@ -14,17 +15,22 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { isNotEnrolled } from '@optimistic-tanuki/learning-domain';
+import {
+  DraftOfferingInput,
+  isNotEnrolled,
+} from '@optimistic-tanuki/learning-domain';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
+import { OfferingAuthorizationService } from './offering-authorization.service';
 
 @Controller('learning')
 export class LearningController {
   constructor(
     @Inject(ServiceTokens.LEARNING_SERVICE)
     private readonly learningService: ClientProxy,
-    private readonly learningProfiles: LearningProfileResolver
+    private readonly learningProfiles: LearningProfileResolver,
+    private readonly offeringAuthorization: OfferingAuthorizationService
   ) {}
 
   @Get('programs')
@@ -228,6 +234,144 @@ export class LearningController {
       this.learningService.send(
         { cmd: LearningCommands.ListMyEnrolments },
         { profileId }
+      )
+    );
+  }
+
+  // The only route that grants learning_course_designer. Idempotent: opting
+  // in twice hits the same role assignment and the permissions service
+  // treats a repeat assignment as a no-op rather than an error.
+  @UseGuards(AuthGuard)
+  @Post('me/author/opt-in')
+  async optInAsAuthor(@Req() req: { user: { userId: string } }) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    await this.learningProfiles.optInAsAuthor(profileId);
+    return { isCourseDesigner: true };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('me/author')
+  async getAuthorStatus(@Req() req: { user: { userId: string } }) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const isCourseDesigner = await this.learningProfiles.isCourseDesigner(
+      profileId
+    );
+    return { isCourseDesigner };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('offerings')
+  async createOffering(
+    @Body() body: DraftOfferingInput,
+    @Req() req: { user: { userId: string; profileId?: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const allowed = await this.offeringAuthorization.authorize(
+      profileId,
+      req.user.profileId,
+      'create'
+    );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'Only a profile that has opted in as a course designer may create an offering.'
+      );
+    }
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.CreateOffering },
+        { profileId, input: body }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('offerings/:offeringId')
+  async updateOffering(
+    @Param('offeringId') offeringId: string,
+    @Body() body: { displayName?: string; description?: string },
+    @Req() req: { user: { userId: string; profileId?: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const allowed = await this.offeringAuthorization.authorize(
+      profileId,
+      req.user.profileId,
+      'update',
+      offeringId
+    );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'You may only update an offering you own or co-edit.'
+      );
+    }
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.UpdateOffering },
+        { offeringId, patch: body }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('offerings/:offeringId')
+  async deleteOffering(
+    @Param('offeringId') offeringId: string,
+    @Req() req: { user: { userId: string; profileId?: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const allowed = await this.offeringAuthorization.authorize(
+      profileId,
+      req.user.profileId,
+      'delete',
+      offeringId
+    );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'Only the owning profile, learning_admin, or a platform owner may delete an offering.'
+      );
+    }
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.DeleteOffering },
+        { offeringId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('offerings/:offeringId/co-editors')
+  async setCoEditors(
+    @Param('offeringId') offeringId: string,
+    @Body() body: { coEditorProfileIds: string[] },
+    @Req() req: { user: { userId: string; profileId?: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const allowed = await this.offeringAuthorization.authorize(
+      profileId,
+      req.user.profileId,
+      'manageCoEditors',
+      offeringId
+    );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'Only the owning profile, learning_admin, or a platform owner may change who co-edits an offering.'
+      );
+    }
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.SetCoEditors },
+        { offeringId, coEditorProfileIds: body.coEditorProfileIds }
       )
     );
   }

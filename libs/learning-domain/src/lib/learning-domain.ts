@@ -225,6 +225,12 @@ export const OfferingSchema = z.object({
   id: z.string().min(1),
   type: z.enum(['course', 'project', 'milestone']),
   displayName: z.string().min(1),
+  /**
+   * Free-text summary an author can revise. Optional because every offering
+   * that predates authored courses (the four built-in tracks) has none, and
+   * backfilling one would be inventing copy nobody wrote.
+   */
+  description: z.string().optional(),
   subjectId: z.string().min(1),
   level: z.union([
     z.literal(100),
@@ -415,4 +421,184 @@ export function isOfferingUnlocked(
   return unlockRules.every(
     (rule) => evaluateRequirementGroup(rule.requirement, completedSet).satisfied
   );
+}
+
+/**
+ * Ownership of an authored offering.
+ *
+ * An offering is not a database row, it is a value nested inside a
+ * ProgramTrack's JSONB `data` column, so "who owns it" cannot live as a
+ * foreign key on an offering table that does not exist. This is the side
+ * table that answers that question instead, keyed on the offering's own id.
+ */
+export const OfferingOwnershipSchema = z.object({
+  offeringId: z.string().min(1),
+  ownerProfileId: z.string().min(1),
+  coEditorProfileIds: z.array(z.string().min(1)),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type OfferingOwnership = z.infer<typeof OfferingOwnershipSchema>;
+
+export const OFFERING_AUTHORIZATION_ACTIONS = [
+  'create',
+  'update',
+  'delete',
+  'manageCoEditors',
+] as const;
+export type OfferingAuthorizationAction =
+  (typeof OFFERING_AUTHORIZATION_ACTIONS)[number];
+
+export interface OfferingAuthorizationRoles {
+  /** Holds `owner` or `global_admin` in the platform's global app scope. */
+  isPlatformOwner: boolean;
+  /** Holds `learning_admin` in the learning app scope. */
+  isLearningAdmin: boolean;
+  /** Holds `learning_course_designer` in the learning app scope. */
+  isCourseDesigner: boolean;
+}
+
+/**
+ * The single place that decides whether a profile may act on an offering.
+ *
+ * Deliberately a pure function of its inputs so it can be unit tested without
+ * standing up a database or a permissions service: the gateway is
+ * responsible for gathering the roles and the ownership record, this just
+ * applies the rule.
+ *
+ * Precedence, in order:
+ *  1. Platform owners and learning_admin may do anything.
+ *  2. Creating a new offering only needs the course-designer role; there is
+ *     no ownership record yet to check.
+ *  3. Everything else needs an ownership record. The owning profile may
+ *     update, delete, or manage co-editors. A co-editor may update content
+ *     but never delete the offering or touch who owns or co-edits it.
+ *  4. Anyone else, including a course designer who owns nothing here, is
+ *     refused.
+ */
+export function authorizeOfferingAction(
+  profileId: string,
+  action: OfferingAuthorizationAction,
+  roles: OfferingAuthorizationRoles,
+  ownership: OfferingOwnership | undefined
+): boolean {
+  if (roles.isPlatformOwner || roles.isLearningAdmin) return true;
+
+  if (action === 'create') return roles.isCourseDesigner;
+
+  if (!ownership) return false;
+
+  if (ownership.ownerProfileId === profileId) return true;
+
+  if (action === 'update' && ownership.coEditorProfileIds.includes(profileId)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Fields an author supplies when opening a new offering.
+ *
+ * Deliberately thin: authoring the real content (modules, lessons,
+ * activities) is a later slice. This only needs to produce something that
+ * satisfies OfferingSchema, which requires at least one module and one
+ * activity.
+ */
+export interface DraftOfferingInput {
+  displayName: string;
+  subjectId: string;
+  description?: string;
+  type?: Offering['type'];
+  level?: CollegiateLevel;
+  credits?: number;
+  outcomeTags?: string[];
+}
+
+/**
+ * The smallest offering that is honestly valid against OfferingSchema.
+ *
+ * OfferingSchema requires at least one module (with a lesson) and one
+ * activity; there is no way to represent "an offering with no content yet"
+ * without either weakening that schema (which would let every other offering
+ * ship without a lesson too) or giving a draft real, if placeholder, content.
+ * This takes the second path: one module, one lesson, one writing-response
+ * activity, each labelled as a draft placeholder so nobody mistakes it for
+ * finished material. The languageId 'any' is used rather than a programming
+ * language because this platform is not about programming.
+ */
+export function buildDraftOffering(
+  offeringId: string,
+  input: DraftOfferingInput
+): Offering {
+  const offering: Offering = {
+    id: offeringId,
+    type: input.type ?? 'course',
+    displayName: input.displayName,
+    ...(input.description ? { description: input.description } : {}),
+    subjectId: input.subjectId,
+    level: input.level ?? 100,
+    credits: input.credits ?? 1,
+    outcomeTags:
+      input.outcomeTags && input.outcomeTags.length > 0
+        ? input.outcomeTags
+        : ['draft'],
+    modules: [
+      {
+        id: `${offeringId}-module-draft`,
+        title: 'Getting started',
+        lessons: [
+          {
+            id: `${offeringId}-lesson-draft`,
+            title: 'Course overview',
+            slug: 'overview',
+            languageVariants: [
+              {
+                languageId: 'any',
+                strategy: 'fenced-blocks',
+                sourcePath: `drafts/${offeringId}/overview.md`,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    activities: [
+      {
+        type: 'writing.response',
+        id: `${offeringId}-activity-draft`,
+        prompt:
+          'Draft placeholder: describe what this course will cover. Replace before publishing.',
+      },
+    ],
+  };
+  return OfferingSchema.parse(offering);
+}
+
+/** Wraps a draft offering in the ProgramTrack it is stored inside. */
+export function buildDraftProgramTrack(
+  offeringId: string,
+  input: DraftOfferingInput
+): ProgramTrack {
+  const offering = buildDraftOffering(offeringId, input);
+  const track: ProgramTrack = {
+    id: offeringId,
+    displayName: input.displayName,
+    subjectIds: [input.subjectId],
+    supportedLanguageIds: ['any'],
+    focuses: [
+      {
+        id: `${offeringId}-focus`,
+        displayName: input.displayName,
+        subjectIds: [input.subjectId],
+      },
+    ],
+    offerings: [offering],
+    requirements: {
+      id: `${offeringId}-requirements`,
+      operator: 'AND',
+      children: [{ kind: 'offering', offeringId }],
+    },
+  };
+  return ProgramTrackSchema.parse(track);
 }

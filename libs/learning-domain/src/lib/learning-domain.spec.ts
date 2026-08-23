@@ -4,6 +4,10 @@ import {
   calculateTotalCredits,
   evaluateRequirementGroup,
   isOfferingUnlocked,
+  authorizeOfferingAction,
+  buildDraftOffering,
+  buildDraftProgramTrack,
+  OfferingOwnership,
 } from './learning-domain';
 import {
   programmingBasicsProgramTrack,
@@ -153,5 +157,157 @@ describe('learning-domain', () => {
       'rust-foundations-concurrency',
       'rust-foundations-testing',
     ]);
+  });
+});
+
+describe('buildDraftOffering / buildDraftProgramTrack', () => {
+  it('produces an offering that satisfies OfferingSchema despite having no real content yet', () => {
+    const offering = buildDraftOffering('draft-1', {
+      displayName: 'Intro to Watercolor',
+      subjectId: 'art',
+    });
+
+    expect(offering.modules.length).toBeGreaterThan(0);
+    expect(offering.activities.length).toBeGreaterThan(0);
+  });
+
+  it('produces a program track that validates end to end', () => {
+    const track = buildDraftProgramTrack('draft-2', {
+      displayName: 'Intro to Watercolor',
+      subjectId: 'art',
+    });
+
+    expect(() => ProgramTrackSchema.parse(track)).not.toThrow();
+    expect(track.requirements.children).toEqual([
+      { kind: 'offering', offeringId: 'draft-2' },
+    ]);
+  });
+
+  it('never bakes a programming language into the placeholder content', () => {
+    const offering = buildDraftOffering('draft-3', {
+      displayName: 'Anything',
+      subjectId: 'anything',
+    });
+
+    expect(offering.modules[0].lessons[0].languageVariants[0].languageId).toBe(
+      'any'
+    );
+  });
+});
+
+describe('authorizeOfferingAction', () => {
+  const noRoles = {
+    isPlatformOwner: false,
+    isLearningAdmin: false,
+    isCourseDesigner: false,
+  };
+
+  function ownership(
+    overrides: Partial<OfferingOwnership> = {}
+  ): OfferingOwnership {
+    return {
+      offeringId: 'offering-1',
+      ownerProfileId: 'owner-profile',
+      coEditorProfileIds: [],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      ...overrides,
+    };
+  }
+
+  it('refuses a plain learner the right to create an offering', () => {
+    expect(
+      authorizeOfferingAction('learner-1', 'create', noRoles, undefined)
+    ).toBe(false);
+  });
+
+  it('lets a course designer create an offering', () => {
+    expect(
+      authorizeOfferingAction(
+        'designer-1',
+        'create',
+        { ...noRoles, isCourseDesigner: true },
+        undefined
+      )
+    ).toBe(true);
+  });
+
+  it("refuses a course designer who owns nothing here from touching someone else's offering", () => {
+    const roles = { ...noRoles, isCourseDesigner: true };
+    const record = ownership();
+
+    expect(authorizeOfferingAction('stranger', 'update', roles, record)).toBe(
+      false
+    );
+    expect(authorizeOfferingAction('stranger', 'delete', roles, record)).toBe(
+      false
+    );
+  });
+
+  it('lets the owner update, delete, and manage co-editors on their own offering', () => {
+    const roles = { ...noRoles, isCourseDesigner: true };
+    const record = ownership({ ownerProfileId: 'owner-profile' });
+
+    for (const action of ['update', 'delete', 'manageCoEditors'] as const) {
+      expect(
+        authorizeOfferingAction('owner-profile', action, roles, record)
+      ).toBe(true);
+    }
+  });
+
+  it('lets a co-editor update content but never delete or manage co-editors', () => {
+    const roles = { ...noRoles, isCourseDesigner: true };
+    const record = ownership({ coEditorProfileIds: ['editor-1'] });
+
+    expect(authorizeOfferingAction('editor-1', 'update', roles, record)).toBe(
+      true
+    );
+    expect(authorizeOfferingAction('editor-1', 'delete', roles, record)).toBe(
+      false
+    );
+    expect(
+      authorizeOfferingAction('editor-1', 'manageCoEditors', roles, record)
+    ).toBe(false);
+  });
+
+  it('never lets a co-editor reassign ownership by acting as if they owned it', () => {
+    const roles = { ...noRoles, isCourseDesigner: true };
+    const record = ownership({ coEditorProfileIds: ['editor-1'] });
+
+    expect(
+      authorizeOfferingAction('editor-1', 'manageCoEditors', roles, record)
+    ).toBe(false);
+  });
+
+  it("lets learning_admin update and delete anyone's offering", () => {
+    const roles = { ...noRoles, isLearningAdmin: true };
+    const record = ownership();
+
+    expect(authorizeOfferingAction('admin-1', 'update', roles, record)).toBe(
+      true
+    );
+    expect(authorizeOfferingAction('admin-1', 'delete', roles, record)).toBe(
+      true
+    );
+  });
+
+  it("lets a platform owner update and delete anyone's offering", () => {
+    const roles = { ...noRoles, isPlatformOwner: true };
+    const record = ownership();
+
+    expect(
+      authorizeOfferingAction('owner-console-1', 'update', roles, record)
+    ).toBe(true);
+    expect(
+      authorizeOfferingAction('owner-console-1', 'delete', roles, record)
+    ).toBe(true);
+  });
+
+  it('refuses any action on an offering with no ownership record for a non-privileged caller', () => {
+    const roles = { ...noRoles, isCourseDesigner: true };
+
+    expect(authorizeOfferingAction('someone', 'update', roles, undefined)).toBe(
+      false
+    );
   });
 });

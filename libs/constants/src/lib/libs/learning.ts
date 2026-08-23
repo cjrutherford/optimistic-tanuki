@@ -13,4 +13,9 @@ export const LearningCommands = {
   Enrol: 'learning.enrolments.create',
   Withdraw: 'learning.enrolments.withdraw',
   ListMyEnrolments: 'learning.enrolments.list',
+  CreateOffering: 'learning.offerings.create',
+  UpdateOffering: 'learning.offerings.update',
+  DeleteOffering: 'learning.offerings.delete',
+  GetOfferingOwnership: 'learning.offerings.ownership.get',
+  SetCoEditors: 'learning.offerings.co-editors.set',
 };

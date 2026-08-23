@@ -4,14 +4,18 @@ import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
 import { Test } from '@nestjs/testing';
 import {
   Attempt,
+  buildDraftProgramTrack,
+  DraftOfferingInput,
   Enrolment,
   Evaluation,
   LessonProgress,
+  OfferingOwnership,
   ProgramTrack,
   sampleProgramTracks,
   tutorialExercises,
   NOT_ENROLLED,
 } from '@optimistic-tanuki/learning-domain';
+import { OfferingContentPatch } from './learning.repository';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -24,6 +28,7 @@ class InMemoryLearningRepository implements LearningRepository {
     LessonProgress & { userId: string; profileId: string }
   >();
   private readonly enrolments = new Map<string, Enrolment>();
+  private readonly ownerships = new Map<string, OfferingOwnership>();
 
   listPrograms() {
     return this.programs;
@@ -105,6 +110,64 @@ class InMemoryLearningRepository implements LearningRepository {
   }
   getEnrolment(profileId: string, offeringId: string) {
     return this.enrolments.get(`${profileId}:${offeringId}`);
+  }
+  createOffering(
+    ownerProfileId: string,
+    offeringId: string,
+    input: DraftOfferingInput
+  ) {
+    const track = buildDraftProgramTrack(offeringId, input);
+    this.programs.push(track);
+    const ownership: OfferingOwnership = {
+      offeringId,
+      ownerProfileId,
+      coEditorProfileIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.ownerships.set(offeringId, ownership);
+    return { track, ownership };
+  }
+  updateOfferingContent(offeringId: string, patch: OfferingContentPatch) {
+    const index = this.programs.findIndex((track) => track.id === offeringId);
+    if (index === -1) throw new Error(`Unknown offering: ${offeringId}`);
+    const track = this.programs[index];
+    const updated: ProgramTrack = {
+      ...track,
+      ...(patch.displayName !== undefined
+        ? { displayName: patch.displayName }
+        : {}),
+      offerings: track.offerings.map((offering) =>
+        offering.id === offeringId
+          ? {
+              ...offering,
+              ...(patch.displayName !== undefined
+                ? { displayName: patch.displayName }
+                : {}),
+              ...(patch.description !== undefined
+                ? { description: patch.description }
+                : {}),
+            }
+          : offering
+      ),
+    };
+    this.programs[index] = updated;
+    return updated;
+  }
+  deleteOffering(offeringId: string) {
+    const index = this.programs.findIndex((track) => track.id === offeringId);
+    if (index !== -1) this.programs.splice(index, 1);
+    this.ownerships.delete(offeringId);
+  }
+  getOwnership(offeringId: string) {
+    return this.ownerships.get(offeringId);
+  }
+  setCoEditors(offeringId: string, coEditorProfileIds: string[]) {
+    const existing = this.ownerships.get(offeringId);
+    if (!existing) throw new Error(`No ownership for offering: ${offeringId}`);
+    const updated = { ...existing, coEditorProfileIds };
+    this.ownerships.set(offeringId, updated);
+    return updated;
   }
 }
 
@@ -368,6 +431,54 @@ describe('AppService', () => {
       );
 
       expect(result.progress).toBeDefined();
+    });
+  });
+
+  // Authorization happens at the gateway; the service trusts the profileId
+  // it is given, the same way submitAttempt trusts the userId it is given.
+  describe('offering authoring write path', () => {
+    it('creates a draft offering owned by the creator', async () => {
+      const { track, ownership } = await service.createOffering(
+        'designer-profile',
+        { displayName: 'Intro to Watercolor', subjectId: 'art' }
+      );
+
+      expect(ownership.ownerProfileId).toBe('designer-profile');
+      expect(ownership.coEditorProfileIds).toEqual([]);
+      expect(track.offerings[0].displayName).toBe('Intro to Watercolor');
+
+      const programs = await service.listPrograms();
+      expect(programs.some((program) => program.id === track.id)).toBe(true);
+    });
+
+    it('updates the title and description of an existing offering', async () => {
+      const { track } = await service.createOffering('designer-profile', {
+        displayName: 'Intro to Watercolor',
+        subjectId: 'art',
+      });
+
+      const updated = await service.updateOffering(track.id, {
+        displayName: 'Watercolor Fundamentals',
+        description: 'A gentler on-ramp than the old title implied.',
+      });
+
+      expect(updated.offerings[0].displayName).toBe('Watercolor Fundamentals');
+      expect(updated.offerings[0].description).toBe(
+        'A gentler on-ramp than the old title implied.'
+      );
+    });
+
+    it('deletes an offering and its ownership record', async () => {
+      const { track } = await service.createOffering('designer-profile', {
+        displayName: 'Intro to Watercolor',
+        subjectId: 'art',
+      });
+
+      await service.deleteOffering(track.id);
+
+      const programs = await service.listPrograms();
+      expect(programs.some((program) => program.id === track.id)).toBe(false);
+      expect(await service.getOfferingOwnership(track.id)).toBeUndefined();
     });
   });
 });

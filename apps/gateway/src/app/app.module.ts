@@ -87,6 +87,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
 import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { LearningController } from '../controllers/learning/learning.controller';
 import { LearningProfileResolver } from '../controllers/learning/learning-profile.resolver';
+import { OfferingAuthorizationService } from '../controllers/learning/offering-authorization.service';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -476,6 +477,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     },
     RoleInitService,
     LearningProfileResolver,
+    OfferingAuthorizationService,
     {
       provide: LoginAccountBootstrapService,
       useFactory: (
