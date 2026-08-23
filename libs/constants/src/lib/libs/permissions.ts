@@ -57,6 +57,7 @@ export const ALL_APP_SCOPES = [
   'D6',
   'wellness',
   'local-hub',
+  'learning',
 ] as const;
 
 export type AppScopeName = (typeof ALL_APP_SCOPES)[number];

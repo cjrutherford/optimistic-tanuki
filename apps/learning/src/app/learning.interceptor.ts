@@ -11,7 +11,7 @@ export const LearningInterceptor: HttpInterceptorFn = (req, next) =>
   next(
     req.clone({
       setHeaders: {
-        'X-ot-appscope': 'Learning',
+        'X-ot-appscope': 'learning',
         'X-ot-session-mode': 'cookie',
       },
       withCredentials: true,
