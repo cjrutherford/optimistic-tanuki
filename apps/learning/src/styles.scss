@@ -1,12 +1,22 @@
-:root {
-  color-scheme: dark;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-}
+/* Learning Studio global styles.
+ *
+ * The palette lives in learning-theme.scss; this file only applies it.
+ */
+@use './learning-theme';
+
 body {
   margin: 0;
-  background: #07111f;
-  color: #e7eef8;
+  background: var(--lx-bg);
+  color: var(--lx-text-body);
+  font-family: var(
+    --personality-font-family,
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
 }
+
 button {
   cursor: pointer;
 }

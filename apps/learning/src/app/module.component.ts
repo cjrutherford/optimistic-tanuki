@@ -41,7 +41,7 @@ import { LearningDataService } from './learning-data.service';
   styles: [
     `
       .back {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         text-decoration: none;
         font-size: 0.85rem;
       }
@@ -49,7 +49,7 @@ import { LearningDataService } from './learning-data.service';
         margin: 2.5rem 0;
       }
       header small {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font: 700 0.7rem ui-monospace, monospace;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -62,7 +62,7 @@ import { LearningDataService } from './learning-data.service';
       }
       header p {
         max-width: 56ch;
-        color: #a9bed2;
+        color: var(--lx-text-muted);
         line-height: 1.65;
       }
       .lesson-list {
@@ -70,29 +70,29 @@ import { LearningDataService } from './learning-data.service';
         margin: 0;
         padding: 0;
         list-style: none;
-        border-top: 1px solid #294b62;
+        border-top: 1px solid var(--lx-border);
       }
       .lesson-list li {
-        border-bottom: 1px solid #294b62;
+        border-bottom: 1px solid var(--lx-border);
       }
       .lesson-list a {
         display: grid;
         grid-template-columns: 3rem 1fr auto;
         gap: 1rem;
         padding: 1.1rem 0.25rem;
-        color: #e5f0f7;
+        color: var(--lx-text);
         text-decoration: none;
       }
       .lesson-list a:hover {
-        background: #0b2030;
-        color: #76e3d0;
+        background: var(--lx-surface-hover);
+        color: var(--lx-accent);
       }
       .lesson-list small {
-        color: #7894ab;
+        color: var(--lx-text-subtle);
         font-family: ui-monospace, monospace;
       }
       .lesson-list b {
-        color: #76e3d0;
+        color: var(--lx-accent);
       }
     `,
   ],

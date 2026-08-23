@@ -1,0 +1,155 @@
+/* Learning Studio palette.
+ *
+ * This app is a console: lessons on one side, an editor and a compiler on the
+ * other. It leans dark and high-contrast the way a terminal or an IDE does,
+ * and Monaco is themed to match. developer-portal set the precedent for an
+ * app-owned surface like this.
+ *
+ * The `architect` personality drives typography and the shared components:
+ * raw, structural, monospace, which is what this surface already was. These
+ * tokens name the surfaces the personality does not cover, so no component
+ * ever repeats a literal.
+ *
+ * Four blocks, in this order, so the viewer's toggle wins either way:
+ *   1. :root                        the dark default
+ *   2. @media light + :root         follow the OS when nothing is stamped
+ *   3. [data-theme='light']         the toggle, forcing light
+ *   4. [data-theme='dark']          the toggle, forcing dark back over 2
+ * Blocks 3 and 4 must come after 2, or a dark toggle would lose to a light OS.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, darkest to lightest. */
+  --lx-bg: #07101a;
+  --lx-surface: #091622;
+  --lx-surface-hover: #0d2131;
+  --lx-surface-active: #123047;
+  --lx-code: #050d16;
+  --lx-code-text: #d5e7f6;
+  --lx-well: #06101c;
+  --lx-inline-code: #14293a;
+
+  /* Rules. */
+  --lx-border: #294b62;
+  --lx-border-soft: #254154;
+  --lx-border-strong: #365674;
+  --lx-border-accent: #3d7f96;
+
+  /* Type, brightest to dimmest. */
+  --lx-text: #eaf3fa;
+  --lx-text-body: #d5e7f6;
+  --lx-text-muted: #a9bed2;
+  --lx-text-subtle: #7894ab;
+  --lx-text-faint: #66849a;
+
+  /* Accent and status. */
+  --lx-accent: #76e3d0;
+  --lx-accent-soft: #9fe8d8;
+  --lx-danger: #d98b6a;
+  --lx-warn: #f0c987;
+
+  /* Prism tokens, tuned to the surfaces above. */
+  --lx-syn-comment: #5f7c91;
+  --lx-syn-punct: #90a9bd;
+  --lx-syn-keyword: #7fb2ff;
+  --lx-syn-string: #9fe8b0;
+  --lx-syn-number: #f0c987;
+  --lx-syn-function: #76e3d0;
+  --lx-syn-operator: #b8cadb;
+  --lx-syn-property: #dfa2c4;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --lx-bg: #f2f6f8;
+    --lx-surface: #ffffff;
+    --lx-surface-hover: #e7eef3;
+    --lx-surface-active: #d8e5ec;
+    /* Code stays dark in both themes: the editor is a dark surface either
+       way, and a pale code well beside it reads as a mistake. */
+    --lx-code: #0d1b26;
+    /* The code surface stays dark in light mode, so its text must stay
+       light or it would be dark-on-dark and unreadable. */
+    --lx-code-text: #d5e7f6;
+    --lx-well: #eef3f7;
+    --lx-inline-code: #dcebe7;
+
+    --lx-border: #c2d2dc;
+    --lx-border-soft: #d5e1e9;
+    --lx-border-strong: #a3b8c6;
+    --lx-border-accent: #2b7f95;
+
+    --lx-text: #10222e;
+    --lx-text-body: #1d3444;
+    --lx-text-muted: #466173;
+    --lx-text-subtle: #5f7a8c;
+    --lx-text-faint: #7b93a3;
+
+    --lx-accent: #0d7a66;
+    --lx-accent-soft: #0f6659;
+    --lx-danger: #b4552c;
+    --lx-warn: #8a6212;
+  }
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --lx-bg: #f2f6f8;
+  --lx-surface: #ffffff;
+  --lx-surface-hover: #e7eef3;
+  --lx-surface-active: #d8e5ec;
+  --lx-code: #0d1b26;
+  --lx-code-text: #d5e7f6;
+  --lx-well: #eef3f7;
+  --lx-inline-code: #dcebe7;
+
+  --lx-border: #c2d2dc;
+  --lx-border-soft: #d5e1e9;
+  --lx-border-strong: #a3b8c6;
+  --lx-border-accent: #2b7f95;
+
+  --lx-text: #10222e;
+  --lx-text-body: #1d3444;
+  --lx-text-muted: #466173;
+  --lx-text-subtle: #5f7a8c;
+  --lx-text-faint: #7b93a3;
+
+  --lx-accent: #0d7a66;
+  --lx-accent-soft: #0f6659;
+  --lx-danger: #b4552c;
+  --lx-warn: #8a6212;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --lx-bg: #07101a;
+  --lx-surface: #091622;
+  --lx-surface-hover: #0d2131;
+  --lx-surface-active: #123047;
+  --lx-code: #050d16;
+  --lx-code-text: #d5e7f6;
+  --lx-well: #06101c;
+  --lx-inline-code: #14293a;
+
+  --lx-border: #294b62;
+  --lx-border-soft: #254154;
+  --lx-border-strong: #365674;
+  --lx-border-accent: #3d7f96;
+
+  --lx-text: #eaf3fa;
+  --lx-text-body: #d5e7f6;
+  --lx-text-muted: #a9bed2;
+  --lx-text-subtle: #7894ab;
+  --lx-text-faint: #66849a;
+
+  --lx-accent: #76e3d0;
+  --lx-accent-soft: #9fe8d8;
+  --lx-danger: #d98b6a;
+  --lx-warn: #f0c987;
+}

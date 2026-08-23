@@ -156,7 +156,7 @@ interface ExerciseOutcome {
   styles: [
     `
       .back {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         text-decoration: none;
         font-size: 0.85rem;
       }
@@ -165,7 +165,7 @@ interface ExerciseOutcome {
       }
       header small,
       .practice-head {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font: 700 0.7rem ui-monospace, monospace;
         letter-spacing: 0.1em;
         text-transform: uppercase;
@@ -183,8 +183,8 @@ interface ExerciseOutcome {
       }
       article,
       aside {
-        border: 1px solid #294b62;
-        background: #091622;
+        border: 1px solid var(--lx-border);
+        background: var(--lx-surface);
       }
       article {
         padding: 1.2rem 1.5rem 2rem;
@@ -192,7 +192,7 @@ interface ExerciseOutcome {
 
       /* Rendered lesson markdown. */
       .prose {
-        color: #cfe0ee;
+        color: var(--lx-text-body);
         line-height: 1.7;
         overflow-wrap: break-word;
       }
@@ -204,7 +204,7 @@ interface ExerciseOutcome {
       .prose h3,
       .prose h4 {
         margin: 2rem 0 0.6rem;
-        color: #eaf3fa;
+        color: var(--lx-text);
         letter-spacing: -0.02em;
         line-height: 1.25;
         text-wrap: balance;
@@ -236,20 +236,20 @@ interface ExerciseOutcome {
         margin-bottom: 0.35rem;
       }
       .prose a {
-        color: #76e3d0;
+        color: var(--lx-accent);
       }
       .prose strong {
-        color: #eaf3fa;
+        color: var(--lx-text);
       }
       .prose blockquote {
         padding: 0.2rem 0 0.2rem 1rem;
-        border-left: 3px solid #2f5771;
-        color: #a9bed2;
+        border-left: 3px solid var(--lx-border-strong);
+        color: var(--lx-text-muted);
       }
       .prose hr {
         margin: 2rem 0;
         border: 0;
-        border-top: 1px solid #294b62;
+        border-top: 1px solid var(--lx-border);
       }
       .prose table {
         display: block;
@@ -261,11 +261,11 @@ interface ExerciseOutcome {
       .prose th,
       .prose td {
         padding: 0.5rem 0.7rem;
-        border: 1px solid #294b62;
+        border: 1px solid var(--lx-border);
         text-align: left;
       }
       .prose th {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         font-size: 0.78rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -274,18 +274,18 @@ interface ExerciseOutcome {
       .prose :not(pre) > code {
         padding: 0.12em 0.4em;
         border-radius: 3px;
-        background: #14293a;
-        color: #9fe8d8;
+        background: var(--lx-inline-code);
+        color: var(--lx-accent-soft);
         font: 400 0.85em ui-monospace, monospace;
       }
       .prose pre {
         margin: 0 0 1.15rem;
         padding: 0.95rem 1.1rem;
         overflow-x: auto;
-        border: 1px solid #24455d;
-        border-left: 3px solid #3d7f96;
-        background: #050d16;
-        color: #d5e7f6;
+        border: 1px solid var(--lx-border-strong);
+        border-left: 3px solid var(--lx-border-accent);
+        background: var(--lx-code);
+        color: var(--lx-code-text);
         font: 400 0.83rem/1.65 ui-monospace, monospace;
       }
       .prose pre code {
@@ -299,45 +299,45 @@ interface ExerciseOutcome {
       .prose .token.prolog,
       .prose .token.doctype,
       .prose .token.cdata {
-        color: #5f7c91;
+        color: var(--lx-syn-comment);
         font-style: italic;
       }
       .prose .token.punctuation {
-        color: #90a9bd;
+        color: var(--lx-syn-punct);
       }
       .prose .token.keyword,
       .prose .token.rule,
       .prose .token.important {
-        color: #7fb2ff;
+        color: var(--lx-syn-keyword);
       }
       .prose .token.string,
       .prose .token.char,
       .prose .token.attr-value {
-        color: #9fe8b0;
+        color: var(--lx-syn-string);
       }
       .prose .token.number,
       .prose .token.boolean,
       .prose .token.constant,
       .prose .token.symbol {
-        color: #f0c987;
+        color: var(--lx-syn-number);
       }
       .prose .token.function,
       .prose .token.class-name {
-        color: #76e3d0;
+        color: var(--lx-accent);
       }
       .prose .token.operator,
       .prose .token.entity,
       .prose .token.url {
-        color: #b8cadb;
+        color: var(--lx-syn-operator);
       }
       .prose .token.property,
       .prose .token.tag,
       .prose .token.attr-name,
       .prose .token.builtin {
-        color: #dfa2c4;
+        color: var(--lx-syn-property);
       }
       .prose .token.deleted {
-        color: #d98b6a;
+        color: var(--lx-danger);
       }
       aside {
         padding: 1.1rem;
@@ -346,17 +346,17 @@ interface ExerciseOutcome {
         display: flex;
         justify-content: space-between;
         padding-bottom: 1rem;
-        border-bottom: 1px solid #294b62;
+        border-bottom: 1px solid var(--lx-border);
       }
       .exercise {
         padding: 1.2rem 0;
-        border-bottom: 1px solid #294b62;
+        border-bottom: 1px solid var(--lx-border);
       }
       .exercise:last-child {
         border-bottom: 0;
       }
       .exercise.solved h2 {
-        color: #76e3d0;
+        color: var(--lx-accent);
       }
       .exercise-head {
         display: flex;
@@ -364,7 +364,7 @@ interface ExerciseOutcome {
         align-items: center;
       }
       .points {
-        color: #7894ab;
+        color: var(--lx-text-subtle);
         font: 700 0.7rem ui-monospace, monospace;
       }
       .exercise h2 {
@@ -372,7 +372,7 @@ interface ExerciseOutcome {
         font-size: 1.15rem;
       }
       .exercise p {
-        color: #a9bed2;
+        color: var(--lx-text-muted);
         line-height: 1.55;
       }
       .exercise textarea {
@@ -382,9 +382,9 @@ interface ExerciseOutcome {
         min-height: 220px;
         margin: 1rem 0;
         padding: 1rem;
-        border: 1px solid #365674;
-        background: #050d16;
-        color: #e7eef8;
+        border: 1px solid var(--lx-border-strong);
+        background: var(--lx-code);
+        color: var(--lx-code-text);
         font: 400 0.82rem/1.6 ui-monospace, monospace;
       }
       .hints {
@@ -398,12 +398,12 @@ interface ExerciseOutcome {
         grid-template-columns: auto 1fr;
         gap: 0.55rem;
         margin: 0;
-        color: #a9bed2;
+        color: var(--lx-text-muted);
         font-size: 0.82rem;
         line-height: 1.5;
       }
       .hints p span {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font: 700 0.65rem ui-monospace, monospace;
         letter-spacing: 0.09em;
         text-transform: uppercase;
@@ -411,23 +411,23 @@ interface ExerciseOutcome {
       }
       .hint-more {
         padding: 0.4rem 0.75rem;
-        border: 1px dashed #3d6a86;
+        border: 1px dashed var(--lx-border-strong);
         border-radius: 2px;
         background: none;
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         font: 400 0.78rem inherit;
         cursor: pointer;
       }
       .hint-more:hover {
-        border-color: #76e3d0;
-        color: #76e3d0;
+        border-color: var(--lx-accent);
+        color: var(--lx-accent);
       }
       .hint-more:focus-visible {
-        outline: 2px solid #76e3d0;
+        outline: 2px solid var(--lx-accent);
         outline-offset: 2px;
       }
       .hint-more em {
-        color: #6b8299;
+        color: var(--lx-text-subtle);
         font-style: normal;
       }
       .actions {
@@ -437,7 +437,7 @@ interface ExerciseOutcome {
         flex-wrap: wrap;
       }
       .working {
-        color: #7894ab;
+        color: var(--lx-text-subtle);
         font-size: 0.8rem;
       }
       .reset {
@@ -445,51 +445,51 @@ interface ExerciseOutcome {
         border: 1px solid transparent;
         border-radius: 2px;
         background: none;
-        color: #8fa7bf;
+        color: var(--lx-text-subtle);
         font: 400 0.78rem inherit;
         cursor: pointer;
       }
       .reset:hover {
-        border-color: #3d6a86;
-        color: #dce8f4;
+        border-color: var(--lx-border-strong);
+        color: var(--lx-text-body);
       }
       .reset:focus-visible {
-        outline: 2px solid #76e3d0;
+        outline: 2px solid var(--lx-accent);
         outline-offset: 2px;
       }
       .result {
         margin: 1rem 0 0;
         padding: 0.8rem;
-        border-left: 3px solid #365674;
-        background: #06101c;
+        border-left: 3px solid var(--lx-border-strong);
+        background: var(--lx-well);
       }
       .result.pass {
-        border-left-color: #76e3d0;
+        border-left-color: var(--lx-accent);
       }
       .result.fail {
-        border-left-color: #d98b6a;
+        border-left-color: var(--lx-danger);
       }
       .result .verdict {
         margin: 0 0 0.4rem;
-        color: #dce8f4;
+        color: var(--lx-text-body);
         font: 700 0.8rem ui-monospace, monospace;
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
       .result.pass .verdict {
-        color: #76e3d0;
+        color: var(--lx-accent);
       }
       .result.fail .verdict {
-        color: #d98b6a;
+        color: var(--lx-danger);
       }
       .result .detail {
         margin: 0;
-        color: #8fa7bf;
+        color: var(--lx-text-subtle);
         font-size: 0.8rem;
       }
       .result pre {
         margin: 0;
-        color: #d8e9f7;
+        color: var(--lx-text-body);
         white-space: pre-wrap;
         font: 400 0.78rem/1.5 ui-monospace, monospace;
       }

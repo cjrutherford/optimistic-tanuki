@@ -71,7 +71,7 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
     `
       header p,
       .path small {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font: 700 0.7rem ui-monospace, monospace;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -84,15 +84,15 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
         letter-spacing: -0.06em;
       }
       header > span {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
       }
       .stats {
         display: flex;
         gap: 2rem;
         margin: 2.5rem 0;
         padding: 1rem 0;
-        border-top: 1px solid #254154;
-        border-bottom: 1px solid #254154;
+        border-top: 1px solid var(--lx-border-soft);
+        border-bottom: 1px solid var(--lx-border-soft);
       }
       .stats div {
         display: grid;
@@ -102,12 +102,12 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
         font: 700 1.7rem ui-monospace, monospace;
       }
       .stats span {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         font-size: 0.78rem;
         text-transform: uppercase;
       }
       .paths {
-        border-top: 1px solid #254154;
+        border-top: 1px solid var(--lx-border-soft);
       }
       .path {
         display: grid;
@@ -115,12 +115,12 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
         align-items: center;
         gap: 1rem;
         padding: 1.35rem 0.35rem;
-        border-bottom: 1px solid #254154;
-        color: #dce8f4;
+        border-bottom: 1px solid var(--lx-border-soft);
+        color: var(--lx-text-body);
         text-decoration: none;
       }
       .path:hover {
-        background: #0d2131;
+        background: var(--lx-surface-hover);
       }
       .path span {
         display: grid;
@@ -130,12 +130,12 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
         font-size: 1.25rem;
       }
       .path em {
-        color: #9db4c7;
+        color: var(--lx-text-muted);
         font-size: 0.9rem;
         font-style: normal;
       }
       .path strong {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font-size: 0.85rem;
       }
       @media (max-width: 600px) {

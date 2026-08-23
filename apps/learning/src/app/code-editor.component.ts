@@ -27,6 +27,11 @@ type MonacoEditor = ReturnType<MonacoApi['editor']['create']>;
 
 const THEME = 'learning-console';
 
+/** Monaco's rule colours are bare hex digits, with no leading hash. */
+function hex(value: string): string {
+  return value.replace(/^#/, '');
+}
+
 /**
  * The code editor for an exercise.
  *
@@ -65,7 +70,7 @@ const THEME = 'learning-console';
       .monaco {
         display: none;
         height: 320px;
-        border: 1px solid #365674;
+        border: 1px solid var(--lx-border-strong);
       }
       .editor.mounted .monaco {
         display: block;
@@ -76,9 +81,9 @@ const THEME = 'learning-console';
         width: 100%;
         min-height: 260px;
         padding: 1rem;
-        border: 1px solid #365674;
-        background: #050d16;
-        color: #e7eef8;
+        border: 1px solid var(--lx-border-strong);
+        background: var(--lx-code);
+        color: var(--lx-code-text);
         font: 400 0.82rem/1.6 ui-monospace, monospace;
         resize: vertical;
       }
@@ -136,6 +141,57 @@ export class CodeEditorComponent {
     });
   }
 
+  /**
+   * Builds Monaco's theme from the app's own tokens, so the editor follows
+   * the palette instead of keeping a second copy of it. Monaco needs literal
+   * colours, not var() references, hence reading the computed values.
+   */
+  private defineTheme(monaco: MonacoApi): void {
+    const styles = getComputedStyle(document.documentElement);
+    const token = (name: string, fallback: string) =>
+      styles.getPropertyValue(name).trim() || fallback;
+
+    const background = token('--lx-code', '#050d16');
+
+    monaco.editor.defineTheme(THEME, {
+      // The code surface stays dark in both themes, so the base does too.
+      base: 'vs-dark',
+      inherit: true,
+      colors: {
+        'editor.background': background,
+        'editorGutter.background': background,
+        'editorLineNumber.foreground': token('--lx-text-faint', '#66849a'),
+        'editorLineNumber.activeForeground': token('--lx-accent', '#76e3d0'),
+        'editor.lineHighlightBackground': token(
+          '--lx-surface-hover',
+          '#0d2131'
+        ),
+      },
+      rules: [
+        {
+          token: 'comment',
+          foreground: hex(token('--lx-syn-comment', '#5f7c91')),
+        },
+        {
+          token: 'keyword',
+          foreground: hex(token('--lx-syn-keyword', '#7fb2ff')),
+        },
+        {
+          token: 'string',
+          foreground: hex(token('--lx-syn-string', '#9fe8b0')),
+        },
+        {
+          token: 'number',
+          foreground: hex(token('--lx-syn-number', '#f0c987')),
+        },
+        {
+          token: 'type',
+          foreground: hex(token('--lx-syn-function', '#76e3d0')),
+        },
+      ],
+    });
+  }
+
   private monacoLanguage(): string {
     return MONACO_LANGUAGES[this.language()] ?? 'plaintext';
   }
@@ -160,18 +216,7 @@ export class CodeEditorComponent {
     }
 
     this.monaco = monaco;
-    monaco.editor.defineTheme(THEME, {
-      base: 'vs-dark',
-      inherit: true,
-      colors: {
-        'editor.background': '#050d16',
-        'editorGutter.background': '#050d16',
-        'editorLineNumber.foreground': '#456375',
-        'editorLineNumber.activeForeground': '#76e3d0',
-        'editor.lineHighlightBackground': '#0b1c2b',
-      },
-      rules: [],
-    });
+    this.defineTheme(monaco);
 
     this.editor = monaco.editor.create(this.host().nativeElement, {
       value: this.code(),

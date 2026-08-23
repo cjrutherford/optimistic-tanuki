@@ -27,13 +27,13 @@ import { RouterLink } from '@angular/router';
       .landing {
         min-height: 100vh;
         padding: 1.4rem clamp(1.4rem, 6vw, 6rem);
-        color: #e6f1f8;
+        color: var(--lx-text);
         background: radial-gradient(
             circle at 78% 35%,
-            #12394a 0,
+            var(--lx-surface-active) 0,
             transparent 28%
           ),
-          #07101a;
+          var(--lx-bg);
       }
       .landing nav {
         display: flex;
@@ -41,11 +41,11 @@ import { RouterLink } from '@angular/router';
         align-items: center;
       }
       .landing nav span {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font-weight: 800;
       }
       .landing nav a {
-        color: #b9ccdb;
+        color: var(--lx-text-muted);
         text-decoration: none;
       }
       .landing section {
@@ -53,7 +53,7 @@ import { RouterLink } from '@angular/router';
         margin: clamp(5rem, 16vh, 11rem) auto;
       }
       .landing section > p:first-child {
-        color: #76e3d0;
+        color: var(--lx-accent);
         font: 700 0.72rem ui-monospace, monospace;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -68,17 +68,17 @@ import { RouterLink } from '@angular/router';
         max-width: 420px;
         margin: 2rem 0;
         padding: 1.1rem 1.4rem;
-        border-left: 2px solid #76e3d0;
-        background: #091a28;
-        color: #9ec2dd;
+        border-left: 2px solid var(--lx-accent);
+        background: var(--lx-surface);
+        color: var(--lx-text-muted);
         font: 400 0.95rem/1.7 ui-monospace, monospace;
       }
       .code b {
-        color: #ffd47a;
+        color: var(--lx-warn);
       }
       .lede {
         max-width: 54ch;
-        color: #b4c7d8;
+        color: var(--lx-text-muted);
         line-height: 1.7;
         font-size: 1.08rem;
         margin-bottom: 1.7rem;
@@ -86,8 +86,8 @@ import { RouterLink } from '@angular/router';
       .start {
         display: inline-block;
         padding: 0.8rem 1.2rem;
-        background: #76e3d0;
-        color: #07101a;
+        background: var(--lx-accent);
+        color: var(--lx-bg);
         text-decoration: none;
         font-weight: 800;
       }
