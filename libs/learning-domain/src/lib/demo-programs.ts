@@ -38,16 +38,16 @@ export const sampleProgramTrack: ProgramTrack = {
               id: 'state-and-side-effects',
               title: 'State and Side Effects',
               slug: 'state-and-side-effects',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'go',
-                  strategy: 'file-variant',
+                  variantId: 'go',
+                  format: 'file-variant',
                   sourcePath:
                     'content/systems-foundations/intro/state-and-side-effects.go.md',
                 },
                 {
-                  languageId: 'typescript',
-                  strategy: 'file-variant',
+                  variantId: 'typescript',
+                  format: 'file-variant',
                   sourcePath:
                     'content/systems-foundations/intro/state-and-side-effects.ts.md',
                 },
@@ -93,16 +93,16 @@ export const sampleProgramTrack: ProgramTrack = {
               id: 'property-tests',
               title: 'Property Testing',
               slug: 'property-testing',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/systems-foundations/testing/property-testing.md',
                 },
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/systems-foundations/testing/property-testing.md',
                 },
@@ -138,16 +138,16 @@ export const sampleProgramTrack: ProgramTrack = {
               id: 'capstone-brief',
               title: 'Project Brief',
               slug: 'project-brief',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'go',
-                  strategy: 'file-variant',
+                  variantId: 'go',
+                  format: 'file-variant',
                   sourcePath:
                     'content/systems-foundations/capstone/project-brief.go.md',
                 },
                 {
-                  languageId: 'typescript',
-                  strategy: 'file-variant',
+                  variantId: 'typescript',
+                  format: 'file-variant',
                   sourcePath:
                     'content/systems-foundations/capstone/project-brief.ts.md',
                 },
@@ -234,28 +234,28 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-functions-and-scope-functions',
               title: 'Functions',
               slug: 'functions',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
@@ -265,28 +265,28 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-functions-and-scope-scope',
               title: 'Scope and Variable Lifetime',
               slug: 'scope-and-variable-lifetime',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath:
                     'content/programming-basics/functions-and-scope.md',
                 },
@@ -302,25 +302,25 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-execution-contexts',
               title: 'Execution Contexts',
               slug: 'execution-contexts',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
               ],
@@ -329,25 +329,25 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-runtimes',
               title: 'Language Runtimes',
               slug: 'language-runtimes',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/execution.md',
                 },
               ],
@@ -362,25 +362,25 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-memory-management',
               title: 'Memory Management',
               slug: 'memory-management',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
               ],
@@ -389,25 +389,25 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-garbage-collection',
               title: 'Garbage Collection',
               slug: 'garbage-collection',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/memory-management.md',
                 },
               ],
@@ -422,25 +422,25 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
               id: 'programming-basics-algorithms',
               title: 'Algorithms and Complexity',
               slug: 'algorithms-and-complexity',
-              languageVariants: [
+              content: [
                 {
-                  languageId: 'typescript',
-                  strategy: 'fenced-blocks',
+                  variantId: 'typescript',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/algorithms.md',
                 },
                 {
-                  languageId: 'go',
-                  strategy: 'fenced-blocks',
+                  variantId: 'go',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/algorithms.md',
                 },
                 {
-                  languageId: 'cpp',
-                  strategy: 'fenced-blocks',
+                  variantId: 'cpp',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/algorithms.md',
                 },
                 {
-                  languageId: 'rust',
-                  strategy: 'fenced-blocks',
+                  variantId: 'rust',
+                  format: 'fenced-blocks',
                   sourcePath: 'content/programming-basics/algorithms.md',
                 },
               ],

@@ -1,7 +1,7 @@
 import { LessonMetadata, rollUpCompletedLessons } from './learning-domain';
 
 const variant = [
-  { languageId: 'go', strategy: 'file-variant' as const, sourcePath: 'x.md' },
+  { variantId: 'go', format: 'file-variant' as const, sourcePath: 'x.md' },
 ];
 
 function lesson(id: string, parentLessonId?: string): LessonMetadata {
@@ -9,7 +9,7 @@ function lesson(id: string, parentLessonId?: string): LessonMetadata {
     id,
     title: id,
     slug: id,
-    languageVariants: variant,
+    content: variant,
     ...(parentLessonId ? { parentLessonId } : {}),
   };
 }

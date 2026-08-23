@@ -3,7 +3,12 @@ import { AsyncPipe, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LoadingStateComponent } from '@optimistic-tanuki/common-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
-import { DashboardEntry, LearningDataService } from './learning-data.service';
+import {
+  DashboardEntry,
+  LearningDataService,
+  Program,
+  programVariantLabel,
+} from './learning-data.service';
 
 @Component({
   selector: 'learning-dashboard',
@@ -47,7 +52,7 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
             entry.program.id,
             entry.program.offerings[0].modules[0].id
           ]"
-          ><small>{{ entry.program.supportedLanguageIds[0] }}</small
+          ><small>{{ variantLabel(entry.program) }}</small
           ><span
             ><b>{{ entry.program.displayName }}</b
             ><em
@@ -150,6 +155,10 @@ import { DashboardEntry, LearningDataService } from './learning-data.service';
   ],
 })
 export class DashboardComponent {
+  protected variantLabel(program: Program): string {
+    return programVariantLabel(program);
+  }
+
   readonly paths$ = inject(LearningDataService).dashboard();
 
   totalLessons = (p: DashboardEntry[]) =>

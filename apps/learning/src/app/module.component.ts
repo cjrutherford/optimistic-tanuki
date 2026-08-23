@@ -3,7 +3,11 @@ import { AsyncPipe, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { combineLatest, map, switchMap } from 'rxjs';
 import { LearningLayoutComponent } from './learning-layout.component';
-import { LearningDataService } from './learning-data.service';
+import {
+  LearningDataService,
+  Program,
+  programVariantLabel,
+} from './learning-data.service';
 
 @Component({
   selector: 'learning-module',
@@ -12,7 +16,9 @@ import { LearningDataService } from './learning-data.service';
     ><ng-container *ngIf="vm$ | async as vm"
       ><a routerLink="/dashboard" class="back">← Dashboard</a>
       <header>
-        <small>{{ vm.track.program.supportedLanguageIds[0] }} module</small>
+        <small *ngIf="variantLabel(vm.track.program) as label"
+          >{{ label }} module</small
+        >
         <h1>{{ vm.module.title }}</h1>
         <p>
           {{ vm.module.lessons.length }} compact lessons. Read in order or jump
@@ -98,6 +104,10 @@ import { LearningDataService } from './learning-data.service';
   ],
 })
 export class ModuleComponent {
+  protected variantLabel(program: Program): string {
+    return programVariantLabel(program);
+  }
+
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
   readonly vm$ = combineLatest([

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -9,6 +9,7 @@ import {
   Evaluation,
   OfferingOwnership,
   ProgramTrack,
+  ProgramTrackSchema,
 } from '@optimistic-tanuki/learning-domain';
 import { AttemptEntity } from '../entities/attempt.entity';
 import { EvaluationEntity } from '../entities/evaluation.entity';
@@ -30,6 +31,8 @@ export { LEARNING_REPOSITORY };
 
 @Injectable()
 export class TypeOrmLearningRepository implements LearningRepository {
+  private readonly logger = new Logger(TypeOrmLearningRepository.name);
+
   constructor(
     @InjectRepository(ProgramTrackEntity)
     private readonly programTrackRepo: Repository<ProgramTrackEntity>,
@@ -62,9 +65,32 @@ export class TypeOrmLearningRepository implements LearningRepository {
     const merged = new Map<string, ProgramTrack>();
     for (const track of tutorialProgramTracks) merged.set(track.id, track);
     for (const row of rows) {
-      merged.set(row.trackId, row.data as unknown as ProgramTrack);
+      const track = this.readStoredTrack(row);
+      if (track) merged.set(row.trackId, track);
     }
     return [...merged.values()];
+  }
+
+  /**
+   * Validates a stored track on the way out, rather than casting it.
+   *
+   * A track is JSONB, so its shape is whatever was written, possibly by an
+   * older version of this code. Parsing here is what converts a row that still
+   * names its lesson renditions `languageVariants` into the current shape;
+   * casting would have handed the old shape straight to callers that expect
+   * `content`, and they would have failed on undefined further downstream.
+   *
+   * A row that cannot be read at all is skipped rather than thrown, so one bad
+   * course cannot blank the catalog for everyone. It is logged, because a
+   * course quietly missing from the catalog is its own kind of bug.
+   */
+  private readStoredTrack(row: ProgramTrackEntity): ProgramTrack | undefined {
+    const parsed = ProgramTrackSchema.safeParse(row.data);
+    if (parsed.success) return parsed.data;
+    this.logger.error(
+      `Stored program track ${row.trackId} does not match the schema and was left out of the catalog: ${parsed.error.message}`
+    );
+    return undefined;
   }
 
   async createOffering(
@@ -109,7 +135,10 @@ export class TypeOrmLearningRepository implements LearningRepository {
     if (!trackEntity) {
       throw new NotFoundException(`Unknown offering: ${offeringId}`);
     }
-    const track = trackEntity.data as unknown as ProgramTrack;
+    // Parsed, not cast, for the same reason as the read path: an edit rewrites
+    // the whole row, so reading a legacy row through the cast would write the
+    // legacy shape straight back and the row would never move forward.
+    const track = ProgramTrackSchema.parse(trackEntity.data);
     const offeringIndex = track.offerings.findIndex(
       (offering) => offering.id === offeringId
     );

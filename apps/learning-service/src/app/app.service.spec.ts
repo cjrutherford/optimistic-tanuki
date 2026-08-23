@@ -14,9 +14,11 @@ import {
   sampleProgramTracks,
   tutorialExercises,
   NOT_ENROLLED,
+  tutorialProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
 import { OfferingContentPatch } from './learning.repository';
 import { randomUUID } from 'crypto';
+import { join } from 'path';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
@@ -191,9 +193,9 @@ describe('AppService', () => {
 
   it('returns seeded programs', async () => {
     const programs = await service.listPrograms();
-    expect(programs.map((program) => program.supportedLanguageIds[0])).toEqual(
-      expect.arrayContaining(['go', 'typescript', 'cpp', 'rust'])
-    );
+    expect(
+      programs.map((program) => program.supportedLanguageIds?.[0])
+    ).toEqual(expect.arrayContaining(['go', 'typescript', 'cpp', 'rust']));
   });
 
   it('records evaluation results for submitted attempts', async () => {
@@ -480,5 +482,191 @@ describe('AppService', () => {
       expect(programs.some((program) => program.id === track.id)).toBe(false);
       expect(await service.getOfferingOwnership(track.id)).toBeUndefined();
     });
+  });
+});
+
+/**
+ * getLesson reads a file off disk, and until this slice it found that file by
+ * mapping the track's first language through a hard-coded table of four
+ * repository names. A track that taught anything other than those four
+ * languages could not have content at all. The track now says where its files
+ * live and which rendition to prefer, and nothing here reasons about a
+ * language. None of that was covered by a test before.
+ */
+describe('AppService.getLesson content resolution', () => {
+  const CONTENT_ROOT = join(__dirname, '..', '..', 'src', 'assets', 'content');
+
+  async function serviceOver(tracks: ProgramTrack[]) {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => tracks,
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+    return moduleRef.get(AppService);
+  }
+
+  const goTrack = tutorialProgramTracks.find(
+    (track) => track.id === 'go-foundations'
+  )!;
+  const firstGoLesson = goTrack.offerings[0].modules[0].lessons[0];
+
+  let previousRoot: string | undefined;
+
+  beforeEach(() => {
+    previousRoot = process.env.LEARNING_CONTENT_ROOT;
+    process.env.LEARNING_CONTENT_ROOT = CONTENT_ROOT;
+  });
+
+  afterEach(() => {
+    if (previousRoot === undefined) delete process.env.LEARNING_CONTENT_ROOT;
+    else process.env.LEARNING_CONTENT_ROOT = previousRoot;
+  });
+
+  it('reads a lesson through the track content collection', async () => {
+    const service = await serviceOver([goTrack]);
+
+    const result = await service.getLesson(goTrack.id, firstGoLesson.id);
+
+    expect(result.content.length).toBeGreaterThan(0);
+    expect(result.lesson.id).toBe(firstGoLesson.id);
+  });
+
+  it('still attaches code exercises to a lesson that has a language', async () => {
+    const service = await serviceOver([goTrack]);
+    const withExercises = goTrack.offerings[0].modules
+      .flatMap((module) => module.lessons)
+      .find((lesson) =>
+        tutorialExercises.some(
+          (exercise) =>
+            exercise.languageId === 'go' && exercise.lessonSlug === lesson.slug
+        )
+      )!;
+
+    const result = await service.getLesson(goTrack.id, withExercises.id);
+
+    expect(result.exercises.length).toBeGreaterThan(0);
+  });
+
+  it('serves a lesson that varies along no axis at all', async () => {
+    const track = {
+      ...goTrack,
+      id: 'art',
+      supportedLanguageIds: undefined,
+      variantAxis: undefined,
+      offerings: [
+        {
+          ...goTrack.offerings[0],
+          id: 'art-100',
+          modules: [
+            {
+              id: 'art-module',
+              title: 'Colour',
+              lessons: [
+                {
+                  ...firstGoLesson,
+                  id: 'art-lesson',
+                  content: [
+                    {
+                      format: 'markdown' as const,
+                      sourcePath: firstGoLesson.content[0].sourcePath,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as ProgramTrack;
+    const service = await serviceOver([track]);
+
+    const result = await service.getLesson('art', 'art-lesson');
+
+    expect(result.content.length).toBeGreaterThan(0);
+    // No language means no code exercises, rather than someone else's.
+    expect(result.exercises).toEqual([]);
+  });
+
+  it('refuses a track that has no content collection', async () => {
+    const service = await serviceOver([
+      { ...goTrack, contentCollection: undefined } as ProgramTrack,
+    ]);
+
+    await expect(
+      service.getLesson(goTrack.id, firstGoLesson.id)
+    ).rejects.toThrow(/no content collection/);
+  });
+
+  it('refuses a source path that climbs out of the collection', async () => {
+    const escaping = {
+      ...goTrack,
+      offerings: [
+        {
+          ...goTrack.offerings[0],
+          modules: [
+            {
+              id: 'm',
+              title: 'm',
+              lessons: [
+                {
+                  ...firstGoLesson,
+                  content: [
+                    {
+                      variantId: 'go',
+                      format: 'file-variant' as const,
+                      sourcePath: '../../../../etc/passwd',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as ProgramTrack;
+    const service = await serviceOver([escaping]);
+
+    await expect(
+      service.getLesson(goTrack.id, firstGoLesson.id)
+    ).rejects.toThrow(/Invalid lesson source path/);
+  });
+});
+
+/**
+ * The dashboard indexed supportedLanguageIds directly to count a track's
+ * exercises. That field is optional now, and strictNullChecks is off in this
+ * workspace, so nothing warned that a course with no language would throw and
+ * take the whole dashboard down with it.
+ */
+describe('AppService.getDashboard with a course that has no language', () => {
+  it('reports no exercises rather than throwing', async () => {
+    const track = buildDraftProgramTrack('art-1', {
+      displayName: 'Intro to Watercolour',
+      subjectId: 'art',
+    });
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => [track],
+            getProgress: () => [],
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+
+    const dashboard = await moduleRef.get(AppService).getDashboard('profile-1');
+
+    expect(dashboard).toHaveLength(1);
+    expect(dashboard[0].totals.exercises).toBe(0);
+    expect(dashboard[0].totals.points).toBe(0);
   });
 });

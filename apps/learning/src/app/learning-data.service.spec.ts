@@ -4,7 +4,12 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { LearningDataService, NotSignedInError } from './learning-data.service';
+import {
+  LearningDataService,
+  NotSignedInError,
+  Program,
+  programVariantLabel,
+} from './learning-data.service';
 
 describe('LearningDataService', () => {
   let service: LearningDataService;
@@ -118,6 +123,44 @@ describe('LearningDataService', () => {
 
     expect(failure).toHaveBeenCalledWith(
       expect.objectContaining({ status: 500 })
+    );
+  });
+});
+
+/**
+ * The label above a track's name used to read supportedLanguageIds[0], which
+ * assumed the track taught a programming language. The catalog is meant to
+ * hold courses about anything.
+ */
+describe('programVariantLabel', () => {
+  const program = (overrides: Partial<Program>): Program => ({
+    id: 'p',
+    displayName: 'A course',
+    offerings: [],
+    ...overrides,
+  });
+
+  it('names the variant a track varies along', () => {
+    expect(
+      programVariantLabel(
+        program({
+          variantAxis: {
+            id: 'language',
+            displayName: 'Language',
+            options: [{ id: 'go', displayName: 'Go' }],
+          },
+        })
+      )
+    ).toBe('Go');
+  });
+
+  it('says nothing about a track that varies along nothing', () => {
+    expect(programVariantLabel(program({}))).toBe('');
+  });
+
+  it('does not fall back to a language id', () => {
+    expect(programVariantLabel(program({ supportedLanguageIds: ['go'] }))).toBe(
+      ''
     );
   });
 });

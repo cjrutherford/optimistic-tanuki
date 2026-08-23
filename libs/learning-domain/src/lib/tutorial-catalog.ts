@@ -568,6 +568,19 @@ function tutorialProgramTrack({
     displayName,
     subjectIds: ['programming'],
     supportedLanguageIds: [languageId],
+    // These four tracks each teach one language, so their axis has one option.
+    // A track that taught the same material in several languages would list
+    // them all here, and a track that teaches watercolour would omit the axis.
+    variantAxis: {
+      id: 'language',
+      displayName: 'Language',
+      options: [{ id: languageId, displayName }],
+    },
+    // The folder the lesson files were imported into, which is the repository
+    // they came from. Derived rather than restated so the two cannot drift.
+    contentCollection: tutorialSources[languageId].repositoryUrl
+      .split('/')
+      .pop(),
     source: tutorialSources[languageId],
     focuses: [
       {
@@ -597,10 +610,10 @@ function tutorialProgramTrack({
                   parentLessonId: `${id}-${module.id}-${lesson.parentSlug}`,
                 }
               : {}),
-            languageVariants: [
+            content: [
               {
-                languageId,
-                strategy: 'file-variant',
+                variantId: languageId,
+                format: 'file-variant',
                 sourcePath: lesson.sourcePath,
               },
             ],

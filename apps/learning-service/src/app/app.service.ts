@@ -10,8 +10,10 @@ import {
   LessonProgress,
   OfferingOwnership,
   ProgramTrack,
+  lessonHasVariant,
   publicExercise,
   rollUpCompletedLessons,
+  selectLessonContent,
   tutorialExercises,
 } from '@optimistic-tanuki/learning-domain';
 import { randomUUID } from 'crypto';
@@ -46,38 +48,39 @@ export class AppService {
       .flatMap((module) => module.lessons)
       .find((candidate) => candidate.id === lessonId);
     if (!lesson) throw new Error(`Unknown lesson: ${lessonId}`);
-    const languageId = track.supportedLanguageIds[0] as
-      | 'typescript'
-      | 'go'
-      | 'cpp'
-      | 'rust';
-    const repository = {
-      typescript: 'letsgots',
-      go: 'letsgogo',
-      cpp: 'letsgocpp',
-      rust: 'letsgorust',
-    }[languageId];
-    const sourcePath = lesson.languageVariants[0].sourcePath.replace(
-      /^src\/content\//,
-      ''
-    );
+    // The track says where its files live and which variant to prefer. Neither
+    // is inferred from a language any more, so a track that teaches something
+    // other than programming reaches its content by the same path.
+    const collection = track.contentCollection;
+    if (!collection)
+      throw new Error(`Track ${track.id} has no content collection`);
+    const preferred = track.variantAxis?.options[0]?.id;
+    const sourcePath = selectLessonContent(
+      lesson,
+      preferred
+    ).sourcePath.replace(/^src\/content\//, '');
     const contentRoot =
       process.env.LEARNING_CONTENT_ROOT ??
       join(process.cwd(), 'assets', 'content');
-    const safePath = normalize(join(contentRoot, repository, sourcePath));
-    if (!safePath.startsWith(normalize(join(contentRoot, repository))))
+    const safePath = normalize(join(contentRoot, collection, sourcePath));
+    if (!safePath.startsWith(normalize(join(contentRoot, collection))))
       throw new Error('Invalid lesson source path');
     const content = await readFile(safePath, 'utf8');
+    // Exercises are code, so they are still matched by language. A track with
+    // no language simply matches none, which is correct.
+    const languageId = track.supportedLanguageIds?.[0];
     return {
       lesson,
       content,
-      exercises: tutorialExercises
-        .filter(
-          (exercise) =>
-            exercise.languageId === languageId &&
-            exercise.lessonSlug === lesson.slug
-        )
-        .map(publicExercise),
+      exercises: languageId
+        ? tutorialExercises
+            .filter(
+              (exercise) =>
+                exercise.languageId === languageId &&
+                exercise.lessonSlug === lesson.slug
+            )
+            .map(publicExercise)
+        : [],
     };
   }
 
@@ -112,9 +115,15 @@ export class AppService {
       const completedExerciseIds = programProgress.flatMap(
         (item) => item.completedExerciseIds
       );
-      const exercises = tutorialExercises.filter(
-        (exercise) => exercise.languageId === program.supportedLanguageIds[0]
-      );
+      // A track with no language has no code exercises. This used to index
+      // supportedLanguageIds directly, which throws on a track that has none.
+      // strictNullChecks is off in this workspace, so nothing warned about it.
+      const trackLanguageId = program.supportedLanguageIds?.[0];
+      const exercises = trackLanguageId
+        ? tutorialExercises.filter(
+            (exercise) => exercise.languageId === trackLanguageId
+          )
+        : [];
       const completedExercises = exercises.filter((exercise) =>
         completedExerciseIds.includes(exercise.id)
       ).length;
@@ -271,9 +280,7 @@ export class AppService {
       .find(
         (item) =>
           item.slug === exercise.lessonSlug &&
-          item.languageVariants.some(
-            (variant) => variant.languageId === exercise.languageId
-          )
+          lessonHasVariant(item, exercise.languageId)
       );
     if (!lesson)
       throw new Error(`Exercise ${activityId} is not attached to a lesson`);

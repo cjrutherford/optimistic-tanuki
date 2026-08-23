@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tutorialProgramTracks } from './tutorial-catalog';
 import { tutorialExercises } from './tutorial-content';
-import { LessonMetadata } from './learning-domain';
+import { LessonMetadata, selectLessonContent } from './learning-domain';
 
 /**
  * The catalog and the content on disk have to agree.
@@ -25,7 +25,14 @@ const CONTENT_ROOT = join(
   'content'
 );
 
-const REPOSITORY_FOR: Record<string, string> = {
+/**
+ * What each track's content folder is expected to be called.
+ *
+ * The catalog now carries this as `contentCollection` rather than deriving it
+ * from a language, so this map exists only to check that what the catalog
+ * derived is what is actually on disk.
+ */
+const COLLECTION_FOR: Record<string, string> = {
   typescript: 'letsgots',
   go: 'letsgogo',
   cpp: 'letsgocpp',
@@ -47,7 +54,7 @@ function lessonsOf(track: (typeof tutorialProgramTracks)[number]) {
 }
 
 function fileFor(repository: string, lesson: LessonMetadata): string {
-  const relative = lesson.languageVariants[0].sourcePath.replace(
+  const relative = selectLessonContent(lesson).sourcePath.replace(
     /^src\/content\//,
     ''
   );
@@ -56,13 +63,19 @@ function fileFor(repository: string, lesson: LessonMetadata): string {
 
 describe('curriculum catalog coverage', () => {
   const tracks = tutorialProgramTracks.map((track) => {
-    const language = track.supportedLanguageIds[0];
+    const language = track.supportedLanguageIds?.[0] ?? '';
     return {
       track,
       language,
-      repository: REPOSITORY_FOR[language],
+      repository: track.contentCollection ?? '',
       lessons: lessonsOf(track),
     };
+  });
+
+  it('names a content folder that matches the track it came from', () => {
+    for (const entry of tracks) {
+      expect(entry.repository).toBe(COLLECTION_FOR[entry.language]);
+    }
   });
 
   it('covers all four language tracks', () => {
@@ -79,7 +92,8 @@ describe('curriculum catalog coverage', () => {
       const broken = lessons
         .filter((lesson) => !existsSync(fileFor(repository, lesson)))
         .map(
-          (lesson) => `${lesson.id} -> ${lesson.languageVariants[0].sourcePath}`
+          (lesson) =>
+            `${lesson.id} -> ${selectLessonContent(lesson).sourcePath}`
         );
 
       expect(broken).toEqual([]);

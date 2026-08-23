@@ -1,6 +1,10 @@
 import {
+  LessonMetadataSchema,
+  OfferingSchema,
   ProgramTrackSchema,
   RunnerProfileSchema,
+  lessonHasVariant,
+  selectLessonContent,
   calculateTotalCredits,
   evaluateRequirementGroup,
   isOfferingUnlocked,
@@ -161,14 +165,14 @@ describe('learning-domain', () => {
 });
 
 describe('buildDraftOffering / buildDraftProgramTrack', () => {
-  it('produces an offering that satisfies OfferingSchema despite having no real content yet', () => {
+  it('produces an offering that satisfies OfferingSchema while empty', () => {
     const offering = buildDraftOffering('draft-1', {
       displayName: 'Intro to Watercolor',
       subjectId: 'art',
     });
 
-    expect(offering.modules.length).toBeGreaterThan(0);
-    expect(offering.activities.length).toBeGreaterThan(0);
+    expect(() => OfferingSchema.parse(offering)).not.toThrow();
+    expect(offering.displayName).toBe('Intro to Watercolor');
   });
 
   it('produces a program track that validates end to end', () => {
@@ -183,15 +187,27 @@ describe('buildDraftOffering / buildDraftProgramTrack', () => {
     ]);
   });
 
-  it('never bakes a programming language into the placeholder content', () => {
+  // A draft used to be filled with a placeholder module, lesson and writing
+  // prompt, because the schema demanded content. Readers could see that
+  // invented material in the catalog. An empty course is the honest shape.
+  it('opens a course with no content rather than invented content', () => {
     const offering = buildDraftOffering('draft-3', {
       displayName: 'Anything',
       subjectId: 'anything',
     });
 
-    expect(offering.modules[0].lessons[0].languageVariants[0].languageId).toBe(
-      'any'
-    );
+    expect(offering.modules).toEqual([]);
+    expect(offering.activities).toEqual([]);
+  });
+
+  it('does not give a non-programming course a language', () => {
+    const track = buildDraftProgramTrack('draft-4', {
+      displayName: 'Intro to Watercolour',
+      subjectId: 'art',
+    });
+
+    expect(track.supportedLanguageIds).toBeUndefined();
+    expect(track.variantAxis).toBeUndefined();
   });
 });
 
@@ -309,5 +325,123 @@ describe('authorizeOfferingAction', () => {
     expect(authorizeOfferingAction('someone', 'update', roles, undefined)).toBe(
       false
     );
+  });
+});
+
+describe('lesson content, without a language axis', () => {
+  const varied = LessonMetadataSchema.parse({
+    id: 'l',
+    title: 'Shading',
+    slug: 'shading',
+    content: [
+      { variantId: 'graphite', format: 'markdown', sourcePath: 'g.md' },
+      { variantId: 'ink', format: 'markdown', sourcePath: 'i.md' },
+    ],
+  });
+
+  const plain = LessonMetadataSchema.parse({
+    id: 'p',
+    title: 'Colour theory',
+    slug: 'colour-theory',
+    content: [{ format: 'markdown', sourcePath: 'c.md' }],
+  });
+
+  it('accepts a lesson that varies along no axis at all', () => {
+    expect(plain.content[0].variantId).toBeUndefined();
+  });
+
+  it('serves the requested variant', () => {
+    expect(selectLessonContent(varied, 'ink').sourcePath).toBe('i.md');
+  });
+
+  it('falls back rather than failing when the variant is unknown', () => {
+    expect(selectLessonContent(varied, 'oils').sourcePath).toBe('g.md');
+  });
+
+  it('prefers the unvaried rendition over the first one', () => {
+    const mixed = LessonMetadataSchema.parse({
+      id: 'm',
+      title: 'm',
+      slug: 'm',
+      content: [
+        { variantId: 'ink', format: 'markdown', sourcePath: 'i.md' },
+        { format: 'markdown', sourcePath: 'any.md' },
+      ],
+    });
+
+    expect(selectLessonContent(mixed).sourcePath).toBe('any.md');
+  });
+
+  it('ignores the preference on a lesson that does not vary', () => {
+    expect(selectLessonContent(plain, 'ink').sourcePath).toBe('c.md');
+  });
+
+  // The exercise catalog matches lessons by variant, so a lesson with no
+  // variants must not match a language, or a watercolour lesson sharing a
+  // slug with a Go lesson would pick up its exercises.
+  it('reports a variant only when the lesson actually carries one', () => {
+    expect(lessonHasVariant(varied, 'ink')).toBe(true);
+    expect(lessonHasVariant(varied, 'go')).toBe(false);
+    expect(lessonHasVariant(plain, 'go')).toBe(false);
+  });
+
+  // Tracks are stored as JSONB, so rows written before this slice still say
+  // languageVariants. They have to keep parsing.
+  it('reads a lesson stored in the old languageVariants shape', () => {
+    const legacy = LessonMetadataSchema.parse({
+      id: 'old',
+      title: 'Old',
+      slug: 'old',
+      languageVariants: [
+        { languageId: 'go', strategy: 'file-variant', sourcePath: 'old.go.md' },
+      ],
+    });
+
+    expect(legacy.content).toEqual([
+      { variantId: 'go', format: 'file-variant', sourcePath: 'old.go.md' },
+    ]);
+    expect(lessonHasVariant(legacy, 'go')).toBe(true);
+  });
+
+  it('leaves a lesson alone when it already uses the new shape', () => {
+    expect(varied.content).toHaveLength(2);
+  });
+});
+
+describe('subjects and tracks without a language', () => {
+  it('accepts a track that declares no language and no axis', () => {
+    expect(() =>
+      ProgramTrackSchema.parse({
+        id: 'art',
+        displayName: 'Watercolour',
+        subjectIds: ['art'],
+        focuses: [{ id: 'f', displayName: 'Art', subjectIds: ['art'] }],
+        offerings: [
+          {
+            id: 'art-100',
+            type: 'course',
+            displayName: 'Watercolour',
+            subjectId: 'art',
+            level: 100,
+            credits: 1,
+            outcomeTags: ['art'],
+            modules: [],
+            activities: [],
+          },
+        ],
+        requirements: {
+          id: 'r',
+          operator: 'AND',
+          children: [{ kind: 'offering', offeringId: 'art-100' }],
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('still validates the four built-in tracks, which do have an axis', () => {
+    for (const track of tutorialProgramTracks) {
+      expect(() => ProgramTrackSchema.parse(track)).not.toThrow();
+      expect(track.variantAxis?.id).toBe('language');
+    }
   });
 });

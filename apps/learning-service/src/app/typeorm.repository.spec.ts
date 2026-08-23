@@ -115,6 +115,52 @@ const watercolourTrack = {
   },
 } as unknown as ProgramTrack;
 
+/**
+ * A track written before the language axis was taken out of the core. The
+ * lesson names its renditions `languageVariants`, and the track carries no
+ * variantAxis and no contentCollection.
+ */
+const legacyTrack = {
+  id: 'legacy-1',
+  displayName: 'Legacy Course',
+  subjectIds: ['programming'],
+  supportedLanguageIds: ['go'],
+  focuses: [{ id: 'f', displayName: 'F', subjectIds: ['programming'] }],
+  offerings: [
+    {
+      id: 'legacy-1',
+      type: 'course',
+      displayName: 'Legacy Course',
+      subjectId: 'programming',
+      level: 100,
+      credits: 1,
+      outcomeTags: ['legacy'],
+      modules: [
+        {
+          id: 'm',
+          title: 'm',
+          lessons: [
+            {
+              id: 'l',
+              title: 'l',
+              slug: 'l',
+              languageVariants: [
+                { languageId: 'go', strategy: 'file-variant', sourcePath: 'x' },
+              ],
+            },
+          ],
+        },
+      ],
+      activities: [{ type: 'writing.response', id: 'a', prompt: 'p' }],
+    },
+  ],
+  requirements: {
+    id: 'r',
+    operator: 'AND',
+    children: [{ kind: 'offering', offeringId: 'legacy-1' }],
+  },
+};
+
 describe('TypeOrmLearningRepository', () => {
   // Wiring, not behaviour. The class takes six collaborators by injection
   // token, and nothing else in this file would notice if one of them stopped
@@ -167,6 +213,41 @@ describe('TypeOrmLearningRepository', () => {
       expect(
         programs.find((program) => program.id === 'authored-1')
       ).toBeDefined();
+    });
+
+    /**
+     * Tracks are JSONB, so rows written before the language axis came out of
+     * the core still hold the old lesson shape. This read path used to cast
+     * rather than parse, which would have handed callers a lesson with no
+     * `content` at all.
+     */
+    it('reads a track stored before lessons had content', async () => {
+      const repo = await withStoredRows([
+        { trackId: 'legacy-1', data: legacyTrack },
+      ]);
+
+      const stored = (await repo.listPrograms()).find(
+        (program) => program.id === 'legacy-1'
+      );
+
+      expect(stored?.offerings[0].modules[0].lessons[0].content).toEqual([
+        { variantId: 'go', format: 'file-variant', sourcePath: 'x' },
+      ]);
+    });
+
+    it('leaves out a row it cannot read rather than blanking the catalog', async () => {
+      const repo = await withStoredRows([
+        { trackId: 'broken', data: { id: 'broken' } },
+        { trackId: 'authored-1', data: watercolourTrack },
+      ]);
+
+      const ids = (await repo.listPrograms()).map((program) => program.id);
+
+      expect(ids).not.toContain('broken');
+      expect(ids).toContain('authored-1');
+      for (const builtIn of tutorialProgramTracks) {
+        expect(ids).toContain(builtIn.id);
+      }
     });
 
     it('lets a stored row shadow a built-in track with the same id', async () => {

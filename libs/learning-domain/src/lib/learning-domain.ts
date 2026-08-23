@@ -42,7 +42,12 @@ export type TutorialSource = z.infer<typeof TutorialSourceSchema>;
 export const SubjectSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
-  supportedLanguageIds: z.array(z.string().min(1)).min(1),
+  /**
+   * Only meaningful for subjects that are about writing code. A subject like
+   * watercolour painting has no languages, and requiring one here was the
+   * first place this platform assumed it was teaching programming.
+   */
+  supportedLanguageIds: z.array(z.string().min(1)).min(1).optional(),
 });
 export type Subject = z.infer<typeof SubjectSchema>;
 
@@ -53,28 +58,121 @@ export const FocusSchema = z.object({
 });
 export type Focus = z.infer<typeof FocusSchema>;
 
-export const LessonVariantSchema = z.object({
-  languageId: z.string().min(1),
-  strategy: z.enum(['file-variant', 'fenced-blocks']),
+/**
+ * An axis a track's lessons vary along.
+ *
+ * The four ported tutorial tracks vary by programming language, so their axis
+ * is `language` with four options. A watercolour course varies along nothing
+ * and declares no axis at all. Naming the axis rather than hard-coding
+ * "language" is what lets a course vary by instrument, by dialect, by
+ * apparatus, or by nothing.
+ */
+export const VariantOptionSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+});
+export type VariantOption = z.infer<typeof VariantOptionSchema>;
+
+export const VariantAxisSchema = z.object({
+  id: z.string().min(1),
+  displayName: z.string().min(1),
+  options: z.array(VariantOptionSchema).min(1),
+});
+export type VariantAxis = z.infer<typeof VariantAxisSchema>;
+
+/**
+ * One rendition of a lesson's material.
+ *
+ * `variantId` names which option along the track's axis this rendition is for,
+ * and is absent when the lesson does not vary. `format` says how to read what
+ * is at `sourcePath`: a whole file, or a file whose fenced code blocks are
+ * filtered down to the matching variant.
+ */
+export const LessonContentSchema = z.object({
+  variantId: z.string().min(1).optional(),
+  format: z.enum(['markdown', 'file-variant', 'fenced-blocks']),
   sourcePath: z.string().min(1),
 });
-export type LessonVariant = z.infer<typeof LessonVariantSchema>;
+export type LessonContent = z.infer<typeof LessonContentSchema>;
 
-export const LessonMetadataSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1),
-  slug: z.string().min(1),
-  languageVariants: z.array(LessonVariantSchema).min(1),
-  /**
-   * The lesson this one breaks down, when it is a part rather than a whole.
-   *
-   * Go's basics split several topics into a short overview plus a few detail
-   * lessons. Finishing every part finishes the overview, so a learner is not
-   * asked to tick the same material twice.
-   */
-  parentLessonId: z.string().min(1).optional(),
-});
+interface LegacyLessonVariant {
+  languageId?: unknown;
+  strategy?: unknown;
+  sourcePath?: unknown;
+}
+
+/**
+ * Reads a lesson that still names its renditions `languageVariants`.
+ *
+ * Program tracks are stored as JSONB, so rows written before this slice carry
+ * the old shape and cannot be rewritten by a schema change alone. Rather than
+ * migrate a JSON blob whose contents nobody has audited, the old shape is read
+ * and mapped forward: a languageId becomes a variantId, a strategy becomes a
+ * format. Nothing writes the old shape any more.
+ */
+function readLegacyLessonContent(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  const lesson = value as Record<string, unknown>;
+  if ('content' in lesson || !Array.isArray(lesson['languageVariants'])) {
+    return value;
+  }
+  const { languageVariants, ...rest } = lesson;
+  return {
+    ...rest,
+    content: (languageVariants as LegacyLessonVariant[]).map((variant) => ({
+      ...(typeof variant?.languageId === 'string'
+        ? { variantId: variant.languageId }
+        : {}),
+      format: variant?.strategy ?? 'markdown',
+      sourcePath: variant?.sourcePath,
+    })),
+  };
+}
+
+export const LessonMetadataSchema = z.preprocess(
+  readLegacyLessonContent,
+  z.object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    slug: z.string().min(1),
+    content: z.array(LessonContentSchema).min(1),
+    /**
+     * The lesson this one breaks down, when it is a part rather than a whole.
+     *
+     * Go's basics split several topics into a short overview plus a few detail
+     * lessons. Finishing every part finishes the overview, so a learner is not
+     * asked to tick the same material twice.
+     */
+    parentLessonId: z.string().min(1).optional(),
+  })
+);
 export type LessonMetadata = z.infer<typeof LessonMetadataSchema>;
+
+/**
+ * The rendition to show, given what the reader asked for.
+ *
+ * Falls back deliberately rather than failing: the requested variant, then a
+ * rendition that belongs to no variant, then whatever is first. A lesson
+ * always has at least one rendition, so this always returns something.
+ */
+export function selectLessonContent(
+  lesson: LessonMetadata,
+  preferredVariantId?: string
+): LessonContent {
+  const requested = preferredVariantId
+    ? lesson.content.find((item) => item.variantId === preferredVariantId)
+    : undefined;
+  const unvaried = lesson.content.find((item) => item.variantId === undefined);
+  return requested ?? unvaried ?? lesson.content[0];
+}
+
+/** Whether a lesson carries a rendition for this variant specifically. */
+export function lessonHasVariant(
+  lesson: LessonMetadata,
+  variantId: string
+): boolean {
+  return lesson.content.some((item) => item.variantId === variantId);
+}
 
 /**
  * Lesson ids that count as done, given what the learner actually completed.
@@ -240,8 +338,14 @@ export const OfferingSchema = z.object({
   ]),
   credits: z.number().positive(),
   outcomeTags: z.array(z.string().min(1)).min(1),
-  modules: z.array(ModuleMetadataSchema).min(1),
-  activities: z.array(ActivitySchema).min(1),
+  /**
+   * Both may be empty, because a course that has just been opened has no
+   * content yet. Requiring content here is what forced draft offerings to
+   * carry a placeholder module and a placeholder activity that no author
+   * wrote. An empty course is honest; a fake lesson is not.
+   */
+  modules: z.array(ModuleMetadataSchema),
+  activities: z.array(ActivitySchema),
   prerequisiteOfferingIds: z.array(z.string().min(1)).optional(),
   unlockRules: z.array(UnlockRuleSchema).optional(),
 });
@@ -251,7 +355,21 @@ export const ProgramTrackSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
   subjectIds: z.array(z.string().min(1)).min(1),
-  supportedLanguageIds: z.array(z.string().min(1)).min(1),
+  /**
+   * Only for tracks that teach a programming language. Kept because the code
+   * runner and the exercise catalog genuinely key on a language, and dropping
+   * it would mean inventing a language somewhere else.
+   */
+  supportedLanguageIds: z.array(z.string().min(1)).min(1).optional(),
+  /** The axis this track's lessons vary along, when they vary at all. */
+  variantAxis: VariantAxisSchema.optional(),
+  /**
+   * Where this track's lesson files live, relative to the content root. Absent
+   * for tracks with no files on disk. This used to be derived from the track's
+   * language through a hard-coded map of four repository names, which meant a
+   * track could only have content if it taught one of four languages.
+   */
+  contentCollection: z.string().min(1).optional(),
   source: TutorialSourceSchema.optional(),
   focuses: z.array(FocusSchema).min(1),
   offerings: z.array(OfferingSchema).min(1),
@@ -501,9 +619,7 @@ export function authorizeOfferingAction(
  * Fields an author supplies when opening a new offering.
  *
  * Deliberately thin: authoring the real content (modules, lessons,
- * activities) is a later slice. This only needs to produce something that
- * satisfies OfferingSchema, which requires at least one module and one
- * activity.
+ * activities) is a later slice.
  */
 export interface DraftOfferingInput {
   displayName: string;
@@ -516,16 +632,13 @@ export interface DraftOfferingInput {
 }
 
 /**
- * The smallest offering that is honestly valid against OfferingSchema.
+ * A newly opened offering, with no content in it.
  *
- * OfferingSchema requires at least one module (with a lesson) and one
- * activity; there is no way to represent "an offering with no content yet"
- * without either weakening that schema (which would let every other offering
- * ship without a lesson too) or giving a draft real, if placeholder, content.
- * This takes the second path: one module, one lesson, one writing-response
- * activity, each labelled as a draft placeholder so nobody mistakes it for
- * finished material. The languageId 'any' is used rather than a programming
- * language because this platform is not about programming.
+ * An earlier version of this filled the draft with a placeholder module, a
+ * placeholder lesson and a placeholder writing prompt, because OfferingSchema
+ * demanded at least one of each. Those placeholders were content nobody wrote,
+ * sitting in a catalog readers can see. The schema now allows an empty course,
+ * so a draft is empty.
  */
 export function buildDraftOffering(
   offeringId: string,
@@ -543,34 +656,8 @@ export function buildDraftOffering(
       input.outcomeTags && input.outcomeTags.length > 0
         ? input.outcomeTags
         : ['draft'],
-    modules: [
-      {
-        id: `${offeringId}-module-draft`,
-        title: 'Getting started',
-        lessons: [
-          {
-            id: `${offeringId}-lesson-draft`,
-            title: 'Course overview',
-            slug: 'overview',
-            languageVariants: [
-              {
-                languageId: 'any',
-                strategy: 'fenced-blocks',
-                sourcePath: `drafts/${offeringId}/overview.md`,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    activities: [
-      {
-        type: 'writing.response',
-        id: `${offeringId}-activity-draft`,
-        prompt:
-          'Draft placeholder: describe what this course will cover. Replace before publishing.',
-      },
-    ],
+    modules: [],
+    activities: [],
   };
   return OfferingSchema.parse(offering);
 }
@@ -585,7 +672,6 @@ export function buildDraftProgramTrack(
     id: offeringId,
     displayName: input.displayName,
     subjectIds: [input.subjectId],
-    supportedLanguageIds: ['any'],
     focuses: [
       {
         id: `${offeringId}-focus`,

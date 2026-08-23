@@ -14,11 +14,31 @@ export interface LearningModule {
   title: string;
   lessons: Lesson[];
 }
+export interface VariantAxis {
+  id: string;
+  displayName: string;
+  options: { id: string; displayName: string }[];
+}
 export interface Program {
   id: string;
   displayName: string;
-  supportedLanguageIds: string[];
+  /** Only present on tracks that teach a programming language. */
+  supportedLanguageIds?: string[];
+  /** What this track's lessons vary along, when they vary at all. */
+  variantAxis?: VariantAxis;
   offerings: { id: string; displayName: string; modules: LearningModule[] }[];
+}
+
+/**
+ * The short label above a track's name, such as "Go" or "Watercolour".
+ *
+ * This used to read `supportedLanguageIds[0]` directly, which meant a course
+ * about anything other than a programming language rendered an empty label or
+ * crashed. It now reads the track's own axis, and says nothing when a track
+ * has none, because a course that does not vary has nothing to announce.
+ */
+export function programVariantLabel(program: Program): string {
+  return program.variantAxis?.options[0]?.displayName ?? '';
 }
 export interface DashboardEntry {
   program: Program;
