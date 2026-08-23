@@ -65,8 +65,43 @@ export const LessonMetadataSchema = z.object({
   title: z.string().min(1),
   slug: z.string().min(1),
   languageVariants: z.array(LessonVariantSchema).min(1),
+  /**
+   * The lesson this one breaks down, when it is a part rather than a whole.
+   *
+   * Go's basics split several topics into a short overview plus a few detail
+   * lessons. Finishing every part finishes the overview, so a learner is not
+   * asked to tick the same material twice.
+   */
+  parentLessonId: z.string().min(1).optional(),
 });
 export type LessonMetadata = z.infer<typeof LessonMetadataSchema>;
+
+/**
+ * Lesson ids that count as done, given what the learner actually completed.
+ *
+ * A parent lesson is included once all of its parts are done, whether or not
+ * the learner opened the parent itself.
+ */
+export function rollUpCompletedLessons(
+  lessons: readonly LessonMetadata[],
+  completedLessonIds: Iterable<string>
+): Set<string> {
+  const completed = new Set(completedLessonIds);
+  const partsByParent = new Map<string, string[]>();
+
+  for (const lesson of lessons) {
+    if (!lesson.parentLessonId) continue;
+    const parts = partsByParent.get(lesson.parentLessonId) ?? [];
+    parts.push(lesson.id);
+    partsByParent.set(lesson.parentLessonId, parts);
+  }
+
+  for (const [parentId, parts] of partsByParent) {
+    if (parts.every((part) => completed.has(part))) completed.add(parentId);
+  }
+
+  return completed;
+}
 
 export const ModuleMetadataSchema = z.object({
   id: z.string().min(1),

@@ -100,4 +100,45 @@ describe('AppService', () => {
     expect(evaluation.attemptId).toBe(attempt.id);
     expect(evaluation.grader).toBe('auto');
   });
+
+  // Go's basics split four topics into an overview plus three detail lessons.
+  // Working through the parts should close the overview too, rather than
+  // leaving the learner to tick the same material twice.
+  describe('sub-lesson roll-up', () => {
+    const parts = [
+      'go-foundations-basics-basic-types',
+      'go-foundations-basics-type-conversion',
+      'go-foundations-basics-custom-types',
+    ];
+    const overview = 'go-foundations-basics-variables-types';
+
+    async function completed(lessonIds: string[]) {
+      for (const lessonId of lessonIds) {
+        await service.saveProgress('learner', {
+          lessonId,
+          completed: true,
+          completedExerciseIds: [],
+          points: 0,
+        });
+      }
+      const dashboard = await service.getDashboard('learner');
+      return dashboard.find((entry) => entry.program.id === 'go-foundations')!;
+    }
+
+    it('does not close the overview while a part is outstanding', async () => {
+      const go = await completed(parts.slice(0, 2));
+      expect(go.progress.completedLessons).toBe(2);
+    });
+
+    it('closes the overview once every part is done', async () => {
+      const go = await completed(parts);
+      // Three parts plus the overview they add up to.
+      expect(go.progress.completedLessons).toBe(4);
+    });
+
+    it('does not offer the overview as the next lesson once it is covered', async () => {
+      const go = await completed(parts);
+      expect(go.progress.nextLessonId).not.toBe(overview);
+    });
+  });
 });

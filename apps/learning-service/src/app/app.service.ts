@@ -5,6 +5,7 @@ import {
   LessonProgress,
   ProgramTrack,
   publicExercise,
+  rollUpCompletedLessons,
   tutorialExercises,
 } from '@optimistic-tanuki/learning-domain';
 import { randomUUID } from 'crypto';
@@ -91,9 +92,16 @@ export class AppService {
       const programProgress = progress.filter((item) =>
         lessonIds.has(item.lessonId)
       );
-      const completedLessons = lessons.filter(
-        (lesson) => completedByLesson.get(lesson.id)?.completed
-      ).length;
+      // A parent lesson counts as done once every part of it is done, so a
+      // learner who worked through the detail lessons is not asked to tick
+      // the overview separately.
+      const completed = rollUpCompletedLessons(
+        lessons,
+        lessons
+          .filter((lesson) => completedByLesson.get(lesson.id)?.completed)
+          .map((lesson) => lesson.id)
+      );
+      const completedLessons = completed.size;
       const completedExerciseIds = programProgress.flatMap(
         (item) => item.completedExerciseIds
       );
@@ -122,9 +130,7 @@ export class AppService {
           completedExercises,
           points,
           nextLessonId:
-            lessons.find(
-              (lesson) => !completedByLesson.get(lesson.id)?.completed
-            )?.id ?? null,
+            lessons.find((lesson) => !completed.has(lesson.id))?.id ?? null,
         },
       };
     });
