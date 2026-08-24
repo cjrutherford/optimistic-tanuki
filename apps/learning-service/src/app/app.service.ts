@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import {
   Attempt,
+  CatalogViewer,
   DraftOfferingInput,
   Enrolment,
   NOT_ENROLLED,
@@ -10,11 +11,15 @@ import {
   LessonProgress,
   OfferingOwnership,
   ProgramTrack,
+  isOfferingVisibleTo,
+  LESSON_NOT_FOUND,
+  LessonNotFoundPayload,
   lessonHasVariant,
   publicExercise,
   rollUpCompletedLessons,
   selectLessonContent,
   tutorialExercises,
+  visibleTracks,
 } from '@optimistic-tanuki/learning-domain';
 import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
@@ -38,34 +43,50 @@ export class AppService {
     return this.repository.listPrograms();
   }
 
-  async getLesson(trackId: string, lessonId: string) {
+  /**
+   * A lesson, if this viewer is allowed to read it.
+   *
+   * Filtering the catalog is not enough on its own: this route takes ids
+   * directly, so without the same check an unpublished course was readable by
+   * anyone who knew a lesson id. That was true of the running service until
+   * the viewer argument was added here.
+   */
+  async getLesson(
+    trackId: string,
+    lessonId: string,
+    viewer: CatalogViewer = {}
+  ) {
     const track = (await this.listPrograms()).find(
       (candidate) => candidate.id === trackId
     );
-    if (!track) throw new Error(`Unknown learning track: ${trackId}`);
-    const lesson = track.offerings
-      .flatMap((offering) => offering.modules)
+    if (!track) throw this.lessonNotFound(trackId, lessonId);
+    const offering = track.offerings.find((candidate) =>
+      candidate.modules
+        .flatMap((module) => module.lessons)
+        .some((candidateLesson) => candidateLesson.id === lessonId)
+    );
+    if (!offering) throw this.lessonNotFound(trackId, lessonId);
+    const ownership =
+      offering.status === 'published'
+        ? undefined
+        : await this.repository.getOwnership(offering.id);
+    if (!isOfferingVisibleTo(offering, ownership, viewer)) {
+      // The same answer an unknown lesson gets. Telling an outsider that a
+      // course exists but is not theirs to read is itself a disclosure.
+      throw this.lessonNotFound(trackId, lessonId);
+    }
+    const lesson = offering.modules
       .flatMap((module) => module.lessons)
       .find((candidate) => candidate.id === lessonId);
-    if (!lesson) throw new Error(`Unknown lesson: ${lessonId}`);
-    // The track says where its files live and which variant to prefer. Neither
-    // is inferred from a language any more, so a track that teaches something
-    // other than programming reaches its content by the same path.
-    const collection = track.contentCollection;
-    if (!collection)
-      throw new Error(`Track ${track.id} has no content collection`);
+    if (!lesson) throw this.lessonNotFound(trackId, lessonId);
+    // The track says which rendition to prefer, and the rendition says where
+    // its words are. A course written inside the product carries them; the
+    // four ported tracks point at a file that ships with the workspace.
     const preferred = track.variantAxis?.options[0]?.id;
-    const sourcePath = selectLessonContent(
-      lesson,
-      preferred
-    ).sourcePath.replace(/^src\/content\//, '');
-    const contentRoot =
-      process.env.LEARNING_CONTENT_ROOT ??
-      join(process.cwd(), 'assets', 'content');
-    const safePath = normalize(join(contentRoot, collection, sourcePath));
-    if (!safePath.startsWith(normalize(join(contentRoot, collection))))
-      throw new Error('Invalid lesson source path');
-    const content = await readFile(safePath, 'utf8');
+    const rendition = selectLessonContent(lesson, preferred);
+    const content = rendition.body
+      ? rendition.body
+      : await this.readLessonFile(track, rendition.sourcePath as string);
     // Exercises are code, so they are still matched by language. A track with
     // no language simply matches none, which is correct.
     const languageId = track.supportedLanguageIds?.[0];
@@ -84,12 +105,70 @@ export class AppService {
     };
   }
 
+  private lessonNotFound(trackId: string, lessonId: string): RpcException {
+    return new RpcException({
+      code: LESSON_NOT_FOUND,
+      trackId,
+      lessonId,
+    } satisfies LessonNotFoundPayload);
+  }
+
+  /**
+   * Reads a lesson file that ships with the workspace.
+   *
+   * The content collection is checked here rather than at the top of
+   * getLesson, because a course whose lessons carry their own text has no
+   * files and needs no collection.
+   */
+  private async readLessonFile(
+    track: ProgramTrack,
+    sourcePath: string
+  ): Promise<string> {
+    const collection = track.contentCollection;
+    if (!collection)
+      throw new Error(`Track ${track.id} has no content collection`);
+    const relative = sourcePath.replace(/^src\/content\//, '');
+    const contentRoot =
+      process.env.LEARNING_CONTENT_ROOT ??
+      join(process.cwd(), 'assets', 'content');
+    const safePath = normalize(join(contentRoot, collection, relative));
+    if (!safePath.startsWith(normalize(join(contentRoot, collection))))
+      throw new Error('Invalid lesson source path');
+    return await readFile(safePath, 'utf8');
+  }
+
+  /**
+   * The catalog as one viewer should see it: everything published, plus the
+   * drafts they are entitled to see.
+   *
+   * Separate from listPrograms, which stays the unfiltered read that every
+   * internal lookup (finding a lesson, resolving an offering) depends on. A
+   * draft still has to be reachable by the person writing it.
+   */
+  async listCatalog(viewer: CatalogViewer): Promise<ProgramTrack[]> {
+    const tracks = await this.listPrograms();
+    const draftOfferingIds = tracks
+      .flatMap((track) => track.offerings)
+      .filter((offering) => offering.status !== 'published')
+      .map((offering) => offering.id);
+    // Ownership is only needed to decide who sees a draft, so nothing is read
+    // for a catalog that happens to be entirely published.
+    const ownerships = new Map<string, OfferingOwnership>();
+    for (const offeringId of draftOfferingIds) {
+      const ownership = await this.repository.getOwnership(offeringId);
+      if (ownership) ownerships.set(offeringId, ownership);
+    }
+    return visibleTracks(tracks, ownerships, viewer);
+  }
+
   async getProgress(profileId: string): Promise<LessonProgress[]> {
     return await this.repository.getProgress(profileId);
   }
 
   async getDashboard(profileId?: string) {
-    const programs = await this.listPrograms();
+    // The catalog, not the raw list. Without this an unpublished course would
+    // appear on every learner's dashboard the moment somebody opened it.
+    const programs = await this.listCatalog({ profileId });
     const progress = profileId ? await this.getProgress(profileId) : [];
     const completedByLesson = new Map(
       progress.map((item) => [item.lessonId, item])
@@ -193,6 +272,15 @@ export class AppService {
   }
 
   async enrol(profileId: string, offeringId: string): Promise<Enrolment> {
+    // Nobody enrols in an unfinished course, including its author. A draft is
+    // for writing and previewing, and enrolment is what progress hangs off.
+    const offering = (await this.listPrograms())
+      .flatMap((track) => track.offerings)
+      .find((candidate) => candidate.id === offeringId);
+    if (!offering) throw new Error(`Unknown offering: ${offeringId}`);
+    if (offering.status !== 'published') {
+      throw new Error(`Offering ${offeringId} is not published`);
+    }
     return await this.repository.enrol(profileId, offeringId);
   }
 

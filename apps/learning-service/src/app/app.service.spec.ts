@@ -13,6 +13,7 @@ import {
   ProgramTrack,
   sampleProgramTracks,
   tutorialExercises,
+  LESSON_NOT_FOUND,
   NOT_ENROLLED,
   tutorialProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
@@ -646,10 +647,16 @@ describe('AppService.getLesson content resolution', () => {
  */
 describe('AppService.getDashboard with a course that has no language', () => {
   it('reports no exercises rather than throwing', async () => {
-    const track = buildDraftProgramTrack('art-1', {
+    const draft = buildDraftProgramTrack('art-1', {
       displayName: 'Intro to Watercolour',
       subjectId: 'art',
     });
+    // Published, because the dashboard only shows what a learner may see, and
+    // this test is about a course with no language rather than about drafts.
+    const track = {
+      ...draft,
+      offerings: [{ ...draft.offerings[0], status: 'published' as const }],
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
@@ -658,6 +665,7 @@ describe('AppService.getDashboard with a course that has no language', () => {
           useValue: {
             listPrograms: () => [track],
             getProgress: () => [],
+            getOwnership: () => undefined,
           } as Partial<LearningRepository>,
         },
       ],
@@ -668,5 +676,251 @@ describe('AppService.getDashboard with a course that has no language', () => {
     expect(dashboard).toHaveLength(1);
     expect(dashboard[0].totals.exercises).toBe(0);
     expect(dashboard[0].totals.points).toBe(0);
+  });
+});
+
+/**
+ * Where a course written inside the product actually lives, and who can see it
+ * before it is finished.
+ */
+describe('AppService authored content', () => {
+  function art(status: 'draft' | 'published', body: string) {
+    return {
+      id: 'art-1',
+      displayName: 'Intro to Watercolour',
+      subjectIds: ['art'],
+      focuses: [{ id: 'f', displayName: 'Art', subjectIds: ['art'] }],
+      offerings: [
+        {
+          id: 'art-1',
+          type: 'course',
+          displayName: 'Intro to Watercolour',
+          subjectId: 'art',
+          level: 100,
+          credits: 1,
+          outcomeTags: ['art'],
+          status,
+          modules: [
+            {
+              id: 'm',
+              title: 'Pigments',
+              lessons: [
+                {
+                  id: 'art-lesson-1',
+                  title: 'Three pigments',
+                  slug: 'three-pigments',
+                  content: [{ format: 'markdown', body }],
+                },
+              ],
+            },
+          ],
+          activities: [],
+        },
+      ],
+      requirements: {
+        id: 'r',
+        operator: 'AND',
+        children: [{ kind: 'offering', offeringId: 'art-1' }],
+      },
+    } as unknown as ProgramTrack;
+  }
+
+  const ownership = {
+    offeringId: 'art-1',
+    ownerProfileId: 'author-profile',
+    coEditorProfileIds: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  async function serviceOver(tracks: ProgramTrack[]) {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => tracks,
+            getProgress: () => [],
+            getOwnership: (offeringId: string) =>
+              offeringId === 'art-1' ? ownership : undefined,
+            enrol: (profileId: string, offeringId: string) => ({
+              id: 'e-1',
+              profileId,
+              offeringId,
+              status: 'active',
+              enrolledAt: '2026-01-01T00:00:00.000Z',
+            }),
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+    return moduleRef.get(AppService);
+  }
+
+  // An author has no way to add a file to the repository, so a lesson they
+  // wrote has to carry its own words. This path did not exist before.
+  it('serves a lesson from its own body, with no file anywhere', async () => {
+    const service = await serviceOver([art('published', '# Three pigments')]);
+
+    const result = await service.getLesson('art-1', 'art-lesson-1');
+
+    expect(result.content).toBe('# Three pigments');
+    expect(result.exercises).toEqual([]);
+  });
+
+  it('needs no content collection for a course that carries its own text', async () => {
+    const track = art('published', 'words');
+
+    expect(track.contentCollection).toBeUndefined();
+    await expect(
+      (await serviceOver([track])).getLesson('art-1', 'art-lesson-1')
+    ).resolves.toBeDefined();
+  });
+
+  describe('who sees a draft', () => {
+    it('hides it from a learner', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      expect(await service.listCatalog({ profileId: 'learner' })).toEqual([]);
+    });
+
+    it('hides it from an anonymous visitor', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      expect(await service.listCatalog({})).toEqual([]);
+    });
+
+    it('shows it to the author writing it', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      const catalog = await service.listCatalog({
+        profileId: 'author-profile',
+      });
+
+      expect(catalog.map((track) => track.id)).toEqual(['art-1']);
+    });
+
+    it('shows it to somebody who answers for the platform', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      const catalog = await service.listCatalog({
+        profileId: 'admin-profile',
+        seesEveryDraft: true,
+      });
+
+      expect(catalog.map((track) => track.id)).toEqual(['art-1']);
+    });
+
+    it('shows it to everyone once published', async () => {
+      const service = await serviceOver([art('published', 'words')]);
+
+      expect(
+        (await service.listCatalog({ profileId: 'learner' })).map(
+          (track) => track.id
+        )
+      ).toEqual(['art-1']);
+    });
+
+    // A draft on a stranger's dashboard would be a course they cannot open.
+    it('keeps a draft off a learner dashboard', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      expect(await service.getDashboard('learner')).toEqual([]);
+    });
+
+    // The unfiltered read still has to reach it, or the author could not edit
+    // the course they can see.
+    it('still reaches a draft through the unfiltered read', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      expect((await service.listPrograms()).map((track) => track.id)).toEqual([
+        'art-1',
+      ]);
+    });
+  });
+
+  /**
+   * Found by probing the running service, not by a test: the catalog hid the
+   * draft, and then this route handed the same course to an anonymous caller
+   * who guessed its two ids.
+   */
+  describe('reading a draft lesson directly', () => {
+    it('refuses an anonymous caller who knows the ids', async () => {
+      const service = await serviceOver([art('draft', 'secret words')]);
+
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', {})
+      ).rejects.toMatchObject({ error: { code: LESSON_NOT_FOUND } });
+    });
+
+    it('refuses a signed-in learner who does not own it', async () => {
+      const service = await serviceOver([art('draft', 'secret words')]);
+
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', { profileId: 'learner' })
+      ).rejects.toMatchObject({ error: { code: LESSON_NOT_FOUND } });
+    });
+
+    // Not "you may not read this course", which would confirm it exists.
+    it('does not admit that the course exists', async () => {
+      const service = await serviceOver([art('draft', 'secret words')]);
+
+      // A structured code, not a message, so the gateway can recognise it
+      // after it crosses the microservice boundary.
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', {})
+      ).rejects.toMatchObject({
+        error: { code: LESSON_NOT_FOUND, trackId: 'art-1' },
+      });
+    });
+
+    it('lets the author read their own draft', async () => {
+      const service = await serviceOver([art('draft', 'secret words')]);
+
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', {
+          profileId: 'author-profile',
+        })
+      ).resolves.toMatchObject({ content: 'secret words' });
+    });
+
+    it('lets somebody who answers for the platform read it', async () => {
+      const service = await serviceOver([art('draft', 'secret words')]);
+
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', {
+          profileId: 'admin',
+          seesEveryDraft: true,
+        })
+      ).resolves.toBeDefined();
+    });
+
+    it('lets anyone read it once published', async () => {
+      const service = await serviceOver([art('published', 'open words')]);
+
+      await expect(
+        service.getLesson('art-1', 'art-lesson-1', {})
+      ).resolves.toMatchObject({ content: 'open words' });
+    });
+  });
+
+  describe('enrolment', () => {
+    it('refuses an unfinished course', async () => {
+      const service = await serviceOver([art('draft', 'words')]);
+
+      await expect(service.enrol('learner', 'art-1')).rejects.toThrow(
+        /not published/
+      );
+    });
+
+    it('allows a published one', async () => {
+      const service = await serviceOver([art('published', 'words')]);
+
+      await expect(service.enrol('learner', 'art-1')).resolves.toMatchObject({
+        offeringId: 'art-1',
+        status: 'active',
+      });
+    });
   });
 });

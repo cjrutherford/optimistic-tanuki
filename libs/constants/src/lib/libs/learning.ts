@@ -1,5 +1,6 @@
 export const LearningCommands = {
   ListPrograms: 'learning.programs.list',
+  ListCatalog: 'learning.catalog.list',
   SubmitAttempt: 'learning.attempts.submit',
   RecordEvaluation: 'learning.evaluations.record',
   GetAttempt: 'learning.attempts.get',
@@ -18,4 +19,5 @@ export const LearningCommands = {
   DeleteOffering: 'learning.offerings.delete',
   GetOfferingOwnership: 'learning.offerings.ownership.get',
   SetCoEditors: 'learning.offerings.co-editors.set',
+  SetOfferingStatus: 'learning.offerings.status.set',
 };

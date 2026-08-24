@@ -270,4 +270,128 @@ describe('TypeOrmLearningRepository', () => {
       expect(programs).toHaveLength(tutorialProgramTracks.length);
     });
   });
+  /**
+   * Where an authored course's lessons are actually written down.
+   *
+   * The offering lives inside a track's JSONB blob, so saving a lesson means
+   * rewriting the offering. This is the only place an author's structure is
+   * validated before it is stored.
+   */
+  describe('updateOfferingContent', () => {
+    const storedTrack = {
+      id: 'art-1',
+      displayName: 'Intro to Watercolour',
+      subjectIds: ['art'],
+      focuses: [{ id: 'f', displayName: 'Art', subjectIds: ['art'] }],
+      offerings: [
+        {
+          id: 'art-1',
+          type: 'course',
+          displayName: 'Intro to Watercolour',
+          subjectId: 'art',
+          level: 100,
+          credits: 1,
+          outcomeTags: ['art'],
+          status: 'draft',
+          modules: [],
+          activities: [],
+        },
+      ],
+      requirements: {
+        id: 'r',
+        operator: 'AND',
+        children: [{ kind: 'offering', offeringId: 'art-1' }],
+      },
+    };
+
+    const lesson = {
+      id: 'art-lesson-1',
+      title: 'Three pigments',
+      slug: 'three-pigments',
+      content: [{ format: 'markdown' as const, body: '# Three pigments' }],
+    };
+
+    async function repositoryWithStoredOffering() {
+      const entity = {
+        trackId: 'art-1',
+        displayName: 'Intro to Watercolour',
+        data: structuredClone(storedTrack),
+      };
+      const save = jest.fn(async (row: unknown) => row);
+      const repo = await buildRepository({
+        programTrack: {
+          findOne: jest.fn().mockResolvedValue(entity),
+          save,
+        } as FakeRepository<ProgramTrackEntity>,
+      });
+      return { repo, save, entity };
+    }
+
+    it('writes an authored lesson into the offering', async () => {
+      const { repo, save } = await repositoryWithStoredOffering();
+
+      const track = await repo.updateOfferingContent('art-1', {
+        modules: [{ id: 'm', title: 'Pigments', lessons: [lesson] }],
+      });
+
+      expect(track.offerings[0].modules[0].lessons[0].content).toEqual([
+        { format: 'markdown', body: '# Three pigments' },
+      ]);
+      expect(save).toHaveBeenCalledTimes(1);
+    });
+
+    it('publishes without touching the content', async () => {
+      const { repo } = await repositoryWithStoredOffering();
+
+      const track = await repo.updateOfferingContent('art-1', {
+        status: 'published',
+      });
+
+      expect(track.offerings[0].status).toBe('published');
+      expect(track.offerings[0].displayName).toBe('Intro to Watercolour');
+    });
+
+    // Content arrives from an author, so this is the boundary where it is
+    // checked. Storing a lesson with no words would fail when a reader opened
+    // it, long after whoever wrote it had moved on.
+    it('refuses a lesson with neither a body nor a source path', async () => {
+      const { repo, save } = await repositoryWithStoredOffering();
+
+      await expect(
+        repo.updateOfferingContent('art-1', {
+          modules: [
+            {
+              id: 'm',
+              title: 'Pigments',
+              lessons: [{ ...lesson, content: [{ format: 'markdown' }] }],
+            },
+          ],
+        } as never)
+      ).rejects.toThrow(/sourcePath or a body/);
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('refuses a lesson that carries both a body and a path', async () => {
+      const { repo } = await repositoryWithStoredOffering();
+
+      await expect(
+        repo.updateOfferingContent('art-1', {
+          modules: [
+            {
+              id: 'm',
+              title: 'Pigments',
+              lessons: [
+                {
+                  ...lesson,
+                  content: [
+                    { format: 'markdown', body: 'words', sourcePath: 'a.md' },
+                  ],
+                },
+              ],
+            },
+          ],
+        } as never)
+      ).rejects.toThrow(/sourcePath or a body/);
+    });
+  });
 });

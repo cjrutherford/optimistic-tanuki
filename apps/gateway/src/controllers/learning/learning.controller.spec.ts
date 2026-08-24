@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   GUARDS_METADATA,
@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
 import { LearningCommands } from '@optimistic-tanuki/constants';
+import { LESSON_NOT_FOUND } from '@optimistic-tanuki/learning-domain';
 import { LearningController } from './learning.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
@@ -33,6 +34,7 @@ describe('LearningController', () => {
 
     offeringAuthorization = {
       authorize: jest.fn().mockResolvedValue(true),
+      seesEveryDraft: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<OfferingAuthorizationService>;
 
     controller = new LearningController(
@@ -91,6 +93,7 @@ describe('LearningController', () => {
         LearningController.prototype.updateOffering,
         LearningController.prototype.deleteOffering,
         LearningController.prototype.setCoEditors,
+        LearningController.prototype.setOfferingStatus,
       ]) {
         expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual(
           expect.arrayContaining([AuthGuard])
@@ -102,6 +105,7 @@ describe('LearningController', () => {
       for (const handler of [
         LearningController.prototype.getDashboard,
         LearningController.prototype.getMyProgress,
+        LearningController.prototype.listPrograms,
       ]) {
         expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBe(true);
       }
@@ -122,6 +126,7 @@ describe('LearningController', () => {
         LearningController.prototype.updateOffering,
         LearningController.prototype.deleteOffering,
         LearningController.prototype.setCoEditors,
+        LearningController.prototype.setOfferingStatus,
       ]) {
         expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).not.toBe(true);
       }
@@ -440,6 +445,221 @@ describe('LearningController', () => {
         { cmd: LearningCommands.SetCoEditors },
         { offeringId: 'offering-1', coEditorProfileIds: ['profile-2'] }
       );
+    });
+  });
+});
+
+describe('LearningController catalog and publication', () => {
+  let client: jest.Mocked<ClientProxy>;
+  let profiles: jest.Mocked<LearningProfileResolver>;
+  let offeringAuthorization: jest.Mocked<OfferingAuthorizationService>;
+  let controller: LearningController;
+
+  beforeEach(() => {
+    client = {
+      send: jest.fn().mockReturnValue(of([])),
+      connect: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<ClientProxy>;
+    profiles = {
+      resolveProfileId: jest.fn().mockResolvedValue('profile-1'),
+    } as unknown as jest.Mocked<LearningProfileResolver>;
+    offeringAuthorization = {
+      authorize: jest.fn().mockResolvedValue(true),
+      seesEveryDraft: jest.fn().mockResolvedValue(false),
+    } as unknown as jest.Mocked<OfferingAuthorizationService>;
+    controller = new LearningController(
+      client,
+      profiles,
+      offeringAuthorization
+    );
+  });
+
+  describe('the catalog knows who is asking', () => {
+    it('asks for the anonymous catalog when nobody is signed in', async () => {
+      await controller.listPrograms({});
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.ListCatalog },
+        {}
+      );
+      expect(profiles.resolveProfileId).not.toHaveBeenCalled();
+    });
+
+    it('passes the caller profile so an author sees their own drafts', async () => {
+      await controller.listPrograms({ user: { userId: 'user-1' } });
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.ListCatalog },
+        { profileId: 'profile-1', seesEveryDraft: false }
+      );
+    });
+
+    it('marks a platform owner as seeing every draft', async () => {
+      offeringAuthorization.seesEveryDraft.mockResolvedValue(true);
+
+      await controller.listPrograms({
+        user: { userId: 'user-1', profileId: 'token-profile' },
+      });
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.ListCatalog },
+        { profileId: 'profile-1', seesEveryDraft: true }
+      );
+    });
+  });
+
+  describe('reading a lesson', () => {
+    it('is open to anonymous callers but still says who is asking', async () => {
+      expect(
+        Reflect.getMetadata(
+          IS_PUBLIC_KEY,
+          LearningController.prototype.getLesson
+        )
+      ).toBe(true);
+
+      await controller.getLesson('art-1', 'art-lesson-1', {});
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.GetLesson },
+        { trackId: 'art-1', lessonId: 'art-lesson-1', viewer: {} }
+      );
+    });
+
+    it('passes the caller so an author can read their own draft', async () => {
+      await controller.getLesson('art-1', 'art-lesson-1', {
+        user: { userId: 'user-1', profileId: 'token-profile' },
+      });
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.GetLesson },
+        {
+          trackId: 'art-1',
+          lessonId: 'art-lesson-1',
+          viewer: { profileId: 'profile-1', seesEveryDraft: false },
+        }
+      );
+    });
+  });
+
+  describe('an unknown lesson', () => {
+    // It answered 500, which is now also the answer for a draft somebody is
+    // not entitled to read. Both should be 404, and indistinguishable.
+    it('is a 404, not a server error', async () => {
+      // The shape the TCP client actually produces: the handler's payload
+      // arrives under `error`, not as a message on an Error.
+      client.send.mockReturnValue(
+        throwError(() => ({
+          error: {
+            code: LESSON_NOT_FOUND,
+            trackId: 'go-foundations',
+            lessonId: 'nope',
+          },
+        }))
+      );
+
+      await expect(
+        controller.getLesson('go-foundations', 'nope', {})
+      ).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('reports an unknown track the same way', async () => {
+      client.send.mockReturnValue(
+        throwError(() => ({
+          error: {
+            code: LESSON_NOT_FOUND,
+            trackId: 'nope',
+            lessonId: 'lesson',
+          },
+        }))
+      );
+
+      await expect(
+        controller.getLesson('nope', 'lesson', {})
+      ).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('leaves a real failure alone rather than calling it a 404', async () => {
+      client.send.mockReturnValue(
+        throwError(() => new Error('connection refused'))
+      );
+
+      await expect(
+        controller.getLesson('go-foundations', 'l', {})
+      ).rejects.toThrow(/connection refused/);
+    });
+  });
+
+  describe('publishing', () => {
+    const req = { user: { userId: 'user-1', profileId: 'token-profile' } };
+
+    it('publishes when the caller is allowed to', async () => {
+      await controller.setOfferingStatus('o-1', { status: 'published' }, req);
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        'token-profile',
+        'publish',
+        'o-1'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.SetOfferingStatus },
+        { offeringId: 'o-1', status: 'published' }
+      );
+    });
+
+    it('refuses a caller who may edit but not publish', async () => {
+      offeringAuthorization.authorize.mockResolvedValue(false);
+
+      await expect(
+        controller.setOfferingStatus('o-1', { status: 'published' }, req)
+      ).rejects.toThrow(/may publish/);
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    // Anything other than draft or published would be stored as-is and then
+    // fail to parse on the way back out.
+    it('refuses a status that is not one of the two', async () => {
+      await expect(
+        controller.setOfferingStatus('o-1', { status: 'live' }, req)
+      ).rejects.toThrow(/draft or published/);
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('refuses a missing status without asking anyone', async () => {
+      await expect(
+        controller.setOfferingStatus('o-1', { status: undefined }, req)
+      ).rejects.toThrow(/draft or published/);
+      expect(offeringAuthorization.authorize).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('saving authored content', () => {
+    it('sends modules and activities through to the service', async () => {
+      const modules = [{ id: 'm', title: 'Pigments', lessons: [] }];
+
+      await controller.updateOffering(
+        'o-1',
+        { modules, activities: [] },
+        { user: { userId: 'user-1', profileId: 'token-profile' } }
+      );
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.UpdateOffering },
+        { offeringId: 'o-1', patch: { modules, activities: [] } }
+      );
+    });
+
+    it('refuses content from a caller who does not own the course', async () => {
+      offeringAuthorization.authorize.mockResolvedValue(false);
+
+      await expect(
+        controller.updateOffering(
+          'o-1',
+          { modules: [] },
+          { user: { userId: 'user-1' } }
+        )
+      ).rejects.toThrow(/own or co-edit/);
+      expect(client.send).not.toHaveBeenCalled();
     });
   });
 });

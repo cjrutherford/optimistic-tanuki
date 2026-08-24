@@ -88,12 +88,38 @@ export type VariantAxis = z.infer<typeof VariantAxisSchema>;
  * is at `sourcePath`: a whole file, or a file whose fenced code blocks are
  * filtered down to the matching variant.
  */
-export const LessonContentSchema = z.object({
-  variantId: z.string().min(1).optional(),
-  format: z.enum(['markdown', 'file-variant', 'fenced-blocks']),
-  sourcePath: z.string().min(1),
-});
+export const LessonContentSchema = z
+  .object({
+    variantId: z.string().min(1).optional(),
+    format: z.enum(['markdown', 'file-variant', 'fenced-blocks']),
+    /**
+     * A file that ships with the workspace. How the four ported tracks carry
+     * their material, and the only option before courses could be authored.
+     */
+    sourcePath: z.string().min(1).optional(),
+    /**
+     * The lesson text itself, for a course written inside the product. An
+     * author has no way to add a file to the repository, so their words have
+     * to live with the course.
+     */
+    body: z.string().min(1).optional(),
+  })
+  .refine(
+    (content) => Boolean(content.sourcePath) !== Boolean(content.body),
+    // Not "at least one": a rendition with both would have two sources of
+    // truth and no rule for which one a reader sees.
+    { message: 'A lesson rendition needs either a sourcePath or a body' }
+  );
 export type LessonContent = z.infer<typeof LessonContentSchema>;
+
+/**
+ * Whether a course is visible to anyone other than the people writing it.
+ *
+ * Drafts are the default, so a course that has just been opened, or one stored
+ * before this existed, stays private until somebody decides to publish it.
+ */
+export const PublicationStatusSchema = z.enum(['draft', 'published']);
+export type PublicationStatus = z.infer<typeof PublicationStatusSchema>;
 
 interface LegacyLessonVariant {
   languageId?: unknown;
@@ -339,6 +365,11 @@ export const OfferingSchema = z.object({
   credits: z.number().positive(),
   outcomeTags: z.array(z.string().min(1)).min(1),
   /**
+   * Defaults to draft, so an offering stored before publication existed is
+   * treated as unfinished rather than silently shown to every learner.
+   */
+  status: PublicationStatusSchema.default('draft'),
+  /**
    * Both may be empty, because a course that has just been opened has no
    * content yet. Requiring content here is what forced draft offerings to
    * carry a placeholder module and a placeholder activity that no author
@@ -470,6 +501,33 @@ export function isNotEnrolled(value: unknown): value is NotEnrolledPayload {
   );
 }
 
+/**
+ * A lesson that this reader cannot have, whether because it does not exist or
+ * because it belongs to a course they are not entitled to read.
+ *
+ * A structured payload rather than a message, for the same reason NOT_ENROLLED
+ * is one: an Error thrown in a microservice handler does not arrive at the
+ * gateway with its message intact, so matching on text there looked right in a
+ * unit test and answered 500 against the running service.
+ */
+export const LESSON_NOT_FOUND = 'LESSON_NOT_FOUND';
+
+export interface LessonNotFoundPayload {
+  code: typeof LESSON_NOT_FOUND;
+  trackId?: string;
+  lessonId?: string;
+}
+
+export function isLessonNotFound(
+  value: unknown
+): value is LessonNotFoundPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { code?: unknown }).code === LESSON_NOT_FOUND
+  );
+}
+
 export const CreditLedgerEntrySchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
@@ -512,6 +570,60 @@ export function evaluateRequirementGroup(
     satisfiedChildren,
     requiredChildren,
   };
+}
+
+/** Who is asking to see the catalog. */
+export interface CatalogViewer {
+  /** The caller's learning profile, absent for an anonymous visitor. */
+  profileId?: string;
+  /** Platform owners and learning_admin see drafts they do not own. */
+  seesEveryDraft?: boolean;
+}
+
+/**
+ * Whether this viewer may see this offering at all.
+ *
+ * A published course is public. A draft is visible only to the people writing
+ * it and to the people who answer for the platform, so an author can work in
+ * the open without shipping half a course to every learner.
+ */
+export function isOfferingVisibleTo(
+  offering: Offering,
+  ownership: OfferingOwnership | undefined,
+  viewer: CatalogViewer
+): boolean {
+  if (offering.status === 'published') return true;
+  if (viewer.seesEveryDraft) return true;
+  if (!viewer.profileId || !ownership) return false;
+  return (
+    ownership.ownerProfileId === viewer.profileId ||
+    ownership.coEditorProfileIds.includes(viewer.profileId)
+  );
+}
+
+/**
+ * The catalog as this viewer should see it.
+ *
+ * Tracks whose offerings are all invisible drop out entirely, rather than
+ * appearing as an empty course with a name and nothing behind it.
+ */
+export function visibleTracks(
+  tracks: readonly ProgramTrack[],
+  ownershipByOfferingId: ReadonlyMap<string, OfferingOwnership>,
+  viewer: CatalogViewer
+): ProgramTrack[] {
+  return tracks
+    .map((track) => ({
+      ...track,
+      offerings: track.offerings.filter((offering) =>
+        isOfferingVisibleTo(
+          offering,
+          ownershipByOfferingId.get(offering.id),
+          viewer
+        )
+      ),
+    }))
+    .filter((track) => track.offerings.length > 0);
 }
 
 export function calculateTotalCredits(
@@ -563,6 +675,9 @@ export const OFFERING_AUTHORIZATION_ACTIONS = [
   'update',
   'delete',
   'manageCoEditors',
+  // Separate from update on purpose. A co-editor may revise a course; putting
+  // it in front of learners is the owner's decision, not theirs.
+  'publish',
 ] as const;
 export type OfferingAuthorizationAction =
   (typeof OFFERING_AUTHORIZATION_ACTIONS)[number];
@@ -589,8 +704,9 @@ export interface OfferingAuthorizationRoles {
  *  2. Creating a new offering only needs the course-designer role; there is
  *     no ownership record yet to check.
  *  3. Everything else needs an ownership record. The owning profile may
- *     update, delete, or manage co-editors. A co-editor may update content
- *     but never delete the offering or touch who owns or co-edits it.
+ *     update, delete, manage co-editors, or publish. A co-editor may update
+ *     content but never delete the offering, change who owns or co-edits it,
+ *     or publish it.
  *  4. Anyone else, including a course designer who owns nothing here, is
  *     refused.
  */
@@ -656,6 +772,8 @@ export function buildDraftOffering(
       input.outcomeTags && input.outcomeTags.length > 0
         ? input.outcomeTags
         : ['draft'],
+    // A new course is nobody's business but its author's until they say so.
+    status: 'draft',
     modules: [],
     activities: [],
   };

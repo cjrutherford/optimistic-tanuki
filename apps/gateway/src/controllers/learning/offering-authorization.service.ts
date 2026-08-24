@@ -71,6 +71,29 @@ export class OfferingAuthorizationService {
     );
   }
 
+  /**
+   * Whether this caller sees every draft in the catalog, not just their own.
+   *
+   * The same two roles that may act on any offering may also read any
+   * unpublished one. Nothing else grants it, including the course-designer
+   * role: writing a course does not entitle you to read someone else's.
+   */
+  async seesEveryDraft(
+    learningProfileId: string,
+    tokenProfileId: string | undefined
+  ): Promise<boolean> {
+    const [learningRoleNames, globalRoleNames] = await Promise.all([
+      this.getRoleNames(learningProfileId, LEARNING_APP_SCOPE),
+      tokenProfileId
+        ? this.getRoleNames(tokenProfileId, GLOBAL_APP_SCOPE)
+        : Promise.resolve(new Set<string>()),
+    ]);
+    return (
+      learningRoleNames.has(LEARNING_ADMIN_ROLE) ||
+      [...globalRoleNames].some((name) => PLATFORM_OWNER_ROLE_NAMES.has(name))
+    );
+  }
+
   async getOwnership(
     offeringId: string
   ): Promise<OfferingOwnership | undefined> {

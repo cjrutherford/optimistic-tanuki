@@ -1,11 +1,14 @@
 import {
+  Activity,
   Attempt,
   DraftOfferingInput,
   Enrolment,
   Evaluation,
   LessonProgress,
+  ModuleMetadata,
   OfferingOwnership,
   ProgramTrack,
+  PublicationStatus,
 } from '@optimistic-tanuki/learning-domain';
 
 export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
@@ -13,6 +16,14 @@ export const LEARNING_REPOSITORY = Symbol('LEARNING_REPOSITORY');
 export interface OfferingContentPatch {
   displayName?: string;
   description?: string;
+  /**
+   * The course's structure, replaced wholesale rather than patched lesson by
+   * lesson. An author works on an outline as a whole, and a whole-document
+   * write has no ordering or partial-failure questions to answer.
+   */
+  modules?: ModuleMetadata[];
+  activities?: Activity[];
+  status?: PublicationStatus;
 }
 
 export type CreateAttemptInput = Omit<

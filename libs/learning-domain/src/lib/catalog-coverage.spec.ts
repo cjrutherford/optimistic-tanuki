@@ -54,10 +54,14 @@ function lessonsOf(track: (typeof tutorialProgramTracks)[number]) {
 }
 
 function fileFor(repository: string, lesson: LessonMetadata): string {
-  const relative = selectLessonContent(lesson).sourcePath.replace(
-    /^src\/content\//,
-    ''
-  );
+  // Every lesson in the four ported tracks is a file. A lesson that carried
+  // its own text instead would have nothing to look for on disk, and silently
+  // resolving to the content root would make this whole check meaningless.
+  const { sourcePath } = selectLessonContent(lesson);
+  if (!sourcePath) {
+    throw new Error(`Lesson ${lesson.id} has no source path`);
+  }
+  const relative = sourcePath.replace(/^src\/content\//, '');
   return join(CONTENT_ROOT, repository, relative);
 }
 

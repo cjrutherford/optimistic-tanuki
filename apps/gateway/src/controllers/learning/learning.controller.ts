@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -6,6 +7,7 @@ import {
   ForbiddenException,
   Get,
   Inject,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -17,7 +19,9 @@ import { firstValueFrom } from 'rxjs';
 import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   DraftOfferingInput,
+  isLessonNotFound,
   isNotEnrolled,
+  PublicationStatusSchema,
 } from '@optimistic-tanuki/learning-domain';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
@@ -33,10 +37,24 @@ export class LearningController {
     private readonly offeringAuthorization: OfferingAuthorizationService
   ) {}
 
+  /**
+   * The catalog, as this caller should see it.
+   *
+   * Anonymous visitors see published courses. A signed-in author also sees
+   * their own drafts, and the people who answer for the platform see every
+   * draft, so nobody has to publish a half-written course to work on it.
+   */
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('programs')
-  async listPrograms() {
+  async listPrograms(
+    @Req() req: { user?: { userId?: string; profileId?: string } }
+  ) {
     return await firstValueFrom(
-      this.learningService.send({ cmd: LearningCommands.ListPrograms }, {})
+      this.learningService.send(
+        { cmd: LearningCommands.ListCatalog },
+        await this.resolveViewer(req)
+      )
     );
   }
 
@@ -87,17 +105,66 @@ export class LearningController {
     );
   }
 
+  // Open to anonymous readers, like the catalog, and gated the same way: an
+  // unpublished course is not readable just because somebody knows its ids.
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('programs/:trackId/lessons/:lessonId')
   async getLesson(
     @Param('trackId') trackId: string,
-    @Param('lessonId') lessonId: string
+    @Param('lessonId') lessonId: string,
+    @Req() req: { user?: { userId?: string; profileId?: string } }
   ) {
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.GetLesson },
-        { trackId, lessonId }
+    const viewer = await this.resolveViewer(req);
+    return await this.asNotFoundWhenUnknown(() =>
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.GetLesson },
+          { trackId, lessonId, viewer }
+        )
       )
     );
+  }
+
+  /**
+   * Turns the service's "unknown lesson" into a 404.
+   *
+   * It was answering 500 for a lesson that does not exist, which was already
+   * wrong and became misleading once refusing to show a draft produces the
+   * same answer on purpose. A reader who is not entitled to a course and a
+   * reader who mistyped an id get the same 404, which is the point.
+   */
+  private async asNotFoundWhenUnknown<T>(work: () => Promise<T>): Promise<T> {
+    try {
+      // A thunk, not a promise, so a client that throws before it ever
+      // returns an observable is caught here too.
+      return await work();
+    } catch (error) {
+      const payload = (error as { error?: unknown })?.error ?? error;
+      if (isLessonNotFound(payload)) throw new NotFoundException(payload);
+      throw error;
+    }
+  }
+
+  /**
+   * Who is asking, for the two routes that answer differently depending on it.
+   *
+   * An anonymous caller resolves to an empty viewer, which sees only published
+   * courses.
+   */
+  private async resolveViewer(req: {
+    user?: { userId?: string; profileId?: string };
+  }): Promise<{ profileId?: string; seesEveryDraft?: boolean }> {
+    const userId = req.user?.userId;
+    if (!userId) return {};
+    const profileId = await this.learningProfiles.resolveProfileId(userId);
+    return {
+      profileId,
+      seesEveryDraft: await this.offeringAuthorization.seesEveryDraft(
+        profileId,
+        req.user?.profileId
+      ),
+    };
   }
 
   // Anonymous visitors get an empty list rather than a 401, so the lesson page
@@ -294,7 +361,16 @@ export class LearningController {
   @Put('offerings/:offeringId')
   async updateOffering(
     @Param('offeringId') offeringId: string,
-    @Body() body: { displayName?: string; description?: string },
+    // Modules and activities are the course itself. They are validated
+    // against OfferingSchema in the service before anything is stored, so an
+    // author cannot save a lesson with no words in it.
+    @Body()
+    body: {
+      displayName?: string;
+      description?: string;
+      modules?: unknown[];
+      activities?: unknown[];
+    },
     @Req() req: { user: { userId: string; profileId?: string } }
   ) {
     const profileId = await this.learningProfiles.resolveProfileId(
@@ -315,6 +391,46 @@ export class LearningController {
       this.learningService.send(
         { cmd: LearningCommands.UpdateOffering },
         { offeringId, patch: body }
+      )
+    );
+  }
+
+  /**
+   * Publishing, and taking a course back down.
+   *
+   * A separate action from updating, so a co-editor can revise a course
+   * without deciding it is ready for learners. Only the owner, learning_admin
+   * and platform owners may.
+   */
+  @UseGuards(AuthGuard)
+  @Put('offerings/:offeringId/status')
+  async setOfferingStatus(
+    @Param('offeringId') offeringId: string,
+    @Body() body: { status: unknown },
+    @Req() req: { user: { userId: string; profileId?: string } }
+  ) {
+    const status = PublicationStatusSchema.safeParse(body?.status);
+    if (!status.success) {
+      throw new BadRequestException('status must be draft or published');
+    }
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    const allowed = await this.offeringAuthorization.authorize(
+      profileId,
+      req.user.profileId,
+      'publish',
+      offeringId
+    );
+    if (!allowed) {
+      throw new ForbiddenException(
+        'Only the owning profile, learning_admin, or a platform owner may publish an offering.'
+      );
+    }
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.SetOfferingStatus },
+        { offeringId, status: status.data }
       )
     );
   }

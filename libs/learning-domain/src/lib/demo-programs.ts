@@ -24,6 +24,7 @@ export const sampleProgramTrack: ProgramTrack = {
     {
       id: 'systems-100-core',
       type: 'course',
+      status: 'published',
       displayName: 'Systems Core 100',
       subjectId: 'systems',
       level: 100,
@@ -79,6 +80,7 @@ export const sampleProgramTrack: ProgramTrack = {
     {
       id: 'systems-200-elective-testing',
       type: 'course',
+      status: 'published',
       displayName: 'Systems Testing Elective',
       subjectId: 'software-engineering',
       level: 200,
@@ -124,6 +126,7 @@ export const sampleProgramTrack: ProgramTrack = {
     {
       id: 'systems-200-capstone-project',
       type: 'project',
+      status: 'published',
       displayName: 'Distributed Task Runner Project',
       subjectId: 'systems',
       level: 200,
@@ -212,6 +215,7 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
     {
       id: 'programming-basics-100-core',
       type: 'course',
+      status: 'published',
       displayName: 'Programming Basics',
       subjectId: 'programming',
       level: 100,

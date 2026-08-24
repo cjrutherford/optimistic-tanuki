@@ -1,6 +1,10 @@
 import {
+  LessonContentSchema,
   LessonMetadataSchema,
+  Offering,
   OfferingSchema,
+  isOfferingVisibleTo,
+  visibleTracks,
   ProgramTrackSchema,
   RunnerProfileSchema,
   lessonHasVariant,
@@ -443,5 +447,212 @@ describe('subjects and tracks without a language', () => {
       expect(() => ProgramTrackSchema.parse(track)).not.toThrow();
       expect(track.variantAxis?.id).toBe('language');
     }
+  });
+});
+
+describe('authored lesson content', () => {
+  const rendition = (extra: Record<string, unknown>) =>
+    LessonContentSchema.safeParse({ format: 'markdown', ...extra });
+
+  it('accepts a lesson written inside the product', () => {
+    expect(
+      rendition({ body: '# Colour theory\n\nStart with three pigments.' })
+        .success
+    ).toBe(true);
+  });
+
+  it('accepts a lesson that points at a file', () => {
+    expect(rendition({ sourcePath: 'basics/01-intro.md' }).success).toBe(true);
+  });
+
+  // Two sources of truth and no rule for which one wins is worse than either.
+  it('refuses a rendition carrying both a body and a path', () => {
+    expect(rendition({ body: 'words', sourcePath: 'a.md' }).success).toBe(
+      false
+    );
+  });
+
+  it('refuses a rendition carrying neither', () => {
+    expect(rendition({}).success).toBe(false);
+  });
+
+  it('refuses an empty body, which is not the same as having one', () => {
+    expect(rendition({ body: '' }).success).toBe(false);
+  });
+});
+
+describe('publication status', () => {
+  function offering(overrides: Partial<Offering> = {}): Offering {
+    return OfferingSchema.parse({
+      id: 'o-1',
+      type: 'course',
+      displayName: 'A course',
+      subjectId: 'art',
+      level: 100,
+      credits: 1,
+      outcomeTags: ['art'],
+      modules: [],
+      activities: [],
+      ...overrides,
+    });
+  }
+
+  function ownedBy(ownerProfileId: string, coEditorProfileIds: string[] = []) {
+    return {
+      offeringId: 'o-1',
+      ownerProfileId,
+      coEditorProfileIds,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
+  // Defaulting to published would have shown every course stored before this
+  // existed to every learner, which is the opposite of what an author expects.
+  it('treats an offering with no status as a draft', () => {
+    expect(offering().status).toBe('draft');
+  });
+
+  it('shows a published course to an anonymous visitor', () => {
+    expect(
+      isOfferingVisibleTo(offering({ status: 'published' }), undefined, {})
+    ).toBe(true);
+  });
+
+  it('hides a draft from an anonymous visitor', () => {
+    expect(isOfferingVisibleTo(offering(), ownedBy('someone'), {})).toBe(false);
+  });
+
+  it('hides a draft from a signed-in learner who does not own it', () => {
+    expect(
+      isOfferingVisibleTo(offering(), ownedBy('someone'), {
+        profileId: 'learner',
+      })
+    ).toBe(false);
+  });
+
+  it('shows a draft to the author writing it', () => {
+    expect(
+      isOfferingVisibleTo(offering(), ownedBy('author'), {
+        profileId: 'author',
+      })
+    ).toBe(true);
+  });
+
+  it('shows a draft to a co-editor', () => {
+    expect(
+      isOfferingVisibleTo(offering(), ownedBy('author', ['helper']), {
+        profileId: 'helper',
+      })
+    ).toBe(true);
+  });
+
+  it('shows every draft to the people who answer for the platform', () => {
+    expect(
+      isOfferingVisibleTo(offering(), ownedBy('someone'), {
+        profileId: 'admin',
+        seesEveryDraft: true,
+      })
+    ).toBe(true);
+  });
+
+  // Fails closed: a draft with no ownership record belongs to nobody, so
+  // nobody but an admin sees it.
+  it('hides a draft with no ownership record', () => {
+    expect(
+      isOfferingVisibleTo(offering(), undefined, { profileId: 'anyone' })
+    ).toBe(false);
+  });
+
+  describe('visibleTracks', () => {
+    const track = {
+      id: 't',
+      displayName: 'T',
+      subjectIds: ['art'],
+      focuses: [{ id: 'f', displayName: 'F', subjectIds: ['art'] }],
+      offerings: [
+        offering({ id: 'published-1', status: 'published' }),
+        offering({ id: 'draft-1' }),
+      ],
+      requirements: {
+        id: 'r',
+        operator: 'AND' as const,
+        children: [{ kind: 'offering' as const, offeringId: 'published-1' }],
+      },
+    };
+
+    it('keeps the published offering and drops the draft', () => {
+      const [visible] = visibleTracks(
+        [track],
+        new Map([['draft-1', ownedBy('someone')]]),
+        { profileId: 'learner' }
+      );
+
+      expect(visible.offerings.map((item) => item.id)).toEqual(['published-1']);
+    });
+
+    it('drops a track whose every offering is hidden', () => {
+      const draftsOnly = { ...track, offerings: [offering({ id: 'draft-1' })] };
+
+      expect(
+        visibleTracks(
+          [draftsOnly],
+          new Map([['draft-1', ownedBy('someone')]]),
+          {
+            profileId: 'learner',
+          }
+        )
+      ).toEqual([]);
+    });
+
+    it('leaves the original tracks untouched', () => {
+      visibleTracks([track], new Map(), { profileId: 'learner' });
+
+      expect(track.offerings).toHaveLength(2);
+    });
+  });
+});
+
+describe('publishing is not editing', () => {
+  const ownership = {
+    offeringId: 'o-1',
+    ownerProfileId: 'author',
+    coEditorProfileIds: ['helper'],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+  const noRoles = {
+    isPlatformOwner: false,
+    isLearningAdmin: false,
+    isCourseDesigner: true,
+  };
+
+  it('lets a co-editor revise a course', () => {
+    expect(
+      authorizeOfferingAction('helper', 'update', noRoles, ownership)
+    ).toBe(true);
+  });
+
+  it('does not let a co-editor decide it is ready', () => {
+    expect(
+      authorizeOfferingAction('helper', 'publish', noRoles, ownership)
+    ).toBe(false);
+  });
+
+  it('lets the owner publish', () => {
+    expect(
+      authorizeOfferingAction('author', 'publish', noRoles, ownership)
+    ).toBe(true);
+  });
+
+  it('lets a learning admin publish', () => {
+    expect(
+      authorizeOfferingAction(
+        'admin',
+        'publish',
+        { ...noRoles, isLearningAdmin: true },
+        ownership
+      )
+    ).toBe(true);
   });
 });

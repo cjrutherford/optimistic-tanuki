@@ -8,6 +8,7 @@ import {
   Enrolment,
   Evaluation,
   OfferingOwnership,
+  OfferingSchema,
   ProgramTrack,
   ProgramTrackSchema,
 } from '@optimistic-tanuki/learning-domain';
@@ -146,7 +147,10 @@ export class TypeOrmLearningRepository implements LearningRepository {
       throw new NotFoundException(`Unknown offering: ${offeringId}`);
     }
     const offering = track.offerings[offeringIndex];
-    const updatedOffering = {
+    // Parsed, not spread and trusted. Modules and activities arrive from an
+    // author, so this is where a lesson with neither a body nor a source path,
+    // or a quiz with one option, is refused rather than stored.
+    const updatedOffering = OfferingSchema.parse({
       ...offering,
       ...(patch.displayName !== undefined
         ? { displayName: patch.displayName }
@@ -154,7 +158,12 @@ export class TypeOrmLearningRepository implements LearningRepository {
       ...(patch.description !== undefined
         ? { description: patch.description }
         : {}),
-    };
+      ...(patch.modules !== undefined ? { modules: patch.modules } : {}),
+      ...(patch.activities !== undefined
+        ? { activities: patch.activities }
+        : {}),
+      ...(patch.status !== undefined ? { status: patch.status } : {}),
+    });
     const updatedTrack: ProgramTrack = {
       ...track,
       ...(patch.displayName !== undefined

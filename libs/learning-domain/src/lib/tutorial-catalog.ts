@@ -598,6 +598,9 @@ function tutorialProgramTrack({
         level: 100,
         credits: 3,
         outcomeTags: ['foundations', languageId],
+        // Explicit, because the schema defaults an offering to draft. These
+        // four shipped with the product and are not anybody's work in progress.
+        status: 'published',
         modules: modules.map((module) => ({
           id: `${id}-${module.id}`,
           title: module.title,

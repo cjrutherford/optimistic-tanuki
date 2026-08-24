@@ -3,8 +3,10 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { LearningCommands } from '@optimistic-tanuki/constants';
 import {
   ActivityType,
+  CatalogViewer,
   DraftOfferingInput,
   Evaluation,
+  PublicationStatus,
 } from '@optimistic-tanuki/learning-domain';
 import { LessonProgress } from '@optimistic-tanuki/learning-domain';
 import { AppService } from './app.service';
@@ -41,6 +43,13 @@ export class AppController {
     return this.appService.listPrograms();
   }
 
+  // What a learner may see: everything published, plus the drafts this
+  // viewer is entitled to. ListPrograms stays the unfiltered read.
+  @MessagePattern({ cmd: LearningCommands.ListCatalog })
+  listCatalog(@Payload() body: CatalogViewer) {
+    return this.appService.listCatalog(body ?? {});
+  }
+
   @MessagePattern({ cmd: LearningCommands.SubmitAttempt })
   submitAttempt(@Payload() body: SubmitAttemptDto) {
     return this.appService.submitAttempt(body);
@@ -55,8 +64,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: LearningCommands.GetLesson })
-  getLesson(@Payload() body: { trackId: string; lessonId: string }) {
-    return this.appService.getLesson(body.trackId, body.lessonId);
+  getLesson(
+    @Payload()
+    body: {
+      trackId: string;
+      lessonId: string;
+      viewer?: CatalogViewer;
+    }
+  ) {
+    return this.appService.getLesson(
+      body.trackId,
+      body.lessonId,
+      body.viewer ?? {}
+    );
   }
 
   @MessagePattern({ cmd: LearningCommands.GetProgress })
@@ -145,6 +165,15 @@ export class AppController {
   @MessagePattern({ cmd: LearningCommands.GetOfferingOwnership })
   getOfferingOwnership(@Payload() body: { offeringId: string }) {
     return this.appService.getOfferingOwnership(body.offeringId);
+  }
+
+  @MessagePattern({ cmd: LearningCommands.SetOfferingStatus })
+  setOfferingStatus(
+    @Payload() body: { offeringId: string; status: PublicationStatus }
+  ) {
+    return this.appService.updateOffering(body.offeringId, {
+      status: body.status,
+    });
   }
 
   @MessagePattern({ cmd: LearningCommands.SetCoEditors })
