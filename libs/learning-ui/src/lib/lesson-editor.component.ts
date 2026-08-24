@@ -90,13 +90,13 @@ import { LessonProseComponent } from './lesson-prose.component';
         width: 100%;
         padding: 0.45rem 0.55rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
       }
       textarea {
-        font-family: ui-monospace, monospace;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
         font-size: 0.85rem;
         line-height: 1.6;
         resize: vertical;
@@ -123,7 +123,7 @@ import { LessonProseComponent } from './lesson-prose.component';
         overflow: auto;
         padding: 0.75rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
       }
       .empty {
         margin: 0;

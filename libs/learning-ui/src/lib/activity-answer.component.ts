@@ -118,12 +118,12 @@ export interface AnswerMark {
         gap: 0.7rem;
         padding: 1rem 1.1rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
       }
       .kind {
         margin: 0;
         color: var(--lx-accent, currentColor);
-        font: 700 0.66rem ui-monospace, monospace;
+        font: 700 0.66rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
@@ -148,7 +148,7 @@ export interface AnswerMark {
         width: 100%;
         padding: 0.5rem 0.6rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -181,7 +181,7 @@ export interface AnswerMark {
       }
       .score {
         margin: 0;
-        font: 700 1.1rem ui-monospace, monospace;
+        font: 700 1.1rem var(--lx-font-mono, ui-monospace, monospace);
         color: var(--lx-accent, currentColor);
       }
       .feedback {
@@ -206,7 +206,7 @@ export interface AnswerMark {
         color: var(--lx-text-muted, currentColor);
       }
       .points {
-        font: 700 0.8rem ui-monospace, monospace;
+        font: 700 0.8rem var(--lx-font-mono, ui-monospace, monospace);
         color: var(--lx-accent, currentColor);
         white-space: nowrap;
       }

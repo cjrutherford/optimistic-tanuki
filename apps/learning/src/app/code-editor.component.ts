@@ -84,7 +84,7 @@ function hex(value: string): string {
         border: 1px solid var(--lx-border-strong);
         background: var(--lx-code);
         color: var(--lx-code-text);
-        font: 400 0.82rem/1.6 ui-monospace, monospace;
+        font: 400 0.82rem/1.6 var(--lx-font-mono, ui-monospace, monospace);
         resize: vertical;
       }
       .editor.mounted textarea {

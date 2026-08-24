@@ -76,7 +76,7 @@ import {
       header p,
       .path small {
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         text-transform: uppercase;
         letter-spacing: 0.1em;
       }
@@ -92,7 +92,8 @@ import {
       }
       .stats {
         display: flex;
-        gap: 2rem;
+        flex-wrap: wrap;
+        gap: 1.25rem 2rem;
         margin: 2.5rem 0;
         padding: 1rem 0;
         border-top: 1px solid var(--lx-border-soft);
@@ -103,7 +104,7 @@ import {
         gap: 0.2rem;
       }
       .stats b {
-        font: 700 1.7rem ui-monospace, monospace;
+        font: 700 1.7rem var(--lx-font-mono, ui-monospace, monospace);
       }
       .stats span {
         color: var(--lx-text-muted);

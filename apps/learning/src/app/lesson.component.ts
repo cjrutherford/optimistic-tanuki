@@ -96,7 +96,7 @@ interface ExerciseOutcome {
             (toggle)="markRead(vm, $event)"
           ></otlearn-lesson-completion>
         </div>
-        <aside>
+        <aside aria-label="Practice exercises">
           <div class="practice-head">
             <span>Practice</span>
             <span
@@ -233,7 +233,7 @@ interface ExerciseOutcome {
       header small,
       .practice-head {
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
@@ -247,6 +247,14 @@ interface ExerciseOutcome {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(330px, 0.85fr);
         gap: 1.2rem;
+      }
+      /*
+        A grid item defaults to min-width:auto, which means it refuses to
+        shrink below its widest content. Without this a long line of code
+        made the whole page scroll sideways on a phone.
+      */
+      .reading {
+        min-width: 0;
       }
       article,
       aside {
@@ -302,7 +310,7 @@ interface ExerciseOutcome {
       }
       .points {
         color: var(--lx-text-subtle);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
       }
       .exercise h2 {
         margin: 0.65rem 0 0.35rem;
@@ -322,7 +330,7 @@ interface ExerciseOutcome {
         border: 1px solid var(--lx-border-strong);
         background: var(--lx-code);
         color: var(--lx-code-text);
-        font: 400 0.82rem/1.6 ui-monospace, monospace;
+        font: 400 0.82rem/1.6 var(--lx-font-mono, ui-monospace, monospace);
       }
       .hints {
         display: grid;
@@ -341,7 +349,7 @@ interface ExerciseOutcome {
       }
       .hints p span {
         color: var(--lx-accent);
-        font: 700 0.65rem ui-monospace, monospace;
+        font: 700 0.65rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.09em;
         text-transform: uppercase;
         padding-top: 0.16rem;
@@ -349,7 +357,7 @@ interface ExerciseOutcome {
       .hint-more {
         padding: 0.4rem 0.75rem;
         border: 1px dashed var(--lx-border-strong);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: none;
         color: var(--lx-text-muted);
         font: 400 0.78rem inherit;
@@ -380,7 +388,7 @@ interface ExerciseOutcome {
       .reset {
         padding: 0.4rem 0.7rem;
         border: 1px solid transparent;
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: none;
         color: var(--lx-text-subtle);
         font: 400 0.78rem inherit;
@@ -409,7 +417,7 @@ interface ExerciseOutcome {
       .result .verdict {
         margin: 0 0 0.4rem;
         color: var(--lx-text-body);
-        font: 700 0.8rem ui-monospace, monospace;
+        font: 700 0.8rem var(--lx-font-mono, ui-monospace, monospace);
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
@@ -428,7 +436,7 @@ interface ExerciseOutcome {
         margin: 0;
         color: var(--lx-text-body);
         white-space: pre-wrap;
-        font: 400 0.78rem/1.5 ui-monospace, monospace;
+        font: 400 0.78rem/1.5 var(--lx-font-mono, ui-monospace, monospace);
       }
       @media (max-width: 850px) {
         .lesson-grid {

@@ -110,14 +110,14 @@ export interface OfferingPrerequisite {
         align-items: center;
         margin: 0;
         color: var(--lx-accent, currentColor);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
       .draft {
         padding: 0.1rem 0.4rem;
         border: 1px dashed var(--lx-border-strong, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         color: var(--lx-text-muted, currentColor);
       }
       h1 {
@@ -155,7 +155,7 @@ export interface OfferingPrerequisite {
       }
       dd {
         margin: 0;
-        font: 700 1.1rem ui-monospace, monospace;
+        font: 700 1.1rem var(--lx-font-mono, ui-monospace, monospace);
       }
       .prerequisites h2 {
         margin: 0 0 0.5rem;

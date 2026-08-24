@@ -49,7 +49,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
       .done {
         margin: 0;
         color: var(--lx-accent, currentColor);
-        font: 700 0.8rem ui-monospace, monospace;
+        font: 700 0.8rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }

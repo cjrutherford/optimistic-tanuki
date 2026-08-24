@@ -1,4 +1,20 @@
-/* Let's Go palette.
+/* Let's Go surfaces, over the personality.
+ *
+ * These tokens are an adapter, not a second palette. Where the personality
+ * carries a value that works on this ground it is adopted through var(), so
+ * changing the personality changes the app. Where it does not, the app holds
+ * its own value and says why, because a token that is unreadable is not a
+ * token worth inheriting.
+ *
+ * Adopted: the accent (dark only), danger, warning, both typefaces, corner
+ * radius, and the focus ring.
+ * Held: the surface ramp, because this app is deliberately a dark console in
+ * both themes, and the light accent, which the personality cannot supply
+ * legibly.
+ *
+ * Original notes follow.
+ *
+ * Let's Go palette.
  *
  * This app is a console: lessons on one side, an editor and a compiler on the
  * other. It leans dark and high-contrast the way a terminal or an IDE does,
@@ -20,6 +36,24 @@
 
 :root {
   color-scheme: dark;
+
+  /* Typography and shape, taken from the personality.
+   *
+   * The app was hardcoding ui-monospace and a 2px radius and so rendered the
+   * same whichever personality was active, which is the opposite of what the
+   * personality system is for. Architect is squared-off and monospace, and
+   * now the app actually is. */
+  --lx-font-heading: var(
+    --font-heading,
+    var(--personality-font-family, inherit)
+  );
+  --lx-font-mono: var(--font-mono, ui-monospace, monospace);
+  --lx-radius: var(--personality-border-radius, 2px);
+
+  /* Keyboard focus follows the accent, which is already the contrast-safe
+     choice for whichever ground is showing. Deciding it separately would mean
+     deciding it wrong in one of the two themes. */
+  --lx-focus: var(--lx-accent);
 
   /* Surfaces, darkest to lightest. */
   --lx-bg: #07101a;
@@ -44,14 +78,20 @@
   --lx-text-subtle: #7894ab;
   --lx-text-faint: #66849a;
 
-  /* Accent and status. */
-  --lx-accent: #76e3d0;
+  /* Accent and status.
+   *
+   * The accent is the personality's own primary. On this ground it measures
+   * 9.09:1, so it is adopted directly and a personality change reaches the
+   * app. The literal is the fallback for server rendering, where the theme
+   * service has not run yet. */
+  --lx-accent: var(--primary, #76e3d0);
   --lx-accent-soft: #9fe8d8;
-  --lx-danger: #d98b6a;
-  --lx-warn: #f0c987;
+  --lx-danger: var(--danger, #d98b6a);
+  --lx-warn: var(--warning, #f0c987);
 
   /* Prism tokens, tuned to the surfaces above. */
-  --lx-syn-comment: #5f7c91;
+  /* Was #5f7c91, which is 4.44:1 on --lx-code and so just misses AA. */
+  --lx-syn-comment: #7d9bb0;
   --lx-syn-punct: #90a9bd;
   --lx-syn-keyword: #7fb2ff;
   --lx-syn-string: #9fe8b0;
@@ -89,6 +129,9 @@
     --lx-text-subtle: #5f7a8c;
     --lx-text-faint: #7b93a3;
 
+    /* Held locally on purpose. The personality's primary measures 1.94:1
+       against this ground, so adopting it here would be unreadable. Every
+       other trait of the personality still applies. */
     --lx-accent: #0d7a66;
     --lx-accent-soft: #0f6659;
     --lx-danger: #b4552c;
@@ -119,6 +162,9 @@
   --lx-text-subtle: #5f7a8c;
   --lx-text-faint: #7b93a3;
 
+  /* Held locally on purpose. The personality's primary measures 1.94:1
+     against this ground, so adopting it here would be unreadable. Every
+     other trait of the personality still applies. */
   --lx-accent: #0d7a66;
   --lx-accent-soft: #0f6659;
   --lx-danger: #b4552c;
@@ -148,8 +194,8 @@
   --lx-text-subtle: #7894ab;
   --lx-text-faint: #66849a;
 
-  --lx-accent: #76e3d0;
+  --lx-accent: var(--primary, #76e3d0);
   --lx-accent-soft: #9fe8d8;
-  --lx-danger: #d98b6a;
-  --lx-warn: #f0c987;
+  --lx-danger: var(--danger, #d98b6a);
+  --lx-warn: var(--warning, #f0c987);
 }

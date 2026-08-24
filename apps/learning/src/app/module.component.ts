@@ -60,7 +60,7 @@ import {
       }
       header small {
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         text-transform: uppercase;
         letter-spacing: 0.1em;
       }
@@ -99,7 +99,7 @@ import {
       }
       .lesson-list small {
         color: var(--lx-text-subtle);
-        font-family: ui-monospace, monospace;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
       }
       .lesson-list b {
         color: var(--lx-accent);

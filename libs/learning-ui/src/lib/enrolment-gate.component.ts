@@ -41,13 +41,13 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         gap: 0.5rem;
         padding: 1rem 1.1rem;
         border: 1px dashed var(--lx-border-strong, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: var(--lx-well, transparent);
       }
       .headline {
         margin: 0;
         color: var(--lx-accent, currentColor);
-        font: 700 0.8rem ui-monospace, monospace;
+        font: 700 0.8rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }

@@ -246,7 +246,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
       button {
         padding: 0.3rem 0.55rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -266,7 +266,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         gap: 0.6rem;
         padding: 0.9rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
       }
       .activity-head {
         display: flex;
@@ -276,7 +276,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
       }
       .kind {
         color: var(--lx-accent, currentColor);
-        font: 700 0.68rem ui-monospace, monospace;
+        font: 700 0.68rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -294,7 +294,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
       select {
         padding: 0.4rem 0.5rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -304,7 +304,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         width: 100%;
         padding: 0.4rem 0.5rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -338,7 +338,7 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         width: 5rem;
         padding: 0.4rem 0.5rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;

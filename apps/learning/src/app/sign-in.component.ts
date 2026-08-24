@@ -29,6 +29,17 @@ import { LearningAuthService } from './learning-auth.service';
   template: `<learning-layout>
     <a routerLink="/" class="back">← Catalog</a>
 
+    <header>
+      <p class="eyebrow">Account</p>
+      <h1>
+        {{ mode() === 'sign-in' ? 'Welcome back.' : 'Create an account.' }}
+      </h1>
+      <p class="lede">
+        Reading is open to everyone. An account is for enrolling, keeping your
+        progress, and writing courses of your own.
+      </p>
+    </header>
+
     @if (mode() === 'sign-in') {
     <lib-login-block
       appId="learning"
@@ -68,6 +79,24 @@ import { LearningAuthService } from './learning-auth.service';
         color: var(--lx-text-muted);
         font-size: 0.85rem;
         text-decoration: none;
+      }
+      .eyebrow {
+        margin: 0;
+        color: var(--lx-accent);
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0.6rem 0;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1;
+        letter-spacing: -0.045em;
+      }
+      .lede {
+        max-width: 52ch;
+        margin: 0 0 2rem;
+        color: var(--lx-text-muted);
       }
       .switch {
         margin-top: 1.25rem;

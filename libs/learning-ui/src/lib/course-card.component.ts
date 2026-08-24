@@ -22,7 +22,7 @@ import { Component, computed, input } from '@angular/core';
         <small class="draft">Draft</small>
         }
       </header>
-      <h3>{{ displayName() }}</h3>
+      <h2>{{ displayName() }}</h2>
       @if (description()) {
       <p class="description">{{ description() }}</p>
       }
@@ -47,7 +47,7 @@ import { Component, computed, input } from '@angular/core';
       }
       .variant,
       .draft {
-        font: 700 0.68rem ui-monospace, monospace;
+        font: 700 0.68rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
@@ -57,10 +57,10 @@ import { Component, computed, input } from '@angular/core';
       .draft {
         padding: 0.1rem 0.4rem;
         border: 1px dashed var(--lx-border-strong, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         color: var(--lx-text-muted, currentColor);
       }
-      h3 {
+      h2 {
         margin: 0;
         font-size: 1.2rem;
         letter-spacing: -0.01em;

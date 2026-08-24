@@ -108,7 +108,7 @@ import { LearningDataService } from './learning-data.service';
       .eyebrow {
         margin: 0;
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
@@ -155,7 +155,7 @@ import { LearningDataService } from './learning-data.service';
       input {
         padding: 0.45rem 0.55rem;
         border: 1px solid var(--lx-border-soft);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -163,7 +163,7 @@ import { LearningDataService } from './learning-data.service';
       button {
         padding: 0.5rem 0.9rem;
         border: 1px solid var(--lx-accent);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: var(--lx-accent);
         font: inherit;

@@ -98,7 +98,7 @@ import { LearningDataService, OfferingDetail } from './learning-data.service';
       }
       .outline span {
         color: var(--lx-text-muted);
-        font: 0.8rem ui-monospace, monospace;
+        font: 0.8rem var(--lx-font-mono, ui-monospace, monospace);
       }
     `,
   ],

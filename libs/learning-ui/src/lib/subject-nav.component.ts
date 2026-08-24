@@ -73,7 +73,7 @@ export interface SubjectNavItem {
       }
       .count {
         color: var(--lx-text-muted, currentColor);
-        font: 700 0.72rem ui-monospace, monospace;
+        font: 700 0.72rem var(--lx-font-mono, ui-monospace, monospace);
       }
       .chip.selected .count {
         color: inherit;

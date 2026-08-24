@@ -89,7 +89,7 @@ interface CatalogRow {
       .eyebrow {
         margin: 0;
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }

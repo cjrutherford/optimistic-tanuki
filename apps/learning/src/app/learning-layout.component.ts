@@ -26,7 +26,7 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
       </span>
     </header>
     <div class="studio">
-      <aside>
+      <aside aria-label="Course navigation">
         <a routerLink="/" class="brand">Catalog</a>
         <nav>
           <a
@@ -66,7 +66,7 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
         border-bottom: 1px solid var(--lx-border-soft);
         background: var(--lx-bg);
         color: var(--lx-text-subtle);
-        font: 0.72rem ui-monospace, monospace;
+        font: 0.72rem var(--lx-font-mono, ui-monospace, monospace);
       }
       .topbar > a {
         color: var(--lx-accent);
@@ -123,7 +123,7 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
       .studio nav p {
         margin: 1.1rem 0.7rem 0.25rem;
         color: var(--lx-text-subtle);
-        font: 700 0.65rem ui-monospace, monospace;
+        font: 700 0.65rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.09em;
         text-transform: uppercase;
       }
@@ -144,7 +144,12 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
         padding: 2.25rem;
       }
       @media (max-width: 760px) {
-        .topbar span {
+        /*
+          Only the tagline goes. This used to hide every span in the bar,
+          which took the whole session block with it once one was added:
+          on a phone there was no way to sign in, sign out, or reach Write.
+        */
+        .tagline {
           display: none;
         }
         .studio {

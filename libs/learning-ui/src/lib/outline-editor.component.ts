@@ -161,7 +161,7 @@ export interface LessonAddress {
         gap: 0.6rem;
         padding: 0.9rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
       }
       .module-head {
         display: flex;
@@ -174,7 +174,7 @@ export interface LessonAddress {
         min-width: 0;
         padding: 0.4rem 0.5rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -188,7 +188,7 @@ export interface LessonAddress {
       button {
         padding: 0.3rem 0.55rem;
         border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -218,7 +218,7 @@ export interface LessonAddress {
         align-items: center;
         justify-content: space-between;
         padding: 0.25rem 0.35rem;
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
       }
       .lessons li.selected {
         background: var(--lx-surface-active, transparent);
@@ -232,7 +232,7 @@ export interface LessonAddress {
       .unwritten {
         margin-left: 0.5rem;
         color: var(--lx-text-muted, currentColor);
-        font: 700 0.65rem ui-monospace, monospace;
+        font: 700 0.65rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }

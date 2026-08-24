@@ -93,7 +93,10 @@ export class LessonMarkdownService {
       ? Prism.highlight(code, grammar, language as string)
       : this.escape(code);
     const className = language ? ` class="language-${language}"` : '';
-    return `<pre${className}><code${className}>${body}</code></pre>`;
+    // A code block scrolls sideways when a line is long, and a region that
+    // scrolls has to be reachable by keyboard or its content is unreadable
+    // without a mouse.
+    return `<pre${className} tabindex="0"><code${className}>${body}</code></pre>`;
   }
 
   private grammarFor(lang?: string): string | undefined {

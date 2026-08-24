@@ -116,7 +116,7 @@ import { LessonMarkdownService } from './lesson-markdown.service';
       .eyebrow {
         margin: 0;
         color: var(--lx-accent);
-        font: 700 0.7rem ui-monospace, monospace;
+        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
@@ -127,7 +127,7 @@ import { LessonMarkdownService } from './lesson-markdown.service';
         margin-top: 0.5rem;
         padding: 0.4rem 0.5rem;
         border: 1px solid transparent;
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: inherit;
         font: inherit;
@@ -160,7 +160,7 @@ import { LessonMarkdownService } from './lesson-markdown.service';
       .bar button {
         padding: 0.45rem 0.9rem;
         border: 1px solid var(--lx-accent);
-        border-radius: 2px;
+        border-radius: var(--lx-radius, 2px);
         background: transparent;
         color: var(--lx-accent);
         font: inherit;

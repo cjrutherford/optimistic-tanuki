@@ -121,7 +121,7 @@ import { Component, input } from '@angular/core';
         border-radius: 3px;
         background: var(--lx-inline-code);
         color: var(--lx-accent-soft);
-        font: 400 0.85em ui-monospace, monospace;
+        font: 400 0.85em var(--lx-font-mono, ui-monospace, monospace);
       }
       :host ::ng-deep pre {
         margin: 0 0 1.15rem;
@@ -131,7 +131,7 @@ import { Component, input } from '@angular/core';
         border-left: 3px solid var(--lx-border-accent);
         background: var(--lx-code);
         color: var(--lx-code-text);
-        font: 400 0.83rem/1.65 ui-monospace, monospace;
+        font: 400 0.83rem/1.65 var(--lx-font-mono, ui-monospace, monospace);
       }
       :host ::ng-deep pre code {
         background: none;
