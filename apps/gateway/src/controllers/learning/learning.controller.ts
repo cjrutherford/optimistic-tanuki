@@ -16,10 +16,15 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
-import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  LearningCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   DraftOfferingInput,
   isLessonNotFound,
+  isOfferingNotFound,
   isNotEnrolled,
   PublicationStatusSchema,
 } from '@optimistic-tanuki/learning-domain';
@@ -33,6 +38,8 @@ export class LearningController {
   constructor(
     @Inject(ServiceTokens.LEARNING_SERVICE)
     private readonly learningService: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient: ClientProxy,
     private readonly learningProfiles: LearningProfileResolver,
     private readonly offeringAuthorization: OfferingAuthorizationService
   ) {}
@@ -53,6 +60,22 @@ export class LearningController {
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.ListCatalog },
+        await this.resolveViewer(req)
+      )
+    );
+  }
+
+  // The subjects in this caller's catalog, named by the server so the rule
+  // for naming them is not duplicated in the browser.
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get('subjects')
+  async listSubjects(
+    @Req() req: { user?: { userId?: string; profileId?: string } }
+  ) {
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.ListSubjects },
         await this.resolveViewer(req)
       )
     );
@@ -141,9 +164,85 @@ export class LearningController {
       return await work();
     } catch (error) {
       const payload = (error as { error?: unknown })?.error ?? error;
-      if (isLessonNotFound(payload)) throw new NotFoundException(payload);
+      if (isLessonNotFound(payload) || isOfferingNotFound(payload)) {
+        throw new NotFoundException(payload);
+      }
       throw error;
     }
+  }
+
+  /**
+   * A course page: what it is, who wrote it, and whether you are in it.
+   *
+   * Open to anonymous readers, and gated the same way as the catalog and the
+   * lesson route. The author's name and the caller's enrolment are added here
+   * rather than in the learning service, which knows neither profiles nor
+   * sessions.
+   */
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get('offerings/:offeringId')
+  async getOffering(
+    @Param('offeringId') offeringId: string,
+    @Req() req: { user?: { userId?: string; profileId?: string } }
+  ) {
+    const viewer = await this.resolveViewer(req);
+    const detail = (await this.asNotFoundWhenUnknown(() =>
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.GetOffering },
+          { offeringId, viewer }
+        )
+      )
+    )) as { ownerProfileId?: string };
+
+    const [author, isEnrolled] = await Promise.all([
+      this.resolveAuthor(detail.ownerProfileId),
+      this.isEnrolledIn(viewer.profileId, offeringId),
+    ]);
+    return { ...detail, author, isEnrolled };
+  }
+
+  /**
+   * The author's display name, or nothing.
+   *
+   * A course whose author cannot be looked up still renders; it just does not
+   * say who wrote it. Failing the whole page because the profile service is
+   * unreachable would be a poor trade for one line of text.
+   */
+  private async resolveAuthor(
+    ownerProfileId: string | undefined
+  ): Promise<{ profileId: string; displayName: string } | null> {
+    if (!ownerProfileId) return null;
+    try {
+      const profile = (await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: ownerProfileId, query: {} }
+        )
+      )) as { id?: string; name?: string } | null;
+      if (!profile?.name) return null;
+      return { profileId: ownerProfileId, displayName: profile.name };
+    } catch {
+      return null;
+    }
+  }
+
+  private async isEnrolledIn(
+    profileId: string | undefined,
+    offeringId: string
+  ): Promise<boolean> {
+    if (!profileId) return false;
+    const enrolments = (await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.ListMyEnrolments },
+        { profileId }
+      )
+    )) as Array<{ offeringId: string; status: string }>;
+    return (enrolments ?? []).some(
+      (enrolment) =>
+        enrolment.offeringId === offeringId && enrolment.status === 'active'
+    );
   }
 
   /**

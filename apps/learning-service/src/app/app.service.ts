@@ -11,9 +11,12 @@ import {
   LessonProgress,
   OfferingOwnership,
   ProgramTrack,
+  groupTracksBySubject,
   isOfferingVisibleTo,
   LESSON_NOT_FOUND,
   LessonNotFoundPayload,
+  OFFERING_NOT_FOUND,
+  OfferingNotFoundPayload,
   lessonHasVariant,
   publicExercise,
   rollUpCompletedLessons,
@@ -159,6 +162,90 @@ export class AppService {
       if (ownership) ownerships.set(offeringId, ownership);
     }
     return visibleTracks(tracks, ownerships, viewer);
+  }
+
+  /**
+   * The subjects this viewer's catalog actually contains.
+   *
+   * Computed here rather than in the browser so the naming rule lives in one
+   * place. The alternative was a copy of it in the client, which would drift
+   * the first time a subject was renamed.
+   */
+  async listSubjects(viewer: CatalogViewer) {
+    const groups = groupTracksBySubject(await this.listCatalog(viewer));
+    return groups.map((group) => ({
+      subjectId: group.subjectId,
+      displayName: group.displayName,
+      focusNames: group.focusNames,
+      courseCount: group.tracks.reduce(
+        (total, track) =>
+          total +
+          track.offerings.filter(
+            (offering) => offering.subjectId === group.subjectId
+          ).length,
+        0
+      ),
+    }));
+  }
+
+  /**
+   * Everything a course page needs, in one call.
+   *
+   * Prerequisites are resolved to names here rather than in the client,
+   * because the client only has the offerings it can see and a prerequisite
+   * may live in a different track.
+   */
+  async getOfferingDetail(offeringId: string, viewer: CatalogViewer) {
+    const tracks = await this.listPrograms();
+    const track = tracks.find((candidate) =>
+      candidate.offerings.some((offering) => offering.id === offeringId)
+    );
+    const offering = track?.offerings.find(
+      (candidate) => candidate.id === offeringId
+    );
+    if (!track || !offering) throw this.offeringNotFound(offeringId);
+
+    const ownership =
+      offering.status === 'published'
+        ? undefined
+        : await this.repository.getOwnership(offeringId);
+    if (!isOfferingVisibleTo(offering, ownership, viewer)) {
+      // Same answer as a course that does not exist, for the same reason the
+      // lesson route gives one.
+      throw this.offeringNotFound(offeringId);
+    }
+
+    const byId = new Map(
+      tracks
+        .flatMap((candidate) => candidate.offerings)
+        .map((candidate) => [candidate.id, candidate])
+    );
+    return {
+      offering,
+      trackId: track.id,
+      trackDisplayName: track.displayName,
+      variantAxis: track.variantAxis,
+      lessonCount: offering.modules.reduce(
+        (total, module) => total + module.lessons.length,
+        0
+      ),
+      // An unknown prerequisite still shows, named by its id, rather than
+      // vanishing. A course silently missing a requirement is worse than an
+      // ugly one.
+      prerequisites: (offering.prerequisiteOfferingIds ?? []).map((id) => ({
+        offeringId: id,
+        displayName: byId.get(id)?.displayName ?? id,
+      })),
+      ownerProfileId: (await this.repository.getOwnership(offeringId))
+        ?.ownerProfileId,
+    };
+  }
+
+  private offeringNotFound(offeringId: string): RpcException {
+    return new RpcException({
+      code: OFFERING_NOT_FOUND,
+      offeringId,
+    } satisfies OfferingNotFoundPayload);
   }
 
   async getProgress(profileId: string): Promise<LessonProgress[]> {

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -162,5 +163,60 @@ describe('programVariantLabel', () => {
     expect(programVariantLabel(program({ supportedLanguageIds: ['go'] }))).toBe(
       ''
     );
+  });
+});
+
+/**
+ * The entrance page rendered "Nothing has been published here yet" on every
+ * server-side first paint, because an unloaded catalog and an empty one were
+ * the same value. Found by looking at the rendered HTML, not by a test.
+ */
+describe('LearningDataService server-side reads', () => {
+  function serviceOnServer(): LearningDataService {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'server' },
+      ],
+    });
+    return TestBed.inject(LearningDataService);
+  }
+
+  it('does not claim the catalog is empty before anyone has asked', () => {
+    const emitted = jest.fn();
+    const completed = jest.fn();
+
+    serviceOnServer()
+      .catalog()
+      .subscribe({ next: emitted, complete: completed });
+
+    expect(emitted).not.toHaveBeenCalled();
+    expect(completed).toHaveBeenCalled();
+  });
+
+  it('does the same for subjects', () => {
+    const emitted = jest.fn();
+
+    serviceOnServer().subjects().subscribe({ next: emitted });
+
+    expect(emitted).not.toHaveBeenCalled();
+  });
+
+  it('does the same for a single course', () => {
+    const emitted = jest.fn();
+
+    serviceOnServer().offering('go-100').subscribe({ next: emitted });
+
+    expect(emitted).not.toHaveBeenCalled();
+  });
+
+  it('makes no request at all from the server', () => {
+    const service = serviceOnServer();
+
+    service.catalog().subscribe();
+    service.subjects().subscribe();
+
+    TestBed.inject(HttpTestingController).verify();
   });
 });

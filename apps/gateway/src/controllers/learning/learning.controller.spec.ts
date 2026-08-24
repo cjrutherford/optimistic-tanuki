@@ -1,12 +1,14 @@
 import { of, throwError } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
+import { Test } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
   PATH_METADATA,
 } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
-import { LearningCommands } from '@optimistic-tanuki/constants';
+import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { LESSON_NOT_FOUND } from '@optimistic-tanuki/learning-domain';
 import { LearningController } from './learning.controller';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -16,6 +18,7 @@ import { OfferingAuthorizationService } from './offering-authorization.service';
 
 describe('LearningController', () => {
   let client: jest.Mocked<ClientProxy>;
+  let profileClient: jest.Mocked<ClientProxy>;
   let profiles: jest.Mocked<LearningProfileResolver>;
   let offeringAuthorization: jest.Mocked<OfferingAuthorizationService>;
   let controller: LearningController;
@@ -23,6 +26,10 @@ describe('LearningController', () => {
   beforeEach(() => {
     client = {
       send: jest.fn().mockReturnValue(of([])),
+      connect: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<ClientProxy>;
+    profileClient = {
+      send: jest.fn().mockReturnValue(of(null)),
       connect: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ClientProxy>;
 
@@ -39,6 +46,7 @@ describe('LearningController', () => {
 
     controller = new LearningController(
       client,
+      profileClient,
       profiles,
       offeringAuthorization
     );
@@ -451,6 +459,7 @@ describe('LearningController', () => {
 
 describe('LearningController catalog and publication', () => {
   let client: jest.Mocked<ClientProxy>;
+  let profileClient: jest.Mocked<ClientProxy>;
   let profiles: jest.Mocked<LearningProfileResolver>;
   let offeringAuthorization: jest.Mocked<OfferingAuthorizationService>;
   let controller: LearningController;
@@ -458,6 +467,10 @@ describe('LearningController catalog and publication', () => {
   beforeEach(() => {
     client = {
       send: jest.fn().mockReturnValue(of([])),
+      connect: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<ClientProxy>;
+    profileClient = {
+      send: jest.fn().mockReturnValue(of(null)),
       connect: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ClientProxy>;
     profiles = {
@@ -469,6 +482,7 @@ describe('LearningController catalog and publication', () => {
     } as unknown as jest.Mocked<OfferingAuthorizationService>;
     controller = new LearningController(
       client,
+      profileClient,
       profiles,
       offeringAuthorization
     );
@@ -661,5 +675,42 @@ describe('LearningController catalog and publication', () => {
       ).rejects.toThrow(/own or co-edit/);
       expect(client.send).not.toHaveBeenCalled();
     });
+  });
+});
+
+/**
+ * Wiring, not behaviour.
+ *
+ * Every other test in this file builds the controller with `new` and a row of
+ * positional arguments, which cannot notice a collaborator Nest is unable to
+ * resolve. That exact mistake once passed 836 tests and then refused to start
+ * the service, so the controller is also resolved through the injector here.
+ */
+describe('LearningController wiring', () => {
+  it('resolves through the injector with every collaborator', async () => {
+    const proxy = {
+      send: jest.fn().mockReturnValue(of([])),
+      connect: jest.fn().mockResolvedValue(undefined),
+    };
+    const moduleRef = await Test.createTestingModule({
+      controllers: [LearningController],
+      providers: [
+        { provide: ServiceTokens.LEARNING_SERVICE, useValue: proxy },
+        { provide: ServiceTokens.PROFILE_SERVICE, useValue: proxy },
+        { provide: LearningProfileResolver, useValue: {} },
+        { provide: OfferingAuthorizationService, useValue: {} },
+        // AuthGuard is attached to most of these routes, so the injector
+        // builds it too. Its own collaborators have to resolve for the
+        // controller to resolve, which is worth knowing here rather than at
+        // container start.
+        { provide: ServiceTokens.AUTHENTICATION_SERVICE, useValue: proxy },
+        { provide: ServiceTokens.PERMISSIONS_SERVICE, useValue: proxy },
+        { provide: JwtService, useValue: {} },
+      ],
+    }).compile();
+
+    expect(moduleRef.get(LearningController)).toBeInstanceOf(
+      LearningController
+    );
   });
 });

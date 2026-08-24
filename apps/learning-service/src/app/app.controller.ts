@@ -79,6 +79,19 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: LearningCommands.ListSubjects })
+  listSubjects(@Payload() body: CatalogViewer) {
+    return this.appService.listSubjects(body ?? {});
+  }
+
+  @MessagePattern({ cmd: LearningCommands.GetOffering })
+  getOffering(@Payload() body: { offeringId: string; viewer?: CatalogViewer }) {
+    return this.appService.getOfferingDetail(
+      body.offeringId,
+      body.viewer ?? {}
+    );
+  }
+
   @MessagePattern({ cmd: LearningCommands.GetProgress })
   getProgress(@Payload() body: { profileId: string }) {
     return this.appService.getProgress(body.profileId);

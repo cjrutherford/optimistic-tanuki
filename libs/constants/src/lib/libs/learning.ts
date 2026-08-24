@@ -1,11 +1,13 @@
 export const LearningCommands = {
   ListPrograms: 'learning.programs.list',
   ListCatalog: 'learning.catalog.list',
+  ListSubjects: 'learning.subjects.list',
   SubmitAttempt: 'learning.attempts.submit',
   RecordEvaluation: 'learning.evaluations.record',
   GetAttempt: 'learning.attempts.get',
   GetCreditLedger: 'learning.credits.list',
   GetLesson: 'learning.lessons.get',
+  GetOffering: 'learning.offerings.get',
   GetProgress: 'learning.progress.get',
   SaveLessonProgress: 'learning.progress.save',
   RunCode: 'learning.code.run',

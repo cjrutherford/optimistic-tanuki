@@ -1,7 +1,7 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Observable, of, throwError } from 'rxjs';
+import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { catchError, shareReplay } from 'rxjs/operators';
 
 export interface Lesson {
@@ -40,6 +40,41 @@ export interface Program {
 export function programVariantLabel(program: Program): string {
   return program.variantAxis?.options[0]?.displayName ?? '';
 }
+export interface CatalogOffering {
+  id: string;
+  displayName: string;
+  description?: string;
+  subjectId: string;
+  level: number;
+  credits: number;
+  status: 'draft' | 'published';
+  modules: LearningModule[];
+}
+export interface CatalogTrack {
+  id: string;
+  displayName: string;
+  subjectIds: string[];
+  variantAxis?: VariantAxis;
+  focuses: { id: string; displayName: string; subjectIds: string[] }[];
+  offerings: CatalogOffering[];
+}
+export interface CatalogSubject {
+  subjectId: string;
+  displayName: string;
+  focusNames: string[];
+  courseCount: number;
+}
+export interface OfferingDetail {
+  offering: CatalogOffering;
+  trackId: string;
+  trackDisplayName: string;
+  variantAxis?: VariantAxis;
+  lessonCount: number;
+  prerequisites: { offeringId: string; displayName: string }[];
+  author: { profileId: string; displayName: string } | null;
+  isEnrolled: boolean;
+}
+
 export interface DashboardEntry {
   program: Program;
   totals: { lessons: number; exercises: number; points: number };
@@ -113,6 +148,34 @@ const emptyLesson: LessonResponse = {
 export class LearningDataService {
   private readonly http = inject(HttpClient);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
+  /**
+   * The catalog, already filtered by the gateway to what this caller may see.
+   *
+   * On the server this completes without emitting, rather than emitting an
+   * empty list. The difference matters: an empty list is indistinguishable
+   * from a catalog with nothing in it, and the entrance page rendered
+   * "Nothing has been published here yet" on every first paint because of it.
+   * Emitting nothing leaves the page in its loading state until the browser
+   * has actually asked.
+   */
+  catalog(): Observable<CatalogTrack[]> {
+    return this.isBrowser
+      ? this.http.get<CatalogTrack[]>('/api/learning/programs')
+      : EMPTY;
+  }
+
+  subjects(): Observable<CatalogSubject[]> {
+    return this.isBrowser
+      ? this.http.get<CatalogSubject[]>('/api/learning/subjects')
+      : EMPTY;
+  }
+
+  offering(offeringId: string): Observable<OfferingDetail | null> {
+    return this.isBrowser
+      ? this.http.get<OfferingDetail>(`/api/learning/offerings/${offeringId}`)
+      : EMPTY;
+  }
 
   dashboard(): Observable<DashboardEntry[]> {
     return this.isBrowser

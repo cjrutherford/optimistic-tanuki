@@ -528,6 +528,24 @@ export function isLessonNotFound(
   );
 }
 
+/** A course this reader cannot have, for the same reasons as a lesson. */
+export const OFFERING_NOT_FOUND = 'OFFERING_NOT_FOUND';
+
+export interface OfferingNotFoundPayload {
+  code: typeof OFFERING_NOT_FOUND;
+  offeringId: string;
+}
+
+export function isOfferingNotFound(
+  value: unknown
+): value is OfferingNotFoundPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { code?: unknown }).code === OFFERING_NOT_FOUND
+  );
+}
+
 export const CreditLedgerEntrySchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
@@ -624,6 +642,79 @@ export function visibleTracks(
       ),
     }))
     .filter((track) => track.offerings.length > 0);
+}
+
+/**
+ * Display names for the subjects the workspace ships with.
+ *
+ * Deliberately short. An authored course names whatever subject it is about,
+ * and nobody will have registered it here, so this is a courtesy for the ids
+ * we already know rather than a list of what a subject may be.
+ */
+const KNOWN_SUBJECT_NAMES: Record<string, string> = {
+  programming: 'Programming',
+  systems: 'Systems',
+};
+
+/**
+ * A readable name for a subject id.
+ *
+ * Falls back to title-casing the id, so a course about `marine-biology` reads
+ * as "Marine Biology" without anyone registering it first. A universal
+ * platform cannot know its subjects in advance.
+ */
+export function subjectDisplayName(subjectId: string): string {
+  const known = KNOWN_SUBJECT_NAMES[subjectId];
+  if (known) return known;
+  return subjectId
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+export interface SubjectGroup {
+  subjectId: string;
+  displayName: string;
+  /** Focus names across this subject's tracks, deduplicated and in order. */
+  focusNames: string[];
+  tracks: ProgramTrack[];
+}
+
+/**
+ * The catalog grouped the way a visitor browses it: by subject first.
+ *
+ * A track that spans several subjects appears under each of them, because a
+ * course on computational biology belongs in both places and picking one for
+ * the visitor would hide it from the other.
+ */
+export function groupTracksBySubject(
+  tracks: readonly ProgramTrack[]
+): SubjectGroup[] {
+  const groups = new Map<string, SubjectGroup>();
+  for (const track of tracks) {
+    for (const subjectId of track.subjectIds) {
+      const group = groups.get(subjectId) ?? {
+        subjectId,
+        displayName: subjectDisplayName(subjectId),
+        focusNames: [],
+        tracks: [],
+      };
+      group.tracks.push(track);
+      for (const focus of track.focuses) {
+        if (
+          focus.subjectIds.includes(subjectId) &&
+          !group.focusNames.includes(focus.displayName)
+        ) {
+          group.focusNames.push(focus.displayName);
+        }
+      }
+      groups.set(subjectId, group);
+    }
+  }
+  return [...groups.values()].sort((left, right) =>
+    left.displayName.localeCompare(right.displayName)
+  );
 }
 
 export function calculateTotalCredits(

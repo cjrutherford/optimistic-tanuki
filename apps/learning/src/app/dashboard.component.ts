@@ -22,9 +22,12 @@ import {
   template: ` <learning-layout
     ><ng-container *ngIf="paths$ | async as paths; else loading"
       ><header>
-        <p>Dashboard</p>
-        <h1>Choose a path. Keep your place.</h1>
-        <span>{{ paths.length }} language paths ready</span>
+        <p>Your progress</p>
+        <h1>Keep your place.</h1>
+        <span
+          >{{ paths.length }} {{ paths.length === 1 ? 'course' : 'courses' }} in
+          progress or ready to start</span
+        >
       </header>
       <section class="stats">
         <div>
@@ -44,14 +47,10 @@ import {
           ><span>Solved</span>
         </div>
       </section>
-      <section class="paths" aria-label="Learning paths">
+      <section class="paths" aria-label="Courses">
         @for (entry of paths; track entry.program.id) {<a
           class="path"
-          [routerLink]="[
-            '/module',
-            entry.program.id,
-            entry.program.offerings[0].modules[0].id
-          ]"
+          [routerLink]="['/course', entry.program.offerings[0].id]"
           ><small>{{ variantLabel(entry.program) }}</small
           ><span
             ><b>{{ entry.program.displayName }}</b

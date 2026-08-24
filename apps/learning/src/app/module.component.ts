@@ -12,9 +12,13 @@ import {
 @Component({
   selector: 'learning-module',
   imports: [LearningLayoutComponent, AsyncPipe, NgIf, RouterLink],
-  template: ` <learning-layout
+  template: ` <learning-layout [trackId]="trackId"
     ><ng-container *ngIf="vm$ | async as vm"
-      ><a routerLink="/dashboard" class="back">← Dashboard</a>
+      ><a
+        [routerLink]="['/course', vm.track.program.offerings[0].id]"
+        class="back"
+        >← Course</a
+      >
       <header>
         <small *ngIf="variantLabel(vm.track.program) as label"
           >{{ label }} module</small
@@ -110,6 +114,14 @@ export class ModuleComponent {
 
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
+
+  /**
+   * Passed to the layout so the sidebar shows this course's modules and only
+   * this course's. Without it the module list vanished on the very page where
+   * a reader is moving between modules.
+   */
+  readonly trackId = this.route.snapshot.paramMap.get('trackId') ?? '';
+
   readonly vm$ = combineLatest([
     this.data.dashboard(),
     this.route.paramMap,

@@ -7,27 +7,35 @@ import { LearningDataService } from './learning-data.service';
   selector: 'learning-layout',
   imports: [RouterLink, RouterLinkActive, AsyncPipe],
   template: ` <header class="topbar">
-      <a routerLink="/dashboard">Let&rsquo;s Go</a
-      ><span>TypeScript · Go · C++ · Rust</span>
+      <a routerLink="/">Let&rsquo;s Go</a
+      ><span>Learn anything, in the open</span>
     </header>
     <div class="studio">
       <aside>
-        <a routerLink="/dashboard" class="brand">Learning paths</a>
+        <a routerLink="/" class="brand">Catalog</a>
         <nav>
           <a
-            routerLink="/dashboard"
+            routerLink="/"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
-            >Dashboard</a
-          >@if (dashboard$ | async; as paths) {@for (path of paths; track
-          path.program.id) {
+            >Browse courses</a
+          ><a routerLink="/dashboard" routerLinkActive="active"
+            >Your progress</a
+          >
+          <!--
+            Modules appear only for the course being read. This sidebar used to
+            list every module of every track on every page, which is forty
+            entries before a visitor has chosen anything.
+          -->
+          @if (trackId) {@if (dashboard$ | async; as paths) {@for (path of
+          paths; track path.program.id) {@if (path.program.id === trackId) {
           <p>{{ path.program.displayName }}</p>
           @for (offering of path.program.offerings; track offering.id) {@for
           (module of offering.modules; track module.id) {<a
             [routerLink]="['/module', path.program.id, module.id]"
             routerLinkActive="active"
             >{{ module.title }}</a
-          >}}}}
+          >}}}}}}
         </nav>
       </aside>
       <main><ng-content></ng-content></main>
@@ -124,5 +132,13 @@ import { LearningDataService } from './learning-data.service';
   ],
 })
 export class LearningLayoutComponent {
+  /**
+   * The course being read, if any.
+   *
+   * Absent on the catalog and the dashboard, which is what keeps the module
+   * list out of the way until somebody has chosen something.
+   */
+  @Input() trackId = '';
+
   readonly dashboard$ = inject(LearningDataService).dashboard();
 }

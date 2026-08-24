@@ -3,7 +3,9 @@ import {
   LessonMetadataSchema,
   Offering,
   OfferingSchema,
+  groupTracksBySubject,
   isOfferingVisibleTo,
+  subjectDisplayName,
   visibleTracks,
   ProgramTrackSchema,
   RunnerProfileSchema,
@@ -654,5 +656,101 @@ describe('publishing is not editing', () => {
         ownership
       )
     ).toBe(true);
+  });
+});
+
+describe('browsing by subject', () => {
+  function track(id: string, subjectIds: string[], focusNames: string[] = []) {
+    return {
+      id,
+      displayName: id,
+      subjectIds,
+      focuses: focusNames.map((displayName, index) => ({
+        id: `${id}-f${index}`,
+        displayName,
+        subjectIds,
+      })),
+      offerings: [
+        OfferingSchema.parse({
+          id: `${id}-100`,
+          type: 'course',
+          displayName: id,
+          subjectId: subjectIds[0],
+          level: 100,
+          credits: 1,
+          outcomeTags: ['x'],
+          modules: [],
+          activities: [],
+        }),
+      ],
+      requirements: {
+        id: `${id}-r`,
+        operator: 'AND' as const,
+        children: [{ kind: 'offering' as const, offeringId: `${id}-100` }],
+      },
+    };
+  }
+
+  // A platform that has to know its subjects in advance is not universal.
+  it('names a subject nobody registered', () => {
+    expect(subjectDisplayName('marine-biology')).toBe('Marine Biology');
+  });
+
+  it('uses the nicer name for a subject it does know', () => {
+    expect(subjectDisplayName('programming')).toBe('Programming');
+  });
+
+  it('handles a single-word subject', () => {
+    expect(subjectDisplayName('art')).toBe('Art');
+  });
+
+  it('groups tracks under the subjects they name', () => {
+    const groups = groupTracksBySubject([
+      track('go', ['programming']),
+      track('watercolour', ['art']),
+    ]);
+
+    expect(groups.map((group) => group.subjectId)).toEqual([
+      'art',
+      'programming',
+    ]);
+  });
+
+  it('orders subjects by name, not by whatever the catalog returned', () => {
+    const groups = groupTracksBySubject([
+      track('zebra', ['zoology']),
+      track('apple', ['agriculture']),
+    ]);
+
+    expect(groups.map((group) => group.displayName)).toEqual([
+      'Agriculture',
+      'Zoology',
+    ]);
+  });
+
+  // A course on computational biology belongs in both places, and picking one
+  // for the visitor would hide it from the other.
+  it('files a track that spans subjects under each of them', () => {
+    const groups = groupTracksBySubject([
+      track('compbio', ['programming', 'biology']),
+    ]);
+
+    expect(groups).toHaveLength(2);
+    for (const group of groups) {
+      expect(group.tracks.map((item) => item.id)).toEqual(['compbio']);
+    }
+  });
+
+  it('collects the focus names within a subject, without repeating them', () => {
+    const groups = groupTracksBySubject([
+      track('go', ['programming'], ['Foundations']),
+      track('rust', ['programming'], ['Foundations', 'Systems']),
+    ]);
+
+    expect(groups[0].focusNames).toEqual(['Foundations', 'Systems']);
+  });
+
+  it('returns nothing for an empty catalog', () => {
+    expect(groupTracksBySubject([])).toEqual([]);
   });
 });

@@ -43,7 +43,7 @@ interface ExerciseOutcome {
     CodeEditorComponent,
     EnrolmentGateComponent,
   ],
-  template: `<learning-layout
+  template: `<learning-layout [trackId]="trackId"
     ><ng-container *ngIf="vm$ | async as vm"
       ><a [routerLink]="['/module', trackId, moduleId]" class="back"
         >← Module</a
