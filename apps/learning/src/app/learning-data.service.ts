@@ -103,10 +103,35 @@ export interface Exercise {
   points: number;
   difficulty: string;
 }
+export interface AnswerableActivityDto {
+  type: 'quiz.mcq' | 'writing.response' | 'project.submission' | 'code.run';
+  id: string;
+  prompt: string;
+  lessonId?: string;
+  options?: { id: string; text: string }[];
+  maxWords?: number;
+}
+export interface AnswerResult {
+  attemptId: string;
+  graded: boolean;
+  score?: number;
+  maxScore?: number;
+  feedback: string;
+  criteria?: {
+    id: string;
+    description: string;
+    maxPoints: number;
+    points: number;
+    evidenceFound: boolean;
+    comment: string;
+  }[];
+}
 export interface LessonResponse {
   lesson: Lesson;
   content: string;
   exercises: Exercise[];
+  /** The work the course author set for this lesson. */
+  activities?: AnswerableActivityDto[];
 }
 
 export interface LessonProgress {
@@ -325,6 +350,34 @@ export class LearningDataService {
         completed,
         completedExerciseIds,
         points,
+      })
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 401)
+            return throwError(() => new NotSignedInError());
+          if (error.status === 409) {
+            const offeringId =
+              (error.error as { offeringId?: string })?.offeringId ?? '';
+            return throwError(() => new NotEnrolledError(offeringId));
+          }
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Answers an activity the course author wrote.
+   *
+   * Marking happens on the server. A 409 carries the offering to enrol in,
+   * exactly as submitting an exercise does.
+   */
+  answerActivity(
+    activityId: string,
+    submission: unknown
+  ): Observable<AnswerResult> {
+    return this.http
+      .post<AnswerResult>(`/api/learning/activities/${activityId}/answer`, {
+        submission,
       })
       .pipe(
         catchError((error: HttpErrorResponse) => {

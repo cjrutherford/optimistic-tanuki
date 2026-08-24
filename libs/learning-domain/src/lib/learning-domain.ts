@@ -234,32 +234,67 @@ export const ModuleMetadataSchema = z.object({
 });
 export type ModuleMetadata = z.infer<typeof ModuleMetadataSchema>;
 
-export const CodeRunActivitySchema = z.object({
-  type: z.literal('code.run'),
+export const RubricCriterionSchema = z.object({
+  id: z.string().min(1),
+  description: z.string().min(1),
+  maxPoints: z.number().nonnegative(),
+});
+export type RubricCriterion = z.infer<typeof RubricCriterionSchema>;
+
+export const RubricSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  criteria: z.array(RubricCriterionSchema).min(1),
+});
+export type Rubric = z.infer<typeof RubricSchema>;
+
+/**
+ * The lesson an activity belongs to.
+ *
+ * Optional, because the four ported tracks attach their work to an offering
+ * rather than to a lesson. An authored activity names its lesson so a reader
+ * meets the work where the material for it is.
+ */
+const activityBase = {
   id: z.string().min(1),
   prompt: z.string().min(1),
+  lessonId: z.string().min(1).optional(),
+};
+
+export const CodeRunActivitySchema = z.object({
+  ...activityBase,
+  type: z.literal('code.run'),
   starterCode: z.string(),
   expectedOutput: z.string().optional(),
 });
 export const QuizMcqActivitySchema = z.object({
+  ...activityBase,
   type: z.literal('quiz.mcq'),
-  id: z.string().min(1),
-  prompt: z.string().min(1),
   options: z
     .array(z.object({ id: z.string().min(1), text: z.string().min(1) }))
     .min(2),
   correctOptionIds: z.array(z.string().min(1)).min(1),
 });
 export const WritingResponseActivitySchema = z.object({
+  ...activityBase,
   type: z.literal('writing.response'),
-  id: z.string().min(1),
-  prompt: z.string().min(1),
   maxWords: z.number().int().positive().optional(),
+  /**
+   * What a good answer looks like, in the author's own words.
+   *
+   * Shown to the grader as a reference, never to the learner before they
+   * answer. It is guidance for marking, not the mark scheme itself.
+   */
+  sampleResponse: z.string().min(1).optional(),
+  /**
+   * How the answer is marked. Without one there is nothing to mark against,
+   * so an answer is recorded and left for a person.
+   */
+  rubric: RubricSchema.optional(),
 });
 export const ProjectSubmissionActivitySchema = z.object({
+  ...activityBase,
   type: z.literal('project.submission'),
-  id: z.string().min(1),
-  prompt: z.string().min(1),
   artifactTypes: z.array(z.string().min(1)).min(1),
 });
 
@@ -270,6 +305,10 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   ProjectSubmissionActivitySchema,
 ]);
 export type Activity = z.infer<typeof ActivitySchema>;
+export type QuizMcqActivity = z.infer<typeof QuizMcqActivitySchema>;
+export type WritingResponseActivity = z.infer<
+  typeof WritingResponseActivitySchema
+>;
 
 /** Workspace-owned exercise data, normalized from the former letsgo clients. */
 export const CodeExerciseSchema = z.object({
@@ -421,20 +460,6 @@ export const AttemptSchema = z.object({
 });
 export type Attempt = z.infer<typeof AttemptSchema>;
 
-export const RubricCriterionSchema = z.object({
-  id: z.string().min(1),
-  description: z.string().min(1),
-  maxPoints: z.number().nonnegative(),
-});
-export type RubricCriterion = z.infer<typeof RubricCriterionSchema>;
-
-export const RubricSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1),
-  criteria: z.array(RubricCriterionSchema).min(1),
-});
-export type Rubric = z.infer<typeof RubricSchema>;
-
 export const EvaluationSchema = z.object({
   id: z.string().min(1),
   attemptId: z.string().min(1),
@@ -525,6 +550,24 @@ export function isLessonNotFound(
     typeof value === 'object' &&
     value !== null &&
     (value as { code?: unknown }).code === LESSON_NOT_FOUND
+  );
+}
+
+/** An activity nobody offered, or that this reader cannot reach. */
+export const ACTIVITY_NOT_FOUND = 'ACTIVITY_NOT_FOUND';
+
+export interface ActivityNotFoundPayload {
+  code: typeof ACTIVITY_NOT_FOUND;
+  activityId: string;
+}
+
+export function isActivityNotFound(
+  value: unknown
+): value is ActivityNotFoundPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { code?: unknown }).code === ACTIVITY_NOT_FOUND
   );
 }
 

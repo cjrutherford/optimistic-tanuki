@@ -197,4 +197,180 @@ describe('ActivityEditorComponent', () => {
     expect(given[0].options).toHaveLength(2);
     expect(changes[0][0]).not.toBe(given[0]);
   });
+
+  /**
+   * A written answer is marked against the rubric its author wrote. Without
+   * one there is nothing to mark against, so the editor says so rather than
+   * letting a course silently never mark anything.
+   */
+  describe('marking a written answer', () => {
+    const written = (): EditableActivity => ({
+      type: 'writing.response',
+      id: 'w1',
+      prompt: 'What is the range?',
+    });
+
+    it('offers the author somewhere to say what a good answer looks like', async () => {
+      const { element } = await render([written()]);
+
+      expect(element.textContent).toContain('An answer you would accept');
+    });
+
+    // The reassurance is on the box itself, where an author will read it.
+    it('says the sample is not shown to the learner', async () => {
+      const { element } = await render([written()]);
+      const boxes = Array.from(element.querySelectorAll('textarea'));
+
+      expect(
+        boxes.some((box) =>
+          box.getAttribute('placeholder')?.includes('Not shown to the learner')
+        )
+      ).toBe(true);
+    });
+
+    it('keeps the sample answer', async () => {
+      const { element, changes } = await render([written()]);
+      const boxes = element.querySelectorAll('textarea');
+
+      (boxes[1] as HTMLTextAreaElement).value = 'High minus low.';
+      boxes[1].dispatchEvent(new Event('input'));
+
+      expect(changes[0][0].sampleResponse).toBe('High minus low.');
+    });
+
+    it('warns that nothing will be marked without criteria', async () => {
+      const { element } = await render([written()]);
+
+      expect(element.textContent).toContain('left for you to mark yourself');
+    });
+
+    it('adds a criterion', async () => {
+      const { button, changes } = await render([written()]);
+
+      button('Add criterion')?.click();
+
+      expect(changes[0][0].rubric?.criteria).toHaveLength(1);
+    });
+
+    it('records what earns the marks', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [{ id: 'c1', description: '', maxPoints: 1 }],
+      };
+      const { element, changes } = await render([activity]);
+      const input = element.querySelector(
+        'input[aria-label="Criterion 1"]'
+      ) as HTMLInputElement;
+
+      input.value = 'Explains the range.';
+      input.dispatchEvent(new Event('input'));
+
+      expect(changes[0][0].rubric?.criteria[0].description).toBe(
+        'Explains the range.'
+      );
+    });
+
+    it('records what a criterion is worth', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [{ id: 'c1', description: 'x', maxPoints: 1 }],
+      };
+      const { element, changes } = await render([activity]);
+      const input = element.querySelector(
+        'input[aria-label="Criterion 1 points"]'
+      ) as HTMLInputElement;
+
+      input.value = '3';
+      input.dispatchEvent(new Event('input'));
+
+      expect(changes[0][0].rubric?.criteria[0].maxPoints).toBe(3);
+    });
+
+    // Negative marks are not a thing, and a blank box should not become NaN.
+    it('refuses a nonsense mark', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [{ id: 'c1', description: 'x', maxPoints: 3 }],
+      };
+      const { element, changes } = await render([activity]);
+      const input = element.querySelector(
+        'input[aria-label="Criterion 1 points"]'
+      ) as HTMLInputElement;
+
+      input.value = '-4';
+      input.dispatchEvent(new Event('input'));
+
+      expect(changes[0][0].rubric?.criteria[0].maxPoints).toBe(0);
+    });
+
+    it('says what the answer will be marked out of', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [
+          { id: 'c1', description: 'Reads a row.', maxPoints: 3 },
+          { id: 'c2', description: 'Explains the range.', maxPoints: 2 },
+        ],
+      };
+      const { element } = await render([activity]);
+
+      expect(element.textContent).toContain(
+        'Marked out of 5 against 2 criteria'
+      );
+    });
+
+    it('says a criterion with no description is not finished', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [{ id: 'c1', description: '  ', maxPoints: 3 }],
+      };
+      const { element } = await render([activity]);
+
+      expect(element.textContent).toContain(
+        'needs to say what earns the marks'
+      );
+    });
+
+    it('removes a criterion', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [
+          { id: 'c1', description: 'a', maxPoints: 1 },
+          { id: 'c2', description: 'b', maxPoints: 1 },
+        ],
+      };
+      const { button, changes } = await render([activity]);
+
+      button('Remove criterion 1')?.click();
+
+      expect(changes[0][0].rubric?.criteria.map((c) => c.id)).toEqual(['c2']);
+    });
+
+    it('emits a fresh rubric rather than mutating the one it was given', async () => {
+      const activity = written();
+      activity.rubric = {
+        id: 'r1',
+        title: 't',
+        criteria: [{ id: 'c1', description: 'a', maxPoints: 1 }],
+      };
+      const given = [activity];
+      const { button, changes } = await render(given);
+
+      button('Add criterion')?.click();
+
+      expect(given[0].rubric?.criteria).toHaveLength(1);
+      expect(changes[0][0].rubric).not.toBe(given[0].rubric);
+    });
+  });
 });

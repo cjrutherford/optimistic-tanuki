@@ -7,3 +7,4 @@ export * from './lib/lesson-editor.component';
 export * from './lib/activity-editor.component';
 export * from './lib/lesson-completion.component';
 export * from './lib/lesson-prose.component';
+export * from './lib/activity-answer.component';

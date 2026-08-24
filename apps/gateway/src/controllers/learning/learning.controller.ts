@@ -358,6 +358,38 @@ export class LearningController {
     }
   }
 
+  /**
+   * Answers an activity an author wrote.
+   *
+   * The submission is whatever the activity takes: chosen option ids for a
+   * multiple choice, prose for a written answer. It is graded on the service
+   * side and never trusted on the way back.
+   */
+  @UseGuards(AuthGuard)
+  @Post('activities/:activityId/answer')
+  async answerActivity(
+    @Param('activityId') activityId: string,
+    @Body() body: { submission: unknown },
+    @Req() req: { user: { userId: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await this.asConflictWhenNotEnrolled(
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.AnswerActivity },
+          {
+            profileId,
+            userId: req.user.userId,
+            activityId,
+            submission: body?.submission,
+          }
+        )
+      )
+    );
+  }
+
   @UseGuards(AuthGuard)
   @Post('enrolments')
   async enrol(

@@ -163,6 +163,13 @@ services:
       DATABASE_NAME: ot_learning_service
       LEARNING_CONTENT_ROOT: /usr/src/app/assets/content
       LEARNING_RUNNER_URL: http://learning-runner:3025
+      # Marking written answers. Ollama lives on the tailscale host, which is
+      # reachable from the host but not from inside a compose network, so this
+      # goes out through the host gateway.
+      LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-granite4:tiny-h}
+    extra_hosts:
+      - 'shangrila:100.89.87.124'
     depends_on:
       db:
         condition: service_healthy

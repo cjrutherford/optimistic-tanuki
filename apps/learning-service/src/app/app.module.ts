@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GradingService } from './grading.service';
 import { TypeOrmLearningRepository } from './typeorm.repository';
 import { LEARNING_REPOSITORY } from './learning.repository';
 import { AttemptEntity } from '../entities/attempt.entity';
@@ -31,6 +32,7 @@ import loadDatabase from './loadDatabase';
   controllers: [AppController],
   providers: [
     AppService,
+    GradingService,
     TypeOrmLearningRepository,
     {
       provide: LEARNING_REPOSITORY,

@@ -97,6 +97,7 @@ import { LessonMarkdownService } from './lesson-markdown.service';
 
     <otlearn-activity-editor
       [activities]="activities()"
+      [lessons]="allLessons()"
       (activitiesChange)="activities.set($event)"
     ></otlearn-activity-editor>
     } @else {
@@ -212,6 +213,16 @@ export class CourseEditorComponent {
   readonly saving = signal(false);
   readonly message = signal('');
   readonly error = signal('');
+
+  /** Every lesson in the course, so activities can be attached to one. */
+  readonly allLessons = computed(() =>
+    this.modules().flatMap((module) =>
+      module.lessons.map((lesson) => ({
+        id: lesson.id,
+        title: lesson.title || 'Untitled lesson',
+      }))
+    )
+  );
 
   readonly currentLesson = computed(() => {
     const address = this.selected();

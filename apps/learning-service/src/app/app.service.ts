@@ -1,8 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import {
+  Activity,
+  ACTIVITY_NOT_FOUND,
+  ActivityNotFoundPayload,
   Attempt,
   CatalogViewer,
+  GradeOutcome,
+  gradeMultipleChoice,
   DraftOfferingInput,
   Enrolment,
   NOT_ENROLLED,
@@ -24,6 +29,7 @@ import {
   tutorialExercises,
   visibleTracks,
 } from '@optimistic-tanuki/learning-domain';
+import { GradingService } from './grading.service';
 import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
 import { join, normalize } from 'path';
@@ -39,7 +45,8 @@ import {
 export class AppService {
   constructor(
     @Inject(LEARNING_REPOSITORY)
-    private readonly repository: LearningRepository
+    private readonly repository: LearningRepository,
+    private readonly grading: GradingService
   ) {}
 
   async listPrograms(): Promise<ProgramTrack[]> {
@@ -96,6 +103,11 @@ export class AppService {
     return {
       lesson,
       content,
+      // The work this lesson's author set. Separate from the exercises above,
+      // which are code and belong to the ported tracks.
+      activities: offering.activities.filter(
+        (activity) => activity.lessonId === lesson.id
+      ),
       exercises: languageId
         ? tutorialExercises
             .filter(
@@ -517,6 +529,154 @@ export class AppService {
       awardedPoints: passed && !alreadyComplete ? exercise.points : 0,
       progress,
     };
+  }
+
+  /**
+   * Answers an activity an author wrote, and marks it.
+   *
+   * The exercise path above runs code in a sandbox. This is the other kind of
+   * work: a multiple choice, marked in process because the author already said
+   * what is correct, or a written answer marked against the author's rubric.
+   *
+   * Every answer is recorded whether or not it could be marked. A grader that
+   * is unreachable must not lose a learner's work, so the attempt is stored
+   * and left for a person.
+   */
+  async answerActivity(
+    profileId: string,
+    userId: string,
+    activityId: string,
+    submission: unknown
+  ) {
+    const tracks = await this.listPrograms();
+    const offering = tracks
+      .flatMap((track) => track.offerings)
+      .find((candidate) =>
+        candidate.activities.some((activity) => activity.id === activityId)
+      );
+    const activity = offering?.activities.find(
+      (candidate) => candidate.id === activityId
+    );
+    if (!offering || !activity) {
+      throw new RpcException({
+        code: ACTIVITY_NOT_FOUND,
+        activityId,
+      } satisfies ActivityNotFoundPayload);
+    }
+
+    // The same rule as submitting an exercise: taking a course is a decision,
+    // and work is only recorded against somebody who has made it.
+    const enrolment = await this.repository.getEnrolment(
+      profileId,
+      offering.id
+    );
+    if (!enrolment || enrolment.status !== 'active') {
+      throw new RpcException({
+        code: NOT_ENROLLED,
+        offeringId: offering.id,
+      } satisfies NotEnrolledPayload);
+    }
+
+    const outcome = await this.markAnswer(activity, submission);
+
+    const attempt = await this.submitAttempt({
+      userId,
+      offeringId: offering.id,
+      activityId,
+      activityType: activity.type,
+      submission,
+    });
+
+    let evaluation: Evaluation | undefined;
+    if (outcome) {
+      evaluation = await this.recordEvaluation({
+        attemptId: attempt.id,
+        mode: activity.type === 'quiz.mcq' ? 'sync' : 'async',
+        grader: activity.type === 'quiz.mcq' ? 'auto' : 'llm',
+        score: outcome.score,
+        maxScore: outcome.maxScore,
+        feedback: outcome.feedback,
+        ...(activity.type === 'writing.response' && activity.rubric
+          ? { rubric: activity.rubric }
+          : {}),
+        humanOverride: false,
+      });
+    }
+
+    const progress = activity.lessonId
+      ? await this.recordActivityProgress(
+          profileId,
+          userId,
+          activity.lessonId,
+          activityId,
+          outcome
+        )
+      : undefined;
+
+    return {
+      attemptId: attempt.id,
+      graded: Boolean(outcome),
+      score: outcome?.score,
+      maxScore: outcome?.maxScore,
+      feedback:
+        outcome?.feedback ??
+        'Your answer has been recorded. This one is marked by a person.',
+      criteria: outcome?.criteria,
+      evaluationId: evaluation?.id,
+      progress,
+    };
+  }
+
+  /** Marks an answer, or returns nothing when it cannot be marked. */
+  private async markAnswer(
+    activity: Activity,
+    submission: unknown
+  ): Promise<GradeOutcome | undefined> {
+    if (activity.type === 'quiz.mcq') {
+      const chosen = Array.isArray(submission)
+        ? (submission as string[])
+        : typeof submission === 'string'
+        ? [submission]
+        : [];
+      return gradeMultipleChoice(activity, chosen);
+    }
+    if (activity.type === 'writing.response') {
+      const text = typeof submission === 'string' ? submission.trim() : '';
+      if (!text) return undefined;
+      return await this.grading.gradeWriting(activity, text);
+    }
+    return undefined;
+  }
+
+  /**
+   * Folds a marked answer into the lesson's progress.
+   *
+   * An activity counts as done once it has been answered acceptably, and only
+   * awards its points the first time, exactly as an exercise does.
+   */
+  private async recordActivityProgress(
+    profileId: string,
+    userId: string,
+    lessonId: string,
+    activityId: string,
+    outcome: GradeOutcome | undefined
+  ): Promise<LessonProgress | undefined> {
+    if (!outcome) return undefined;
+    const passed = outcome.maxScore > 0 && outcome.score >= outcome.maxScore;
+    const previous = (await this.getProgress(profileId)).find(
+      (item) => item.lessonId === lessonId
+    );
+    const already =
+      previous?.completedExerciseIds.includes(activityId) ?? false;
+    return await this.saveProgress(profileId, userId, {
+      lessonId,
+      completed: previous?.completed ?? false,
+      completedExerciseIds: passed
+        ? [...new Set([...(previous?.completedExerciseIds ?? []), activityId])]
+        : previous?.completedExerciseIds ?? [],
+      points:
+        (previous?.points ?? 0) + (passed && !already ? outcome.score : 0),
+    });
   }
 
   async submitAttempt(input: CreateAttemptInput): Promise<Attempt> {

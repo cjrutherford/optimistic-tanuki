@@ -2,6 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { GradingService } from './grading.service';
+
+/**
+ * A grader that marks nothing. Marking is covered in learning-domain, where
+ * it is pure; nothing here should reach for a model.
+ */
+const gradingStub = () => ({ gradeWriting: jest.fn(async () => undefined) });
 import { LearningRepository, LEARNING_REPOSITORY } from './learning.repository';
 import {
   Attempt,
@@ -178,6 +185,8 @@ describe('AppController', () => {
       controllers: [AppController],
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         InMemoryLearningRepository,
         {
           provide: LEARNING_REPOSITORY,

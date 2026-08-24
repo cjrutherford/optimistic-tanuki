@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { AppService } from './app.service';
+import { GradingService } from './grading.service';
+
+/**
+ * A grader that marks nothing. Marking is covered in learning-domain, where
+ * it is pure; nothing here should reach for a model.
+ */
+const gradingStub = () => ({ gradeWriting: jest.fn(async () => undefined) });
 import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
 import { Test } from '@nestjs/testing';
 import {
@@ -13,6 +20,7 @@ import {
   ProgramTrack,
   sampleProgramTracks,
   tutorialExercises,
+  ACTIVITY_NOT_FOUND,
   LESSON_NOT_FOUND,
   NOT_ENROLLED,
   tutorialProgramTracks,
@@ -188,6 +196,8 @@ describe('AppService', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         InMemoryLearningRepository,
         {
           provide: LEARNING_REPOSITORY,
@@ -508,6 +518,8 @@ describe('AppService.getLesson content resolution', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         {
           provide: LEARNING_REPOSITORY,
           useValue: {
@@ -667,6 +679,8 @@ describe('AppService.getDashboard with a course that has no language', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         {
           provide: LEARNING_REPOSITORY,
           useValue: {
@@ -744,6 +758,8 @@ describe('AppService authored content', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         {
           provide: LEARNING_REPOSITORY,
           useValue: {
@@ -999,6 +1015,8 @@ describe('AppService.listMyOfferings', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         {
           provide: LEARNING_REPOSITORY,
           useValue: {
@@ -1077,6 +1095,8 @@ describe('AppService.listMyOfferings', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        { provide: GradingService, useValue: gradingStub() },
         {
           provide: LEARNING_REPOSITORY,
           useValue: {
@@ -1100,5 +1120,242 @@ describe('AppService.listMyOfferings', () => {
     );
 
     expect((await service.listMyOfferings('author'))[0].lessonCount).toBe(1);
+  });
+});
+
+/**
+ * Answering an activity an author wrote. Marking itself is pure and covered in
+ * learning-domain; what matters here is that nothing is recorded for somebody
+ * who has not enrolled, and that an answer is never lost when marking fails.
+ */
+describe('AppService.answerActivity', () => {
+  const rubric = {
+    id: 'r1',
+    title: 'Reading a tide table',
+    criteria: [
+      { id: 'range', description: 'Explains the range.', maxPoints: 2 },
+    ],
+  };
+
+  function course(activities: unknown[]) {
+    return {
+      id: 'art-1',
+      displayName: 'Reading Tide Tables',
+      subjectIds: ['seamanship'],
+      focuses: [{ id: 'f', displayName: 'F', subjectIds: ['seamanship'] }],
+      offerings: [
+        {
+          id: 'art-1',
+          type: 'course',
+          displayName: 'Reading Tide Tables',
+          subjectId: 'seamanship',
+          level: 100,
+          credits: 1,
+          outcomeTags: ['x'],
+          status: 'published',
+          modules: [
+            {
+              id: 'm',
+              title: 'm',
+              lessons: [
+                {
+                  id: 'l1',
+                  title: 'l',
+                  slug: 'l',
+                  content: [{ format: 'markdown', body: 'words' }],
+                },
+              ],
+            },
+          ],
+          activities,
+        },
+      ],
+      requirements: {
+        id: 'r',
+        operator: 'AND',
+        children: [{ kind: 'offering', offeringId: 'art-1' }],
+      },
+    } as unknown as ProgramTrack;
+  }
+
+  const mcq = {
+    type: 'quiz.mcq',
+    id: 'q1',
+    prompt: 'Which is cool?',
+    lessonId: 'l1',
+    options: [
+      { id: 'o1', text: 'Ultramarine' },
+      { id: 'o2', text: 'Cadmium red' },
+    ],
+    correctOptionIds: ['o1'],
+  };
+
+  const written = {
+    type: 'writing.response',
+    id: 'w1',
+    prompt: 'What is the range?',
+    lessonId: 'l1',
+    rubric,
+  };
+
+  async function build(
+    activities: unknown[],
+    options: { enrolled?: boolean; grade?: unknown } = {}
+  ) {
+    const saved: unknown[] = [];
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: GradingService,
+          useValue: {
+            gradeWriting: jest.fn(async () => options.grade),
+          },
+        },
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => [course(activities)],
+            getEnrolment: () =>
+              options.enrolled === false
+                ? undefined
+                : {
+                    id: 'e1',
+                    profileId: 'p1',
+                    offeringId: 'art-1',
+                    status: 'active' as const,
+                    enrolledAt: '2026-01-01T00:00:00.000Z',
+                  },
+            getProgress: () => [],
+            createAttempt: (attempt: unknown) => attempt,
+            getAttempt: () => undefined,
+            saveAttempt: (attempt: unknown) => attempt,
+            recordEvaluation: (evaluation: unknown) => {
+              saved.push(evaluation);
+              return evaluation;
+            },
+            saveProgress: (
+              _p: string,
+              _u: string,
+              _e: string,
+              progress: unknown
+            ) => progress,
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+    return { service: moduleRef.get(AppService), evaluations: saved };
+  }
+
+  it('marks a multiple choice without asking any model', async () => {
+    const { service } = await build([mcq]);
+
+    const result = await service.answerActivity('p1', 'u1', 'q1', ['o1']);
+
+    expect(result).toMatchObject({ graded: true, score: 1, maxScore: 1 });
+  });
+
+  it('marks a wrong choice as wrong', async () => {
+    const { service } = await build([mcq]);
+
+    expect((await service.answerActivity('p1', 'u1', 'q1', ['o2'])).score).toBe(
+      0
+    );
+  });
+
+  it('records who graded it and how', async () => {
+    const { service, evaluations } = await build([mcq]);
+
+    await service.answerActivity('p1', 'u1', 'q1', ['o1']);
+
+    expect(evaluations[0]).toMatchObject({ grader: 'auto', mode: 'sync' });
+  });
+
+  it('marks a written answer against the author rubric', async () => {
+    const { service, evaluations } = await build([written], {
+      grade: { score: 2, maxScore: 2, feedback: 'Good.', criteria: [] },
+    });
+
+    const result = await service.answerActivity('p1', 'u1', 'w1', 'The range.');
+
+    expect(result).toMatchObject({ graded: true, score: 2 });
+    expect(evaluations[0]).toMatchObject({ grader: 'llm', mode: 'async' });
+  });
+
+  it('keeps the rubric with the evaluation, so a mark can be read back', async () => {
+    const { service, evaluations } = await build([written], {
+      grade: { score: 2, maxScore: 2, feedback: 'Good.', criteria: [] },
+    });
+
+    await service.answerActivity('p1', 'u1', 'w1', 'The range.');
+
+    expect(evaluations[0]).toMatchObject({ rubric });
+  });
+
+  // A grader that is unreachable must not lose a learner's work.
+  it('records an answer it could not mark, rather than failing', async () => {
+    const { service, evaluations } = await build([written], {
+      grade: undefined,
+    });
+
+    const result = await service.answerActivity('p1', 'u1', 'w1', 'Something.');
+
+    expect(result.graded).toBe(false);
+    expect(result.attemptId).toBeTruthy();
+    expect(result.feedback).toContain('marked by a person');
+    expect(evaluations).toHaveLength(0);
+  });
+
+  it('leaves an answer with no rubric for a person', async () => {
+    const { service } = await build([{ ...written, rubric: undefined }]);
+
+    expect((await service.answerActivity('p1', 'u1', 'w1', 'Hi')).graded).toBe(
+      false
+    );
+  });
+
+  // The same rule as submitting an exercise.
+  it('refuses somebody who has not enrolled', async () => {
+    const { service } = await build([mcq], { enrolled: false });
+
+    await expect(
+      service.answerActivity('p1', 'u1', 'q1', ['o1'])
+    ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
+  });
+
+  it('refuses an activity nobody offered', async () => {
+    const { service } = await build([mcq]);
+
+    await expect(
+      service.answerActivity('p1', 'u1', 'made-up', ['o1'])
+    ).rejects.toMatchObject({ error: { code: ACTIVITY_NOT_FOUND } });
+  });
+
+  it('counts a fully correct answer towards the lesson', async () => {
+    const { service } = await build([mcq]);
+
+    const result = await service.answerActivity('p1', 'u1', 'q1', ['o1']);
+
+    expect(result.progress).toMatchObject({
+      lessonId: 'l1',
+      completedExerciseIds: ['q1'],
+    });
+  });
+
+  it('does not count a wrong answer towards the lesson', async () => {
+    const { service } = await build([mcq]);
+
+    const result = await service.answerActivity('p1', 'u1', 'q1', ['o2']);
+
+    expect(result.progress).toMatchObject({ completedExerciseIds: [] });
+  });
+
+  it('records an activity that belongs to no lesson without progress', async () => {
+    const { service } = await build([{ ...mcq, lessonId: undefined }]);
+
+    const result = await service.answerActivity('p1', 'u1', 'q1', ['o1']);
+
+    expect(result.graded).toBe(true);
+    expect(result.progress).toBeUndefined();
   });
 });

@@ -5,6 +5,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import {
+  ActivityAnswerComponent,
+  AnswerMark,
   EnrolmentGateComponent,
   LessonCompletionComponent,
   LessonProseComponent,
@@ -49,6 +51,7 @@ interface ExerciseOutcome {
     EnrolmentGateComponent,
     LessonCompletionComponent,
     LessonProseComponent,
+    ActivityAnswerComponent,
   ],
   template: `<learning-layout [trackId]="trackId"
     ><ng-container *ngIf="vm$ | async as vm"
@@ -62,6 +65,25 @@ interface ExerciseOutcome {
       <div class="lesson-grid">
         <div class="reading">
           <otlearn-lesson-prose [html]="vm.content"></otlearn-lesson-prose>
+          <!--
+            The work this lesson's author set. Authored activities were
+            storable and editable long before anything rendered them, so a
+            quiz somebody wrote was never put in front of a reader.
+          -->
+          @if (vm.lesson.activities?.length) {
+          <section class="activities" aria-label="Work set for this lesson">
+            <h2>Work</h2>
+            @for (activity of vm.lesson.activities ?? []; track activity.id) {
+            <otlearn-activity-answer
+              [activity]="activity"
+              [mark]="marks[activity.id] ?? null"
+              [busy]="answering === activity.id"
+              [error]="answerErrors[activity.id] ?? ''"
+              (answer)="answerActivity(activity.id, $event)"
+            ></otlearn-activity-answer>
+            }
+          </section>
+          }
           <!--
             The only way to make progress in a course with no code in it, which
             is most subjects. Progress used to be recorded solely as a side
@@ -244,6 +266,15 @@ interface ExerciseOutcome {
       */
       otlearn-lesson-prose {
         min-width: 0;
+      }
+      .activities {
+        display: grid;
+        gap: 1rem;
+        margin-top: 2.5rem;
+      }
+      .activities h2 {
+        margin: 0;
+        font-size: 1rem;
       }
       aside {
         padding: 1.1rem;
@@ -472,6 +503,42 @@ export class LessonComponent {
 
   protected marking = false;
   protected markError = '';
+
+  /** Marks already returned, per activity. */
+  protected marks: Record<string, AnswerMark> = {};
+  protected answering = '';
+  protected answerErrors: Record<string, string> = {};
+
+  /**
+   * Answers an activity the author set and shows what it was marked.
+   *
+   * The mark is whatever the server returned. Nothing is decided here: a
+   * client that graded its own answers would be a client that could award
+   * itself anything.
+   */
+  protected answerActivity(activityId: string, submission: unknown): void {
+    this.answering = activityId;
+    this.answerErrors = { ...this.answerErrors, [activityId]: '' };
+    this.data.answerActivity(activityId, submission).subscribe({
+      next: (result) => {
+        this.answering = '';
+        this.marks = { ...this.marks, [activityId]: result };
+        this.progressReload$.next();
+      },
+      error: (failure: unknown) => {
+        this.answering = '';
+        this.answerErrors = {
+          ...this.answerErrors,
+          [activityId]:
+            failure instanceof NotSignedInError
+              ? 'Sign in to answer.'
+              : failure instanceof NotEnrolledError
+              ? 'Enrol in this course to answer.'
+              : 'Could not send that just now.',
+        };
+      },
+    });
+  }
 
   /**
    * Records, or un-records, that this lesson has been read.

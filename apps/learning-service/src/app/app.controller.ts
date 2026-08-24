@@ -146,6 +146,24 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: LearningCommands.AnswerActivity })
+  answerActivity(
+    @Payload()
+    body: {
+      profileId: string;
+      userId: string;
+      activityId: string;
+      submission: unknown;
+    }
+  ) {
+    return this.appService.answerActivity(
+      body.profileId,
+      body.userId,
+      body.activityId,
+      body.submission
+    );
+  }
+
   @MessagePattern({ cmd: LearningCommands.Enrol })
   enrol(@Payload() body: { profileId: string; offeringId: string }) {
     return this.appService.enrol(body.profileId, body.offeringId);

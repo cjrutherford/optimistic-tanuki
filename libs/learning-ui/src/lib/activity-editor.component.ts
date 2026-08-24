@@ -6,15 +6,27 @@ export type ActivityKind =
   | 'project.submission'
   | 'code.run';
 
+export interface RubricCriterionDraft {
+  id: string;
+  description: string;
+  maxPoints: number;
+}
+
 export interface EditableActivity {
   type: ActivityKind;
   id: string;
   prompt: string;
+  /** The lesson this work belongs to, so a reader meets it in context. */
+  lessonId?: string;
   /** quiz.mcq only. */
   options?: { id: string; text: string }[];
   correctOptionIds?: string[];
   /** writing.response only. */
   maxWords?: number;
+  /** An answer the author would accept, shown to the marker and never to the learner. */
+  sampleResponse?: string;
+  /** How a written answer is marked. Without one it waits for a person. */
+  rubric?: { id: string; title: string; criteria: RubricCriterionDraft[] };
   /** project.submission only. */
   artifactTypes?: string[];
   /** code.run only. */
@@ -80,7 +92,31 @@ const KIND_LABELS: Record<ActivityKind, string> = {
           ></textarea>
         </label>
 
-        @if (activity.type === 'quiz.mcq') {
+        @if (lessons().length) {
+        <label>
+          <span>Shown with</span>
+          <select
+            [value]="activity.lessonId ?? ''"
+            [attr.aria-label]="'Lesson for ' + label(activity.type)"
+            (change)="setLesson(index, $event)"
+          >
+            <option value="">Nowhere in particular</option>
+            @for (lesson of lessons(); track lesson.id) {
+            <option
+              [value]="lesson.id"
+              [selected]="activity.lessonId === lesson.id"
+            >
+              {{ lesson.title }}
+            </option>
+            }
+          </select>
+        </label>
+        @if (!activity.lessonId) {
+        <p class="hint">
+          Work that belongs to no lesson is stored but never put in front of a
+          reader.
+        </p>
+        } } @if (activity.type === 'quiz.mcq') {
         <div class="options">
           <span class="legend">Options, with the correct ones ticked</span>
           @for (option of activity.options ?? []; track $index; let optionIndex
@@ -112,6 +148,54 @@ const KIND_LABELS: Record<ActivityKind, string> = {
           @if (quizWarning(activity)) {
           <p class="warning" role="status">{{ quizWarning(activity) }}</p>
           }
+        </div>
+        } @if (activity.type === 'writing.response') {
+        <label>
+          <span>An answer you would accept</span>
+          <textarea
+            rows="3"
+            placeholder="Not shown to the learner. The marker sees it as a reference."
+            [value]="activity.sampleResponse ?? ''"
+            (input)="setSampleResponse(index, $event)"
+          ></textarea>
+        </label>
+        <div class="rubric">
+          <span class="legend">How it is marked</span>
+          @for (criterion of activity.rubric?.criteria ?? []; track $index; let
+          criterionIndex = $index) {
+          <div class="criterion">
+            <input
+              type="text"
+              [value]="criterion.description"
+              [attr.aria-label]="'Criterion ' + (criterionIndex + 1)"
+              placeholder="What earns the marks"
+              (input)="setCriterion(index, criterionIndex, $event)"
+            />
+            <input
+              type="number"
+              min="0"
+              [value]="criterion.maxPoints"
+              [attr.aria-label]="
+                'Criterion ' + (criterionIndex + 1) + ' points'
+              "
+              (input)="setCriterionPoints(index, criterionIndex, $event)"
+            />
+            <button
+              type="button"
+              class="remove"
+              [attr.aria-label]="'Remove criterion ' + (criterionIndex + 1)"
+              (click)="removeCriterion(index, criterionIndex)"
+            >
+              ×
+            </button>
+          </div>
+          }
+          <button type="button" (click)="addCriterion(index)">
+            Add criterion
+          </button>
+          <p class="hint">
+            {{ rubricHint(activity) }}
+          </p>
         </div>
         } @if (activity.type === 'project.submission') {
         <label>
@@ -207,6 +291,14 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         letter-spacing: 0.06em;
         text-transform: uppercase;
       }
+      select {
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--lx-border-soft, currentColor);
+        border-radius: 2px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+      }
       input[type='text'],
       textarea {
         width: 100%;
@@ -231,6 +323,31 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         align-items: center;
         width: 100%;
       }
+      .rubric {
+        display: grid;
+        gap: 0.4rem;
+        justify-items: start;
+      }
+      .criterion {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        width: 100%;
+      }
+      .criterion input[type='number'] {
+        width: 5rem;
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--lx-border-soft, currentColor);
+        border-radius: 2px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+      }
+      .hint {
+        margin: 0;
+        color: var(--lx-text-muted, currentColor);
+        font-size: 0.8rem;
+      }
       .warning {
         margin: 0;
         color: var(--lx-warn, currentColor);
@@ -241,6 +358,8 @@ const KIND_LABELS: Record<ActivityKind, string> = {
 })
 export class ActivityEditorComponent {
   readonly activities = input<EditableActivity[]>([]);
+  /** The lessons this work can be attached to. */
+  readonly lessons = input<{ id: string; title: string }[]>([]);
   readonly activitiesChange = output<EditableActivity[]>();
 
   protected readonly kinds: ActivityKind[] = [
@@ -350,6 +469,108 @@ export class ActivityEditorComponent {
     this.activitiesChange.emit(next);
   }
 
+  /**
+   * What marking this answer will do, said plainly.
+   *
+   * Without a rubric there is nothing to mark against, and a course that
+   * silently never marks anything is worse than one that says so.
+   */
+  protected rubricHint(activity: EditableActivity): string {
+    const criteria = activity.rubric?.criteria ?? [];
+    if (!criteria.length) {
+      return 'With no criteria, an answer is recorded and left for you to mark yourself.';
+    }
+    if (criteria.some((criterion) => !criterion.description.trim())) {
+      return 'Every criterion needs to say what earns the marks.';
+    }
+    const total = criteria.reduce(
+      (sum, criterion) => sum + (criterion.maxPoints || 0),
+      0
+    );
+    return `Marked out of ${total} against ${criteria.length} ${
+      criteria.length === 1 ? 'criterion' : 'criteria'
+    }.`;
+  }
+
+  protected setLesson(index: number, event: Event): void {
+    const next = this.copy();
+    const chosen = (event.target as HTMLSelectElement).value;
+    next[index].lessonId = chosen || undefined;
+    this.activitiesChange.emit(next);
+  }
+
+  protected setSampleResponse(index: number, event: Event): void {
+    const next = this.copy();
+    next[index].sampleResponse = this.value(event);
+    this.activitiesChange.emit(next);
+  }
+
+  private ensureRubric(activity: EditableActivity) {
+    activity.rubric = activity.rubric ?? {
+      id: `rubric-${Math.random().toString(36).slice(2, 10)}`,
+      title: 'How this is marked',
+      criteria: [],
+    };
+    return activity.rubric;
+  }
+
+  protected addCriterion(index: number): void {
+    const next = this.copy();
+    const rubric = this.ensureRubric(next[index]);
+    rubric.criteria = [
+      ...rubric.criteria,
+      {
+        id: `criterion-${Math.random().toString(36).slice(2, 10)}`,
+        description: '',
+        maxPoints: 1,
+      },
+    ];
+    this.activitiesChange.emit(next);
+  }
+
+  protected removeCriterion(index: number, criterionIndex: number): void {
+    const next = this.copy();
+    const rubric = this.ensureRubric(next[index]);
+    rubric.criteria = rubric.criteria.filter(
+      (_criterion, position) => position !== criterionIndex
+    );
+    this.activitiesChange.emit(next);
+  }
+
+  protected setCriterion(
+    index: number,
+    criterionIndex: number,
+    event: Event
+  ): void {
+    const next = this.copy();
+    const rubric = this.ensureRubric(next[index]);
+    rubric.criteria = rubric.criteria.map((criterion, position) =>
+      position === criterionIndex
+        ? { ...criterion, description: this.value(event) }
+        : criterion
+    );
+    this.activitiesChange.emit(next);
+  }
+
+  protected setCriterionPoints(
+    index: number,
+    criterionIndex: number,
+    event: Event
+  ): void {
+    const parsed = Number.parseInt(this.value(event), 10);
+    const next = this.copy();
+    const rubric = this.ensureRubric(next[index]);
+    rubric.criteria = rubric.criteria.map((criterion, position) =>
+      position === criterionIndex
+        ? {
+            ...criterion,
+            maxPoints: Number.isFinite(parsed) && parsed >= 0 ? parsed : 0,
+          }
+        : criterion
+    );
+    this.activitiesChange.emit(next);
+  }
+
   protected setArtifactTypes(index: number, event: Event): void {
     const next = this.copy();
     next[index].artifactTypes = this.value(event)
@@ -374,6 +595,14 @@ export class ActivityEditorComponent {
         : undefined,
       artifactTypes: activity.artifactTypes
         ? [...activity.artifactTypes]
+        : undefined,
+      rubric: activity.rubric
+        ? {
+            ...activity.rubric,
+            criteria: activity.rubric.criteria.map((criterion) => ({
+              ...criterion,
+            })),
+          }
         : undefined,
     }));
   }

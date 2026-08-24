@@ -36,6 +36,9 @@ services:
       dockerfile: ./apps/learning-service/Dockerfile
     environment:
       - LEARNING_CONTENT_ROOT=/usr/src/app/assets/content
+      # Marking written answers against an author's rubric.
+      - LEARNING_OLLAMA_URL=${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-granite4:tiny-h}
       - LEARNING_RUNNER_URL=http://learning-runner:3025
 
   authentication:
