@@ -444,12 +444,16 @@ describe('LessonComponent marking a lesson read', () => {
       true
     );
 
-    expect(markLesson).toHaveBeenCalledWith('b-01', true, [], 0);
+    expect(markLesson).toHaveBeenCalledWith('b-01', true);
   });
 
-  // This is a whole-row write, so dropping what was already solved would
-  // quietly undo work the learner has done.
-  it('carries through exercises already solved and points already earned', async () => {
+  /**
+   * A learner says they read it. They do not get to say what that was worth.
+   * Points and solved exercises used to be sent from here and written
+   * verbatim, so anyone could award themselves any score by editing one
+   * request; the server carries forward what it recorded instead.
+   */
+  it('sends no score, whatever the page happens to be holding', async () => {
     const markLesson = jest.fn(() => of({} as LessonProgress));
     const { fixture } = setup({ markLesson });
 
@@ -466,7 +470,7 @@ describe('LessonComponent marking a lesson read', () => {
       true
     );
 
-    expect(markLesson).toHaveBeenCalledWith('b-01', true, ['ex-1'], 10);
+    expect(markLesson).toHaveBeenCalledWith('b-01', true);
   });
 
   it('lets a learner take it back', async () => {
@@ -478,7 +482,7 @@ describe('LessonComponent marking a lesson read', () => {
       false
     );
 
-    expect(markLesson).toHaveBeenCalledWith('b-01', false, [], 0);
+    expect(markLesson).toHaveBeenCalledWith('b-01', false);
   });
 
   it('asks an anonymous visitor to sign in', async () => {

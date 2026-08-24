@@ -108,14 +108,15 @@ export class AppController {
     body: {
       profileId: string;
       userId: string;
-      progress: Omit<LessonProgress, 'updatedAt'>;
+      lessonId: string;
+      completed: boolean;
     }
   ) {
-    return this.appService.saveProgress(
-      body.profileId,
-      body.userId,
-      body.progress
-    );
+    // No points and no exercise ids: a learner says only that they read it.
+    return this.appService.saveProgress(body.profileId, body.userId, {
+      lessonId: body.lessonId,
+      completed: body.completed,
+    });
   }
 
   @MessagePattern({ cmd: LearningCommands.RunCode })

@@ -85,8 +85,6 @@ describe('LearningController', () => {
   describe('guards', () => {
     it('runs AuthGuard on every route that mutates or executes', () => {
       for (const handler of [
-        LearningController.prototype.submitAttempt,
-        LearningController.prototype.recordEvaluation,
         LearningController.prototype.runCode,
         LearningController.prototype.submitExercise,
         LearningController.prototype.saveMyProgress,
@@ -121,8 +119,6 @@ describe('LearningController', () => {
 
     it('does not mark the mutating or executing routes as @Public', () => {
       for (const handler of [
-        LearningController.prototype.submitAttempt,
-        LearningController.prototype.recordEvaluation,
         LearningController.prototype.runCode,
         LearningController.prototype.submitExercise,
         LearningController.prototype.saveMyProgress,
@@ -179,57 +175,6 @@ describe('LearningController', () => {
           guards: expect.arrayContaining([AuthGuard]),
         });
       }
-    });
-  });
-
-  describe('attempts', () => {
-    it('takes the acting user from the token and ignores a userId in the body', async () => {
-      client.send.mockReturnValue(of({ id: 'attempt-1' }));
-
-      await controller.submitAttempt(
-        {
-          userId: 'attacker-supplied-id',
-          offeringId: 'go-foundations',
-          activityId: 'go-b-01',
-          activityType: 'exercise',
-          submission: { code: 'package main' },
-        },
-        { user: { userId: 'user-1' } }
-      );
-
-      expect(client.send).toHaveBeenCalledWith(
-        { cmd: LearningCommands.SubmitAttempt },
-        expect.objectContaining({ userId: 'user-1' })
-      );
-      const [, payload] = client.send.mock.calls[0] as [
-        unknown,
-        { userId: string }
-      ];
-      expect(payload.userId).toBe('user-1');
-      expect(payload.userId).not.toBe('attacker-supplied-id');
-    });
-  });
-
-  describe('evaluations', () => {
-    it('forwards the acting user as the grader identity', async () => {
-      client.send.mockReturnValue(of({ id: 'eval-1' }));
-
-      await controller.recordEvaluation(
-        {
-          attemptId: 'attempt-1',
-          mode: 'auto',
-          grader: 'runner',
-          score: 8,
-          maxScore: 10,
-          feedback: 'Looks right',
-        },
-        { user: { userId: 'grader-1' } }
-      );
-
-      expect(client.send).toHaveBeenCalledWith(
-        { cmd: LearningCommands.RecordEvaluation },
-        expect.objectContaining({ recordedByUserId: 'grader-1' })
-      );
     });
   });
 
@@ -774,5 +719,140 @@ describe('LearningController wiring', () => {
     expect(moduleRef.get(LearningController)).toBeInstanceOf(
       LearningController
     );
+  });
+
+  /**
+   * The three ways a learner could once write their own transcript.
+   */
+  describe('LearningController cannot be gamed', () => {
+    let client: jest.Mocked<ClientProxy>;
+    let profileClient: jest.Mocked<ClientProxy>;
+    let profiles: jest.Mocked<LearningProfileResolver>;
+    let offeringAuthorization: jest.Mocked<OfferingAuthorizationService>;
+    let controller: LearningController;
+
+    beforeEach(() => {
+      client = {
+        send: jest.fn().mockReturnValue(of({})),
+        connect: jest.fn().mockResolvedValue(undefined),
+      } as unknown as jest.Mocked<ClientProxy>;
+      profileClient = {
+        send: jest.fn().mockReturnValue(of(null)),
+        connect: jest.fn().mockResolvedValue(undefined),
+      } as unknown as jest.Mocked<ClientProxy>;
+      profiles = {
+        resolveProfileId: jest.fn().mockResolvedValue('profile-1'),
+      } as unknown as jest.Mocked<LearningProfileResolver>;
+      offeringAuthorization = {
+        authorize: jest.fn().mockResolvedValue(true),
+        seesEveryDraft: jest.fn().mockResolvedValue(false),
+      } as unknown as jest.Mocked<OfferingAuthorizationService>;
+      controller = new LearningController(
+        client,
+        profileClient,
+        profiles,
+        offeringAuthorization
+      );
+    });
+
+    /**
+     * These two routes took a score from the caller and stored it. Nothing in
+     * any client used them, and while they existed the evidence checking in the
+     * grader was decoration: you could skip it by not asking to be graded.
+     */
+    it('has no route for writing your own attempt or your own mark', () => {
+      const handlers = Object.getOwnPropertyNames(
+        LearningController.prototype
+      ) as (keyof LearningController)[];
+
+      expect(handlers).not.toContain('submitAttempt');
+      expect(handlers).not.toContain('recordEvaluation');
+    });
+
+    describe('recording that a lesson was read', () => {
+      const req = { user: { userId: 'user-1' } };
+
+      it('takes the lesson and whether it was read, and nothing else', async () => {
+        await controller.saveMyProgress(req, {
+          lessonId: 'l1',
+          completed: true,
+        });
+
+        expect(client.send).toHaveBeenCalledWith(
+          { cmd: LearningCommands.SaveLessonProgress },
+          {
+            userId: 'user-1',
+            profileId: 'profile-1',
+            lessonId: 'l1',
+            completed: true,
+          }
+        );
+      });
+
+      // The whole point. A score in the body used to be written verbatim.
+      it('refuses to carry points or solved exercises from the caller', async () => {
+        await controller.saveMyProgress(req, {
+          lessonId: 'l1',
+          completed: true,
+          points: 999999,
+          completedExerciseIds: ['never-attempted'],
+        } as never);
+
+        const [, payload] = client.send.mock.calls[0];
+        expect(payload).not.toHaveProperty('points');
+        expect(payload).not.toHaveProperty('completedExerciseIds');
+      });
+
+      it('needs a lesson to record anything against', async () => {
+        await expect(
+          controller.saveMyProgress(req, { completed: true })
+        ).rejects.toThrow(/lessonId/);
+        expect(client.send).not.toHaveBeenCalled();
+      });
+    });
+
+    /**
+     * Publishing is authorized separately from editing so that a co-editor
+     * cannot ship a course. Forwarding the request body wholesale handed them
+     * a way around that check.
+     */
+    describe('editing a course', () => {
+      const req = { user: { userId: 'user-1', profileId: 'token-profile' } };
+
+      it('does not let a status ride along with an edit', async () => {
+        await controller.updateOffering(
+          'o-1',
+          { displayName: 'Still mine', status: 'published' } as never,
+          req
+        );
+
+        const [, payload] = client.send.mock.calls[0] as [
+          unknown,
+          { patch: Record<string, unknown> }
+        ];
+        expect(payload.patch).not.toHaveProperty('status');
+        expect(payload.patch).toEqual({ displayName: 'Still mine' });
+      });
+
+      it('still forwards the fields an editor may change', async () => {
+        const modules = [{ id: 'm', title: 'M', lessons: [] }];
+
+        await controller.updateOffering('o-1', { modules }, req);
+
+        const [, payload] = client.send.mock.calls[0] as [
+          unknown,
+          { patch: Record<string, unknown> }
+        ];
+        expect(payload.patch).toEqual({ modules });
+      });
+
+      it('checks the publish authorization on the route that does publish', async () => {
+        offeringAuthorization.authorize.mockResolvedValue(false);
+
+        await expect(
+          controller.setOfferingStatus('o-1', { status: 'published' }, req)
+        ).rejects.toThrow(/may publish/);
+      });
+    });
   });
 });

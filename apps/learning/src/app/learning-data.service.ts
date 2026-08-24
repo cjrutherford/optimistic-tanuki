@@ -80,6 +80,8 @@ export interface OfferingDetail {
   prerequisites: { offeringId: string; displayName: string }[];
   author: { profileId: string; displayName: string } | null;
   isEnrolled: boolean;
+  /** Whether this viewer may publish it. Only the owner may. */
+  isOwner?: boolean;
 }
 
 export interface DashboardEntry {
@@ -338,18 +340,13 @@ export class LearningDataService {
    * The server refuses this without an enrolment, the same as submitting an
    * exercise, so a 409 carries the offering to enrol in.
    */
-  markLesson(
-    lessonId: string,
-    completed: boolean,
-    completedExerciseIds: string[],
-    points: number
-  ): Observable<LessonProgress> {
+  markLesson(lessonId: string, completed: boolean): Observable<LessonProgress> {
+    // Only these two facts. What the lesson is worth is the server's to
+    // decide, from work it watched happen.
     return this.http
       .put<LessonProgress>('/api/learning/me/progress', {
         lessonId,
         completed,
-        completedExerciseIds,
-        points,
       })
       .pipe(
         catchError((error: HttpErrorResponse) => {

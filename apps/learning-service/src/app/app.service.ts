@@ -365,10 +365,23 @@ export class AppService {
     });
   }
 
+  /**
+   * Records progress on a lesson.
+   *
+   * `earned` is what the server watched the learner do, and only the two
+   * callers that grade work supply it: submitting an exercise and answering
+   * an activity. A learner marking a lesson read supplies nothing, and the
+   * points and solved exercises already on the record are carried forward
+   * untouched.
+   *
+   * This used to take the whole record from the caller and write it verbatim,
+   * so anyone could send themselves any score.
+   */
   async saveProgress(
     profileId: string,
     userId: string,
-    progress: Omit<LessonProgress, 'updatedAt'>
+    progress: { lessonId: string; completed: boolean },
+    earned?: { completedExerciseIds: string[]; points: number }
   ): Promise<LessonProgress> {
     const offeringId = await this.findOfferingIdForLesson(progress.lessonId);
     const enrolment = await this.repository.getEnrolment(profileId, offeringId);
@@ -384,12 +397,16 @@ export class AppService {
         lessonId: progress.lessonId,
       } satisfies NotEnrolledPayload);
     }
-    return await this.repository.saveProgress(
-      profileId,
-      userId,
-      enrolment.id,
-      progress
+    const previous = (await this.getProgress(profileId)).find(
+      (item) => item.lessonId === progress.lessonId
     );
+    return await this.repository.saveProgress(profileId, userId, enrolment.id, {
+      lessonId: progress.lessonId,
+      completed: progress.completed,
+      completedExerciseIds:
+        earned?.completedExerciseIds ?? previous?.completedExerciseIds ?? [],
+      points: earned?.points ?? previous?.points ?? 0,
+    });
   }
 
   private async findOfferingIdForLesson(lessonId: string): Promise<string> {
@@ -517,12 +534,12 @@ export class AppService {
     const points =
       (previous?.points ?? 0) +
       (passed && !alreadyComplete ? exercise.points : 0);
-    const progress = await this.saveProgress(profileId, userId, {
-      lessonId: lesson.id,
-      completed: previous?.completed ?? false,
-      completedExerciseIds,
-      points,
-    });
+    const progress = await this.saveProgress(
+      profileId,
+      userId,
+      { lessonId: lesson.id, completed: previous?.completed ?? false },
+      { completedExerciseIds, points }
+    );
     return {
       ...result,
       passed,
@@ -668,15 +685,23 @@ export class AppService {
     );
     const already =
       previous?.completedExerciseIds.includes(activityId) ?? false;
-    return await this.saveProgress(profileId, userId, {
-      lessonId,
-      completed: previous?.completed ?? false,
-      completedExerciseIds: passed
-        ? [...new Set([...(previous?.completedExerciseIds ?? []), activityId])]
-        : previous?.completedExerciseIds ?? [],
-      points:
-        (previous?.points ?? 0) + (passed && !already ? outcome.score : 0),
-    });
+    return await this.saveProgress(
+      profileId,
+      userId,
+      { lessonId, completed: previous?.completed ?? false },
+      {
+        completedExerciseIds: passed
+          ? [
+              ...new Set([
+                ...(previous?.completedExerciseIds ?? []),
+                activityId,
+              ]),
+            ]
+          : previous?.completedExerciseIds ?? [],
+        points:
+          (previous?.points ?? 0) + (passed && !already ? outcome.score : 0),
+      }
+    );
   }
 
   async submitAttempt(input: CreateAttemptInput): Promise<Attempt> {

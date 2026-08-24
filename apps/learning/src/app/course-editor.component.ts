@@ -209,7 +209,14 @@ export class CourseEditorComponent {
   readonly activities = signal<EditableActivity[]>([]);
   readonly selected = signal<LessonAddress | null>(null);
   readonly isPublished = signal(false);
-  readonly isOwner = signal(true);
+  /**
+   * Whether this viewer owns the course, and so may publish it.
+   *
+   * This was hardcoded true and never set, so a co-editor was shown a publish
+   * button that the server always refused. The server was right; the button
+   * was the lie.
+   */
+  readonly isOwner = signal(false);
   readonly saving = signal(false);
   readonly message = signal('');
   readonly error = signal('');
@@ -258,6 +265,7 @@ export class CourseEditorComponent {
     this.displayName.set(detail.offering.displayName);
     this.description.set(detail.offering.description ?? '');
     this.isPublished.set(detail.offering.status === 'published');
+    this.isOwner.set(detail.isOwner ?? false);
     this.modules.set(
       (detail.offering.modules ?? []).map((module) => ({
         id: module.id,

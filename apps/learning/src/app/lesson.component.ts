@@ -551,38 +551,31 @@ export class LessonComponent {
   /**
    * Records, or un-records, that this lesson has been read.
    *
-   * Whatever exercises were already solved and whatever points they earned are
-   * carried through, because this is a whole-row write and dropping them would
-   * quietly undo work the learner has done.
+   * Nothing else is sent. The server carries forward whatever was already
+   * earned; this used to pass the points back and they were written verbatim,
+   * which meant anyone could name their own score.
    */
   protected markRead(
-    vm: { lesson: { lesson: { id: string } }; recorded?: LessonProgress },
+    vm: { lesson: { lesson: { id: string } } },
     completed: boolean
   ): void {
     this.marking = true;
     this.markError = '';
-    this.data
-      .markLesson(
-        vm.lesson.lesson.id,
-        completed,
-        vm.recorded?.completedExerciseIds ?? [],
-        vm.recorded?.points ?? 0
-      )
-      .subscribe({
-        next: () => {
-          this.marking = false;
-          this.progressReload$.next();
-        },
-        error: (failure: unknown) => {
-          this.marking = false;
-          this.markError =
-            failure instanceof NotSignedInError
-              ? 'Sign in to keep your progress.'
-              : failure instanceof NotEnrolledError
-              ? 'Enrol in this course to keep your progress.'
-              : 'Could not save that just now.';
-        },
-      });
+    this.data.markLesson(vm.lesson.lesson.id, completed).subscribe({
+      next: () => {
+        this.marking = false;
+        this.progressReload$.next();
+      },
+      error: (failure: unknown) => {
+        this.marking = false;
+        this.markError =
+          failure instanceof NotSignedInError
+            ? 'Sign in to keep your progress.'
+            : failure instanceof NotEnrolledError
+            ? 'Enrol in this course to keep your progress.'
+            : 'Could not save that just now.';
+      },
+    });
   }
 
   /** How many hints the learner has asked for, per exercise. */

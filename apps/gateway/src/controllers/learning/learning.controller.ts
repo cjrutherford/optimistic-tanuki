@@ -97,36 +97,22 @@ export class LearningController {
     );
   }
 
-  @UseGuards(AuthGuard)
-  @Post('attempts')
-  async submitAttempt(
-    @Body() body: Record<string, unknown>,
-    @Req() req: { user: { userId: string } }
-  ) {
-    // The acting user always comes from the verified token. A userId in the
-    // body would let a caller submit an attempt as someone else.
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.SubmitAttempt },
-        { ...body, userId: req.user.userId }
-      )
-    );
-  }
+  /*
+    There were two routes here, POST attempts and POST evaluations, and they
+    were the way to cheat.
 
-  @UseGuards(AuthGuard)
-  @Post('evaluations')
-  async recordEvaluation(
-    @Body() body: Record<string, unknown>,
-    @Req() req: { user: { userId: string } }
-  ) {
-    // Recording who graded an attempt gives an audit trail for scores.
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.RecordEvaluation },
-        { ...body, recordedByUserId: req.user.userId }
-      )
-    );
-  }
+    Both were guarded by nothing but a session. Submitting an attempt checked
+    no enrolment and did not check the activity existed; recording an
+    evaluation stored whatever score the caller sent and marked the attempt
+    graded. Any signed-in learner could forge an attempt against any activity
+    and award themselves full marks, which is precisely what the comment on
+    Evaluation.recordedByUserId says must never be possible.
+
+    Nothing called them. Marks are only ever written by the server now, from
+    answerActivity and submitExercise, which check enrolment and grade the
+    work themselves. A human-override route can come back when there is a
+    screen for it and a role check on it.
+  */
 
   // Open to anonymous readers, like the catalog, and gated the same way: an
   // unpublished course is not readable just because somebody knows its ids.
@@ -200,7 +186,17 @@ export class LearningController {
       this.resolveAuthor(detail.ownerProfileId),
       this.isEnrolledIn(viewer.profileId, offeringId),
     ]);
-    return { ...detail, author, isEnrolled };
+    return {
+      ...detail,
+      author,
+      isEnrolled,
+      // Publishing is the owner's call, so the editor needs to know whether
+      // this viewer is the owner. It used to assume yes and show everyone a
+      // button that always answered 403.
+      isOwner: Boolean(
+        viewer.profileId && detail.ownerProfileId === viewer.profileId
+      ),
+    };
   }
 
   /**
@@ -287,19 +283,37 @@ export class LearningController {
     );
   }
 
+  /**
+   * Records that a learner has read a lesson, or has not.
+   *
+   * Only those two facts are taken from the caller. Points and solved
+   * exercises used to come straight from the request body and were written
+   * verbatim, so anyone could award themselves any score by editing one
+   * request. What a lesson is worth is decided by the server, from work it
+   * watched happen.
+   */
   @UseGuards(AuthGuard)
   @Put('me/progress')
   async saveMyProgress(
     @Req() req: { user: { userId: string } },
-    @Body() progress: unknown
+    @Body() body: { lessonId?: unknown; completed?: unknown }
   ) {
+    const lessonId = typeof body?.lessonId === 'string' ? body.lessonId : '';
+    if (!lessonId) throw new BadRequestException('lessonId is required');
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.SaveLessonProgress },
-        { userId: req.user.userId, profileId, progress }
+    return await this.asConflictWhenNotEnrolled(
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.SaveLessonProgress },
+          {
+            userId: req.user.userId,
+            profileId,
+            lessonId,
+            completed: body?.completed !== false,
+          }
+        )
       )
     );
   }
@@ -562,10 +576,29 @@ export class LearningController {
         'You may only update an offering you own or co-edit.'
       );
     }
+    // Built field by field on purpose. Forwarding the body wholesale let a
+    // co-editor publish a course by adding "status" to an edit, walking
+    // straight past the publish check above. The global ValidationPipe does
+    // not catch this: every body in this controller is an inline type, which
+    // reflects as Object, and Nest skips validation for those.
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.UpdateOffering },
-        { offeringId, patch: body }
+        {
+          offeringId,
+          patch: {
+            ...(body?.displayName !== undefined
+              ? { displayName: body.displayName }
+              : {}),
+            ...(body?.description !== undefined
+              ? { description: body.description }
+              : {}),
+            ...(body?.modules !== undefined ? { modules: body.modules } : {}),
+            ...(body?.activities !== undefined
+              ? { activities: body.activities }
+              : {}),
+          },
+        }
       )
     );
   }

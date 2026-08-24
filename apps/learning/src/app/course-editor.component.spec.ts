@@ -44,6 +44,8 @@ describe('CourseEditorComponent', () => {
     prerequisites: [],
     author: null,
     isEnrolled: false,
+    // Owned unless a test says otherwise. Only the owner may publish.
+    isOwner: 'isOwner' in overrides ? (overrides['isOwner'] as boolean) : true,
   });
 
   async function render(response: unknown = detail()) {
@@ -245,5 +247,48 @@ describe('CourseEditorComponent', () => {
     const { element } = await render(empty);
 
     expect(element.textContent).toContain('No modules yet');
+  });
+
+  /**
+   * Publishing is the owner's decision, and the server enforces that. The
+   * button was shown to everyone regardless, so a co-editor got a control
+   * that always answered 403.
+   */
+  describe('who may publish', () => {
+    function publishButton(element: HTMLElement) {
+      return Array.from(element.querySelectorAll('button')).find((candidate) =>
+        /publish/i.test(candidate.textContent || '')
+      );
+    }
+
+    it('offers publishing to the owner', async () => {
+      const { element } = await render(detail({ isOwner: true }));
+
+      expect(publishButton(element)).toBeDefined();
+    });
+
+    it('hides it from a co-editor', async () => {
+      const { element } = await render(detail({ isOwner: false }));
+
+      expect(publishButton(element)).toBeUndefined();
+    });
+
+    // A course whose ownership the server declined to state is not one this
+    // viewer may publish.
+    it('hides it when the server says nothing about ownership', async () => {
+      const { element } = await render(detail({ isOwner: undefined }));
+
+      expect(publishButton(element)).toBeUndefined();
+    });
+
+    it('still lets a co-editor save their edits', async () => {
+      const { element } = await render(detail({ isOwner: false }));
+
+      expect(
+        Array.from(element.querySelectorAll('button')).find(
+          (candidate) => candidate.textContent?.trim() === 'Save'
+        )
+      ).toBeDefined();
+    });
   });
 });

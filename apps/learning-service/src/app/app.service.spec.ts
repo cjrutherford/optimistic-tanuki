@@ -259,8 +259,6 @@ describe('AppService', () => {
         await service.saveProgress(profileId, 'learner', {
           lessonId,
           completed: true,
-          completedExerciseIds: [],
-          points: 0,
         });
       }
       const dashboard = await service.getDashboard(profileId);
@@ -345,8 +343,6 @@ describe('AppService', () => {
         service.saveProgress('profile-unenrolled', 'user-1', {
           lessonId: 'go-foundations-basics-variables-types',
           completed: true,
-          completedExerciseIds: [],
-          points: 0,
         })
       ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
     });
@@ -357,12 +353,7 @@ describe('AppService', () => {
       const progress = await service.saveProgress(
         'profile-enrolled',
         'user-1',
-        {
-          lessonId: 'go-foundations-basics-variables-types',
-          completed: true,
-          completedExerciseIds: [],
-          points: 0,
-        }
+        { lessonId: 'go-foundations-basics-variables-types', completed: true }
       );
 
       expect(progress.lessonId).toBe('go-foundations-basics-variables-types');
@@ -376,8 +367,6 @@ describe('AppService', () => {
         service.saveProgress('profile-withdrawn', 'user-1', {
           lessonId: 'go-foundations-basics-variables-types',
           completed: true,
-          completedExerciseIds: [],
-          points: 0,
         })
       ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
     });
