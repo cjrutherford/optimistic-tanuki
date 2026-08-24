@@ -1,7 +1,7 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { EMPTY, Observable, catchError, map, of } from 'rxjs';
+import { EMPTY, Observable, catchError, map, of, tap } from 'rxjs';
 
 export interface SignedInPerson {
   name: string;
@@ -20,7 +20,12 @@ export class LearningAuthService {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   login(email: string, password: string): Observable<unknown> {
-    return this.http.post('/api/authentication/login', { email, password });
+    return (
+      this.http
+        .post('/api/authentication/login', { email, password })
+        // Whoever was here before is not who is here now.
+        .pipe(tap(() => this.forgetCachedContent()))
+    );
   }
 
   register(input: {
@@ -47,8 +52,32 @@ export class LearningAuthService {
     return this.http.post('/api/authentication/logout', {}).pipe(
       // Signing out should not fail visibly. Whatever the server says, the
       // person asked to leave.
-      catchError(() => of(null))
+      catchError(() => of(null)),
+      tap(() => this.forgetCachedContent())
     );
+  }
+
+  /**
+   * Drops anything the service worker cached for the person who was here.
+   *
+   * A cached lesson is keyed by its URL and nothing else, so a draft that
+   * only its author may read would otherwise still be sitting there for
+   * whoever signs in next on the same browser. Signing in and out are the
+   * only moments the answer to "who is asking" changes.
+   */
+  async forgetCachedContent(): Promise<void> {
+    if (!this.isBrowser || typeof caches === 'undefined') return;
+    try {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter((name) => name.includes('ngsw') || name.includes('lessons'))
+          .map((name) => caches.delete(name))
+      );
+    } catch {
+      // A browser that refuses to open its cache store has nothing to leak
+      // from it either.
+    }
   }
 
   /**

@@ -19,6 +19,16 @@
           {
             "glob": "**/*",
             "input": "apps/learning/public"
+          },
+          {
+            "glob": "**/*",
+            "input": "apps/learning/src/assets",
+            "output": "assets"
+          },
+          {
+            "glob": "manifest.webmanifest",
+            "input": "apps/learning/src",
+            "output": "."
           }
         ],
         "styles": ["apps/learning/src/styles.scss"],
@@ -42,7 +52,8 @@
               "maximumError": "40kb"
             }
           ],
-          "outputHashing": "all"
+          "outputHashing": "all",
+          "serviceWorker": "apps/learning/ngsw-config.json"
         },
         "development": {
           "optimization": false,

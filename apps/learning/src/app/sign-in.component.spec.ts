@@ -193,6 +193,63 @@ describe('LearningAuthService', () => {
     expect(seen).toHaveBeenCalledWith(null);
   });
 
+  /**
+   * A cached lesson is keyed by URL and nothing else, so a draft only its
+   * author may read would otherwise sit in the browser cache for whoever
+   * signs in next on the same machine.
+   */
+  describe('cached content and who is asking', () => {
+    const originalCaches = (globalThis as { caches?: unknown }).caches;
+
+    afterEach(() => {
+      (globalThis as { caches?: unknown }).caches = originalCaches;
+    });
+
+    function fakeCaches(names: string[]) {
+      const deleted: string[] = [];
+      (globalThis as { caches?: unknown }).caches = {
+        keys: async () => names,
+        delete: async (name: string) => {
+          deleted.push(name);
+          return true;
+        },
+      };
+      return deleted;
+    }
+
+    it('forgets cached lessons when somebody signs out', async () => {
+      const deleted = fakeCaches(['ngsw:1:data:lessons', 'unrelated']);
+      const { auth, http } = service();
+
+      auth.logout().subscribe();
+      http.expectOne('/api/authentication/logout').flush({});
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(deleted).toContain('ngsw:1:data:lessons');
+      expect(deleted).not.toContain('unrelated');
+    });
+
+    it('forgets them when somebody else signs in', async () => {
+      const deleted = fakeCaches(['ngsw:1:data:lessons']);
+      const { auth, http } = service();
+
+      auth.login('grace@example.com', 'secret').subscribe();
+      http.expectOne('/api/authentication/login').flush({});
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(deleted).toContain('ngsw:1:data:lessons');
+    });
+
+    it('does not fall over in a browser with no cache store', async () => {
+      delete (globalThis as { caches?: unknown }).caches;
+      const { auth } = service();
+
+      await expect(auth.forgetCachedContent()).resolves.toBeUndefined();
+    });
+  });
+
   it('does not fail a sign-out the server refused', async () => {
     const { auth, http } = service();
     const done = jest.fn();

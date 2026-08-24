@@ -6,14 +6,10 @@
   "implicitDependencies": ["learning"],
   "targets": {
     "e2e": {
-      "executor": "@nx/playwright:playwright",
+      "executor": "nx:run-commands",
       "options": {
-        "config": "apps/learning-e2e/playwright.config.ts"
-      },
-      "configurations": {
-        "ci": {
-          "skipInstall": true
-        }
+        "command": "node apps/learning-e2e/src/journey.mjs",
+        "cwd": "{workspaceRoot}"
       }
     },
     "lint": {

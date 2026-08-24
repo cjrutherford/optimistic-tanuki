@@ -4,9 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { LoadingStateComponent } from '@optimistic-tanuki/common-ui';
 import {
   CourseCardComponent,
+  InstallPromptComponent,
   SubjectNavComponent,
   SubjectNavItem,
 } from '@optimistic-tanuki/learning-ui';
+import { InstallService } from './install.service';
 import { LearningLayoutComponent } from './learning-layout.component';
 import {
   CatalogOffering,
@@ -44,6 +46,7 @@ interface CatalogRow {
     LoadingStateComponent,
     SubjectNavComponent,
     CourseCardComponent,
+    InstallPromptComponent,
     RouterLink,
   ],
   template: `<learning-layout>
@@ -80,6 +83,16 @@ interface CatalogRow {
     </section>
     } @else {
     <p class="empty">{{ emptyMessage() }}</p>
+    }
+
+    <!--
+      Asked once, at the foot of the entrance, and never again once refused.
+    -->
+    @if (install.available()) {
+    <otlearn-install-prompt
+      (install)="install.install()"
+      (dismiss)="install.dismiss()"
+    ></otlearn-install-prompt>
     } } @else {
     <otui-loading-state headline="Loading catalog"></otui-loading-state>
     }
@@ -125,6 +138,7 @@ interface CatalogRow {
   ],
 })
 export class CatalogComponent {
+  protected readonly install = inject(InstallService);
   private readonly router = inject(Router);
   private readonly data = inject(LearningDataService);
   readonly tracks = toSignal(this.data.catalog());
