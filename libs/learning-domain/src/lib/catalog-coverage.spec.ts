@@ -128,7 +128,7 @@ describe('curriculum catalog coverage', () => {
     // Update these when lessons are genuinely added, not to silence a failure.
     expect(counts).toEqual({
       letsgots: 38,
-      letsgogo: 47,
+      letsgogo: 49,
       letsgocpp: 23,
       letsgorust: 24,
     });

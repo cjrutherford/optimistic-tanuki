@@ -300,6 +300,11 @@ const tutorialCurricula: TutorialCurriculum[] = [
           ['functions', 'Functions'],
           ['control-flow', 'Control Flow'],
           ['packages-imports', 'Packages & Imports'],
+          // Structs and interfaces come last in Basics because methods need
+          // functions first, but they come before every other module, which
+          // has assumed both since the course was written.
+          ['structs', 'Structs'],
+          ['interfaces', 'Interfaces'],
         ]).concat(goBasicsSubLessons),
       },
       {

@@ -1970,7 +1970,8 @@ func main() {
     id: 's-04',
     lessonSlug: 'context-basics',
     title: 'Context With Value',
-    description: 'Use context to pass and retrieve a value.',
+    description:
+      'Store a value in a context and read it back, using an unexported key type rather than a string.',
     starterCode: `package main
 
 import (
@@ -1978,21 +1979,238 @@ import (
     "fmt"
 )
 
+// An unexported key type. A plain string key would collide silently with
+// other packages storing the same key on the same context.
+type contextKey int
+
+const userKey contextKey = iota
+
 func main() {
     ctx := context.Background()
-    ctx = context.WithValue(ctx, "user", "alice")
-    
-    // Retrieve the value
-    
+    ctx = context.WithValue(ctx, userKey, "alice")
+
+    // Read the value back into 'user'. Use the comma-ok form so a missing
+    // value is false rather than a panic.
+
+    if !ok {
+        fmt.Println("no user in context")
+        return
+    }
     fmt.Println(user)
 }`,
     expectedOutput: 'alice',
     hints: [
-      'Use ctx.Value("key") to retrieve value',
-      'Values are stored as interface{}',
+      'ctx.Value(userKey) returns an any, so you need a type assertion',
+      'user, ok := ctx.Value(userKey).(string)',
     ],
     points: 15,
     difficulty: 'easy',
+  },
+
+  // Structs
+  {
+    id: 'b-21',
+    lessonSlug: 'structs',
+    title: 'Declare a Struct',
+    description:
+      'Declare a Book struct with Title and Pages fields, then create one and print its title.',
+    starterCode: `package main
+
+import "fmt"
+
+// Declare a Book struct with a Title string and a Pages int.
+
+
+func main() {
+    // Create a Book with the title "Dune" and 412 pages,
+    // using field names rather than positional values.
+
+    fmt.Println(b.Title)
+}`,
+    expectedOutput: 'Dune',
+    hints: [
+      'type Book struct { Title string; Pages int }',
+      'b := Book{Title: "Dune", Pages: 412}',
+    ],
+    points: 15,
+    difficulty: 'easy',
+  },
+  {
+    id: 'b-22',
+    lessonSlug: 'structs',
+    title: 'Value or Pointer Receiver',
+    description:
+      'One of these methods does nothing. Fix it so the discount is actually applied.',
+    starterCode: `package main
+
+import "fmt"
+
+type Product struct {
+    Name  string
+    Price float64
+}
+
+// This method is meant to halve the price, but it does not work.
+// The receiver gets a copy, so the write is thrown away on return.
+// Change it so the change sticks.
+func (p Product) Discount() {
+    p.Price = p.Price / 2
+}
+
+func main() {
+    item := Product{Name: "Desk", Price: 200}
+    item.Discount()
+    fmt.Println(item.Price)
+}`,
+    expectedOutput: '100',
+    hints: [
+      'A value receiver operates on a copy of the struct',
+      'Change (p Product) to (p *Product) so the method has the original',
+      'You do not need to change the call: Go takes the address for you',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'b-23',
+    lessonSlug: 'structs',
+    title: 'Embedding',
+    description:
+      'Embed one struct in another and call the promoted method on the outer type.',
+    starterCode: `package main
+
+import "fmt"
+
+type Engine struct {
+    Horsepower int
+}
+
+func (e Engine) Start() string {
+    return "engine started"
+}
+
+type Car struct {
+    // Embed Engine here, with no field name, so Car gets Start().
+
+    Make string
+}
+
+func main() {
+    c := Car{Engine: Engine{Horsepower: 300}, Make: "Saab"}
+
+    // Call Start on c directly, not through c.Engine.
+    fmt.Println(...)
+}`,
+    expectedOutput: 'engine started',
+    hints: [
+      'An embedded field is written as just the type name, with no field name',
+      'Embedded methods are promoted, so c.Start() works',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+
+  // Interfaces
+  {
+    id: 'b-24',
+    lessonSlug: 'interfaces',
+    title: 'Satisfy an Interface',
+    description:
+      'Give Square the method it needs to satisfy Shape. Nothing declares the relationship — the methods are the whole contract.',
+    starterCode: `package main
+
+import "fmt"
+
+type Shape interface {
+    Area() float64
+}
+
+type Square struct {
+    Side float64
+}
+
+// Give Square an Area method so it satisfies Shape.
+// Note that you do not write "implements" anywhere.
+
+
+func main() {
+    var s Shape = Square{Side: 4}
+    fmt.Println(s.Area())
+}`,
+    expectedOutput: '16',
+    hints: ['func (s Square) Area() float64 { ... }', 'Return s.Side * s.Side'],
+    points: 20,
+    difficulty: 'easy',
+  },
+  {
+    id: 'b-25',
+    lessonSlug: 'interfaces',
+    title: 'Type Switch',
+    description:
+      'Write a function that reports what type it was given, using a type switch.',
+    starterCode: `package main
+
+import "fmt"
+
+func describe(v any) string {
+    // Return "int" for an int, "string" for a string,
+    // and "other" for anything else.
+
+}
+
+func main() {
+    fmt.Println(describe(42))
+    fmt.Println(describe("hi"))
+    fmt.Println(describe(3.5))
+}`,
+    expectedOutput: 'int\nstring\nother',
+    hints: [
+      'switch v.(type) { case int: ... }',
+      'The default case handles everything you did not list',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'b-26',
+    lessonSlug: 'interfaces',
+    title: 'The Nil Interface Trap',
+    description:
+      'This program reports a failure that never happened. Work out why, and fix it.',
+    starterCode: `package main
+
+import "fmt"
+
+type ValidationError struct{}
+
+func (e *ValidationError) Error() string { return "invalid" }
+
+// This is meant to report success, but the caller sees a failure.
+// An interface is nil only when its type AND its value are empty,
+// and returning a typed nil pointer leaves the type half filled in.
+func validate(ok bool) error {
+    var err *ValidationError
+    if !ok {
+        err = &ValidationError{}
+    }
+    return err
+}
+
+func main() {
+    if err := validate(true); err != nil {
+        fmt.Println("failed:", err)
+    } else {
+        fmt.Println("passed")
+    }
+}`,
+    expectedOutput: 'passed',
+    hints: [
+      'The returned interface holds (*ValidationError, nil), which is not nil',
+      'Return the literal nil on the success path rather than a typed nil pointer',
+      'Restructure validate so it returns &ValidationError{} or nil directly',
+    ],
+    points: 30,
+    difficulty: 'hard',
   },
 ];
 
@@ -2004,12 +2222,17 @@ export function getChallengesForLesson(lessonSlug: string): CodeChallenge[] {
 // Helper to get total possible points per module
 export function getModulePoints(moduleId: string): number {
   const moduleLessonMap: Record<string, string[]> = {
+    // These are lesson slugs, matching challenge.lessonSlug. They were once
+    // written with a 'basics-' prefix that no challenge has ever used, which
+    // made this module score zero.
     basics: [
-      'basics-hello-world',
-      'basics-variables-types',
-      'basics-functions',
-      'basics-control-flow',
-      'basics-packages-imports',
+      'hello-world',
+      'variables-types',
+      'functions',
+      'control-flow',
+      'packages-imports',
+      'structs',
+      'interfaces',
     ],
     'typescript-to-go': [
       'type-system-comparison',
