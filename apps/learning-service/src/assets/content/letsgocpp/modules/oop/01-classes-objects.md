@@ -91,15 +91,38 @@ Called automatically when an object goes out of scope:
 ```cpp
 class Resource {
     int* data_;
+    std::size_t size_;
 public:
-    Resource(int size) : data_(new int[size]) {}
+    explicit Resource(std::size_t size)
+        : data_(new int[size]), size_(size) {}
+
     ~Resource() { delete[] data_; }  // cleanup
+
+    // A class that owns raw memory must say what copying means. Say it here,
+    // even if the answer is "you may not", or the compiler writes a copy that
+    // duplicates the pointer and frees the same buffer twice.
+    Resource(const Resource&) = delete;
+    Resource& operator=(const Resource&) = delete;
 };
 
 {
     Resource r(100);  // allocates
 }   // destructor called here automatically
 ```
+
+Those two deleted lines are not decoration. Without them the compiler
+generates a copy constructor that copies `data_` as a pointer, so two objects
+believe they own one buffer and both destructors free it:
+
+```cpp
+Resource a(100);
+Resource b = a;   // with the deletes: a compile error, which is what you want
+                  // without them: both destructors call delete[] on the same
+                  // pointer, and the second one corrupts the heap
+```
+
+Deleting the copy is the honest minimum. The next section is about what to do
+when you actually want the class to be copyable or movable.
 
 ---
 

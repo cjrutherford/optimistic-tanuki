@@ -8,8 +8,12 @@ Go's garbage collector has evolved:
 
 - **Go 1.0**: Mark-sweep (stop-the-world)
 - **Go 1.5**: Concurrent mark-sweep
-- **Go 1.8**: Tri-color mark-sweep (concurrent)
-- **Go 1.21**: Go 1.21+ uses a new collector with significantly improved latency and memory efficiency
+- **Go 1.8**: Tri-color mark-sweep with sub-millisecond pauses
+- **Go 1.19**: `GOMEMLIMIT`, a soft memory limit the collector works to stay under
+
+That last one is the change most worth knowing about. The algorithm has been
+concurrent tri-color mark-sweep since 1.8 and has not been replaced since;
+what has improved is the tuning you get over it.
 
 ## The Tri-Color Algorithm
 
@@ -68,12 +72,19 @@ GOGC=200
 ### GODEBUG
 
 ```bash
-# Print GC info
+# Print a line to stderr on every collection
 GODEBUG=gctrace=1
 
-# Disable GC (for debugging only!)
-GODEBUG=gctrace=1
+# Turn the collector off entirely (for measurement, never in production)
+GOGC=off
+
+# Cap the heap instead of turning collection off. Go 1.19 and later.
+GOMEMLIMIT=512MiB
 ```
+
+`gctrace` only reports; it never changes when collection happens. Turning the
+collector off is `GOGC=off`, and a process that does that will grow until it
+is killed.
 
 ## Memory Management
 
@@ -83,8 +94,14 @@ GODEBUG=gctrace=1
 // Small allocations (< 32KB): from local caches
 // Large allocations: from heap directly
 
-// Make sure you know when things go on heap
-var buf bytes.Buffer // pointer to heap
+// Where a value lives is decided by escape analysis, not by how it is
+// declared. This buffer is a local value and stays on the stack, unless it
+// escapes -- by being returned, stored in a global, or captured by a
+// goroutine that outlives the call.
+var buf bytes.Buffer
+
+// Ask the compiler rather than guessing:
+//   go build -gcflags='-m' ./...
 ```
 
 ### Stack vs Heap

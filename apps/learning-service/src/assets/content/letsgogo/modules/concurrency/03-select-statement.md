@@ -126,14 +126,23 @@ case <-ch2:
 ### Idle Connection Timeout
 
 ```go
-func withTimeout(conn <-chan Request, timeout time.Duration) Request? {
+// Go has no optional type. When a value might not be there, return a second
+// bool saying whether it is, and let the caller check it.
+func withTimeout(conn <-chan Request, timeout time.Duration) (Request, bool) {
     select {
     case req := <-conn:
-        return req
+        return req, true
     case <-time.After(timeout):
-        return nil
+        var zero Request
+        return zero, false
     }
 }
+
+// At the call site:
+//   req, ok := withTimeout(conn, 5*time.Second)
+//   if !ok {
+//       return fmt.Errorf("no request within 5s")
+//   }
 ```
 
 ### Graceful Shutdown

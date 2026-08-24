@@ -135,8 +135,8 @@ type User struct {
     ent.Schema
 }
 
- Fields() []ent.Field {
-    returnfunc (User) []ent.Field{
+func (User) Fields() []ent.Field {
+    return []ent.Field{
         field.String("name"),
         field.String("email"),
     }

@@ -12,7 +12,7 @@ interface TabsProps {
 
 const TabsContext = createContext<{ activeTab: string; setActiveTab: (t: string) => void } | null>(null);
 
-function Tabs({ children, defaultTab }: TabsProps) {
+function TabsRoot({ children, defaultTab }: TabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>
@@ -21,15 +21,28 @@ function Tabs({ children, defaultTab }: TabsProps) {
   );
 }
 
-Tabs.Tab = function Tab({ id, children }: { id: string; children: ReactNode }) {
-  const ctx = useContext(TabsContext)!;
+function Tab({ id, children }: { id: string; children: ReactNode }) {
+  const ctx = useContext(TabsContext);
+  if (!ctx) throw new Error('<Tab> must be rendered inside <Tabs>');
+
   return (
     <button onClick={() => ctx.setActiveTab(id)} aria-selected={ctx.activeTab === id}>
       {children}
     </button>
   );
-};
+}
+
+// Object.assign, not `TabsRoot.Tab = Tab`. Assigning a property to a function
+// declaration is an error: the function's type has no `Tab` on it, and
+// TypeScript will not widen a declared type to accommodate the assignment.
+// Object.assign returns an intersection type, so `Tabs.Tab` is known to exist.
+export const Tabs = Object.assign(TabsRoot, { Tab });
 ```
+
+Note the `if (!ctx) throw` rather than a `!` assertion. The non-null assertion
+silences the compiler and leaves a `Cannot read properties of null` at runtime
+for anyone who renders a `<Tab>` outside its `<Tabs>`. The thrown error says
+what they did wrong.
 
 ## Generic Components
 

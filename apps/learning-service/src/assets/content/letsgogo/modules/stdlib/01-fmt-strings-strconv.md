@@ -68,7 +68,13 @@ import "strings"
 // Case conversion
 strings.ToLower("HELLO")  // "hello"
 strings.ToUpper("hello")  // "HELLO"
-strings.Title("hello world") // "Hello World"
+// strings.Title is deprecated as of Go 1.18: it uses simple word boundaries
+// and gets multi-byte characters and apostrophes wrong ("o'brien" becomes
+// "O'Brien" in some locales and not others). For titles, use
+// golang.org/x/text/cases:
+//
+//   caser := cases.Title(language.English)
+//   caser.String("hello world")  // "Hello World"
 
 // Search
 strings.Contains("hello world", "world")  // true

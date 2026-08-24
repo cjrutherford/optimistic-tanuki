@@ -63,11 +63,20 @@ Rust uses two marker traits to ensure thread safety:
 - `Send`: A type can be transferred to another thread
 - `Sync`: A type can be shared between threads (via references)
 
-Most types are automatically `Send + Sync`. Types that are not:
+Most types are automatically `Send + Sync`. The exceptions differ in _which_
+of the two they lack, and the difference decides what you can do with them:
 
-- `Rc<T>` (use `Arc<T>` instead)
-- `Cell<T>` / `RefCell<T>` (use `Mutex<T>` instead)
-- Raw pointers
+- `Rc<T>` is neither `Send` nor `Sync`. Its reference count is updated without
+  synchronisation, so it cannot cross threads at all. Use `Arc<T>`.
+- `Cell<T>` and `RefCell<T>` **are** `Send` when `T: Send` — you may move one
+  to another thread — but they are not `Sync`, so they cannot be _shared_ by
+  reference across threads. To share, use `Mutex<T>` or `RwLock<T>`.
+- Raw pointers are neither, because the compiler knows nothing about what they
+  point to.
+
+The short version: `Send` is about moving a value to another thread, `Sync` is
+about two threads holding `&T` at once. A type can have the first without the
+second, and `RefCell` is the everyday example.
 
 ## Panic Handling in Threads
 

@@ -9,10 +9,58 @@ Every reference in Rust has a **lifetime** — the scope for which it is valid. 
 ## The Problem: Dangling References
 
 ```rust
-// This would NOT compile:
 fn dangle() -> &String {
     let s = String::from("hello");
-    &s  // ERROR: s is dropped at end of function, reference would dangle!
+    &s
+}
+```
+
+This does not compile, but it is worth being precise about why, because the
+error you get is not the one most tutorials describe:
+
+```text
+error[E0106]: missing lifetime specifier
+ --> src/lib.rs:1:16
+  |
+1 | fn dangle() -> &String {
+  |                ^ expected named lifetime parameter
+  |
+  = help: this function's return type contains a borrowed value, but there is
+          no value for it to be borrowed from
+```
+
+The compiler rejects the **signature**, before it looks at the body at all. A
+returned reference has to borrow from something, and every borrow needs a
+lifetime. Here there are no parameters, so there is nothing to borrow from and
+nothing to infer a lifetime from. That is what "no value for it to be borrowed
+from" means.
+
+The dangling-reference story is the _second_ error, the one you reach if you
+paper over the first:
+
+```rust
+fn dangle() -> &'static str {
+    let s = String::from("hello");
+    &s  // now the body is checked, and now it fails
+}
+```
+
+```text
+error[E0515]: cannot return reference to local variable `s`
+  = note: returns a reference to data owned by the current function
+```
+
+Two different errors, at two different stages. E0106 says the signature does
+not describe a valid borrow. E0515 says the borrow is described fine but the
+data does not live long enough. Knowing which one you are looking at tells you
+whether to fix the signature or the body.
+
+The honest fix for this function is to return the `String` itself and move
+ownership out, rather than lend a reference to something about to be dropped:
+
+```rust
+fn no_dangle() -> String {
+    String::from("hello")
 }
 ```
 

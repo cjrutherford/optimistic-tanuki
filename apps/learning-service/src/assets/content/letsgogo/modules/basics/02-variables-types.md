@@ -236,13 +236,34 @@ const (
     StatusInternalServerError = 500
 )
 
-// With iota - cleaner!
+// iota does NOT work here. It counts 0, 1, 2..., so this gives you
+// 100, 101, 102 -- not 100, 200, 201. Reaching for iota because the
+// constants look related will quietly give you the wrong numbers.
 const (
-    StatusContinue           = iota + 100  // 100
-    StatusOK                               // 101
-    StatusCreated                          // 102
+    StatusContinue = iota + 100  // 100  correct by luck
+    StatusOK                     // 101  wrong, should be 200
+    StatusCreated                // 102  wrong, should be 201
 )
 ```
+
+HTTP status codes are values fixed by a standard, not a sequence you get to
+choose, so write them out. `iota` is for when the numbers are yours and their
+only job is to be distinct and consecutive:
+
+```go
+type Weekday int
+
+const (
+    Sunday Weekday = iota  // 0
+    Monday                 // 1
+    Tuesday                // 2
+    Wednesday              // 3
+)
+```
+
+Note the named type. Without it these are untyped constants that mix freely
+with any integer; with it, the compiler stops you passing a `Weekday` where an
+HTTP status was wanted.
 
 **Bit flags with iota:**
 

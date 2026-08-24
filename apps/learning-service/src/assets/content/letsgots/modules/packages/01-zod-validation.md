@@ -8,6 +8,13 @@ Zod is a TypeScript-first schema validation library. Define your schema once and
 npm install zod
 ```
 
+> **Versions.** This lesson is written against Zod 4. Zod 3 is still widely
+> deployed and most of what follows is identical in both. Where they differ it
+> is called out. If you are reading a Zod 3 codebase, expect string formats
+> written as methods — `z.string().email()` rather than `z.email()` — and
+> `error.format()` where this lesson uses `error.issues`. The Zod 3 spellings
+> still work in Zod 4; they are deprecated, not removed.
+
 ## Basic Schemas
 
 ```typescript
@@ -43,7 +50,11 @@ const result = userSchema.safeParse(unknownData);
 if (result.success) {
   console.log(result.data.name); // typed as User
 } else {
-  console.error(result.error.format()); // detailed error info
+  // error.issues is a flat array of what failed and where. It is the one
+  // shape that has stayed the same across Zod 3 and 4.
+  for (const issue of result.error.issues) {
+    console.error(`${issue.path.join('.')}: ${issue.message}`);
+  }
 }
 ```
 
@@ -64,7 +75,12 @@ const dateSchema = z.string().transform((str) => new Date(str));
 app.post('/users', async (req, res) => {
   const result = createUserSchema.safeParse(req.body);
   if (!result.success) {
-    res.status(400).json({ errors: result.error.format() });
+    res.status(400).json({
+      errors: result.error.issues.map((issue) => ({
+        field: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
     return;
   }
   const user = await createUser(result.data); // data is fully typed

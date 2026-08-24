@@ -97,14 +97,36 @@ arr[10] = 99;  // writes beyond allocated memory — UNDEFINED BEHAVIOR
 
 ---
 
-## Escape Analysis
+## Don't Allocate At All
 
-Modern C++ compilers perform **escape analysis** to determine if a local variable can stay on the stack even when its address is taken:
+C++ has no escape analysis in the sense languages like Go and Java have it.
+There, the compiler owns the allocator and can quietly move a heap object to
+the stack. In C++ `operator new` is replaceable — a program may define its
+own, with observable behaviour like logging or counting — so the compiler
+cannot generally decide on your behalf that an allocation should not happen.
+The standard does permit allocations to be omitted or merged in narrow cases,
+but it is not a guarantee, and no implementation reliably turns a
+`make_unique` into a stack object:
 
 ```cpp
-// The compiler may optimize this to stack allocation
+// This heap-allocates. Assume it does, because you cannot verify otherwise.
 std::unique_ptr<int> p = std::make_unique<int>(42);
 ```
+
+Which is the useful lesson: in C++ you do not hope the optimiser removes an
+allocation, you decline to write one. A value that lives and dies inside one
+scope should be a local.
+
+```cpp
+int value = 42;             // no allocation
+std::array<int, 64> buf{};  // no allocation, size known at compile time
+std::vector<int> v;         // one allocation, and only when it grows
+v.reserve(1000);            // one allocation instead of a dozen
+```
+
+Reach for the heap when you need a lifetime that outlives the scope, or a size
+you only learn at runtime and cannot bound. Otherwise the stack is both faster
+and impossible to leak.
 
 ---
 

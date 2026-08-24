@@ -106,17 +106,30 @@ handler := chain(baseHandler, Logger, Auth, CORS)
 Pass data to handlers via context:
 
 ```go
+// An unexported key type. Never a plain string: string keys collide silently
+// with other middleware and with library code (staticcheck SA1029).
+type contextKey int
+
+const userIDKey contextKey = iota
+
 func UserContext(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         userID := getUserFromToken(r.Header.Get("Authorization"))
 
-        ctx := context.WithValue(r.Context(), "userID", userID)
+        ctx := context.WithValue(r.Context(), userIDKey, userID)
         next.ServeHTTP(w, r.WithContext(ctx))
     })
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-    userID := r.Context().Value("userID").(string)
+    // Comma-ok, not a bare assertion. A request that skipped the middleware
+    // has no user, and asserting on that would panic and take down the
+    // handler for what is a perfectly ordinary case.
+    userID, ok := r.Context().Value(userIDKey).(string)
+    if !ok {
+        http.Error(w, "unauthorized", http.StatusUnauthorized)
+        return
+    }
     fmt.Fprintf(w, "User: %s", userID)
 }
 ```
