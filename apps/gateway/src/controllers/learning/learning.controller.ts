@@ -220,9 +220,13 @@ export class LearningController {
           { cmd: ProfileCommands.Get },
           { id: ownerProfileId, query: {} }
         )
-      )) as { id?: string; name?: string } | null;
-      if (!profile?.name) return null;
-      return { profileId: ownerProfileId, displayName: profile.name };
+      )) as { id?: string; profileName?: string } | null;
+      // The field is profileName, not name. Reading `name` returned undefined
+      // every time, so every course said its author was not recorded, and
+      // nothing failed loudly enough to notice.
+      const displayName = profile?.profileName?.trim();
+      if (!displayName) return null;
+      return { profileId: ownerProfileId, displayName };
     } catch {
       return null;
     }
@@ -427,6 +431,22 @@ export class LearningController {
       profileId
     );
     return { isCourseDesigner };
+  }
+
+  // An author's own courses, drafts included. Nothing else lists a draft to
+  // the person writing it.
+  @UseGuards(AuthGuard)
+  @Get('me/courses')
+  async getMyCourses(@Req() req: { user: { userId: string } }) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.ListMyOfferings },
+        { profileId }
+      )
+    );
   }
 
   @UseGuards(AuthGuard)

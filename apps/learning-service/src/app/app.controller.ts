@@ -84,6 +84,11 @@ export class AppController {
     return this.appService.listSubjects(body ?? {});
   }
 
+  @MessagePattern({ cmd: LearningCommands.ListMyOfferings })
+  listMyOfferings(@Payload() body: { profileId: string }) {
+    return this.appService.listMyOfferings(body.profileId);
+  }
+
   @MessagePattern({ cmd: LearningCommands.GetOffering })
   getOffering(@Payload() body: { offeringId: string; viewer?: CatalogViewer }) {
     return this.appService.getOfferingDetail(

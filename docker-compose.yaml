@@ -1035,7 +1035,7 @@ services:
       dockerfile: ./apps/learning/Dockerfile
     image: cjrutherford/optimistic_tanuki_learning:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${LEARNING_PORT:-8096}:4000'
+      - '${LEARNING_PORT:-8099}:4000'
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000

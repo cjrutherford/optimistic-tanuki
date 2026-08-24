@@ -75,6 +75,10 @@ export interface LearningRepository {
   getOwnership(
     offeringId: string
   ): Promise<OfferingOwnership | undefined> | OfferingOwnership | undefined;
+  /** Every offering this profile owns or co-edits. */
+  listOwnerships(
+    profileId: string
+  ): Promise<OfferingOwnership[]> | OfferingOwnership[];
   setCoEditors(
     offeringId: string,
     coEditorProfileIds: string[]

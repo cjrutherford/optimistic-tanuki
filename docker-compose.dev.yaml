@@ -16,7 +16,7 @@ services:
       context: .
       dockerfile: ./apps/learning/Dockerfile
     ports:
-      - '8096:4000'
+      - '8099:4000'
     environment:
       - NODE_ENV=development
       - PORT=4000

@@ -251,6 +251,22 @@
       }
     },
     {
+      "appId": "learning",
+      "name": "Let's Go",
+      "domain": "localhost",
+      "uiBaseUrl": "http://localhost:8099",
+      "apiBaseUrl": "http://localhost:3300",
+      "appType": "client",
+      "visibility": "public",
+      "description": "A learning platform for any subject, with courses anyone can write.",
+      "iconUrl": "http://localhost:8099/favicon.ico",
+      "sortOrder": 23,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
+    },
+    {
       "appId": "ui-playground",
       "name": "UI Playground",
       "domain": "localhost",

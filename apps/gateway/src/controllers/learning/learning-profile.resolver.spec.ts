@@ -35,7 +35,10 @@ describe('LearningProfileResolver', () => {
 
   it('creates a learning profile and grants learning_learner on first visit', async () => {
     profileClient.send
+      // The learning-scope lookup, then the global-scope one that supplies a
+      // name for the new profile, then the create.
       .mockReturnValueOnce(of(null))
+      .mockReturnValueOnce(of({ id: 'global-1', profileName: 'Ada' }))
       .mockReturnValueOnce(of({ id: 'profile-new' }));
     permissionsClient.send
       .mockReturnValueOnce(
@@ -69,6 +72,7 @@ describe('LearningProfileResolver', () => {
   // fixes it, mirroring how profile.service.ts treats a failed role copy.
   it('creates the profile even if granting the role fails', async () => {
     profileClient.send
+      .mockReturnValueOnce(of(null))
       .mockReturnValueOnce(of(null))
       .mockReturnValueOnce(of({ id: 'profile-new' }));
     permissionsClient.send.mockReturnValueOnce(
@@ -140,5 +144,82 @@ describe('LearningProfileResolver', () => {
 
       await expect(resolver.isCourseDesigner('profile-1')).resolves.toBe(false);
     });
+  });
+});
+
+/**
+ * A learning profile used to be created with the literal name 'Learner', so
+ * every course anyone wrote said "Written by Learner" on its own page. Found
+ * by writing a course in the running stack and reading the result.
+ */
+describe('LearningProfileResolver names a new profile', () => {
+  function build(responses: Record<string, unknown>) {
+    const profileClient = {
+      send: jest.fn(
+        (pattern: { cmd: string }, payload: { appScope?: string }) => {
+          if (pattern.cmd === ProfileCommands.Create) {
+            return of({
+              id: 'new-profile',
+              userId: 'u1',
+              appScope: 'learning',
+            });
+          }
+          return of(responses[payload?.appScope ?? ''] ?? null);
+        }
+      ),
+    } as unknown as ClientProxy;
+    const permissionsClient = {
+      send: jest.fn().mockReturnValue(of(null)),
+    } as unknown as ClientProxy;
+    return {
+      resolver: new LearningProfileResolver(profileClient, permissionsClient),
+      profileClient,
+    };
+  }
+
+  function createdWith(profileClient: ClientProxy) {
+    const send = profileClient.send as unknown as jest.Mock;
+    return send.mock.calls.find(
+      ([pattern]) => pattern.cmd === ProfileCommands.Create
+    )?.[1];
+  }
+
+  it('borrows the name the person already goes by', async () => {
+    const { resolver, profileClient } = build({
+      learning: null,
+      global: { id: 'g1', profileName: 'Ada Lovelace' },
+    });
+
+    await resolver.resolveProfileId('u1');
+
+    expect(createdWith(profileClient).name).toBe('Ada Lovelace');
+  });
+
+  it('falls back to Learner when there is no name to borrow', async () => {
+    const { resolver, profileClient } = build({ learning: null, global: null });
+
+    await resolver.resolveProfileId('u1');
+
+    expect(createdWith(profileClient).name).toBe('Learner');
+  });
+
+  it('does not use a blank name', async () => {
+    const { resolver, profileClient } = build({
+      learning: null,
+      global: { id: 'g1', profileName: '   ' },
+    });
+
+    await resolver.resolveProfileId('u1');
+
+    expect(createdWith(profileClient).name).toBe('Learner');
+  });
+
+  it('creates nothing new when a learning profile already exists', async () => {
+    const { resolver, profileClient } = build({
+      learning: { id: 'existing', userId: 'u1', appScope: 'learning' },
+    });
+
+    expect(await resolver.resolveProfileId('u1')).toBe('existing');
+    expect(createdWith(profileClient)).toBeUndefined();
   });
 });

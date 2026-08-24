@@ -193,6 +193,23 @@ export class TypeOrmLearningRepository implements LearningRepository {
     return entity ? this.toOwnershipDomain(entity) : undefined;
   }
 
+  /**
+   * Every offering this profile owns or co-edits.
+   *
+   * Co-editors live in a JSONB array, so the containment check is done in the
+   * database rather than by reading every ownership row into memory.
+   */
+  async listOwnerships(profileId: string): Promise<OfferingOwnership[]> {
+    const entities = await this.offeringOwnershipRepo
+      .createQueryBuilder('ownership')
+      .where('ownership."ownerProfileId" = :profileId', { profileId })
+      .orWhere('ownership."coEditorProfileIds" @> :asJson', {
+        asJson: JSON.stringify([profileId]),
+      })
+      .getMany();
+    return entities.map((entity) => this.toOwnershipDomain(entity));
+  }
+
   async setCoEditors(
     offeringId: string,
     coEditorProfileIds: string[]

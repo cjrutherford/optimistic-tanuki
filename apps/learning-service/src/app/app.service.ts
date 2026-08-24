@@ -189,6 +189,41 @@ export class AppService {
   }
 
   /**
+   * The courses this profile may work on.
+   *
+   * Drafts included, published included: an author needs to see everything
+   * they are responsible for, which is exactly the set the catalog hides from
+   * everyone else.
+   */
+  async listMyOfferings(profileId: string) {
+    const ownerships = await this.repository.listOwnerships(profileId);
+    if (ownerships.length === 0) return [];
+    const byOfferingId = new Map(
+      ownerships.map((ownership) => [ownership.offeringId, ownership])
+    );
+    const tracks = await this.listPrograms();
+    return tracks.flatMap((track) =>
+      track.offerings
+        .filter((offering) => byOfferingId.has(offering.id))
+        .map((offering) => {
+          const ownership = byOfferingId.get(offering.id) as OfferingOwnership;
+          return {
+            offering,
+            trackId: track.id,
+            trackDisplayName: track.displayName,
+            lessonCount: offering.modules.reduce(
+              (total, module) => total + module.lessons.length,
+              0
+            ),
+            // An author needs to know which of these are theirs to publish
+            // and which they were invited to help with.
+            isOwner: ownership.ownerProfileId === profileId,
+          };
+        })
+    );
+  }
+
+  /**
    * Everything a course page needs, in one call.
    *
    * Prerequisites are resolved to names here rather than in the client,

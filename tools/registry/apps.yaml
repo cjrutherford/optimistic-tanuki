@@ -221,6 +221,20 @@ apps:
     iconUrl: http://localhost:8093/android-chrome-192x192.png
     sortOrder: 22
 
+  - appId: learning
+    name: Let's Go
+    domain: localhost
+    uiBaseUrl: http://localhost:8099
+    apiBaseUrl: http://localhost:3300
+    appType: client
+    visibility: public
+    authEmail:
+      enabled: true
+      from: no-reply@christopherrutherford.net
+    description: A learning platform for any subject, with courses anyone can write.
+    iconUrl: http://localhost:8099/favicon.ico
+    sortOrder: 23
+
   - appId: ui-playground
     name: UI Playground
     domain: localhost

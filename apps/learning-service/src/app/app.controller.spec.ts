@@ -154,6 +154,13 @@ class InMemoryLearningRepository implements LearningRepository {
   getOwnership(offeringId: string) {
     return this.ownerships.get(offeringId);
   }
+  listOwnerships(profileId: string) {
+    return [...this.ownerships.values()].filter(
+      (ownership) =>
+        ownership.ownerProfileId === profileId ||
+        ownership.coEditorProfileIds.includes(profileId)
+    );
+  }
   setCoEditors(offeringId: string, coEditorProfileIds: string[]) {
     const existing = this.ownerships.get(offeringId);
     if (!existing) throw new Error(`No ownership for offering: ${offeringId}`);

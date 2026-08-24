@@ -165,6 +165,13 @@ class InMemoryLearningRepository implements LearningRepository {
   getOwnership(offeringId: string) {
     return this.ownerships.get(offeringId);
   }
+  listOwnerships(profileId: string) {
+    return [...this.ownerships.values()].filter(
+      (ownership) =>
+        ownership.ownerProfileId === profileId ||
+        ownership.coEditorProfileIds.includes(profileId)
+    );
+  }
   setCoEditors(offeringId: string, coEditorProfileIds: string[]) {
     const existing = this.ownerships.get(offeringId);
     if (!existing) throw new Error(`No ownership for offering: ${offeringId}`);
@@ -922,5 +929,176 @@ describe('AppService authored content', () => {
         status: 'active',
       });
     });
+  });
+});
+
+/**
+ * Nothing else lists a draft to the person writing it: the catalog hides
+ * drafts by design, and the dashboard shows only what a learner may see.
+ */
+describe('AppService.listMyOfferings', () => {
+  function ownership(
+    offeringId: string,
+    ownerProfileId: string,
+    coEditorProfileIds: string[] = []
+  ) {
+    return {
+      offeringId,
+      ownerProfileId,
+      coEditorProfileIds,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
+  function course(id: string, status: 'draft' | 'published') {
+    return {
+      id,
+      displayName: id,
+      subjectIds: ['art'],
+      focuses: [{ id: 'f', displayName: 'Art', subjectIds: ['art'] }],
+      offerings: [
+        {
+          id,
+          type: 'course',
+          displayName: id,
+          subjectId: 'art',
+          level: 100,
+          credits: 1,
+          outcomeTags: ['art'],
+          status,
+          modules: [
+            {
+              id: 'm',
+              title: 'M',
+              lessons: [
+                {
+                  id: 'l',
+                  title: 'l',
+                  slug: 'l',
+                  content: [{ format: 'markdown', body: 'words' }],
+                },
+              ],
+            },
+          ],
+          activities: [],
+        },
+      ],
+      requirements: {
+        id: 'r',
+        operator: 'AND',
+        children: [{ kind: 'offering', offeringId: id }],
+      },
+    } as unknown as ProgramTrack;
+  }
+
+  async function serviceWith(
+    tracks: ProgramTrack[],
+    ownerships: ReturnType<typeof ownership>[]
+  ) {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => tracks,
+            listOwnerships: (profileId: string) =>
+              ownerships.filter(
+                (item) =>
+                  item.ownerProfileId === profileId ||
+                  item.coEditorProfileIds.includes(profileId)
+              ),
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+    return moduleRef.get(AppService);
+  }
+
+  it('lists a draft to the author who owns it', async () => {
+    const service = await serviceWith(
+      [course('mine', 'draft')],
+      [ownership('mine', 'author')]
+    );
+
+    const mine = await service.listMyOfferings('author');
+
+    expect(mine.map((item) => item.offering.id)).toEqual(['mine']);
+    expect(mine[0].offering.status).toBe('draft');
+  });
+
+  it('lists published courses too, since an author still maintains them', async () => {
+    const service = await serviceWith(
+      [course('mine', 'published')],
+      [ownership('mine', 'author')]
+    );
+
+    expect(await service.listMyOfferings('author')).toHaveLength(1);
+  });
+
+  it('lists a course somebody invited them to co-edit', async () => {
+    const service = await serviceWith(
+      [course('theirs', 'draft')],
+      [ownership('theirs', 'author', ['helper'])]
+    );
+
+    const theirs = await service.listMyOfferings('helper');
+
+    expect(theirs.map((item) => item.offering.id)).toEqual(['theirs']);
+  });
+
+  // Publishing is the owner's call, so an author needs to know which is which.
+  it('says which of them are theirs to publish', async () => {
+    const service = await serviceWith(
+      [course('mine', 'draft'), course('theirs', 'draft')],
+      [ownership('mine', 'author'), ownership('theirs', 'someone', ['author'])]
+    );
+
+    const all = await service.listMyOfferings('author');
+
+    expect(all.map((item) => [item.offering.id, item.isOwner])).toEqual([
+      ['mine', true],
+      ['theirs', false],
+    ]);
+  });
+
+  it("does not list somebody else's course", async () => {
+    const service = await serviceWith(
+      [course('theirs', 'draft')],
+      [ownership('theirs', 'someone')]
+    );
+
+    expect(await service.listMyOfferings('author')).toEqual([]);
+  });
+
+  it('reads nothing at all for somebody who has written nothing', async () => {
+    const listPrograms = jest.fn();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms,
+            listOwnerships: () => [],
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+
+    expect(await moduleRef.get(AppService).listMyOfferings('nobody')).toEqual(
+      []
+    );
+    expect(listPrograms).not.toHaveBeenCalled();
+  });
+
+  it('counts the lessons in each one', async () => {
+    const service = await serviceWith(
+      [course('mine', 'draft')],
+      [ownership('mine', 'author')]
+    );
+
+    expect((await service.listMyOfferings('author'))[0].lessonCount).toBe(1);
   });
 });

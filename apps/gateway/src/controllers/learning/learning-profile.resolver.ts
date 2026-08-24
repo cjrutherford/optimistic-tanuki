@@ -8,6 +8,7 @@ import {
 } from '@optimistic-tanuki/constants';
 
 const LEARNING_APP_SCOPE = 'learning';
+const GLOBAL_APP_SCOPE = 'global';
 const LEARNING_LEARNER_ROLE = 'learning_learner';
 const LEARNING_COURSE_DESIGNER_ROLE = 'learning_course_designer';
 
@@ -15,6 +16,7 @@ interface LearningProfile {
   id: string;
   userId: string;
   appScope: string;
+  profileName?: string;
 }
 
 /**
@@ -63,7 +65,7 @@ export class LearningProfileResolver {
         { cmd: ProfileCommands.Create },
         {
           userId,
-          name: 'Learner',
+          name: await this.borrowedName(userId),
           description: '',
           profilePic: '',
           coverPic: '',
@@ -81,6 +83,32 @@ export class LearningProfileResolver {
     await this.grantRole(created.id, LEARNING_LEARNER_ROLE);
 
     return created.id;
+  }
+
+  /**
+   * The name to give a brand new learning profile.
+   *
+   * Borrowed from whatever the person is already called elsewhere on the
+   * platform. This used to be the literal string 'Learner', which meant every
+   * course anyone wrote was attributed to "Learner" on its own page. The
+   * fallback is still 'Learner', because a name is better than an empty
+   * byline and a userId is not a name.
+   */
+  private async borrowedName(userId: string): Promise<string> {
+    try {
+      const globalProfile = (await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { userId, appScope: GLOBAL_APP_SCOPE }
+        )
+      )) as LearningProfile | null;
+      return globalProfile?.profileName?.trim() || 'Learner';
+    } catch (error) {
+      this.logger.warn(
+        `Could not read a name for user ${userId}: ${(error as Error)?.message}`
+      );
+      return 'Learner';
+    }
   }
 
   /**

@@ -58,6 +58,13 @@ export interface CatalogTrack {
   focuses: { id: string; displayName: string; subjectIds: string[] }[];
   offerings: CatalogOffering[];
 }
+export interface MyCourse {
+  offering: CatalogOffering;
+  trackId: string;
+  trackDisplayName: string;
+  lessonCount: number;
+  isOwner: boolean;
+}
 export interface CatalogSubject {
   subjectId: string;
   displayName: string;
@@ -163,6 +170,58 @@ export class LearningDataService {
     return this.isBrowser
       ? this.http.get<CatalogTrack[]>('/api/learning/programs')
       : EMPTY;
+  }
+
+  /** The courses this author owns or co-edits, drafts included. */
+  myCourses(): Observable<MyCourse[]> {
+    return this.isBrowser
+      ? this.http.get<MyCourse[]>('/api/learning/me/courses')
+      : EMPTY;
+  }
+
+  authorStatus(): Observable<{ isCourseDesigner: boolean }> {
+    return this.isBrowser
+      ? this.http.get<{ isCourseDesigner: boolean }>('/api/learning/me/author')
+      : EMPTY;
+  }
+
+  optInAsAuthor(): Observable<{ isCourseDesigner: boolean }> {
+    return this.http.post<{ isCourseDesigner: boolean }>(
+      '/api/learning/me/author/opt-in',
+      {}
+    );
+  }
+
+  createCourse(input: {
+    displayName: string;
+    subjectId: string;
+    description?: string;
+  }): Observable<{ track: { id: string } }> {
+    return this.http.post<{ track: { id: string } }>(
+      '/api/learning/offerings',
+      input
+    );
+  }
+
+  saveCourse(
+    offeringId: string,
+    patch: {
+      displayName?: string;
+      description?: string;
+      modules?: unknown[];
+      activities?: unknown[];
+    }
+  ): Observable<unknown> {
+    return this.http.put(`/api/learning/offerings/${offeringId}`, patch);
+  }
+
+  setCourseStatus(
+    offeringId: string,
+    status: 'draft' | 'published'
+  ): Observable<unknown> {
+    return this.http.put(`/api/learning/offerings/${offeringId}/status`, {
+      status,
+    });
   }
 
   subjects(): Observable<CatalogSubject[]> {

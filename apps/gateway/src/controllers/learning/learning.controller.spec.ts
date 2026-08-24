@@ -522,6 +522,68 @@ describe('LearningController catalog and publication', () => {
     });
   });
 
+  /**
+   * Every course said its author was not recorded, because this read `name`
+   * from a profile whose field is `profileName`. Nothing failed: the lookup
+   * simply returned undefined and the page fell back to saying nothing.
+   */
+  describe('who wrote a course', () => {
+    beforeEach(() => {
+      client.send.mockReturnValue(of({ ownerProfileId: 'owner-1' }));
+    });
+
+    it('names the author from the profile field that actually exists', async () => {
+      profileClient.send.mockReturnValue(
+        of({ id: 'owner-1', profileName: 'Ada Lovelace' })
+      );
+
+      const detail = (await controller.getOffering('go-100', {})) as {
+        author: { displayName: string } | null;
+      };
+
+      expect(detail.author).toEqual({
+        profileId: 'owner-1',
+        displayName: 'Ada Lovelace',
+      });
+    });
+
+    it('says nothing rather than guessing when the profile has no name', async () => {
+      profileClient.send.mockReturnValue(
+        of({ id: 'owner-1', profileName: '' })
+      );
+
+      const detail = (await controller.getOffering('go-100', {})) as {
+        author: unknown;
+      };
+
+      expect(detail.author).toBeNull();
+    });
+
+    it('says nothing for a course nobody owns', async () => {
+      client.send.mockReturnValue(of({}));
+
+      const detail = (await controller.getOffering('go-100', {})) as {
+        author: unknown;
+      };
+
+      expect(detail.author).toBeNull();
+      expect(profileClient.send).not.toHaveBeenCalled();
+    });
+
+    // One line of text is not worth failing the whole page for.
+    it('still renders the course when the profile service is unreachable', async () => {
+      profileClient.send.mockReturnValue(
+        throwError(() => new Error('connection refused'))
+      );
+
+      const detail = (await controller.getOffering('go-100', {})) as {
+        author: unknown;
+      };
+
+      expect(detail.author).toBeNull();
+    });
+  });
+
   describe('reading a lesson', () => {
     it('is open to anonymous callers but still says who is asking', async () => {
       expect(
