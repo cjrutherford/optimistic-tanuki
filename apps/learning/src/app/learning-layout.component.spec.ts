@@ -60,7 +60,7 @@ describe('LearningLayoutComponent', () => {
     },
   ];
 
-  async function render(trackId = '') {
+  async function render(trackId = '', person: unknown = null) {
     TestBed.configureTestingModule({
       imports: [LearningLayoutComponent],
       providers: [
@@ -73,6 +73,7 @@ describe('LearningLayoutComponent', () => {
     fixture.componentInstance.trackId = trackId;
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
+    for (const pending of http.match('/api/learning/me')) pending.flush(person);
     for (const pending of http.match('/api/learning/dashboard')) {
       pending.flush(dashboard);
     }
@@ -116,5 +117,72 @@ describe('LearningLayoutComponent', () => {
     const topbar = element.querySelector('.topbar')?.textContent ?? '';
 
     expect(topbar).not.toMatch(/TypeScript|C\+\+|Rust/);
+  });
+});
+
+/**
+ * The header is the only place the app says who you are, and the only way in
+ * for somebody who is not signed in. It told people to sign in from three
+ * other screens while offering no route to it.
+ */
+describe('LearningLayoutComponent session', () => {
+  async function render(person: unknown) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [LearningLayoutComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    const fixture = TestBed.createComponent(LearningLayoutComponent);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    for (const pending of http.match('/api/learning/me')) pending.flush(person);
+    for (const pending of http.match('/api/learning/dashboard')) {
+      pending.flush([]);
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('offers a way in to somebody who is not signed in', async () => {
+    const element = await render(null);
+    const link = Array.from(element.querySelectorAll('a')).find(
+      (candidate) => candidate.textContent?.trim() === 'Sign in'
+    );
+
+    expect(link?.getAttribute('href')).toBe('/sign-in');
+  });
+
+  it('names whoever is signed in', async () => {
+    const element = await render({ name: 'Ada Lovelace' });
+
+    expect(element.querySelector('.who')?.textContent).toContain(
+      'Ada Lovelace'
+    );
+  });
+
+  // A course has to be attributable to somebody, so writing is offered only
+  // to a person the app can name.
+  it('does not offer writing to an anonymous visitor', async () => {
+    const element = await render(null);
+
+    expect(element.textContent).not.toContain('Write');
+  });
+
+  it('offers writing once somebody is signed in', async () => {
+    const element = await render({ name: 'Ada Lovelace' });
+
+    expect(element.textContent).toContain('Write');
+  });
+
+  it('offers a way out', async () => {
+    const element = await render({ name: 'Ada Lovelace' });
+
+    expect(element.textContent).toContain('Sign out');
   });
 });

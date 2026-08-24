@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { LessonProseComponent } from './lesson-prose.component';
 
 /**
  * Writing one lesson: its title, the address readers reach it by, and its text.
@@ -12,6 +13,7 @@ import { Component, computed, input, output } from '@angular/core';
  */
 @Component({
   selector: 'otlearn-lesson-editor',
+  imports: [LessonProseComponent],
   template: `
     <section class="editor">
       <header>
@@ -49,7 +51,10 @@ import { Component, computed, input, output } from '@angular/core';
         <div class="preview">
           <span class="label">Preview</span>
           @if (body()) {
-          <article class="prose" [innerHTML]="previewHtml()"></article>
+          <otlearn-lesson-prose
+            class="prose"
+            [html]="previewHtml()"
+          ></otlearn-lesson-prose>
           } @else {
           <p class="empty">Nothing written yet.</p>
           }

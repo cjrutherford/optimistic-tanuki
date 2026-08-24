@@ -1,14 +1,29 @@
-import { Component, Input, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, Input, inject, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AsyncPipe } from '@angular/common';
 import { LearningDataService } from './learning-data.service';
+import { LearningAuthService, SignedInPerson } from './learning-auth.service';
 
 @Component({
   selector: 'learning-layout',
   imports: [RouterLink, RouterLinkActive, AsyncPipe],
   template: ` <header class="topbar">
-      <a routerLink="/">Let&rsquo;s Go</a
-      ><span>Learn anything, in the open</span>
+      <a routerLink="/">Let&rsquo;s Go</a>
+      <span class="tagline">Learn anything, in the open</span>
+      <!--
+        The only place the app says who you are, and the only way in for
+        somebody who is not signed in. Reading is open to everyone, so this is
+        an invitation rather than a gate.
+      -->
+      <span class="session">
+        @if (person(); as signedIn) {
+        <span class="who">{{ signedIn.name }}</span>
+        <a routerLink="/author">Write</a>
+        <button type="button" (click)="signOut()">Sign out</button>
+        } @else {
+        <a routerLink="/sign-in">Sign in</a>
+        }
+      </span>
     </header>
     <div class="studio">
       <aside>
@@ -53,10 +68,33 @@ import { LearningDataService } from './learning-data.service';
         color: var(--lx-text-subtle);
         font: 0.72rem ui-monospace, monospace;
       }
-      .topbar a {
+      .topbar > a {
         color: var(--lx-accent);
         font-weight: 800;
         text-decoration: none;
+      }
+      .tagline {
+        flex: 1;
+      }
+      .session {
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+      }
+      .session .who {
+        color: var(--lx-text);
+        font-weight: 700;
+      }
+      .session a {
+        color: var(--lx-accent);
+        text-decoration: none;
+      }
+      .session button {
+        border: 0;
+        background: transparent;
+        color: var(--lx-text-muted);
+        font: inherit;
+        cursor: pointer;
       }
       .studio {
         display: grid;
@@ -132,6 +170,24 @@ import { LearningDataService } from './learning-data.service';
   ],
 })
 export class LearningLayoutComponent {
+  private readonly auth = inject(LearningAuthService);
+  private readonly router = inject(Router);
+
+  readonly person = signal<SignedInPerson | null>(null);
+
+  constructor() {
+    this.auth.me().subscribe((person) => this.person.set(person));
+  }
+
+  protected signOut(): void {
+    this.auth.logout().subscribe(() => {
+      this.person.set(null);
+      // A full reload, because everything on the page was fetched as the
+      // person who is now signed out.
+      this.router.navigateByUrl('/').then(() => location.reload());
+    });
+  }
+
   /**
    * The course being read, if any.
    *

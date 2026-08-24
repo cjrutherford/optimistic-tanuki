@@ -55,15 +55,15 @@ import {
           ><span
             ><b>{{ entry.program.displayName }}</b
             ><em
-              >{{ entry.totals.lessons }} lessons ·
-              {{ entry.totals.exercises }} practice exercises @if
+              >{{ entry.totals.lessons }} lessons @if (entry.totals.exercises) {
+              · {{ entry.totals.exercises }} practice exercises } @if
+              (entry.progress.completedLessons) { ·
+              {{ entry.progress.completedLessons }} read } @if
               (entry.progress.completedExercises) { ·
               {{ entry.progress.completedExercises }} solved,
               {{ entry.progress.points }} pts }</em
             ></span
-          ><strong
-            >{{ entry.progress.nextLessonId ? 'Continue' : 'Open' }} →</strong
-          ></a
+          ><strong>{{ action(entry) }} →</strong></a
         >}
       </section></ng-container
     ><ng-template #loading
@@ -154,6 +154,23 @@ import {
   ],
 })
 export class DashboardComponent {
+  /**
+   * What the card offers to do.
+   *
+   * A course that has been read to the end says so, rather than inviting
+   * somebody back into it. Lesson completion was computed by the server and
+   * never shown here, so finishing a course with no exercises in it looked
+   * exactly like never having opened it.
+   */
+  protected action(entry: DashboardEntry): string {
+    if (entry.progress.nextLessonId) {
+      return entry.progress.completedLessons ? 'Continue' : 'Open';
+    }
+    return entry.totals.lessons && entry.progress.completedLessons
+      ? 'Read again'
+      : 'Open';
+  }
+
   protected variantLabel(program: Program): string {
     return programVariantLabel(program);
   }

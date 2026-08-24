@@ -53,7 +53,7 @@ describe('LessonEditorComponent', () => {
   it('shows the preview it was handed', async () => {
     const { element } = await render();
 
-    expect(element.querySelector('.prose')?.innerHTML).toContain(
+    expect(element.querySelector('otlearn-lesson-prose')?.innerHTML).toContain(
       'Three pigments'
     );
   });
@@ -62,7 +62,7 @@ describe('LessonEditorComponent', () => {
     const { element } = await render({ body: '', previewHtml: '' });
 
     expect(element.textContent).toContain('Nothing written yet');
-    expect(element.querySelector('.prose')).toBeNull();
+    expect(element.querySelector('otlearn-lesson-prose')).toBeNull();
   });
 
   // A slug is part of a URL and is what exercises are matched on, so a bad

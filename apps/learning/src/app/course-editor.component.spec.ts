@@ -144,7 +144,7 @@ describe('CourseEditorComponent', () => {
     fixture.componentInstance.selected.set({ moduleIndex: 0, lessonIndex: 0 });
     fixture.detectChanges();
 
-    expect(element.querySelector('.prose')?.innerHTML).toContain(
+    expect(element.querySelector('otlearn-lesson-prose')?.innerHTML).toContain(
       '<h2>Three pigments</h2>'
     );
   });

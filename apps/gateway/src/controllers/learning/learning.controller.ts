@@ -433,6 +433,30 @@ export class LearningController {
     return { isCourseDesigner };
   }
 
+  /**
+   * Who the caller is, in this app's terms.
+   *
+   * The client cannot read the session cookie, so this is the only way for it
+   * to know whether anyone is signed in and what to call them. Anonymous
+   * callers get null rather than a 401, because the header renders for
+   * everyone.
+   */
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get('me')
+  async getMe(@Req() req: { user?: { userId?: string } }) {
+    const userId = req.user?.userId;
+    if (!userId) return null;
+    const profileId = await this.learningProfiles.resolveProfileId(userId);
+    const author = await this.learningProfiles.isCourseDesigner(profileId);
+    const profile = await this.resolveAuthor(profileId);
+    return {
+      profileId,
+      name: profile?.displayName ?? 'Learner',
+      isCourseDesigner: author,
+    };
+  }
+
   // An author's own courses, drafts included. Nothing else lists a draft to
   // the person writing it.
   @UseGuards(AuthGuard)

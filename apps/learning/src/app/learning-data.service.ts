@@ -306,6 +306,40 @@ export class LearningDataService {
       );
   }
 
+  /**
+   * Records that a lesson has been read.
+   *
+   * The only way a learner can make progress in a course with no code in it.
+   * The server refuses this without an enrolment, the same as submitting an
+   * exercise, so a 409 carries the offering to enrol in.
+   */
+  markLesson(
+    lessonId: string,
+    completed: boolean,
+    completedExerciseIds: string[],
+    points: number
+  ): Observable<LessonProgress> {
+    return this.http
+      .put<LessonProgress>('/api/learning/me/progress', {
+        lessonId,
+        completed,
+        completedExerciseIds,
+        points,
+      })
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          if (error.status === 401)
+            return throwError(() => new NotSignedInError());
+          if (error.status === 409) {
+            const offeringId =
+              (error.error as { offeringId?: string })?.offeringId ?? '';
+            return throwError(() => new NotEnrolledError(offeringId));
+          }
+          return throwError(() => error);
+        })
+      );
+  }
+
   /** Enrols the signed-in learner in an offering. */
   enrol(offeringId: string): Observable<{ offeringId: string }> {
     return this.http.post<{ offeringId: string }>('/api/learning/enrolments', {

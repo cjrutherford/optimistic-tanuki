@@ -44,6 +44,22 @@ export class LessonMarkdownService {
     this.marked.use({
       renderer: {
         code: ({ text, lang }) => renderCode(text, lang),
+        /**
+         * Task list items, as text rather than as a control.
+         *
+         * marked emits a real <input type="checkbox">, and Angular's sanitizer
+         * drops it, which left a done task and an undone one looking exactly
+         * the same. A symbol survives sanitizing and says which is which.
+         * Nothing here is interactive: a lesson records progress through the
+         * lesson itself, not through a checkbox in its prose.
+         */
+        listitem({ tokens, task, checked }) {
+          const body = this.parser.parse(tokens, false);
+          if (!task) return `<li>${body}</li>`;
+          return `<li class="task"><span class="task-mark">${
+            checked ? '&#10003;' : '&#9744;'
+          }</span>${body}</li>`;
+        },
         // A method, not an arrow: marked binds `this` to the renderer, which
         // is where the parser needed for inline markup lives.
         heading({ tokens, depth }) {

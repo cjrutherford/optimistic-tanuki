@@ -10,6 +10,7 @@ import {
   NotSignedInError,
   SubmitResult,
 } from './learning-data.service';
+import { LearningAuthService } from './learning-auth.service';
 
 const exercise: Exercise = {
   id: 'go-b-01',
@@ -60,6 +61,13 @@ function setup(
     imports: [LessonComponent],
     providers: [
       { provide: LearningDataService, useValue: data },
+      // The layout asks who is signed in so it can render the header. Stubbed
+      // rather than given an HttpClient, because none of these tests are
+      // about the session.
+      {
+        provide: LearningAuthService,
+        useValue: { me: () => of(null), logout: () => of(null) },
+      },
       {
         provide: ActivatedRoute,
         useValue: {
@@ -418,5 +426,84 @@ describe('LessonComponent', () => {
         'go-foundations-100-core'
       );
     });
+  });
+});
+
+/**
+ * A course with no code in it could be enrolled in and read but never
+ * progressed through, because the client never called the save-progress route
+ * at all. Found by reading an authored course end to end in a browser.
+ */
+describe('LessonComponent marking a lesson read', () => {
+  it('records the lesson against the learner', async () => {
+    const markLesson = jest.fn(() => of({} as LessonProgress));
+    const { fixture } = setup({ markLesson });
+
+    fixture.componentInstance['markRead'](
+      { lesson: { lesson: { id: 'b-01' } } },
+      true
+    );
+
+    expect(markLesson).toHaveBeenCalledWith('b-01', true, [], 0);
+  });
+
+  // This is a whole-row write, so dropping what was already solved would
+  // quietly undo work the learner has done.
+  it('carries through exercises already solved and points already earned', async () => {
+    const markLesson = jest.fn(() => of({} as LessonProgress));
+    const { fixture } = setup({ markLesson });
+
+    fixture.componentInstance['markRead'](
+      {
+        lesson: { lesson: { id: 'b-01' } },
+        recorded: {
+          lessonId: 'b-01',
+          completed: false,
+          completedExerciseIds: ['ex-1'],
+          points: 10,
+        },
+      },
+      true
+    );
+
+    expect(markLesson).toHaveBeenCalledWith('b-01', true, ['ex-1'], 10);
+  });
+
+  it('lets a learner take it back', async () => {
+    const markLesson = jest.fn(() => of({} as LessonProgress));
+    const { fixture } = setup({ markLesson });
+
+    fixture.componentInstance['markRead'](
+      { lesson: { lesson: { id: 'b-01' } } },
+      false
+    );
+
+    expect(markLesson).toHaveBeenCalledWith('b-01', false, [], 0);
+  });
+
+  it('asks an anonymous visitor to sign in', async () => {
+    const markLesson = jest.fn(() => throwError(() => new NotSignedInError()));
+    const { fixture } = setup({ markLesson });
+
+    fixture.componentInstance['markRead'](
+      { lesson: { lesson: { id: 'b-01' } } },
+      true
+    );
+
+    expect(fixture.componentInstance['markError']).toContain('Sign in');
+  });
+
+  it('asks somebody who has not enrolled to enrol', async () => {
+    const markLesson = jest.fn(() =>
+      throwError(() => new NotEnrolledError('go-foundations-100-core'))
+    );
+    const { fixture } = setup({ markLesson });
+
+    fixture.componentInstance['markRead'](
+      { lesson: { lesson: { id: 'b-01' } } },
+      true
+    );
+
+    expect(fixture.componentInstance['markError']).toContain('Enrol');
   });
 });

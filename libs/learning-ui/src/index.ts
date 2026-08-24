@@ -5,3 +5,5 @@ export * from './lib/offering-summary.component';
 export * from './lib/outline-editor.component';
 export * from './lib/lesson-editor.component';
 export * from './lib/activity-editor.component';
+export * from './lib/lesson-completion.component';
+export * from './lib/lesson-prose.component';

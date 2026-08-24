@@ -146,4 +146,51 @@ describe('LessonMarkdownService', () => {
       expect(bind('<img src="x" onerror="alert(1)">')).not.toContain('onerror');
     });
   });
+
+  /**
+   * marked emits a real <input type="checkbox"> for these, and Angular's
+   * sanitizer drops it, which left a done task and an undone one rendering
+   * identically. Found by auditing every markdown construct in a browser.
+   */
+  describe('task lists', () => {
+    it('marks a task nobody has done', () => {
+      const html = service.render('- [ ] Check the tide');
+
+      expect(html).toContain('task-mark');
+      expect(html).toContain('&#9744;');
+      expect(html).toContain('Check the tide');
+    });
+
+    it('marks a task that is done, differently', () => {
+      const html = service.render('- [x] Check the tide');
+
+      expect(html).toContain('&#10003;');
+    });
+
+    it('tells the two apart', () => {
+      const done = service.render('- [x] Done');
+      const notDone = service.render('- [ ] Not done');
+
+      expect(done).not.toBe(notDone);
+    });
+
+    // The symbol has to be text, or the sanitizer removes it and both states
+    // look the same again.
+    it('uses no input element, which would not survive sanitizing', () => {
+      expect(service.render('- [x] Done')).not.toContain('<input');
+    });
+
+    it('leaves an ordinary list item alone', () => {
+      const html = service.render('- Just a bullet');
+
+      expect(html).toContain('<li>Just a bullet</li>');
+      expect(html).not.toContain('task-mark');
+    });
+
+    it('still renders inline markup inside a task', () => {
+      expect(service.render('- [ ] Read **the** table')).toContain(
+        '<strong>the</strong>'
+      );
+    });
+  });
 });

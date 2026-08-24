@@ -4,7 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
-import { EnrolmentGateComponent } from '@optimistic-tanuki/learning-ui';
+import {
+  EnrolmentGateComponent,
+  LessonCompletionComponent,
+  LessonProseComponent,
+} from '@optimistic-tanuki/learning-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
 import { LessonMarkdownService } from './lesson-markdown.service';
 import { CodeEditorComponent } from './code-editor.component';
@@ -13,6 +17,7 @@ import { Diagnostic, parseCompilerErrors } from './code-diagnostics';
 import {
   Exercise,
   LearningDataService,
+  LessonProgress,
   NotEnrolledError,
   NotSignedInError,
 } from './learning-data.service';
@@ -42,6 +47,8 @@ interface ExerciseOutcome {
     BadgeComponent,
     CodeEditorComponent,
     EnrolmentGateComponent,
+    LessonCompletionComponent,
+    LessonProseComponent,
   ],
   template: `<learning-layout [trackId]="trackId"
     ><ng-container *ngIf="vm$ | async as vm"
@@ -53,7 +60,20 @@ interface ExerciseOutcome {
         <h1>{{ vm.lesson.lesson.title }}</h1>
       </header>
       <div class="lesson-grid">
-        <article class="prose" [innerHTML]="vm.content"></article>
+        <div class="reading">
+          <otlearn-lesson-prose [html]="vm.content"></otlearn-lesson-prose>
+          <!--
+            The only way to make progress in a course with no code in it, which
+            is most subjects. Progress used to be recorded solely as a side
+            effect of passing a code exercise.
+          -->
+          <otlearn-lesson-completion
+            [completed]="vm.lessonCompleted"
+            [busy]="marking"
+            [error]="markError"
+            (toggle)="markRead(vm, $event)"
+          ></otlearn-lesson-completion>
+        </div>
         <aside>
           <div class="practice-head">
             <span>Practice</span>
@@ -216,153 +236,14 @@ interface ExerciseOutcome {
       }
 
       /* Rendered lesson markdown. */
-      .prose {
-        color: var(--lx-text-body);
-        line-height: 1.7;
-        overflow-wrap: break-word;
-      }
-      .prose :first-child {
-        margin-top: 0;
-      }
-      .prose h1,
-      .prose h2,
-      .prose h3,
-      .prose h4 {
-        margin: 2rem 0 0.6rem;
-        color: var(--lx-text);
-        letter-spacing: -0.02em;
-        line-height: 1.25;
-        text-wrap: balance;
-      }
-      .prose h1 {
-        font-size: 1.8rem;
-      }
-      .prose h2 {
-        font-size: 1.4rem;
-      }
-      .prose h3 {
-        font-size: 1.13rem;
-      }
-      .prose h4 {
-        font-size: 1rem;
-      }
-      .prose p,
-      .prose ul,
-      .prose ol,
-      .prose blockquote,
-      .prose table {
-        margin: 0 0 1rem;
-      }
-      .prose ul,
-      .prose ol {
-        padding-left: 1.35rem;
-      }
-      .prose li {
-        margin-bottom: 0.35rem;
-      }
-      .prose a {
-        color: var(--lx-accent);
-      }
-      .prose strong {
-        color: var(--lx-text);
-      }
-      .prose blockquote {
-        padding: 0.2rem 0 0.2rem 1rem;
-        border-left: 3px solid var(--lx-border-strong);
-        color: var(--lx-text-muted);
-      }
-      .prose hr {
-        margin: 2rem 0;
-        border: 0;
-        border-top: 1px solid var(--lx-border);
-      }
-      .prose table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        border-collapse: collapse;
-        font-size: 0.87rem;
-      }
-      .prose th,
-      .prose td {
-        padding: 0.5rem 0.7rem;
-        border: 1px solid var(--lx-border);
-        text-align: left;
-      }
-      .prose th {
-        color: var(--lx-text-muted);
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-      /* Inline code, but not the code inside a highlighted block. */
-      .prose :not(pre) > code {
-        padding: 0.12em 0.4em;
-        border-radius: 3px;
-        background: var(--lx-inline-code);
-        color: var(--lx-accent-soft);
-        font: 400 0.85em ui-monospace, monospace;
-      }
-      .prose pre {
-        margin: 0 0 1.15rem;
-        padding: 0.95rem 1.1rem;
-        overflow-x: auto;
-        border: 1px solid var(--lx-border-strong);
-        border-left: 3px solid var(--lx-border-accent);
-        background: var(--lx-code);
-        color: var(--lx-code-text);
-        font: 400 0.83rem/1.65 ui-monospace, monospace;
-      }
-      .prose pre code {
-        background: none;
-        padding: 0;
-        font: inherit;
-      }
-
-      /* Prism tokens, tuned to this app's console palette. */
-      .prose .token.comment,
-      .prose .token.prolog,
-      .prose .token.doctype,
-      .prose .token.cdata {
-        color: var(--lx-syn-comment);
-        font-style: italic;
-      }
-      .prose .token.punctuation {
-        color: var(--lx-syn-punct);
-      }
-      .prose .token.keyword,
-      .prose .token.rule,
-      .prose .token.important {
-        color: var(--lx-syn-keyword);
-      }
-      .prose .token.string,
-      .prose .token.char,
-      .prose .token.attr-value {
-        color: var(--lx-syn-string);
-      }
-      .prose .token.number,
-      .prose .token.boolean,
-      .prose .token.constant,
-      .prose .token.symbol {
-        color: var(--lx-syn-number);
-      }
-      .prose .token.function,
-      .prose .token.class-name {
-        color: var(--lx-accent);
-      }
-      .prose .token.operator,
-      .prose .token.entity,
-      .prose .token.url {
-        color: var(--lx-syn-operator);
-      }
-      .prose .token.property,
-      .prose .token.tag,
-      .prose .token.attr-name,
-      .prose .token.builtin {
-        color: var(--lx-syn-property);
-      }
-      .prose .token.deleted {
-        color: var(--lx-danger);
+      /*
+        Lesson typography lives in otlearn-lesson-prose, so the reader's page
+        and the author's preview cannot drift apart. It used to be 54 rules
+        here, every one of them dead: content bound through innerHTML carries
+        no encapsulation attribute, so none of them ever matched.
+      */
+      otlearn-lesson-prose {
+        min-width: 0;
       }
       aside {
         padding: 1.1rem;
@@ -578,9 +459,56 @@ export class LessonComponent {
         solvedCount: lesson.exercises.filter((exercise) =>
           solved.has(exercise.id)
         ).length,
+        lessonCompleted: Boolean(
+          progress.find((entry) => entry.lessonId === lesson.lesson.id)
+            ?.completed
+        ),
+        // Carried through so marking a lesson read does not wipe the
+        // exercises already solved in it, or the points earned for them.
+        recorded: progress.find((entry) => entry.lessonId === lesson.lesson.id),
       };
     })
   );
+
+  protected marking = false;
+  protected markError = '';
+
+  /**
+   * Records, or un-records, that this lesson has been read.
+   *
+   * Whatever exercises were already solved and whatever points they earned are
+   * carried through, because this is a whole-row write and dropping them would
+   * quietly undo work the learner has done.
+   */
+  protected markRead(
+    vm: { lesson: { lesson: { id: string } }; recorded?: LessonProgress },
+    completed: boolean
+  ): void {
+    this.marking = true;
+    this.markError = '';
+    this.data
+      .markLesson(
+        vm.lesson.lesson.id,
+        completed,
+        vm.recorded?.completedExerciseIds ?? [],
+        vm.recorded?.points ?? 0
+      )
+      .subscribe({
+        next: () => {
+          this.marking = false;
+          this.progressReload$.next();
+        },
+        error: (failure: unknown) => {
+          this.marking = false;
+          this.markError =
+            failure instanceof NotSignedInError
+              ? 'Sign in to keep your progress.'
+              : failure instanceof NotEnrolledError
+              ? 'Enrol in this course to keep your progress.'
+              : 'Could not save that just now.';
+        },
+      });
+  }
 
   /** How many hints the learner has asked for, per exercise. */
   protected shownHints: Record<string, number> = {};
