@@ -16,6 +16,7 @@ type ImportedChallenge = {
   testCode?: string;
   expectedOutput?: string;
   validationPattern?: string;
+  supportingFiles?: Record<string, string>;
 };
 
 const normalize = (

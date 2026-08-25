@@ -359,6 +359,16 @@ export const CodeExerciseSchema = z.object({
   points: z.number().nonnegative(),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   expectedOutput: z.string().optional(),
+  /**
+   * Files written beside the learner's code, keyed by filename.
+   *
+   * A lesson about imports cannot be practised in one file, so an exercise may
+   * ship the module being imported. These are read-only from the learner's
+   * side: they are shown so the import can be written against something real,
+   * and the runner refuses any name that would escape the run directory or
+   * replace the submission.
+   */
+  supportingFiles: z.record(z.string().min(1), z.string()).optional(),
   /** Never returned by the public catalog endpoint. */
   verifier: z.object({
     testCode: z.string().optional(),

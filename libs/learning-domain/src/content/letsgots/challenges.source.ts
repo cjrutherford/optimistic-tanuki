@@ -7,6 +7,14 @@ export interface Challenge {
   starterCode: string;
   expectedOutput: string;
   testCode?: string;
+  /**
+   * Modules the exercise ships for the learner to import.
+   *
+   * A lesson about imports cannot be practised in one file. These are written
+   * beside the submission and are read-only: the runner refuses a name that
+   * would escape the run directory or replace main.ts.
+   */
+  supportingFiles?: Record<string, string>;
   hints: string[];
   points: number;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -1273,6 +1281,148 @@ test('the same string means different things per kind', function () {
       'Join them with |, the same union syntax as any other',
       "The other member is { kind: 'submit'; label: string }",
       'Because kind is a literal type rather than string, switching on it narrows the union',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+
+  // ── Lessons that need more than one file ────────────────────────────────
+  {
+    id: 'basics-modules-imports',
+    lessonSlug: 'modules-imports',
+    moduleId: 'basics',
+    title: 'Import What You Need',
+    description:
+      'Import from a module that already exists, using a named import, a renamed import, and a type-only import.',
+    starterCode: `// geometry.ts sits next to this file. It exports:
+//   interface Point       a shape with x and y
+//   const origin          a Point at 0, 0
+//   function distance     the distance between two Points
+//   function area         the area of a circle, which you do not need here
+//
+// Import only what you use: distance, origin, and the Point type.
+// Rename distance to gap on the way in, so the call below works.
+// Bring Point in as a type-only import, because it is a type and
+// erasing it keeps it out of the emitted JavaScript.
+
+
+const here: Point = { x: 3, y: 4 };
+
+console.log(gap(origin, here));
+console.log(here.x + here.y);
+`,
+    supportingFiles: {
+      'geometry.ts': `export interface Point {
+  x: number;
+  y: number;
+}
+
+export const origin: Point = { x: 0, y: 0 };
+
+export function distance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+export function area(radius: number): number {
+  return Math.PI * radius * radius;
+}
+`,
+    },
+    expectedOutput: '5\n7\n',
+    hints: [
+      "A named import lists what you want: import { distance } from './geometry.ts'",
+      'Rename with as: { distance as gap }',
+      'A type-only import is written import { type Point }, or import type { Point }',
+      'Node needs the .ts extension in the specifier here',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'modules-declaration-files',
+    lessonSlug: 'declaration-files',
+    moduleId: 'modules-packages',
+    title: 'Type an Untyped Module',
+    description:
+      'A JavaScript module has no types of its own. Describe its shape so the compiler can check calls against it.',
+    starterCode: `// legacy.ts is plain JavaScript behaviour with no useful types: every
+// export is typed as any, so nothing about the calls below is checked.
+//
+// Declare the shape it should have, and use it to type the imports.
+// This is the same job a .d.ts file does for a package that ships
+// without types.
+
+import { formatName, VERSION } from './legacy.ts';
+
+// Describe the module's surface here. formatName takes a first and last
+// name and returns a string; VERSION is a string.
+interface LegacyModule {
+
+}
+
+// Then check the imports against it rather than trusting them.
+const legacy: LegacyModule = { formatName, VERSION };
+
+console.log(legacy.formatName('Ada', 'Lovelace'));
+console.log(legacy.VERSION);
+`,
+    supportingFiles: {
+      'legacy.ts': `// Deliberately untyped: this stands in for a JavaScript package that
+// ships no declarations of its own.
+export const formatName = (first: any, last: any): any =>
+  String(first) + ' ' + String(last);
+
+export const VERSION: any = '1.4.0';
+`,
+    },
+    expectedOutput: 'Ada Lovelace\n1.4.0\n',
+    hints: [
+      'A function property is written formatName: (first: string, last: string) => string',
+      'VERSION is just VERSION: string',
+      'Assigning the imports to a typed object is what forces the check',
+      'If the signature is wrong, that assignment stops compiling, which is the point',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'modules-resolution',
+    lessonSlug: 'module-resolution',
+    moduleId: 'modules-packages',
+    title: 'Default, Named, and Namespace',
+    description:
+      'One module, three ways in. Use each correctly, and see why a default export is not a name you can rely on.',
+    starterCode: `// counter.ts exports one default and two named values.
+//
+// Bring in all three:
+//   the default export, which you may call anything, so call it tally
+//   the named export step
+//   everything at once, as a namespace called counter
+//
+// A default export carries no name across the boundary, which is why
+// the importer chooses one. Named exports do carry theirs, so they must
+// match or be renamed explicitly.
+
+
+console.log(tally(3));
+console.log(step);
+console.log(counter.label);
+`,
+    supportingFiles: {
+      'counter.ts': `export const step = 2;
+export const label = 'counter';
+
+export default function increment(value: number): number {
+  return value + step;
+}
+`,
+    },
+    expectedOutput: '5\n2\ncounter\n',
+    hints: [
+      "A default import takes no braces: import tally from './counter.ts'",
+      'Named imports take braces and must match the exported name',
+      'Both can be combined: import tally, { step } from ...',
+      "A namespace import is import * as counter from './counter.ts'",
     ],
     points: 25,
     difficulty: 'medium',

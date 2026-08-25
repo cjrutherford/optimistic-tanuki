@@ -133,8 +133,49 @@ async function execute(languageId, cwd, testMode) {
   return await sandboxed(steps.run[0], steps.run.slice(1), cwd);
 }
 
+/**
+ * Names an exercise may write beside the learner's code.
+ *
+ * A name is a filename in the run directory and nothing else. Anything with a
+ * separator, a drive, or a parent segment is refused, because a run directory
+ * that can be escaped is not a run directory. The extension list keeps this to
+ * source files rather than, say, a shell profile a toolchain might read.
+ */
+const SUPPORTING_FILE_NAME = /^[A-Za-z0-9._-]+$/;
+const SUPPORTING_FILE_EXTENSIONS = ['.ts', '.go', '.rs', '.cpp', '.h', '.hpp'];
+
+function validateSupportingFiles(files, entryPoint) {
+  const entries = Object.entries(files);
+  if (entries.length > 10) {
+    throw new Error('Too many supporting files');
+  }
+  for (const [name, contents] of entries) {
+    if (!SUPPORTING_FILE_NAME.test(name) || name === '.' || name === '..') {
+      throw new Error(`Unsafe supporting file name: ${name}`);
+    }
+    if (!SUPPORTING_FILE_EXTENSIONS.some((ext) => name.endsWith(ext))) {
+      throw new Error(`Unsupported supporting file type: ${name}`);
+    }
+    if (name === entryPoint) {
+      // Otherwise a supporting file could quietly replace the learner's work
+      // and the exercise would grade something they never wrote.
+      throw new Error(`A supporting file may not replace ${entryPoint}`);
+    }
+    if (typeof contents !== 'string' || contents.length > 50_000) {
+      throw new Error(`Invalid contents for ${name}`);
+    }
+  }
+  return entries;
+}
+
 async function handleRun(payload) {
-  const { languageId, code, verifier = {}, expectedOutput } = payload;
+  const {
+    languageId,
+    code,
+    verifier = {},
+    expectedOutput,
+    supportingFiles = {},
+  } = payload;
 
   if (typeof code !== 'string' || code.length > 50_000) {
     throw new Error('Invalid code payload');
@@ -142,6 +183,13 @@ async function handleRun(payload) {
   if (!sourceNames[languageId]) {
     throw new Error(`Unsupported language: ${languageId}`);
   }
+  if (supportingFiles === null || typeof supportingFiles !== 'object') {
+    throw new Error('Invalid supporting files');
+  }
+  const supporting = validateSupportingFiles(
+    supportingFiles,
+    sourceNames[languageId]
+  );
 
   const testCode = verifier.testCode;
   const wantsCppTests = Boolean(testCode) && languageId === 'cpp';
@@ -169,6 +217,13 @@ async function handleRun(payload) {
 
   const directory = await mkdtemp(join(scratchRoot, 'learning-run-'));
   try {
+    // Supporting files first, so the entry point can import them. They are
+    // written verbatim: they belong to the exercise, not to the learner, and
+    // no harness is spliced into them.
+    for (const [name, contents] of supporting) {
+      await writeFile(join(directory, name), contents);
+    }
+
     await writeFile(
       join(directory, sourceNames[languageId]),
       buildSource(languageId, code, testCode, TYPESCRIPT_HARNESS)

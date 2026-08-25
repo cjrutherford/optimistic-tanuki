@@ -494,7 +494,13 @@ export class AppService {
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ languageId: exercise.languageId, code }),
+        body: JSON.stringify({
+          languageId: exercise.languageId,
+          code,
+          // The exercise's own modules, so an import in a plain run resolves
+          // to the same thing it will on submission.
+          supportingFiles: exercise.supportingFiles,
+        }),
       }
     );
     const result = (await response.json()) as {
@@ -534,6 +540,7 @@ export class AppService {
           code,
           verifier: exercise.verifier,
           expectedOutput: exercise.expectedOutput,
+          supportingFiles: exercise.supportingFiles,
         }),
       }
     );
