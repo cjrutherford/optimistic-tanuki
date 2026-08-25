@@ -2,6 +2,45 @@
 
 The `<algorithm>` header provides over 100 generic algorithms that work with any STL container via iterators.
 
+## First: Reading a Lambda
+
+Most algorithms here take a small function as an argument, and almost nobody
+writes that as a named function. They write a lambda, which is a function
+defined where it is used. You will see them on nearly every line below, so
+here is enough to read them. The Modern C++ module covers writing them
+properly.
+
+```cpp
+[](int x){ return x % 2 == 0; }
+// ^  ^        ^
+// |  |        the body, returning true or false
+// |  the parameters, exactly like a normal function
+// the capture list
+```
+
+The capture list is the part with no equivalent in an ordinary function. It
+says which surrounding variables the lambda may use:
+
+```cpp
+int threshold = 5;
+
+[](int x){ return x > threshold; }   // error: threshold was not captured
+[threshold](int x){ return x > threshold; }  // by copy
+[&threshold](int x){ return x > threshold; } // by reference
+[=](int x){ return x > threshold; }  // everything used, by copy
+[&](int x){ return x > threshold; }  // everything used, by reference
+```
+
+Empty brackets, `[]`, mean the lambda uses nothing from around it, which is
+what most of the examples below need. A lambda that returns `true` or `false`
+is called a predicate, and that is what `find_if`, `count_if`, `any_of` and
+friends are asking for.
+
+One warning worth carrying now: capturing by reference with `[&]` and then
+using the lambda after those variables have gone out of scope is a dangling
+reference, with the same consequences as any other. For an algorithm call that
+runs immediately, as all of these do, that cannot happen.
+
 ## Searching
 
 ```cpp

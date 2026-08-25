@@ -99,26 +99,24 @@ process('hello'); // "HELLO" — TypeScript knows it returns string
 process(5); // 10 — TypeScript knows it returns number
 ```
 
-## Generic Functions
+## Functions Over Many Types
 
-Generics let you write functions that work with multiple types while preserving type information:
+Sometimes a function should work for several types without losing track of
+which one it was given. Writing `any` gets you there and throws away
+everything useful:
 
 ```typescript
-function identity<T>(value: T): T {
-  return value;
-}
-
-const str = identity('hello'); // type: string
-const num = identity(42); // type: number
-
-// With constraints
-function first<T>(arr: T[]): T | undefined {
+function first(arr: any[]): any {
   return arr[0];
 }
 
-const firstNum = first([1, 2, 3]); // type: number | undefined
-const firstStr = first(['a', 'b']); // type: string | undefined
+const n = first([1, 2, 3]); // n is any, so n.toUpperCase() compiles and crashes
 ```
+
+The tool for this is a generic, written with a type parameter in angle
+brackets. It has its own lesson later in the course, because doing it well
+takes more room than there is here. What is worth knowing now is that the
+problem has a proper solution and `any` is not it.
 
 ## Callbacks and Higher-Order Functions
 

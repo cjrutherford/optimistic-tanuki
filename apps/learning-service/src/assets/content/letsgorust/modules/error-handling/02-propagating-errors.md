@@ -70,16 +70,39 @@ fn read_and_parse(path: &str) -> Result<i32, AppError> {
 
 ## Using Box<dyn Error>
 
-For quick prototyping, use `Box<dyn std::error::Error>`:
+`?` converts the error it propagates into the function's error type. That is
+awkward when a function can fail in several unrelated ways: reading a file
+gives you an `io::Error`, parsing gives you a `ParseIntError`, and no single
+concrete type covers both.
+
+`Box<dyn std::error::Error>` is the escape hatch. Read it right to left:
+
+- `std::error::Error` is a trait, so it describes what a type can do rather
+  than what it is. Anything that can report itself as an error implements it.
+- `dyn` means the concrete type is decided at runtime instead of compile time.
+  A `dyn Trait` is called a trait object, and it is how one value can hold any
+  of several types that share a trait. Traits and trait objects have their own
+  module next.
+- `Box` puts it on the heap, which is required here: different error types have
+  different sizes, so the compiler cannot reserve space for "whichever one it
+  turns out to be" on the stack.
+
+Together it means "some error, I am not saying which". Every standard error
+type converts into it automatically, so `?` works across all of them:
 
 ```rust
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let s = std::fs::read_to_string("file.txt")?;
-    let n: i32 = s.trim().parse()?;
+    let s = std::fs::read_to_string("file.txt")?; // io::Error
+    let n: i32 = s.trim().parse()?;               // ParseIntError
     println!("Number: {}", n);
     Ok(())
 }
 ```
+
+The cost is that the caller learns nothing about what went wrong beyond a
+message, so they cannot handle one failure differently from another. That is
+fine in `main` and in prototypes, and wrong in a library. The next lesson
+builds an error type that keeps the distinction.
 
 ## Using thiserror and anyhow
 

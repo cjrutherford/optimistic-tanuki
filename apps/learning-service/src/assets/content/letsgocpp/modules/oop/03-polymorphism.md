@@ -45,7 +45,18 @@ Rectangle r(4.0, 6.0);
 printArea(c);  // Area: 78.53975
 printArea(r);  // Area: 24
 
-// Collections of mixed shapes
+// Collections of mixed shapes.
+//
+// This needs unique_ptr, which the memory module covers next. Enough to read
+// it now: unique_ptr<Shape> owns a heap-allocated Shape and deletes it when it
+// goes out of scope, so nothing here leaks and no delete is written by hand.
+// make_unique<Circle>(3.0) builds a Circle and hands back that owning pointer.
+//
+// A plain vector<Shape> would not work, and the reason is the point of this
+// lesson: every element of a vector is the same size, so storing a Circle in a
+// vector<Shape> copies only the Shape part of it and discards the rest. That
+// is called slicing, and it takes the virtual dispatch with it. Holding a
+// pointer keeps the real object, and with it the behaviour.
 std::vector<std::unique_ptr<Shape>> shapes;
 shapes.push_back(std::make_unique<Circle>(3.0));
 shapes.push_back(std::make_unique<Rectangle>(2.0, 5.0));

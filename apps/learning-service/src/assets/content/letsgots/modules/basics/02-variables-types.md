@@ -125,6 +125,58 @@ const id: UserId = 'abc-123';
 const score: Score = 95;
 ```
 
+## Union Types
+
+A union says a value is one of several types. Write the alternatives with `|`
+between them:
+
+```typescript
+type Id = string | number;
+
+let userId: Id = 'abc-123';
+userId = 42; // also fine
+```
+
+Before you can use a union, you have to work out which side you are holding.
+The compiler will not let you call a string method on something that might be
+a number:
+
+```typescript
+function format(id: string | number): string {
+  if (typeof id === 'string') {
+    return id.toUpperCase(); // here TypeScript knows it is a string
+  }
+  return id.toFixed(0); // and here it knows it is a number
+}
+```
+
+That `typeof` check is called narrowing, and it is most of what working with
+unions feels like day to day. The union and intersection lesson goes further,
+into building unions out of object types and discriminating between them.
+
+## Describing an Object's Shape
+
+`type` names a shape, and so does `interface`. Both work here:
+
+```typescript
+interface User {
+  name: string;
+  age: number;
+  email?: string; // optional: may be missing
+}
+
+const ada: User = { name: 'Ada', age: 36 };
+```
+
+The `?` marks a property that does not have to be there. Reading one gives you
+`string | undefined`, so you have to handle the missing case before using it.
+
+`interface User { ... }` and `type User = { ... }` describe the same shape here,
+and the differences between them only start to matter later. The interfaces and
+types lesson covers when to reach for which. Until then, use `interface` for
+object shapes and `type` for everything else, which is the convention most
+codebases follow anyway.
+
 ## `const` vs `let` Type Widening
 
 ```typescript

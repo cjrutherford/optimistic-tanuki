@@ -25,6 +25,13 @@ impl fmt::Display for AppError {
 }
 
 impl std::error::Error for AppError {
+    // source reports the error underneath this one, so a caller can walk the
+    // chain back to the original cause.
+    //
+    // The `+ 'static` is a lifetime bound, and it says the underlying error
+    // borrows nothing that could be dropped before it is. This signature is
+    // fixed by the standard library, so you copy it rather than choose it.
+    // Lifetimes get their own module shortly.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             AppError::IoError(e) => Some(e),

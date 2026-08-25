@@ -81,6 +81,9 @@ const scores: number[] = [95, 87, 72]; // typed array
 TypeScript code (`.ts` files) must be compiled to JavaScript before it can run in a browser or Node.js:
 
 ```bash
+# Turn strict on before you write anything
+# (tsc --init writes a tsconfig.json with "strict": true)
+
 # Compile a single file
 npx tsc hello.ts
 
@@ -89,6 +92,41 @@ npx tsx hello.ts
 ```
 
 On this site, the **Run** button handles compilation automatically — you can focus on learning!
+
+## Turn On Strict Mode First
+
+Every example in this course assumes `"strict": true` in your `tsconfig.json`.
+That single flag is what makes TypeScript worth using, and without it a lot of
+what follows will silently not apply to your code.
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "NodeNext"
+  }
+}
+```
+
+The part that matters most is `strictNullChecks`, which `strict` turns on. With
+it off, `null` and `undefined` belong to every type, so this compiles and then
+crashes at runtime:
+
+```typescript
+function greet(name: string) {
+  return 'Hello, ' + name.toUpperCase();
+}
+
+greet(null); // strict: a compile error. Non-strict: a crash.
+```
+
+With strict on, the compiler makes you say when something might be missing, and
+then makes you handle it. Almost every guarantee this course describes depends
+on it.
+
+There is a full lesson on `tsconfig.json` and on strict mode near the end of
+the course. This is the one setting worth turning on before you understand it.
 
 ## Key Concepts to Remember
 
