@@ -4,7 +4,22 @@ export interface CodeChallenge {
   title: string;
   description: string;
   starterCode: string;
+  /**
+   * A `#[cfg(test)]` module appended to the learner's code.
+   *
+   * Be aware of what this does and does not buy you. The runner compiles with
+   * `rustc` and runs the binary; it does not run `cargo test`, so a
+   * `#[cfg(test)]` module is compiled out and its assertions never execute.
+   * An exercise carrying only `testCode` is therefore graded on whether it
+   * compiles and runs, not on whether it is right.
+   *
+   * Leave this empty and set `expectedOutput` instead when the exercise should
+   * actually be checked. The runner only compares output when there is no test
+   * code at all.
+   */
   testCode: string;
+  /** Exact stdout the finished exercise must produce. */
+  expectedOutput?: string;
   hints: string[];
   points: number;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -636,6 +651,342 @@ mod tests {
     ],
     points: 30,
     difficulty: 'medium',
+  },
+
+  // Pattern matching
+  {
+    id: 'structs-04',
+    lessonSlug: 'pattern-matching',
+    title: 'Match on an Enum',
+    description:
+      'Write a function that turns a Shape into a description, using match. Every variant must be handled, and match will not compile until they are.',
+    starterCode: `enum Shape {
+    Circle(f64),
+    Rectangle(f64, f64),
+    Unit,
+}
+
+fn describe(shape: &Shape) -> String {
+    // Match on shape. Bind the values inside each variant and use them.
+    //   Circle(r)       -> "circle of radius 3"
+    //   Rectangle(w, h) -> "rectangle 2 by 5"
+    //   Unit            -> "unit"
+
+}
+
+fn main() {
+    println!("{}", describe(&Shape::Circle(3.0)));
+    println!("{}", describe(&Shape::Rectangle(2.0, 5.0)));
+    println!("{}", describe(&Shape::Unit));
+}`,
+    testCode: ``,
+    expectedOutput: 'circle of radius 3\nrectangle 2 by 5\nunit',
+    hints: [
+      'match shape { Shape::Circle(r) => ..., Shape::Rectangle(w, h) => ..., Shape::Unit => ... }',
+      'The names in the pattern bind to what is inside the variant',
+      'format!("circle of radius {}", r) builds the string',
+      'A match must cover every variant, or the compiler rejects it',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+
+  // Error handling
+  {
+    id: 'errors-03',
+    lessonSlug: 'propagating-errors',
+    title: 'Propagate With ?',
+    description:
+      'Use the ? operator to pass an error up to the caller instead of handling it where it happens.',
+    starterCode: `fn parse_and_double(text: &str) -> Result<i32, std::num::ParseIntError> {
+    // Parse text into an i32 and return double it.
+    // Use ? so a parse failure is returned to the caller rather than
+    // unwrapped here.
+
+}
+
+fn main() {
+    match parse_and_double("21") {
+        Ok(n) => println!("ok {}", n),
+        Err(_) => println!("bad"),
+    }
+    match parse_and_double("abc") {
+        Ok(n) => println!("ok {}", n),
+        Err(_) => println!("bad"),
+    }
+}`,
+    testCode: ``,
+    expectedOutput: 'ok 42\nbad',
+    hints: [
+      'text.parse::<i32>() returns Result<i32, ParseIntError>',
+      '? unwraps the Ok and returns early on Err',
+      'let n = text.parse::<i32>()?; then Ok(n * 2)',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'errors-04',
+    lessonSlug: 'custom-errors',
+    title: 'An Error Type of Your Own',
+    description:
+      'Implement Display and the Error trait for your own error type, so it can be reported like any other error.',
+    starterCode: `use std::fmt;
+
+#[derive(Debug)]
+enum ValidationError {
+    TooShort(usize),
+    Empty,
+}
+
+// Implement Display so the error can be printed.
+//   TooShort(n) -> "too short: 2 characters"
+//   Empty       -> "empty"
+
+
+// Implement std::error::Error. The default methods are enough, so the
+// body of the impl block can be empty -- but Display must exist first,
+// because Error requires it.
+
+
+fn validate(name: &str) -> Result<(), ValidationError> {
+    if name.is_empty() {
+        return Err(ValidationError::Empty);
+    }
+    if name.len() < 3 {
+        return Err(ValidationError::TooShort(name.len()));
+    }
+    Ok(())
+}
+
+fn main() {
+    for name in ["", "ab", "ada"] {
+        match validate(name) {
+            Ok(()) => println!("ok"),
+            Err(e) => println!("{}", e),
+        }
+    }
+}`,
+    testCode: ``,
+    expectedOutput: 'empty\ntoo short: 2 characters\nok',
+    hints: [
+      'impl fmt::Display for ValidationError { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { ... } }',
+      'Inside fmt, match on self and use write!(f, "...") for each variant',
+      'impl std::error::Error for ValidationError {} with an empty body is enough',
+      'Error requires Display, which is why the order matters',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+
+  // Generics
+  {
+    id: 'traits-03',
+    lessonSlug: 'generics',
+    title: 'Constrain a Generic',
+    description:
+      'Write a generic function that works for any comparable type, using a trait bound.',
+    starterCode: `// largest should return the biggest item in a slice.
+// It must work for any type that can be compared, not just i32.
+// Constrain T with a trait bound rather than writing the function twice.
+fn largest<T>(items: &[T]) -> &T {
+
+}
+
+fn main() {
+    println!("{}", largest(&[3, 7, 2]));
+    println!("{}", largest(&["pear", "apple", "quince"]));
+}`,
+    testCode: ``,
+    expectedOutput: '7\nquince',
+    hints: [
+      'PartialOrd is the trait for > and <',
+      'Write it as fn largest<T: PartialOrd>(items: &[T]) -> &T',
+      'Walk the slice keeping a reference to the biggest seen so far',
+      'Returning &T rather than T means the caller keeps ownership',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+
+  // Lifetimes
+  {
+    id: 'lifetimes-01',
+    lessonSlug: 'lifetimes',
+    title: 'Annotate a Lifetime',
+    description:
+      'This function does not compile. The signature does not say how the returned reference relates to the arguments, so add the annotation that does.',
+    starterCode: `// This fails with E0106: missing lifetime specifier.
+// The compiler cannot tell whether the returned reference borrows from
+// x or from y, so it will not guess. Say so with a lifetime parameter.
+fn longest(x: &str, y: &str) -> &str {
+    if x.len() > y.len() { x } else { y }
+}
+
+fn main() {
+    println!("{}", longest("hello", "hi"));
+    println!("{}", longest("a", "bcd"));
+}`,
+    testCode: ``,
+    expectedOutput: 'hello\nbcd',
+    hints: [
+      "A lifetime parameter is declared like a type parameter: fn longest<'a>(...)",
+      "Then use it on the references: x: &'a str, y: &'a str, and the return type",
+      'It means the result lives no longer than the shorter of the two inputs',
+      'The body does not change at all; only the signature was ever wrong',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+
+  // Collections
+  {
+    id: 'collections-03',
+    lessonSlug: 'hashmaps',
+    title: 'Count With a HashMap',
+    description:
+      'Count how many times each word appears, using the entry API rather than checking for the key first.',
+    starterCode: `use std::collections::HashMap;
+
+fn main() {
+    let words = ["apple", "pear", "apple", "fig", "apple", "pear"];
+    let mut counts: HashMap<&str, i32> = HashMap::new();
+
+    // Count each word. The entry API gives you a place to write whether or
+    // not the key was already there, in one lookup rather than two.
+
+
+    let mut keys: Vec<&&str> = counts.keys().collect();
+    keys.sort();
+    for k in keys {
+        println!("{} {}", k, counts[*k]);
+    }
+}`,
+    testCode: ``,
+    expectedOutput: 'apple 3\nfig 1\npear 2',
+    hints: [
+      'for word in words { ... }',
+      'counts.entry(word) returns an Entry for that key',
+      '.or_insert(0) gives you a &mut i32, inserting 0 first if the key was absent',
+      'Dereference it to add: *counts.entry(word).or_insert(0) += 1;',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+
+  // Concurrency: this module had no exercises at all.
+  {
+    id: 'concurrency-01',
+    lessonSlug: 'threads',
+    title: 'Spawn and Join',
+    description:
+      'Start a thread, give it work, and collect its result. join returns what the closure returned.',
+    starterCode: `use std::thread;
+
+fn main() {
+    // Spawn a thread that sums the numbers 1 to 10 and returns the total.
+    // move is needed so the closure takes ownership of what it uses.
+    let handle =
+
+    // join() waits for the thread and hands back its return value,
+    // wrapped in a Result because the thread might have panicked.
+    let total =
+
+    println!("{}", total);
+}`,
+    testCode: ``,
+    expectedOutput: '55',
+    hints: [
+      'thread::spawn(move || { ... }) returns a JoinHandle',
+      'The last expression in the closure is what the thread returns',
+      '(1..=10).sum::<i32>() adds them up',
+      'handle.join().unwrap() waits and unwraps the Result',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'concurrency-02',
+    lessonSlug: 'channels',
+    title: 'Send Between Threads',
+    description:
+      'Use a channel to move values out of a thread. The sender is moved into the thread; the receiver stays behind.',
+    starterCode: `use std::sync::mpsc;
+use std::thread;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    // Spawn a thread that sends 1, 2 and 3 down the channel.
+    // tx must be moved into the closure.
+
+
+    // Receiving ends when every sender has been dropped. Because tx was
+    // moved into the thread, it is dropped when the thread finishes, so
+    // this loop terminates on its own.
+    for received in rx {
+        println!("{}", received);
+    }
+}`,
+    testCode: ``,
+    expectedOutput: '1\n2\n3',
+    hints: [
+      'thread::spawn(move || { ... }) takes ownership of tx',
+      'tx.send(i).unwrap() sends one value',
+      'Loop over 1..=3 inside the thread',
+      'Do not keep a second copy of tx outside, or the receive loop never ends',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'concurrency-03',
+    lessonSlug: 'shared-state',
+    title: 'Share a Counter',
+    description:
+      'Four threads increment one counter a thousand times each. Make it total 4000 every time, using the two types Rust gives you for shared mutable state.',
+    starterCode: `use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    // Two wrappers, each doing one job:
+    //   Mutex<T> makes the value safe to mutate from one thread at a time.
+    //   Arc<T> lets several threads own a handle to the same value.
+    // Rc will not compile here, because it is not Send.
+    let counter =
+
+    let mut handles = vec![];
+
+    for _ in 0..4 {
+        // Each thread needs its own handle to the same counter.
+        let counter =
+
+        handles.push(thread::spawn(move || {
+            for _ in 0..1000 {
+                // Lock, increment, and let the guard drop at the end of
+                // the iteration so another thread can take its turn.
+
+            }
+        }));
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("{}", *counter.lock().unwrap());
+}`,
+    testCode: ``,
+    expectedOutput: '4000',
+    hints: [
+      'Arc::new(Mutex::new(0)) wraps a zero in both',
+      'Arc::clone(&counter) makes another handle; it copies the pointer, not the value',
+      'counter.lock().unwrap() returns a guard that dereferences to the value',
+      '*counter.lock().unwrap() += 1; does the increment',
+      'The lock is released when the guard goes out of scope, with no unlock call',
+    ],
+    points: 30,
+    difficulty: 'hard',
   },
 ];
 

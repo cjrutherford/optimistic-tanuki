@@ -1082,6 +1082,201 @@ console.log(formatCurrency(5.5, "EUR"))`,
     points: 10,
     difficulty: 'easy',
   },
+
+  // ── Lessons that had no exercise at all ──────────────────────────────────
+  {
+    id: 'basics-control-flow',
+    lessonSlug: 'control-flow',
+    moduleId: 'basics',
+    title: 'Exhaustive Switch',
+    description:
+      'Handle every variant of a union in a switch, and make the compiler prove you did by assigning the leftover to never.',
+    starterCode: `type Status = 'idle' | 'loading' | 'done'
+
+function label(status: Status): string {
+  switch (status) {
+    // Return "waiting" for idle, "working" for loading,
+    // and "finished" for done.
+
+    default: {
+      // If a new Status is added later and not handled above, this
+      // assignment stops compiling, which is the point of writing it.
+      const unreachable: never = status
+      return unreachable
+    }
+  }
+}
+
+console.log(label('idle'))
+console.log(label('loading'))
+console.log(label('done'))`,
+    expectedOutput: 'waiting\nworking\nfinished\n',
+    testCode: `test('idle is waiting', function () {
+  expect(label('idle')).toBe('waiting');
+});
+test('loading is working', function () {
+  expect(label('loading')).toBe('working');
+});
+test('done is finished', function () {
+  expect(label('done')).toBe('finished');
+});`,
+    hints: [
+      "case 'idle': return 'waiting'",
+      'Each case narrows status to that one literal type',
+      'Once every case is handled, status in the default branch has type never',
+      'That is why the never assignment compiles only when the switch is exhaustive',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'testing-mocking',
+    lessonSlug: 'mocking',
+    moduleId: 'testing',
+    title: 'A Typed Spy',
+    description:
+      'Write a spy that records the calls made to it and keeps the signature of the function it stands in for.',
+    starterCode: `type Logger = (message: string) => void
+
+// createSpy should return a function usable anywhere a Logger is, plus a
+// calls array holding every argument it was given. Returning an
+// intersection lets it be both at once.
+function createSpy(): Logger & { calls: string[] } {
+
+}
+
+const spy = createSpy()
+
+function greet(name: string, log: Logger) {
+  log('greeting ' + name)
+}
+
+greet('Ada', spy)
+greet('Grace', spy)
+
+console.log(spy.calls.length)
+console.log(spy.calls[0])`,
+    expectedOutput: '2\ngreeting Ada\n',
+    testCode: `test('the spy records every call', function () {
+  var s = createSpy();
+  s('one');
+  s('two');
+  expect(s.calls.length).toBe(2);
+});
+test('it records the arguments in order', function () {
+  var s = createSpy();
+  s('first');
+  expect(s.calls[0]).toBe('first');
+});
+test('a fresh spy starts empty', function () {
+  expect(createSpy().calls.length).toBe(0);
+});`,
+    hints: [
+      'Declare the array first: const calls: string[] = []',
+      'Then a function that pushes into it: const fn = (message: string) => { calls.push(message) }',
+      'Object.assign(fn, { calls }) returns the intersection type you need',
+      'Assigning fn.calls directly will not type-check, because the declared function type has no calls',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'frontend-hooks-typing',
+    lessonSlug: 'hooks-typing',
+    moduleId: 'frontend-react',
+    title: 'Type a State Hook',
+    description:
+      "Model useState's signature. The setter must accept either a new value or a function from the old value to the new one.",
+    starterCode: `// useState returns a pair: the current value, and a setter.
+// The setter takes either the next value directly, or a function that
+// receives the previous value and returns the next one. Model both.
+type Setter<T> =
+
+function useState<T>(initial: T): [T, Setter<T>] {
+  let value = initial
+  const set: Setter<T> = (next) => {
+    value = typeof next === 'function' ? (next as (prev: T) => T)(value) : next
+  }
+  // Reading through a function keeps this honest outside React.
+  return [value, set] as [T, Setter<T>]
+}
+
+const [count, setCount] = useState(0)
+setCount(5)
+setCount((previous) => previous + 1)
+
+console.log(typeof count)
+console.log(typeof setCount)`,
+    expectedOutput: 'number\nfunction\n',
+    testCode: `test('the initial value comes back', function () {
+  var pair = useState(7);
+  expect(pair[0]).toBe(7);
+});
+test('the setter is a function', function () {
+  var pair = useState('x');
+  expect(typeof pair[1]).toBe('function');
+});
+test('it works for other types too', function () {
+  var pair = useState(true);
+  expect(pair[0]).toBe(true);
+});`,
+    hints: [
+      'A union of the two shapes: (next: T) => void combined with the updater form',
+      'Write it as: type Setter<T> = (next: T | ((prev: T) => T)) => void',
+      'The union goes on the parameter, not on the whole function type',
+      'That is why the body needs the typeof check before calling next',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'frontend-component-patterns',
+    lessonSlug: 'component-patterns',
+    moduleId: 'frontend-react',
+    title: 'Props That Cannot Be Wrong',
+    description:
+      'Use a discriminated union so illegal prop combinations fail to compile rather than being checked at runtime.',
+    starterCode: `// A button is either a link, which needs an href, or a submit button,
+// which needs an onClick. Neither should accept the other's prop.
+//
+// A single interface with both optional cannot express that: it allows
+// passing both, or neither. A discriminated union can. Give each member
+// a literal 'kind' so TypeScript can tell them apart.
+type ButtonProps =
+
+function render(props: ButtonProps): string {
+  // Switching on the discriminant narrows props to one member, so
+  // props.href is only reachable in the branch that has it.
+  switch (props.kind) {
+    case 'link':
+      return 'link:' + props.href
+    case 'submit':
+      return 'submit:' + props.label
+  }
+}
+
+console.log(render({ kind: 'link', href: '/home' }))
+console.log(render({ kind: 'submit', label: 'Save' }))`,
+    expectedOutput: 'link:/home\nsubmit:Save\n',
+    testCode: `test('a link renders its href', function () {
+  expect(render({ kind: 'link', href: '/a' })).toBe('link:/a');
+});
+test('a submit renders its label', function () {
+  expect(render({ kind: 'submit', label: 'Go' })).toBe('submit:Go');
+});
+test('the same string means different things per kind', function () {
+  expect(render({ kind: 'link', href: '/x' })).toBe('link:/x');
+  expect(render({ kind: 'submit', label: '/x' })).toBe('submit:/x');
+});`,
+    hints: [
+      "Each member is an object type with a literal kind: { kind: 'link'; href: string }",
+      'Join them with |, the same union syntax as any other',
+      "The other member is { kind: 'submit'; label: string }",
+      'Because kind is a literal type rather than string, switching on it narrows the union',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
 ];
 
 export const TOTAL_POINTS = challenges.reduce((sum, c) => sum + c.points, 0);

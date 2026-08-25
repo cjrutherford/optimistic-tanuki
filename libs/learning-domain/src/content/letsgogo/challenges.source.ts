@@ -2213,6 +2213,100 @@ func main() {
     points: 30,
     difficulty: 'hard',
   },
+
+  // Race conditions: this lesson had no exercise.
+  {
+    id: 'p-04',
+    lessonSlug: 'race-conditions',
+    title: 'Fix the Data Race',
+    description:
+      'Four goroutines increment a counter a thousand times each. The total should be 4000 and usually is not. Fix it.',
+    starterCode: `package main
+
+import (
+    "fmt"
+    "sync"
+)
+
+func main() {
+    var wg sync.WaitGroup
+    counter := 0
+
+    // counter++ is three operations: read, add, write. Two goroutines
+    // interleaving them lose an update, and nothing reports it.
+    //
+    // Guard the increment with a sync.Mutex. Lock before touching the
+    // counter and unlock after, so only one goroutine is inside at a time.
+
+    for i := 0; i < 4; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            for j := 0; j < 1000; j++ {
+                counter++
+            }
+        }()
+    }
+
+    wg.Wait()
+    fmt.Println(counter)
+}`,
+    expectedOutput: '4000',
+    hints: [
+      'Declare a var mu sync.Mutex alongside the counter',
+      'mu.Lock() before counter++ and mu.Unlock() after',
+      'defer mu.Unlock() works too, but inside the inner loop, not the goroutine',
+      'Run it with `go run -race .` to see the detector name the conflict',
+      'sync/atomic is the other answer here, and atomic.AddInt64 is faster for a single counter',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+
+  // Packages and imports: the overview lesson had no exercise of its own.
+  {
+    id: 'b-27',
+    lessonSlug: 'packages-imports',
+    title: 'Exported or Not',
+    description:
+      'In Go, capitalisation decides visibility. Fix the names so the program compiles and prints what it should.',
+    starterCode: `package main
+
+import (
+    "fmt"
+    "strings"
+)
+
+// Go has no public or private keyword. An identifier starting with a
+// capital letter is exported and visible to other packages; a lowercase
+// one is not. Inside a single package everything is reachable either way,
+// but the convention still tells a reader what is meant to be used.
+
+// This helper is meant to be part of the package's public surface.
+// Rename it so it is exported.
+func shout(text string) string {
+    return strings.ToUpper(text) + "!"
+}
+
+// This one is an internal detail and should stay unexported.
+// Rename it so it is not exported.
+func Trim(text string) string {
+    return strings.TrimSpace(text)
+}
+
+func main() {
+    fmt.Println(Shout(trim("  hello  ")))
+}`,
+    expectedOutput: 'HELLO!',
+    hints: [
+      'Exported means the first letter is a capital: shout becomes Shout',
+      'Unexported means it starts lowercase: Trim becomes trim',
+      'main is calling Shout and trim already, so the names have to match',
+      'strings.ToUpper and strings.TrimSpace are doing the actual work',
+    ],
+    points: 15,
+    difficulty: 'easy',
+  },
 ];
 
 // Helper to get challenges for a lesson

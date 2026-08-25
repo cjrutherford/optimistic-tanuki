@@ -793,6 +793,330 @@ int multiply(int a, int b) {
     points: 25,
     difficulty: 'hard',
   },
+
+  // ─── Gaps: lessons that had no exercise at all ────────────────────────────
+
+  {
+    id: 'oop-04',
+    lessonSlug: 'polymorphism',
+    title: 'Dispatch Through a Base Pointer',
+    description:
+      'Give Shape a virtual area, override it in both subclasses, and total a collection of mixed shapes held by base pointer.',
+    starterCode: `#include <vector>
+#include <memory>
+
+class Shape {
+public:
+    // Make this virtual so a call through Shape* runs the derived version.
+    // Give the class a virtual destructor too, or deleting through a
+    // Shape* will not run the derived destructor.
+    double area() const { return 0.0; }
+};
+
+class Square : public Shape {
+public:
+    explicit Square(double side) : side_(side) {}
+    // Override area here.
+private:
+    double side_;
+};
+
+class Rect : public Shape {
+public:
+    Rect(double w, double h) : w_(w), h_(h) {}
+    // Override area here.
+private:
+    double w_, h_;
+};
+
+// Sum the areas. Each element is a Shape* but a Square or Rect underneath,
+// and virtual dispatch is what makes this add the right numbers.
+double totalArea(const std::vector<std::unique_ptr<Shape>>& shapes) {
+
+}`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <vector>
+#include <memory>
+
+TEST_CASE("totalArea adds mixed shapes", "[oop]") {
+    std::vector<std::unique_ptr<Shape>> shapes;
+    shapes.push_back(std::make_unique<Square>(3.0));
+    shapes.push_back(std::make_unique<Rect>(2.0, 5.0));
+    REQUIRE(totalArea(shapes) == Catch::Approx(19.0));
+}
+
+TEST_CASE("an empty collection totals zero", "[oop]") {
+    std::vector<std::unique_ptr<Shape>> shapes;
+    REQUIRE(totalArea(shapes) == Catch::Approx(0.0));
+}
+
+TEST_CASE("dispatch really is virtual", "[oop]") {
+    // If area is not virtual this calls Shape::area and returns 0.
+    std::unique_ptr<Shape> s = std::make_unique<Square>(4.0);
+    REQUIRE(s->area() == Catch::Approx(16.0));
+}`,
+    hints: [
+      'virtual double area() const { return 0.0; } in the base',
+      'Add `virtual ~Shape() = default;` as well',
+      'In each subclass write `double area() const override { ... }`',
+      'override is not required but makes the compiler check you actually overrode something',
+      'Loop the vector and accumulate s->area()',
+    ],
+    points: 25,
+    difficulty: 'medium',
+  },
+  {
+    id: 'memory-04',
+    lessonSlug: 'stack-heap',
+    title: 'Stack, Heap, and Who Frees It',
+    description:
+      'Two functions with the same job. One leaks and one cannot, and the difference is where the memory lives.',
+    starterCode: `#include <vector>
+#include <numeric>
+
+// This allocates and never frees. Every call leaks the array.
+// Rewrite it so nothing is allocated at all: the values are needed only
+// for the length of the call, so they belong on the stack.
+int sumLeaky(int count) {
+    int* values = new int[count];
+    for (int i = 0; i < count; ++i) values[i] = i + 1;
+    int total = 0;
+    for (int i = 0; i < count; ++i) total += values[i];
+    return total;  // values is never deleted
+}
+
+// Now the case where the heap is the right answer: the caller decides the
+// size at runtime and keeps the result. Return a vector, which owns its
+// buffer and frees it when the caller is done.
+std::vector<int> firstN(int count) {
+
+}`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <vector>
+
+TEST_CASE("sumLeaky still adds up", "[memory]") {
+    REQUIRE(sumLeaky(4) == 10);
+    REQUIRE(sumLeaky(1) == 1);
+    REQUIRE(sumLeaky(0) == 0);
+}
+
+TEST_CASE("sumLeaky no longer calls new", "[memory]") {
+    // Called many times: a leak here would be obvious under a sanitiser,
+    // and a stack version costs nothing.
+    long long total = 0;
+    for (int i = 0; i < 1000; ++i) total += sumLeaky(10);
+    REQUIRE(total == 55000);
+}
+
+TEST_CASE("firstN returns the numbers", "[memory]") {
+    REQUIRE(firstN(4) == std::vector<int>{1, 2, 3, 4});
+    REQUIRE(firstN(0).empty());
+}`,
+    hints: [
+      'For sumLeaky, you do not need a container at all: add i + 1 as you go',
+      'If you want one, std::vector<int> values(count) allocates and frees itself',
+      'For firstN, build a std::vector<int> and return it',
+      'Returning a vector by value does not copy the buffer; it is moved',
+      'The rule: stack when the value dies with the call, heap when it outlives it or the size is unknown',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'memory-03',
+    lessonSlug: 'raii',
+    title: 'Write a RAII Guard',
+    description:
+      'Make a type that acquires in its constructor and releases in its destructor, so the release cannot be forgotten or skipped by an early return.',
+    starterCode: `#include <vector>
+
+// A tiny stand-in for a real resource.
+inline std::vector<const char*>& log() {
+    static std::vector<const char*> entries;
+    return entries;
+}
+
+// Build a guard that appends "open" when constructed and "close" when
+// destroyed. That is the whole of RAII: tie the lifetime of the resource
+// to the lifetime of an object, and let scope do the work.
+//
+// It must also not be copyable. Two guards owning one resource would
+// release it twice, which is the same bug as a double free.
+class Guard {
+
+};`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <vector>
+#include <string>
+
+TEST_CASE("the guard opens and closes with its scope", "[memory]") {
+    log().clear();
+    {
+        Guard g;
+        REQUIRE(log().size() == 1);
+        REQUIRE(std::string(log()[0]) == "open");
+    }
+    REQUIRE(log().size() == 2);
+    REQUIRE(std::string(log()[1]) == "close");
+}
+
+TEST_CASE("it closes even when the scope exits early", "[memory]") {
+    log().clear();
+    auto run = [](bool bail) {
+        Guard g;
+        if (bail) return;
+    };
+    run(true);
+    REQUIRE(log().size() == 2);
+    REQUIRE(std::string(log()[1]) == "close");
+}
+
+TEST_CASE("the guard cannot be copied", "[memory]") {
+    REQUIRE_FALSE(std::is_copy_constructible<Guard>::value);
+}`,
+    hints: [
+      'Guard() { log().push_back("open"); } is the constructor',
+      '~Guard() { log().push_back("close"); } is the destructor',
+      'Delete the copy operations: Guard(const Guard&) = delete;',
+      'And Guard& operator=(const Guard&) = delete;',
+      'The destructor runs on every exit from the scope, including an early return or a thrown exception, which is the point',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+  {
+    id: 'stl-04',
+    lessonSlug: 'iterators',
+    title: 'Walk With Iterators',
+    description:
+      'Sum a vector using an explicit iterator loop rather than a range-for, so the begin/end pair is doing visible work.',
+    starterCode: `#include <vector>
+
+// Add up every element, using an iterator rather than an index or a
+// range-for. begin() points at the first element and end() points one
+// past the last, which is why the loop condition is != end().
+int sumWith(const std::vector<int>& v) {
+
+}
+
+// Return the number of elements strictly greater than threshold, again
+// using iterators.
+int countAbove(const std::vector<int>& v, int threshold) {
+
+}`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <vector>
+
+TEST_CASE("sumWith adds every element", "[stl]") {
+    REQUIRE(sumWith({1, 2, 3, 4}) == 10);
+    REQUIRE(sumWith({}) == 0);
+    REQUIRE(sumWith({-2, 2}) == 0);
+}
+
+TEST_CASE("countAbove counts what is bigger", "[stl]") {
+    REQUIRE(countAbove({1, 5, 3, 9}, 3) == 2);
+    REQUIRE(countAbove({1, 2}, 10) == 0);
+    REQUIRE(countAbove({}, 0) == 0);
+}`,
+    hints: [
+      'for (auto it = v.begin(); it != v.end(); ++it) { ... }',
+      '*it is the element the iterator points at',
+      'Use const_iterator implicitly by taking v as a const reference, which is already done for you',
+      'end() is one past the last element, so it is never dereferenced',
+    ],
+    points: 20,
+    difficulty: 'medium',
+  },
+  {
+    id: 'templates-04',
+    lessonSlug: 'template-specialization',
+    title: 'Specialise a Template',
+    description:
+      'Write a general template, then a full specialisation for one type that needs to behave differently.',
+    starterCode: `#include <string>
+
+// The general case: describe any type as "value".
+template <typename T>
+std::string describe(T value) {
+    return "value";
+}
+
+// Add a full specialisation for bool that returns "true" or "false".
+// A full specialisation names the concrete type and takes no template
+// parameters of its own.
+
+
+// And one for std::string that returns the string itself.
+`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <string>
+
+TEST_CASE("the general template still handles other types", "[templates]") {
+    REQUIRE(describe(42) == "value");
+    REQUIRE(describe(3.5) == "value");
+}
+
+TEST_CASE("bool is specialised", "[templates]") {
+    REQUIRE(describe(true) == "true");
+    REQUIRE(describe(false) == "false");
+}
+
+TEST_CASE("std::string is specialised", "[templates]") {
+    REQUIRE(describe(std::string("hello")) == "hello");
+}`,
+    hints: [
+      'template <> std::string describe<bool>(bool value) { ... }',
+      'The empty angle brackets say this is a full specialisation',
+      'Return value ? "true" : "false"',
+      'The std::string one returns its argument unchanged',
+    ],
+    points: 25,
+    difficulty: 'hard',
+  },
+  {
+    id: 'modern-04',
+    lessonSlug: 'concurrency',
+    title: 'Guard a Shared Counter',
+    description:
+      'Four threads increment one counter a thousand times each. Without a lock the total is wrong and varies run to run; with one it is 4000 every time.',
+    starterCode: `#include <thread>
+#include <mutex>
+#include <vector>
+
+// Increment counter 1000 times from each of four threads, and return the
+// total. Unsynchronised ++ is a data race: reading, adding and writing
+// are separate steps, and two threads interleaving them lose updates.
+//
+// Protect it with the mutex. Prefer std::lock_guard over calling lock()
+// and unlock() yourself, so the mutex is released even if the body
+// returns early or throws.
+int countToFourThousand() {
+    int counter = 0;
+    std::mutex m;
+    std::vector<std::thread> threads;
+
+
+
+    return counter;
+}`,
+    testCode: `#include "catch_amalgamated.hpp"
+
+TEST_CASE("the count is exact every time", "[modern]") {
+    // Run it repeatedly: a missing lock often passes once by luck.
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        REQUIRE(countToFourThousand() == 4000);
+    }
+}`,
+    hints: [
+      'threads.emplace_back([&]{ ... }); starts a thread capturing by reference',
+      'Inside the loop body: std::lock_guard<std::mutex> guard(m); then ++counter;',
+      'The guard locks on construction and unlocks when it goes out of scope',
+      'Join every thread before reading the counter, or you read it while they are still running',
+      'for (auto& t : threads) t.join();',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
 ];
 
 export function getChallengesForLesson(lessonSlug: string): CodeChallenge[] {
