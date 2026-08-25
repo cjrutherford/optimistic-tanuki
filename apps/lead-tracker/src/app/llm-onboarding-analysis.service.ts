@@ -107,6 +107,7 @@ const DISC_ASSESSMENT_SCHEMA = {
 
 const RESUME_PARSE_SCHEMA = {
   type: 'object',
+  additionalProperties: false,
   properties: {
     summary: { type: 'string' },
     skills: { type: 'array', items: { type: 'string' } },
