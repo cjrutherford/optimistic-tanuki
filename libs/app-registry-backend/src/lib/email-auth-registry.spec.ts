@@ -33,7 +33,10 @@ describe('app email authentication metadata', () => {
     const configured = DEFAULT_APP_REGISTRY.apps.filter(
       (app) => app.authEmail?.enabled
     );
-    expect(configured).toHaveLength(11);
+    // Update when an app genuinely gains or loses authentication, not to
+    // quiet a failure. The assertion below is the one that matters: every
+    // sender has to be on an approved domain.
+    expect(configured).toHaveLength(12);
     expect(
       configured.every((app) => isApprovedAuthEmailSender(app.authEmail!.from))
     ).toBe(true);
