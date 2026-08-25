@@ -10,6 +10,7 @@ import {
 } from './lib/typescript-harness.mjs';
 import { CATCH2_DIR, catch2Available, catch2Results } from './lib/catch2.mjs';
 import { buildSource, prepare, verdict } from './lib/run-plan.mjs';
+import { libtestResults } from './lib/libtest.mjs';
 
 const port = Number(process.env.PORT || 3025);
 
@@ -194,7 +195,14 @@ async function handleRun(payload) {
     }
 
     if (testMode && languageId === 'rust') {
-      return { ...result, testsPassed: result.success, testResults: [] };
+      // rustc --test builds libtest's harness, so the exit code is already the
+      // verdict. Parsing names which test failed and why, which a non-zero
+      // exit on its own does not.
+      const { testsPassed, testResults } = libtestResults(
+        result.output,
+        result.exitCode
+      );
+      return { ...result, testResults, testsPassed };
     }
 
     return {

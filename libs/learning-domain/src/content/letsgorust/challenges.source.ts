@@ -7,18 +7,19 @@ export interface CodeChallenge {
   /**
    * A `#[cfg(test)]` module appended to the learner's code.
    *
-   * Be aware of what this does and does not buy you. The runner compiles with
-   * `rustc` and runs the binary; it does not run `cargo test`, so a
-   * `#[cfg(test)]` module is compiled out and its assertions never execute.
-   * An exercise carrying only `testCode` is therefore graded on whether it
-   * compiles and runs, not on whether it is right.
-   *
-   * Leave this empty and set `expectedOutput` instead when the exercise should
-   * actually be checked. The runner only compares output when there is no test
-   * code at all.
+   * These do run. The runner compiles with `rustc --test`, which builds
+   * libtest's harness, so the assertions execute and the exit code is the
+   * verdict. Use this when correctness is about behaviour the tests can probe
+   * rather than about what gets printed.
    */
   testCode: string;
-  /** Exact stdout the finished exercise must produce. */
+  /**
+   * Exact stdout the finished exercise must produce.
+   *
+   * Only consulted when there is no test code, because test code puts the run
+   * into test mode and libtest's own output replaces the program's. Use this
+   * when the printed result is the thing being taught.
+   */
   expectedOutput?: string;
   hints: string[];
   points: number;
