@@ -12,13 +12,14 @@ import { validateE2eEnvironment } from '../validate-e2e-environment.mjs';
 
 test('the registry exposes the CI microservice and UI suites by kind', () => {
   assert.equal(listE2eTargets('microservice').length, 13);
-  assert.equal(listE2eTargets('ui').length, 8);
+  assert.equal(listE2eTargets('ui').length, 9);
   assert.equal(listE2eTargets('dedicated-overlay').length, 1);
 
   assert.deepEqual(
     listE2eTargets('ui').map((target) => target.nx.project),
     [
       'client-interface-e2e',
+      'learning-e2e',
       'forgeofwill-e2e',
       'fin-commander-e2e',
       'digital-homestead-e2e',
@@ -94,7 +95,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   const uiServiceSets = listE2eTargets('ui').map((entry) =>
     resolveE2eServices(entry).join(',')
   );
-  assert.equal(new Set(uiServiceSets).size, 8);
+  assert.equal(new Set(uiServiceSets).size, 9);
   assert.ok(
     uiServiceSets.every((services) => services.split(',').length <= 13)
   );

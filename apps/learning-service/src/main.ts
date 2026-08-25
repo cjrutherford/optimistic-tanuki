@@ -19,10 +19,7 @@ async function bootstrap() {
   );
 
   await app.listen();
-  Logger.log(
-    `🚀 Learning microservice is listening on: tcp://0.0.0.0:${port}`
-  );
+  Logger.log(`🚀 Learning microservice is listening on: tcp://0.0.0.0:${port}`);
 }
 
 bootstrap();
-
