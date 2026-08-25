@@ -2,6 +2,7 @@ import { of, throwError } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { ThrottlerModule } from '@nestjs/throttler';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
@@ -700,6 +701,13 @@ describe('LearningController wiring', () => {
       connect: jest.fn().mockResolvedValue(undefined),
     };
     const moduleRef = await Test.createTestingModule({
+      // The expensive routes carry IdentityThrottlerGuard, which the injector
+      // builds alongside the controller. It needs the throttler's own
+      // providers, so a missing ThrottlerModule fails here rather than at
+      // container start.
+      imports: [
+        ThrottlerModule.forRoot([{ name: 'long', ttl: 60000, limit: 60 }]),
+      ],
       controllers: [LearningController],
       providers: [
         { provide: ServiceTokens.LEARNING_SERVICE, useValue: proxy },

@@ -28,10 +28,45 @@ import {
   isNotEnrolled,
   PublicationStatusSchema,
 } from '@optimistic-tanuki/learning-domain';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
 import { OfferingAuthorizationService } from './offering-authorization.service';
+import { IdentityThrottlerGuard } from './identity-throttler.guard';
+
+const limitFromEnv = (envKey: string, fallback: number): number => {
+  const raw = process.env[envKey];
+  const parsed = raw === undefined || raw === '' ? NaN : Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+/**
+ * What one identity may spend per minute on the expensive routes.
+ *
+ * Overrides have to name a throttler configured in the gateway's
+ * ThrottlerModule, which is `short` / `medium` / `long`. `long` is the sixty
+ * second window, so that is the one worth constraining; the others stay at
+ * the gateway defaults.
+ *
+ * Running code is capped higher than grading because a learner iterating on a
+ * compiler error genuinely runs it many times in a row, and that is the work,
+ * not abuse. Grading is capped lower because each call occupies a language
+ * model, and nobody writes thirty considered paragraphs in a minute.
+ */
+const THROTTLE_TTL = limitFromEnv('THROTTLE_LEARNING_TTL', 60000);
+const RUN_THROTTLE = {
+  long: {
+    limit: limitFromEnv('THROTTLE_LEARNING_RUN_LIMIT', 60),
+    ttl: THROTTLE_TTL,
+  },
+};
+const GRADING_THROTTLE = {
+  long: {
+    limit: limitFromEnv('THROTTLE_LEARNING_GRADING_LIMIT', 20),
+    ttl: THROTTLE_TTL,
+  },
+};
 
 @Controller('learning')
 export class LearningController {
@@ -320,7 +355,8 @@ export class LearningController {
 
   // Running code is compute and must be attributable to a session, even
   // though a plain run does not record anything against the learner.
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, IdentityThrottlerGuard)
+  @Throttle(RUN_THROTTLE)
   @Post('runs')
   async runCode(@Body() body: { activityId: string; code: string }) {
     return await firstValueFrom(
@@ -328,7 +364,9 @@ export class LearningController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  // Submitting runs the code too, so it costs the same as a plain run.
+  @UseGuards(AuthGuard, IdentityThrottlerGuard)
+  @Throttle(RUN_THROTTLE)
   @Post('exercises/:activityId/submit')
   async submitExercise(
     @Param('activityId') activityId: string,
@@ -380,6 +418,10 @@ export class LearningController {
    * side and never trusted on the way back.
    */
   @UseGuards(AuthGuard)
+  // Marking a written answer occupies a language model, so this is the
+  // tightest of the three.
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(GRADING_THROTTLE)
   @Post('activities/:activityId/answer')
   async answerActivity(
     @Param('activityId') activityId: string,
