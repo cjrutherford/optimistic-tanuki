@@ -94,31 +94,56 @@ go func(name string, age int) {
 
 ## Goroutines and Closures
 
-**Important**: Be careful with closures capturing loop variables!
+A goroutine started inside a loop captures the loop variable. What that
+means changed in Go 1.22, and which Go you are reading matters.
 
 ```go
-// WRONG - all goroutines capture same variable
 for i := 0; i < 3; i++ {
-    go func() {
-        fmt.Println(i) // All print 3!
-    }()
-}
-
-// RIGHT - pass as parameter
-for i := 0; i < 3; i++ {
-    go func(n int) {
-        fmt.Println(n) // Prints 0, 1, 2
-    }(i)
-}
-
-// Also RIGHT - create new variable
-for i := 0; i < 3; i++ {
-    i := i // Create new variable
     go func() {
         fmt.Println(i)
     }()
 }
 ```
+
+**Go 1.22 and later**, which includes every supported version: each iteration
+declares its own `i`, so each goroutine captures a different one and this
+prints 0, 1 and 2 in some order. It is correct.
+
+**Go 1.21 and earlier**: all three iterations shared one `i`, so all three
+goroutines saw whatever it held when they ran, which was usually 3 after the
+loop finished. This was the single most reported Go bug, and it is why so much
+older code and so many older tutorials carry the workarounds:
+
+```go
+// The old fixes. Both still work and neither is needed any more.
+for i := 0; i < 3; i++ {
+    go func(n int) { fmt.Println(n) }(i)   // pass it as an argument
+}
+
+for i := 0; i < 3; i++ {
+    i := i                                  // or shadow it
+    go func() { fmt.Println(i) }()
+}
+```
+
+The version your module targets is what decides this, not the compiler you
+happen to be running. The `go` line in `go.mod` selects the semantics, so a
+module saying `go 1.21` keeps the old behaviour even on a new toolchain. If
+you inherit code with `i := i` at the top of a loop body, that is where it came
+from.
+
+What did **not** change is the underlying rule: a closure captures variables,
+not values. That still matters everywhere else.
+
+```go
+counter := 0
+go func() {
+    counter++   // the same counter main can see, and a data race
+}()
+```
+
+Go 1.22 gave loops a fresh variable per iteration. It did not make captured
+variables safe to share, which is what the parallelism module is about.
 
 ## Goroutine Leaks
 

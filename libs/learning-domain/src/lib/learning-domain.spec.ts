@@ -144,10 +144,10 @@ describe('learning-domain', () => {
     ).toEqual([
       { id: 'typescript-foundations', modules: 12, lessons: 38 },
       { id: 'go-foundations', modules: 11, lessons: 49 },
-      { id: 'cpp-foundations', modules: 7, lessons: 23 },
+      { id: 'cpp-foundations', modules: 7, lessons: 24 },
       // 24, not 23: error-handling/03-custom-errors.md shipped with the
       // content but had no catalog entry, so nobody could open it.
-      { id: 'rust-foundations', modules: 9, lessons: 24 },
+      { id: 'rust-foundations', modules: 9, lessons: 25 },
     ]);
   });
 

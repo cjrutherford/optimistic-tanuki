@@ -129,8 +129,8 @@ describe('curriculum catalog coverage', () => {
     expect(counts).toEqual({
       letsgots: 38,
       letsgogo: 49,
-      letsgocpp: 23,
-      letsgorust: 24,
+      letsgocpp: 24,
+      letsgorust: 25,
     });
   });
 

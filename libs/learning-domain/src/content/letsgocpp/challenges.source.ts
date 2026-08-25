@@ -866,6 +866,82 @@ TEST_CASE("dispatch really is virtual", "[oop]") {
     difficulty: 'medium',
   },
   {
+    id: 'memory-05',
+    lessonSlug: 'exceptions',
+    title: 'Throw, Catch, and Survive',
+    description:
+      'Validate with an exception, catch it by const reference, and make a function leak-free when something throws part way through.',
+    starterCode: `#include <stdexcept>
+#include <string>
+#include <vector>
+
+// Throw std::invalid_argument("negative") when count is below zero,
+// and std::out_of_range("too many") when it is above 100.
+// Otherwise return a vector of that many zeroes.
+std::vector<int> makeBuffer(int count) {
+
+}
+
+// Call makeBuffer and report what happened, catching by const reference.
+// Return "ok" on success, and otherwise the exception's what() message.
+// Catch the two cases separately, most derived first: invalid_argument
+// and out_of_range are siblings, so either order works between them, but
+// a std::exception handler placed first would swallow both.
+std::string describe(int count) {
+
+}
+
+// This leaks whenever mightThrow throws, because the delete is skipped
+// during unwinding and only destructors run. Rewrite it so nothing can
+// leak, without adding a try or a catch.
+int leaky(bool shouldThrow) {
+    int* values = new int[10];
+    for (int i = 0; i < 10; ++i) values[i] = i;
+    if (shouldThrow) throw std::runtime_error("boom");
+    int total = 0;
+    for (int i = 0; i < 10; ++i) total += values[i];
+    delete[] values;
+    return total;
+}`,
+    testCode: `#include "catch_amalgamated.hpp"
+#include <string>
+#include <vector>
+#include <stdexcept>
+
+TEST_CASE("makeBuffer builds what it should", "[memory]") {
+    REQUIRE(makeBuffer(3).size() == 3);
+    REQUIRE(makeBuffer(0).empty());
+}
+
+TEST_CASE("makeBuffer rejects what it should", "[memory]") {
+    REQUIRE_THROWS_AS(makeBuffer(-1), std::invalid_argument);
+    REQUIRE_THROWS_AS(makeBuffer(101), std::out_of_range);
+}
+
+TEST_CASE("describe reports the message", "[memory]") {
+    REQUIRE(describe(5) == "ok");
+    REQUIRE(describe(-1) == "negative");
+    REQUIRE(describe(500) == "too many");
+}
+
+TEST_CASE("the rewritten function still works", "[memory]") {
+    REQUIRE(leaky(false) == 45);
+}
+
+TEST_CASE("and still throws when asked", "[memory]") {
+    REQUIRE_THROWS_AS(leaky(true), std::runtime_error);
+}`,
+    hints: [
+      'throw std::invalid_argument("negative"); the message is what() returns later',
+      'std::vector<int>(count) gives you count zeroes',
+      'catch (const std::invalid_argument& e) { return e.what(); }',
+      'For the leak: replace the raw new[] with a std::vector<int>, which frees itself during unwinding',
+      'That is the whole point of RAII, and why C++ has no finally',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+  {
     id: 'memory-04',
     lessonSlug: 'stack-heap',
     title: 'Stack, Heap, and Who Frees It',

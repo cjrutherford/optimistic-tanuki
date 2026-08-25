@@ -653,6 +653,70 @@ mod tests {
     difficulty: 'medium',
   },
 
+  // Interior mutability
+  {
+    id: 'ownership-03',
+    lessonSlug: 'interior-mutability',
+    title: 'Mutate Through a Shared Reference',
+    description:
+      'A counter has to record hits through &self. Use interior mutability rather than changing the signature, then share one across two owners.',
+    starterCode: `use std::cell::Cell;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+struct Counter {
+    // A plain u32 cannot be changed through &self: the compiler rejects it
+    // with E0594. Wrap it so it can. The value is small and Copy, so the
+    // wrapper that needs no runtime borrow tracking is the right one here.
+    hits: ,
+}
+
+impl Counter {
+    fn new() -> Counter {
+        Counter { hits: }
+    }
+
+    // Note the &self. Changing this to &mut self is the thing you are
+    // avoiding, because callers only have a shared reference.
+    fn record(&self) {
+
+    }
+
+    fn total(&self) -> u32 {
+
+    }
+}
+
+fn main() {
+    let counter = Counter::new();
+    counter.record();
+    counter.record();
+    counter.record();
+    println!("{}", counter.total());
+
+    // Now a value two owners share and both mutate. Rc gives out shared
+    // references only, so the inside needs to be mutable on its own.
+    let shared: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![1]));
+    let second = Rc::clone(&shared);
+
+    // Push 2 through the second handle.
+
+
+    println!("{:?}", shared.borrow());
+}`,
+    testCode: ``,
+    expectedOutput: '3\n[1, 2]',
+    hints: [
+      'Cell<u32> for the counter: set and get, with no borrow tracking and no way to panic',
+      'self.hits.set(self.hits.get() + 1) records a hit',
+      'Cell::new(0) in the constructor',
+      'second.borrow_mut().push(2) mutates the shared vector',
+      'Both handles see it, because Rc::clone copies the pointer rather than the data',
+    ],
+    points: 30,
+    difficulty: 'hard',
+  },
+
   // Pattern matching
   {
     id: 'structs-04',

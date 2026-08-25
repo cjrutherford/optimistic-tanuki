@@ -17,9 +17,18 @@ var users = []User{
 }
 
 func main() {
-    http.HandleFunc("/api/users", handleUsers)
-    http.HandleFunc("/api/users/", handleUser)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+    mux := http.NewServeMux()
+
+    // Since Go 1.22 a pattern may name a method and capture path segments in
+    // braces. Before that, ServeMux matched paths only, which is why older
+    // code registers "/api/users/" with a trailing slash and then works out
+    // the method and the id by hand inside the handler.
+    mux.HandleFunc("GET /api/users", listUsers)
+    mux.HandleFunc("POST /api/users", createUser)
+    mux.HandleFunc("GET /api/users/{id}", handleUser)
+    mux.HandleFunc("DELETE /api/users/{id}", deleteUser)
+
+    log.Fatal(http.ListenAndServe(":8080", mux))
 }
 
 func handleUsers(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +62,12 @@ func createUser(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(user)
 }
 
+// Registered as "GET /api/users/{id}" so the router extracts the id.
+// Slicing r.URL.Path by a prefix length, which older code does everywhere,
+// breaks the moment the route is renamed and silently returns the wrong
+// substring rather than an error.
 func handleUser(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Path[len("/api/users/"):]
+    id := r.PathValue("id")
     idNum, err := strconv.Atoi(id)
     if err != nil {
         http.Error(w, "Invalid ID", http.StatusBadRequest)
@@ -81,7 +94,11 @@ func handleUser(w http.ResponseWriter, r *http.Request) {
 
 ## Using a Router
 
-Third-party routers are commonly used:
+Reach for a third-party router when you need something the standard one still
+does not do: route groups, per-group middleware chains, regex constraints on a
+segment, or reverse URL building. For method-and-parameter routing alone,
+`http.ServeMux` has been enough since Go 1.22, and it has no dependency to
+keep up to date.
 
 ```bash
 go get github.com/go-chi/chi/v5

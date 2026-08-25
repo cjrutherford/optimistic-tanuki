@@ -431,6 +431,9 @@ const tutorialCurricula: TutorialCurriculum[] = [
           ['stack-heap', 'Stack vs Heap'],
           ['smart-pointers', 'Smart Pointers'],
           ['raii', 'RAII'],
+          // After RAII, and before the testing module whose exercises have
+          // always required throwing without a lesson ever covering catch.
+          ['exceptions', 'Exceptions & Exception Safety'],
         ]),
       },
       {
@@ -492,6 +495,15 @@ const tutorialCurricula: TutorialCurriculum[] = [
         lessons: lessons('ownership', [
           ['ownership-rules', 'Ownership Rules'],
           ['borrowing', 'Borrowing & References'],
+        ]).concat([
+          // Numbered 04 on disk because 03 is the lifetimes lesson, which
+          // belongs to its own module further down the course.
+          {
+            slug: 'interior-mutability',
+            title: 'Interior Mutability',
+            sourcePath:
+              'src/content/modules/ownership/04-interior-mutability.md',
+          },
         ]),
       },
       {
