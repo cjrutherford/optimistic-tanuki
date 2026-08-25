@@ -146,7 +146,10 @@ const RESUME_PARSE_SCHEMA = {
         required: [],
       },
     },
-    evidenceByField: { type: 'object' },
+    evidenceByField: {
+      type: 'object',
+      additionalProperties: { type: 'array', items: { type: 'string' } },
+    },
   },
   required: [
     'summary',
