@@ -23,6 +23,7 @@ import {
   OFFERING_NOT_FOUND,
   OfferingNotFoundPayload,
   lessonHasVariant,
+  publicActivity,
   publicExercise,
   rollUpCompletedLessons,
   selectLessonContent,
@@ -51,6 +52,28 @@ export class AppService {
 
   async listPrograms(): Promise<ProgramTrack[]> {
     return this.repository.listPrograms();
+  }
+
+  /**
+   * Strips the mark scheme out of every activity in a catalog.
+   *
+   * listPrograms itself stays whole, because grading reads activities back out
+   * of it by id and needs the answers. This runs at the edges, on what is
+   * about to leave the service.
+   */
+  private withoutMarkSchemes(tracks: ProgramTrack[]): ProgramTrack[] {
+    return tracks.map((track) => ({
+      ...track,
+      offerings: track.offerings.map((offering) => ({
+        ...offering,
+        activities: offering.activities.map(publicActivity),
+      })),
+    })) as ProgramTrack[];
+  }
+
+  /** The catalog as it leaves the service, for callers with no viewer. */
+  async listPublicPrograms(): Promise<ProgramTrack[]> {
+    return this.withoutMarkSchemes(await this.listPrograms());
   }
 
   /**
@@ -105,9 +128,9 @@ export class AppService {
       content,
       // The work this lesson's author set. Separate from the exercises above,
       // which are code and belong to the ported tracks.
-      activities: offering.activities.filter(
-        (activity) => activity.lessonId === lesson.id
-      ),
+      activities: offering.activities
+        .filter((activity) => activity.lessonId === lesson.id)
+        .map(publicActivity),
       exercises: languageId
         ? tutorialExercises
             .filter(
@@ -173,7 +196,7 @@ export class AppService {
       const ownership = await this.repository.getOwnership(offeringId);
       if (ownership) ownerships.set(offeringId, ownership);
     }
-    return visibleTracks(tracks, ownerships, viewer);
+    return this.withoutMarkSchemes(visibleTracks(tracks, ownerships, viewer));
   }
 
   /**

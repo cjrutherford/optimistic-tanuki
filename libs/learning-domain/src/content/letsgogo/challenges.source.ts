@@ -1778,7 +1778,7 @@ func main() {
   // Error Handling Sub-lessons
   {
     id: 'tsg-08',
-    lessonSlug: 'error-values',
+    lessonSlug: 'error-handling',
     title: 'Error Type',
     description: 'Create a custom error using the error interface.',
     starterCode: `package main
@@ -1814,7 +1814,7 @@ func main() {
   // Defer Sub-lessons
   {
     id: 'q-04',
-    lessonSlug: 'defer-statements',
+    lessonSlug: 'defer-panic-recover',
     title: 'Defer Basics',
     description: 'Use defer to print "world" before "hello" is printed.',
     starterCode: `package main
@@ -1837,7 +1837,7 @@ func main() {
   // Select Sub-lessons
   {
     id: 'c-06',
-    lessonSlug: 'basic-select',
+    lessonSlug: 'select-statement',
     title: 'Basic Select',
     description: 'Use select to receive from one of two channels.',
     starterCode: `package main
@@ -1873,7 +1873,7 @@ func main() {
   // WaitGroup Sub-lessons
   {
     id: 'p-03',
-    lessonSlug: 'waitgroup-basics',
+    lessonSlug: 'waitgroup-mutex',
     title: 'WaitGroup Usage',
     description: 'Use WaitGroup to wait for 3 goroutines to complete.',
     starterCode: `package main
@@ -1910,7 +1910,7 @@ func main() {
   // Benchmark Sub-lessons
   {
     id: 't-05',
-    lessonSlug: 'benchmark-basics',
+    lessonSlug: 'benchmarks',
     title: 'Benchmark Function',
     description: 'Write a benchmark function that runs 1000 times.',
     starterCode: `package main
@@ -1934,7 +1934,7 @@ func BenchmarkHello(b *testing.B) {
   // Middleware Sub-lessons
   {
     id: 'w-04',
-    lessonSlug: 'middleware-pattern',
+    lessonSlug: 'middleware',
     title: 'Basic Middleware',
     description: 'Create a simple logging middleware function.',
     starterCode: `package main
@@ -1968,7 +1968,7 @@ func main() {
   // Context Sub-lessons
   {
     id: 's-04',
-    lessonSlug: 'context-basics',
+    lessonSlug: 'net-http-context',
     title: 'Context With Value',
     description:
       'Store a value in a context and read it back, using an unexported key type rather than a string.',
@@ -2029,8 +2029,9 @@ func main() {
 }`,
     expectedOutput: 'Dune',
     hints: [
-      'type Book struct { Title string; Pages int }',
-      'b := Book{Title: "Dune", Pages: 412}',
+      'A struct declaration is `type Name struct { ... }`, with each field written as `FieldName FieldType`',
+      'Build it with a composite literal that names each field: `Book{Title: ..., Pages: ...}`',
+      'The title and page count are in the description above',
     ],
     points: 15,
     difficulty: 'easy',

@@ -38,9 +38,12 @@ interface RecordEvaluationDto {
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  // Whole tracks, minus the mark schemes. This crosses the wire to the
+  // gateway and on to a browser, so it must not carry quiz answers, expected
+  // output, or an author's rubric.
   @MessagePattern({ cmd: LearningCommands.ListPrograms })
   listPrograms() {
-    return this.appService.listPrograms();
+    return this.appService.listPublicPrograms();
   }
 
   // What a learner may see: everything published, plus the drafts this

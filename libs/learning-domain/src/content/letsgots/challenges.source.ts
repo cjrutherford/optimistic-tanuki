@@ -251,22 +251,24 @@ console.log(\`\${dog.name} is a \${dog.breed}\`)
       'Create types `Serializable = { serialize(): string }` and `Loggable = { log(): void }`. Create an intersection type `SerializableAndLoggable` and implement an object that satisfies it. The serialize method should return "serialized" and log should print "logged". Call both methods.',
     starterCode: `type Serializable = { serialize(): string }
 type Loggable = { log(): void }
-type SerializableAndLoggable = Serializable & Loggable
+
+// An intersection type has to satisfy both sides at once.
+// Declare it, then build an object that satisfies it.
+type SerializableAndLoggable =
 
 const obj: SerializableAndLoggable = {
-  serialize() {
-    return "serialized"
-  },
-  log() {
-    console.log("logged")
-  }
+
 }
 
 console.log(obj.serialize())
 obj.log()
 `,
     expectedOutput: 'serialized\nlogged\n',
-    hints: ['The code is mostly done – just run it!'],
+    hints: [
+      '& combines two object types, where | would let you pick either one',
+      'The object must supply both methods, or it does not satisfy the intersection',
+      "serialize returns the string 'serialized'; log prints 'logged'",
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -328,18 +330,24 @@ console.log(\`\${config.host}:\${config.port}\`)
     title: 'Conditional Types',
     description:
       'Create a conditional type `IsString<T>` that resolves to "yes" if T is string, "no" otherwise. Print the results for string and number.',
-    starterCode: `type IsString<T> = T extends string ? "yes" : "no"
+    starterCode: `// A conditional type picks a type based on a test, using the same
+// ternary shape as a value-level conditional.
+// IsString<T> should be "yes" when T is a string, and "no" otherwise.
+type IsString<T> =
 
-type A = IsString<string>   // "yes"
-type B = IsString<number>   // "no"
+type A = IsString<string>   // should be "yes"
+type B = IsString<number>   // should be "no"
 
 const a: A = "yes"
 const b: B = "no"
 console.log(a)
-console.log(b)
-`,
+console.log(b)`,
     expectedOutput: 'yes\nno\n',
-    hints: ['The type is already defined – just run it'],
+    hints: [
+      'The shape is T extends U ? X : Y',
+      'Here the test is `T extends string`',
+      'Both branches are string literal types, so write "yes" and "no" as types, not as values',
+    ],
     points: 30,
     difficulty: 'hard',
   },
@@ -351,10 +359,10 @@ console.log(b)
     title: 'Basic Promise',
     description:
       'Create a function `delay(ms: number): Promise<string>` that resolves with "Done!" after 0ms. Await it and print the result.',
-    starterCode: `function delay(ms: number): Promise<string> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve("Done!"), ms)
-  })
+    starterCode: `// delay should return a Promise that resolves with "Done!" after ms.
+// Build the Promise yourself rather than returning an already-resolved one.
+function delay(ms: number): Promise<string> {
+
 }
 
 async function main() {
@@ -362,10 +370,13 @@ async function main() {
   console.log(result)
 }
 
-main()
-`,
+main()`,
     expectedOutput: 'Done!\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      'new Promise<string>((resolve) => { ... })',
+      "Call resolve('Done!') inside a setTimeout of ms milliseconds",
+      'The executor takes resolve as its first argument',
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -381,20 +392,19 @@ main()
 }
 
 async function main() {
-  try {
-    const result = await riskyOperation()
-    console.log(result)
-  } catch (err) {
-    if (err instanceof Error) {
-      console.log(\`Caught: \${err.message}\`)
-    }
-  }
+  // Await riskyOperation and log the result.
+  // If it rejects, log "Caught: " followed by the error's message.
+  // catch gives you unknown, so narrow it before reading .message.
+
 }
 
-main()
-`,
+main()`,
     expectedOutput: 'Caught: Something went wrong\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      'Wrap the await in try / catch',
+      'catch (err) types err as unknown, so check err instanceof Error first',
+      'Template literal: `Caught: ${err.message}`',
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -556,22 +566,26 @@ test('divide(0, 5) returns 0', function () {
     title: 'Typed Component Props',
     description:
       'Define a `ButtonProps` interface with `label: string` and optional `disabled?: boolean`. Write a function that renders the button as a string and print it.',
-    starterCode: `interface ButtonProps {
-  label: string
-  disabled?: boolean
+    starterCode: `// Describe the props: a required label, and an optional disabled flag.
+interface ButtonProps {
+
 }
 
+// Return "<button>Label</button>", or "<button disabled>Label</button>"
+// when disabled is true.
 function renderButton(props: ButtonProps): string {
-  const attrs = props.disabled ? ' disabled' : ''
-  return \`<button\${attrs}>\${props.label}</button>\`
+
 }
 
 console.log(renderButton({ label: "Click me" }))
-console.log(renderButton({ label: "Submit", disabled: true }))
-`,
+console.log(renderButton({ label: "Submit", disabled: true }))`,
     expectedOutput:
       '<button>Click me</button>\n<button disabled>Submit</button>\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      'An optional property is written `disabled?: boolean`',
+      "Build the attribute separately: props.disabled ? ' disabled' : ''",
+      'Return a template literal with the attribute and the label interpolated',
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -789,20 +803,22 @@ test('errors is empty when all pass', function () {
     title: 'Type Guards',
     description:
       'Write a type guard `isString(value: unknown): value is string` and use it to safely process a value that could be anything.',
-    starterCode: `function isString(value: unknown): value is string {
-  return typeof value === 'string'
+    starterCode: `// Write a type guard. The return type is not boolean: it is
+// \`value is string\`, which is what tells the compiler to narrow.
+function isString(value: unknown): value is string {
+
 }
 
 function processInput(input: unknown): string {
   if (isString(input)) {
+    // Inside this branch input is a string, so this compiles.
     return input.toUpperCase()
   }
   return String(input)
 }
 
 console.log(processInput("hello"))
-console.log(processInput(42))
-`,
+console.log(processInput(42))`,
     expectedOutput: 'HELLO\n42\n',
     testCode: `test('isString returns true for strings', function () {
   expect(isString('hello')).toBe(true);
@@ -819,7 +835,11 @@ test('processInput uppercases strings', function () {
 test('processInput converts numbers to string', function () {
   expect(processInput(42)).toBe('42');
 });`,
-    hints: ['The code is complete – just run it'],
+    hints: [
+      'The body is a single typeof check',
+      "return typeof value === 'string'",
+      'The `value is string` return type is the whole point: without it the compiler will not let you call toUpperCase',
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -836,27 +856,24 @@ test('processInput converts numbers to string', function () {
   age: number
 }
 
+// Data arriving from outside your program is unknown, not Person.
+// Check it at runtime, then return it as a Person. Throw
+// new Error('Invalid person data') if it does not match.
 function validatePerson(data: unknown): Person {
-  if (
-    typeof data === 'object' &&
-    data !== null &&
-    'name' in data &&
-    'age' in data &&
-    typeof (data as Record<string, unknown>).name === 'string' &&
-    typeof (data as Record<string, unknown>).age === 'number'
-  ) {
-    return data as Person
-  }
-  throw new Error('Invalid person data')
+
 }
 
 const raw = { name: "Alice", age: 25 }
 const person = validatePerson(raw)
-console.log(\`Valid: \${person.name}, \${person.age}\`)
-`,
+console.log(\`Valid: \${person.name}, \${person.age}\`)`,
     expectedOutput: 'Valid: Alice, 25\n',
-    hints: ['The code is complete – just run it'],
-    points: 20,
+    hints: [
+      "Check typeof data === 'object' and data !== null first, because typeof null is 'object'",
+      "Use the `in` operator to check for the keys: 'name' in data",
+      'Cast through Record<string, unknown> to read the fields before you know the shape',
+      'Return `data as Person` only after every check has passed',
+    ],
+    points: 25,
     difficulty: 'medium',
   },
   // ── Polish ───────────────────────────────────────────────────────────────
@@ -876,13 +893,18 @@ console.log(\`Valid: \${person.name}, \${person.age}\`)
 
 const config: Config = {}
 
-const host = config.db?.host ?? "localhost"
-const port = config.db?.port ?? 5432
+// Read host and port. Both the db object and its fields may be missing,
+// so reach through them safely and fall back to "localhost" and 5432.
+const host =
+const port =
 
-console.log(\`\${host}:\${port}\`)
-`,
+console.log(\`\${host}:\${port}\`)`,
     expectedOutput: 'localhost:5432\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      '?. stops and gives undefined instead of throwing when something is missing',
+      '?? supplies the fallback, and unlike || it does not replace 0 or an empty string',
+      "config.db?.host ?? 'localhost'",
+    ],
     points: 10,
     difficulty: 'easy',
   },
@@ -893,7 +915,9 @@ console.log(\`\${host}:\${port}\`)
     title: 'Mapped Types',
     description:
       'Create a mapped type `Nullable<T>` that makes all properties of T nullable. Apply it to a User type and print a nullable user.',
-    starterCode: `type Nullable<T> = { [K in keyof T]: T[K] | null }
+    starterCode: `// Write a mapped type. Nullable<T> should have every key of T, with
+// each value allowed to be its original type or null.
+type Nullable<T> =
 
 interface User {
   name: string
@@ -906,10 +930,13 @@ const nullableUser: Nullable<User> = {
 }
 
 console.log(nullableUser.name)
-console.log(nullableUser.age)
-`,
+console.log(nullableUser.age)`,
     expectedOutput: 'null\n25\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      'The shape is { [K in keyof T]: ... }',
+      "keyof T gives the union of T's keys; K takes each one in turn",
+      'T[K] is the original value type, so the result is T[K] | null',
+    ],
     points: 30,
     difficulty: 'hard',
   },
@@ -943,15 +970,20 @@ console.log(hover)
     title: 'Generic Constraints',
     description:
       'Write a generic function `getLength<T extends { length: number }>(arg: T): number` that returns the length of anything with a length property. Test it with a string and an array.',
-    starterCode: `function getLength<T extends { length: number }>(arg: T): number {
+    starterCode: `// getLength should accept anything with a length, and reject anything
+// without one. Constrain T rather than widening it to any.
+function getLength<T>(arg: T): number {
   return arg.length
 }
 
 console.log(getLength("hello"))
-console.log(getLength([1, 2, 3, 4]))
-`,
+console.log(getLength([1, 2, 3, 4]))`,
     expectedOutput: '5\n4\n',
-    hints: ['The code is complete – just run it'],
+    hints: [
+      '`extends` on a type parameter constrains it: <T extends ...>',
+      'Constrain to a shape, not a named type: { length: number }',
+      'Strings and arrays both satisfy it, and getLength(42) then fails to compile, which is the point',
+    ],
     points: 20,
     difficulty: 'medium',
   },
@@ -1032,15 +1064,21 @@ main()
     title: 'Migrating JS to TS',
     description:
       'Take this JavaScript-style function and add proper TypeScript types. The function formats a currency value.',
-    starterCode: `function formatCurrency(amount: number, currency: string = "USD"): string {
+    starterCode: `// This came from JavaScript with no types. Add them.
+// amount is a number, currency is a string that defaults to "USD",
+// and the function returns a string.
+function formatCurrency(amount, currency) {
   return \`\${currency} \${amount.toFixed(2)}\`
 }
 
 console.log(formatCurrency(19.99))
-console.log(formatCurrency(5.5, "EUR"))
-`,
+console.log(formatCurrency(5.5, "EUR"))`,
     expectedOutput: 'USD 19.99\nEUR 5.50\n',
-    hints: ['The code already has types – just run it'],
+    hints: [
+      'Annotate a parameter as `name: type`',
+      "A default value goes in the signature: currency: string = 'USD'",
+      'The return type goes after the parameter list: ): string {',
+    ],
     points: 10,
     difficulty: 'easy',
   },

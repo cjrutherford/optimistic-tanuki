@@ -181,29 +181,22 @@ describe('curriculum catalog coverage', () => {
       };
     });
 
-    it.each(reachability.filter((entry) => entry.language !== 'go'))(
+    // Go's seven were once pinned here as a content gap, on the reading that
+    // each named a sub-topic with no markdown file. That was wrong. Every one
+    // of them named a lesson that already existed under a different slug:
+    // error-values was error-handling, defer-statements was
+    // defer-panic-recover, basic-select was select-statement, and so on. They
+    // were repointed, so no language gets an exception any more.
+    it.each(reachability)(
       'attaches every $language exercise to a lesson',
       ({ orphans }) => {
         expect([...new Set(orphans)]).toEqual([]);
       }
     );
 
-    // Go still has seven, and they are a content gap rather than a mapping
-    // bug: each names a sub-topic that upstream taught inside another lesson
-    // and that has no markdown file here. Pinned so the number cannot grow
-    // quietly; shrink it by adding the lessons, not by editing this list.
-    it('has exactly the known Go exercises with nowhere to live', () => {
-      const go = reachability.find((entry) => entry.language === 'go');
-
-      expect([...new Set(go?.orphans)].sort()).toEqual([
-        'basic-select',
-        'benchmark-basics',
-        'context-basics',
-        'defer-statements',
-        'error-values',
-        'middleware-pattern',
-        'waitgroup-basics',
-      ]);
+    it('practises every language it teaches', () => {
+      const silent = reachability.filter((entry) => entry.total === 0);
+      expect(silent).toEqual([]);
     });
   });
 });

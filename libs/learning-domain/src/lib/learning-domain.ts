@@ -306,6 +306,43 @@ export const ActivitySchema = z.discriminatedUnion('type', [
 ]);
 export type Activity = z.infer<typeof ActivitySchema>;
 export type QuizMcqActivity = z.infer<typeof QuizMcqActivitySchema>;
+
+/**
+ * An activity as a learner may see it.
+ *
+ * Authored activities used to travel to the browser whole, through both the
+ * catalog and the lesson endpoint, and the catalog needs no sign-in. That
+ * published every quiz's correct answers, every code activity's expected
+ * output, and the sample response and rubric that WritingResponseActivity
+ * documents as never being shown before an answer is given.
+ *
+ * Every branch here is a deliberate omission. Adding a field to an activity
+ * that a learner must not see means adding it here too, and the test named
+ * after this function fails until you do.
+ */
+export function publicActivity(activity: Activity) {
+  switch (activity.type) {
+    case 'code.run': {
+      const { expectedOutput: _expectedOutput, ...rest } = activity;
+      return rest;
+    }
+    case 'quiz.mcq': {
+      const { correctOptionIds: _correctOptionIds, ...rest } = activity;
+      return rest;
+    }
+    case 'writing.response': {
+      const {
+        sampleResponse: _sampleResponse,
+        rubric: _rubric,
+        ...rest
+      } = activity;
+      return rest;
+    }
+    case 'project.submission':
+      // Nothing here is a mark scheme: it lists what may be handed in.
+      return activity;
+  }
+}
 export type WritingResponseActivity = z.infer<
   typeof WritingResponseActivitySchema
 >;
