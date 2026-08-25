@@ -105,6 +105,59 @@ const DISC_ASSESSMENT_SCHEMA = {
   ],
 } as const;
 
+const RESUME_PARSE_SCHEMA = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string' },
+    skills: { type: 'array', items: { type: 'string' } },
+    experience: { type: 'array', items: { type: 'string' } },
+    certifications: { type: 'array', items: { type: 'string' } },
+    suggestedProfile: {
+      type: 'object',
+      properties: {
+        yearsExperience: { type: 'string' },
+        skills: { type: 'array', items: { type: 'string' } },
+        certifications: { type: 'array', items: { type: 'string' } },
+        idealCustomer: { type: 'string' },
+        companySizeTarget: { type: 'array', items: { type: 'string' } },
+        industries: { type: 'array', items: { type: 'string' } },
+        problemsSolved: { type: 'array', items: { type: 'string' } },
+        outcomes: { type: 'array', items: { type: 'string' } },
+        geographicFocus: { type: 'string' },
+        salesApproach: { type: 'string' },
+        outreachMethod: { type: 'array', items: { type: 'string' } },
+        communicationStyle: { type: 'string' },
+      },
+      required: [],
+    },
+    roleSummaries: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          company: { type: 'string' },
+          skills: { type: 'array', items: { type: 'string' } },
+          industries: { type: 'array', items: { type: 'string' } },
+          highlights: { type: 'array', items: { type: 'string' } },
+          outcomes: { type: 'array', items: { type: 'string' } },
+        },
+        required: [],
+      },
+    },
+    evidenceByField: { type: 'object' },
+  },
+  required: [
+    'summary',
+    'skills',
+    'experience',
+    'certifications',
+    'suggestedProfile',
+    'roleSummaries',
+    'evidenceByField',
+  ],
+} as const;
+
 /**
  * Ceiling on a single model call when nothing is configured.
  *
@@ -369,8 +422,7 @@ Respond with only valid JSON using this exact shape:
   }
 }`,
       `Extract the key onboarding fields from this resume text.\n\n${text}`,
-      // No schema here; these callers rely on parseJsonObject instead.
-      undefined,
+      RESUME_PARSE_SCHEMA,
       'resume-parse'
     );
 
