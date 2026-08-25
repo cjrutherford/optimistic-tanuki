@@ -407,19 +407,11 @@ export class AppService {
     earned?: { completedExerciseIds: string[]; points: number }
   ): Promise<LessonProgress> {
     const offeringId = await this.findOfferingIdForLesson(progress.lessonId);
-    const enrolment = await this.repository.getEnrolment(profileId, offeringId);
-    // No enrolment, no progress. Without this, saving progress is the only
-    // signal that anyone is taking anything, and it's forgeable by anyone
-    // who knows a lessonId.
-    if (!enrolment || enrolment.status !== 'active') {
-      // A payload rather than a message, so the gateway can answer 409 and
-      // the client can offer to enrol instead of showing a failure.
-      throw new RpcException({
-        code: NOT_ENROLLED,
-        offeringId,
-        lessonId: progress.lessonId,
-      } satisfies NotEnrolledPayload);
-    }
+    const enrolment = await this.requireActiveEnrolment(
+      profileId,
+      progress.lessonId,
+      offeringId
+    );
     const previous = (await this.getProgress(profileId)).find(
       (item) => item.lessonId === progress.lessonId
     );
@@ -430,6 +422,30 @@ export class AppService {
         earned?.completedExerciseIds ?? previous?.completedExerciseIds ?? [],
       points: earned?.points ?? previous?.points ?? 0,
     });
+  }
+
+  /**
+   * No enrolment, no progress.
+   *
+   * Without this, saving progress is the only signal that anyone is taking
+   * anything, and it is forgeable by anyone who knows a lessonId. Throws a
+   * payload rather than a message so the gateway can answer 409 and the client
+   * can offer to enrol instead of showing a failure.
+   */
+  private async requireActiveEnrolment(
+    profileId: string,
+    lessonId: string,
+    offeringId: string
+  ): Promise<Enrolment> {
+    const enrolment = await this.repository.getEnrolment(profileId, offeringId);
+    if (!enrolment || enrolment.status !== 'active') {
+      throw new RpcException({
+        code: NOT_ENROLLED,
+        offeringId,
+        lessonId,
+      } satisfies NotEnrolledPayload);
+    }
+    return enrolment;
   }
 
   private async findOfferingIdForLesson(lessonId: string): Promise<string> {
@@ -551,22 +567,43 @@ export class AppService {
     );
     const alreadyComplete =
       previous?.completedExerciseIds.includes(activityId) ?? false;
-    const completedExerciseIds = passed
-      ? [...new Set([...(previous?.completedExerciseIds ?? []), activityId])]
-      : previous?.completedExerciseIds ?? [];
-    const points =
-      (previous?.points ?? 0) +
-      (passed && !alreadyComplete ? exercise.points : 0);
-    const progress = await this.saveProgress(
+
+    if (!passed) {
+      // Nothing was earned, so nothing is written. Returning the record as it
+      // stands keeps the response shape the same for the client.
+      return {
+        ...result,
+        passed,
+        awardedPoints: 0,
+        progress:
+          previous ??
+          (await this.saveProgress(profileId, userId, {
+            lessonId: lesson.id,
+            completed: false,
+          })),
+      };
+    }
+
+    // The new total is computed by the database, not here. Two exercises in
+    // the same lesson solved at once would otherwise both read the same
+    // points and the later write would discard the earlier award.
+    const enrolment = await this.requireActiveEnrolment(
+      profileId,
+      lesson.id,
+      await this.findOfferingIdForLesson(lesson.id)
+    );
+    const progress = await this.repository.recordSolvedExercise(
       profileId,
       userId,
-      { lessonId: lesson.id, completed: previous?.completed ?? false },
-      { completedExerciseIds, points }
+      enrolment.id,
+      lesson.id,
+      { id: activityId, points: exercise.points }
     );
+
     return {
       ...result,
       passed,
-      awardedPoints: passed && !alreadyComplete ? exercise.points : 0,
+      awardedPoints: alreadyComplete ? 0 : exercise.points,
       progress,
     };
   }

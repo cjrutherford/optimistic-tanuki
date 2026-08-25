@@ -79,6 +79,35 @@ class InMemoryLearningRepository implements LearningRepository {
     this.progress.set(`${profileId}:${input.lessonId}`, value);
     return value;
   }
+  /**
+   * The same merge the SQL does, so the tests exercise the real semantics:
+   * union the exercise, add its points only the first time.
+   */
+  recordSolvedExercise(
+    profileId: string,
+    userId: string,
+    enrolmentId: string,
+    lessonId: string,
+    exercise: { id: string; points: number }
+  ) {
+    const key = `${profileId}:${lessonId}`;
+    const existing = this.progress.get(key);
+    const already =
+      existing?.completedExerciseIds.includes(exercise.id) ?? false;
+    const value = {
+      lessonId,
+      completed: existing?.completed ?? false,
+      completedExerciseIds: already
+        ? existing?.completedExerciseIds ?? []
+        : [...(existing?.completedExerciseIds ?? []), exercise.id],
+      points: (existing?.points ?? 0) + (already ? 0 : exercise.points),
+      userId,
+      profileId,
+      updatedAt: new Date().toISOString(),
+    } as LessonProgress & { userId: string; profileId: string };
+    this.progress.set(key, value);
+    return value;
+  }
   enrol(profileId: string, offeringId: string) {
     const key = `${profileId}:${offeringId}`;
     const existing = this.enrolments.get(key);

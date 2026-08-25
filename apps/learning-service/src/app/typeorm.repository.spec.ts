@@ -394,4 +394,61 @@ describe('TypeOrmLearningRepository', () => {
       ).rejects.toThrow(/sourcePath or a body/);
     });
   });
+
+  describe('recordSolvedExercise', () => {
+    /**
+     * The point of this method is that it never reads before it writes. A
+     * read-then-write lost an award whenever two exercises in one lesson were
+     * solved at the same time, so a test that only checked the returned value
+     * would pass on the broken version too.
+     */
+    it('merges in a single statement rather than reading first', async () => {
+      const query = jest.fn().mockResolvedValue([
+        {
+          lessonId: 'lesson-1',
+          completed: false,
+          completedExerciseIds: ['ex-1'],
+          points: 20,
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ]);
+      const findOne = jest.fn();
+      const save = jest.fn();
+      const repo = await buildRepository({
+        lessonProgress: { query, findOne, save } as never,
+      });
+
+      const progress = await repo.recordSolvedExercise(
+        'profile-1',
+        'user-1',
+        'enrolment-1',
+        'lesson-1',
+        { id: 'ex-1', points: 20 }
+      );
+
+      expect(findOne).not.toHaveBeenCalled();
+      expect(save).not.toHaveBeenCalled();
+      expect(query).toHaveBeenCalledTimes(1);
+
+      const [sql, params] = query.mock.calls[0];
+      expect(sql).toContain('ON CONFLICT ("profileId", "lessonId") DO UPDATE');
+      // Containment is what makes a repeat submission add nothing twice.
+      expect(sql).toContain('@> $5::jsonb');
+      expect(params).toEqual([
+        'user-1',
+        'profile-1',
+        'enrolment-1',
+        'lesson-1',
+        '["ex-1"]',
+        20,
+      ]);
+      expect(progress).toEqual({
+        lessonId: 'lesson-1',
+        completed: false,
+        completedExerciseIds: ['ex-1'],
+        points: 20,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      });
+    });
+  });
 });

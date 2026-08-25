@@ -311,6 +311,62 @@ export class TypeOrmLearningRepository implements LearningRepository {
     return this.toProgressDomain(await this.lessonProgressRepo.save(entity));
   }
 
+  /**
+   * One statement, because anything else can lose an award.
+   *
+   * Read-then-write is not safe here even inside a transaction: the row may
+   * not exist yet, so there is nothing to lock, and two first-time
+   * submissions would both insert. `ON CONFLICT` covers both cases at once,
+   * and the merge is evaluated by Postgres against the row as it stands at
+   * that instant rather than against a copy this process read earlier.
+   *
+   * `@>` is jsonb containment, so an exercise already recorded adds neither
+   * itself nor its points again, which makes resubmitting a correct answer
+   * harmless.
+   */
+  async recordSolvedExercise(
+    profileId: string,
+    userId: string,
+    enrolmentId: string,
+    lessonId: string,
+    exercise: { id: string; points: number }
+  ): Promise<LessonProgress> {
+    const solved = JSON.stringify([exercise.id]);
+    const [row] = (await this.lessonProgressRepo.query(
+      `INSERT INTO "lp_lesson_progress"
+         ("userId", "profileId", "enrolmentId", "lessonId",
+          "completed", "completedExerciseIds", "points")
+       VALUES ($1, $2, $3, $4, false, $5::jsonb, $6)
+       ON CONFLICT ("profileId", "lessonId") DO UPDATE SET
+         "completedExerciseIds" =
+           CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
+                THEN "lp_lesson_progress"."completedExerciseIds"
+                ELSE "lp_lesson_progress"."completedExerciseIds" || $5::jsonb
+           END,
+         "points" =
+           "lp_lesson_progress"."points" +
+           CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
+                THEN 0 ELSE $6 END,
+         "updatedAt" = now()
+       RETURNING "lessonId", "completed", "completedExerciseIds", "points", "updatedAt"`,
+      [userId, profileId, enrolmentId, lessonId, solved, exercise.points]
+    )) as Array<{
+      lessonId: string;
+      completed: boolean;
+      completedExerciseIds: string[];
+      points: number;
+      updatedAt: Date;
+    }>;
+
+    return {
+      lessonId: row.lessonId,
+      completed: row.completed,
+      completedExerciseIds: row.completedExerciseIds,
+      points: row.points,
+      updatedAt: new Date(row.updatedAt).toISOString(),
+    };
+  }
+
   async enrol(profileId: string, offeringId: string): Promise<Enrolment> {
     const existing = await this.enrolmentRepo.findOne({
       where: { profileId, offeringId },

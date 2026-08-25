@@ -50,6 +50,26 @@ export interface LearningRepository {
     enrolmentId: string,
     progress: Omit<LessonProgress, 'updatedAt'>
   ): Promise<LessonProgress> | LessonProgress;
+  /**
+   * Adds one solved exercise to a lesson's progress, atomically.
+   *
+   * Separate from saveProgress because the caller must not compute the new
+   * total. Solving two exercises in the same lesson at once had both requests
+   * read the same points, each add their own, and the later write discard the
+   * earlier one: the learner did two exercises and was credited for one. The
+   * merge happens in a single statement so there is no gap between reading and
+   * writing for the other request to land in.
+   *
+   * Awarding is idempotent. Submitting a correct answer twice adds the
+   * exercise once and its points once.
+   */
+  recordSolvedExercise(
+    profileId: string,
+    userId: string,
+    enrolmentId: string,
+    lessonId: string,
+    exercise: { id: string; points: number }
+  ): Promise<LessonProgress> | LessonProgress;
   enrol(profileId: string, offeringId: string): Promise<Enrolment> | Enrolment;
   withdraw(
     profileId: string,
