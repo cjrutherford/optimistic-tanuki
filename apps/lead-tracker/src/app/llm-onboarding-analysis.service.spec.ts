@@ -129,4 +129,39 @@ describe('LlmOnboardingAnalysisService model fallback', () => {
       })
     ).rejects.toThrow(/No valid JSON object/);
   });
+
+  it('passes a schema when extracting structured resume data', async () => {
+    const service = new LlmOnboardingAnalysisService(buildConfig());
+    const primary = {
+      invoke: jest.fn().mockResolvedValue(
+        reply(
+          JSON.stringify({
+            summary: 'A resume summary.',
+            skills: [],
+            experience: [],
+            certifications: [],
+            suggestedProfile: {},
+            roleSummaries: [],
+            evidenceByField: {},
+          })
+        )
+      ),
+    };
+    withClients(service, primary, null);
+    (service as unknown as Record<string, unknown>)['clients'] = new Map([
+      ['primary-model', primary],
+    ]);
+
+    await service.parseResumeText('Resume text');
+
+    expect(primary.invoke).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        format: expect.objectContaining({
+          type: 'object',
+          required: expect.arrayContaining(['summary', 'roleSummaries']),
+        }),
+      })
+    );
+  });
 });
