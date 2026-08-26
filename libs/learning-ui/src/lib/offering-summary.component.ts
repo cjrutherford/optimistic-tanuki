@@ -36,6 +36,22 @@ export interface OfferingPrerequisite {
         }
       </header>
 
+      @if (audience() || outcome()) {
+      <section class="pitch">
+        @if (audience()) {
+        <div>
+          <h2>Who this is for</h2>
+          <p>{{ audience() }}</p>
+        </div>
+        } @if (outcome()) {
+        <div>
+          <h2>What you will be able to do</h2>
+          <p>{{ outcome() }}</p>
+        </div>
+        }
+      </section>
+      }
+
       <dl class="facts">
         <div>
           <dt>Lessons</dt>
@@ -126,6 +142,35 @@ export interface OfferingPrerequisite {
         line-height: 1.02;
         letter-spacing: -0.04em;
       }
+      .pitch {
+        display: grid;
+        gap: 1.25rem;
+        margin: 0 0 1.75rem;
+        padding: 1.15rem 1.25rem;
+        border-left: 2px solid var(--lx-accent);
+        background: var(--lx-surface-2, transparent);
+      }
+      .pitch h2 {
+        margin: 0 0 0.35rem;
+        font-family: var(--lx-font-mono);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--lx-accent);
+      }
+      .pitch p {
+        margin: 0;
+        max-width: 62ch;
+        line-height: 1.6;
+      }
+      @media (min-width: 46rem) {
+        .pitch {
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+        }
+      }
+
       .description {
         margin: 0;
         max-width: 62ch;
@@ -192,6 +237,15 @@ export interface OfferingPrerequisite {
 export class OfferingSummaryComponent {
   readonly displayName = input<string>('');
   readonly description = input<string>('');
+  /**
+   * The case this course makes for itself, written by its author.
+   *
+   * Blank on a course that predates these fields, and the whole block is
+   * omitted rather than showing an empty heading. A course that has not said
+   * who it is for should look like it has not said, not like it said nothing.
+   */
+  readonly audience = input<string>('');
+  readonly outcome = input<string>('');
   readonly trackDisplayName = input<string>('');
   readonly authorName = input<string>('');
   readonly lessonCount = input<number>(0);

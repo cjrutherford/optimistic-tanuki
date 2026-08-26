@@ -599,6 +599,8 @@ export class LearningController {
     body: {
       displayName?: string;
       description?: string;
+      audience?: string;
+      outcome?: string;
       modules?: unknown[];
       activities?: unknown[];
     },
@@ -635,6 +637,13 @@ export class LearningController {
             ...(body?.description !== undefined
               ? { description: body.description }
               : {}),
+            // The case the course makes for itself. Listed here explicitly,
+            // like every other field, so adding one never becomes a way to
+            // smuggle in a field that is not meant to be author-editable.
+            ...(body?.audience !== undefined
+              ? { audience: body.audience }
+              : {}),
+            ...(body?.outcome !== undefined ? { outcome: body.outcome } : {}),
             ...(body?.modules !== undefined ? { modules: body.modules } : {}),
             ...(body?.activities !== undefined
               ? { activities: body.activities }

@@ -574,6 +574,45 @@ const tutorialCurricula: TutorialCurriculum[] = [
   },
 ];
 
+/**
+ * The case each ported course makes for itself.
+ *
+ * The platform is positioned around professional growth, but who benefits
+ * differs per course, so each one says who it is for rather than the catalog
+ * saying it once for all of them. These four are backfilled from what the
+ * courses actually contain and, where it still fits, from how the original
+ * repositories pitched themselves before the port.
+ */
+const tutorialPitch: Record<
+  TutorialLanguageId,
+  { audience: string; outcome: string }
+> = {
+  go: {
+    audience:
+      'Developers coming from TypeScript or another garbage-collected language who are being asked to work in Go, and want to understand why it is shaped the way it is rather than translate syntax.',
+    outcome:
+      'Write and review idiomatic Go: reach for the right receiver, handle errors as values, use goroutines and channels without introducing a race, and read what the garbage collector and escape analysis are doing to your allocations.',
+  },
+  typescript: {
+    audience:
+      'JavaScript developers whose codebase has grown past the point where they can hold its shapes in their head, and who need the compiler to start carrying some of that weight.',
+    outcome:
+      'Model a domain in types that make invalid states unrepresentable, work confidently with generics, unions and narrowing, and configure a project so the compiler catches what it can rather than waving it through.',
+  },
+  cpp: {
+    audience:
+      'Programmers who know a managed language and now need C++, whether for performance, for embedded work, or because the codebase they inherited is written in it.',
+    outcome:
+      'Reason about where a value lives and when it dies, use RAII and smart pointers so resources release themselves, write exception-safe code, and lean on the standard library rather than reimplementing it.',
+  },
+  rust: {
+    audience:
+      'Developers who have heard that Rust prevents a class of bug they have shipped before, and want to know what the borrow checker is actually enforcing rather than fighting it.',
+    outcome:
+      'Read and satisfy the borrow checker rather than working around it, choose between ownership, borrowing and interior mutability deliberately, and write concurrent code the compiler proves is free of data races.',
+  },
+};
+
 function tutorialProgramTrack({
   id,
   displayName,
@@ -615,6 +654,8 @@ function tutorialProgramTrack({
         level: 100,
         credits: 3,
         outcomeTags: ['foundations', languageId],
+        audience: tutorialPitch[languageId].audience,
+        outcome: tutorialPitch[languageId].outcome,
         // Explicit, because the schema defaults an offering to draft. These
         // four shipped with the product and are not anybody's work in progress.
         status: 'published',

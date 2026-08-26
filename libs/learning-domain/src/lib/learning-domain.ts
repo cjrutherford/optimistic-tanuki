@@ -441,6 +441,27 @@ export const OfferingSchema = z.object({
    * backfilling one would be inventing copy nobody wrote.
    */
   description: z.string().optional(),
+  /**
+   * Who this course is for, in the author's own words.
+   *
+   * The platform is positioned around professional growth, and the audience
+   * for that differs per course rather than once for the whole catalog: the
+   * person who should take Tech Literacy and the person who should take
+   * Systems Design have nothing in common. So each course makes its own case
+   * and the platform does not try to make one on their behalf.
+   *
+   * Optional, because a course written before this existed has none and
+   * inventing one would be putting words in its author's mouth.
+   */
+  audience: z.string().min(1).optional(),
+  /**
+   * What a learner can do afterwards that they could not before.
+   *
+   * Distinct from `outcomeTags`, which are keywords for grouping. This is a
+   * sentence a prospective learner reads to decide whether the course is
+   * worth their evening.
+   */
+  outcome: z.string().min(1).optional(),
   subjectId: z.string().min(1),
   level: z.union([
     z.literal(100),

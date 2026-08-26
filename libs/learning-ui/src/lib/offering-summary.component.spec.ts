@@ -165,4 +165,50 @@ describe('OfferingSummaryComponent', () => {
     expect(element.textContent).toContain('Enrolment is closed');
     expect(element.textContent).toContain('Go Foundations');
   });
+
+  describe('the case a course makes for itself', () => {
+    it('shows who it is for and what you will be able to do', () => {
+      const fixture = TestBed.createComponent(OfferingSummaryComponent);
+      fixture.componentRef.setInput('displayName', 'Tech Literacy');
+      fixture.componentRef.setInput(
+        'audience',
+        'People whose job now assumes technology nobody taught them.'
+      );
+      fixture.componentRef.setInput(
+        'outcome',
+        'Spot a phishing message and say what gave it away.'
+      );
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain('Who this is for');
+      expect(text).toContain('nobody taught them');
+      expect(text).toContain('What you will be able to do');
+      expect(text).toContain('what gave it away');
+    });
+
+    it('says nothing at all when the author has not said', () => {
+      // A course that predates these fields should look like it has not made
+      // a case, not like it made an empty one. An empty heading reads as a
+      // bug and invites somebody to fill it with filler.
+      const fixture = TestBed.createComponent(OfferingSummaryComponent);
+      fixture.componentRef.setInput('displayName', 'An older course');
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).not.toContain('Who this is for');
+      expect(text).not.toContain('What you will be able to do');
+    });
+
+    it('shows one half without the other', () => {
+      const fixture = TestBed.createComponent(OfferingSummaryComponent);
+      fixture.componentRef.setInput('displayName', 'Half a pitch');
+      fixture.componentRef.setInput('audience', 'Somebody specific.');
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain('Who this is for');
+      expect(text).not.toContain('What you will be able to do');
+    });
+  });
 });

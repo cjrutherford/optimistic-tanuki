@@ -28,6 +28,8 @@ import { LearningDataService, OfferingDetail } from './learning-data.service';
     <otlearn-offering-summary
       [displayName]="course.offering.displayName"
       [description]="course.offering.description ?? ''"
+      [audience]="course.offering.audience ?? ''"
+      [outcome]="course.offering.outcome ?? ''"
       [trackDisplayName]="course.trackDisplayName"
       [authorName]="course.author?.displayName ?? ''"
       [lessonCount]="course.lessonCount"

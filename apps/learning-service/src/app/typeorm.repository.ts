@@ -158,6 +158,8 @@ export class TypeOrmLearningRepository implements LearningRepository {
       ...(patch.description !== undefined
         ? { description: patch.description }
         : {}),
+      ...(patch.audience !== undefined ? { audience: patch.audience } : {}),
+      ...(patch.outcome !== undefined ? { outcome: patch.outcome } : {}),
       ...(patch.modules !== undefined ? { modules: patch.modules } : {}),
       ...(patch.activities !== undefined
         ? { activities: patch.activities }
