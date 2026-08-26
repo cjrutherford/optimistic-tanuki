@@ -21,7 +21,7 @@ import {
   OfferingContentPatch,
 } from './learning.repository';
 import {
-  tutorialProgramTracks,
+  builtInProgramTracks,
   LessonProgress,
 } from '@optimistic-tanuki/learning-domain';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
@@ -64,7 +64,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
   async listPrograms(): Promise<ProgramTrack[]> {
     const rows = await this.programTrackRepo.find();
     const merged = new Map<string, ProgramTrack>();
-    for (const track of tutorialProgramTracks) merged.set(track.id, track);
+    for (const track of builtInProgramTracks) merged.set(track.id, track);
     for (const row of rows) {
       const track = this.readStoredTrack(row);
       if (track) merged.set(row.trackId, track);

@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
 import {
   ProgramTrack,
-  tutorialProgramTracks,
+  builtInProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
 import { TypeOrmLearningRepository } from './typeorm.repository';
 import { AttemptEntity } from '../entities/attempt.entity';
@@ -173,9 +173,13 @@ describe('TypeOrmLearningRepository', () => {
 
   /**
    * The old listPrograms treated a non-empty program_track table as a full
-   * replacement for the four built-in tracks, then filtered out anything with
-   * no upstream repositoryUrl. An authored track has no repositoryUrl, so
+   * replacement for the built-in tracks, then filtered out anything with no
+   * upstream repositoryUrl. An authored track has no repositoryUrl, so
    * authoring one course took the catalog from four tracks to zero.
+   *
+   * These compare against builtInProgramTracks rather than the ported four,
+   * because a course written in this workspace is just as built-in as one
+   * that came from a repository, and the catalog has to keep both.
    */
   describe('listPrograms', () => {
     it('returns the built-in tracks when nothing has been authored', async () => {
@@ -184,7 +188,7 @@ describe('TypeOrmLearningRepository', () => {
       const programs = await repo.listPrograms();
 
       expect(programs.map((program) => program.id).sort()).toEqual(
-        tutorialProgramTracks.map((program) => program.id).sort()
+        builtInProgramTracks.map((program) => program.id).sort()
       );
     });
 
@@ -196,11 +200,11 @@ describe('TypeOrmLearningRepository', () => {
       const programs = await repo.listPrograms();
       const ids = programs.map((program) => program.id);
 
-      for (const builtIn of tutorialProgramTracks) {
+      for (const builtIn of builtInProgramTracks) {
         expect(ids).toContain(builtIn.id);
       }
       expect(ids).toContain('authored-1');
-      expect(programs).toHaveLength(tutorialProgramTracks.length + 1);
+      expect(programs).toHaveLength(builtInProgramTracks.length + 1);
     });
 
     it('does not discard a track that has no upstream repository', async () => {
@@ -245,18 +249,18 @@ describe('TypeOrmLearningRepository', () => {
 
       expect(ids).not.toContain('broken');
       expect(ids).toContain('authored-1');
-      for (const builtIn of tutorialProgramTracks) {
+      for (const builtIn of builtInProgramTracks) {
         expect(ids).toContain(builtIn.id);
       }
     });
 
     it('lets a stored row shadow a built-in track with the same id', async () => {
-      const builtInId = tutorialProgramTracks[0].id;
+      const builtInId = builtInProgramTracks[0].id;
       const repo = await withStoredRows([
         {
           trackId: builtInId,
           data: {
-            ...tutorialProgramTracks[0],
+            ...builtInProgramTracks[0],
             displayName: 'Edited by an admin',
           },
         },
@@ -267,7 +271,7 @@ describe('TypeOrmLearningRepository', () => {
       expect(
         programs.find((program) => program.id === builtInId)?.displayName
       ).toBe('Edited by an admin');
-      expect(programs).toHaveLength(tutorialProgramTracks.length);
+      expect(programs).toHaveLength(builtInProgramTracks.length);
     });
   });
   /**

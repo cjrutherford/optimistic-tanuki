@@ -148,7 +148,7 @@ export interface OfferingPrerequisite {
         margin: 0 0 1.75rem;
         padding: 1.15rem 1.25rem;
         border-left: 2px solid var(--lx-accent);
-        background: var(--lx-surface-2, transparent);
+        background: var(--lx-surface-hover);
       }
       .pitch h2 {
         margin: 0 0 0.35rem;

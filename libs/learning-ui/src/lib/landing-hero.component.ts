@@ -104,7 +104,7 @@ import { Component, input, output } from '@angular/core';
         max-width: 54ch;
         font-size: 1.06rem;
         line-height: 1.6;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
 
       .actions {
@@ -123,29 +123,29 @@ import { Component, input, output } from '@angular/core';
       .primary {
         border: 1px solid var(--lx-accent);
         background: var(--lx-accent);
-        color: var(--lx-ground, #0b0f0e);
+        color: var(--lx-bg);
       }
       .secondary {
-        border: 1px solid var(--lx-rule, currentColor);
+        border: 1px solid var(--lx-border);
         background: transparent;
         color: inherit;
       }
       button:focus-visible {
-        outline: 2px solid var(--lx-focus, var(--lx-accent));
+        outline: 2px solid var(--lx-focus);
         outline-offset: 2px;
       }
       .reassurance {
         margin: 1rem 0 0;
         font-size: 0.86rem;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
 
       .sample {
         margin: 0;
         padding: 1.4rem 1.5rem 1.6rem;
-        border: 1px solid var(--lx-rule, currentColor);
+        border: 1px solid var(--lx-border);
         border-radius: var(--lx-radius);
-        background: var(--lx-surface, transparent);
+        background: var(--lx-surface);
       }
       figcaption {
         display: flex;
@@ -155,7 +155,7 @@ import { Component, input, output } from '@angular/core';
         font-size: 0.7rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       .dot {
         width: 0.5rem;
@@ -172,12 +172,12 @@ import { Component, input, output } from '@angular/core';
       .sample p {
         margin: 0;
         line-height: 1.65;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       .exercise {
         margin-top: 1.1rem !important;
         padding-top: 1rem;
-        border-top: 1px solid var(--lx-rule, currentColor);
+        border-top: 1px solid var(--lx-border);
       }
       .exercise .label {
         display: block;

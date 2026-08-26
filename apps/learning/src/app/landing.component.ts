@@ -126,16 +126,16 @@ import { LearningAuthService } from './learning-auth.service';
       }
       nav button:hover,
       nav button:focus-visible {
-        border-color: var(--lx-rule, currentColor);
+        border-color: var(--lx-border);
       }
       nav button:focus-visible {
-        outline: 2px solid var(--lx-focus, var(--lx-accent));
+        outline: 2px solid var(--lx-focus);
         outline-offset: 2px;
       }
 
       .closing {
         padding: 3.5rem 0 1rem;
-        border-top: 1px solid var(--lx-rule, currentColor);
+        border-top: 1px solid var(--lx-border);
       }
       .closing h2 {
         margin: 0;
@@ -147,7 +147,7 @@ import { LearningAuthService } from './learning-auth.service';
         margin: 0.7rem 0 1.6rem;
         max-width: 56ch;
         line-height: 1.65;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       .primary {
         font: inherit;
@@ -156,11 +156,11 @@ import { LearningAuthService } from './learning-auth.service';
         border: 1px solid var(--lx-accent);
         border-radius: var(--lx-radius);
         background: var(--lx-accent);
-        color: var(--lx-ground, #0b0f0e);
+        color: var(--lx-bg);
         cursor: pointer;
       }
       .primary:focus-visible {
-        outline: 2px solid var(--lx-focus, var(--lx-accent));
+        outline: 2px solid var(--lx-focus);
         outline-offset: 2px;
       }
 
@@ -171,9 +171,9 @@ import { LearningAuthService } from './learning-auth.service';
         justify-content: space-between;
         margin-top: 3.5rem;
         padding-top: 1.4rem;
-        border-top: 1px solid var(--lx-rule, currentColor);
+        border-top: 1px solid var(--lx-border);
         font-size: 0.85rem;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
     `,
   ],

@@ -29,6 +29,7 @@ import {
   PublicationStatusSchema,
 } from '@optimistic-tanuki/learning-domain';
 import { Throttle } from '@nestjs/throttler';
+import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
@@ -419,7 +420,14 @@ export class LearningController {
    */
   @UseGuards(AuthGuard)
   // Marking a written answer occupies a language model, so this is the
-  // tightest of the three.
+  // tightest of the three throttles.
+  //
+  // It is also model-bound, and the gateway's 30 second default is not enough:
+  // a written answer graded against a rubric answered a 408 here while the
+  // marking itself completed fine a moment later. A learner cannot tell that
+  // apart from the feature being broken, and this course is mostly written
+  // answers.
+  @ModelBound()
   @UseGuards(IdentityThrottlerGuard)
   @Throttle(GRADING_THROTTLE)
   @Post('activities/:activityId/answer')

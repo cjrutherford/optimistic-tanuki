@@ -6,6 +6,7 @@
  * a file, and no file without an entry.
  */
 import { ProgramTrack } from './learning-domain';
+import { techLiteracyTrack } from './tech-literacy';
 const tutorialSources = {
   typescript: {
     repositoryUrl: 'https://github.com/cjrutherford/letsgots',
@@ -700,3 +701,19 @@ function tutorialProgramTrack({
 
 export const tutorialProgramTracks: ProgramTrack[] =
   tutorialCurricula.map(tutorialProgramTrack);
+
+/**
+ * Every course that ships with the product, not only the ported four.
+ *
+ * `tutorialProgramTracks` stays exactly what its name says: the four letsgo
+ * repositories, as data. Courses written here rather than ported are a
+ * different thing with a different shape, and the coverage spec that checks
+ * the ported four against their repositories has no business asserting
+ * anything about them.
+ *
+ * This is what the catalog serves.
+ */
+export const builtInProgramTracks: ProgramTrack[] = [
+  ...tutorialProgramTracks,
+  techLiteracyTrack,
+];

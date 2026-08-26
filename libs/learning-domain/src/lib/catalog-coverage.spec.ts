@@ -1,6 +1,10 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { tutorialProgramTracks } from './tutorial-catalog';
+import {
+  builtInProgramTracks,
+  tutorialProgramTracks,
+} from './tutorial-catalog';
+import { techLiteracyTrack } from './tech-literacy';
 import { tutorialExercises } from './tutorial-content';
 import { LessonMetadata, selectLessonContent } from './learning-domain';
 
@@ -198,5 +202,152 @@ describe('curriculum catalog coverage', () => {
       const silent = reachability.filter((entry) => entry.total === 0);
       expect(silent).toEqual([]);
     });
+  });
+});
+
+/**
+ * The courses written here rather than ported.
+ *
+ * Held to the same promise as the four above: no catalog entry without a file,
+ * and no file without a catalog entry. Kept in its own block because the
+ * checks above are about agreement with four upstream repositories, which this
+ * course has nothing to do with.
+ */
+describe('courses written in this workspace', () => {
+  const lessonsOfTrack = lessonsOf(techLiteracyTrack);
+
+  it('is in the catalog the platform actually serves', () => {
+    expect(builtInProgramTracks).toContain(techLiteracyTrack);
+    // And is not mistaken for one of the ported four.
+    expect(tutorialProgramTracks).not.toContain(techLiteracyTrack);
+  });
+
+  it('teaches a subject that is not programming', () => {
+    // The whole reason this course exists. A platform claiming to teach any
+    // subject, whose entire catalog is programming, is making a claim a
+    // visitor can disprove at a glance.
+    expect(techLiteracyTrack.subjectIds).not.toContain('programming');
+  });
+
+  it('claims no language, because it has no code in it', () => {
+    expect(techLiteracyTrack.supportedLanguageIds).toBeUndefined();
+    expect(techLiteracyTrack.variantAxis).toBeUndefined();
+  });
+
+  it('points every lesson at a file that exists', () => {
+    const repository = techLiteracyTrack.contentCollection ?? '';
+    const broken = lessonsOfTrack
+      .filter((lesson) => !existsSync(fileFor(repository, lesson)))
+      .map(
+        (lesson) => `${lesson.id} -> ${selectLessonContent(lesson).sourcePath}`
+      );
+
+    expect(broken).toEqual([]);
+  });
+
+  it('leaves no lesson file unreachable', () => {
+    const repository = techLiteracyTrack.contentCollection ?? '';
+    const referenced = new Set(
+      lessonsOfTrack.map((lesson) => fileFor(repository, lesson))
+    );
+    const orphaned = markdownUnder(join(CONTENT_ROOT, repository))
+      .filter((file) => !referenced.has(file))
+      .map((file) => file.replace(join(CONTENT_ROOT, repository) + '/', ''));
+
+    expect(orphaned).toEqual([]);
+  });
+
+  it('attaches every activity to a lesson that exists', () => {
+    // An activity naming a lesson that is not there is work nobody can reach,
+    // which is the same defect the exercise reachability check above exists
+    // to catch.
+    const lessonIds = new Set(lessonsOfTrack.map((lesson) => lesson.id));
+    const orphaned = techLiteracyTrack.offerings
+      .flatMap((offering) => offering.activities)
+      .filter(
+        (activity) => activity.lessonId && !lessonIds.has(activity.lessonId)
+      )
+      .map((activity) => `${activity.id} -> ${activity.lessonId}`);
+
+    expect(orphaned).toEqual([]);
+  });
+
+  it('sets work that does not need the code runner', () => {
+    const types = new Set(
+      techLiteracyTrack.offerings
+        .flatMap((offering) => offering.activities)
+        .map((activity) => activity.type)
+    );
+
+    expect(types.has('code.run')).toBe(false);
+    // And genuinely uses the author-facing types, since exercising those is
+    // half the reason this course exists.
+    expect(types.has('writing.response')).toBe(true);
+    expect(types.has('quiz.mcq')).toBe(true);
+    expect(types.has('project.submission')).toBe(true);
+  });
+
+  it('gives every written activity a rubric to be marked against', () => {
+    // Without one the answer is recorded and left for a person, which is a
+    // real fallback but not what this course intends.
+    const unmarkable = techLiteracyTrack.offerings
+      .flatMap((offering) => offering.activities)
+      .filter(
+        (activity) => activity.type === 'writing.response' && !activity.rubric
+      )
+      .map((activity) => activity.id);
+
+    expect(unmarkable).toEqual([]);
+  });
+});
+
+/**
+ * Adding a course must not remove one.
+ *
+ * This catalog has done exactly that before: listPrograms once treated a
+ * non-empty table as a full replacement for the built-ins, so authoring a
+ * single course emptied it. Adding Tech Literacy is the first time anything
+ * has been added to the shipped set since, so the property is worth asserting
+ * rather than assuming.
+ */
+describe('the catalog only ever grows', () => {
+  it('still carries all four ported courses', () => {
+    const ids = builtInProgramTracks.map((track) => track.id);
+
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'typescript-foundations',
+        'go-foundations',
+        'cpp-foundations',
+        'rust-foundations',
+      ])
+    );
+  });
+
+  it('carries the new course alongside them, not instead of them', () => {
+    expect(builtInProgramTracks).toHaveLength(tutorialProgramTracks.length + 1);
+    expect(builtInProgramTracks.map((track) => track.id)).toContain(
+      'tech-literacy'
+    );
+  });
+
+  it('leaves the ported courses' + ' lessons untouched', () => {
+    // Counted per track rather than in total, so a course losing lessons
+    // cannot be hidden by another course gaining them.
+    const counts = Object.fromEntries(
+      tutorialProgramTracks.map((track) => [track.id, lessonsOf(track).length])
+    );
+
+    expect(counts).toEqual({
+      'typescript-foundations': 38,
+      'go-foundations': 49,
+      'cpp-foundations': 24,
+      'rust-foundations': 25,
+    });
+  });
+
+  it('gives every track a distinct id', () => {
+    const ids = builtInProgramTracks.map((track) => track.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

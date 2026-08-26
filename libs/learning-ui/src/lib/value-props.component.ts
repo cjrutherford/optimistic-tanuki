@@ -37,7 +37,7 @@ export interface ValueProp {
       }
       .props {
         padding: 3rem 0;
-        border-top: 1px solid var(--lx-rule, currentColor);
+        border-top: 1px solid var(--lx-border);
       }
       h2 {
         margin: 0 0 2rem;
@@ -66,7 +66,7 @@ export interface ValueProp {
       li p {
         margin: 0;
         line-height: 1.65;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
     `,
   ],

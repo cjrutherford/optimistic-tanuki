@@ -66,7 +66,7 @@ export interface CurriculumPreviewCourse {
       }
       .preview {
         padding: 3rem 0;
-        border-top: 1px solid var(--lx-rule, currentColor);
+        border-top: 1px solid var(--lx-border);
       }
       header h2 {
         margin: 0;
@@ -77,7 +77,7 @@ export interface CurriculumPreviewCourse {
       header p {
         margin: 0.6rem 0 0;
         max-width: 58ch;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       ul {
         list-style: none;
@@ -85,8 +85,8 @@ export interface CurriculumPreviewCourse {
         padding: 0;
         display: grid;
         gap: 1px;
-        background: var(--lx-rule, currentColor);
-        border: 1px solid var(--lx-rule, currentColor);
+        background: var(--lx-border);
+        border: 1px solid var(--lx-border);
       }
       @media (min-width: 48rem) {
         ul {
@@ -94,7 +94,7 @@ export interface CurriculumPreviewCourse {
         }
       }
       li {
-        background: var(--lx-surface, transparent);
+        background: var(--lx-surface);
       }
       button {
         display: grid;
@@ -111,10 +111,10 @@ export interface CurriculumPreviewCourse {
       }
       button:hover,
       button:focus-visible {
-        background: var(--lx-surface-2, transparent);
+        background: var(--lx-surface-hover);
       }
       button:focus-visible {
-        outline: 2px solid var(--lx-focus, var(--lx-accent));
+        outline: 2px solid var(--lx-focus);
         outline-offset: -2px;
       }
       .subject {
@@ -132,16 +132,16 @@ export interface CurriculumPreviewCourse {
       .audience {
         font-size: 0.9rem;
         line-height: 1.55;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       .count {
         font-family: var(--lx-font-mono);
         font-size: 0.72rem;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
       .empty {
         margin: 2rem 0 0;
-        color: var(--lx-text-dim, inherit);
+        color: var(--lx-text-muted);
       }
     `,
   ],
