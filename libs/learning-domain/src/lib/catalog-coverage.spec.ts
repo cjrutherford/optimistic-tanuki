@@ -5,6 +5,7 @@ import {
   tutorialProgramTracks,
 } from './tutorial-catalog';
 import { techLiteracyTrack } from './tech-literacy';
+import { programmingConceptsTrack } from './programming-concepts';
 import { tutorialExercises } from './tutorial-content';
 import { LessonMetadata, selectLessonContent } from './learning-domain';
 
@@ -213,29 +214,28 @@ describe('curriculum catalog coverage', () => {
  * checks above are about agreement with four upstream repositories, which this
  * course has nothing to do with.
  */
-describe('courses written in this workspace', () => {
-  const lessonsOfTrack = lessonsOf(techLiteracyTrack);
+describe.each([
+  ['Tech Literacy', techLiteracyTrack],
+  ['Programming Concepts', programmingConceptsTrack],
+])('courses written in this workspace: %s', (_name, track) => {
+  const lessonsOfTrack = lessonsOf(track);
 
   it('is in the catalog the platform actually serves', () => {
-    expect(builtInProgramTracks).toContain(techLiteracyTrack);
+    expect(builtInProgramTracks).toContain(track);
     // And is not mistaken for one of the ported four.
-    expect(tutorialProgramTracks).not.toContain(techLiteracyTrack);
+    expect(tutorialProgramTracks).not.toContain(track);
   });
 
-  it('teaches a subject that is not programming', () => {
-    // The whole reason this course exists. A platform claiming to teach any
-    // subject, whose entire catalog is programming, is making a claim a
-    // visitor can disprove at a glance.
-    expect(techLiteracyTrack.subjectIds).not.toContain('programming');
-  });
-
-  it('claims no language, because it has no code in it', () => {
-    expect(techLiteracyTrack.supportedLanguageIds).toBeUndefined();
-    expect(techLiteracyTrack.variantAxis).toBeUndefined();
+  it('claims no language, because it teaches no single one', () => {
+    // Both of these courses are deliberately language-free: one has no code
+    // in it at all, the other is the spine the four language courses hang
+    // from. Claiming a language would file either under the wrong filter.
+    expect(track.supportedLanguageIds).toBeUndefined();
+    expect(track.variantAxis).toBeUndefined();
   });
 
   it('points every lesson at a file that exists', () => {
-    const repository = techLiteracyTrack.contentCollection ?? '';
+    const repository = track.contentCollection ?? '';
     const broken = lessonsOfTrack
       .filter((lesson) => !existsSync(fileFor(repository, lesson)))
       .map(
@@ -246,7 +246,7 @@ describe('courses written in this workspace', () => {
   });
 
   it('leaves no lesson file unreachable', () => {
-    const repository = techLiteracyTrack.contentCollection ?? '';
+    const repository = track.contentCollection ?? '';
     const referenced = new Set(
       lessonsOfTrack.map((lesson) => fileFor(repository, lesson))
     );
@@ -262,7 +262,7 @@ describe('courses written in this workspace', () => {
     // which is the same defect the exercise reachability check above exists
     // to catch.
     const lessonIds = new Set(lessonsOfTrack.map((lesson) => lesson.id));
-    const orphaned = techLiteracyTrack.offerings
+    const orphaned = track.offerings
       .flatMap((offering) => offering.activities)
       .filter(
         (activity) => activity.lessonId && !lessonIds.has(activity.lessonId)
@@ -274,14 +274,14 @@ describe('courses written in this workspace', () => {
 
   it('sets work that does not need the code runner', () => {
     const types = new Set(
-      techLiteracyTrack.offerings
+      track.offerings
         .flatMap((offering) => offering.activities)
         .map((activity) => activity.type)
     );
 
     expect(types.has('code.run')).toBe(false);
     // And genuinely uses the author-facing types, since exercising those is
-    // half the reason this course exists.
+    // half the reason these courses exist.
     expect(types.has('writing.response')).toBe(true);
     expect(types.has('quiz.mcq')).toBe(true);
     expect(types.has('project.submission')).toBe(true);
@@ -289,8 +289,8 @@ describe('courses written in this workspace', () => {
 
   it('gives every written activity a rubric to be marked against', () => {
     // Without one the answer is recorded and left for a person, which is a
-    // real fallback but not what this course intends.
-    const unmarkable = techLiteracyTrack.offerings
+    // real fallback but not what these courses intend.
+    const unmarkable = track.offerings
       .flatMap((offering) => offering.activities)
       .filter(
         (activity) => activity.type === 'writing.response' && !activity.rubric
@@ -301,14 +301,38 @@ describe('courses written in this workspace', () => {
   });
 });
 
+describe('what each workspace-written course is for', () => {
+  it('gives Tech Literacy a subject that is not programming', () => {
+    // The whole reason that course exists. A platform claiming to teach any
+    // subject, whose entire catalog is programming, is making a claim a
+    // visitor can disprove at a glance.
+    expect(techLiteracyTrack.subjectIds).not.toContain('programming');
+  });
+
+  it('files Programming Concepts under programming without tying it to one', () => {
+    // The opposite case: it belongs with the language courses in the catalog,
+    // and would be miscategorised anywhere else, but a learner arriving from
+    // any of the four should find it.
+    expect(programmingConceptsTrack.subjectIds).toContain('programming');
+  });
+
+  it('keeps the two courses in separate content collections', () => {
+    // Sharing one would make the unreachable-file check above vacuous, since
+    // every orphan in one course would be claimed by the other.
+    expect(programmingConceptsTrack.contentCollection).not.toEqual(
+      techLiteracyTrack.contentCollection
+    );
+  });
+});
+
 /**
  * Adding a course must not remove one.
  *
  * This catalog has done exactly that before: listPrograms once treated a
  * non-empty table as a full replacement for the built-ins, so authoring a
- * single course emptied it. Adding Tech Literacy is the first time anything
- * has been added to the shipped set since, so the property is worth asserting
- * rather than assuming.
+ * single course emptied it. Every course added to the shipped set since is
+ * asserted here rather than assumed, and the counts below are per ported
+ * track so a loss cannot be masked by a gain elsewhere.
  */
 describe('the catalog only ever grows', () => {
   it('still carries all four ported courses', () => {
@@ -324,10 +348,10 @@ describe('the catalog only ever grows', () => {
     );
   });
 
-  it('carries the new course alongside them, not instead of them', () => {
-    expect(builtInProgramTracks).toHaveLength(tutorialProgramTracks.length + 1);
-    expect(builtInProgramTracks.map((track) => track.id)).toContain(
-      'tech-literacy'
+  it('carries the new courses alongside them, not instead of them', () => {
+    expect(builtInProgramTracks).toHaveLength(tutorialProgramTracks.length + 2);
+    expect(builtInProgramTracks.map((track) => track.id)).toEqual(
+      expect.arrayContaining(['tech-literacy', 'programming-concepts'])
     );
   });
 
