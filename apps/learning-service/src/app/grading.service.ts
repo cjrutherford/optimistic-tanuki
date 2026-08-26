@@ -1,9 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   buildGradingRequest,
+  buildIntentRequest,
   enforceEvidence,
   GradeOutcome,
+  IntentVerdict,
+  IntentVerdictSchema,
   LlmVerdictSchema,
+  shouldGrade,
   WritingResponseActivity,
 } from '@optimistic-tanuki/learning-domain';
 
@@ -54,6 +58,32 @@ export class GradingService {
     const rubric = activity.rubric;
     if (!rubric) return undefined;
 
+    /*
+      Stage one runs, and is deliberately not believed yet.
+
+      The evidence check cannot tell an answer from an instruction aimed at
+      the marker: in a prompt injection the attack text is the submission, so
+      a compliant model quotes the learner's own words back, the quote
+      verifies, and full marks follow. That is demonstrated in
+      grading.spec.ts, not theorised, and it is what this gate is for.
+
+      It is not allowed to block yet because it is not accurate enough. On a
+      six-case sample it refused an honest but thin answer -- "I think it is
+      the delivery one because the address looked wrong" -- as though it were
+      addressed to the marker. A gate that refuses real work is worse than the
+      attack it prevents, so for now it only writes down what it would have
+      done. Give it authority once the log says it is right about submissions
+      nobody wrote to test it.
+    */
+    const verdict = await this.classifyIntent(activity, submission);
+    if (!shouldGrade(verdict, submission)) {
+      this.logger.warn(
+        `Triage would have refused to mark this submission. Not acting on it: ` +
+          `addressesTheMarker=${verdict?.addressesTheMarker ?? 'unreadable'} ` +
+          `quote=${JSON.stringify(verdict?.quote ?? '')}`
+      );
+    }
+
     // Measured against the live model: roughly one call in three came back
     // with truncated JSON. One retry turns that into a rare failure rather
     // than a common one, and costs a few seconds only when it happens.
@@ -61,6 +91,76 @@ export class GradingService {
       (await this.attemptGrading(activity, submission)) ??
       (await this.attemptGrading(activity, submission))
     );
+  }
+
+  /**
+   * Stage one: answer, manipulation, or blank.
+   *
+   * Returns undefined when the model cannot be reached or says something
+   * unreadable, and shouldGrade treats that as "do not mark". Failing to
+   * classify is not a reason to proceed: the whole point of this call is that
+   * marking requires a positive verdict rather than the absence of a negative
+   * one.
+   */
+  private async classifyIntent(
+    activity: WritingResponseActivity,
+    submission: string
+  ): Promise<IntentVerdict | undefined> {
+    const request = buildIntentRequest(activity, submission);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await fetch(`${this.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: this.model,
+          stream: false,
+          format: request.schema,
+          // Triage answers a boolean and a short quote. It has no reason to
+          // produce more than a couple of sentences, and capping it keeps the
+          // gate cheap enough to justify sitting in front of every marking.
+          options: { temperature: 0, repeat_penalty: 1.1, num_predict: 256 },
+          messages: [
+            { role: 'system', content: request.system },
+            { role: 'user', content: request.user },
+          ],
+        }),
+      });
+      if (!response.ok) {
+        this.logger.warn(
+          `Triage model answered ${response.status}; leaving the answer unmarked`
+        );
+        return undefined;
+      }
+      const body = (await response.json()) as {
+        message?: { content?: string };
+      };
+      const content = body.message?.content;
+      if (!content) return undefined;
+
+      const parsed = IntentVerdictSchema.safeParse(JSON.parse(content));
+      if (!parsed.success) {
+        this.logger.warn(
+          `Triage returned something unusable: ${parsed.error.message}`
+        );
+        return undefined;
+      }
+      if (parsed.data.addressesTheMarker) {
+        this.logger.log(
+          `Triage says a submission speaks to the marker, quoting: ${parsed.data.quote}`
+        );
+      }
+      return parsed.data;
+    } catch (error) {
+      this.logger.warn(
+        `Could not classify a submission: ${(error as Error)?.message ?? error}`
+      );
+      return undefined;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private async attemptGrading(
@@ -82,8 +182,29 @@ export class GradingService {
           model: this.model,
           stream: false,
           format: request.schema,
-          // Marking should not vary between two identical answers.
-          options: { temperature: 0 },
+          options: {
+            // Marking should not vary between two identical answers.
+            temperature: 0,
+            /*
+              Greedy decoding is what makes marking reproducible, and it is
+              also what made it fail. At temperature 0 this model fell into a
+              repetition loop inside the evidence field, repeating the same
+              two sentences until it ran out of room: 4.7KB of unterminated
+              JSON, done_reason "length", nothing parseable, and the learner
+              told their answer could not be marked. Longer answers triggered
+              it; the short ones I first tested did not, which is why it
+              looked like it worked.
+
+              repeat_penalty breaks the loop without introducing randomness,
+              so identical answers still mark identically. Measured on the
+              prompt that failed: 4722 chars truncated becomes 1412 chars that
+              parse, in 309 tokens rather than the full 1024.
+            */
+            repeat_penalty: 1.1,
+            // And a ceiling, so a loop that survives the penalty costs one
+            // failed marking rather than the whole timeout.
+            num_predict: 1024,
+          },
           messages: [
             { role: 'system', content: request.system },
             { role: 'user', content: request.user },
