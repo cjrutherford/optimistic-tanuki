@@ -964,6 +964,98 @@ describe('AppService authored content', () => {
       });
     });
   });
+
+  /**
+   * The course page and the editor are the same route, and they want opposite
+   * things from it.
+   *
+   * This route returned the offering exactly as listPrograms holds it, which
+   * keeps the mark scheme so grading can read answers back out by id. That
+   * meant every quiz answer key and sample response in every course was
+   * readable by anyone who fetched the course, signed in or not. It shipped
+   * that way and no test here noticed, so both directions are pinned below.
+   */
+  describe('what the offering route gives away', () => {
+    /** The same art course, plus work that has a right answer. */
+    function marked(status: 'draft' | 'published') {
+      const track = art(status, 'words') as unknown as ProgramTrack;
+      track.offerings[0].activities = [
+        {
+          id: 'a-quiz',
+          type: 'quiz.mcq',
+          lessonId: 'art-lesson-1',
+          prompt: 'Which pigment is not a primary?',
+          options: [
+            { id: 'o1', text: 'Green' },
+            { id: 'o2', text: 'Red' },
+          ],
+          correctOptionIds: ['o1'],
+        },
+        {
+          id: 'a-write',
+          type: 'writing.response',
+          lessonId: 'art-lesson-1',
+          prompt: 'Explain why.',
+          rubric: 'Names the primaries.',
+          sampleResponse: 'Green is mixed from blue and yellow.',
+        },
+      ] as unknown as ProgramTrack['offerings'][number]['activities'];
+      return track;
+    }
+
+    async function activitiesSeenBy(profileId?: string) {
+      const service = await serviceOver([marked('published')]);
+      const detail = await service.getOfferingDetail(
+        'art-1',
+        profileId ? { profileId } : {}
+      );
+      return detail.offering.activities as unknown as Record<string, unknown>[];
+    }
+
+    it('withholds the answer key from an anonymous visitor', async () => {
+      const [quiz, writing] = await activitiesSeenBy();
+
+      expect(quiz).not.toHaveProperty('correctOptionIds');
+      expect(writing).not.toHaveProperty('sampleResponse');
+      // The question itself still has to arrive, or the page is blank.
+      expect(quiz['options']).toHaveLength(2);
+    });
+
+    it('withholds it from a signed-in learner who does not own the course', async () => {
+      const [quiz, writing] = await activitiesSeenBy('some-learner');
+
+      expect(quiz).not.toHaveProperty('correctOptionIds');
+      expect(writing).not.toHaveProperty('sampleResponse');
+    });
+
+    /**
+     * The other half, and the more dangerous one to get wrong. The editor
+     * loads from this route and saves activities back as a full replacement,
+     * so an author handed a stripped copy would save it over their own
+     * answers the next time they touched anything.
+     */
+    it('gives the author their own answers back', async () => {
+      const [quiz, writing] = await activitiesSeenBy('author-profile');
+
+      expect(quiz['correctOptionIds']).toEqual(['o1']);
+      expect(writing['sampleResponse']).toBe(
+        'Green is mixed from blue and yellow.'
+      );
+    });
+
+    it('still hides a draft from everyone but its author', async () => {
+      // Reading ownership for published courses too is what makes the check
+      // above possible; this makes sure it did not loosen the draft rule.
+      const service = await serviceOver([marked('draft')]);
+
+      await expect(
+        service.getOfferingDetail('art-1', { profileId: 'some-learner' })
+      ).rejects.toThrow();
+      await expect(
+        service.getOfferingDetail('art-1', { profileId: 'author-profile' })
+      ).resolves.toBeDefined();
+    });
+  });
 });
 
 /**

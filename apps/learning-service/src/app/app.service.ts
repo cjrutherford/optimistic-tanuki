@@ -275,15 +275,37 @@ export class AppService {
     );
     if (!track || !offering) throw this.offeringNotFound(offeringId);
 
-    const ownership =
-      offering.status === 'published'
-        ? undefined
-        : await this.repository.getOwnership(offeringId);
-    if (!isOfferingVisibleTo(offering, ownership, viewer)) {
+    // Looked up whether or not the course is published, because this route
+    // feeds the editor as well as the course page and the answer below turns
+    // on who is asking. A published course used to skip this entirely.
+    const ownership = await this.repository.getOwnership(offeringId);
+    if (
+      !isOfferingVisibleTo(
+        offering,
+        offering.status === 'published' ? undefined : ownership,
+        viewer
+      )
+    ) {
       // Same answer as a course that does not exist, for the same reason the
       // lesson route gives one.
       throw this.offeringNotFound(offeringId);
     }
+
+    // The author gets their own course back whole. Everyone else gets it
+    // without the mark scheme.
+    //
+    // Both halves matter. Returning it whole to everyone handed anyone who
+    // fetched a course every quiz answer key and sample response in it,
+    // signed in or not. Stripping it from everyone would have been worse in
+    // a quieter way: the editor loads from this route and saves activities
+    // back as a full replacement, so an author opening their own course
+    // would have saved the stripped copy over their answers.
+    const isOwner = Boolean(
+      viewer.profileId && ownership?.ownerProfileId === viewer.profileId
+    );
+    const visibleOffering = isOwner
+      ? offering
+      : { ...offering, activities: offering.activities.map(publicActivity) };
 
     const byId = new Map(
       tracks
@@ -291,7 +313,7 @@ export class AppService {
         .map((candidate) => [candidate.id, candidate])
     );
     return {
-      offering,
+      offering: visibleOffering,
       trackId: track.id,
       trackDisplayName: track.displayName,
       variantAxis: track.variantAxis,
@@ -306,8 +328,7 @@ export class AppService {
         offeringId: id,
         displayName: byId.get(id)?.displayName ?? id,
       })),
-      ownerProfileId: (await this.repository.getOwnership(offeringId))
-        ?.ownerProfileId,
+      ownerProfileId: ownership?.ownerProfileId,
     };
   }
 
