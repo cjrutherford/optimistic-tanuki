@@ -167,7 +167,7 @@ services:
       # reachable from the host but not from inside a compose network, so this
       # goes out through the host gateway.
       LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
-      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-granite4:tiny-h}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
     extra_hosts:
       - 'shangrila:100.89.87.124'
     depends_on:

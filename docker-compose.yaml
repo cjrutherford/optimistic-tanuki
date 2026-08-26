@@ -995,7 +995,7 @@ services:
       - DATABASE_NAME=ot_learning_service
       # Marking written answers against an author's rubric.
       - LEARNING_OLLAMA_URL=${LEARNING_OLLAMA_URL:-http://shangrila:11434}
-      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-granite4:tiny-h}
+      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
       - LEARNING_RUNNER_URL=http://learning-runner:3025
     depends_on:
       postgres:

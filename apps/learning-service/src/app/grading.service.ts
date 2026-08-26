@@ -31,8 +31,33 @@ export class GradingService {
     return process.env.LEARNING_OLLAMA_URL ?? 'http://shangrila:11434';
   }
 
+  /**
+   * Chosen by measurement against the roster on the inference host, on the
+   * real grading prompt, with one strong answer and four that should earn
+   * nothing.
+   *
+   *   model                     strong answer   quotes the reference   secs
+   *   granite4:tiny-h           1/10            yes                    3-42
+   *   llama3.2:3b               10/10           yes                    28
+   *   nemotron-3-nano:4b-q8_0   10/10           no                     11-49
+   *   qwen3:8b                  10/10           no                     75-116
+   *   qwen3.5:4b-q8_0           unparseable: spends every token reasoning
+   *
+   * All of them correctly gave nothing to the weak, off-topic, empty and
+   * injected answers, so the difference is entirely in whether an honest
+   * answer gets its marks.
+   *
+   * granite was under-marking real work badly, and quoting the author's
+   * reference answer as evidence despite being told twice not to. That
+   * evidence is not in the submission, so it verifies as false and the marks
+   * vanish: 1/10 for an answer naming three concrete signals. The fix was a
+   * model that follows the instruction, not a better instruction.
+   *
+   * nemotron over qwen3:8b for latency. Both mark correctly; one does it in
+   * a third of the time.
+   */
   private get model(): string {
-    return process.env.LEARNING_GRADING_MODEL ?? 'granite4:tiny-h';
+    return process.env.LEARNING_GRADING_MODEL ?? 'nemotron-3-nano:4b-q8_0';
   }
 
   private get timeoutMs(): number {
