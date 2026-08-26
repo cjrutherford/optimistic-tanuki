@@ -95,9 +95,46 @@ async function main() {
   console.log(`Driving ${BASE_URL}\n`);
   browser(['set', 'viewport', '1280', '800'], { allowFailure: true });
 
-  await check('the catalog offers courses, and a way in', () => {
+  // The front door makes an argument. This is checked signed out, because a
+  // visitor deciding whether to bother is by definition not signed in.
+  await check('the landing page argues for itself', () => {
     const seen = inspect(
       '/',
+      `({ heading: document.querySelector('h1')?.textContent?.trim() ?? '',
+          text: (document.body.textContent || '').replace(/\\s+/g, ' '),
+          courseCount: document.querySelectorAll('otlearn-curriculum-preview li').length,
+          buttons: Array.from(document.querySelectorAll('button')).map(b => (b.textContent || '').trim()) })`
+    );
+    assert(seen.heading.length > 0, 'the landing page has no headline');
+    assert(
+      /readable without an account/i.test(seen.text),
+      'the landing page never says reading is free'
+    );
+    assert(
+      seen.buttons.some((label) => /browse courses/i.test(label)),
+      `no way through to the catalog; buttons were ${JSON.stringify(
+        seen.buttons
+      )}`
+    );
+    // Writing a course is the half of the product nothing used to mention.
+    assert(
+      seen.buttons.some((label) => /write a course/i.test(label)),
+      'the landing page never invites anyone to write'
+    );
+    // The curriculum preview reads the live catalog, so an empty one means
+    // the page is promising courses it is not showing. The data service
+    // returns EMPTY during server rendering, so this only fills in after
+    // hydration; if that ever stops working the section renders its empty
+    // state and this catches it.
+    assert(
+      seen.courseCount > 0,
+      'the curriculum preview lists no courses, so the landing page shows nothing that is actually here'
+    );
+  });
+
+  await check('the catalog offers courses, and a way in', () => {
+    const seen = inspect(
+      '/courses',
       `({ courses: document.querySelectorAll('a.course').length,
           heading: document.querySelector('h1')?.textContent?.trim() ?? '',
           firstCourse: document.querySelector('a.course')?.getAttribute('href') ?? '',

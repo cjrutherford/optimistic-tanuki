@@ -9,3 +9,6 @@ export * from './lib/lesson-completion.component';
 export * from './lib/lesson-prose.component';
 export * from './lib/activity-answer.component';
 export * from './lib/install-prompt.component';
+export * from './lib/landing-hero.component';
+export * from './lib/curriculum-preview.component';
+export * from './lib/value-props.component';

@@ -44,6 +44,9 @@ export interface CatalogOffering {
   id: string;
   displayName: string;
   description?: string;
+  /** The case this course makes for itself, if its author made one. */
+  audience?: string;
+  outcome?: string;
   subjectId: string;
   level: number;
   credits: number;

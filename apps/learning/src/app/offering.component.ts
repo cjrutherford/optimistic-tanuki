@@ -24,7 +24,7 @@ import { LearningDataService, OfferingDetail } from './learning-data.service';
   ],
   template: `<learning-layout [trackId]="detail()?.trackId ?? ''">
     @if (detail(); as course) {
-    <a routerLink="/" class="back">← Catalog</a>
+    <a routerLink="/courses" class="back">← Catalog</a>
     <otlearn-offering-summary
       [displayName]="course.offering.displayName"
       [description]="course.offering.description ?? ''"

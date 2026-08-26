@@ -27,10 +27,10 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
     </header>
     <div class="studio">
       <aside aria-label="Course navigation">
-        <a routerLink="/" class="brand">Catalog</a>
+        <a routerLink="/courses" class="brand">Catalog</a>
         <nav>
           <a
-            routerLink="/"
+            routerLink="/courses"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             >Browse courses</a
@@ -187,8 +187,9 @@ export class LearningLayoutComponent {
   protected signOut(): void {
     this.auth.logout().subscribe(() => {
       this.person.set(null);
-      // A full reload, because everything on the page was fetched as the
-      // person who is now signed out.
+      // The landing page, which is the right place for somebody with no
+      // session. A full reload, because everything on the page was fetched as
+      // the person who is now signed out.
       this.router.navigateByUrl('/').then(() => location.reload());
     });
   }

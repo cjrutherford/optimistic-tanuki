@@ -7,12 +7,15 @@ import { SignInComponent } from './sign-in.component';
 import { CourseEditorComponent } from './course-editor.component';
 import { DashboardComponent } from './dashboard.component';
 import { ModuleComponent } from './module.component';
+import { LandingComponent } from './landing.component';
 import { LessonComponent } from './lesson.component';
 
 export const appRoutes: Routes = [
-  // The catalog is the entrance. It used to be a landing page that sent
-  // visitors straight into a course's module sidebar.
-  { path: '', component: CatalogComponent },
+  // The landing page is the entrance, and the catalog is where you go once
+  // you have decided. It was the other way round, which meant the front door
+  // answered "what is here" and never answered "why would I".
+  { path: '', component: LandingComponent },
+  { path: 'courses', component: CatalogComponent },
   { path: 'course/:offeringId', component: OfferingComponent },
   { path: 'sign-in', component: SignInComponent },
   { path: 'dashboard', component: DashboardComponent },

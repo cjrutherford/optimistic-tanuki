@@ -27,7 +27,7 @@ import { LearningAuthService } from './learning-auth.service';
     RouterLink,
   ],
   template: `<learning-layout>
-    <a routerLink="/" class="back">← Catalog</a>
+    <a routerLink="/courses" class="back">← Catalog</a>
 
     <header>
       <p class="eyebrow">Account</p>
@@ -159,8 +159,9 @@ export class SignInComponent {
 
   private done(): void {
     this.pending.set(false);
-    // Straight back to the catalog: whatever they came here to do, it starts
-    // from a course.
-    this.router.navigateByUrl('/');
+    // The catalog rather than the landing page: somebody who has just signed
+    // in has already been sold, and sending them back to the pitch would be
+    // making the argument twice.
+    this.router.navigateByUrl('/courses');
   }
 }

@@ -57,7 +57,7 @@ describe('SignInComponent', () => {
     expect(element.textContent).toContain('Already have one?');
   });
 
-  it('sends the credentials and goes back to the catalog', async () => {
+  it('sends the credentials and goes on to the catalog', async () => {
     const { fixture, http } = await render();
     const navigate = jest.spyOn(TestBed.inject(Router), 'navigateByUrl');
 
@@ -72,7 +72,9 @@ describe('SignInComponent', () => {
     });
     request.flush({});
 
-    expect(navigate).toHaveBeenCalledWith('/');
+    // /courses, not /. Somebody who has just signed in has already been
+    // sold; sending them back to the landing page makes the pitch twice.
+    expect(navigate).toHaveBeenCalledWith('/courses');
   });
 
   // The gateway answers 500 for a wrong password, which is not something to
