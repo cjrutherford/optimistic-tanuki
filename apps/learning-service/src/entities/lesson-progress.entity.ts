@@ -2,11 +2,27 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { EnrolmentEntity } from './enrolment.entity';
 
 @Entity('lp_lesson_progress')
+/**
+ * One row per learner per lesson, and the database enforces it.
+ *
+ * This is not bookkeeping: recordSolvedExercise merges awards with
+ * `INSERT ... ON CONFLICT ("profileId", "lessonId")`, and Postgres resolves
+ * that target against a unique index on exactly those columns. Without this
+ * the merge has nothing to conflict on, and two exercises finishing together
+ * insert two rows instead of combining.
+ */
+@Index(['profileId', 'lessonId'], { unique: true })
+@Index(['userId'])
+@Index(['profileId'])
 export class LessonProgressEntity {
   @PrimaryGeneratedColumn('uuid') id!: string;
   @Column({ type: 'uuid' }) userId!: string;
@@ -20,6 +36,17 @@ export class LessonProgressEntity {
    */
   @Column({ type: 'uuid' }) profileId!: string;
   @Column({ type: 'uuid' }) enrolmentId!: string;
+  /**
+   * The enrolment that entitles this progress to exist.
+   *
+   * Declared as a relation rather than a bare column so the foreign key is
+   * part of the schema the entities describe. Progress without an enrolment
+   * is progress nobody is entitled to, and the database should be the thing
+   * that says so.
+   */
+  @ManyToOne(() => EnrolmentEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'enrolmentId' })
+  enrolment?: EnrolmentEntity;
   @Column({ type: 'varchar', length: 192 }) lessonId!: string;
   @Column({ type: 'boolean', default: false }) completed!: boolean;
   @Column({ type: 'jsonb', default: () => "'[]'" })

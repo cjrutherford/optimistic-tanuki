@@ -12,15 +12,19 @@ RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3024
 WORKDIR /usr/src/app
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && pnpm add nodemon
+
+# Install from the workspace manifest, before the build output is copied over
+# it. The runtime dependencies then come at the versions this was built and
+# tested against, rather than versions written down here that drift from them.
+# This image previously pinned zod 3 while the workspace had moved to zod 4,
+# which is a major version apart and would have failed at runtime on schemas
+# that use the newer API.
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
+
 COPY --from=builder /usr/src/app/dist/apps/learning-service/ ./
-RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.dependencies={...(pkg.dependencies||{}), pg:'8.20.0', tslib:'2.8.1', typeorm:'0.3.28', zod:'3.24.2'}; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n');"
-RUN corepack enable && pnpm install --prod --no-frozen-lockfile
 USER node
 EXPOSE 3024
 CMD ["dumb-init", "node", "main.js"]
