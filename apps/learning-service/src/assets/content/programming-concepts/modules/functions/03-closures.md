@@ -61,6 +61,29 @@ closure captures the _variable_, every closure in `funcs` shares the same
 `i`, and what gets printed depends on what `i` holds by the time each
 closure actually runs, not on what it held when the closure was created.
 
+The difference is not in the closures. It is in how many boxes there are
+for them to point at:
+
+```mermaid
+flowchart LR
+    subgraph shared["One variable, shared (the bug)"]
+        direction LR
+        A1["closure 0"] --> B1(("i"))
+        A2["closure 1"] --> B1
+        A3["closure 2"] --> B1
+    end
+    subgraph own["One variable each (the fix)"]
+        direction LR
+        C1["closure 0"] --> D1(("i = 0"))
+        C2["closure 1"] --> D2(("i = 1"))
+        C3["closure 2"] --> D3(("i = 2"))
+    end
+```
+
+On the left there is one box, so whatever it holds last is what all three
+closures read. On the right there are three, and each closure reads its
+own. Nothing about the closures changed between the two pictures.
+
 **A necessary correction about Go specifically.** Prior to Go 1.22, `i` in a
 `for` loop was one variable, reused across all iterations, so the example
 above printed `3, 3, 3` in that version of the language: every closure saw

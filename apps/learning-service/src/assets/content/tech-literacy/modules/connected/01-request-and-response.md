@@ -10,6 +10,24 @@ have to have used. The goal is not to make you able to build one of these
 systems. The goal is that the next time a page is slow, or an app says it
 cannot connect, you have a mental picture of what actually failed.
 
+Here is the whole journey on one page. Everything after this is just a
+closer look at one of these four boxes:
+
+```mermaid
+flowchart TD
+    A["You type an address and press Enter"]
+    A --> B["1. Look up<br/>Turn the name you typed into a number"]
+    B --> C["2. Request<br/>Ask the computer at that number for the page"]
+    C --> D["3. Response<br/>That computer sends the page back"]
+    D --> E["4. Draw<br/>Your browser turns what arrived into what you see"]
+```
+
+Keep the numbers in mind. Most of the things that go wrong go wrong at one
+specific step, and knowing which one is most of knowing what to do about
+it. A message saying a site cannot be found is usually step one. A page
+that hangs with nothing on it is usually step two or three. A page that
+arrives but looks wrong is step four.
+
 ---
 
 ## Step One: Looking Up Which Computer the Address Belongs To

@@ -91,6 +91,48 @@ describe('LessonMarkdownService', () => {
     });
   });
 
+  // A mermaid fence is diagram source, not code, and the render stage
+  // (lesson-prose.component.ts) looks for exactly this placeholder. It must
+  // not go anywhere near Prism, and its class must survive so the render
+  // stage can find it.
+  describe('mermaid fences', () => {
+    it('emits a placeholder carrying the source as text, not highlighted code', () => {
+      const html = service.render('```mermaid\ngraph TD;\n  A-->B;\n```');
+
+      expect(html).toContain('<pre class="lesson-mermaid">');
+      expect(html).toContain('graph TD;');
+      expect(html).not.toContain('<code');
+      expect(html).not.toContain('token');
+      expect(html).not.toContain('language-mermaid');
+    });
+
+    it('escapes the diagram source so it survives as text content', () => {
+      const html = service.render(
+        '```mermaid\ngraph TD;\n  A["<x>"]-->B;\n```'
+      );
+
+      expect(html).toContain('&lt;x&gt;');
+      expect(html).not.toContain('<x>');
+    });
+
+    it('ignores extras after the mermaid tag, like other fences', () => {
+      const html = service.render(
+        '```mermaid title="flow"\ngraph TD;\n  A-->B;\n```'
+      );
+
+      expect(html).toContain('<pre class="lesson-mermaid">');
+    });
+
+    it('still highlights a normal fence as code', () => {
+      const html = service.render('```go\nfunc main() {}\n```');
+
+      expect(html).toContain('<pre class="language-go"');
+      expect(html).toContain('<code class="language-go">');
+      expect(html).toContain('class="token');
+      expect(html).not.toContain('lesson-mermaid');
+    });
+  });
+
   // render() deliberately returns unsanitized HTML: the binding sanitizes it.
   // These cover the contract that arrangement depends on, because Angular's
   // sanitizer has to strip the dangerous parts WITHOUT stripping the token

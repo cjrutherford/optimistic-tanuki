@@ -29,6 +29,16 @@
             "glob": "manifest.webmanifest",
             "input": "apps/learning/src",
             "output": "."
+          },
+          {
+            "glob": "katex.min.css",
+            "input": "node_modules/katex/dist",
+            "output": "assets/katex"
+          },
+          {
+            "glob": "**/*",
+            "input": "node_modules/katex/dist/fonts",
+            "output": "assets/katex/fonts"
           }
         ],
         "styles": ["apps/learning/src/styles.scss"],

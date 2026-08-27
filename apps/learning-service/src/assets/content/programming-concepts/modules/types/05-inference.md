@@ -57,7 +57,10 @@ If inference genuinely skipped enforcement, this would be allowed. It
 isn't, in either language:
 
 ```rust
-let x = 5;      // inferred as i32
+// mut, so that the only thing wrong here is the type. A plain `let` binding
+// cannot be reassigned at all, which would fail for a second reason and
+// muddy the point being made.
+let mut x = 5;  // inferred as i32
 x = "hello";    // error[E0308]: mismatched types, expected `i32`, found `&str`
 ```
 

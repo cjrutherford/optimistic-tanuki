@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   builtInProgramTracks,
@@ -394,5 +394,69 @@ describe('the catalog only ever grows', () => {
   it('gives every track a distinct id', () => {
     const ids = builtInProgramTracks.map((track) => track.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+/**
+ * A table whose rows disagree about how many columns they have.
+ *
+ * This is invisible until somebody opens the page. A pipe inside a code span
+ * has to be escaped as `\|`, and one that is not silently becomes a column
+ * break: the header grows a phantom column, every body row is short by one,
+ * and the reader gets a garbled table. It shipped that way in the TypeScript
+ * course's union-and-intersection lesson, where the heading `A | B` split
+ * itself in half, and a formatter then reflowed the file around the break so
+ * it looked deliberate.
+ *
+ * Nothing else catches this. The markdown is valid, the build is clean, and
+ * the coverage checks above only care that files exist.
+ */
+describe('markdown tables in the courseware', () => {
+  /** Cells in a table row, where an escaped pipe is content and not a border. */
+  function cellCount(row: string): number {
+    return row
+      .trim()
+      .replace(/^\||\|$/g, '')
+      .split(/(?<!\\)\|/).length;
+  }
+
+  const malformed = builtInProgramTracks
+    .flatMap((track) =>
+      markdownUnder(join(CONTENT_ROOT, track.contentCollection ?? ''))
+    )
+    .flatMap((file) => {
+      const lines = readFileSync(file, 'utf8').split('\n');
+      const problems: string[] = [];
+      let inFence = false;
+      lines.forEach((line, index) => {
+        if (line.startsWith('```')) {
+          inFence = !inFence;
+          return;
+        }
+        // The separator row is what makes the lines around it a table.
+        if (inFence || !/^\s*\|[\s:|-]+\|\s*$/.test(line)) return;
+        const header = lines[index - 1];
+        if (!header?.trim().startsWith('|')) return;
+
+        const width = cellCount(header);
+        if (cellCount(line) !== width) {
+          problems.push(`${file}:${index + 1} separator width`);
+        }
+        for (let row = index + 1; row < lines.length; row++) {
+          if (!lines[row].trim().startsWith('|')) break;
+          if (cellCount(lines[row]) !== width) {
+            problems.push(
+              `${file}:${row + 1} has ${cellCount(
+                lines[row]
+              )} cells, header has ${width}`
+            );
+          }
+        }
+      });
+      return problems;
+    });
+
+  it('gives every row the same number of columns as its header', () => {
+    expect(malformed).toEqual([]);
   });
 });

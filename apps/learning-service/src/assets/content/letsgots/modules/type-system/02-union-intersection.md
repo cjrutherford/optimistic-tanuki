@@ -108,8 +108,8 @@ function processEntity(entity: LoggableAndSerializable) {
 
 ## Union vs Intersection: Mental Model
 
-| Union (`A                        | B`)                             | Intersection (`A & B`) |
-| -------------------------------- | ------------------------------- | ---------------------- |
+| Union (`A \| B`)                 | Intersection (`A & B`)          |
+| -------------------------------- | ------------------------------- |
 | "Either A or B"                  | "Both A and B"                  |
 | Has properties common to A and B | Has all properties from A and B |
 | Wider set of values              | Narrower set of values          |

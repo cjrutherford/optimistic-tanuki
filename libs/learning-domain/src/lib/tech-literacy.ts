@@ -138,9 +138,24 @@ const activities: Activity[] = [
     id: 'tl-locks-project',
     type: 'project.submission',
     lessonId: `${TRACK_ID}-locks-and-keys-two-factor`,
+    // Deliberately no screenshot.
+    //
+    // This asked for one, with "any codes blacked out". A two-factor setup
+    // screen routinely shows a QR code, which encodes the shared secret
+    // outright, and a list of backup codes, any one of which bypasses the
+    // second factor entirely. A reader of this course is by definition not
+    // yet practised at spotting which parts of that screen are the dangerous
+    // ones, and blacking out the six-digit code while leaving the QR visible
+    // is the obvious mistake to make.
+    //
+    // It also contradicted the course. The lesson on what you hand to a
+    // service argues against putting sensitive things into a box because
+    // somebody asked. Asking for exactly that, as coursework, teaches the
+    // habit the module is trying to break. Writing what happened proves the
+    // same thing and risks nothing.
     prompt:
-      'Set up a password manager, and turn on two-factor authentication for one account that matters to you. Hand in a screenshot of the confirmation with any codes blacked out, and one sentence saying which account you chose and why that one.',
-    artifactTypes: ['screenshot', 'note'],
+      'Set up a password manager, and turn on two-factor authentication for one account that matters to you. Then write a short note: which account you chose and why that one, which second factor you used and why, and what the service told you to do if you lose access to it. Do not send a screenshot, and do not include any codes, backup codes, or recovery phrases. Describing it is the point; the codes are yours and nobody marking this needs them.',
+    artifactTypes: ['note'],
   },
   {
     id: 'tl-data-quiz',
@@ -237,8 +252,11 @@ const activities: Activity[] = [
     id: 'tl-habits-project',
     type: 'project.submission',
     lessonId: `${TRACK_ID}-habits-monthly-check-in`,
+    // A settings screen is a fair thing to show, unlike a two-factor setup
+    // screen, but it still carries a device name and often an account email,
+    // so the prompt says what to leave out rather than assuming it is obvious.
     prompt:
-      'Turn on automatic updates for one device, and write down your backup plan for it: what is backed up, where it goes, and how you would get it back. Hand in both.',
+      'Turn on automatic updates for one device, and write down your backup plan for it: what is backed up, where it goes, and how you would get it back. Hand in both. If you show the settings screen, crop or cover your account email and anything else identifying: the marker only needs to see that updates are on.',
     artifactTypes: ['screenshot', 'note'],
   },
   {

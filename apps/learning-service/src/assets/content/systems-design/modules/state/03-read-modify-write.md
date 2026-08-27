@@ -16,18 +16,24 @@ Take the naive handler from the previous lesson, applied to one row in
 `lp_lesson_progress` for a learner who solves two exercises, A and B,
 close enough together that the requests overlap:
 
-```text
-Request 1 (exercise A):
-  read row -> completedExerciseIds = [], points = 0
-  compute -> completedExerciseIds = ["A"], points = 10
-
-Request 2 (exercise B):
-  read row -> completedExerciseIds = [], points = 0
-  compute -> completedExerciseIds = ["B"], points = 15
-
-Request 1 writes -> completedExerciseIds = ["A"], points = 10
-Request 2 writes -> completedExerciseIds = ["B"], points = 15
+```mermaid
+sequenceDiagram
+    participant R1 as Request 1, exercise A
+    participant DB as The progress row
+    participant R2 as Request 2, exercise B
+    R1->>DB: read
+    DB-->>R1: no exercises, 0 points
+    R2->>DB: read
+    DB-->>R2: no exercises, 0 points
+    Note over R1,R2: Both are now holding the same value,<br/>and one of them is about to make it stale
+    R1->>DB: write exercise A, 10 points
+    R2->>DB: write exercise B, 15 points
+    Note over DB: Row says exercise B, 15 points.<br/>Exercise A and its 10 points are gone.
 ```
+
+Read that top to bottom as time passing. The two reads happen before either
+write, which is the whole bug in one line: request 2 asked the row what it
+contained while request 1 was still deciding what to put there.
 
 Both requests read the same starting state, because request 2's read
 happened before request 1's write landed. Both computed a correct answer

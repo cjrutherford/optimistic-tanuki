@@ -87,6 +87,17 @@ export class LessonMarkdownService {
   }
 
   private renderCode(code: string, lang?: string): string {
+    const first = (lang ?? '').trim().split(/\s+/)[0]?.toLowerCase();
+    if (first === 'mermaid') {
+      // Not highlighted, and not a <code> block at all: the render stage
+      // looks for this exact class and replaces its content with a diagram.
+      // The source has to survive as TEXT content, because Angular's
+      // sanitizer strips the <svg> mermaid produces and would strip an
+      // attribute holding raw diagram markup just as readily. Escaping it
+      // here and letting the browser decode entities back on read is what
+      // keeps that survivable.
+      return `<pre class="lesson-mermaid">${this.escape(code)}</pre>`;
+    }
     const language = this.grammarFor(lang);
     const grammar = language ? Prism.languages[language] : undefined;
     const body = grammar
