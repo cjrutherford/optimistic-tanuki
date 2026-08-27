@@ -39,10 +39,12 @@ export class QueryTaskDto extends OmitType(PartialType(CreateTaskDto), [
   @IsUUID()
   updatedBy?: string;
 
+  // `assignee` moved onto CreateTaskDto, so this redeclaration now overrides a
+  // base member and needs saying so, the same way tagIds does above.
   @ApiPropertyOptional({ description: 'User assigned to the task' })
   @IsOptional()
   @IsUUID()
-  assignee?: string;
+  override assignee?: string;
 
   @ApiPropertyOptional({
     type: [Date],

@@ -196,14 +196,29 @@ describe('ProjectsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('labels the static project context truthfully without attributing it to AI', () => {
+  /**
+   * This tile once claimed to be an "AI Project Summary" written by "your AI
+   * Project Manager" and was static markup saying neither. It was replaced
+   * with honest static text, and this test was added so the claim could not
+   * come back.
+   *
+   * The static text has since been replaced again, this time by a component
+   * that really does read the project: open tasks, overdue ones, unresolved
+   * risks, pending changes. So the sentence it used to assert is gone on
+   * purpose, and asserting it again would only pin wording. What the test is
+   * actually for survives untouched below. Nothing may claim to be AI here,
+   * because nothing here is.
+   */
+  it('summarises the project without attributing any of it to AI', () => {
     component.selectedProject.set(mockProject);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Project context');
     expect(compiled.textContent).not.toContain('AI Project Summary');
     expect(compiled.textContent).not.toContain('AI Project Manager');
+    // Real content, so an empty tile cannot pass this by saying nothing.
+    expect(compiled.textContent).toContain('Project health');
+    expect(compiled.querySelector('lib-project-summary')).toBeTruthy();
   });
 
   it('should load projects on init', fakeAsync(() => {

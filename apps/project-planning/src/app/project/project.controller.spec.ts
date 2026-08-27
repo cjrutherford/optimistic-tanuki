@@ -3,6 +3,7 @@ import { ProjectCommands } from '@optimistic-tanuki/constants';
 import { PATTERN_METADATA } from '@nestjs/microservices/constants';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
+import { AiChangeService } from '../ai-change/ai-change.service';
 
 describe('ProjectController', () => {
   let controller: ProjectController;
@@ -12,6 +13,11 @@ describe('ProjectController', () => {
     findOne: jest.Mock;
     update: jest.Mock;
     remove: jest.Mock;
+  };
+  let aiChangeService: {
+    create: jest.Mock;
+    findAll: jest.Mock;
+    review: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -23,9 +29,18 @@ describe('ProjectController', () => {
       remove: jest.fn(),
     };
 
+    aiChangeService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      review: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectController],
-      providers: [{ provide: ProjectService, useValue: service }],
+      providers: [
+        { provide: ProjectService, useValue: service },
+        { provide: AiChangeService, useValue: aiChangeService },
+      ],
     }).compile();
 
     controller = module.get<ProjectController>(ProjectController);
