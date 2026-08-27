@@ -117,6 +117,30 @@ s->area();   // looks up Circle::area via vtable
 delete s;    // calls ~Circle() then ~Shape() if destructors are virtual
 ```
 
+Each object of a polymorphic type carries a hidden `vptr`, and each class
+(not each object) has one `vtable`, shared by every instance of that
+class. Two different concrete types stored behind the same `Shape*`
+therefore point at two different tables, and it is that divergence, not
+anything about the pointer itself, that makes `s->area()` reach different
+code for a `Circle` and a `Rectangle`:
+
+```mermaid
+flowchart TD
+    c["Circle object<br/>vptr"] --> cv["Circle vtable"]
+    cv --> ca["area: Circle::area"]
+    cv --> cd["describe: Shape::describe"]
+    r["Rectangle object<br/>vptr"] --> rv["Rectangle vtable"]
+    rv --> ra["area: Rectangle::area"]
+    rv --> rd["describe: Shape::describe"]
+```
+
+`describe` was never overridden by either class, so both vtables point
+that slot back at the same `Shape::describe`. `area` was overridden by
+both, so each vtable's `area` slot points somewhere different. `s->area()`
+does not know at compile time which one it will run; it follows whichever
+object's `vptr` it was called through, at that call, which is what "runtime
+dispatch" means concretely.
+
 **Why virtual destructor matters:**
 
 ```cpp

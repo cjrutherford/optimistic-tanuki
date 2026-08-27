@@ -84,6 +84,22 @@ which the caller cannot observe, because the caller's reference was never
 touched. This is the same rebinding-versus-mutation split, applied to a
 function parameter instead of a local variable.
 
+Laid out as a grid, with one real example in each cell, the two axes look
+like this:
+
+|                        | Call passes a copy                                                                      | Call passes the same reference                                                                        |
+| ---------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Type copies data**   | C++ `byValue(std::vector<int>)`: a fresh vector, mutating it never touches the caller's | C++ `byRef(std::vector<int>&)`: same vector, mutating it mutates the caller's                         |
+| **Type copies access** | (rare in practice; would need a language that copies a reference's pointee per call)    | JS `mutate(obj)`: a copied reference to the same object, mutating through it is visible to the caller |
+
+The top-left and bottom-right cells are the two everyday cases, "genuinely
+independent" and "genuinely shared." The top-right cell, C++'s `byRef`, is
+what makes even a value-copying type behave like the shared case for that
+one call. The bottom-left cell is close to empty because almost no
+mainstream language bothers to deep-copy the pointee of a reference just
+because it crossed a function boundary; that would defeat the point of
+having reference types at all.
+
 ---
 
 ## Go Makes Both Axes Visible at Once

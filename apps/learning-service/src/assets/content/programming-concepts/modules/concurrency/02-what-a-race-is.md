@@ -102,6 +102,13 @@ happen to be idempotent or the timing window never gets hit in practice. It's
 still undefined behavior (the compiler still assumed no such access existed)
 even if you never see a symptom.
 
+|                                 | Data race                                 | Race condition                                                         |
+| ------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------- |
+| Requires unsynchronized access  | yes, by definition                        | no, every access can be locked                                         |
+| Requires a write                | yes, at least one of the accesses         | no, the bug can be purely in ordering                                  |
+| Can occur under correct locking | no, locking prevents it by definition     | yes, e.g. check-then-act across two correctly-locked operations        |
+| Example above                   | `counter++` from many goroutines, no lock | balance checked, then withdrawn, each step locked, but not as one unit |
+
 So: data race is about unsynchronized memory access. Race condition is about
 outcome depending on interleaving. A data race is one way to get a race
 condition, but check-then-act bugs over correctly-synchronized state get you

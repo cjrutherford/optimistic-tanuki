@@ -22,6 +22,19 @@ const b = await httpClient.get(url); // returns, throws, or never settles
 
 The syntax looks identical. `await` makes a network call read like a function call, which is exactly the trap: it borrows the local call's grammar without inheriting its guarantee.
 
+|           | Local call           | Remote call                                                    |
+| --------- | -------------------- | -------------------------------------------------------------- |
+| Outcome 1 | Returns              | Returns                                                        |
+| Outcome 2 | Process dies with it | Throws                                                         |
+| Outcome 3 | (not possible)       | Never comes back, and you find out nothing when it doesn't     |
+| Outcome 4 | (not possible)       | Comes back too late to be useful, having already done the work |
+
+Two outcomes on the left, four on the right. The two extra ones on the
+right have no local equivalent at all: a plain function call cannot
+silently never return while the rest of the process keeps running, and it
+cannot finish its work and then fail to tell you. Both are ordinary for a
+call that crosses a boundary.
+
 ---
 
 ## The Gateway's Answer: a Deadline

@@ -1,10 +1,11 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
   LearningDataService,
   NotSignedInError,
@@ -178,12 +179,58 @@ describe('LearningDataService server-side reads', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: PLATFORM_ID, useValue: 'server' },
+        { provide: API_BASE_URL, useValue: 'http://gateway:3000/api' },
       ],
     });
     return TestBed.inject(LearningDataService);
   }
 
-  it('does not claim the catalog is empty before anyone has asked', () => {
+  // catalog() and subjects() are @Public() gateway routes, so the server may
+  // call them directly. This is the behaviour this whole change is for: a
+  // signed-out visitor's first paint should have real courses in it.
+  it('fetches the catalog from the gateway, using the injected base URL', () => {
+    const emitted = jest.fn();
+    const catalog = [
+      {
+        id: 't1',
+        displayName: 'Go',
+        subjectIds: [],
+        focuses: [],
+        offerings: [],
+      },
+    ];
+
+    serviceOnServer().catalog().subscribe(emitted);
+
+    const request = TestBed.inject(HttpTestingController).expectOne(
+      'http://gateway:3000/api/learning/programs'
+    );
+    request.flush(catalog);
+
+    expect(emitted).toHaveBeenCalledWith(catalog);
+  });
+
+  it('fetches subjects from the gateway the same way', () => {
+    const emitted = jest.fn();
+    const subjects = [
+      { subjectId: 's1', displayName: 'Go', focusNames: [], courseCount: 1 },
+    ];
+
+    serviceOnServer().subjects().subscribe(emitted);
+
+    const request = TestBed.inject(HttpTestingController).expectOne(
+      'http://gateway:3000/api/learning/subjects'
+    );
+    request.flush(subjects);
+
+    expect(emitted).toHaveBeenCalledWith(subjects);
+  });
+
+  // The render must not hang because the gateway is slow or down. A timed
+  // out or failed server-side read completes without emitting, exactly like
+  // the old unconditional EMPTY, so it stays distinguishable from a genuinely
+  // empty catalog rather than becoming `of([])`.
+  it('degrades to the loading state, not an empty list, when the gateway times out', fakeAsync(() => {
     const emitted = jest.fn();
     const completed = jest.fn();
 
@@ -191,32 +238,38 @@ describe('LearningDataService server-side reads', () => {
       .catalog()
       .subscribe({ next: emitted, complete: completed });
 
+    TestBed.inject(HttpTestingController).expectOne(
+      'http://gateway:3000/api/learning/programs'
+    );
+    tick(2001);
+
+    expect(emitted).not.toHaveBeenCalled();
+    expect(completed).toHaveBeenCalled();
+    TestBed.inject(HttpTestingController).verify();
+  }));
+
+  it('degrades the same way when the gateway errors', () => {
+    const emitted = jest.fn();
+    const completed = jest.fn();
+
+    serviceOnServer()
+      .subjects()
+      .subscribe({ next: emitted, complete: completed });
+
+    TestBed.inject(HttpTestingController)
+      .expectOne('http://gateway:3000/api/learning/subjects')
+      .flush('Boom', { status: 503, statusText: 'Service Unavailable' });
+
     expect(emitted).not.toHaveBeenCalled();
     expect(completed).toHaveBeenCalled();
   });
 
-  it('does the same for subjects', () => {
-    const emitted = jest.fn();
-
-    serviceOnServer().subjects().subscribe({ next: emitted });
-
-    expect(emitted).not.toHaveBeenCalled();
-  });
-
-  it('does the same for a single course', () => {
+  it('does not claim a single course is empty before anyone has asked', () => {
     const emitted = jest.fn();
 
     serviceOnServer().offering('go-100').subscribe({ next: emitted });
 
     expect(emitted).not.toHaveBeenCalled();
-  });
-
-  it('makes no request at all from the server', () => {
-    const service = serviceOnServer();
-
-    service.catalog().subscribe();
-    service.subjects().subscribe();
-
     TestBed.inject(HttpTestingController).verify();
   });
 });

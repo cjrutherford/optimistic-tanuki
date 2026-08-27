@@ -168,6 +168,35 @@ fmt.Println(a[0]) // 99!
 // Real copy:
 b := make([]int, len(a))
 copy(b, a)
+```
+
+`b := a` copies the slice header (Data, Len, Cap), not the backing array
+the header points at. Both headers end up with the same `Data` pointer, so
+a write through `b` is a write to the array `a` is also looking at:
+
+```mermaid
+flowchart TD
+    subgraph a["a (header)"]
+        direction TB
+        aD["Data"]
+        aL["Len: 3"]
+        aC["Cap: 3"]
+    end
+    subgraph b["b (header)"]
+        direction TB
+        bD["Data"]
+        bL["Len: 3"]
+        bC["Cap: 3"]
+    end
+    arr["backing array: 1, 2, 3"]
+    aD --> arr
+    bD --> arr
+```
+
+Two headers, one array. `copy(b, a)` into a freshly `make`d slice gives `b`
+its own backing array instead, which is what makes it a real copy.
+
+```go
 
 // 2. Map iteration order is random
 for k, v := range m {

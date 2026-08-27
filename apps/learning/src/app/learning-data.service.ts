@@ -2,7 +2,18 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { EMPTY, Observable, of, throwError } from 'rxjs';
-import { catchError, shareReplay } from 'rxjs/operators';
+import { catchError, shareReplay, timeout } from 'rxjs/operators';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+
+/**
+ * How long the server waits on the gateway for a public catalog read before
+ * giving up and rendering degraded.
+ *
+ * A learner's first paint should never hang because one service is slow;
+ * falling back to the loading state (see `catalog()` and `subjects()`) beats
+ * blocking the response for however long the gateway takes.
+ */
+const SSR_FETCH_TIMEOUT_MS = 2000;
 
 export interface Lesson {
   id: string;
@@ -185,21 +196,39 @@ const emptyLesson: LessonResponse = {
 export class LearningDataService {
   private readonly http = inject(HttpClient);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly apiBaseUrl =
+    inject(API_BASE_URL, { optional: true }) ?? '/api';
+
+  /**
+   * Runs a public, unauthenticated read that is safe to make on the server.
+   *
+   * The browser call is untouched: same URL (the base is '/api' there too),
+   * no timeout, no fallback. On the server the base resolves to the gateway's
+   * absolute address (see app.config.server.ts) and the request is bounded,
+   * so a slow or unreachable gateway degrades the render instead of hanging
+   * it. A failure or timeout here completes without emitting, exactly like
+   * the old unconditional EMPTY, so "still loading" and "genuinely nothing
+   * published" stay distinguishable — this never becomes `of([])`.
+   */
+  private publicRead<T>(path: string): Observable<T> {
+    const request = this.http.get<T>(`${this.apiBaseUrl}${path}`);
+    return this.isBrowser
+      ? request
+      : request.pipe(
+          timeout(SSR_FETCH_TIMEOUT_MS),
+          catchError(() => EMPTY)
+        );
+  }
 
   /**
    * The catalog, already filtered by the gateway to what this caller may see.
    *
-   * On the server this completes without emitting, rather than emitting an
-   * empty list. The difference matters: an empty list is indistinguishable
-   * from a catalog with nothing in it, and the entrance page rendered
-   * "Nothing has been published here yet" on every first paint because of it.
-   * Emitting nothing leaves the page in its loading state until the browser
-   * has actually asked.
+   * Runs on the server now: `programs` is a `@Public()` gateway route, so no
+   * session needs to be forwarded. See `publicRead` for the empty-state and
+   * timeout behaviour this relies on.
    */
   catalog(): Observable<CatalogTrack[]> {
-    return this.isBrowser
-      ? this.http.get<CatalogTrack[]>('/api/learning/programs')
-      : EMPTY;
+    return this.publicRead<CatalogTrack[]>('/learning/programs');
   }
 
   /** The courses this author owns or co-edits, drafts included. */
@@ -254,10 +283,12 @@ export class LearningDataService {
     });
   }
 
+  /**
+   * The subjects in this caller's catalog. Also `@Public()`, also fine to run
+   * on the server; see `publicRead`.
+   */
   subjects(): Observable<CatalogSubject[]> {
-    return this.isBrowser
-      ? this.http.get<CatalogSubject[]>('/api/learning/subjects')
-      : EMPTY;
+    return this.publicRead<CatalogSubject[]>('/learning/subjects');
   }
 
   offering(offeringId: string): Observable<OfferingDetail | null> {

@@ -101,6 +101,19 @@ usually requiring a backup key or a recovery process set up in advance.
 
 ---
 
+Set next to each other, the three sections above amount to this:
+
+| Method                | Works offline                   | Resists phishing                              | Resists SIM swap                         | Setup effort                 |
+| --------------------- | ------------------------------- | --------------------------------------------- | ---------------------------------------- | ---------------------------- |
+| App codes             | yes, calculates locally         | no, a typed code can be phished               | yes, not tied to your phone number       | one-time app setup           |
+| Text message codes    | no, needs cellular/SMS delivery | no, a typed code can be phished               | no, a transferred number redirects codes | none beyond a phone number   |
+| Physical security key | no, needs the key with you      | yes, checks it is talking to the real service | yes, not tied to your phone number       | buying and carrying a device |
+
+Phishing resistance is the column where physical keys pull ahead of both
+of the other two, and SIM swap resistance is the column where text
+message codes fall behind both. Nothing in the table above says a method
+is disqualified; it says which specific attack each one is exposed to.
+
 ## Choosing Among Them
 
 Any of the three is a substantial improvement over a password alone, and the

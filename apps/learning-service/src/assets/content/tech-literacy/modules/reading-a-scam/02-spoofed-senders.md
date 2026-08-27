@@ -85,6 +85,16 @@ character comparison applies once the real destination is visible.
 
 ---
 
+The four fields above all share the same shape: something visible, and
+something separate underneath that actually determines where things go.
+
+| Field        | What you see                         | What is actually checked                      | How to check                                   |
+| ------------ | ------------------------------------ | --------------------------------------------- | ---------------------------------------------- |
+| Display name | Free text like "Your Bank"           | Nothing, it is chosen freely by the sender    | Ignore it; check the address instead           |
+| From address | Hidden by default in most inboxes    | The actual domain the message originated from | Tap or hover the sender name to reveal it      |
+| Reply-to     | Not shown unless you inspect headers | Where your reply will actually go             | Compare it to the from address before replying |
+| Link text    | Words like "Verify Your Account"     | The URL the link actually points to           | Hover, or long-press on touch, before tapping  |
+
 ## What This Does and Does Not Prove
 
 Confirming that a message's address and link destinations genuinely match

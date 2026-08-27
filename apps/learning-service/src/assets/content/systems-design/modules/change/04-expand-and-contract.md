@@ -53,6 +53,23 @@ expand ─▶ write both ─▶ backfill ─▶ move reads ─▶ stop writing o
                 running at once; only the last step is a one-way door.
 ```
 
+The same six steps, shown by what each version of the code sees rather
+than by what the step does:
+
+| Step                | What old code sees               | What new code sees               | Safe to stop here?                                 |
+| ------------------- | -------------------------------- | -------------------------------- | -------------------------------------------------- |
+| 1. Expand           | Old column only, unchanged       | Old column only, unchanged       | yes, new column is unused                          |
+| 2. Write both       | Old column, correctly maintained | Old column, correctly maintained | yes, new column fills in from here forward         |
+| 3. Backfill         | Old column, correctly maintained | Old column, correctly maintained | yes, new column now complete for old rows too      |
+| 4. Move reads       | Old column, correctly maintained | New column, correctly maintained | yes, both columns still correct                    |
+| 5. Stop writing old | Old column, now stale            | New column, correctly maintained | yes, as long as nothing still reads the old column |
+| 6. Contract         | Column is gone                   | New column, correctly maintained | no, this step is the one-way door                  |
+
+Every row up through step 5 answers "yes": old code and new code each see
+a column that is correct for what they expect, at the same moment. Step 6
+is the only row where stopping mid-step leaves something broken, which is
+exactly why it comes last.
+
 ---
 
 ## The Failure Mode Each Step Prevents

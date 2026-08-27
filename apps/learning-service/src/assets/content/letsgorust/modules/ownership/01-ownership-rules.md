@@ -27,6 +27,31 @@ println!("{}", s1);  // ERROR: s1 is no longer valid!
 println!("{}", s2);  // OK
 ```
 
+A `String` is itself a small struct on the stack (a pointer, a length, and
+a capacity) pointing at the actual characters on the heap. `let s2 = s1`
+copies that small struct, pointer and all, into `s2`. It does not copy the
+heap data, and it does not leave `s1` holding its own now-stale copy of
+the pointer either: Rust invalidates `s1` at the same moment, so there is
+never a point where two owners hold the same pointer at once:
+
+```mermaid
+flowchart TD
+    subgraph before["Before the move"]
+        direction LR
+        s1a["s1: ptr, len 5, cap 5"] --> heap1["heap: h e l l o"]
+    end
+    subgraph after["After let s2 = s1"]
+        direction LR
+        s1b["s1: invalidated"]
+        s2b["s2: ptr, len 5, cap 5"] --> heap2["heap: h e l l o"]
+    end
+```
+
+That is exactly why the compiler has to reject the use of `s1` afterward:
+if it allowed both, dropping `s1` and dropping `s2` would each try to free
+the same heap buffer, a double free. Refusing to compile the second
+`println!` is what makes that impossible rather than just unlikely.
+
 This prevents double-free errors without garbage collection.
 
 ## Clone

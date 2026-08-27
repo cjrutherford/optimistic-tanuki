@@ -91,6 +91,34 @@ interface NetworkStateBad {
 }
 ```
 
+`NetworkStateBad` has three boolean-ish fields once you count `data` and
+`error` as present-or-absent, so it has 2 x 2 x 2 = 8 reachable
+combinations. Only 3 of them are states the domain actually allows:
+
+| loading | has data | has error | valid?                                        |
+| ------- | -------- | --------- | --------------------------------------------- |
+| true    | no       | no        | valid: still loading                          |
+| false   | yes      | no        | valid: loaded successfully                    |
+| false   | no       | yes       | valid: failed                                 |
+| true    | yes      | no        | invalid: loading and already has data         |
+| true    | no       | yes       | invalid: loading and already has an error     |
+| true    | yes      | yes       | invalid: loading with both data and an error  |
+| false   | no       | no        | invalid: finished with neither data nor error |
+| false   | yes      | yes       | invalid: succeeded and failed at once         |
+
+The sum-typed `NetworkState` has exactly 3 variants, and all 3 are valid,
+because the type has no fourth shape to be invalid in:
+
+| variant                       | valid?                |
+| ----------------------------- | --------------------- |
+| `{ status: 'loading' }`       | valid: the only shape |
+| `{ status: 'success', data }` | valid: the only shape |
+| `{ status: 'error', error }`  | valid: the only shape |
+
+Five of the product type's eight reachable combinations are nonsense the
+type nonetheless allows; the sum type has no equivalent column of
+nonsense to list.
+
 Nothing stops `{ loading: true, data: [...], error: new Error() }` from
 existing: loading _and_ holding data _and_ holding an error, all at once,
 a combination that should never occur but that the type happily allows.

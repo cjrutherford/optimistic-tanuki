@@ -56,6 +56,16 @@ A `shared_ptr` uses **reference counting** — multiple pointers can own the sam
 }   // s1 destroyed, refcount goes to 0 → string is deleted
 ```
 
+Traced line by line, `use_count()` is just a count of how many `shared_ptr`
+objects currently own the string, going up on copy and down on scope exit:
+
+| Line executed                    | `use_count()` | Owners at that point    |
+| -------------------------------- | ------------- | ----------------------- |
+| `s1 = make_shared(...)`          | 1             | `s1`                    |
+| `s2 = s1` (copy)                 | 2             | `s1`, `s2`              |
+| inner scope ends, `s2` destroyed | 1             | `s1`                    |
+| outer scope ends, `s1` destroyed | 0             | none, string is deleted |
+
 ### With polymorphism
 
 ```cpp

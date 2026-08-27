@@ -128,6 +128,35 @@ case <-time.After(time.Second):
 
 ## Patterns
 
+The two patterns below both move values through channels between several
+goroutines, and it is easy to lose the shape of who is talking to whom
+while reading the code top to bottom. Fan-out is one channel splitting
+work across several goroutines; fan-in is several channels collapsing
+back into one:
+
+```mermaid
+flowchart TD
+    jobs(("jobs chan")) --> w1["worker 1"]
+    jobs --> w2["worker 2"]
+    jobs --> w3["worker 3"]
+    w1 --> results(("results chan"))
+    w2 --> results
+    w3 --> results
+```
+
+```mermaid
+flowchart TD
+    g1["generator ch1"] --> merged(("merged chan"))
+    g2["generator ch2"] --> merged
+    merged --> main["for v := range merged"]
+```
+
+Fan-out is the `jobs` channel below: one sender, three workers each
+pulling from it, so the work spreads out. Fan-in is `merge`: several
+generator channels, each read by its own `output` goroutine, all writing
+into the single `merged` channel, so the results converge back to one
+stream before `main` ranges over it.
+
 ### Fan-out (multiple workers)
 
 ```go

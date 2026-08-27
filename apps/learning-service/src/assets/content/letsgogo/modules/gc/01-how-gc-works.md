@@ -31,6 +31,40 @@ what has improved is the tuning you get over it.
 5. White objects = garbage, collect them
 ```
 
+The three colors track how far the collector has gotten through the
+object graph, not any property of the objects themselves. Take a root
+pointing at A, which points at B and C, where C is unreachable garbage:
+
+```mermaid
+flowchart TD
+    subgraph start["1. Start: everything white"]
+        direction TB
+        r1((root)) --> a1["A (white)"]
+        a1 --> b1["B (white)"]
+        a1 --> c1["C (white)"]
+    end
+    subgraph frontier["2. Root scanned: A goes grey"]
+        direction TB
+        r2((root)) --> a2["A (grey)"]
+        a2 --> b2["B (white)"]
+        a2 --> c2["C (white)"]
+    end
+    subgraph done["3. A scanned: B follows, C left behind"]
+        direction TB
+        r3((root)) --> a3["A (black)"]
+        a3 --> b3["B (grey, will go black)"]
+        a3 -.-> c3["C (white, unreachable)"]
+    end
+```
+
+Grey means "known reachable, not yet scanned for what it points to."
+Black means "known reachable and fully scanned." White starts as "not yet
+proven reachable" and, once the grey set runs out, becomes its final
+meaning: unreachable, safe to collect. C stays white through every step
+because nothing ever visits it: no root, and no already-grey object,
+ever points to it. That is the whole algorithm; the phases below are
+about when the scanning above is allowed to run.
+
 ## Phases of GC
 
 1. **Mark Start**: Stop-the-world, mark roots

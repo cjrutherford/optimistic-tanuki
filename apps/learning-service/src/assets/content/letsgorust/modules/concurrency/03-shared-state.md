@@ -81,6 +81,25 @@ let mut b = lock_b.lock().unwrap();  // if another thread did this in reverse...
 // Always acquire locks in the same order across threads
 ```
 
+Spelled out, the "in reverse" case is thread 1 locking `A` then waiting on
+`B`, while thread 2 has already locked `B` and is waiting on `A`. Each
+thread holds the one lock the other needs next, so neither can proceed
+and neither will ever release what it holds:
+
+```mermaid
+flowchart TD
+    t1["Thread 1<br/>holds A"] -->|waits for| B(("Lock B"))
+    t2["Thread 2<br/>holds B"] -->|waits for| A(("Lock A"))
+    B -.->|held by| t2
+    A -.->|held by| t1
+```
+
+That cycle, thread 1 to B to thread 2 to A back to thread 1, is the
+deadlock: no thread is broken, no data is corrupted, they are simply each
+waiting on the other forever. Acquiring `A` before `B` on every thread
+that touches both removes the cycle, because a thread that already holds
+`A` can never be the one still waiting on it.
+
 ## Atomic Types
 
 For simple numeric operations, `std::sync::atomic` types are faster than Mutex:
