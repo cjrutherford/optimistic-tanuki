@@ -104,6 +104,13 @@
         }
       },
       "dependsOn": ["build"]
+    },
+    "prune-ngsw": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/prune-ngsw-phantoms.mjs dist/apps/learning/browser",
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }

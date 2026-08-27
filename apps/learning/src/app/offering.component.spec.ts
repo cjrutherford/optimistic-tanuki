@@ -65,6 +65,44 @@ describe('OfferingComponent', () => {
     return { fixture, element: fixture.nativeElement as HTMLElement, http };
   }
 
+  /**
+   * A wrong or unpublished id used to sit on "Loading course" forever. The
+   * request had already come back 404; nothing was watching for it, so the
+   * page could not tell "still asking" from "asked and there is none".
+   */
+  it('says there is no course rather than loading forever', async () => {
+    TestBed.configureTestingModule({
+      imports: [OfferingComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap({ offeringId: 'nope' })),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(OfferingComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    http
+      .expectOne('/api/learning/offerings/nope')
+      .flush('missing', { status: 404, statusText: 'Not Found' });
+    for (const pending of http.match('/api/learning/dashboard')) {
+      pending.flush([]);
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('No course here');
+    expect(text).not.toContain('Loading course');
+  });
+
   it('says what the course is, who wrote it, and what it costs', async () => {
     const { element } = await render(detail());
 

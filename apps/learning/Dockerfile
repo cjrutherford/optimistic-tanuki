@@ -11,9 +11,18 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/learning ./apps/learning
+# The post-build service worker fix below lives here, so the build needs it.
+COPY scripts/prune-ngsw-phantoms.mjs ./scripts/prune-ngsw-phantoms.mjs
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build learning --configuration=production
+# The service worker manifest can pick up a CSS file emitted for the server
+# bundle, which the browser can never fetch. Left in, the prefetch hash check
+# fails, the worker never finishes starting, and every request it handles hangs.
+# See scripts/prune-ngsw-phantoms.mjs.
+# Run directly rather than through nx: nx reports a failing run-commands as a
+# warning and still exits zero, so a broken fix here would sail past the build.
+RUN node scripts/prune-ngsw-phantoms.mjs dist/apps/learning/browser
 
 FROM node:24-alpine
 

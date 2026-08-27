@@ -1,7 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { catchError, of, switchMap } from 'rxjs';
 import { LoadingStateComponent } from '@optimistic-tanuki/common-ui';
 import { OfferingSummaryComponent } from '@optimistic-tanuki/learning-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
@@ -58,7 +58,17 @@ import { LearningDataService, OfferingDetail } from './learning-data.service';
         }
       </ol>
     </section>
-    } } @else {
+    } } @else if (missing()) {
+    <a routerLink="/courses" class="back">← Catalog</a>
+    <section class="missing">
+      <h1>No course here</h1>
+      <p>
+        There is no course at this address. It may have been unpublished, or the
+        link may be wrong.
+      </p>
+      <a routerLink="/courses">Browse the catalog</a>
+    </section>
+    } @else {
     <otui-loading-state headline="Loading course"></otui-loading-state>
     }
   </learning-layout>`,
@@ -70,6 +80,20 @@ import { LearningDataService, OfferingDetail } from './learning-data.service';
         color: var(--lx-text-muted);
         font-size: 0.85rem;
         text-decoration: none;
+      }
+      .missing {
+        margin-top: 2rem;
+      }
+      .missing h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .missing p {
+        color: var(--lx-text-muted);
+        margin-bottom: 1rem;
+      }
+      .missing a {
+        color: var(--lx-accent);
       }
       .outline {
         margin-top: 2.5rem;
@@ -109,11 +133,27 @@ export class OfferingComponent {
   private readonly data = inject(LearningDataService);
   private readonly router = inject(Router);
 
-  readonly detail = toSignal(
+  /**
+   * Three states, not two.
+   *
+   * `undefined` is still asking, `null` is asked and there is no such course,
+   * and a value is the course. Collapsing the middle one into the first is why
+   * a wrong id used to sit on "Loading course" forever: the request had already
+   * come back 404 and nothing was watching for it.
+   */
+  private readonly result = toSignal(
     inject(ActivatedRoute).paramMap.pipe(
-      switchMap((params) => this.data.offering(params.get('offeringId') ?? ''))
-    )
+      switchMap((params) =>
+        this.data
+          .offering(params.get('offeringId') ?? '')
+          .pipe(catchError(() => of(null)))
+      )
+    ),
+    { initialValue: undefined }
   );
+
+  readonly detail = computed(() => this.result() ?? undefined);
+  readonly missing = computed(() => this.result() === null);
 
   readonly enrolling = signal(false);
   readonly enrolled = signal(false);
