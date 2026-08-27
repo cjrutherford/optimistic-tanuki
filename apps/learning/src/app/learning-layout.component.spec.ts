@@ -168,7 +168,10 @@ describe('LearningLayoutComponent session', () => {
       (candidate) => candidate.textContent?.trim() === 'Sign in'
     );
 
-    expect(link?.getAttribute('href')).toBe('/sign-in');
+    // Carries where they are, so signing in does not cost them their place.
+    // Reading is open to anyone, so this is most often clicked from the
+    // middle of a lesson.
+    expect(link?.getAttribute('href')).toMatch(/^\/sign-in\?returnTo=/);
   });
 
   it('names whoever is signed in', async () => {

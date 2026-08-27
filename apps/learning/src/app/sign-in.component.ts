@@ -1,5 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   LoginBlockComponent,
   RegisterBlockComponent,
@@ -27,7 +27,7 @@ import { LearningAuthService } from './learning-auth.service';
     RouterLink,
   ],
   template: `<learning-layout>
-    <a routerLink="/courses" class="back">← Catalog</a>
+    <a [routerLink]="returnTo()" class="back">{{ backLabel() }}</a>
 
     <header>
       <p class="eyebrow">Account</p>
@@ -118,6 +118,32 @@ export class SignInComponent {
   private readonly auth = inject(LearningAuthService);
   private readonly router = inject(Router);
 
+  /**
+   * Where to put somebody back when they are done.
+   *
+   * Reading a lesson is open to anyone, so the usual way here is from the
+   * middle of one, having been told to sign in to keep progress. Sending
+   * everybody to the catalog made them find their place again by hand.
+   *
+   * Only a path on this site is accepted. Taking the parameter at face value
+   * would let a link off the site be handed to a person who has just typed a
+   * password, which is the standard shape of an open redirect.
+   */
+  readonly returnTo = computed(() => {
+    const requested = this.route.snapshot.queryParamMap.get('returnTo') ?? '';
+    const isLocalPath =
+      requested.startsWith('/') &&
+      !requested.startsWith('//') &&
+      !requested.includes('\\');
+    return isLocalPath ? requested : '/courses';
+  });
+
+  readonly backLabel = computed(() =>
+    this.returnTo() === '/courses' ? '← Catalog' : '← Back'
+  );
+
+  private readonly route = inject(ActivatedRoute);
+
   readonly mode = signal<'sign-in' | 'register'>('sign-in');
   readonly pending = signal(false);
   readonly error = signal('');
@@ -159,9 +185,10 @@ export class SignInComponent {
 
   private done(): void {
     this.pending.set(false);
-    // The catalog rather than the landing page: somebody who has just signed
-    // in has already been sold, and sending them back to the pitch would be
-    // making the argument twice.
-    this.router.navigateByUrl('/courses');
+    // Back where they were if that is known, and otherwise the catalog rather
+    // than the landing page: somebody who has just signed in has already been
+    // sold, and sending them back to the pitch would be making the argument
+    // twice.
+    this.router.navigateByUrl(this.returnTo());
   }
 }

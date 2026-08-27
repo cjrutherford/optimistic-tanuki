@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, provideRouter } from '@angular/router';
+import {
+  ActivatedRoute,
+  Router,
+  convertToParamMap,
+  provideRouter,
+} from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -14,7 +19,7 @@ import { LearningDataService } from './learning-data.service';
  * The app told people to sign in from three places and had nowhere to do it.
  */
 describe('SignInComponent', () => {
-  async function render() {
+  async function render(returnTo?: string) {
     TestBed.configureTestingModule({
       imports: [SignInComponent],
       providers: [
@@ -24,6 +29,16 @@ describe('SignInComponent', () => {
         {
           provide: LearningDataService,
           useValue: { dashboard: () => of([]) },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap(
+                returnTo === undefined ? {} : { returnTo }
+              ),
+            },
+          },
         },
       ],
     });
@@ -149,6 +164,78 @@ describe('SignInComponent', () => {
 
     expect(fixture.componentInstance.error()).toContain('already an account');
   });
+});
+
+/**
+ * Reading is open to anyone, so this page is usually reached from the middle
+ * of a lesson. Landing everybody on the catalog afterwards made them find
+ * their place again by hand.
+ */
+describe('SignInComponent returning somebody to where they were', () => {
+  async function signInWith(returnTo: string | undefined) {
+    TestBed.configureTestingModule({
+      imports: [SignInComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LearningDataService, useValue: { dashboard: () => of([]) } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap(
+                returnTo === undefined ? {} : { returnTo }
+              ),
+            },
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(SignInComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    for (const pending of http.match('/api/learning/me')) pending.flush(null);
+    fixture.detectChanges();
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigateByUrl');
+
+    fixture.componentInstance.signIn({
+      email: 'reader@example.com',
+      password: 'secret',
+    } as never);
+    for (const pending of http.match((request) => request.method === 'POST')) {
+      pending.flush({});
+    }
+    for (const pending of http.match('/api/learning/me')) pending.flush({});
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return navigate;
+  }
+
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('puts a reader back on the lesson they were reading', async () => {
+    const navigate = await signInWith('/module/go/basics/hello');
+
+    expect(navigate).toHaveBeenCalledWith('/module/go/basics/hello');
+  });
+
+  it('falls back to the catalog when it was not told', async () => {
+    const navigate = await signInWith(undefined);
+
+    expect(navigate).toHaveBeenCalledWith('/courses');
+  });
+
+  it.each(['https://evil.example/steal', '//evil.example/steal'])(
+    'refuses to send somebody off the site: %s',
+    async (hostile) => {
+      // Somebody has just typed a password. Handing them a link off the site
+      // taken straight from a query parameter is an open redirect.
+      const navigate = await signInWith(hostile);
+
+      expect(navigate).toHaveBeenCalledWith('/courses');
+    }
+  );
 });
 
 describe('LearningAuthService', () => {

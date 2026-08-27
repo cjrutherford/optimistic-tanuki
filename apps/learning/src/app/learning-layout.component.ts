@@ -23,7 +23,9 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
         <a routerLink="/author">Write</a>
         <button type="button" (click)="signOut()">Sign out</button>
         } @else {
-        <a routerLink="/sign-in">Sign in</a>
+        <a routerLink="/sign-in" [queryParams]="{ returnTo: currentPath() }"
+          >Sign in</a
+        >
         }
       </span>
     </header>
@@ -179,6 +181,14 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
 export class LearningLayoutComponent {
   private readonly auth = inject(LearningAuthService);
   private readonly router = inject(Router);
+
+  /**
+   * Where the reader is now, handed to the sign-in page so it can put them
+   * back. Reading is open to anyone, so this link is most often clicked from
+   * the middle of a lesson, and dropping them at the catalog afterwards made
+   * them find their place again by hand.
+   */
+  readonly currentPath = () => this.router.url.split('?')[0];
 
   readonly person = signal<SignedInPerson | null>(null);
 
