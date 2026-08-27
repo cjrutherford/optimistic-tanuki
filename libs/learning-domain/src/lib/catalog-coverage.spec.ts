@@ -6,6 +6,7 @@ import {
 } from './tutorial-catalog';
 import { techLiteracyTrack } from './tech-literacy';
 import { programmingConceptsTrack } from './programming-concepts';
+import { systemsDesignTrack } from './systems-design';
 import { tutorialExercises } from './tutorial-content';
 import { LessonMetadata, selectLessonContent } from './learning-domain';
 
@@ -217,6 +218,7 @@ describe('curriculum catalog coverage', () => {
 describe.each([
   ['Tech Literacy', techLiteracyTrack],
   ['Programming Concepts', programmingConceptsTrack],
+  ['Systems Design', systemsDesignTrack],
 ])('courses written in this workspace: %s', (_name, track) => {
   const lessonsOfTrack = lessonsOf(track);
 
@@ -316,12 +318,27 @@ describe('what each workspace-written course is for', () => {
     expect(programmingConceptsTrack.subjectIds).toContain('programming');
   });
 
-  it('keeps the two courses in separate content collections', () => {
+  it('gives each of these courses its own content collection', () => {
     // Sharing one would make the unreachable-file check above vacuous, since
-    // every orphan in one course would be claimed by the other.
-    expect(programmingConceptsTrack.contentCollection).not.toEqual(
-      techLiteracyTrack.contentCollection
-    );
+    // every orphan in one course would be claimed by another.
+    const collections = [
+      techLiteracyTrack,
+      programmingConceptsTrack,
+      systemsDesignTrack,
+    ].map((track) => track.contentCollection);
+
+    expect(collections.every(Boolean)).toBe(true);
+    expect(new Set(collections).size).toBe(collections.length);
+  });
+
+  it('stacks the two programming courses rather than duplicating a level', () => {
+    // Programming Concepts is the spine under the four language courses;
+    // Systems Design sits above it and assumes the code already works. Giving
+    // them the same level would file them as alternatives to each other.
+    const conceptsLevel = programmingConceptsTrack.offerings[0].level;
+    const designLevel = systemsDesignTrack.offerings[0].level;
+
+    expect(designLevel).toBeGreaterThan(conceptsLevel as number);
   });
 });
 
@@ -349,9 +366,13 @@ describe('the catalog only ever grows', () => {
   });
 
   it('carries the new courses alongside them, not instead of them', () => {
-    expect(builtInProgramTracks).toHaveLength(tutorialProgramTracks.length + 2);
+    expect(builtInProgramTracks).toHaveLength(tutorialProgramTracks.length + 3);
     expect(builtInProgramTracks.map((track) => track.id)).toEqual(
-      expect.arrayContaining(['tech-literacy', 'programming-concepts'])
+      expect.arrayContaining([
+        'tech-literacy',
+        'programming-concepts',
+        'systems-design',
+      ])
     );
   });
 

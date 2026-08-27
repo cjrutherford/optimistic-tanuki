@@ -5,3 +5,4 @@ export * from './lib/demo-programs';
 export * from './lib/tutorial-content';
 export * from './lib/tech-literacy';
 export * from './lib/programming-concepts';
+export * from './lib/systems-design';

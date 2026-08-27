@@ -15,6 +15,7 @@ const migrationDirectories = [
   'apps/finance/src/migrations',
   'apps/forum/migrations',
   'apps/lead-tracker/migrations',
+  'apps/learning-service/src/migrations',
   'apps/payments/migrations',
   'apps/permissions/migrations',
   'apps/profile/migrations',

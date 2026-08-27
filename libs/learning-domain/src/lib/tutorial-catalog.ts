@@ -8,6 +8,7 @@
 import { ProgramTrack } from './learning-domain';
 import { techLiteracyTrack } from './tech-literacy';
 import { programmingConceptsTrack } from './programming-concepts';
+import { systemsDesignTrack } from './systems-design';
 const tutorialSources = {
   typescript: {
     repositoryUrl: 'https://github.com/cjrutherford/letsgots',
@@ -718,4 +719,5 @@ export const builtInProgramTracks: ProgramTrack[] = [
   ...tutorialProgramTracks,
   techLiteracyTrack,
   programmingConceptsTrack,
+  systemsDesignTrack,
 ];
