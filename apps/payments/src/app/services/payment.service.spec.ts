@@ -513,29 +513,43 @@ describe('PaymentService classified payment authorization', () => {
   });
 
   it('includes canonical-owner legacy payments while excluding forged seller payments from a user collection', async () => {
+    // Timestamps are explicit and distinct, because getUserPayments sorts on
+    // them. Every payment here used to take createdAt from the factory's
+    // `new Date()`, which meant the assertion below only held while all four
+    // landed in the same millisecond and the sort was a no-op over stable
+    // input order. On a machine where the clock ticked mid-setup they got
+    // different milliseconds, the sort did what it is supposed to do, and the
+    // order flipped. That is what failed in CI while passing everywhere else.
+    //
+    // Newest first, matching the order the assertion expects, so the test now
+    // proves the sort works rather than depending on it not happening.
     const buyerPayment = buildClassifiedPayment({
       id: 'buyer-payment',
       classifiedId: 'classified-buyer',
       buyerId: 'user-1',
       sellerId: 'other-seller',
+      createdAt: new Date('2026-03-04T00:00:00.000Z'),
     });
     const forgedSellerPayment = buildClassifiedPayment({
       id: 'forged-payment',
       classifiedId: 'classified-forged',
       buyerId: 'buyer-2',
       sellerId: 'user-1',
+      createdAt: new Date('2026-03-03T00:00:00.000Z'),
     });
     const secondCanonicalSellerPayment = buildClassifiedPayment({
       id: 'canonical-payment-2',
       classifiedId: 'classified-owned',
       buyerId: 'buyer-4',
       sellerId: 'user-1',
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
     });
     const canonicalSellerPayment = buildClassifiedPayment({
       id: 'canonical-payment-1',
       classifiedId: 'classified-owned',
       buyerId: 'buyer-3',
       sellerId: 'stale-seller',
+      createdAt: new Date('2026-03-02T00:00:00.000Z'),
     });
     const collectionPayments = [
       buyerPayment,
