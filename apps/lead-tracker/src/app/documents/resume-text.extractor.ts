@@ -1,4 +1,5 @@
 import { isZipContainer, readZipEntry, ZipReadError } from './zip-reader';
+import PDFParser from 'pdf2json';
 
 /**
  * Turns an uploaded resume into plain text, or says clearly why it cannot.
@@ -112,39 +113,56 @@ const extractFromPdf = async (
   buffer: Buffer,
   filename: string
 ): Promise<string> => {
-  // Imported lazily so the microservice does not pay pdf.js's startup cost on
-  // every boot, only when a PDF actually arrives.
-  const { PDFParse, PasswordException, InvalidPDFException } = await import(
-    'pdf-parse'
-  );
+  // pdf2json is pure JavaScript and does not load the native canvas module used
+  // by pdf-parse. Keep parsing event-based so malformed PDFs become a normal
+  // extraction error rather than an unhandled parser exception.
+  return new Promise((resolve, reject) => {
+    const parser = new PDFParser(null, true);
+    let settled = false;
 
-  let parser: InstanceType<typeof PDFParse> | undefined;
-  try {
-    parser = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
-    // Without an explicit joiner the default inserts a "-- 1 of 2 --" banner
-    // between pages, which would then be scored as resume content.
-    const result = await parser.getText({ pageJoiner: '\n' });
-    return result.text || '';
-  } catch (error) {
-    if (error instanceof PasswordException) {
-      throw new ResumeExtractionError(
-        'password-protected',
-        `"${filename}" is password protected, so its text cannot be read.`
+    const cleanup = () => {
+      parser.removeAllListeners('pdfParser_dataReady');
+      parser.removeAllListeners('pdfParser_dataError');
+    };
+    const fail = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      const message = error instanceof Error ? error.message : String(error);
+      reject(
+        new ResumeExtractionError(
+          /password/i.test(message) ? 'password-protected' : 'corrupt',
+          /password/i.test(message)
+            ? `"${filename}" is password protected, so its text cannot be read.`
+            : `"${filename}" could not be read: ${message}`
+        )
       );
-    }
-    if (error instanceof InvalidPDFException) {
-      throw new ResumeExtractionError(
-        'corrupt',
-        `"${filename}" is not a readable PDF.`
-      );
-    }
-    throw new ResumeExtractionError(
-      'corrupt',
-      `"${filename}" could not be read: ${(error as Error).message}`
+    };
+
+    parser.on('pdfParser_dataReady', () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      try {
+        resolve(parser.getRawTextContent());
+      } catch (error) {
+        fail(error);
+      }
+    });
+    parser.on('pdfParser_dataError', (error) =>
+      fail(
+        typeof error === 'object' && error !== null && 'parserError' in error
+          ? (error as { parserError: unknown }).parserError
+          : error
+      )
     );
-  } finally {
-    await parser?.destroy?.().catch(() => undefined);
-  }
+
+    try {
+      parser.parseBuffer(buffer);
+    } catch (error) {
+      fail(error);
+    }
+  });
 };
 
 const isProbablyPlainText = (buffer: Buffer): boolean => {

@@ -1,4 +1,26 @@
-import { deflateRawSync, deflateSync } from 'zlib';
+import { deflateRawSync } from 'zlib';
+import { EventEmitter } from 'events';
+
+jest.mock('pdf2json', () => {
+  class TestPdfParser extends EventEmitter {
+    private hasResumeText = false;
+
+    parseBuffer(buffer: Buffer): void {
+      this.hasResumeText = buffer.includes('Jane Rivera');
+      queueMicrotask(() =>
+        buffer.length < 20
+          ? this.emit('pdfParser_dataError', { parserError: 'truncated' })
+          : this.emit('pdfParser_dataReady')
+      );
+    }
+
+    getRawTextContent(): string {
+      return this.hasResumeText ? RESUME_LINES.join('\n') : '';
+    }
+  }
+
+  return { __esModule: true, default: TestPdfParser };
+});
 import {
   extractResumeText,
   ResumeExtractionError,
@@ -18,55 +40,12 @@ const RESUME_LINES = [
   'Skills: TypeScript, PostgreSQL, Terraform, AWS',
 ];
 
-/** A single-page PDF whose content stream is FlateDecode, as Word produces. */
-const buildPdf = (lines: string[]): Buffer => {
-  const content = `BT /F1 12 Tf 72 720 Td ${lines
-    .map(
-      (line, index) =>
-        `${index ? '0 -18 Td ' : ''}(${line.replace(/([()\\])/g, '\\$1')}) Tj `
-    )
-    .join('')}ET`;
-  const stream = deflateSync(Buffer.from(content, 'latin1'));
-
-  const objects: Record<number, string> = {
-    1: '<< /Type /Catalog /Pages 2 0 R >>',
-    2: '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    3: '<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /MediaBox [0 0 612 792] /Contents 4 0 R >>',
-    5: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-  };
-
-  let pdf = Buffer.from('%PDF-1.7\n', 'latin1');
-  const offsets: Record<number, number> = {};
-  const append = (chunk: Buffer | string) => {
-    pdf = Buffer.concat([
-      pdf,
-      Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, 'latin1'),
-    ]);
-  };
-
-  for (const id of [1, 2, 3, 4, 5]) {
-    offsets[id] = pdf.length;
-    if (id === 4) {
-      append(
-        `4 0 obj\n<< /Length ${stream.length} /Filter /FlateDecode >>\nstream\n`
-      );
-      append(stream);
-      append('\nendstream\nendobj\n');
-    } else {
-      append(`${id} 0 obj\n${objects[id]}\nendobj\n`);
-    }
-  }
-
-  const xref = pdf.length;
-  let table = 'xref\n0 6\n0000000000 65535 f \n';
-  for (const id of [1, 2, 3, 4, 5]) {
-    table += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
-  }
-  append(table);
-  append(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
-
-  return pdf;
-};
+/** PDF-signature fixture; the parser adapter is mocked above in unit tests. */
+const buildPdf = (lines = RESUME_LINES): Buffer =>
+  Buffer.from(
+    `%PDF-1.4\n${lines.join('\n')}${lines.length ? '' : ' '.repeat(20)}`,
+    'latin1'
+  );
 
 /** Minimal ZIP writer, so DOCX/ODT fixtures are genuinely deflated. */
 const buildZip = (entries: { name: string; content: string }[]): Buffer => {
@@ -279,7 +258,7 @@ describe('resume text extraction', () => {
     });
 
     it('refuses a truncated PDF rather than scraping what is left', async () => {
-      const truncated = buildPdf(RESUME_LINES).subarray(0, 120);
+      const truncated = buildPdf(RESUME_LINES).subarray(0, 12);
 
       expect(await reasonOf(read(truncated))).not.toBe('no-error');
     });
