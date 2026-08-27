@@ -1,0 +1,126 @@
+{
+  "name": "learning",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/learning/src",
+  "tags": ["type:app", "scope:learning", "platform:web", "visibility:public"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/learning",
+        "browser": "apps/learning/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/learning/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/learning/public"
+          },
+          {
+            "glob": "**/*",
+            "input": "apps/learning/src/assets",
+            "output": "assets"
+          },
+          {
+            "glob": "manifest.webmanifest",
+            "input": "apps/learning/src",
+            "output": "."
+          },
+          {
+            "glob": "katex.min.css",
+            "input": "node_modules/katex/dist",
+            "output": "assets/katex"
+          },
+          {
+            "glob": "**/*",
+            "input": "node_modules/katex/dist/fonts",
+            "output": "assets/katex/fonts"
+          }
+        ],
+        "styles": ["apps/learning/src/styles.scss"],
+        "server": "apps/learning/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/learning/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ],
+          "outputHashing": "all",
+          "serviceWorker": "apps/learning/ngsw-config.json"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "learning:build:production"
+        },
+        "development": {
+          "buildTarget": "learning:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "learning:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/learning/jest.config.ts",
+        "tsConfig": "apps/learning/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node dist/apps/learning/server/server.mjs",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "PORT": "4215"
+        }
+      },
+      "dependsOn": ["build"]
+    },
+    "prune-ngsw": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/prune-ngsw-phantoms.mjs dist/apps/learning/browser",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+/* Let's Go global styles.
+ *
+ * The palette lives in learning-theme.scss; this file only applies it.
+ */
+@use './learning-theme';
+
+body {
+  margin: 0;
+  background: var(--lx-bg);
+  color: var(--lx-text-body);
+  font-family: var(
+    --personality-font-family,
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+}
+
+/* Headings carry the personality's display face. Architect supplies Oswald,
+   which the app was loading and never using. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--lx-font-heading);
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Keyboard focus, once, for everything.
+ *
+ * Almost nothing in the app defined a focus style, so keyboard users were
+ * left with the browser default: a thin dark ring that is close to invisible
+ * on these surfaces. Global because a focus ring is a property of the theme,
+ * not of any one component, and because a component that forgets it is
+ * exactly the component a keyboard user gets lost in.
+ */
+:focus-visible {
+  outline: 2px solid var(--lx-focus);
+  outline-offset: 2px;
+  border-radius: var(--lx-radius);
+}
+
+/* Anything a finger has to hit is at least the size of a fingertip. Applied
+   to the small controls in the chrome, which were 18 to 20 pixels tall. */
+.topbar a,
+.topbar button,
+.studio nav a,
+.back {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Monaco's hidden input, which is anything but.
+ *
+ * It builds its DOM after Angular has stamped its scoping attributes, so
+ * component styles never reach it and it renders with UA defaults: a grey
+ * 182x36 box sitting on top of the first line of code. It only exists to
+ * catch IME composition, so it needs to be present and focusable without
+ * being seen. This has to be global for the same reason it broke. */
+.monaco-editor .ime-text-area {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  opacity: 0;
+  overflow: hidden;
+}

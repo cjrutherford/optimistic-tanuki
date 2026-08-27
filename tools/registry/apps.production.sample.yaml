@@ -164,3 +164,14 @@ apps:
     apiBaseUrl: https://video.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
+
+  - appId: learning
+    name: Let's Go
+    domain: experiments.christopherrutherford.net
+    subdomain: letsgo
+    uiBaseUrl: https://letsgo.experiments.christopherrutherford.net
+    apiBaseUrl: https://letsgo.experiments.christopherrutherford.net/api
+    appType: client
+    visibility: public
+    description: Learn TypeScript, Go, C++ and Rust by changing code that runs.
+    sortOrder: 56

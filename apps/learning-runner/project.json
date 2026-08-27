@@ -1,0 +1,35 @@
+{
+  "name": "learning-runner",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/learning-runner",
+  "projectType": "application",
+  "tags": [
+    "type:app",
+    "scope:learning",
+    "platform:server",
+    "visibility:internal"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "node --check server.mjs",
+          "node --check lib/typescript-harness.mjs",
+          "node --check lib/catch2.mjs",
+          "node --check lib/run-plan.mjs",
+          "node --check lib/libtest.mjs"
+        ],
+        "cwd": "apps/learning-runner",
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --test 'test/**/*.test.mjs'",
+        "cwd": "apps/learning-runner"
+      }
+    }
+  }
+}

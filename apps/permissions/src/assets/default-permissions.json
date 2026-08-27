@@ -109,6 +109,11 @@
       "name": "business-site",
       "description": "Business site and client portal",
       "active": true
+    },
+    {
+      "name": "learning",
+      "description": "Universal learning platform (Let's Go) covering offerings, structured content, enrolment, progress, and evaluation for any subject",
+      "active": true
     }
   ],
   "roles": [
@@ -366,6 +371,26 @@
       "name": "business_site_client",
       "description": "Business-site client account with scoped portal access",
       "appScope": "business-site"
+    },
+    {
+      "name": "learning_learner",
+      "description": "Default learning role: read published offerings, enrol, record own progress, submit own attempts, and run code",
+      "appScope": "learning"
+    },
+    {
+      "name": "learning_course_designer",
+      "description": "Opt-in role for authoring offerings and structuring their modules, lessons, and activities, restricted to offerings the author owns",
+      "appScope": "learning"
+    },
+    {
+      "name": "learning_course_editor",
+      "description": "Revises content on offerings owned or co-edited, without the ability to create or delete offerings",
+      "appScope": "learning"
+    },
+    {
+      "name": "learning_admin",
+      "description": "Full administrative control of the learning scope, including grading and managing any offering",
+      "appScope": "learning"
     }
   ],
   "permissions": [
@@ -2779,6 +2804,402 @@
       "resource": "reaction",
       "action": "read",
       "appScope": "video-client"
+    },
+    {
+      "name": "offering.read",
+      "description": "Read a published offering",
+      "active": true,
+      "resource": "offering",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "offering.create",
+      "description": "Create a new offering",
+      "active": true,
+      "resource": "offering",
+      "action": "create",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "offering.update",
+      "description": "Update any offering",
+      "active": true,
+      "resource": "offering",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "offering.update.own",
+      "description": "Update an offering you own",
+      "active": true,
+      "resource": "offering",
+      "action": "update.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "offering.delete",
+      "description": "Delete any offering",
+      "active": true,
+      "resource": "offering",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "offering.delete.own",
+      "description": "Delete an offering you own",
+      "active": true,
+      "resource": "offering",
+      "action": "delete.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.read",
+      "description": "Read a module within an offering",
+      "active": true,
+      "resource": "module",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.create",
+      "description": "Add a module to any offering",
+      "active": true,
+      "resource": "module",
+      "action": "create",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.create.own",
+      "description": "Add a module to an offering you own",
+      "active": true,
+      "resource": "module",
+      "action": "create.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.update",
+      "description": "Update a module on any offering",
+      "active": true,
+      "resource": "module",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.update.own",
+      "description": "Update a module on an offering you own",
+      "active": true,
+      "resource": "module",
+      "action": "update.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.delete",
+      "description": "Delete a module from any offering",
+      "active": true,
+      "resource": "module",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "module.delete.own",
+      "description": "Delete a module from an offering you own",
+      "active": true,
+      "resource": "module",
+      "action": "delete.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.read",
+      "description": "Read a lesson within a module",
+      "active": true,
+      "resource": "lesson",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.create",
+      "description": "Add a lesson to any module",
+      "active": true,
+      "resource": "lesson",
+      "action": "create",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.create.own",
+      "description": "Add a lesson to a module you own",
+      "active": true,
+      "resource": "lesson",
+      "action": "create.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.update",
+      "description": "Update a lesson on any offering",
+      "active": true,
+      "resource": "lesson",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.update.own",
+      "description": "Update a lesson on an offering you own",
+      "active": true,
+      "resource": "lesson",
+      "action": "update.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.delete",
+      "description": "Delete a lesson from any offering",
+      "active": true,
+      "resource": "lesson",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "lesson.delete.own",
+      "description": "Delete a lesson from an offering you own",
+      "active": true,
+      "resource": "lesson",
+      "action": "delete.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.read",
+      "description": "Read an activity within a lesson",
+      "active": true,
+      "resource": "activity",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.create",
+      "description": "Add an activity to any lesson",
+      "active": true,
+      "resource": "activity",
+      "action": "create",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.create.own",
+      "description": "Add an activity to a lesson you own",
+      "active": true,
+      "resource": "activity",
+      "action": "create.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.update",
+      "description": "Update an activity on any offering",
+      "active": true,
+      "resource": "activity",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.update.own",
+      "description": "Update an activity on an offering you own",
+      "active": true,
+      "resource": "activity",
+      "action": "update.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.delete",
+      "description": "Delete an activity from any offering",
+      "active": true,
+      "resource": "activity",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.delete.own",
+      "description": "Delete an activity from an offering you own",
+      "active": true,
+      "resource": "activity",
+      "action": "delete.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.run",
+      "description": "Run code for an activity in the sandboxed runner",
+      "active": true,
+      "resource": "activity",
+      "action": "run",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "activity.submit.own",
+      "description": "Submit your own attempt at an activity",
+      "active": true,
+      "resource": "activity",
+      "action": "submit.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.create.own",
+      "description": "Enrol yourself in an offering",
+      "active": true,
+      "resource": "enrolment",
+      "action": "create.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.read.own",
+      "description": "Read your own enrolment",
+      "active": true,
+      "resource": "enrolment",
+      "action": "read.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.read",
+      "description": "Read any learner's enrolment",
+      "active": true,
+      "resource": "enrolment",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.update",
+      "description": "Update any learner's enrolment",
+      "active": true,
+      "resource": "enrolment",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.delete.own",
+      "description": "Withdraw your own enrolment",
+      "active": true,
+      "resource": "enrolment",
+      "action": "delete.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "enrolment.delete",
+      "description": "Remove any learner's enrolment",
+      "active": true,
+      "resource": "enrolment",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "progress.create.own",
+      "description": "Record your own progress",
+      "active": true,
+      "resource": "progress",
+      "action": "create.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "progress.update.own",
+      "description": "Update your own progress",
+      "active": true,
+      "resource": "progress",
+      "action": "update.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "progress.read.own",
+      "description": "Read your own progress",
+      "active": true,
+      "resource": "progress",
+      "action": "read.own",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "progress.read",
+      "description": "Read any learner's progress",
+      "active": true,
+      "resource": "progress",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "progress.update",
+      "description": "Correct any learner's progress",
+      "active": true,
+      "resource": "progress",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "evaluation.create",
+      "description": "Record an evaluation (grade) for an attempt",
+      "active": true,
+      "resource": "evaluation",
+      "action": "create",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "evaluation.update",
+      "description": "Revise an evaluation",
+      "active": true,
+      "resource": "evaluation",
+      "action": "update",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "evaluation.read",
+      "description": "Read any evaluation",
+      "active": true,
+      "resource": "evaluation",
+      "action": "read",
+      "targetId": null,
+      "appScope": "learning"
+    },
+    {
+      "name": "evaluation.read.own",
+      "description": "Read your own evaluation feedback",
+      "active": true,
+      "resource": "evaluation",
+      "action": "read.own",
+      "targetId": null,
+      "appScope": "learning"
     }
   ],
   "role_permissions": [
@@ -6456,6 +6877,706 @@
       "role": "video_channel_creator",
       "permission": "social.reaction.read",
       "permissionAppScope": "video-client"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "activity.submit.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "enrolment.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "enrolment.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "enrolment.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "progress.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "progress.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "progress.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_learner",
+      "permission": "evaluation.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.submit.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "enrolment.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "enrolment.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "enrolment.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "progress.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "progress.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "progress.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "evaluation.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "offering.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "offering.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "module.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "module.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "module.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "lesson.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "lesson.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "lesson.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_designer",
+      "permission": "activity.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "offering.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "module.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "lesson.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_course_editor",
+      "permission": "activity.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "offering.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "module.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "lesson.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "activity.submit.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.delete.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "enrolment.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "progress.create.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "progress.update.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "progress.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "progress.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "progress.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "evaluation.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "evaluation.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "evaluation.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "learning_admin",
+      "permission": "evaluation.read.own",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "progress.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "progress.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "progress.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "progress.update",
+      "permissionAppScope": "learning"
     }
   ]
 }

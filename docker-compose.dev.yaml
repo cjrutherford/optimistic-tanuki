@@ -10,6 +10,37 @@
 # See docs/devops/docker-compose.md for the supported-service matrix.
 #
 services:
+  learning:
+    container_name: ot_learning
+    build:
+      context: .
+      dockerfile: ./apps/learning/Dockerfile
+    ports:
+      - '8099:4000'
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+
+  learning-runner:
+    container_name: ot_learning_runner
+    build:
+      context: .
+      dockerfile: ./apps/learning-runner/Dockerfile
+    environment:
+      - PORT=3025
+
+  learning-service:
+    build:
+      context: .
+      dockerfile: ./apps/learning-service/Dockerfile
+    environment:
+      - LEARNING_CONTENT_ROOT=/usr/src/app/assets/content
+      # Marking written answers against an author's rubric.
+      - LEARNING_OLLAMA_URL=${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
+      - LEARNING_RUNNER_URL=http://learning-runner:3025
+
   authentication:
     container_name: ot_authentication # Corrected typo
     environment:

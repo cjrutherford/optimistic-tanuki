@@ -1,0 +1,229 @@
+# Just enough real stack to run the Learning Studio.
+#
+# Postgres, the learning service, the sandboxed runner, the gateway and the
+# client. No auth service: the routes this exercises are either public or
+# degrade to anonymous, which is exactly the path a signed-out learner takes.
+#
+#   nx run learning-e2e:up
+#   nx run learning-e2e:e2e-docker
+services:
+  db:
+    image: postgres:17
+    container_name: e2e_db_learning
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # The service migrates into this on first boot.
+      POSTGRES_DB: ot_learning_service
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ot_learning_service']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # The gateway keeps OAuth state here and refuses to boot without it.
+  redis:
+    image: redis:7-alpine
+    container_name: e2e_redis_learning
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  learning-runner:
+    container_name: e2e_learning_runner
+    build:
+      context: ..
+      dockerfile: ./apps/learning-runner/Dockerfile
+    environment:
+      PORT: 3025
+      LEARNING_SCRATCH_DIR: /scratch
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+      - /scratch:size=512m,exec,nosuid,nodev,mode=1777
+    # On an internal network: the learning service can reach it, and it
+    # cannot reach the internet. network_mode: none would be tighter but
+    # also unreachable, which is no use to anyone.
+    networks: [learning-internal]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1g
+
+  # ──────────────── Identity ────────────────
+  # Authoring is entirely behind a session: the gateway resolves a learning
+  # profile and reads roles before it will let anyone write a course. Without
+  # these three the authoring routes cannot be exercised at all, only their
+  # 401s.
+  db-setup:
+    build:
+      context: ..
+      dockerfile: ./docker/db-setup/Dockerfile
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "command -v pg_isready && sh ./scripts/setup-and-migrate.sh"
+    restart: 'no'
+
+  authentication:
+    container_name: e2e_auth_learning
+    build:
+      context: ..
+      dockerfile: ./apps/authentication/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_authentication
+      AUTH_AUTO_VERIFY_EMAILS: 'true'
+      JWT_SECRET: c3VwZXJzZWNyZXRzdHJpbmc=
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  profile:
+    container_name: e2e_profile_learning
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_profile
+      SERVICE_PERMISSIONS_HOST: permissions
+      SERVICE_PERMISSIONS_PORT: 3012
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  permissions:
+    container_name: e2e_permissions_learning
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_permissions
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  # The learning roles are seeded here. Without them a new learner gets no
+  # role at all and opting in as an author grants nothing.
+  permissions-seed:
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    command: ['node', './seed-permissions.js']
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_permissions
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    restart: 'no'
+
+  learning-service:
+    container_name: ot_learning_service
+    build:
+      context: ..
+      dockerfile: ./apps/learning-service/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_learning_service
+      LEARNING_CONTENT_ROOT: /usr/src/app/assets/content
+      LEARNING_RUNNER_URL: http://learning-runner:3025
+      # Marking written answers. Ollama lives on the tailscale host, which is
+      # reachable from the host but not from inside a compose network, so this
+      # goes out through the host gateway.
+      LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
+    extra_hosts:
+      - 'shangrila:100.89.87.124'
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [default, learning-internal]
+  gateway:
+    container_name: e2e_gateway_learning
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    environment:
+      PORT: 3000
+      LISTEN_PORT: 3000
+      # Not production: the registry's callback URLs are localhost, which the
+      # gateway rightly refuses to send verification email against in prod.
+      NODE_ENV: test
+      JWT_SECRET: c3VwZXJzZWNyZXRzdHJpbmc=
+      # The gateway refuses to boot without this, even with no OAuth provider
+      # configured. Test-only value.
+      OAUTH_STATE_SECRET: e2e-learning-oauth-state-secret-value
+      CORS_ALLOWED_ORIGINS: http://localhost:8099,http://localhost:8084
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+    ports:
+      - '3000:3000'
+    depends_on:
+      learning-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+      permissions:
+        condition: service_started
+
+  learning:
+    container_name: e2e_learning
+    build:
+      context: ..
+      dockerfile: ./apps/learning/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      GATEWAY_URL: http://gateway:3000
+    ports:
+      - '8099:4000'
+    depends_on:
+      - gateway
+
+networks:
+  learning-internal:
+    internal: true

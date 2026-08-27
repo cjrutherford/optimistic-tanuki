@@ -85,6 +85,9 @@ import { DonationsController } from '../controllers/donations/donations.controll
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
+import { LearningController } from '../controllers/learning/learning.controller';
+import { LearningProfileResolver } from '../controllers/learning/learning-profile.resolver';
+import { OfferingAuthorizationService } from '../controllers/learning/offering-authorization.service';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -124,6 +127,7 @@ const gatewayServices = [
   'lead-tracker',
   'system-configurator-api',
   'videos',
+  'learning-service',
 ] as const;
 
 const gatewayComposition = normalizeGatewayComposition(
@@ -308,6 +312,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         value: HardwareController,
       },
       {
+        id: 'learning',
+        requiredServices: ['learning-service'],
+        value: LearningController,
+      },
+      {
         id: 'trainer',
         requiredServices: ['store', 'lead-tracker'],
         value: TrainerController,
@@ -467,6 +476,8 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       },
     },
     RoleInitService,
+    LearningProfileResolver,
+    OfferingAuthorizationService,
     {
       provide: LoginAccountBootstrapService,
       useFactory: (
