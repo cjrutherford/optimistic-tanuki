@@ -97,6 +97,19 @@ describe('LearningLayoutComponent', () => {
     expect(element.textContent).toContain('Your progress');
   });
 
+  // Nowhere told a visitor what enrolling, marking or authoring meant, so
+  // these have to be reachable from every page, not just linked from one.
+  it('links to the about and docs pages from every page', async () => {
+    const element = await render();
+    const topbar = element.querySelector('.topbar');
+    const links = Array.from(topbar?.querySelectorAll('a') ?? []).map((a) =>
+      a.getAttribute('href')
+    );
+
+    expect(links).toContain('/about');
+    expect(links).toContain('/docs');
+  });
+
   it('shows the modules of the course being read', async () => {
     const element = await render('go-foundations');
 

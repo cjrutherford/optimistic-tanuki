@@ -158,4 +158,36 @@ describe('LandingComponent', () => {
     expect(typeof LearningDataService.prototype.subjects).toBe('function');
     expect(typeof LearningAuthService.prototype.me).toBe('function');
   });
+
+  /**
+   * This page draws its own header rather than using the studio layout, so
+   * links added to that layout do not appear here. About and Docs were added
+   * to the layout and were reachable from every page except this one, which
+   * is the only page a stranger actually arrives on.
+   */
+  it('offers a stranger a way to read what this is', () => {
+    const labels = Array.from(
+      build({}).nativeElement.querySelectorAll('header nav button')
+    ).map((button) => (button as HTMLButtonElement).textContent?.trim());
+
+    expect(labels).toEqual(expect.arrayContaining(['About', 'Docs']));
+  });
+
+  it.each([
+    ['About', '/about'],
+    ['Docs', '/docs'],
+  ])('sends %s to %s', (label, path) => {
+    const nativeElement = build({}).nativeElement;
+    const navigate = jest.spyOn(TestBed.inject(Router), 'navigateByUrl');
+    const button = Array.from(
+      nativeElement.querySelectorAll('header nav button')
+    ).find(
+      (candidate) =>
+        (candidate as HTMLButtonElement).textContent?.trim() === label
+    ) as HTMLButtonElement;
+
+    button.click();
+
+    expect(navigate).toHaveBeenCalledWith(path);
+  });
 });

@@ -36,6 +36,14 @@ import { LearningAuthService } from './learning-auth.service';
         <span class="brand">Let&rsquo;s Go</span>
         <nav>
           <button type="button" (click)="browse()">Courses</button>
+          <!--
+            The landing page has its own header rather than the studio layout,
+            so links added to that layout do not appear here. This is the one
+            page a stranger arrives on, and it was the only page from which
+            the docs were unreachable.
+          -->
+          <button type="button" (click)="go('/about')">About</button>
+          <button type="button" (click)="go('/docs')">Docs</button>
           @if (person()) {
           <button type="button" (click)="go('/dashboard')">
             Your progress

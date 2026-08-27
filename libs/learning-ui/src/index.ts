@@ -12,3 +12,5 @@ export * from './lib/install-prompt.component';
 export * from './lib/landing-hero.component';
 export * from './lib/curriculum-preview.component';
 export * from './lib/value-props.component';
+export * from './lib/about-content.component';
+export * from './lib/docs-content.component';

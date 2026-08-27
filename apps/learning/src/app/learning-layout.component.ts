@@ -16,6 +16,8 @@ import { LearningAuthService, SignedInPerson } from './learning-auth.service';
         an invitation rather than a gate.
       -->
       <span class="session">
+        <a routerLink="/about">About</a>
+        <a routerLink="/docs">Docs</a>
         @if (person(); as signedIn) {
         <span class="who">{{ signedIn.name }}</span>
         <a routerLink="/author">Write</a>

@@ -9,6 +9,8 @@ import { DashboardComponent } from './dashboard.component';
 import { ModuleComponent } from './module.component';
 import { LandingComponent } from './landing.component';
 import { LessonComponent } from './lesson.component';
+import { AboutComponent } from './about.component';
+import { DocsComponent } from './docs.component';
 
 export const appRoutes: Routes = [
   // The landing page is the entrance, and the catalog is where you go once
@@ -18,6 +20,8 @@ export const appRoutes: Routes = [
   { path: 'courses', component: CatalogComponent },
   { path: 'course/:offeringId', component: OfferingComponent },
   { path: 'sign-in', component: SignInComponent },
+  { path: 'about', component: AboutComponent },
+  { path: 'docs', component: DocsComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'author', component: AuthorComponent },
   { path: 'author/:offeringId', component: CourseEditorComponent },
