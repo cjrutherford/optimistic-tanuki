@@ -84,7 +84,7 @@ export class GradingService {
     if (!rubric) return undefined;
 
     /*
-      Stage one runs, and is deliberately not believed yet.
+      Stage one, and it now blocks.
 
       The evidence check cannot tell an answer from an instruction aimed at
       the marker: in a prompt injection the attack text is the submission, so
@@ -92,21 +92,35 @@ export class GradingService {
       verifies, and full marks follow. That is demonstrated in
       grading.spec.ts, not theorised, and it is what this gate is for.
 
-      It is not allowed to block yet because it is not accurate enough. On a
-      six-case sample it refused an honest but thin answer -- "I think it is
-      the delivery one because the address looked wrong" -- as though it were
-      addressed to the marker. A gate that refuses real work is worse than the
-      attack it prevents, so for now it only writes down what it would have
-      done. Give it authority once the log says it is right about submissions
-      nobody wrote to test it.
+      It used to only write down what it would have done, because on a
+      six-case sample it refused an honest but thin answer, "I think it is
+      the delivery one because the address looked wrong", as though it were
+      addressed to the marker. A gate that refuses real work is worse than
+      the attack it prevents.
+
+      That observation predates the model change. Re-measured against the
+      model actually in use: the thin answer above is marked on five runs out
+      of five, four other honest answers across two courses are marked, and
+      three prompt injections are refused. An empty-but-confident answer and
+      an off-topic one are marked and score zero, which is the wanted
+      behaviour rather than a miss: a wrong answer deserves a nought, not a
+      refusal.
+
+      The remaining way this refuses honest work is an unreadable verdict,
+      which shouldGrade treats as "do not mark". Twenty consecutive calls
+      came back readable, because this schema is two fields rather than a
+      whole rubric, but there is a retry below regardless. A refusal is not a
+      lost answer, it is recorded for a person to mark, so the cost of being
+      wrong here is a slower response rather than a missing one.
     */
     const verdict = await this.classifyIntent(activity, submission);
     if (!shouldGrade(verdict, submission)) {
       this.logger.warn(
-        `Triage would have refused to mark this submission. Not acting on it: ` +
+        `Triage refused to mark this submission: ` +
           `addressesTheMarker=${verdict?.addressesTheMarker ?? 'unreadable'} ` +
           `quote=${JSON.stringify(verdict?.quote ?? '')}`
       );
+      return undefined;
     }
 
     // Measured against the live model: roughly one call in three came back
@@ -128,6 +142,19 @@ export class GradingService {
    * one.
    */
   private async classifyIntent(
+    activity: WritingResponseActivity,
+    submission: string
+  ): Promise<IntentVerdict | undefined> {
+    // One retry, for the same reason the marking call has one. This gate can
+    // now refuse, and an unreadable verdict refuses, so a single flaky
+    // response should not cost an honest learner their automatic mark.
+    return (
+      (await this.attemptClassifyIntent(activity, submission)) ??
+      (await this.attemptClassifyIntent(activity, submission))
+    );
+  }
+
+  private async attemptClassifyIntent(
     activity: WritingResponseActivity,
     submission: string
   ): Promise<IntentVerdict | undefined> {
