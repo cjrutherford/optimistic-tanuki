@@ -103,9 +103,15 @@ export class LoginComponent {
     this.error.set(null);
 
     this.authService.login(credentials).subscribe({
-      next: (response) => {
-        this.authService.setAuthToken(response.data.newToken);
-        this.router.navigate(['/dashboard']);
+      next: async () => {
+        await this.authState.restoreSession();
+        if (!this.authState.isLoggedIn()) {
+          this.error.set(
+            'Login could not establish a session. Please try again.'
+          );
+          return;
+        }
+        await this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Login failed. Please try again.');
@@ -121,11 +127,16 @@ export class LoginComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'd6'
+        'd6',
+        true
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success && (result.token || result.session)) {
+        if (result.token) this.authState.setToken(result.token);
+        else if (!(await this.authState.restoreSession())) {
+          this.error.set('OAuth login could not restore your session.');
+          return;
+        }
         await this.router.navigate(['/dashboard']);
         return;
       }

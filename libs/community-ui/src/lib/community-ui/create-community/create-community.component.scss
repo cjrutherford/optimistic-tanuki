@@ -1,6 +1,7 @@
 // ============================================
 // Create Community — Personality-Aware Styling
 // ============================================
+@use 'personality' as p;
 
 :host {
   display: block;
@@ -117,9 +118,8 @@
   );
   border-radius: var(--border-radius-lg);
   border: var(--border-width, 1px) solid var(--local-borderColor);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.shadow('sm');
+  @include p.personality-transition(box-shadow, 'fast');
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -143,14 +143,11 @@
   border: 2px dashed var(--local-borderColor);
   border-radius: var(--border-radius-md);
   overflow: hidden;
-  transition: border-color var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease),
-    box-shadow var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease);
+  @include p.personality-transition((border-color, box-shadow), 'fast');
 
   &:hover {
     border-color: var(--local-accent);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
 }
 
@@ -162,8 +159,7 @@
   cursor: pointer;
   position: relative;
   background: color-mix(in srgb, var(--local-accent) 4%, transparent);
-  transition: background var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(background, 'fast');
 
   &:hover {
     background: color-mix(in srgb, var(--local-accent) 10%, transparent);
@@ -200,7 +196,7 @@
     height: 100%;
     object-fit: cover;
     border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
 
   .remove-btn {
@@ -219,9 +215,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-sm);
-    transition: transform var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease);
+    @include p.shadow('sm');
+    @include p.personality-transition(transform, 'fast');
 
     &:hover {
       transform: scale(1.15);
@@ -243,7 +238,7 @@
 // Minimal: stripped back, maximum whitespace
 :host-context([data-personality='minimal']) {
   .image-uploads {
-    box-shadow: none;
+    @include p.shadow('none');
     background: transparent;
     border-color: var(--local-borderColor);
   }
@@ -269,7 +264,7 @@
       color-mix(in srgb, var(--local-accent) 3%, var(--local-background)),
       var(--local-background)
     );
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
   .form-actions {
     border-top-color: color-mix(in srgb, var(--local-accent) 20%, transparent);
@@ -279,7 +274,7 @@
 // Bold: heavy shadows, gradient accent bars, thick borders
 :host-context([data-personality='bold']) {
   .image-uploads {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-color: var(--local-accent);
     background: linear-gradient(
       180deg,
@@ -291,11 +286,11 @@
     font-weight: 800;
   }
   .image-upload:hover {
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
   }
   .error-message {
     border-width: 2px;
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
 }
 
@@ -307,14 +302,14 @@
       color-mix(in srgb, var(--local-accent) 8%, var(--local-background)),
       color-mix(in srgb, var(--local-complement) 6%, var(--local-background))
     );
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     border-radius: var(--border-radius-xl);
   }
   .image-upload {
     border-radius: var(--border-radius-lg);
     &:hover {
       transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
+      @include p.shadow('md');
     }
   }
   .remove-btn:hover {
@@ -328,7 +323,7 @@
 // Electric: glow borders, neon hover
 :host-context([data-personality='electric']) {
   .image-uploads {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-color: var(--local-accent);
     background: linear-gradient(
       180deg,
@@ -355,7 +350,7 @@
       var(--local-accent) 5%,
       var(--local-background)
     );
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
     border-radius: var(--border-radius-xl);
   }
   .image-upload {
@@ -398,13 +393,13 @@
 
 :host-context([data-personality='architect']) {
   .image-uploads {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
   }
 }
 
 :host-context([data-personality='control-center']) {
   .image-uploads {
-    box-shadow: none;
+    @include p.shadow('none');
     padding: var(--spacing-md);
   }
 }

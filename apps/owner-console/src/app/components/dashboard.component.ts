@@ -91,6 +91,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
         route: '/dashboard/operations',
       },
       {
+        label: 'Security',
+        route: '/dashboard/security',
+      },
+      {
+        label: 'Performance',
+        route: '/dashboard/performance',
+      },
+      {
         label: 'Control Center',
         route: '/dashboard/control-center',
       },

@@ -25,8 +25,8 @@ import * as THREE from 'three';
   },
 })
 export class MurmurationSceneComponent implements AfterViewInit, OnDestroy {
-  @Input() count = 48;
-  @Input() speed = 0.35;
+  @Input() count = 72;
+  @Input() speed = 0.5;
   @Input() height = '24rem';
   @Input() reducedMotion = false;
 

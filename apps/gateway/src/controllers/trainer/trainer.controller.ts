@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpException,
   Inject,
@@ -12,6 +13,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -680,19 +682,28 @@ export class TrainerController {
       }));
   }
 
+  // Public so an unauthenticated caller (or one browsing a specific site
+  // slug) can still load the config, but AuthGuard still runs to OPTIONALLY
+  // attach a signature-verified `request.user` when a valid token is
+  // present. We read the profileId from that guard-verified context — never
+  // from the `@User()` decorator, which decodes the token WITHOUT verifying
+  // its signature and would let a forged profileId return another owner's
+  // site config when no slug is given.
   @Public()
   @UseGuards(AuthGuard)
   @Get('site-config')
   async getSiteConfig(
     @Query('slug') slug?: string,
-    @User() user?: UserDetails | null
+    @Req() req?: { user?: { profileId?: string } }
   ) {
     try {
       const result = await firstValueFrom(
         this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
           configKey: 'default',
           slug: slug?.trim() || undefined,
-          profileId: slug?.trim() ? undefined : user?.profileId || undefined,
+          profileId: slug?.trim()
+            ? undefined
+            : req?.user?.profileId || undefined,
         })
       );
       if (!result || !result.config) {
@@ -725,12 +736,18 @@ export class TrainerController {
     });
   }
 
+  // Public so an anonymous business-site visitor can submit a lead, but
+  // AuthGuard still runs to OPTIONALLY attach a signature-verified
+  // `request.user`. The lead falls back to that guard-verified identity —
+  // never to the raw `@User()` decode, which does not verify the token's
+  // signature and would let a forged userId/profileId attribute the lead to
+  // an arbitrary victim.
   @Public()
   @UseGuards(AuthGuard)
   @Post('leads')
   async createLeadIntake(
     @Body() payload: BusinessLeadIntakeDto,
-    @User() user?: UserDetails | null
+    @Req() req?: { user?: { userId?: string; profileId?: string } }
   ) {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
@@ -740,8 +757,8 @@ export class TrainerController {
     )) as { config?: Record<string, any> } | null;
     const leadContext = this.getBusinessLeadContext(result?.config);
     const linkedUserId =
-      payload.userId || user?.userId || 'anonymous-business-site';
-    const linkedProfileId = payload.profileId || user?.profileId || '';
+      payload.userId || req?.user?.userId || 'anonymous-business-site';
+    const linkedProfileId = payload.profileId || req?.user?.profileId || '';
     const dto: CreateLeadDto = {
       name: this.resolveBusinessLeadName(payload),
       email: payload.email,
@@ -876,7 +893,17 @@ export class TrainerController {
     const slugOwnerUserId = normalizedSlug
       ? await this.loadOwnerUserIdForSlug(normalizedSlug)
       : null;
-    const ownerId = slugOwnerUserId || user.userId;
+
+    // A slug is only a convenience lookup for the caller's own business.
+    // It must never let one authenticated owner view another tenant's
+    // leads/bookings by guessing or copying a slug that isn't theirs.
+    if (normalizedSlug && slugOwnerUserId && slugOwnerUserId !== user.userId) {
+      throw new ForbiddenException(
+        'You do not have access to this business site.'
+      );
+    }
+
+    const ownerId = user.userId;
     const leads = (await this.loadBusinessLeads(normalizedSlug)).leads;
     const bookings = await this.loadOwnerAppointments(ownerId);
 
@@ -1011,12 +1038,14 @@ export class TrainerController {
   @Put('owner/availabilities/:id')
   updateOwnerAvailability(
     @Param('id') id: string,
-    @Body() payload: UpdateAvailabilityDto
+    @Body() payload: UpdateAvailabilityDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY, {
         id,
         updateAvailabilityDto: payload,
+        requesterOwnerId: user.userId,
       })
     );
   }
@@ -1024,9 +1053,12 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('owner/availabilities/:id')
-  removeOwnerAvailability(@Param('id') id: string) {
+  removeOwnerAvailability(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, id)
+      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 
@@ -1065,7 +1097,8 @@ export class TrainerController {
   @Put('owner/availability-overrides/:id')
   updateOwnerAvailabilityOverride(
     @Param('id') id: string,
-    @Body() payload: UpdateAvailabilityOverrideDto
+    @Body() payload: UpdateAvailabilityOverrideDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(
@@ -1073,6 +1106,7 @@ export class TrainerController {
         {
           id,
           updateAvailabilityOverrideDto: payload,
+          requesterOwnerId: user.userId,
         }
       )
     );
@@ -1081,11 +1115,14 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('owner/availability-overrides/:id')
-  removeOwnerAvailabilityOverride(@Param('id') id: string) {
+  removeOwnerAvailabilityOverride(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
     return firstValueFrom(
       this.storeService.send(
         AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
-        id
+        { id, requesterOwnerId: user.userId }
       )
     );
   }
@@ -1095,12 +1132,14 @@ export class TrainerController {
   @Put('owner/bookings/:id/approve')
   approveBooking(
     @Param('id') id: string,
-    @Body() payload: ApproveAppointmentDto
+    @Body() payload: ApproveAppointmentDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(AppointmentCommands.APPROVE_APPOINTMENT, {
         id,
         approveAppointmentDto: payload,
+        requesterOwnerId: user.userId,
       })
     );
   }
@@ -1108,18 +1147,24 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/bookings/:id/complete')
-  completeBooking(@Param('id') id: string) {
+  completeBooking(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.COMPLETE_APPOINTMENT, id)
+      this.storeService.send(AppointmentCommands.COMPLETE_APPOINTMENT, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('owner/bookings/:id/invoice')
-  generateInvoice(@Param('id') id: string) {
+  generateInvoice(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.GENERATE_INVOICE, id)
+      this.storeService.send(AppointmentCommands.GENERATE_INVOICE, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 
@@ -1155,6 +1200,7 @@ export class TrainerController {
       this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
         id: payload.configId,
         config,
+        requesterProfileId: user.profileId,
       })
     );
   }
@@ -1218,6 +1264,7 @@ export class TrainerController {
       this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
         id: payload.configId,
         config: nextConfig,
+        requesterProfileId: user.profileId,
       })
     );
   }

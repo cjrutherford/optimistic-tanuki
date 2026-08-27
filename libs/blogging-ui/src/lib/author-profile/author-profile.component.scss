@@ -5,11 +5,15 @@
   justify-content: flex-start;
   flex-direction: row;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
+  // Fixed dark scrim (sits over a portrait/banner image regardless of
+  // theme), same overlay token the modal scrims use.
+  background: var(--background-overlay, rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-lg, 10px);
 }
 .bio {
-  color: #fff;
+  // Text renders directly on the dark scrim above, so it stays light
+  // regardless of theme mode (mirrors the on-primary contrast token).
+  color: var(--primary-foreground, #fff);
   margin-left: 20px;
   flex-direction: column;
 }

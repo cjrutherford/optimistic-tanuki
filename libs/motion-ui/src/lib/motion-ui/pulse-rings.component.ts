@@ -11,8 +11,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 })
 export class PulseRingsComponent {
   @Input() height = '20rem';
-  @Input() ringCount = 4;
-  @Input() speed = 1;
+  @Input() ringCount = 6;
+  @Input() speed = 1.4;
   @Input() intensity = 0.7;
   @Input() reducedMotion = false;
 

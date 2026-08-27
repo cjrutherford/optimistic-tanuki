@@ -7,8 +7,14 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskTimeEntry } from '../entities/task-time-entry.entity';
-import { Repository, FindOptionsWhere, IsNull } from 'typeorm';
+import { FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
 import { Task } from '../entities/task.entity';
+import { Project } from '../entities/project.entity';
+import {
+  assertFound,
+  assertProjectAccess,
+  getAccessibleProjectIds,
+} from '../common/project-access.util';
 
 @Injectable()
 export class TaskTimeEntryService {
@@ -16,15 +22,20 @@ export class TaskTimeEntryService {
     @Inject(getRepositoryToken(TaskTimeEntry))
     private readonly taskTimeEntryRepository: Repository<TaskTimeEntry>,
     @Inject(getRepositoryToken(Task))
-    private readonly taskRepository: Repository<Task>
+    private readonly taskRepository: Repository<Task>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
 
-  async create(createDto: CreateTaskTimeEntryDto) {
+  async create(createDto: CreateTaskTimeEntryDto, requestingUserId?: string) {
     const task = await this.taskRepository.findOne({
       where: { id: createDto.taskId },
+      relations: ['project'],
     });
-    if (!task) {
-      throw new Error('Task not found');
+    assertFound(task, `Task with id ${createDto.taskId} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(task.project, requestingUserId);
     }
 
     // Check for active time entries and stop them (only one active timer per task)
@@ -63,33 +74,68 @@ export class TaskTimeEntryService {
     return await this.taskTimeEntryRepository.save(timeEntry);
   }
 
-  async findAll(query: QueryTaskTimeEntryDto) {
+  async findAll(query: QueryTaskTimeEntryDto, requestingUserId?: string) {
     const where: FindOptionsWhere<TaskTimeEntry> = {
       deletedAt: IsNull(),
     };
-
-    if (query.taskId) {
-      where.task = { id: query.taskId };
-    }
 
     if (query.createdBy) {
       where.createdBy = query.createdBy;
     }
 
+    // Scope to time entries whose task belongs to a project the caller can
+    // access. A client-supplied taskId is only honored within that scope.
+    if (requestingUserId) {
+      const accessibleProjectIds = await getAccessibleProjectIds(
+        this.projectRepository,
+        requestingUserId
+      );
+      if (accessibleProjectIds.length === 0) {
+        return [];
+      }
+      where.task = {
+        ...(query.taskId ? { id: query.taskId } : {}),
+        project: { id: In(accessibleProjectIds) },
+      };
+    } else if (query.taskId) {
+      where.task = { id: query.taskId };
+    }
+
     return await this.taskTimeEntryRepository.find({
       where,
-      relations: ['task'],
+      relations: ['task', 'task.project'],
     });
   }
 
-  async findOne(id: string) {
-    return await this.taskTimeEntryRepository.findOne({
+  async findOne(id: string, requestingUserId?: string) {
+    const timeEntry = await this.taskTimeEntryRepository.findOne({
       where: { id },
-      relations: ['task'],
+      relations: ['task', 'task.project'],
     });
+    assertFound(timeEntry, `Time entry with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(timeEntry.task?.project, requestingUserId);
+    }
+
+    return timeEntry;
   }
 
-  async update(id: string, updateDto: UpdateTaskTimeEntryDto) {
+  async update(
+    id: string,
+    updateDto: UpdateTaskTimeEntryDto,
+    requestingUserId?: string
+  ) {
+    const timeEntry = await this.taskTimeEntryRepository.findOne({
+      where: { id },
+      relations: ['task', 'task.project'],
+    });
+    assertFound(timeEntry, `Time entry with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(timeEntry.task?.project, requestingUserId);
+    }
+
     const updateData: Partial<TaskTimeEntry> = {
       updatedAt: new Date(),
     };
@@ -117,13 +163,15 @@ export class TaskTimeEntryService {
     });
   }
 
-  async stop(id: string, updatedBy: string) {
+  async stop(id: string, updatedBy: string, requestingUserId?: string) {
     const timeEntry = await this.taskTimeEntryRepository.findOne({
       where: { id },
+      relations: ['task', 'task.project'],
     });
+    assertFound(timeEntry, `Time entry with id ${id} not found`);
 
-    if (!timeEntry) {
-      throw new Error('Time entry not found');
+    if (requestingUserId) {
+      assertProjectAccess(timeEntry.task?.project, requestingUserId);
     }
 
     const endTime = new Date();
@@ -144,7 +192,17 @@ export class TaskTimeEntryService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestingUserId?: string) {
+    const timeEntry = await this.taskTimeEntryRepository.findOne({
+      where: { id },
+      relations: ['task', 'task.project'],
+    });
+    assertFound(timeEntry, `Time entry with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(timeEntry.task?.project, requestingUserId);
+    }
+
     await this.taskTimeEntryRepository.update(id, { deletedAt: new Date() });
     return `Time entry #${id} soft-deleted`;
   }

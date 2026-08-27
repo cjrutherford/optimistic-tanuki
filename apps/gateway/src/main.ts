@@ -9,20 +9,25 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import cookieParser from 'cookie-parser';
 import {
   applyGatewaySecurityHeaders,
+  assertProductionOwnerConsoleOrigin,
   enforceTrustedBrowserOrigins,
   getTrustedOrigins,
   isAllowedOrigin,
   parseConfiguredOrigins,
 } from './bootstrap/security';
 import { loadConfiguredRegistry } from './controllers/registry/registry.config';
+import { assertOAuthStateEnvironment } from './controllers/oauth/oauth-state.store';
 
 async function bootstrap() {
+  assertOAuthStateEnvironment();
   const registry = loadConfiguredRegistry(process.env.APP_REGISTRY_PATH);
   const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+  app.use(cookieParser());
 
   // Enable global validation pipe for DTO validation
   app.useGlobalPipes(
@@ -57,6 +62,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   const configuredOrigins = parseConfiguredOrigins();
+  assertProductionOwnerConsoleOrigin({ configuredOrigins, registry });
   const trustedOrigins = getTrustedOrigins({ configuredOrigins, registry });
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');
@@ -87,8 +93,9 @@ async function bootstrap() {
       callback(new Error('Origin not allowed by CORS policy'));
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
     allowedHeaders:
-      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id',
+      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id,X-ot-session-mode',
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

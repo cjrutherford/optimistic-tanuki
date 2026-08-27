@@ -150,6 +150,7 @@ export class ProfileService {
     if ('newToken' in response && response.newToken) {
       this.authState.setToken(response.newToken);
     }
+    await this.authState.restoreSession();
 
     if (originalProfilePic) {
       const fileExtension =

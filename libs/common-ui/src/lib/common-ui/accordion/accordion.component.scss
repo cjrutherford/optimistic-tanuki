@@ -1,4 +1,5 @@
 @use '../../styles/mixins' as *;
+@use '../interfaces/variant' as variant;
 
 // ============================================
 // Personality-Driven Accordion
@@ -24,31 +25,37 @@
     border-left-color: var(--secondary);
   }
 
-  &.glass {
-    background: rgba(255, 255, 255, 0.9);
+  // Tone + emphasis from the shared contract. `flat` emphasis carries no rule,
+  // preserving the borderless default. Non-flat emphases resolve tone colors.
+  @include variant.variant-surface;
+
+  // Decorative surface chrome, folded out of the legacy variant and now driven
+  // by theme + personality variables (works in light and dark).
+  &[data-surface='glass'] {
+    background: color-mix(
+      in oklab,
+      var(--variant-bg-source, var(--surface)) 12%,
+      var(--surface, transparent)
+    );
     border-left: var(--border-width, 3px) solid var(--primary);
+    box-shadow: var(--personality-card-shadow, var(--shadow-sm));
     padding: 16px;
+    backdrop-filter: blur(8px);
   }
 
-  &.gradient {
-    background: repeating-linear-gradient(
-      45deg,
-      var(--primary),
-      var(--primary) 10px,
-      var(--primary-shade, var(--primary)) 10px,
-      var(--primary-shade, var(--primary)) 20px
-    );
-    color: #fff;
+  &[data-surface='gradient'] {
+    background: var(--gradient-primary, var(--primary));
+    color: var(--on-primary, var(--primary-foreground, #fff));
     border: none;
 
     .accordion-header {
       background: transparent;
-      color: #fff;
+      color: inherit;
     }
 
     .accordion-content {
-      background: rgba(0, 0, 0, 0.1);
-      color: #fff;
+      background: color-mix(in oklab, #000 10%, transparent);
+      color: inherit;
     }
   }
 

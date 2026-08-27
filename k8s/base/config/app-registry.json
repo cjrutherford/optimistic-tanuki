@@ -3,6 +3,15 @@
   "generatedAt": "2026-04-22T00:00:00Z",
   "apps": [
     {
+      "appId": "owner-console",
+      "name": "Owner Console",
+      "domain": "owner-console.tail-scale.ts.net",
+      "uiBaseUrl": "https://owner-console.tail-scale.ts.net",
+      "apiBaseUrl": "https://owner-console.tail-scale.ts.net/api",
+      "appType": "admin",
+      "visibility": "internal"
+    },
+    {
       "appId": "hai",
       "name": "HAI Company Website",
       "domain": "hopefulaspirationsindustries.com",

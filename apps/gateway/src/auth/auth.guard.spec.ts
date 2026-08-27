@@ -1,17 +1,21 @@
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import { AuthCommands, RoleCommands } from '@optimistic-tanuki/constants';
 import { AuthGuard } from './auth.guard';
 import { Reflector } from '@nestjs/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 
 describe('AuthGuard', () => {
   let authGuard: AuthGuard;
   let reflector: Reflector;
   let jwtService: JwtService;
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   let clientProxy: any;
+  let permissionsClient: any;
 
   const mockUserDetails = {
     userId: '123450',
@@ -28,15 +32,40 @@ describe('AuthGuard', () => {
     clientProxy = {
       send: jest.fn().mockReturnValue(of({})),
     };
+    permissionsClient = {
+      send: jest.fn().mockReturnValue(of([])),
+    };
     jwtService = {
       verifyAsync: jest.fn().mockResolvedValue(mockUserDetails),
       decode: jest.fn(), // Add decode mock if it's used elsewhere
     } as unknown as JwtService; // Cast to JwtService to satisfy type checking
 
-    authGuard = new AuthGuard(clientProxy, reflector, jwtService); // Instantiate AuthGuard with Reflector
+    authGuard = new AuthGuard(
+      clientProxy,
+      reflector,
+      jwtService,
+      permissionsClient
+    );
   });
 
   describe('canActivate', () => {
+    it('authenticates a browser session from the HttpOnly session cookie', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {},
+            cookies: { ot_session: 'cookie-token' },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token');
+    });
+
     it('should return true if the user is authenticated', async () => {
       // Mock ExecutionContext and Reflector to simulate an authenticated user
       clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
@@ -166,5 +195,141 @@ describe('AuthGuard', () => {
         UnauthorizedException
       );
     });
+
+    it('rejects a non-owner attempting to claim the owner-console scope', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      permissionsClient.send = jest.fn().mockReturnValue(of([]));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              authorization: 'Bearer valid-token',
+              'x-ot-appscope': 'owner-console',
+            },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).rejects.toThrow(
+        ForbiddenException
+      );
+      expect(permissionsClient.send).toHaveBeenCalledWith(
+        { cmd: RoleCommands.GetUserRoles },
+        { profileId: mockUserDetails.profileId, appScope: 'owner-console' }
+      );
+    });
+
+    it('allows the owner-console role in the owner-console scope', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      permissionsClient.send = jest
+        .fn()
+        .mockReturnValue(of([{ role: { name: 'owner_console_owner' } }]));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              authorization: 'Bearer valid-token',
+              'x-ot-appscope': 'owner-console',
+            },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(permissionsClient.send).toHaveBeenCalledWith(
+        { cmd: RoleCommands.GetUserRoles },
+        { profileId: mockUserDetails.profileId, appScope: 'owner-console' }
+      );
+    });
+
+    it('allows a global administrator to use the global scope', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      permissionsClient.send = jest
+        .fn()
+        .mockReturnValue(of([{ role: { name: 'global_admin' } }]));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              authorization: 'Bearer valid-token',
+              'x-ot-appscope': 'global',
+            },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+    });
+
+    it('fails closed when privileged role lookup fails', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      permissionsClient.send = jest
+        .fn()
+        .mockReturnValue(
+          throwError(() => new Error('permissions unavailable'))
+        );
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              authorization: 'Bearer valid-token',
+              'x-ot-appscope': 'owner-console',
+            },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).rejects.toThrow(
+        ForbiddenException
+      );
+    });
+
+    it('does not look up owner roles for ordinary app scopes', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {
+              authorization: 'Bearer valid-token',
+              'x-ot-appscope': 'business-site',
+            },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(permissionsClient.send).not.toHaveBeenCalled();
+    });
+  });
+
+  it('authenticates a protected request from the HttpOnly session cookie', async () => {
+    clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+    const request: {
+      headers: Record<string, string>;
+      cookies: Record<string, string>;
+      user?: unknown;
+    } = {
+      headers: {},
+      cookies: { ot_session: 'cookie-token' },
+    };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as jest.Mocked<ExecutionContext>;
+
+    await expect(authGuard.canActivate(context)).resolves.toBe(true);
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token');
+    expect(request.user).toEqual(expect.objectContaining({ userId: '123450' }));
   });
 });

@@ -30,6 +30,7 @@ import {
   FinCommanderPlanCommands,
   FinCommanderGoalCommands,
   FinCommanderScenarioCommands,
+  FinCommanderProjectionCommands,
   FinCommanderPlanDto,
   UpdateFinCommanderPlanDto,
   FinCommanderGoalDto,
@@ -59,6 +60,8 @@ import {
   BudgetDto,
   CreateBudgetDto,
   CreateFinanceTenantDto,
+  CreateFinanceTenantMemberDto,
+  UpdateFinanceTenantMemberRoleDto,
   CreateRecurringItemDto,
   FinanceWorkQueueDto,
   FinanceOnboardingStateDto,
@@ -1362,6 +1365,61 @@ export class FinanceController {
     );
   }
 
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.member.manage')
+  @Post('tenant/members')
+  async createTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() dto: CreateFinanceTenantMemberDto
+  ): Promise<FinanceTenantMemberDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.CREATE_TENANT_MEMBER },
+      { ...dto, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.member.manage')
+  @Put('tenant/members/:memberId')
+  async updateTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateFinanceTenantMemberRoleDto
+  ): Promise<FinanceTenantMemberDto> {
+    return this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.UPDATE_TENANT_MEMBER },
+      { ...dto, memberId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.member.manage')
+  @Delete('tenant/members/:memberId')
+  async removeTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Param('memberId') memberId: string
+  ): Promise<void> {
+    await firstValueFrom(
+      this.financeClient
+        .send<void>(
+          { cmd: FinanceTenantCommands.REMOVE_TENANT_MEMBER },
+          { memberId, ...this.getScope(user, appScope, tenantId) }
+        )
+        .pipe(
+          catchError((error) =>
+            throwError(() => this.mapFinanceRpcError(error))
+          )
+        ),
+      { defaultValue: undefined }
+    );
+  }
+
   // Fin Commander plan endpoints
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('fin-commander')
@@ -1408,6 +1466,24 @@ export class FinanceController {
     return await this.sendFinanceCommand(
       { cmd: FinCommanderPlanCommands.FIND_MANY },
       this.getScope(user, appScope, tenantId)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Project 90 days of plan cash flow' })
+  @Get('fin-commander/plan/:planId/projection')
+  @RequirePermissions('finance.fin-commander-plan.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getFinCommanderCashFlowProjection(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderProjectionCommands.GET },
+      { planId, ...this.getScope(user, appScope, tenantId) }
     );
   }
 
@@ -1559,6 +1635,60 @@ export class FinanceController {
     return await this.sendFinanceCommand(
       { cmd: FinCommanderGoalCommands.FIND },
       { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Preview a goal funding directive' })
+  @Get('fin-commander/goal/:goalId/funding-directive')
+  @RequirePermissions('finance.fin-commander-goal.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async previewFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_PREVIEW },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Approve a goal funding directive' })
+  @Post('fin-commander/goal/:goalId/funding-directive/approve')
+  @RequirePermissions('finance.fin-commander-goal.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async approveFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_APPROVE },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Cancel a goal funding directive' })
+  @Post('fin-commander/goal/:goalId/funding-directive/cancel')
+  @RequirePermissions('finance.fin-commander-goal.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async cancelFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_CANCEL },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
     );
   }
 

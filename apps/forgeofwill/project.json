@@ -38,6 +38,16 @@
       "configurations": {
         "production": {
           "sourceMap": true,
+          "optimization": {
+            "scripts": true,
+            "styles": {
+              "minify": true,
+              "inlineCritical": true
+            },
+            "fonts": {
+              "inline": false
+            }
+          },
           "budgets": [
             {
               "type": "initial",

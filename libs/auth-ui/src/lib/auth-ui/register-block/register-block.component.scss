@@ -1,83 +1,108 @@
+@use 'personality' as p;
+
 .register-container {
-  // Changed from .login-container
+  // Kept in sync with login-block.component.scss.
   display: flex;
-  padding: 0; /* Remove padding to center the card */
+  padding: 0;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
+  width: 100%;
+  min-width: 0;
 }
 .card-outer {
-  // Copied from login-block.component.scss
-  background: var(--border-gradient);
+  background: var(--gradient-border, var(--primary));
   padding: 6px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px var(--complement);
-  width: auto; // Adjust width as needed, login uses auto implicitly via card
+  border-radius: var(--border-radius-lg, 8px);
+  @include p.shadow('md');
+  min-width: 0;
 }
 .card-inner {
-  // Copied from login-block.component.scss
+  // Container queries are unavailable here, so the row layout is gated on the
+  // card having room for it rather than on the viewport: hosts drop this block
+  // into columns far narrower than the page, and the old 640px viewport gate
+  // left the form squeezed to ~156px on a 1440px screen.
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 1.5rem;
   padding: 20px;
   background: var(--background);
-  border-radius: 8px; // Adjusted from 8px to match inner radius expectation
-  box-shadow: 0 4px 8px var(--complement); // Consider removing if outer provides shadow
-  @media (max-width: 640px) {
-    flex-direction: column; // Ensure mobile responsiveness like login
-  }
+  border-radius: var(--border-radius-lg, 8px);
+  @include p.shadow('md');
+  min-width: 0;
+
   .hero {
-    // Copied from login-block.component.scss
     display: flex;
+    flex: 1 1 16rem;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding: 20px 60px;
-    @media (max-width: 640px) {
-      padding: 5px; // Reduced padding for mobile
-      margin: 0; // Remove margin for better fit on small screens
+    gap: 0.75rem;
+    padding: 20px;
+    min-width: 0;
+
+    h1,
+    p {
+      text-wrap: balance;
     }
   }
+
   .form {
-    // Copied from login-block.component.scss
     display: flex;
+    flex: 1 1 20rem;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    margin: 30px;
     padding: 20px;
-    gap: 1rem; // Adjusted gap slightly from login's 2rem if needed
-    form > * {
-      // Target direct children of form for spacing
-      padding-top: 10px;
-      padding-bottom: 10px;
-    }
-    .actions {
-      // Style actions container if needed
+    // `width: 100%` plus a 30px margin used to push this past the card edge;
+    // flex-basis plus padding keeps it inside on every host width.
+    min-width: 0;
+    box-sizing: border-box;
+    gap: 1.25rem;
+
+    form {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
       justify-content: center;
       gap: 1rem;
-      margin-top: 20px; // Adjusted margin-top
+      margin-top: 0.5rem;
     }
   }
 }
 
+.auth-error {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--border-radius-sm, 4px);
+  border: 1px solid var(--error, #b3261e);
+  background: color-mix(in srgb, var(--error, #b3261e) 10%, transparent);
+  color: var(--error, #b3261e);
+  font-size: 0.9rem;
+}
+
 .hero img {
-  max-width: 100%;
+  max-width: min(300px, 100%);
   height: auto;
 }
 
 @media (max-width: 480px) {
   .card-inner {
     padding: 12px;
+    gap: 1rem;
   }
-  .form {
-    margin: 12px;
+
+  .card-inner .hero,
+  .card-inner .form {
     padding: 12px;
   }
 }

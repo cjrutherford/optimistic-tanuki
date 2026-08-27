@@ -1,4 +1,11 @@
-<div class="card" [ngClass]="CardVariant">
+<div
+  class="card"
+  [ngClass]="CardVariant"
+  [class.textured]="textured"
+  [attr.data-tone]="usesContract ? tone : null"
+  [attr.data-emphasis]="usesContract ? emphasis : null"
+  [attr.data-size]="usesContract ? size : null"
+>
   <div class="card-body">
     <ng-content></ng-content>
   </div>

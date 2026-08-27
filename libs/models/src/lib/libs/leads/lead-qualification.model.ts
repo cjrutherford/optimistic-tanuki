@@ -73,7 +73,12 @@ export class LeadQualification {
   @Column({ type: 'timestamp' })
   analyzedAt: Date;
 
-  @OneToOne(() => Lead)
+  // A qualification is derived data about a lead and has no meaning without it.
+  // The database has always had ON DELETE CASCADE here; the entity omitted
+  // `onDelete`, so TypeORM assumed NO ACTION and every generated migration tried
+  // to "correct" the database to match — which would have made a qualified lead
+  // undeletable (its delete would fail on the foreign key).
+  @OneToOne(() => Lead, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'leadId' })
   lead?: Relation<Lead>;
 

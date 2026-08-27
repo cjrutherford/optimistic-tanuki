@@ -1,4 +1,4 @@
-export { ButtonComponent } from './button/button.component';
+export { ButtonComponent, type ButtonVariant } from './button/button.component';
 export { SpinnerComponent } from './spinner/spinner.component';
 export { GridComponent } from './grid/grid.component';
 export {
@@ -13,7 +13,12 @@ export {
 export { CardComponent } from './card/card.component';
 export { TileComponent } from './tile/tile.component';
 export { PaginationComponent } from './pagination.component';
-export { AccordionComponent } from './accordion/accordion.component';
+export {
+  AccordionComponent,
+  type AccordionVariant,
+  type AccordionSurface,
+  type AccordionEmphasis,
+} from './accordion/accordion.component';
 export { ListComponent } from './list/list.component';
 export { HeadingComponent } from './heading/heading.component';
 export {
@@ -34,7 +39,7 @@ export { ContentSectionComponent } from './content-section/content-section.compo
 export { IconComponent, type IconName } from './icon/icon.component';
 export { TabsComponent, type Tab } from './tabs/tabs.component';
 export { DropdownComponent } from './dropdown/dropdown.component';
-export { ChipComponent } from './chip/chip.component';
+export { ChipComponent, type ChipVariant } from './chip/chip.component';
 export { TooltipDirective } from './tooltip/tooltip.directive';
 export { DevInfoComponent } from './dev-info/dev-info.component';
 export {
@@ -43,6 +48,15 @@ export {
   type BadgeSize,
 } from './badge.component';
 export { SectionHeadingComponent } from './section-heading/section-heading.component';
+export {
+  createPerformanceReporter,
+  normalizePerformanceRoute,
+  startPerformanceMonitoring,
+  type PerformanceMetric,
+  type PerformanceMetricName,
+  type PerformanceMonitorOptions,
+  type PerformanceRumPayload,
+} from './performance-monitor';
 export {
   MetricTileComponent,
   type MetricDeltaDirection,
@@ -61,6 +75,20 @@ export {
 
 // Export interfaces
 export type { ListItem } from './interfaces/component.interface';
+
+// Canonical variant contract
+export type {
+  Tone,
+  Emphasis,
+  VariantSize,
+  VariantContract,
+  VariantBinding,
+} from './interfaces/variant.contract';
+export {
+  BUTTON_VARIANT_BRIDGE,
+  CHIP_TONE_BRIDGE,
+  SURFACE_EMPHASIS_BRIDGE,
+} from './interfaces/variant.contract';
 
 // Export themeable base classes
 export {

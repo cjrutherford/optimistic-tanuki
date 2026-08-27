@@ -6,21 +6,16 @@
   "tags": ["type:app"],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["node-env=production"],
-        "packageJson": {
-          "dependencies": {
-            "pg": "^8.16.0"
-          }
-        }
+        "webpackConfig": "apps/social/webpack.config.js",
+        "outputPath": "dist/apps/social"
       },
       "configurations": {
-        "development": {
-          "args": ["node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "add-pg-dependency": {
       "executor": "nx:run-commands",

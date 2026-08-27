@@ -23,6 +23,7 @@ const buildInsightsStub = () => ({
     negativeFeedback: 0,
     usefulnessRate: 0,
   }),
+  events: signal([]),
   feedbackSummaryForConcept: jest.fn(() => ({
     positive: 0,
     negative: 0,
@@ -174,7 +175,7 @@ describe('ResultsPageComponent', () => {
         },
         {
           provide: MarketingEnrichmentApiService,
-          useValue: { enrichConcepts: jest.fn() },
+          useValue: { enrichConcepts: jest.fn(), generateConcepts: jest.fn() },
         },
         { provide: MarketingInsightsService, useValue: buildInsightsStub() },
       ],
@@ -334,7 +335,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           { provide: MarketingInsightsService, useValue: buildInsightsStub() },
         ],
@@ -348,6 +352,147 @@ describe('ResultsPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Delivery model');
     expect(fixture.nativeElement.textContent).toContain('Pricing model');
     expect(fixture.nativeElement.textContent).toContain('Self-hosted');
+  });
+
+  it('renders the ai-generated provenance label, description, and token usage', async () => {
+    const request: GenerationRequest = {
+      offeringKind: 'preset-app',
+      selectedOfferingId: 'billing-service',
+      customApp: {
+        name: '',
+        category: '',
+        summary: '',
+        features: '',
+        differentiators: '',
+        primaryGoal: '',
+      },
+      audienceId: 'technical-buyers',
+      campaignIntent: 'conversion',
+      channel: 'web',
+      secondaryChannels: [],
+      tone: 'technical',
+      includeAiPolish: true,
+      deliverables: [{ type: 'flyer', formatId: 'flyer-letter', quantity: 1 }],
+      brand: {
+        businessName: 'Billing Service',
+        tagline: '',
+        primaryColor: '#f59e0b',
+        secondaryColor: '#111827',
+        accentColor: '#34d399',
+        visualStyle: '',
+        logoUrl: '',
+      },
+      visualDirection: '',
+      generateImages: false,
+    };
+
+    const stateStub = {
+      request: signal(request),
+      concepts: signal([
+        {
+          id: 'billing-concept',
+          angle: 'Hosted usage metering',
+          generationMode: 'llm',
+          generationProvenance: 'ai-generated',
+          headline: 'Hosted metering without bespoke billing plumbing.',
+          subheadline:
+            'Usage blocks, invoice preview, and a self-hosted path stay available.',
+          cta: 'Explore the offer',
+          channelLabel: 'Web landing concept',
+          audienceLabel: 'Technical Buyers',
+          sectionType: 'Statement panel',
+          positioning:
+            'A hosted backend for metering, usage blocks, and invoice-preview orchestration.',
+          valueProposition:
+            'Adopt hosted billing infrastructure now and keep a Docker self-host option later.',
+          objectives: ['Position hosted billing as a managed capability'],
+          proofPoints: [
+            'Usage blocks and invoice previews stay behind one backend surface',
+          ],
+          deliveryModel: 'hybrid',
+          pricingModel: 'metered',
+          selfHostedNote: 'Self-hosted Docker containers are available.',
+          sections: [
+            { title: 'Delivery model', body: 'Hybrid hosted and self-hosted' },
+            { title: 'Pricing model', body: 'Metered usage' },
+          ],
+          channelOutputs: [
+            {
+              id: 'channel-1',
+              type: 'landing-page',
+              label: 'Landing page draft',
+              summary: 'A hosted billing story.',
+              isPrimary: true,
+              blocks: [
+                {
+                  id: 'b1',
+                  role: 'hero',
+                  label: 'Hero headline',
+                  value: 'Hosted metering without bespoke billing plumbing.',
+                },
+              ],
+            },
+          ],
+          materialOutputs: [],
+        },
+      ]),
+      setRequest: jest.fn(),
+      setConcepts: jest.fn(),
+    };
+
+    const insightsStub = {
+      ...buildInsightsStub(),
+      events: signal([
+        {
+          id: 'event-1',
+          type: 'generation_requested',
+          createdAt: new Date().toISOString(),
+          metadata: {
+            channel: 'web',
+            promptTokens: 320,
+            completionTokens: 96,
+            model: 'gemma3',
+          },
+        },
+      ]),
+    };
+
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [ResultsPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: MarketingStateService, useValue: stateStub },
+          {
+            provide: MarketingGeneratorService,
+            useValue: { generateConcepts: jest.fn() },
+          },
+          {
+            provide: MarketingEnrichmentApiService,
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
+          },
+          { provide: MarketingInsightsService, useValue: insightsStub },
+        ],
+      })
+      .compileComponents();
+
+    const fixture = TestBed.createComponent(ResultsPageComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('AI-generated');
+    expect(fixture.nativeElement.textContent).toContain('schema-validated');
+    expect(fixture.nativeElement.textContent).toContain('Token usage');
+    expect(fixture.nativeElement.textContent).toContain('320 prompt');
+    expect(fixture.nativeElement.textContent).toContain('96 completion');
+    expect(fixture.nativeElement.textContent).toContain('gemma3');
+    expect(component.provenanceLabel('ai-generated')).toBe('AI-generated');
+    expect(component.provenanceDescription('ai-generated')).toContain(
+      'schema-validated'
+    );
   });
 
   it('renders template preview shells with rich text and imagery editors', async () => {
@@ -503,7 +648,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           { provide: MarketingInsightsService, useValue: buildInsightsStub() },
         ],
@@ -666,7 +814,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           { provide: MarketingInsightsService, useValue: buildInsightsStub() },
         ],
@@ -911,6 +1062,7 @@ describe('ResultsPageComponent', () => {
         negativeFeedback: 0,
         usefulnessRate: 0,
       }),
+      events: signal([]),
       feedbackSummaryForConcept: jest.fn(() => ({
         positive: 0,
         negative: 0,
@@ -937,7 +1089,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           { provide: MarketingInsightsService, useValue: insightsStub },
         ],
@@ -1203,7 +1358,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           {
             provide: MarketingInsightsService,
@@ -1222,6 +1380,7 @@ describe('ResultsPageComponent', () => {
                 negativeFeedback: 0,
                 usefulnessRate: 0,
               }),
+              events: signal([]),
               feedbackSummaryForConcept: jest.fn(() => ({
                 positive: 0,
                 negative: 0,
@@ -1342,7 +1501,10 @@ describe('ResultsPageComponent', () => {
           },
           {
             provide: MarketingEnrichmentApiService,
-            useValue: { enrichConcepts: jest.fn() },
+            useValue: {
+              enrichConcepts: jest.fn(),
+              generateConcepts: jest.fn(),
+            },
           },
           { provide: MarketingInsightsService, useValue: buildInsightsStub() },
         ],

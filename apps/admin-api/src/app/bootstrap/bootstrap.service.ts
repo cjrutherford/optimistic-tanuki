@@ -568,6 +568,7 @@ export class BootstrapService {
     email: string,
     password: string
   ): Promise<{
+    created: boolean;
     userId: string;
     profileId: string;
     email: string;
@@ -577,38 +578,43 @@ export class BootstrapService {
     const [firstName, ...lastParts] = name.trim().split(/\s+/);
     const lastName = lastParts.join(' ') || firstName;
 
-    const existingGlobalProfiles = (await firstValueFrom(
-      this.profileClient.send(
-        { cmd: ProfileCommands.GetAll },
-        {
-          where: [{ appScope: 'global' }, { appScope: null }],
-        }
-      )
-    )) as Array<{ id: string }>;
-
-    if (existingGlobalProfiles.length > 0) {
-      throw new Error(
-        'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
-      );
-    }
-
-    const registrationResult = await firstValueFrom(
+    const bootstrapResult = await firstValueFrom(
       this.authClient.send(
-        { cmd: AuthCommands.Register },
+        { cmd: AuthCommands.BootstrapOwner },
         {
           fn: firstName,
           ln: lastName,
           email: normalizedEmail,
           password,
-          confirm: password,
           bio: 'Platform owner',
         }
       )
     );
 
-    const userId = registrationResult?.data?.user?.id || '';
+    const userId = bootstrapResult?.user?.id || '';
     if (!userId) {
-      throw new Error('Owner registration did not return a user id');
+      throw new Error('Owner bootstrap did not return a user id');
+    }
+
+    const existingGlobalProfiles = (await firstValueFrom(
+      this.profileClient.send(
+        { cmd: ProfileCommands.GetAll },
+        { where: [{ appScope: 'global' }, { appScope: null }] }
+      )
+    )) as Array<{ id: string; userId?: string }>;
+    const existingProfile = existingGlobalProfiles.find(
+      (profile) => profile.userId === userId
+    );
+
+    if (existingProfile) {
+      await this.initializeOwnerPermissions(existingProfile.id);
+      return {
+        created: Boolean(bootstrapResult?.created),
+        email: normalizedEmail,
+        name,
+        profileId: existingProfile.id,
+        userId,
+      };
     }
 
     const profileInput: CreateProfileDto & { appScope: string } = {
@@ -633,50 +639,34 @@ export class BootstrapService {
       throw new Error('Owner registration did not return a profile id');
     }
 
-    await this.roleInit.processNow(
-      new RoleInitBuilder()
-        .setScopeName('global')
-        .setProfile(createdProfile.id)
-        .assignOwnerRole()
-        .addOwnerScopeDefaults()
-        .addAssetOwnerPermissions()
-        .build()
-    );
-
-    const ownerApp = this.loadDeploymentConfig().apps.find(
-      (app) => app.appId === 'owner-console'
-    );
-    if (ownerApp?.authEmail?.enabled && ownerApp.authEmail.from) {
-      try {
-        await firstValueFrom(
-          this.authClient.send(
-            { cmd: AuthCommands.RequestEmailAuthAction },
-            {
-              purpose: 'verification',
-              email: normalizedEmail,
-              context: {
-                appId: ownerApp.appId,
-                appName: 'Owner Console',
-                uiBaseUrl: ownerApp.uiBaseUrl,
-                from: ownerApp.authEmail.from,
-                replyTo: ownerApp.authEmail.replyTo,
-                returnPath: '/',
-              },
-            }
-          )
-        );
-      } catch {
-        // Account creation remains idempotent; the owner can request another
-        // verification message from the Owner Console login screen.
-      }
-    }
+    await this.initializeOwnerPermissions(createdProfile.id);
 
     return {
+      created: Boolean(bootstrapResult?.created),
       userId,
       profileId: createdProfile.id,
       email: normalizedEmail,
       name,
     };
+  }
+
+  private async initializeOwnerPermissions(profileId: string): Promise<void> {
+    await this.roleInit.processNow(
+      new RoleInitBuilder()
+        .setScopeName('global')
+        .setProfile(profileId)
+        .addOwnerScopeDefaults()
+        .addAssetOwnerPermissions()
+        .build()
+    );
+
+    await this.roleInit.processNow(
+      new RoleInitBuilder()
+        .setScopeName('owner-console')
+        .setProfile(profileId)
+        .addOwnerScopeDefaults()
+        .build()
+    );
   }
 
   async configureOAuthProvider(

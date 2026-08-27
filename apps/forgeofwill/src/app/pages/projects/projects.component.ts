@@ -234,7 +234,45 @@ export class ProjectsComponent implements OnInit {
 
   onDeleteProject() {
     console.log('Delete project clicked');
-    this.showDeleteModal.set(true);
+    if (this.selectedProject()) {
+      this.showDeleteModal.set(true);
+    }
+  }
+
+  cancelDeleteProject(): void {
+    this.showDeleteModal.set(false);
+  }
+
+  confirmDeleteProject(): void {
+    const project = this.selectedProject();
+    if (!project) return;
+
+    this.projectService.deleteProject(project.id).subscribe({
+      next: () => {
+        const remainingProjects = this.projects().filter(
+          (currentProject) => currentProject.id !== project.id
+        );
+        this.projects.set(remainingProjects);
+        this.selectedProject.update((selectedProject) =>
+          selectedProject?.id === project.id
+            ? remainingProjects[0] ?? null
+            : selectedProject
+        );
+        this.showDeleteModal.set(false);
+        this.messageService.addMessage({
+          content: 'Project deleted successfully',
+          type: 'success',
+        });
+      },
+      error: (error) => {
+        console.error('Error deleting project:', error);
+        this.messageService.addMessage({
+          content:
+            'Error deleting project: ' + (error.message || 'Unknown error'),
+          type: 'error',
+        });
+      },
+    });
   }
 
   onDeleteTask(taskId: string) {
@@ -483,9 +521,19 @@ export class ProjectsComponent implements OnInit {
       ...this.selectedProject(),
       ...project,
     } as Project;
+    const updateRequest = {
+      id: updatedProject.id,
+      name: updatedProject.name,
+      description: updatedProject.description,
+      startDate: updatedProject.startDate,
+      ...(updatedProject.endDate !== undefined
+        ? { endDate: updatedProject.endDate }
+        : {}),
+      status: updatedProject.status,
+    };
     console.log('Project updated:', updatedProject);
 
-    this.projectService.updateProject(updatedProject).subscribe({
+    this.projectService.updateProject(updateRequest as Project).subscribe({
       next: (systemUpdatedProject) => {
         this.messageService.addMessage({
           content: 'Project updated successfully',
@@ -494,8 +542,15 @@ export class ProjectsComponent implements OnInit {
         console.log('Project updated successfully:', systemUpdatedProject);
         this.projects.update((currentProjects) =>
           currentProjects.map((p) =>
-            p.id === systemUpdatedProject.id ? systemUpdatedProject : p
+            p.id === systemUpdatedProject.id
+              ? { ...p, ...systemUpdatedProject }
+              : p
           )
+        );
+        this.selectedProject.update((selectedProject) =>
+          selectedProject?.id === systemUpdatedProject.id
+            ? { ...selectedProject, ...systemUpdatedProject }
+            : selectedProject
         );
         this.showEditModal.set(false);
       },

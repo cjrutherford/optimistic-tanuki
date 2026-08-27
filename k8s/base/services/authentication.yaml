@@ -22,6 +22,8 @@ spec:
           env:
             - name: NODE_ENV
               value: 'production'
+            - name: AUTH_AUTO_VERIFY_EMAILS
+              value: 'false'
             - name: PORT
               value: '3001'
             - name: POSTGRES_HOST

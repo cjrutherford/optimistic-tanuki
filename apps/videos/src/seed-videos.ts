@@ -66,16 +66,6 @@ type AuthenticatedSeedUser = SeedUserSession & {
   email: string;
 };
 
-type SeedVideoRecord = {
-  title: string;
-  description: string;
-  assetId: string;
-  visibility: VideoVisibility;
-  durationSeconds?: number;
-  resolution?: string;
-  encoding?: string;
-};
-
 async function bootstrap() {
   const logger = new Logger('VideoSeedScript-HTTP');
 
@@ -87,11 +77,7 @@ async function bootstrap() {
     throw new Error('No seed users could be authenticated for video seeding.');
   }
 
-  const importedCount = await importVideosFromLibrary({ logger, users });
-
-  if (importedCount === 0) {
-    await seedFallbackCatalog({ logger, users });
-  }
+  await importVideosFromLibrary({ logger, users });
 
   await ensureSampleSubscriptions({ logger, users });
 
@@ -129,10 +115,9 @@ async function importVideosFromLibrary(params: {
   const { logger, users } = params;
 
   if (!existsSync(DEFAULT_VIDEO_SOURCE_DIR)) {
-    logger.warn(
-      `Video source directory "${DEFAULT_VIDEO_SOURCE_DIR}" does not exist. Falling back to sample catalog.`
+    throw new Error(
+      `Video seed source directory "${DEFAULT_VIDEO_SOURCE_DIR}" does not exist. Mount a directory containing supported media before seeding.`
     );
-    return 0;
   }
 
   const filesToImport = await discoverSeedVideoFiles(DEFAULT_VIDEO_SOURCE_DIR, {
@@ -140,10 +125,9 @@ async function importVideosFromLibrary(params: {
   });
 
   if (filesToImport.length === 0) {
-    logger.warn(
-      `No supported video files found in "${DEFAULT_VIDEO_SOURCE_DIR}". Falling back to sample catalog.`
+    throw new Error(
+      `Video seed source directory "${DEFAULT_VIDEO_SOURCE_DIR}" contains no supported media files.`
     );
-    return 0;
   }
 
   logger.log(
@@ -217,152 +201,6 @@ async function importVideosFromLibrary(params: {
   }
 
   return createdVideos;
-}
-
-async function seedFallbackCatalog(params: {
-  logger: Logger;
-  users: AuthenticatedSeedUser[];
-}): Promise<void> {
-  const { logger, users } = params;
-  const channelCache = new Map<string, SeedChannel>();
-  const fallbackChannels = [
-    {
-      name: 'Tech Tutorials',
-      description:
-        'Learn programming, web development, and software engineering with our comprehensive tutorials.',
-      owner: users[0],
-    },
-    {
-      name: 'Cooking Adventures',
-      description:
-        'Delicious recipes and cooking tips from around the world. Join us on a culinary journey!',
-      owner: users[1],
-    },
-    {
-      name: 'Fitness & Health',
-      description:
-        'Get fit and stay healthy with our workout routines, nutrition advice, and wellness tips.',
-      owner: users[2],
-    },
-  ];
-
-  const createdChannels = await Promise.all(
-    fallbackChannels.map((channel) =>
-      ensureChannelThroughApi(
-        channel.owner,
-        channel.name,
-        channelCache,
-        channel.description
-      )
-    )
-  );
-
-  const videos: Array<SeedVideoRecord & { channelIndex: number }> = [
-    {
-      channelIndex: 0,
-      title: 'Getting Started with NestJS',
-      description:
-        'Learn the basics of NestJS framework and build your first API.',
-      assetId: '',
-      durationSeconds: 1245,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 0,
-      title: 'Angular Best Practices 2024',
-      description:
-        'Discover the best practices for Angular development in 2024.',
-      assetId: '',
-      durationSeconds: 1876,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 0,
-      title: 'TypeScript Advanced Features',
-      description: 'Deep dive into advanced TypeScript features and patterns.',
-      assetId: '',
-      durationSeconds: 2156,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 1,
-      title: 'Perfect Homemade Pizza',
-      description:
-        'Learn how to make authentic Italian pizza from scratch at home.',
-      assetId: '',
-      durationSeconds: 945,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 1,
-      title: 'Thai Green Curry Recipe',
-      description: 'A step-by-step guide to making delicious Thai green curry.',
-      assetId: '',
-      durationSeconds: 1123,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 2,
-      title: '30-Minute Full Body Workout',
-      description: 'An effective full-body workout routine you can do at home.',
-      assetId: '',
-      durationSeconds: 1876,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-    {
-      channelIndex: 2,
-      title: 'Meal Prep for Beginners',
-      description: 'Simple and healthy meal prep ideas for busy people.',
-      assetId: '',
-      durationSeconds: 1456,
-      resolution: '1920x1080',
-      encoding: 'H.264',
-      visibility: VideoVisibility.PUBLIC,
-    },
-  ];
-
-  for (const videoData of videos) {
-    const channel = createdChannels[videoData.channelIndex];
-    const owner = fallbackChannels[videoData.channelIndex].owner;
-    const existingVideos = await listChannelVideosThroughApi(
-      owner.httpClient,
-      channel.id
-    );
-
-    if (existingVideos.some((video) => video.title === videoData.title)) {
-      continue;
-    }
-
-    const asset = await uploadAssetThroughApi(owner.httpClient, owner.token, {
-      name: fallbackAssetName(videoData.title),
-      profileId: owner.profileId,
-      type: 'video',
-      fileExtension: 'mp4',
-      contentBase64: fallbackVideoAssetContent(videoData.title),
-    });
-
-    await createVideoThroughApi(owner.httpClient, owner.token, {
-      title: videoData.title,
-      description: videoData.description,
-      channelId: channel.id,
-      assetId: asset.id,
-      visibility: videoData.visibility,
-    });
-  }
-
-  logger.log('Seeded fallback sample video catalog through HTTP API.');
 }
 
 async function ensureSampleSubscriptions(params: {
@@ -456,21 +294,6 @@ function extensionWithoutDot(filePath: string): string {
 
 function titleWithExtension(filePath: string): string {
   return `${deriveVideoTitle(filePath)}.${extensionWithoutDot(filePath)}`;
-}
-
-function fallbackAssetName(title: string): string {
-  return `${
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'sample-video'
-  }.mp4`;
-}
-
-function fallbackVideoAssetContent(title: string): string {
-  return Buffer.from(`Placeholder video asset for ${title}\n`, 'utf8').toString(
-    'base64'
-  );
 }
 
 function resolveDefaultVideoSourceDir(): string {

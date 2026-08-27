@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -50,9 +54,11 @@ export class AvailabilitiesService {
 
   async update(
     id: string,
-    updateAvailabilityDto: UpdateAvailabilityDto
+    updateAvailabilityDto: UpdateAvailabilityDto,
+    requesterOwnerId?: string
   ): Promise<AvailabilityEntity> {
     const current = await this.findOne(id);
+    this.assertOwnership(current?.ownerId, requesterOwnerId);
     await this.assertAvailabilityDoesNotOverlap(
       {
         ...current,
@@ -64,7 +70,11 @@ export class AvailabilitiesService {
     return this.findOne(id);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, requesterOwnerId?: string): Promise<void> {
+    if (requesterOwnerId) {
+      const current = await this.findOne(id);
+      this.assertOwnership(current?.ownerId, requesterOwnerId);
+    }
     await this.availabilityRepository.delete(id);
   }
 
@@ -99,9 +109,11 @@ export class AvailabilitiesService {
 
   async updateOverride(
     id: string,
-    updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto
+    updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto,
+    requesterOwnerId?: string
   ): Promise<AvailabilityOverrideEntity> {
     const current = await this.findOneOverride(id);
+    this.assertOwnership(current?.ownerId, requesterOwnerId);
     await this.assertOverrideDoesNotOverlap(
       {
         ...current,
@@ -116,8 +128,27 @@ export class AvailabilitiesService {
     return this.findOneOverride(id);
   }
 
-  async removeOverride(id: string): Promise<void> {
+  async removeOverride(id: string, requesterOwnerId?: string): Promise<void> {
+    if (requesterOwnerId) {
+      const current = await this.findOneOverride(id);
+      this.assertOwnership(current?.ownerId, requesterOwnerId);
+    }
     await this.availabilityOverrideRepository.delete(id);
+  }
+
+  private assertOwnership(
+    entityOwnerId: string | null | undefined,
+    requesterOwnerId?: string
+  ): void {
+    if (
+      requesterOwnerId &&
+      entityOwnerId &&
+      entityOwnerId !== requesterOwnerId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this resource.'
+      );
+    }
   }
 
   private async assertAvailabilityDoesNotOverlap(

@@ -14,11 +14,14 @@ import { FinancialCheckoutSession } from '../entities/financial-checkout-session
 import { FinCommanderPlanEntity } from '../entities/fin-commander-plan.entity';
 import { FinCommanderGoalEntity } from '../entities/fin-commander-goal.entity';
 import { FinCommanderScenarioEntity } from '../entities/fin-commander-scenario.entity';
+import { FinCommanderFundingDirectiveEntity } from '../entities/fin-commander-funding-directive.entity';
 import * as path from 'path';
-import { AddFinanceTenantType1760613363000 } from '../migrations/add-finance-tenant-type.migration';
+import { AddFinanceTenantType1760613363000 } from '../migrations/1760613363000-add-finance-tenant-type';
 import { BankConnections1771000000000 } from '../migrations/1771000000000-bank-connections';
 import { FinancialUtilities1771500000000 } from '../migrations/1771500000000-financial-utilities';
 import { FinCommander1772000000000 } from '../migrations/1772000000000-fin-commander';
+import { FinCommanderFundedGoal1772100000000 } from '../migrations/1772100000000-fin-commander-funded-goal';
+import { FinCommanderFundingDirective1772200000000 } from '../migrations/1772200000000-fin-commander-funding-directive';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -37,6 +40,7 @@ const loadDatabase = (config: ConfigService) => {
     FinCommanderPlanEntity,
     FinCommanderGoalEntity,
     FinCommanderScenarioEntity,
+    FinCommanderFundingDirectiveEntity,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
@@ -51,6 +55,8 @@ const loadDatabase = (config: ConfigService) => {
       BankConnections1771000000000,
       FinancialUtilities1771500000000,
       FinCommander1772000000000,
+      FinCommanderFundedGoal1772100000000,
+      FinCommanderFundingDirective1772200000000,
       path.resolve(__dirname, '../migrations/*.js'),
     ],
     migrationsRun: true,

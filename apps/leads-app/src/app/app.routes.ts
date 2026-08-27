@@ -14,7 +14,7 @@ import {
 } from './onboarding-gate.service';
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('ot-leads-authToken'),
+  ...emailAuthRoutes('ot-leads-authToken', true),
   {
     path: 'register',
     loadComponent: () =>
@@ -29,6 +29,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
     component: OAuthCallbackComponent,
   },
   {
@@ -55,7 +59,7 @@ export const appRoutes: Route[] = [
   {
     path: '',
     loadComponent: () =>
-      import('./home-redirect.component').then((m) => m.HomeRedirectComponent),
+      import('./landing.component').then((m) => m.LandingComponent),
     pathMatch: 'full',
   },
   {

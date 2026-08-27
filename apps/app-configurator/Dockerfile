@@ -16,11 +16,9 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon pg typeorm
 COPY --from=builder /usr/src/app/dist/apps/app-configurator/ ./
 RUN mkdir -p ./seed-data && cp ./seed-script.js ./seed-data/seed-script.js
 RUN mkdir -p ./seed-data/assets && cp ./assets/config.yaml ./seed-data/assets/config.yaml
-RUN chown -R node:node .
 USER node
 EXPOSE 3014
 CMD ["dumb-init", "node", "main.js"]

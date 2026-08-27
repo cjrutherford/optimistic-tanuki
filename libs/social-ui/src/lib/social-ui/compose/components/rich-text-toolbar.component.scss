@@ -1,3 +1,16 @@
+@use 'personality' as p;
+
+// 2026-07 batch 6 legacy-var migration: same dead `--local-*` fallback tier
+// as the rest of compose/* (see angular-component-node.styles.scss header
+// comment) — grep for `style.--local-` across `libs/social-ui/**/*.ts`
+// finds zero bindings, so every `var(--local-X, var(--legacy-Y, ...))`
+// chain always fell straight through to its legacy/hardcoded tail.
+// `--local-background-gradient`/`--background-gradient` were BOTH dead
+// (unlike chat-ui's genuinely-bound `--local-background-gradient` host API
+// from batch 4 — verified here there is no such binding), and with no
+// terminal literal at all, `.toolbar-container`'s `background` was
+// computing to nothing (initial value) — this toolbar has been rendering
+// with no background. Fixed onto the real `--card` surface token.
 .toolbar-container {
   display: flex;
   flex-wrap: wrap;
@@ -6,9 +19,9 @@
   padding: var(--spacing-sm, 8px);
   border-radius: var(--border-radius-lg, 8px);
   margin-bottom: var(--spacing-xs, 4px);
-  background: var(--local-background-gradient, var(--background-gradient));
-  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-  border: 1px solid var(--local-complement, var(--complement));
+  background: var(--card, var(--background));
+  @include p.shadow('md');
+  border: 1px solid var(--secondary);
 }
 
 .toolbar-group {
@@ -20,21 +33,13 @@
 .toolbar-group-name {
   font-size: var(--font-size-xs, 0.75rem);
   font-weight: 500;
-  color: var(--local-foreground, var(--foreground));
+  color: var(--foreground);
   opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   text-align: center;
   margin-bottom: var(--spacing-xs, 2px);
-  font-family: var(
-    --font-body,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif
-  );
+  font-family: var(--font-body, system-ui, sans-serif);
 }
 
 .toolbar-buttons {
@@ -48,43 +53,36 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs, 4px);
-  background: var(--local-complement, var(--complement));
-  color: var(--local-foreground, var(--foreground));
+  background: var(--secondary);
+  color: var(--foreground);
   border: none;
   padding: var(--spacing-xs, 4px);
   border-radius: var(--border-radius-md, 4px);
   cursor: pointer;
-  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
-  transition: all 0.15s ease-in-out;
+  @include p.shadow('sm');
+  @include p.personality-transition(all, 'fast');
   min-width: 32px;
   min-height: 32px;
   position: relative;
-  font-family: var(
-    --font-body,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif
-  );
+  font-family: var(--font-body, system-ui, sans-serif);
 
   &:hover {
-    background-color: var(--local-accent, var(--accent));
-    color: var(--local-background, var(--background));
-    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    background-color: var(--primary);
+    color: var(--background);
+    @include p.shadow('md');
     transform: translateY(-1px);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+    @include p.shadow('sm');
   }
 
   &.is-active {
-    background-color: var(--local-accent, var(--accent));
-    color: var(--local-background, var(--background));
-    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    background-color: var(--primary);
+    color: var(--background);
+    box-shadow: inset 0 2px 4px 0
+      color-mix(in srgb, var(--shadow-color, #000) 6%, transparent);
 
     &::after {
       content: '';
@@ -94,20 +92,20 @@
       transform: translateX(-50%);
       width: 8px;
       height: 2px;
-      background-color: var(--local-accent, var(--accent));
+      background-color: var(--primary);
       border-radius: 1px;
     }
   }
 
   &.component-btn {
-    background-color: var(--local-accent, var(--accent));
-    color: var(--local-background, var(--background));
+    background-color: var(--primary);
+    color: var(--background);
     font-weight: 500;
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 
     &:hover {
-      background-color: var(--local-complement, var(--complement));
-      color: var(--local-foreground, var(--foreground));
+      background-color: var(--secondary);
+      color: var(--foreground);
     }
 
     span {
@@ -119,7 +117,7 @@
 .toolbar-separator {
   width: 1px;
   height: 40px;
-  background-color: var(--local-complement, var(--complement, #c0af4b));
+  background-color: var(--secondary);
   opacity: 0.3;
   margin: 0 var(--spacing-xs, 4px);
 }
@@ -158,7 +156,7 @@
 
 /* Accessibility improvements */
 .toolbar-btn:focus {
-  outline: 2px solid var(--local-accent, var(--accent));
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -168,7 +166,7 @@
 
 /* Animation for group appearance */
 .toolbar-group {
-  animation: fadeInUp 0.3s ease-out forwards;
+  animation: fadeInUp var(--animation-duration-normal, 0.3s) ease-out forwards;
 }
 
 @keyframes fadeInUp {

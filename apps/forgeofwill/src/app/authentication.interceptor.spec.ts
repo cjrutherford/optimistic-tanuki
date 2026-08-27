@@ -53,15 +53,15 @@ describe('authenticationInterceptor', () => {
     httpMock.verify();
   });
 
-  it('should add an Authorization header if a token is present', fakeAsync(() => {
+  it('should use the cookie session if a token is present in legacy state', fakeAsync(() => {
     jest.spyOn(authStateService, 'getToken').mockReturnValue('test-token');
 
     httpClient.get('/api/data').subscribe();
 
     const testReq = httpMock.expectOne('/api/data');
-    expect(testReq.request.headers.get('Authorization')).toBe(
-      'Bearer test-token'
-    );
+    expect(testReq.request.headers.get('Authorization')).toBeNull();
+    expect(testReq.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(testReq.request.withCredentials).toBe(true);
     testReq.flush({});
     tick();
   }));
@@ -72,7 +72,7 @@ describe('authenticationInterceptor', () => {
     httpClient.get('/api/data').subscribe();
 
     const testReq = httpMock.expectOne('/api/data');
-    expect(testReq.request.headers.get('Authorization')).toBe('Bearer null');
+    expect(testReq.request.headers.has('Authorization')).toBe(false);
     testReq.flush({});
     tick();
   }));

@@ -1,4 +1,12 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Output,
+  ViewChild,
+} from '@angular/core';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
 import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
 import { IconComponent } from '@optimistic-tanuki/common-ui/icon/icon.component';
@@ -17,21 +25,32 @@ interface SectionTypeOption {
   imports: [IconComponent, ButtonComponent, CardComponent],
   template: `
     <div class="modal-backdrop" (click)="onClose()"></div>
-    <otui-card class="section-selector">
+    <otui-card
+      #dialog
+      class="section-selector"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="section-selector-title"
+      tabindex="-1"
+    >
       <div class="selector-header">
-        <h3>Add Section</h3>
-        <button (click)="onClose()" class="close-btn">
+        <h3 id="section-selector-title">Add Section</h3>
+        <button
+          type="button"
+          (click)="onClose()"
+          class="close-btn"
+          aria-label="Close section selector"
+        >
           <otui-icon name="close"></otui-icon>
         </button>
       </div>
 
       <div class="section-types-grid">
         @for (sectionType of sectionTypes; track sectionType.type) {
-        <div
+        <button
+          type="button"
           class="section-type-item"
           (click)="selectSectionType(sectionType.type)"
-          (keyup.enter)="selectSectionType(sectionType.type)"
-          tabindex="0"
         >
           <div class="section-type-icon">
             <otui-icon [name]="sectionType.icon"></otui-icon>
@@ -40,7 +59,7 @@ interface SectionTypeOption {
             <h4>{{ sectionType.name }}</h4>
             <p>{{ sectionType.description }}</p>
           </div>
-        </div>
+        </button>
         }
       </div>
 
@@ -80,6 +99,23 @@ interface SectionTypeOption {
         flex-direction: column;
       }
 
+      @media (max-width: 680px) {
+        .section-selector {
+          width: calc(100vw - 2rem);
+          max-height: calc(100vh - 2rem);
+        }
+
+        .section-types-grid {
+          grid-template-columns: 1fr;
+          padding: 1rem;
+        }
+
+        .selector-header,
+        .selector-actions {
+          padding-inline: 1rem;
+        }
+      }
+
       .selector-header {
         display: flex;
         justify-content: space-between;
@@ -108,12 +144,12 @@ interface SectionTypeOption {
       .close-btn:hover {
         background-color: color-mix(
           in srgb,
-          var(--accent, #2563eb) 10%,
+          var(--accent) 10%,
           var(--surface, #ffffff)
         );
         color: color-mix(
           in srgb,
-          var(--accent, #2563eb) 82%,
+          var(--accent) 82%,
           var(--foreground, #111827)
         );
       }
@@ -128,6 +164,10 @@ interface SectionTypeOption {
       }
 
       .section-type-item {
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        color: inherit;
         display: flex;
         align-items: flex-start;
         gap: 1rem;
@@ -157,6 +197,12 @@ interface SectionTypeOption {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px
           color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
+      }
+
+      .section-type-item:focus-visible,
+      .close-btn:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--accent, #2563eb) 72%, white);
+        outline-offset: 2px;
       }
 
       .section-type-icon {
@@ -211,9 +257,12 @@ interface SectionTypeOption {
     `,
   ],
 })
-export class SectionSelectorComponent {
+export class SectionSelectorComponent implements AfterViewInit {
   @Output() sectionTypeSelected = new EventEmitter<SectionType>();
   @Output() closed = new EventEmitter<void>();
+  @ViewChild('dialog', { read: ElementRef })
+  private dialog?: ElementRef<HTMLElement>;
+  private returnFocusElement: HTMLElement | null = null;
 
   sectionTypes: SectionTypeOption[] = [
     {
@@ -259,7 +308,18 @@ export class SectionSelectorComponent {
     this.sectionTypeSelected.emit(type);
   }
 
+  ngAfterViewInit(): void {
+    this.returnFocusElement = document.activeElement as HTMLElement | null;
+    this.dialog?.nativeElement.focus();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.onClose();
+  }
+
   onClose(): void {
     this.closed.emit();
+    this.returnFocusElement?.focus();
   }
 }

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ButtonComponent } from './button.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -5,7 +7,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 describe('ButtonComponent', () => {
   let component: ButtonComponent;
   let fixture: ComponentFixture<ButtonComponent>;
-  let themeService: ThemeService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -15,12 +16,28 @@ describe('ButtonComponent', () => {
 
     fixture = TestBed.createComponent(ButtonComponent);
     component = fixture.componentInstance;
-    themeService = TestBed.inject(ThemeService);
     fixture.detectChanges();
   });
 
+  function btn(): HTMLButtonElement {
+    return fixture.nativeElement.querySelector('button');
+  }
+
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('gives the host a block layout box for hit testing', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const styles = readFileSync(
+      join(__dirname, 'button.component.scss'),
+      'utf8'
+    );
+
+    // JSDOM does not perform browser hit testing, so assert the layout
+    // primitive and its authored host contract separately.
+    expect(getComputedStyle(host).display).toBe('block');
+    expect(styles).toMatch(/:host\s*\{[\s\S]*display:\s*block;[\s\S]*\}/);
   });
 
   it('should emit action when not disabled', () => {
@@ -37,183 +54,72 @@ describe('ButtonComponent', () => {
     expect(component.action.emit).not.toHaveBeenCalled();
   });
 
-  it('should apply theme colors correctly for dark theme with primary variant', () => {
-    const mockColors = {
-      background: '#000',
-      foreground: '#fff',
-      accent: '#111',
-      complementary: '#222',
-      success: '#333',
-      warning: '#444',
-      danger: '#555',
-      complementaryGradients: {
-        dark: 'dark-comp-gradient',
-        light: 'light-comp-gradient',
-      },
-      accentGradients: {
-        dark: 'dark-accent-gradient',
-        light: 'light-accent-gradient',
-      },
-      complementaryShades: [
-        [null, '#666'],
-        [null, '#777'],
-        [null, '#888'],
-        [null, '#999'],
-        [null, '#aaa'],
-        [null, '#bbb'],
-        [null, '#ccc'],
-      ],
-    } as any;
-
-    component.theme = 'dark';
-    component.variant = 'primary';
-    component.useGradient = true;
-    component.applyTheme(mockColors);
-
-    // With useGradient=true, background should be CSS variable reference
-    expect(component.background).toBe('var(--button-gradient)');
-    expect(component.foreground).toBe(mockColors.foreground);
-    expect(component.accent).toBe(mockColors.accent);
-    expect(component.complement).toBe(mockColors.complementary);
-    expect(component.success).toBe(mockColors.success);
-    expect(component.warning).toBe(mockColors.warning);
-    expect(component.danger).toBe(mockColors.danger);
-    expect(component.borderColor).toBe('transparent');
+  it('should expose canonical tone/emphasis/size axes with defaults', () => {
+    expect(component.tone).toBe('brand');
+    expect(component.emphasis).toBe('solid');
+    expect(component.size).toBe('md');
   });
 
-  it('should apply solid background when useGradient is false', () => {
-    const mockColors = {
-      background: '#000',
-      foreground: '#fff',
-      accent: '#111',
-      complementary: '#222',
-      success: '#333',
-      warning: '#444',
-      danger: '#555',
-      complementaryGradients: {
-        dark: 'dark-comp-gradient',
-        light: 'light-comp-gradient',
-      },
-      accentGradients: {
-        dark: 'dark-accent-gradient',
-        light: 'light-accent-gradient',
-      },
-      complementaryShades: [
-        [null, '#666'],
-        [null, '#777'],
-        [null, '#888'],
-        [null, '#999'],
-        [null, '#aaa'],
-        [null, '#bbb'],
-        [null, '#ccc'],
-      ],
-    } as any;
+  it('should map legacy variant onto tone/emphasis via the bridge', () => {
+    component.variant = 'outlined';
+    expect(component.tone).toBe('brand');
+    expect(component.emphasis).toBe('outline');
 
-    component.theme = 'dark';
+    component.variant = 'danger';
+    expect(component.tone).toBe('danger');
+    expect(component.emphasis).toBe('solid');
+
+    component.variant = 'text';
+    expect(component.tone).toBe('brand');
+    expect(component.emphasis).toBe('ghost');
+
+    component.variant = 'secondary';
+    expect(component.tone).toBe('neutral');
+    expect(component.emphasis).toBe('solid');
+  });
+
+  it('should render data-tone/emphasis/size on the button element', () => {
+    component.tone = 'success';
+    component.emphasis = 'soft';
+    component.size = 'lg';
+    fixture.detectChanges();
+    expect(btn().getAttribute('data-tone')).toBe('success');
+    expect(btn().getAttribute('data-emphasis')).toBe('soft');
+    expect(btn().getAttribute('data-size')).toBe('lg');
+  });
+
+  it('should flag the gradient path for brand+solid when useGradient is true', () => {
+    component.variant = 'primary';
+    component.useGradient = true;
+    fixture.detectChanges();
+    expect(btn().classList.contains('use-gradient')).toBe(true);
+    // A gradient value is computed and surfaced as the CSS var.
+    expect(component.buttonGradient).not.toBe('none');
+  });
+
+  it('should not flag the gradient path when useGradient is false', () => {
     component.variant = 'primary';
     component.useGradient = false;
-    component.applyTheme(mockColors);
-
-    // With useGradient=false, background should be accent color
-    expect(component.background).toBe(mockColors.accent);
-    expect(component.foreground).toBe(mockColors.foreground);
-    expect(component.accent).toBe(mockColors.accent);
-    expect(component.complement).toBe(mockColors.complementary);
-    expect(component.success).toBe(mockColors.success);
-    expect(component.warning).toBe(mockColors.warning);
-    expect(component.danger).toBe(mockColors.danger);
-    expect(component.borderColor).toBe('transparent');
+    fixture.detectChanges();
+    expect(btn().classList.contains('use-gradient')).toBe(false);
   });
 
-  it('should apply theme colors correctly for light theme', () => {
-    const mockColors = {
-      background: '#eee',
-      foreground: '#222',
-      accent: '#abc',
-      complementary: '#def',
-      success: '#fed',
-      warning: '#cba',
-      danger: '#987',
-      complementaryGradients: {
-        dark: 'dark-comp-gradient',
-        light: 'light-comp-gradient',
-      },
-      accentGradients: {
-        dark: 'dark-accent-gradient',
-        light: 'light-accent-gradient',
-      },
-      complementaryShades: [
-        [null, '#666'],
-        [null, '#777'],
-        [null, '#888'],
-        [null, '#999'],
-        [null, '#aaa'],
-        [null, '#bbb'],
-        [null, '#ccc'],
-      ],
-    } as any;
-
-    component.theme = 'light';
-    component.variant = 'primary';
-    component.useGradient = true;
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe('var(--button-gradient)');
-    expect(component.foreground).toBe(mockColors.foreground);
-    expect(component.accent).toBe(mockColors.accent);
-    expect(component.complement).toBe(mockColors.complementary);
-    expect(component.success).toBe(mockColors.success);
-    expect(component.warning).toBe(mockColors.warning);
-    expect(component.danger).toBe(mockColors.danger);
-    expect(component.borderColor).toBe('transparent');
-  });
-
-  it('should apply outlined variant styles', () => {
-    const mockColors = {
-      background: '#eee',
-      foreground: '#222',
-      accent: '#abc',
-      complementary: '#def',
-    } as any;
-
-    component.theme = 'light';
+  it('should not flag the gradient path for non-solid emphasis', () => {
     component.variant = 'outlined';
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe('transparent');
-    expect(component.borderColor).toBe(mockColors.accent);
+    component.useGradient = true;
+    fixture.detectChanges();
+    expect(btn().classList.contains('use-gradient')).toBe(false);
   });
 
-  it('should apply text variant styles', () => {
-    const mockColors = {
-      background: '#eee',
-      foreground: '#222',
-      accent: '#abc',
-      complementary: '#def',
-    } as any;
-
-    component.theme = 'light';
-    component.variant = 'text';
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe('transparent');
-    expect(component.borderColor).toBe('transparent');
+  it('should add the rounded class for the rounded legacy variant', () => {
+    component.variant = 'rounded';
+    fixture.detectChanges();
+    expect(btn().classList.contains('rounded')).toBe(true);
   });
 
-  it('should support danger variant with solid color', () => {
-    const mockColors = {
-      background: '#eee',
-      foreground: '#222',
-      accent: '#abc',
-      complementary: '#def',
-      danger: '#987',
-    } as any;
-
-    component.theme = 'light';
-    component.variant = 'danger';
-    component.applyTheme(mockColors);
-
-    expect(component.background).toBe(mockColors.danger);
-    expect(component.borderColor).toBe('transparent');
+  it('should keep the legacy variant class for personality selectors', () => {
+    component.variant = 'primary';
+    fixture.detectChanges();
+    expect(btn().classList.contains('primary')).toBe(true);
   });
 });

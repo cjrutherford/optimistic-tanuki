@@ -16,21 +16,25 @@ import { RouterLink } from '@angular/router';
 describe('AppComponent', () => {
   function createStore(
     config: typeof DEFAULT_BUSINESS_SITE_CONFIG = DEFAULT_BUSINESS_SITE_CONFIG,
-    configId: string | null = null
+    configId: string | null = null,
+    loadError: string | null = null
   ) {
     const site = signal(config);
     const configIdSignal = signal<string | null>(configId);
+    const loadErrorSignal = signal<string | null>(loadError);
 
     return {
       site: site.asReadonly(),
       configId: configIdSignal.asReadonly(),
       loaded: signal(true).asReadonly(),
+      loadError: loadErrorSignal.asReadonly(),
       fetch: jest.fn(() => of(config)),
       setSite: jest.fn((nextConfig: typeof DEFAULT_BUSINESS_SITE_CONFIG) => {
         site.set(nextConfig);
       }),
       __site: site,
       __configId: configIdSignal,
+      __loadError: loadErrorSignal,
     };
   }
 
@@ -93,7 +97,7 @@ describe('AppComponent', () => {
       theme: {
         ...DEFAULT_BUSINESS_SITE_CONFIG.theme,
         mode: 'dark' as const,
-        personalityId: 'bold-minimal',
+        personalityId: 'elegant',
         primaryColor: '#123456',
       },
     };
@@ -131,8 +135,58 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(themeService.setTheme).toHaveBeenCalledWith('dark');
-    expect(themeService.setPersonality).toHaveBeenCalledWith('bold-minimal');
+    expect(themeService.setPersonality).toHaveBeenCalledWith('elegant');
     expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#123456');
+  });
+
+  it('surfaces a config-load-error notice when the site config store reports a load failure', () => {
+    localStorage.clear();
+    const store = createStore(DEFAULT_BUSINESS_SITE_CONFIG, null, null);
+    const trainerAuthService = {
+      isAuthenticated: jest.fn(() => false),
+      isClientAuthenticated: jest.fn(() => false),
+      clientUser: jest.fn(() => null),
+      logout: jest.fn(),
+      logoutClient: jest.fn(),
+    };
+    const themeService = {
+      setTheme: jest.fn(),
+      setPersonality: jest.fn(),
+      setPrimaryColor: jest.fn(),
+      getTheme: jest.fn(() => 'light' as const),
+      toggleTheme: jest.fn(),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        { provide: BusinessAuthService, useValue: trainerAuthService },
+        { provide: ThemeService, useValue: themeService },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.config-load-error')
+    ).toBeNull();
+
+    store.__loadError.set('Failed to load business site configuration.');
+    fixture.detectChanges();
+
+    const banner = fixture.nativeElement.querySelector('.config-load-error');
+    expect(banner).not.toBeNull();
+    expect(banner.textContent).toContain("couldn't refresh");
+
+    store.__loadError.set(null);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.config-load-error')
+    ).toBeNull();
   });
 
   it('applies the hosted business theme even when a user theme is already stored', () => {
@@ -305,6 +359,62 @@ describe('AppComponent', () => {
       );
 
     expect(clientLoginLink).toBeTruthy();
+  });
+
+  it('keeps the hosted slug intact when the url carries a fragment or query', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'canopy-tree-service',
+      },
+    });
+    const trainerAuthService = {
+      isAuthenticated: jest.fn(() => false),
+      isClientAuthenticated: jest.fn(() => false),
+      clientUser: jest.fn(() => null),
+      logout: jest.fn(),
+      logoutClient: jest.fn(),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        { provide: BusinessAuthService, useValue: trainerAuthService },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    // Router urls include the fragment, so a nav click to an in-page anchor
+    // lands here as `/sites/<slug>#results`. The slug must not absorb it —
+    // otherwise the next routerLink re-encodes `#` to `%23` and the
+    // corruption compounds on every subsequent click.
+    for (const url of [
+      '/sites/canopy-tree-service#results',
+      '/sites/canopy-tree-service#contact',
+      '/sites/canopy-tree-service?utm=x',
+      '/sites/canopy-tree-service/book#top',
+    ]) {
+      component.currentUrl.set(url);
+      fixture.detectChanges();
+
+      expect(component.topNavLinks()[0].route).toEqual([
+        '/sites',
+        'canopy-tree-service',
+      ]);
+      expect(component.brandHomeLink()).toEqual([
+        '/sites',
+        'canopy-tree-service',
+      ]);
+    }
   });
 
   it('renders business-scoped owner auth links on hosted business routes', () => {

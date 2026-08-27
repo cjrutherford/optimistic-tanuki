@@ -11,6 +11,10 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver = async () => {
+  const authState = inject(AuthStateService);
+  if (!authState.getDecodedTokenValue()) {
+    return [];
+  }
   const permissionsService = inject(UserPermissionsService);
   const startsWith = 'forum.';
   const permissions = await permissionsService.searchPermissions(startsWith);
@@ -28,7 +32,7 @@ const forumUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('fow-client-authToken'),
+  ...emailAuthRoutes('fow-client-authToken', true),
   {
     path: '',
     loadComponent: () =>
@@ -111,6 +115,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
     component: OAuthCallbackComponent,
   },
   {

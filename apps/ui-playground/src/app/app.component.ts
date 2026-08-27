@@ -6,6 +6,7 @@ import {
   ThemeService,
   ThemeValidationHarnessComponent,
 } from '@optimistic-tanuki/theme-lib';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { NavSidebarComponent } from './shared';
 
 @Component({
@@ -17,6 +18,7 @@ import { NavSidebarComponent } from './shared';
     RouterLink,
     NavSidebarComponent,
     ThemeValidationHarnessComponent,
+    PersonalityBackdropComponent,
   ],
   template: `
     <otui-theme-validation-harness
@@ -24,6 +26,12 @@ import { NavSidebarComponent } from './shared';
       [mode]="activeMode"
       [primaryColor]="primaryColor"
     >
+      <!-- Workstream C2: reference integration of the reusable page-
+           background delivery mechanism. Replaces the middle
+           var(--page-background-pattern, none) layer that used to be
+           painted directly on body in styles.scss (removed there to
+           avoid painting the same pattern twice). -->
+      <lib-personality-backdrop />
       <a class="skip-link" href="#main-content">Skip to main content</a>
       <div class="app-shell">
         <pg-nav-sidebar />

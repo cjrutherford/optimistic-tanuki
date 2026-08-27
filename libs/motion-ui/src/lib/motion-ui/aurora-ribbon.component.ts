@@ -11,8 +11,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 })
 export class AuroraRibbonComponent {
   @Input() height = '24rem';
-  @Input() density = 3;
-  @Input() speed = 1;
+  @Input() density = 5;
+  @Input() speed = 1.4;
   @Input() intensity = 0.72;
   @Input() reducedMotion = false;
 

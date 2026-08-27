@@ -299,15 +299,15 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
     `
       :host {
         display: block;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
       .client-studio {
         display: grid;
         gap: 1.25rem;
-        --studio-base: var(--background, #ffffff);
+        --studio-base: var(--background);
         --studio-elevated: var(
           --background-elevated,
-          var(--surface, var(--background, #ffffff))
+          var(--surface, var(--background))
         );
         --studio-surface: color-mix(
           in srgb,
@@ -326,23 +326,23 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         );
         --studio-accent-surface: color-mix(
           in srgb,
-          var(--primary, #1f7a63) 12%,
+          var(--primary) 12%,
           var(--studio-elevated)
         );
         --studio-border: color-mix(
           in srgb,
-          var(--border, #d0d7de) 78%,
-          var(--primary, #1f7a63) 22%
+          var(--border) 78%,
+          var(--primary) 22%
         );
         --studio-border-soft: color-mix(
           in srgb,
-          var(--border, #d0d7de) 88%,
+          var(--border) 88%,
           transparent
         );
         --studio-shadow: 0 16px 36px
-          color-mix(in srgb, var(--foreground, #0f172a) 10%, transparent);
+          color-mix(in srgb, var(--foreground) 10%, transparent);
         --studio-shadow-soft: 0 10px 24px
-          color-mix(in srgb, var(--foreground, #0f172a) 8%, transparent);
+          color-mix(in srgb, var(--foreground) 8%, transparent);
       }
       .headline-card ::ng-deep .card,
       .roster-card ::ng-deep .card,
@@ -377,7 +377,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         border-radius: 1.6rem;
         background: radial-gradient(
             circle at top left,
-            color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent),
+            color-mix(in srgb, var(--primary) 14%, transparent),
             transparent 38%
           ),
           linear-gradient(
@@ -410,7 +410,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .headline-body {
         margin: 0;
         max-width: 54ch;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
       }
       .headline-band {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -514,10 +514,10 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         border: 1px solid var(--studio-border);
         background: color-mix(
           in srgb,
-          var(--primary, #1f7a63) 12%,
+          var(--primary) 12%,
           var(--studio-elevated)
         );
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       .status-pill,
       .status-tag {
@@ -562,22 +562,13 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         width: 2.5rem;
         height: 2.5rem;
         border-radius: 0.9rem;
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 28%,
-            var(--border, #d0d7de)
-          );
+        border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
         background: linear-gradient(
           135deg,
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 22%,
-            var(--studio-elevated)
-          ),
-          color-mix(in srgb, var(--primary, #1f7a63) 10%, var(--studio-base))
+          color-mix(in srgb, var(--primary) 22%, var(--studio-elevated)),
+          color-mix(in srgb, var(--primary) 10%, var(--studio-base))
         );
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-weight: 800;
       }
       .roster-identity {
@@ -594,7 +585,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         border-radius: 999px;
         background: color-mix(
           in srgb,
-          var(--foreground, #0f172a) 6%,
+          var(--foreground) 6%,
           var(--studio-elevated)
         );
       }
@@ -616,7 +607,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         );
       }
       .insight-chip strong {
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
       .workspace-layout {
         grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
@@ -654,7 +645,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         align-items: baseline;
         padding-bottom: 0.65rem;
         border-bottom: 1px solid
-          color-mix(in srgb, var(--border, #d0d7de) 78%, transparent);
+          color-mix(in srgb, var(--border) 78%, transparent);
       }
       .overview-row:last-child {
         padding-bottom: 0;
@@ -666,7 +657,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       .activity-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -694,9 +685,9 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         height: 0.85rem;
         margin-top: 0.35rem;
         border-radius: 999px;
-        background: var(--primary, #1f7a63);
+        background: var(--primary);
         box-shadow: 0 0 0 6px
-          color-mix(in srgb, var(--primary, #1f7a63) 10%, transparent);
+          color-mix(in srgb, var(--primary) 10%, transparent);
       }
       .timeline-content {
         display: grid;
@@ -756,7 +747,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         );
       }
       .routine-board-card small {
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;

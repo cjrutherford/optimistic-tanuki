@@ -17,6 +17,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   SOCKET_HOST,
+  SOCKET_PATH,
   SOCKET_NAMESPACE,
   SOCKET_IO_INSTANCE,
   SOCKET_AUTH_TOKEN_PROVIDER,
@@ -82,6 +83,7 @@ describe('AppComponent', () => {
         { provide: ThemeService, useValue: themeService },
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: SOCKET_HOST, useValue: 'http://localhost' },
+        { provide: SOCKET_PATH, useValue: '/socket.io' },
         { provide: SOCKET_NAMESPACE, useValue: '/chat' },
         { provide: SOCKET_IO_INSTANCE, useValue: io },
         { provide: SOCKET_AUTH_TOKEN_PROVIDER, useValue: () => 'test-token' },
@@ -198,6 +200,30 @@ describe('AppComponent', () => {
       expect(compiled.querySelector('.motion-background')).toBeTruthy();
       expect(compiled.querySelector('otui-pulse-rings')).toBeTruthy();
       expect(compiled.querySelector('.app-content')).toBeTruthy();
+    });
+
+    it('provides a skip link to the primary workspace landmark', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const skipLink = compiled.querySelector(
+        'a.skip-link[href="#main-content"]'
+      );
+
+      expect(skipLink?.textContent).toContain('Skip to main content');
+      expect(compiled.querySelector('main#main-content')).toBeTruthy();
+    });
+
+    it('keeps supported chat separate from the unavailable assistant status in the main flow', () => {
+      isAuthenticatedSubject.next(true);
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const main = compiled.querySelector('main#main-content');
+
+      expect(compiled.querySelector('app-chat')).toBeTruthy();
+      expect(
+        main?.querySelector('app-ai-assistant-bubble [role="status"]')
+      ).toBeTruthy();
+      expect(main?.querySelector('app-chat')).toBeNull();
     });
   });
 

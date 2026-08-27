@@ -97,11 +97,13 @@ export class LoginComponent implements OnInit {
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
-      'finance'
+      'finance',
+      true
     );
 
-    if (result.success && result.token) {
-      this.authStateService.setToken(result.token);
+    if (result.success && (result.token || result.session)) {
+      if (result.token) this.authStateService.setToken(result.token);
+      else if (!(await this.authStateService.restoreSession())) return;
       await this.handlePostLogin();
       return;
     }
@@ -117,8 +119,9 @@ export class LoginComponent implements OnInit {
         ''
       );
 
-      if (regResult.success && regResult.token) {
-        this.authStateService.setToken(regResult.token);
+      if (regResult.success) {
+        if (regResult.token) this.authStateService.setToken(regResult.token);
+        await this.authStateService.restoreSession();
         await this.handlePostLogin();
       }
     }

@@ -26,6 +26,7 @@ import {
   cloneBusinessSiteConfig,
   configDocumentToBusinessSiteConfig,
   GridLayoutSlot,
+  injectSiteSlugSignal,
   LandingSection,
   LandingSectionMediaItem,
   LandingSectionMotionKind,
@@ -1967,16 +1968,11 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         min-width: 0;
         padding: 1rem;
         border-radius: 1.5rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         background: linear-gradient(
           180deg,
-          color-mix(
-              in srgb,
-              var(--primary, #1f7a63) 5%,
-              var(--background, #fff)
-            )
-            0%,
-          var(--background, #fff) 100%
+          color-mix(in srgb, var(--primary) 5%, var(--background)) 0%,
+          var(--background) 100%
         );
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
         align-content: start;
@@ -2025,7 +2021,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         padding: 0.38rem 0.75rem;
         border-radius: 999px;
         border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
-        background: color-mix(in srgb, var(--surface, #fff) 90%, transparent);
+        background: color-mix(in srgb, var(--surface) 90%, transparent);
         color: color-mix(in srgb, var(--foreground) 70%, transparent);
         font-size: 0.75rem;
         font-weight: 700;
@@ -2041,9 +2037,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         margin: 0;
         font-size: 1rem;
         font-weight: 700;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
         padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border, #e2e8f0);
+        border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -2074,17 +2070,17 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.35rem;
         font-size: 0.82rem;
         font-weight: 500;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       input,
       textarea,
       select {
         padding: 0.6rem 0.85rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: var(--personality-border-radius, 0.5rem);
-        background: var(--surface, #fff);
-        color: var(--foreground, #0f172a);
+        background: var(--surface);
+        color: var(--foreground);
         font-size: 0.9rem;
         font-family: inherit;
         resize: vertical;
@@ -2095,9 +2091,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       textarea:focus,
       select:focus {
         outline: none;
-        border-color: var(--primary, #1f7a63);
+        border-color: var(--primary);
         box-shadow: 0 0 0 3px
-          color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent);
+          color-mix(in srgb, var(--primary) 14%, transparent);
       }
 
       select {
@@ -2191,8 +2187,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         padding: 0.4rem 0.6rem;
         border-radius: var(--personality-border-radius, 0.35rem);
         border: none;
-        background: color-mix(in srgb, var(--danger, #ef4444) 10%, transparent);
-        color: var(--danger, #ef4444);
+        background: color-mix(in srgb, var(--danger) 10%, transparent);
+        color: var(--danger);
         font-size: 0.85rem;
         font-weight: 700;
         cursor: pointer;
@@ -2238,8 +2234,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         min-height: 100%;
         padding: 1rem;
         border-radius: var(--personality-card-radius, 1rem);
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(in srgb, var(--background, #ffffff) 94%, white);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 94%, white);
       }
 
       .toggle-card.dependent.disabled {
@@ -2253,11 +2249,11 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
       .toggle-copy strong {
         font-size: 0.95rem;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       .toggle-copy small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2278,8 +2274,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.75rem;
         padding: 1rem;
         border-radius: var(--personality-card-radius, 1rem);
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 96%, white);
         cursor: pointer;
         text-align: left;
         transition: transform 0.2s ease, border-color 0.2s ease,
@@ -2308,11 +2304,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       .layout-option-preview span {
         display: block;
         border-radius: 0.6rem;
-        background: color-mix(
-          in srgb,
-          var(--primary) 16%,
-          var(--surface, white)
-        );
+        background: color-mix(in srgb, var(--primary) 16%, var(--surface));
         border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border));
       }
 
@@ -2352,7 +2344,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .layout-option-copy small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2372,13 +2364,13 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 1rem;
         padding: 1rem;
         border-radius: var(--personality-card-radius, 1rem);
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         background: radial-gradient(
             circle at top right,
             color-mix(in srgb, var(--primary) 9%, transparent),
             transparent 42%
           ),
-          color-mix(in srgb, var(--background, #ffffff) 97%, white);
+          color-mix(in srgb, var(--background) 97%, white);
       }
 
       .canvas-heading {
@@ -2391,7 +2383,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .canvas-heading small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2427,7 +2419,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .canvas-lane-head small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.4;
       }
 
@@ -2438,7 +2430,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         padding: 0.8rem;
         border-radius: var(--personality-card-radius, 1rem);
         border: 1px dashed color-mix(in srgb, var(--primary) 30%, var(--border));
-        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
       }
 
       .column-zone {
@@ -2450,8 +2442,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.55rem;
         padding: 0.85rem;
         border-radius: 0.9rem;
-        border: 1px solid var(--border, #e2e8f0);
-        background: var(--background, #fff);
+        border: 1px solid var(--border);
+        background: var(--background);
         box-shadow: 0 10px 26px
           color-mix(in srgb, var(--primary) 5%, rgba(0, 0, 0, 0.04));
         cursor: move;
@@ -2467,7 +2459,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             color-mix(in srgb, var(--primary) 18%, transparent),
             transparent
           ),
-          color-mix(in srgb, var(--surface, #fff) 88%, var(--background, #fff));
+          color-mix(in srgb, var(--surface) 88%, var(--background));
       }
 
       .canvas-card-media img {
@@ -2497,7 +2489,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .canvas-card-order {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
       }
 
       .canvas-card-summary {
@@ -2519,8 +2511,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.25rem;
         padding: 0.28rem 0.6rem;
         border-radius: 999px;
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
         color: color-mix(in srgb, var(--foreground) 74%, transparent);
         font-size: 0.72rem;
         font-weight: 700;
@@ -2535,9 +2527,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       .layout-btn {
         padding: 0.55rem 0.8rem;
         border-radius: 999px;
-        border: 1px solid var(--border, #e2e8f0);
-        background: var(--surface, #fff);
-        color: var(--foreground, #0f172a);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--foreground);
         cursor: pointer;
         font-size: 0.84rem;
         font-weight: 600;
@@ -2574,9 +2566,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         display: grid;
         gap: 0.85rem;
         padding: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: var(--personality-card-radius, 1rem);
-        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+        background: color-mix(in srgb, var(--background) 96%, white);
       }
 
       .custom-compose-editor {
@@ -2597,7 +2589,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
       .selected-section-head p {
         margin: 0.2rem 0 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2613,9 +2605,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 1rem;
         padding: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: var(--personality-card-radius, 1rem);
-        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+        background: color-mix(in srgb, var(--background) 96%, white);
       }
 
       .layout-row-main {
@@ -2630,7 +2622,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         padding: 1rem;
         border-radius: 0.9rem;
         border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border));
-        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
       }
 
       .media-editor-head {
@@ -2644,7 +2636,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .media-editor-head small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2670,7 +2662,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       .contact-image-fields label {
         display: grid;
         gap: 0.35rem;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         font-size: 0.82rem;
         font-weight: 600;
       }
@@ -2693,7 +2685,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         padding: 0.85rem;
         border-radius: 0.85rem;
         border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border));
-        background: var(--background, #fff);
+        background: var(--background);
       }
 
       .asset-picker-head {
@@ -2707,7 +2699,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .asset-picker-head small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.45;
       }
 
@@ -2728,9 +2720,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.45rem;
         padding: 0.5rem;
         border-radius: 0.8rem;
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
-        color: var(--foreground, #0f172a);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        color: var(--foreground);
         cursor: pointer;
         text-align: left;
         transition: border-color 0.2s ease, transform 0.2s ease,
@@ -2764,8 +2756,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.7rem;
         padding: 0.85rem;
         border-radius: 0.85rem;
-        border: 1px solid var(--border, #e2e8f0);
-        background: var(--background, #fff);
+        border: 1px solid var(--border);
+        background: var(--background);
       }
 
       .checkbox-line {
@@ -2785,7 +2777,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
       .section-help {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         font-size: 0.84rem;
         line-height: 1.45;
       }
@@ -2809,7 +2801,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
       .store-workspace-link {
         justify-self: start;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-size: 0.88rem;
         font-weight: 700;
         text-decoration: none;
@@ -2891,23 +2883,23 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .otui-btn.primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
         border: none;
         box-shadow: 0 6px 16px
           color-mix(in srgb, var(--primary) 24%, transparent);
       }
 
       .otui-btn.primary:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--primary, #1f7a63) 88%, black);
+        background: color-mix(in srgb, var(--primary) 88%, black);
         box-shadow: 0 8px 22px
           color-mix(in srgb, var(--primary) 32%, transparent);
       }
 
       .otui-btn.ghost {
         background: transparent;
-        border: 1px solid var(--border, #e2e8f0);
-        color: var(--foreground, #0f172a);
+        border: 1px solid var(--border);
+        color: var(--foreground);
       }
 
       .otui-btn.ghost:hover {
@@ -2929,19 +2921,15 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       }
 
       .status-msg.success {
-        color: color-mix(in srgb, var(--success, #166534) 90%, black);
-        background: color-mix(
-          in srgb,
-          var(--success, #dcfce7) 20%,
-          transparent
-        );
+        color: color-mix(in srgb, var(--success) 90%, black);
+        background: color-mix(in srgb, var(--success) 20%, transparent);
         border: var(--personality-border-width, 1px) solid
           color-mix(in srgb, var(--success) 30%, transparent);
       }
 
       .status-msg.error {
-        color: color-mix(in srgb, var(--danger, #991b1b) 90%, black);
-        background: color-mix(in srgb, var(--danger, #fee2e2) 20%, transparent);
+        color: color-mix(in srgb, var(--danger) 90%, black);
+        background: color-mix(in srgb, var(--danger) 20%, transparent);
         border: var(--personality-border-width, 1px) solid
           color-mix(in srgb, var(--danger) 30%, transparent);
       }
@@ -2974,9 +2962,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         .mobile-preview-btn,
         .mobile-sheet-close,
         .mobile-sheet-tab {
-          border: 1px solid var(--border, #e2e8f0);
-          background: var(--surface, #fff);
-          color: var(--foreground, #0f172a);
+          border: 1px solid var(--border);
+          background: var(--surface);
+          color: var(--foreground);
           border-radius: 999px;
           padding: 0.7rem 0.95rem;
           font-weight: 700;
@@ -2985,8 +2973,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
         .mobile-preview-btn.primary,
         .mobile-sheet-tab.active {
-          background: var(--primary, #1f7a63);
-          border-color: var(--primary, #1f7a63);
+          background: var(--primary);
+          border-color: var(--primary);
           color: white;
         }
 
@@ -3010,8 +2998,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           max-height: 82vh;
           padding: 0.85rem 1rem 1rem;
           border-radius: 20px 20px 0 0;
-          border: 1px solid var(--border, #e2e8f0);
-          background: var(--background, #fff);
+          border: 1px solid var(--border);
+          background: var(--background);
           box-shadow: 0 -18px 48px rgba(15, 23, 42, 0.18);
           transform: translateY(calc(100% + 2rem));
           transition: transform 0.24s ease;
@@ -3026,11 +3014,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           height: 0.32rem;
           margin: 0 auto;
           border-radius: 999px;
-          background: color-mix(
-            in srgb,
-            var(--foreground, #0f172a) 16%,
-            transparent
-          );
+          background: color-mix(in srgb, var(--foreground) 16%, transparent);
         }
 
         .mobile-sheet-header {
@@ -3049,7 +3033,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           text-transform: uppercase;
           letter-spacing: 0.14em;
           font-size: 0.72rem;
-          color: var(--primary, #1f7a63);
+          color: var(--primary);
           font-weight: 700;
         }
 
@@ -3106,11 +3090,12 @@ export class BusinessSiteEditorPageComponent {
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly themeService = inject(ThemeService);
   private readonly route = inject(ActivatedRoute, { optional: true });
-  private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
+  private readonly siteSlug = injectSiteSlugSignal();
 
   ownerProductsLink(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', 'products']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', 'products']
       : ['/owner/products'];
   }
 
@@ -3405,7 +3390,7 @@ export class BusinessSiteEditorPageComponent {
     }
     this.onboardingMode.set(!!this.route?.snapshot.data['onboardingMode']);
 
-    this.siteConfig.fetch(false, this.siteSlug).subscribe({
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe({
       next: (site) => {
         this.loading.set(false);
         this.configId = this.siteConfig.configId();
@@ -5296,24 +5281,26 @@ export class BusinessSiteEditorPageComponent {
       payload.site.onboardingCompletedAt = new Date().toISOString();
     }
 
-    this.api.updateSiteConfig(this.configId, payload, this.siteSlug).subscribe({
-      next: (saved: any) => {
-        this.saving.set(false);
-        if (saved?.id && this.configId === null) {
-          this.configId = saved.id;
-        }
-        this.draft.set(payload);
-        this.successMsg.set('Site content saved successfully.');
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.errorMsg.set(
-          err?.error?.message ||
-            err?.message ||
-            'Save failed. Please try again.'
-        );
-      },
-    });
+    this.api
+      .updateSiteConfig(this.configId, payload, this.siteSlug())
+      .subscribe({
+        next: (saved: any) => {
+          this.saving.set(false);
+          if (saved?.id && this.configId === null) {
+            this.configId = saved.id;
+          }
+          this.draft.set(payload);
+          this.successMsg.set('Site content saved successfully.');
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.errorMsg.set(
+            err?.error?.message ||
+              err?.message ||
+              'Save failed. Please try again.'
+          );
+        },
+      });
   }
 
   reset(): void {

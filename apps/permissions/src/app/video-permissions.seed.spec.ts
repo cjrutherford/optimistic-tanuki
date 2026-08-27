@@ -96,7 +96,7 @@ describe('video-client permission seeds', () => {
         }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'community.join' &&
-          entry.permissionAppScope === 'video-client'
+          entry.permissionAppScope === 'community'
       )
     ).toBe(true);
 
@@ -109,7 +109,52 @@ describe('video-client permission seeds', () => {
         }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'social.post.create' &&
-          entry.permissionAppScope === 'video-client'
+          entry.permissionAppScope === 'social'
+      )
+    ).toBe(true);
+  });
+
+  it('grants Owner Console owners video processing access in their own scope', () => {
+    expect(
+      seedData.permissions.some(
+        (entry: { name: string; appScope: string }) =>
+          entry.name === 'videos.video.update' &&
+          entry.appScope === 'owner-console'
+      )
+    ).toBe(true);
+
+    expect(
+      seedData.role_permissions.some(
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
+          entry.role === 'owner_console_owner' &&
+          entry.permission === 'videos.video.update' &&
+          entry.permissionAppScope === 'owner-console'
+      )
+    ).toBe(true);
+  });
+
+  it('grants global owners video processing access for Owner Console operations', () => {
+    expect(
+      seedData.permissions.some(
+        (entry: { name: string; appScope: string }) =>
+          entry.name === 'videos.video.update' && entry.appScope === 'global'
+      )
+    ).toBe(true);
+
+    expect(
+      seedData.role_permissions.some(
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
+          entry.role === 'owner' &&
+          entry.permission === 'videos.video.update' &&
+          entry.permissionAppScope === 'global'
       )
     ).toBe(true);
   });

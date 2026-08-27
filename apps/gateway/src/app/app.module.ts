@@ -15,9 +15,15 @@ import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
 import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
+import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import {
+  EmailModule,
+  ConsoleEmailProvider,
+  SmtpEmailProvider,
+} from '@optimistic-tanuki/email';
 import { Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
@@ -39,12 +45,25 @@ import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestTimeoutInterceptor } from '../interceptors/request-timeout.interceptor';
+import {
+  SECURITY_TELEMETRY_SERVICE,
+  SecurityTelemetryController,
+} from '../security/security-telemetry.controller';
+import { SecurityTelemetryService } from '../security/security-telemetry.service';
+import { PerformanceTelemetryController } from '../performance/performance-telemetry.controller';
+import { PerformanceTelemetryService } from '../performance/performance-telemetry.service';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
 import { OAuthController } from '../controllers/oauth/oauth.controller';
+import {
+  LocalOAuthStateStore,
+  OAUTH_STATE_STORE,
+  RedisOAuthStateStore,
+  selectOAuthStateStore,
+} from '../controllers/oauth/oauth-state.store';
 import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
@@ -343,10 +362,47 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       },
     ]),
     LoggerModule,
+    EmailModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const smtpHost = config.get<string>('SMTP_HOST');
+        if (!smtpHost) return { providers: [new ConsoleEmailProvider()] };
+        return {
+          providers: [
+            new SmtpEmailProvider({
+              host: smtpHost,
+              port: Number(config.get<string | number>('SMTP_PORT') || 465),
+              secure: String(config.get('SMTP_SECURE') ?? 'true') === 'true',
+              auth: {
+                user: config.get<string>('SMTP_USER') || '',
+                pass: config.get<string>('SMTP_PASS') || '',
+              },
+              defaultFrom:
+                config.get<string>('SMTP_FROM') ||
+                'noreply@optimistic-tanuki.dev',
+            }),
+          ],
+        };
+      },
+    }),
     ...createMcpToolImports(gatewayComposition),
   ],
-  controllers: controllerEntries.map((entry) => entry.value),
+  controllers: [
+    ...controllerEntries.map((entry) => entry.value),
+    SecurityTelemetryController,
+    PerformanceTelemetryController,
+  ],
   providers: [
+    {
+      provide: SECURITY_TELEMETRY_SERVICE,
+      useFactory: () =>
+        new SecurityTelemetryService({
+          lokiUrl: process.env.SECURITY_LOKI_URL ?? 'http://loki:3100',
+          crowdsecUrl:
+            process.env.SECURITY_CROWDSEC_URL ?? 'http://crowdsec:8080',
+        }),
+    },
+    PerformanceTelemetryService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -367,6 +423,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       useFactory: () => DEFAULT_NAVIGATION_LINKS,
     },
     AuthGuard,
+    SocketSessionAuthService,
     PermissionsGuard,
     PermissionsProxyService,
     {
@@ -392,6 +449,22 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
         return new JwtService({ secret });
       },
       inject: [ConfigService],
+    },
+    {
+      provide: OAUTH_STATE_STORE,
+      useFactory: () => {
+        if (selectOAuthStateStore() === 'local') {
+          return new LocalOAuthStateStore();
+        }
+        const host = process.env.REDIS_HOST?.trim();
+        // selectOAuthStateStore has already required this value.
+        return new RedisOAuthStateStore(
+          host!,
+          Number(process.env.REDIS_PORT || 6379),
+          process.env.REDIS_PASSWORD || undefined,
+          Number(process.env.REDIS_DB || 0)
+        );
+      },
     },
     RoleInitService,
     {

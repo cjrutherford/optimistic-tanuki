@@ -200,8 +200,8 @@ export class LoginComponent {
         'local-hub'
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success) {
+        await this.authState.restoreSession();
         const returnUrl =
           this.route.snapshot.queryParamMap.get('returnUrl') || '/';
         await this.router.navigateByUrl(returnUrl);
@@ -219,8 +219,8 @@ export class LoginComponent {
           ''
         );
 
-        if (regResult.success && regResult.token) {
-          this.authState.setToken(regResult.token);
+        if (regResult.success) {
+          await this.authState.restoreSession();
           const returnUrl =
             this.route.snapshot.queryParamMap.get('returnUrl') || '/';
           await this.router.navigateByUrl(returnUrl);

@@ -17,12 +17,14 @@
       color-mix(in srgb, var(--background) 96%, var(--surface)) 100%
     );
   color: var(--foreground);
+  min-width: 0;
 }
 
 .page-header {
   position: relative;
   padding: 3.75rem 1.5rem 2.5rem;
   overflow: hidden;
+  --hero-foreground: white;
 }
 
 .header-background {
@@ -54,11 +56,24 @@
     linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent);
 }
 
+[data-theme='dark'] .header-gradient,
+.dark-theme .header-gradient {
+  background: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
+    linear-gradient(
+      130deg,
+      color-mix(in srgb, var(--primary) 88%, black) 0%,
+      color-mix(in srgb, var(--tertiary, var(--secondary)) 82%, transparent) 58%,
+      color-mix(in srgb, var(--secondary) 76%, transparent) 100%
+    ),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2), transparent);
+}
+
 .header-content {
   position: relative;
   max-width: 1320px;
   margin: 0 auto;
-  color: white;
+  color: var(--hero-foreground);
+  box-sizing: border-box;
 }
 
 .page-title {
@@ -135,11 +150,13 @@
   margin: 0 auto;
   padding: 0 1.5rem 3rem;
   align-items: start;
+  min-width: 0;
 }
 
 .map-rail {
   position: sticky;
   top: 1.5rem;
+  min-width: 0;
 }
 
 .map-rail-card,
@@ -162,6 +179,7 @@
 .workspace-column,
 .panel-body {
   background-color: transparent;
+  min-width: 0;
 }
 
 .map-header,
@@ -176,6 +194,9 @@
 
 .map-frame {
   padding: 0 1rem 1rem;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .map-note {
@@ -186,6 +207,7 @@
   padding: 1rem 1.2rem 1.25rem;
   color: var(--foreground-muted);
   font-size: 0.93rem;
+  flex-wrap: wrap;
 }
 
 .map-note strong {
@@ -200,7 +222,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--secondary);
+  color: var(--primary);
 }
 
 .workspace-column {
@@ -219,6 +241,8 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -345,6 +369,8 @@
   font: inherit;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-chip {
@@ -369,13 +395,13 @@
 .filter-chip.active {
   background: var(--primary);
   border-color: var(--primary);
-  color: var(--on-primary, white);
+  color: var(--on-primary);
 }
 
 .filter-chip.soft.active {
   background: var(--secondary);
   border-color: var(--secondary);
-  color: var(--on-secondary, var(--on-primary, white));
+  color: var(--on-secondary);
 }
 
 .filter-summary {
@@ -435,6 +461,8 @@
   cursor: pointer;
   transition: transform 0.24s ease, box-shadow 0.24s ease;
   box-shadow: var(--shadow-card, 0 18px 36px rgba(0, 0, 0, 0.08));
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .city-card:hover,
@@ -585,7 +613,7 @@
 .community-location,
 .highlight-tag {
   background: color-mix(in srgb, var(--secondary) 10%, transparent);
-  color: var(--secondary);
+  color: var(--foreground-muted);
 }
 
 .city-highlights {
@@ -667,6 +695,14 @@
   .map-frame {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
+  }
+
+  .map-rail,
+  .map-rail-card,
+  .workspace-column,
+  .city-card,
+  .community-card {
+    min-width: 0;
   }
 
   .filter-summary {

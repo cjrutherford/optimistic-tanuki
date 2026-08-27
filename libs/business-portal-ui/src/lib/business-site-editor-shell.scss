@@ -21,17 +21,17 @@ business-site-editor-page .page-header {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.5rem 1.75rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: var(--personality-border-radius, 1rem);
   background: radial-gradient(
       circle at top right,
-      color-mix(in srgb, var(--primary, #1f7a63) 18%, transparent) 0%,
+      color-mix(in srgb, var(--primary) 18%, transparent) 0%,
       transparent 44%
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--surface, #fff) 92%, var(--background, #fff)) 0%,
-      var(--surface, #fff) 100%
+      color-mix(in srgb, var(--surface) 92%, var(--background)) 0%,
+      var(--surface) 100%
     );
 }
 
@@ -45,7 +45,7 @@ business-site-editor-page .workspace-kicker {
   letter-spacing: 0.16em;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--primary, #1f7a63);
+  color: var(--primary);
 }
 
 business-site-editor-page .workspace-theme-note {
@@ -63,9 +63,9 @@ business-site-editor-page .mode-switch {
   grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
   padding: 0.3rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface, #fff) 86%, transparent);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
 }
 
 business-site-editor-page .mode-switch-btn {
@@ -73,27 +73,23 @@ business-site-editor-page .mode-switch-btn {
   border-radius: 999px;
   padding: 0.65rem 1rem;
   background: transparent;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
   font-weight: 700;
   cursor: pointer;
 }
 
 business-site-editor-page .mode-switch-btn.active {
-  background: var(--foreground, #0f172a);
-  color: var(--background, #fff);
+  background: var(--foreground);
+  color: var(--background);
 }
 
 business-site-editor-page .guided-rail {
   display: grid;
   gap: 0.8rem;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: var(--personality-border-radius, 1rem);
-  background: color-mix(
-    in srgb,
-    var(--primary, #1f7a63) 6%,
-    var(--surface, #fff)
-  );
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
 }
 
 business-site-editor-page .guided-rail-copy {
@@ -107,7 +103,7 @@ business-site-editor-page .guided-rail-copy strong {
 
 business-site-editor-page .guided-rail-copy p {
   margin: 0;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
 }
 
 business-site-editor-page .guided-steps {
@@ -122,9 +118,9 @@ business-site-editor-page .guided-step-chip {
   gap: 0.5rem;
   padding: 0.55rem 0.85rem;
   border-radius: 999px;
-  border: 1px solid var(--border, #e2e8f0);
-  background: var(--surface, #fff);
-  color: var(--foreground, #0f172a);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
   cursor: pointer;
 }
 
@@ -134,14 +130,14 @@ business-site-editor-page .guided-step-chip span {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--primary, #1f7a63) 12%, transparent);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
 business-site-editor-page .guided-step-chip.active {
-  border-color: var(--primary, #1f7a63);
-  color: var(--primary, #1f7a63);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 business-site-editor-page .guided-actions {
@@ -151,9 +147,9 @@ business-site-editor-page .guided-actions {
 }
 
 business-site-editor-page .guided-nav-btn {
-  border: 1px solid var(--border, #e2e8f0);
-  background: var(--surface, #fff);
-  color: var(--foreground, #0f172a);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
   border-radius: 999px;
   padding: 0.6rem 0.95rem;
   font-weight: 700;
@@ -161,9 +157,9 @@ business-site-editor-page .guided-nav-btn {
 }
 
 business-site-editor-page .guided-nav-btn.primary {
-  background: var(--primary, #1f7a63);
-  border-color: var(--primary, #1f7a63);
-  color: var(--primary-foreground, #fff);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }
 
 business-site-editor-page .guided-nav-btn:disabled {
@@ -186,5 +182,5 @@ business-site-editor-page .page-header h1 {
 
 business-site-editor-page .page-header p {
   margin: 0;
-  color: var(--muted, #6b7280);
+  color: var(--muted);
 }

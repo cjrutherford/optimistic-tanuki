@@ -1,16 +1,21 @@
+@use 'personality' as p;
+
 .business-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--border-radius-xl, 12px);
   padding: 1.25rem;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.3s var(--animation-easing),
-    box-shadow 0.3s var(--animation-easing);
+  // `--shadow-card`/`--shadow-card-hover` are this app's own warm-tinted
+  // elevation tokens (see apps/local-hub/src/styles.scss); fall back to the
+  // shared personality shadow scale for consumers (e.g. ui-playground) that
+  // only provide the personality contract.
+  box-shadow: var(--shadow-card, var(--shadow-sm));
+  @include p.personality-transition('transform, box-shadow', 'normal');
   cursor: pointer;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-card-hover);
+    box-shadow: var(--shadow-card-hover, var(--shadow-lg));
   }
 
   &__header {
@@ -23,14 +28,14 @@
   &__logo {
     width: 48px;
     height: 48px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-lg, 8px);
     object-fit: cover;
   }
 
   &__logo-placeholder {
     width: 48px;
     height: 48px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-lg, 8px);
     background: var(--background);
     display: flex;
     align-items: center;
@@ -55,7 +60,7 @@
   &__tier {
     font-size: 0.75rem;
     padding: 0.125rem 0.5rem;
-    border-radius: 100px;
+    border-radius: var(--border-radius-full, 100px);
     font-weight: 500;
 
     &.tier--basic {

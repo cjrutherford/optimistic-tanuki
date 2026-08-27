@@ -2,10 +2,11 @@ export type OfferingKind = 'preset-app' | 'service' | 'library' | 'custom-app';
 export type CampaignIntent = 'awareness' | 'conversion' | 'launch';
 export type ChannelType = 'web' | 'email' | 'social';
 export type ToneStyle = 'editorial' | 'direct' | 'technical' | 'warm';
-export type GenerationMode = 'template' | 'hybrid';
+export type GenerationMode = 'template' | 'hybrid' | 'llm';
 export type GenerationProvenance =
   | 'template-only'
   | 'ai-enriched'
+  | 'ai-generated'
   | 'ai-fallback';
 export type ConceptWorkflowStatus =
   | 'candidate'

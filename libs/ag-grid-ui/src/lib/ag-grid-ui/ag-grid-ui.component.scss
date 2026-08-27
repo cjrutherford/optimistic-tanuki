@@ -1,7 +1,22 @@
 /**
- * AG Grid wrapper styles
- * Theme is now applied programmatically via the new themeQuartz API
- * See ag-grid-ui.component.ts applyTheme() method
+ * AG Grid wrapper styles — theme bridge
+ *
+ * AG Grid's Theming API (v32+, `themeQuartz.withParams()` in
+ * ag-grid-ui.component.ts) owns the grid's internal chrome (header, cells,
+ * rows, popups); every color/font param it's given is a `var(--...)`
+ * reference into the personality contract that `ThemeService` maintains on
+ * `documentElement`, so AG Grid's generated stylesheet repaints on
+ * personality/mode change without any JS recompute here.
+ *
+ * This stylesheet covers what the Theming API does not: the wrapper chrome
+ * around the grid, and the custom action/delete/select controls added by
+ * grid consumers (`.ag-grid-action-button` etc. are not native AG Grid
+ * classes). The `--local-*` tier is set by `Themeable`/this component's host
+ * bindings (see ag-grid-ui.component.ts) as real per-instance CSS values;
+ * its own fallback always terminates on a bare personality contract token
+ * (`--surface`, `--foreground`, `--border`, `--primary`, `--danger`, ...) —
+ * never a hardcoded hex — since those tokens are always present once
+ * `ThemeService` has run.
  */
 
 .ag-grid-wrapper {
@@ -10,16 +25,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--local-background, var(--background, #ffffff));
-  color: var(--local-foreground, var(--foreground, #212121));
+  background: var(--local-background, var(--surface));
+  color: var(--local-foreground, var(--foreground));
   border: var(--local-border-width, 1px) solid
-    var(--local-border-color, var(--complement, #c0af4b));
+    var(--local-border-color, var(--border));
   border-radius: var(--local-border-radius, var(--border-radius-md, 8px));
   box-shadow: var(
     --local-shadow,
     var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08))
   );
-  font-family: var(--local-font-family, var(--font-family-base, inherit));
+  font-family: var(--local-font-family, var(--font-body, inherit));
   transition: box-shadow
       var(--local-transition-duration, var(--animation-duration-fast, 150ms))
       var(--local-easing, var(--animation-easing, ease)),
@@ -36,13 +51,13 @@
 .ag-grid-wrapper ::ng-deep .ag-header-cell,
 .ag-grid-wrapper ::ng-deep .ag-paging-panel,
 .ag-grid-wrapper ::ng-deep .ag-overlay {
-  font-family: var(--local-font-family, var(--font-family-base, inherit));
+  font-family: var(--local-font-family, var(--font-body, inherit));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-root-wrapper {
   border: none;
   border-radius: var(--local-border-radius, var(--border-radius-md, 8px));
-  background: var(--local-background, var(--background, #ffffff));
+  background: var(--local-background, var(--surface));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-root,
@@ -56,65 +71,52 @@
 .ag-grid-wrapper ::ng-deep .ag-body-horizontal-scroll-viewport,
 .ag-grid-wrapper ::ng-deep .ag-floating-bottom,
 .ag-grid-wrapper ::ng-deep .ag-floating-top {
-  background: var(--local-background, var(--background, #ffffff));
-  color: var(--local-foreground, var(--foreground, #212121));
+  background: var(--local-background, var(--surface));
+  color: var(--local-foreground, var(--foreground));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-header {
   background: var(
     --local-header-background,
-    color-mix(
-      in srgb,
-      var(--local-background, #ffffff) 88%,
-      var(--local-accent, #3f51b5) 12%
-    )
+    color-mix(in srgb, var(--surface) 88%, var(--primary) 12%)
   );
-  color: var(--local-foreground, var(--foreground, #212121));
+  color: var(--local-foreground, var(--foreground));
   border-bottom: var(--local-border-width, 1px) solid
-    var(--local-border-color, var(--complement, #c0af4b));
+    var(--local-border-color, var(--border));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-header-cell,
 .ag-grid-wrapper ::ng-deep .ag-paging-panel,
 .ag-grid-wrapper ::ng-deep .ag-cell {
   font-size: var(--local-grid-font-size, 14px);
-  color: var(--local-foreground, var(--foreground, #212121));
+  color: var(--local-foreground, var(--foreground));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-header-cell:hover {
   background: var(
     --local-header-hover-background,
-    color-mix(
-      in srgb,
-      var(--local-header-background, #f3f4f6) 90%,
-      var(--local-accent, #3f51b5) 10%
-    )
+    color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)
   );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-row {
-  background: var(--local-row-background, var(--local-background, #ffffff));
+  background: var(
+    --local-row-background,
+    var(--local-background, var(--surface))
+  );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-row.ag-row-odd {
   background: var(
     --local-row-alt-background,
-    color-mix(
-      in srgb,
-      var(--local-background, #ffffff) 94%,
-      var(--local-accent, #3f51b5) 6%
-    )
+    color-mix(in srgb, var(--surface) 94%, var(--primary) 6%)
   );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-row:hover {
   background: var(
     --local-row-hover-background,
-    color-mix(
-      in srgb,
-      var(--local-background, #ffffff) 90%,
-      var(--local-accent, #3f51b5) 10%
-    )
+    color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)
   );
 }
 
@@ -122,11 +124,7 @@
 .ag-grid-wrapper ::ng-deep .ag-row.ag-row-selected {
   background: var(
     --local-row-selected-background,
-    color-mix(
-      in srgb,
-      var(--local-background, #ffffff) 82%,
-      var(--local-accent, #3f51b5) 18%
-    )
+    color-mix(in srgb, var(--surface) 82%, var(--primary) 18%)
   ) !important;
 }
 
@@ -134,7 +132,7 @@
 .ag-grid-wrapper ::ng-deep .ag-overlay,
 .ag-grid-wrapper ::ng-deep .ag-header-cell-text,
 .ag-grid-wrapper ::ng-deep .ag-cell-value {
-  color: var(--local-foreground, var(--foreground, #212121));
+  color: var(--local-foreground, var(--foreground));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-paging-panel,
@@ -145,16 +143,24 @@
 .ag-grid-wrapper ::ng-deep .ag-select-list,
 .ag-grid-wrapper ::ng-deep .ag-filter-toolpanel,
 .ag-grid-wrapper ::ng-deep .ag-side-bar {
-  background: var(--local-background, var(--background, #ffffff));
-  color: var(--local-foreground, var(--foreground, #212121));
-  border-color: var(--local-border-color, var(--border, #d1d5db));
+  background: var(--local-background, var(--surface));
+  color: var(--local-foreground, var(--foreground));
+  border-color: var(--local-border-color, var(--border));
+}
+
+// Popups/menus float above the grid body — give them the same elevation
+// language as the rest of the personality contract (card/dialog shadow).
+.ag-grid-wrapper ::ng-deep .ag-menu,
+.ag-grid-wrapper ::ng-deep .ag-popup-child,
+.ag-grid-wrapper ::ng-deep .ag-select-list {
+  box-shadow: var(--local-shadow, var(--shadow-lg));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-cell,
 .ag-grid-wrapper ::ng-deep .ag-header-cell,
 .ag-grid-wrapper ::ng-deep .ag-paging-row-summary-panel,
 .ag-grid-wrapper ::ng-deep .ag-paging-page-summary-panel {
-  border-color: var(--local-border-color, var(--border, #d1d5db));
+  border-color: var(--local-border-color, var(--border));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-icon,
@@ -162,7 +168,7 @@
 .ag-grid-wrapper ::ng-deep .ag-sort-indicator-icon {
   color: var(
     --local-muted-foreground,
-    var(--local-foreground, var(--foreground, #212121))
+    var(--muted-foreground, var(--local-foreground, var(--foreground)))
   );
 }
 
@@ -175,12 +181,9 @@
   );
   background: var(
     --local-action-button-background,
-    var(--local-accent, var(--primary, #2563eb))
+    var(--local-accent, var(--primary))
   );
-  color: var(
-    --local-action-button-foreground,
-    var(--on-primary, var(--primary-foreground, #ffffff))
-  );
+  color: var(--local-action-button-foreground, var(--on-primary));
   box-shadow: none;
   font: inherit;
   font-size: 0.8125rem;
@@ -202,7 +205,8 @@
     --local-action-button-hover,
     color-mix(
       in srgb,
-      var(--local-action-button-background, var(--local-accent, #2563eb)) 88%,
+      var(--local-action-button-background, var(--local-accent, var(--primary)))
+        88%,
       black
     )
   );
@@ -214,16 +218,12 @@
   box-shadow: 0 0 0 3px
     var(
       --local-focus-ring,
-      color-mix(
-        in srgb,
-        var(--local-accent, var(--primary, #2563eb)) 24%,
-        transparent
-      )
+      color-mix(in srgb, var(--local-accent, var(--primary)) 24%, transparent)
     );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-grid-delete-button {
-  background: var(--local-action-delete-background, var(--danger, #dc2626));
+  background: var(--local-action-delete-background, var(--danger));
 }
 
 .ag-grid-wrapper ::ng-deep .ag-grid-delete-button:hover {
@@ -231,7 +231,7 @@
     --local-action-delete-hover,
     color-mix(
       in srgb,
-      var(--local-action-delete-background, var(--danger, #dc2626)) 88%,
+      var(--local-action-delete-background, var(--danger)) 88%,
       black
     )
   );
@@ -244,17 +244,17 @@
   min-height: 32px;
   padding: 0.35rem 0.625rem;
   border: 1px solid
-    var(--local-control-border, var(--local-border-color, #d1d5db));
+    var(--local-control-border, var(--local-border-color, var(--border)));
   border-radius: calc(
     var(--local-border-radius, var(--border-radius-md, 8px)) * 0.75
   );
   background: var(
     --local-control-background,
-    var(--local-background, var(--background, #ffffff))
+    var(--local-background, var(--surface))
   );
   color: var(
     --local-control-foreground,
-    var(--local-foreground, var(--foreground, #212121))
+    var(--local-foreground, var(--foreground))
   );
   font: inherit;
 }

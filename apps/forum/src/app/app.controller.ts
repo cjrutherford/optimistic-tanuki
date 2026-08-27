@@ -5,6 +5,7 @@ import {
   ThreadCommands,
   ForumPostCommands,
   ForumModerationCommands,
+  ForumCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateTopicDto,
@@ -20,6 +21,7 @@ import { ForumPostService } from './services/forum-post.service';
 import { ForumModerationService } from './services/forum-moderation.service';
 import { FindManyOptions } from 'typeorm';
 import { ForumPost, ForumReport, Thread, Topic } from '../entities';
+import { ForumSeedService } from './services/forum-seed.service';
 
 @Controller()
 export class AppController {
@@ -27,8 +29,19 @@ export class AppController {
     private readonly topicService: TopicService,
     private readonly threadService: ThreadService,
     private readonly forumPostService: ForumPostService,
-    private readonly forumModerationService: ForumModerationService
+    private readonly forumModerationService: ForumModerationService,
+    private readonly forumSeedService: ForumSeedService
   ) {}
+
+  @MessagePattern({ cmd: ForumCommands.SEED_DEMO_TOPICS })
+  async seedDemoTopics() {
+    return await this.forumSeedService.seedDemoTopics();
+  }
+
+  @MessagePattern({ cmd: ForumCommands.SEED_PRODUCTION_TOPICS })
+  async seedProductionTopics() {
+    return await this.forumSeedService.seedProductionTopics();
+  }
 
   // Topic endpoints
   @MessagePattern({ cmd: TopicCommands.CREATE })
@@ -42,8 +55,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: TopicCommands.FIND })
-  async findOneTopic(@Payload('id') id: string) {
-    return await this.topicService.findOne(id);
+  async findOneTopic(@Payload() data: { id: string; appScope?: string }) {
+    return await this.topicService.findOne(data.id, {
+      where: {
+        id: data.id,
+        ...(data.appScope ? { appScope: data.appScope } : {}),
+      },
+    });
   }
 
   @MessagePattern({ cmd: TopicCommands.UPDATE })
@@ -71,8 +89,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ThreadCommands.FIND })
-  async findOneThread(@Payload('id') id: string) {
-    return await this.threadService.findOne(id);
+  async findOneThread(@Payload() data: { id: string; appScope?: string }) {
+    return await this.threadService.findOne(data.id, {
+      where: {
+        id: data.id,
+        ...(data.appScope ? { appScope: data.appScope } : {}),
+      },
+    });
   }
 
   @MessagePattern({ cmd: ThreadCommands.UPDATE })

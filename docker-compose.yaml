@@ -99,6 +99,9 @@ services:
     environment:
       <<: *service_db_env
       JWT_SECRET: ${JWT_SECRET:-}
+      # Email addresses stay unverified unless the recipient consumes a
+      # verification action token. Development may override this explicitly.
+      AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}
       SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}
@@ -270,6 +273,7 @@ services:
     environment:
       <<: *gateway_client_env
       ADMIN_API_URL: ${ADMIN_API_URL:-http://admin-api:8098}
+      OWNER_CONSOLE_JWT_SECRET: ${JWT_SECRET:-}
     depends_on:
       - admin-api
 
@@ -280,12 +284,14 @@ services:
       dockerfile: ./apps/admin-api/Dockerfile
     image: cjrutherford/optimistic_tanuki_admin-api:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${ADMIN_API_PORT:-8098}:8098'
+      - '127.0.0.1:${ADMIN_API_PORT:-8098}:8098'
     environment:
       ADMIN_API_DEPLOYMENT_PATH: /app/ops/deployments/production.yaml
       ADMIN_API_SECRETS_PATH: /app/.secrets
       ADMIN_API_WORKSPACE_ROOT: /workspace
       ADMIN_API_PORT: 8098
+      ADMIN_API_JWT_SECRET: ${JWT_SECRET:-}
+      ADMIN_API_BOOTSTRAP_TOKEN: ${ADMIN_API_BOOTSTRAP_TOKEN:-}
       PRODUCTION_IMAGE_TAG: ${PRODUCTION_IMAGE_TAG:-latest}
     volumes:
       - ./ops:/app/ops
@@ -300,7 +306,7 @@ services:
       gateway:
         condition: service_healthy
       authentication:
-        condition: service_healthy
+        condition: service_started
 
   leads-app:
     container_name: ot_leads_app
@@ -372,7 +378,10 @@ services:
       SOCKET_PORT: ${GATEWAY_CHAT_SOCKET_PORT:-3300}
       SOCIAL_SOCKET_PORT: ${GATEWAY_SOCIAL_SOCKET_PORT:-3301}
       GATEWAY_REQUEST_TIMEOUT_MS: ${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
+      ASSETS_INTERNAL_MEDIA_URL: ${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
+      ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
       JWT_SECRET: ${JWT_SECRET:-}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -387,7 +396,9 @@ services:
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:
       - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro
     ports:
@@ -477,7 +488,10 @@ services:
       SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
       OLLAMA_HOST: ${OLLAMA_HOST:-prompt-proxy}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-granite4:tiny-h}
+      OLLAMA_FALLBACK_MODEL: ${OLLAMA_FALLBACK_MODEL:-qwen3.5:4b-q8_0}
+      OLLAMA_CONVERSATIONAL_MODEL: ${OLLAMA_CONVERSATIONAL_MODEL:-qwen3.5:4b-q8_0}
+      OLLAMA_TIMEOUT_MS: ${OLLAMA_TIMEOUT_MS:-600000}
       LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY: ${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
       LEAD_DISCOVERY_SEARCH_GOOGLE_CX: ${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
       LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY: ${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
@@ -598,6 +612,8 @@ services:
       <<: *service_db_env
       STORAGE_STRATEGY: ${STORAGE_STRATEGY:-local}
       LOCAL_STORAGE_PATH: /usr/src/app/storage
+      ASSETS_INTERNAL_MEDIA_PORT: ${ASSETS_INTERNAL_MEDIA_PORT:-3006}
+      ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -738,7 +754,7 @@ services:
       dockerfile: ./apps/store/Dockerfile
     image: cjrutherford/optimistic_tanuki_store:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${STORE_PORT:-3013}:3009'
+      - '${STORE_PORT:-3013}:3013'
     environment:
       <<: *service_db_env
     depends_on:

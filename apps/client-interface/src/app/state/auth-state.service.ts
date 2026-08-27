@@ -1,5 +1,5 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
 import {
   LoginRequest,
@@ -7,7 +7,6 @@ import {
   API_BASE_URL,
 } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
-import { jwtDecode } from 'jwt-decode';
 import { isPlatformBrowser } from '@angular/common';
 
 export interface UserData {
@@ -53,15 +52,9 @@ export class AuthStateService {
       return;
     }
 
-    this.tokenSubject = new BehaviorSubject<string | null>(
-      localStorage.getItem(this.tokenKey)
-    );
-    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(
-      !!localStorage.getItem(this.tokenKey)
-    );
-    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
-      this.getDecodedToken()
-    );
+    this.tokenSubject = new BehaviorSubject<string | null>(null);
+    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
     this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(
       this.getPersistedSelectedProfile()
     );
@@ -69,10 +62,7 @@ export class AuthStateService {
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
     this.currentProfile$ = this.currentProfileSubject.asObservable();
 
-    const token = localStorage.getItem(this.tokenKey);
-    if (token) {
-      this.setToken(token);
-    }
+    void this.restoreSession();
   }
 
   get isAuthenticated(): boolean {
@@ -82,15 +72,49 @@ export class AuthStateService {
     return this._isAuthenticated;
   }
 
-  login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
+  async login(
+    loginRequest: LoginRequest
+  ): Promise<{ data: Record<string, never> }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
-    return this.authService.login(loginRequest).then((response) => {
-      const token = response.data.newToken;
-      this.setToken(token);
-      return response;
-    });
+    const response = await this.authService.login(loginRequest);
+    await this.restoreSession();
+    return response;
+  }
+
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: UserData }>(
+          `${this.apiBaseUrl}/authentication/session`,
+          { withCredentials: true }
+        )
+      );
+      this.setSession(response.data);
+      return true;
+    } catch {
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.decodedTokenSubject.next(null);
+      this._isAuthenticated = false;
+      return false;
+    }
+  }
+
+  setSession(user: UserData) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.removeItem(this.tokenKey);
+    this.tokenSubject.next(null);
+    this.isAuthenticatedSubject.next(true);
+    this.decodedTokenSubject.next({ ...user, profileId: user.profileId ?? '' });
+    this._isAuthenticated = true;
   }
 
   setToken(token: string) {
@@ -99,10 +123,10 @@ export class AuthStateService {
       console.log('setToken called on non-browser platform');
       return;
     }
-    localStorage.setItem(this.tokenKey, token);
+    localStorage.removeItem(this.tokenKey);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
-    this.decodedTokenSubject.next(this.getDecodedToken());
+    this.decodedTokenSubject.next(null);
     this._isAuthenticated = true;
   }
 
@@ -113,15 +137,17 @@ export class AuthStateService {
 
     const token = this.getToken();
 
-    if (token) {
-      this.http
-        .post(`${this.apiBaseUrl}/authentication/logout`, { token })
-        .subscribe({
-          next: () => console.log('Token invalidated on gateway'),
-          error: (err) =>
-            console.error('Failed to invalidate token on gateway:', err),
-        });
-    }
+    this.http
+      .post(
+        `${this.apiBaseUrl}/authentication/logout`,
+        token ? { token } : {},
+        { withCredentials: true }
+      )
+      .subscribe({
+        next: () => console.log('Session invalidated on gateway'),
+        error: (err) =>
+          console.error('Failed to invalidate session on gateway:', err),
+      });
 
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
@@ -137,12 +163,7 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const token = localStorage.getItem(this.tokenKey);
-    if (!token) return null;
-    const decoded: any = jwtDecode(token);
-    if (decoded.profileId === undefined || decoded.profileId === null)
-      decoded.profileId = '';
-    return decoded as UserData;
+    return this.decodedTokenSubject.value;
   }
 
   getToken() {

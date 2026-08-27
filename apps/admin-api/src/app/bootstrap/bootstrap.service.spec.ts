@@ -1,15 +1,22 @@
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { of } from 'rxjs';
 import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
 import { BootstrapService } from './bootstrap.service';
 
 describe('BootstrapService', () => {
+  let deploymentPath: string;
+
   const buildConfigService = () =>
     ({
       get: jest.fn((key: string) => {
         switch (key) {
           case 'admin-api.workspaceRoot':
             return process.cwd();
+          case 'admin-api.deploymentPath':
+            return deploymentPath;
           case 'admin-api.gatewayBaseUrl':
             return 'http://127.0.0.1:3000';
           default:
@@ -18,17 +25,24 @@ describe('BootstrapService', () => {
       }),
     } as unknown as ConfigService);
 
-  it('creates the initial owner auth user, profile, and owner roles', async () => {
+  beforeEach(() => {
+    const fixtureDirectory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'bootstrap-service-')
+    );
+    deploymentPath = path.join(fixtureDirectory, 'production.yaml');
+    fs.writeFileSync(deploymentPath, 'apps: []\n');
+  });
+
+  afterEach(() => {
+    fs.rmSync(path.dirname(deploymentPath), { force: true, recursive: true });
+  });
+
+  it('upserts the configured owner auth user, profile, and owner roles', async () => {
     const authClient = {
       send: jest.fn().mockReturnValue(
         of({
-          data: {
-            user: {
-              id: 'owner-user-1',
-              firstName: 'Owner',
-              lastName: 'Console',
-            },
-          },
+          created: true,
+          user: { id: 'owner-user-1' },
         })
       ),
     };
@@ -57,6 +71,7 @@ describe('BootstrapService', () => {
     await expect(
       service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password')
     ).resolves.toEqual({
+      created: true,
       email: 'owner@example.com',
       name: 'Owner Console',
       profileId: 'owner-profile-1',
@@ -64,10 +79,9 @@ describe('BootstrapService', () => {
     });
 
     expect(authClient.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Register },
+      { cmd: AuthCommands.BootstrapOwner },
       expect.objectContaining({
         bio: 'Platform owner',
-        confirm: 'password',
         email: 'owner@example.com',
         fn: 'Owner',
         ln: 'Console',
@@ -88,7 +102,9 @@ describe('BootstrapService', () => {
         userId: 'owner-user-1',
       })
     );
-    expect(roleInit.processNow).toHaveBeenCalledWith(
+    expect(roleInit.processNow).toHaveBeenCalledTimes(2);
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         scopeName: 'global',
         assignments: expect.arrayContaining([
@@ -96,18 +112,33 @@ describe('BootstrapService', () => {
         ]),
       })
     );
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        scopeName: 'owner-console',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
+        ]),
+      })
+    );
   });
 
-  it('treats legacy null-scoped global profiles as existing owners', async () => {
+  it('repairs global and owner-console permissions for the configured existing owner', async () => {
     const authClient = {
-      send: jest.fn(),
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ created: false, user: { id: 'legacy-owner-user' } })
+        ),
     };
     const profileClient = {
       send: jest.fn().mockReturnValue(
         of([
           {
             id: 'legacy-owner-profile',
+            name: 'Existing Owner',
             appScope: null,
+            userId: 'legacy-owner-user',
           },
         ])
       ),
@@ -125,10 +156,36 @@ describe('BootstrapService', () => {
 
     await expect(
       service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password')
-    ).rejects.toThrow(
-      'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
-    );
+    ).resolves.toEqual({
+      created: false,
+      email: 'owner@example.com',
+      name: 'Owner Console',
+      profileId: 'legacy-owner-profile',
+      userId: 'legacy-owner-user',
+    });
 
-    expect(authClient.send).not.toHaveBeenCalled();
+    expect(authClient.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.BootstrapOwner },
+      expect.objectContaining({ email: 'owner@example.com' })
+    );
+    expect(roleInit.processNow).toHaveBeenCalledTimes(2);
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        scopeName: 'global',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner' }),
+        ]),
+      })
+    );
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        scopeName: 'owner-console',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
+        ]),
+      })
+    );
   });
 });

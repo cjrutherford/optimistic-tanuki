@@ -109,7 +109,7 @@ refresh_service() {
   service="$1"
 
   echo "Refreshing ${service} with current compose configuration..."
-  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$service"
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --renew-anon-volumes --no-deps "$service"
 }
 
 refresh_services() {
@@ -118,7 +118,7 @@ refresh_services() {
   fi
 
   echo "Refreshing services with current compose configuration..."
-  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$@"
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --renew-anon-volumes --no-deps "$@"
 }
 
 wait_for_gateway() {
@@ -149,6 +149,50 @@ wait_for_gateway() {
   return 1
 }
 
+seed_default_owner() {
+  owner_name="${OWNER_BOOTSTRAP_NAME:-${DEV_OWNER_NAME:-Development Owner}}"
+  owner_email="${OWNER_BOOTSTRAP_EMAIL:-${DEV_OWNER_EMAIL:-owner@optimistic-tanuki.local}}"
+  owner_password="${OWNER_BOOTSTRAP_PASSWORD:-${DEV_OWNER_PASSWORD:-DevOwner!123}}"
+  owner_payload="$(
+    node -e '
+      const [name, email, password] = process.argv.slice(1);
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      console.log(JSON.stringify({
+        fn: parts.shift() || "Development",
+        ln: parts.join(" ") || "Owner",
+        email,
+        password,
+        confirm: password,
+        bio: "Development owner",
+      }));
+    ' "$owner_name" "$owner_email" "$owner_password"
+  )"
+
+  echo "Provisioning development owner ${owner_email}..."
+  owner_response="$(
+    curl -sS -w '\n%{http_code}' \
+      -H 'content-type: application/json' \
+      -H 'x-ot-appscope: owner-console' \
+      -H 'x-ot-app-id: owner-console' \
+      -d "$owner_payload" \
+      "${HOST_GATEWAY_BASE_URL}/api/authentication/register"
+  )"
+  owner_status="$(printf '%s\n' "$owner_response" | tail -n 1)"
+  owner_body="$(printf '%s\n' "$owner_response" | sed '$d')"
+
+  case "$owner_status" in
+    2*) echo "Development owner is ready." ;;
+    *)
+      if printf '%s' "$owner_body" | grep -q 'Owner Console registration is closed'; then
+        echo "Development owner already exists."
+      else
+        echo "Unable to provision development owner: ${owner_body}" >&2
+        return 1
+      fi
+      ;;
+  esac
+}
+
 wait_for_chat_collector() {
   attempts="${1:-30}"
   delay_seconds="${2:-2}"
@@ -172,14 +216,72 @@ wait_for_chat_collector() {
   return 1
 }
 
+wait_for_forum() {
+  attempts="${1:-30}"
+  delay_seconds="${2:-2}"
+
+  echo "Waiting for forum TCP service..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    if docker compose ${COMPOSE_FILES} exec -T forum node -e '
+      const net = require("node:net");
+      const socket = net.createConnection({ host: "127.0.0.1", port: 3015 });
+      socket.once("connect", () => socket.end());
+      socket.once("close", () => process.exit(0));
+      socket.once("error", () => process.exit(1));
+      setTimeout(() => process.exit(1), 1000).unref();
+    ' >/dev/null 2>&1; then
+      echo "forum is ready."
+      return 0
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "forum did not become ready in time." >&2
+  return 1
+}
+
+wait_for_videos() {
+  attempts="${1:-60}"
+  delay_seconds="${2:-2}"
+
+  echo "Waiting for videos TCP service..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    if docker compose ${COMPOSE_FILES} exec -T videos node -e '
+      const net = require("node:net");
+      const socket = net.createConnection({ host: "127.0.0.1", port: 3022 });
+      socket.once("connect", () => socket.end());
+      socket.once("close", () => process.exit(0));
+      socket.once("error", () => process.exit(1));
+      setTimeout(() => process.exit(1), 1000).unref();
+    ' >/dev/null 2>&1; then
+      echo "videos is ready."
+      return 0
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "videos did not become ready in time." >&2
+  return 1
+}
+
 refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 refresh_service permissions
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
+refresh_service forum
+wait_for_forum
+run_seed forum "${APP_RUNTIME_DIR}" node -e 'const { ClientProxyFactory, Transport } = require("@nestjs/microservices"); const { firstValueFrom } = require("rxjs"); (async () => { const client = ClientProxyFactory.create({ transport: Transport.TCP, options: { host: process.env.FORUM_HOST || "forum", port: Number(process.env.FORUM_PORT || 3015) } }); await client.connect(); await firstValueFrom(client.send({ cmd: "SEED_DEMO_FORUM_TOPICS" }, {})); client.close(); })().catch((error) => { console.error(error); process.exit(1); });'
 refresh_service gateway
 refresh_services store authentication profile social payments assets chat-collector classifieds
 run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js
 wait_for_gateway
+seed_default_owner
 sleep 15
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
 wait_for_chat_collector
@@ -219,11 +321,9 @@ run_seed_with_media_volume_from_image() {
 }
 
 refresh_service videos
+wait_for_videos
 run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
 
-run_seed_assets() {
-  echo "Seeding assets..."
-  docker compose ${COMPOSE_FILES} exec -T assets node ./seed-assets.js || true
-}
+echo "Development seeding complete."

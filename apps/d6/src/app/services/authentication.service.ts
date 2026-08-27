@@ -10,10 +10,11 @@ export class AuthenticationService {
   private readonly authState = inject(AuthStateService);
   private readonly baseUrl = '/api/authentication';
 
-  login(data: LoginRequest): Observable<{ data: { newToken: string } }> {
-    return this.http.post<{ data: { newToken: string } }>(
+  login(data: LoginRequest): Observable<{ data: { profileId?: string } }> {
+    return this.http.post<{ data: { profileId?: string } }>(
       `${this.baseUrl}/login`,
-      data
+      data,
+      { headers: { 'X-ot-session-mode': 'cookie' }, withCredentials: true }
     );
   }
 

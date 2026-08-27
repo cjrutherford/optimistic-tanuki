@@ -28,6 +28,17 @@
 
 This is a large project and needs to be handled with care or there will be a long turn around on changes. When working on a task, please track which apps and libs are being touched to ensure we can streamline the rebuild process.
 
+## Workspace isolation
+
+- Do not create or use Git worktrees for this repository. Work in the current checkout unless the user explicitly changes this instruction.
+
+## TypeORM migrations
+
+- Schema changes must use the owning service's Nx `typeorm:migration:generate` target. Do not hand-create migration files or timestamps.
+- Use TypeORM CLI `migration:create` only when a data backfill cannot be inferred from entity metadata; document that exception and provide reversible `up` and `down` behavior.
+- Review generated SQL, run the service migration target against a fresh database, and run `pnpm run validate:typeorm-migrations` before merging.
+- Migration classes must end in the CLI-generated 13-digit JavaScript timestamp. Do not rename or reorder migrations that are already deployed.
+
 We want to have the quickest turnaround on changes, so please use the most efficient script (preferably with pnpm) to apply the changes to the local stack.
 
 New components and UX should either try to use existing component elements or build new libraries to allow for reusability. The defining goal in the architecture is that the platform provides, apps shouldn't have to create their own elements unless it's for structure or unique to that specific application.

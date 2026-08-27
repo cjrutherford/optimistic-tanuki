@@ -11,6 +11,7 @@ export { FinancialInvoice } from './financial-invoice.entity';
 export { FinancialCheckoutSession } from './financial-checkout-session.entity';
 export { FinCommanderPlanEntity } from './fin-commander-plan.entity';
 export { FinCommanderGoalEntity } from './fin-commander-goal.entity';
+export { FinCommanderFundingDirectiveEntity } from './fin-commander-funding-directive.entity';
 export {
   FinCommanderScenarioEntity,
   FinCommanderScenarioAssumptionRecord,

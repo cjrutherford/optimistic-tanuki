@@ -6,15 +6,23 @@ import {
 } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'hai',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 
 app.use(
   express.static(browserDistFolder, {

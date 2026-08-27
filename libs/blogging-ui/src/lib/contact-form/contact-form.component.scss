@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .row {
   display: flex;
   flex-direction: row;
@@ -8,7 +10,7 @@
     img {
       width: 100%;
       height: auto;
-      border-radius: 0.5rem;
+      border-radius: var(--border-radius-lg, 0.5rem);
       object-fit: cover;
       height: 100%;
     }
@@ -18,10 +20,10 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
+    background: var(--background-overlay, rgba(0, 0, 0, 0.5));
+    border-radius: var(--border-radius-lg, 8px);
     padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    @include p.shadow('md');
   }
 }
 

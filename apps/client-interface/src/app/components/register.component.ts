@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 
 import { Router } from '@angular/router';
@@ -82,11 +81,21 @@ export class RegisterComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'client-interface'
+        'client-interface',
+        true
       );
 
-      if (result.success && result.token) {
-        this.authStateService.setToken(result.token);
+      if (result.success && (result.token || result.session)) {
+        if (result.token) {
+          this.authStateService.setToken(result.token);
+        } else if (!(await this.authStateService.restoreSession())) {
+          this.messageService.addMessage({
+            content:
+              'OAuth registration could not restore your session. Please try again.',
+            type: 'error',
+          });
+          return;
+        }
         await this.handlePostLogin();
       } else if (result.needsRegistration) {
         this.messageService.addMessage({

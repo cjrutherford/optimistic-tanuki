@@ -5,7 +5,7 @@
 .circle {
   /* Circle spinner styles */
   border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: var(--accent, #1c4c5b);
+  border-left-color: var(--primary);
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -14,7 +14,7 @@
 
 .dots {
   /* change color here */
-  color: var(--accent, #1c4c5b);
+  color: var(--primary);
 }
 .dots,
 .dots div {
@@ -97,7 +97,7 @@
 
 .default {
   /* change color here */
-  color: var(--accent, #1c4c5b);
+  color: var(--primary);
 }
 .default,
 .default div {
@@ -134,7 +134,7 @@
 }
 .dual-ring {
   /* change color here */
-  color: var(--accent, #1c4c5b);
+  color: var(--primary);
 }
 .dual-ring,
 .dual-ring:after {
@@ -167,7 +167,7 @@
 
 .hourglass {
   /* change color here */
-  color: var(--accent, #1c4c5b);
+  color: var(--primary);
 }
 .hourglass,
 .hourglass:after {

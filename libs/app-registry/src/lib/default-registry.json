@@ -77,13 +77,13 @@
     {
       "appId": "forgeofwill",
       "name": "Forge of Will",
-      "domain": "localhost",
-      "uiBaseUrl": "http://localhost:8081",
-      "apiBaseUrl": "http://localhost:3300",
+      "domain": "forgeofwill.com",
+      "uiBaseUrl": "https://forgeofwill.com",
+      "apiBaseUrl": "https://forgeofwill.com/api",
       "appType": "client",
       "visibility": "public",
       "description": "Personal project planning and execution workspace.",
-      "iconUrl": "http://localhost:8081/android-chrome-192x192.png",
+      "iconUrl": "https://forgeofwill.com/android-chrome-192x192.png",
       "sortOrder": 11,
       "authEmail": {
         "enabled": true,

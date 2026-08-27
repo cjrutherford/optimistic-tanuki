@@ -111,10 +111,36 @@ function harmonySpread(p: Personality): number | undefined {
 }
 
 /**
+ * Categorical signature for a personality's page-background pattern
+ * (Workstream C1/D3, 2026-07-18 refactor plan). `undefined` for the two
+ * documented flat personalities (`classic`, `foundation`) — matching
+ * `categorical()`'s existing "both undefined counts as equal" rule, so a
+ * flat/flat pair contributes 0 here (correctly: two flat personalities
+ * really are alike on this one dimension) while any pattern/pattern or
+ * pattern/flat pair contributes a full unit of difference. The full pattern
+ * string (plus the tint flag) is used as the signature rather than a
+ * hand-picked motif label so two authored patterns can never accidentally
+ * collide.
+ */
+function pageBackgroundSignature(p: Personality): string | undefined {
+  if (!p.pageBackground) return undefined;
+  return `${p.pageBackground.usePrimaryTint ? 'tint' : 'neutral'}:${
+    p.pageBackground.pattern
+  }`;
+}
+
+/**
  * Field specs, grouped by how strongly they drive the rendered look. Group
- * weights (sum to 1):
- *   color 0.28 | typography 0.24 | structure/tokens 0.22 | animation 0.10 |
- *   presentation 0.08 | color-generation + icon 0.08
+ * weights (sum to 1.08; `personalityDistance` normalizes by the actual
+ * summed weight, so this isn't required to be exactly 1, but is kept close
+ * to it for the numbers below to stay meaningful at a glance):
+ *   color 0.28 | typography 0.24 | structure/tokens 0.25 (was 0.22 — +0.03
+ *   for `tokens.shadowProfile`, Workstream B2) | animation 0.10 |
+ *   presentation 0.08 | color-generation + icon 0.10 (was 0.08 — +0.02 for
+ *   `pageBackground.pattern`, Workstream C1/D3, 2026-07-18 refactor plan) |
+ *   surface character 0.03 (new — Workstream E1/D3, same 2026-07-18 plan's
+ *   Phase 5b: `surfaceHueBias` + `surfaceLuminosityOffset`, a combined
+ *   weight similar in magnitude to `tokens.shadowProfile`'s single 0.03)
  */
 const FIELD_SPECS: readonly FieldSpec[] = [
   // ---- Color (0.28) ----
@@ -221,6 +247,16 @@ const FIELD_SPECS: readonly FieldSpec[] = [
     weight: 0.02,
     distance: numeric((p) => p.tokens.shadowMultiplier, 0.4),
   },
+  {
+    // Workstream B2 (2026-07-18 refactor plan / joint 07-14 plan B2):
+    // shadowProfile is a genuine shape discriminator (layered / diffuse /
+    // hard-offset / neon / technical / minimal / playful-drop) on top of
+    // shadowIntensity's magnitude scaling, so it earns its own categorical
+    // dimension here rather than folding into shadowIntensity above.
+    id: 'tokens.shadowProfile',
+    weight: 0.03,
+    distance: categorical((p) => p.tokens.shadowProfile),
+  },
 
   // ---- Animation (0.10) ----
   {
@@ -294,6 +330,37 @@ const FIELD_SPECS: readonly FieldSpec[] = [
     id: 'iconStyle',
     weight: 0.02,
     distance: categorical((p) => p.iconStyle),
+  },
+  {
+    // Workstream C1/D3 (2026-07-18 refactor plan): page-background pattern
+    // presence/type is now a genuine per-personality visual dimension (10 of
+    // 12 personalities render a distinct pattern; `classic`/`foundation` are
+    // the documented flat exceptions). Small weight, same categorical style
+    // as `tokens.shadowProfile` above.
+    id: 'pageBackground.pattern',
+    weight: 0.02,
+    distance: categorical(pageBackgroundSignature),
+  },
+
+  // ---- Surface character (0.03, Workstream E1/D3, Phase 5b) ----
+  {
+    // Every predefined personality authors a `surfaceHueBias`
+    // ('none'/'primary'/'warm'/'cool', mirroring `shadowTint`'s vocabulary),
+    // so this is a genuine categorical dimension the same way
+    // `colorGeneration.shadowTint` is above, not an optional field with a
+    // meaningful "both undefined" case.
+    id: 'colorGeneration.surfaceHueBias',
+    weight: 0.015,
+    distance: categorical((p) => p.colorGeneration.surfaceHueBias),
+  },
+  {
+    // Authored range is roughly -1..-7 (Workstream E1 spread the previous
+    // -1..-4, mostly-−2 cluster across 7 unique values); ~3 points is the
+    // point an elevation lift reads as clearly deeper/shallower than
+    // another personality's, so that's the JND scale here.
+    id: 'colorGeneration.surfaceLuminosityOffset',
+    weight: 0.015,
+    distance: numeric((p) => p.colorGeneration.surfaceLuminosityOffset, 3),
   },
 ];
 

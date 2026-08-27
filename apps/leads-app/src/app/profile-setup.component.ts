@@ -155,7 +155,7 @@ import { ProfileService } from './profile.service';
       }
       .error {
         margin: 0;
-        color: #b91c1c;
+        color: var(--app-danger);
       }
       @media (max-width: 720px) {
         .grid {

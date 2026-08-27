@@ -4,6 +4,7 @@ import * as yaml from 'js-yaml';
 
 export declare type AssetsConfigType = {
   listenPort: number;
+  internalMediaPort?: number;
   database: {
     host: string;
     port: number;
@@ -60,6 +61,8 @@ export const loadConfig = () => {
 
   return {
     listenPort: configData.listenPort,
+    internalMediaPort: Number(process.env.ASSETS_INTERNAL_MEDIA_PORT || 3006),
+    internalMediaToken: process.env.ASSETS_INTERNAL_MEDIA_TOKEN,
     database: {
       ...configData.database,
       password: process.env.POSTGRES_PASSWORD || configData.database.password,

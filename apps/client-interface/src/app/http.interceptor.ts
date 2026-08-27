@@ -7,34 +7,36 @@ import { catchError, throwError } from 'rxjs';
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);
-  const token = authStateService.getToken();
-
   // Determine app scope based on API route to align with
   // permissions configuration (social endpoints use the
   // "social" app scope, blogging uses "blogging", etc.).
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (url.includes('/api/blog')) {
+  if (url.includes('/api/social')) {
+    appScope = 'social';
+  } else if (url.includes('/api/blog')) {
     appScope = 'blogging';
   } else if (url.includes('/api/project')) {
     appScope = 'project-planning';
-  } else if (url.includes('/api/forum')) {
-    appScope = 'forum';
   }
 
   const clonedRequest = req.clone({
     setHeaders: {
-      Authorization: token ? `Bearer ${token}` : '',
       'X-ot-appscope': appScope,
+      'X-ot-session-mode': 'cookie',
     },
+    withCredentials: true,
   });
 
   return next(clonedRequest).pipe(
     catchError((error) => {
       // Only logout on 401 (Unauthorized - token expired/invalid)
       // Do NOT logout on 403 (Forbidden - permission denied)
-      if (error.status === 401) {
+      if (
+        error.status === 401 &&
+        !req.url.includes('/authentication/session')
+      ) {
         authStateService.logout();
         router.navigate(['/login']);
       }

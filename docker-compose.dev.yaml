@@ -359,16 +359,17 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
       - ADMIN_API_URL=http://admin-api:8098
+      - OWNER_CONSOLE_JWT_SECRET=${JWT_SECRET:-development-jwt-secret}
 
   admin-api:
     container_name: ot_admin_api
     build:
       context: .
       dockerfile: ./apps/admin-api/Dockerfile
-    ports:
-      - '8098:8098'
     environment:
       - ADMIN_API_PORT=8098
+      - ADMIN_API_JWT_SECRET=${JWT_SECRET:-development-jwt-secret}
+      - ADMIN_API_BOOTSTRAP_TOKEN=${ADMIN_API_BOOTSTRAP_TOKEN:-}
       - ADMIN_API_DEPLOYMENT_PATH=/app/ops/deployments/production.yaml
       - ADMIN_API_SECRETS_PATH=/app/.secrets
       - ADMIN_API_WORKSPACE_ROOT=/workspace
@@ -887,13 +888,20 @@ services:
       - '9000:9000' # Expose the debugging port
     environment:
       - NODE_ENV=development
+      - OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}
       - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
       - DEV_ALLOW_ALL_BROWSER_ORIGINS=true
+      - APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081"}
+      - CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081
+      - CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080
+      - CLIENT_INTERFACE_DOMAIN=localhost
       - GATEWAY_REQUEST_TIMEOUT_MS=${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
+      - ASSETS_INTERNAL_MEDIA_URL=${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
+      - ASSETS_INTERNAL_MEDIA_TOKEN=${ASSETS_INTERNAL_MEDIA_TOKEN:-development-assets-media-token}
       - LEMON_SQUEEZY_WEBHOOK_SECRET=${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
+      - GOOGLE_REDIRECT_URI=http://localhost:8080/oauth/callback/google
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
       - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-}
@@ -1046,8 +1054,14 @@ services:
     environment:
       - POSTGRES_HOST=postgres
       - NODE_ENV=development
-      - OLLAMA_HOST=192.168.50.14
-      - OLLAMA_MODEL=gemma3:4b
+      - OLLAMA_HOST=${OLLAMA_HOST:-192.168.50.191}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite4:tiny-h}
+      - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-qwen3.5:4b-q8_0}
+      # DISC turns only; see llm/task-models.ts.
+      - OLLAMA_CONVERSATIONAL_MODEL=${OLLAMA_CONVERSATIONAL_MODEL:-qwen3.5:4b-q8_0}
+      # Matches the gateway's model-bound preset; 0 disables it (debugging only).
+      - OLLAMA_TIMEOUT_MS=${OLLAMA_TIMEOUT_MS:-600000}
       - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
       - LEAD_DISCOVERY_SEARCH_GOOGLE_CX=${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
       - LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY=${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
@@ -1231,6 +1245,8 @@ services:
       - NODE_ENV=development
       - STORAGE_STRATEGY=local
       - LOCAL_STORAGE_PATH=/usr/src/app/storage
+      - ASSETS_INTERNAL_MEDIA_PORT=${ASSETS_INTERNAL_MEDIA_PORT:-3006}
+      - ASSETS_INTERNAL_MEDIA_TOKEN=${ASSETS_INTERNAL_MEDIA_TOKEN:-development-assets-media-token}
     depends_on:
       postgres:
         condition: service_healthy
@@ -1279,7 +1295,7 @@ services:
       - video-processing-data:/tmp/video-processing
       - /mnt/valhalla/media:/media:ro
     environment:
-      - VIDEO_SEED_SOURCE_DIR=/media/Tv
+      - VIDEO_SEED_SOURCE_DIR=/media/TV
     command:
       [
         'dumb-init',

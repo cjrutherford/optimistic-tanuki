@@ -3,7 +3,10 @@
   @for (message of messageService.messages(); track message) {
   <otui-tile class="message" [ngClass]="message.type">
     <span>{{ message.content }}</span>
-    <otui-button (click)="dismissMessage($index)">❌</otui-button>
+    <otui-button (click)="dismissMessage($index)">
+      <span aria-hidden="true">❌</span>
+      <span class="message-dismiss-label">Dismiss message</span>
+    </otui-button>
   </otui-tile>
   }
 </otui-card>

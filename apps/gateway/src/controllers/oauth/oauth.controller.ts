@@ -10,7 +10,9 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -26,8 +28,6 @@ import {
 } from '@optimistic-tanuki/app-registry-backend';
 import {
   CreateProfileDto,
-  LinkProviderRequest,
-  OAuthCallbackRequest,
   OAuthProvider,
   ProfileDto,
   RegisterRequest,
@@ -37,18 +37,21 @@ import { firstValueFrom } from 'rxjs';
 import {
   AuthCommands,
   ProfileCommands,
+  RoleCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { Public } from '../../decorators/public.decorator';
-import { User, UserDetails } from '../../decorators/user.decorator';
+import { AuthGuard } from '../../auth/auth.guard';
 import {
   RoleInitBuilder,
   RoleInitService,
 } from '@optimistic-tanuki/permission-lib';
 import { Request, Response } from 'express';
 import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature-account-bootstrap';
-import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import validator from 'validator';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { OAUTH_STATE_STORE, OAuthStateStore } from './oauth-state.store';
 
 type GatewayOAuthProviderConfig = {
   clientId?: string;
@@ -65,7 +68,14 @@ type OAuthStatePayload = {
   provider: string;
   returnTo: string;
   appScope: string;
+  /** Exact provider callback selected during initiation and retained server-side. */
+  providerRedirectUri?: string;
   issuedAt: number;
+  /** Server-held PKCE verifier; never serialized into the browser state. */
+  codeVerifier: string;
+  cookieSession?: boolean;
+  /** Present only in the server-side one-time state record for link flows. */
+  linkUserId?: string;
 };
 
 type OAuthIdentity = {
@@ -75,8 +85,6 @@ type OAuthIdentity = {
   displayName: string;
   firstName: string;
   lastName: string;
-  accessToken?: string;
-  refreshToken?: string;
 };
 
 @ApiTags('oauth')
@@ -84,18 +92,24 @@ type OAuthIdentity = {
 export class OAuthController {
   private readonly providers = ['google', 'github', 'microsoft', 'facebook'];
   private readonly oauthStateTtlMs = 10 * 60 * 1000;
+  private readonly callbackGrantTtlMs = 60 * 1000;
+  private readonly providerRequestTimeoutMs = 10 * 1000;
 
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy,
     @Inject(GATEWAY_APP_REGISTRY)
     private readonly registry: AppRegistry,
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly configService: ConfigService,
-    private readonly registerBootstrap: RegisterAccountBootstrapService
+    private readonly registerBootstrap: RegisterAccountBootstrapService,
+    @Inject(OAUTH_STATE_STORE)
+    private readonly oauthStateStore: OAuthStateStore
   ) {
     this.authClient
       .connect()
@@ -107,6 +121,7 @@ export class OAuthController {
 
   @Get('start/:provider')
   @Public()
+  @Throttle({ short: { limit: 20, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Initiate shared OAuth login',
     description:
@@ -117,8 +132,99 @@ export class OAuthController {
     @Res() response: Response,
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
+    @Query('domain') queryDomain: string | undefined,
+    @Query('sessionMode') sessionMode?: string
+  ) {
+    return this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain,
+      undefined,
+      true,
+      sessionMode === 'cookie'
+    );
+  }
+
+  /**
+   * Starts a provider-owned authorization flow to link an identity to the
+   * guard-authenticated account. The provider identity is never accepted from
+   * a client request; it is derived only after the callback code exchange.
+   */
+  @UseGuards(AuthGuard)
+  @Get('link/:provider')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initiate a verified OAuth provider link' })
+  async startOAuthLink(
+    @Req() request: Request & { user?: { userId?: string } },
+    @Res() response: Response,
+    @Query('returnTo') returnTo: string | undefined,
+    @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined
   ) {
+    const userId = request.user?.userId;
+    if (!userId) {
+      throw new HttpException(
+        'Authenticated user is required',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    return this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain,
+      userId
+    );
+  }
+
+  /**
+   * Browser clients cannot attach an Authorization header to a popup GET.
+   * This guarded endpoint creates the link transaction and returns the
+   * provider URL that the already-authenticated application can open.
+   */
+  @UseGuards(AuthGuard)
+  @Post('link/:provider')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create an OAuth provider-link transaction' })
+  async createOAuthLink(
+    @Req() request: Request & { user?: { userId?: string } },
+    @Res({ passthrough: true }) response: Response,
+    @Query('returnTo') returnTo: string | undefined,
+    @Query('appScope') requestedAppScope: string | undefined,
+    @Query('domain') queryDomain: string | undefined
+  ): Promise<{ authorizationUrl: string }> {
+    const userId = request.user?.userId;
+    if (!userId) {
+      throw new HttpException(
+        'Authenticated user is required',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    const authorizationUrl = await this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain,
+      userId,
+      false
+    );
+    return { authorizationUrl };
+  }
+
+  private async beginOAuthFlow(
+    request: Request,
+    response: Response,
+    returnTo: string | undefined,
+    requestedAppScope: string | undefined,
+    queryDomain: string | undefined,
+    linkUserId?: string,
+    redirect = true,
+    cookieSession = false
+  ): Promise<string> {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
     )
@@ -136,9 +242,17 @@ export class OAuthController {
     }
 
     const validatedReturnTo = this.validateReturnTo(returnTo);
-    const appScope =
-      requestedAppScope?.trim() ||
-      this.resolveAppScopeForReturnTo(validatedReturnTo);
+    const resolvedAppScope = this.resolveAppScopeForReturnTo(validatedReturnTo);
+    if (
+      requestedAppScope?.trim() &&
+      requestedAppScope.trim() !== resolvedAppScope
+    ) {
+      throw new HttpException(
+        'appScope must match the registered returnTo application',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    const appScope = resolvedAppScope;
     if (!appScope) {
       throw new HttpException(
         'Unable to resolve app scope for OAuth request',
@@ -146,8 +260,13 @@ export class OAuthController {
       );
     }
 
-    const domain =
-      queryDomain?.trim() || new URL(validatedReturnTo).hostname || undefined;
+    const domain = new URL(validatedReturnTo).hostname;
+    if (queryDomain?.trim() && queryDomain.trim() !== domain) {
+      throw new HttpException(
+        'domain must match the returnTo host',
+        HttpStatus.BAD_REQUEST
+      );
+    }
     const config = this.getProviderConfig(provider, domain);
     if (!config.enabled || !config.clientId || !config.authorizationEndpoint) {
       throw new HttpException(
@@ -156,20 +275,29 @@ export class OAuthController {
       );
     }
 
-    const state = this.signState({
+    const providerRedirectUri = this.resolveProviderRedirectUri(
+      provider,
+      config,
+      appScope
+    );
+    const { state, stateId, nonce, codeChallenge } = await this.signState({
       provider,
       returnTo: validatedReturnTo,
       appScope,
+      providerRedirectUri,
       issuedAt: Date.now(),
-    });
+      linkUserId,
+      cookieSession,
+    } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
-    const redirectUri = this.resolveProviderRedirectUri(provider, config);
     const params = new URLSearchParams({
       client_id: config.clientId,
-      redirect_uri: redirectUri,
+      redirect_uri: providerRedirectUri,
       response_type: 'code',
       scope: (config.scopes || []).join(' '),
       state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
 
     if (provider === 'google') {
@@ -177,7 +305,25 @@ export class OAuthController {
       params.set('prompt', 'consent');
     }
 
-    response.redirect(`${config.authorizationEndpoint}?${params.toString()}`);
+    const existingNonces = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    );
+    const nonceCookie = [
+      ...existingNonces.filter((entry) => entry.id !== stateId),
+      { id: stateId, nonce },
+    ].slice(-4);
+    response.cookie('oauth_state_nonce', JSON.stringify(nonceCookie), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: !['development', 'test'].includes(process.env.NODE_ENV || ''),
+      path: '/api/oauth',
+      maxAge: this.oauthStateTtlMs,
+    });
+    const authorizationUrl = `${
+      config.authorizationEndpoint
+    }?${params.toString()}`;
+    if (redirect) response.redirect(authorizationUrl);
+    return authorizationUrl;
   }
 
   @Get('callback/:provider')
@@ -203,24 +349,55 @@ export class OAuthController {
       );
     }
 
-    const {
-      code,
-      state,
-      error,
-      error_description: errorDescription,
-    } = request.query as Record<string, string | undefined>;
-    if (!state) {
-      throw new HttpException('Missing OAuth state', HttpStatus.BAD_REQUEST);
+    const { code, state, error } = request.query as Record<
+      string,
+      string | undefined
+    >;
+    if (!state || state.length > 512 || (code && code.length > 4096)) {
+      this.logger.warn('Rejected OAuth callback: missing state');
+      this.respondInvalidOAuthCallback(response);
+      return;
     }
 
-    const statePayload = this.verifyState(state, provider);
-    const finalCallbackUrl = this.buildFinalCallbackUrl(statePayload.returnTo);
+    const stateId = state.split('.')[0];
+    const nonce = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    ).find((entry) => entry.id === stateId)?.nonce;
+    let statePayload: OAuthStatePayload;
+    try {
+      statePayload = await this.verifyAndConsumeState(state, provider, nonce);
+    } catch (callbackStateError: any) {
+      this.logger.warn(
+        `Rejected OAuth callback state: ${
+          callbackStateError?.message || callbackStateError
+        }`
+      );
+      this.respondInvalidOAuthCallback(response);
+      return;
+    }
+    const finalCallbackUrl = this.buildFinalCallbackUrl(statePayload.appScope);
+    const callbackDomain = new URL(statePayload.returnTo).hostname;
+    const expectedProviderRedirectUri = this.resolveProviderRedirectUri(
+      provider,
+      this.getProviderConfig(provider, callbackDomain),
+      statePayload.appScope
+    );
+    if (
+      statePayload.providerRedirectUri &&
+      statePayload.providerRedirectUri !== expectedProviderRedirectUri
+    ) {
+      this.logger.warn('Rejected OAuth callback with mismatched redirect URI');
+      this.respondInvalidOAuthCallback(response);
+      return;
+    }
+    const providerRedirectUri =
+      statePayload.providerRedirectUri || expectedProviderRedirectUri;
 
     if (error) {
       response.redirect(
         this.withQuery(finalCallbackUrl, {
           error,
-          error_description: errorDescription || error,
+          error_description: 'OAuth sign-in was cancelled or declined.',
           returnTo: statePayload.returnTo,
         })
       );
@@ -239,11 +416,36 @@ export class OAuthController {
     }
 
     try {
-      const identity = await this.exchangeProviderCode(
-        provider,
-        code,
-        new URL(statePayload.returnTo).hostname
+      const identity = this.validateProviderIdentity(
+        await this.exchangeProviderCode(
+          provider,
+          code,
+          callbackDomain,
+          statePayload.codeVerifier,
+          providerRedirectUri
+        )
       );
+      if (statePayload.linkUserId) {
+        await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.LinkProvider },
+            {
+              userId: statePayload.linkUserId,
+              provider,
+              providerUserId: identity.providerUserId,
+              providerEmail: identity.email,
+              providerDisplayName: identity.displayName,
+            }
+          )
+        );
+        response.redirect(
+          this.withQuery(finalCallbackUrl, {
+            linked: provider,
+            returnTo: statePayload.returnTo,
+          })
+        );
+        return;
+      }
       const loginResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.OAuthLogin },
@@ -253,8 +455,6 @@ export class OAuthController {
             email: identity.email,
             emailVerified: identity.emailVerified,
             displayName: identity.displayName,
-            accessToken: identity.accessToken,
-            refreshToken: identity.refreshToken,
           }
         )
       );
@@ -277,25 +477,29 @@ export class OAuthController {
         return;
       }
       if (!userId && loginResult?.data?.needsRegistration) {
-        userId = await this.registerOAuthUser(
+        this.requireUsableOAuthEmail(identity.email, provider);
+        const registeredUser = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
           identity
         );
-        await this.sendOAuthVerificationEmail(
-          statePayload.appScope,
-          identity.email,
-          statePayload.returnTo
-        );
-        response.redirect(
-          this.withQuery(finalCallbackUrl, {
-            error: 'email_verification_required',
-            error_description:
-              'Check your email to verify your account before signing in.',
-            returnTo: statePayload.returnTo,
-          })
-        );
-        return;
+        userId = registeredUser.userId;
+        if (!registeredUser.emailVerified) {
+          await this.sendOAuthVerificationEmail(
+            statePayload.appScope,
+            identity.email,
+            statePayload.returnTo
+          );
+          response.redirect(
+            this.withQuery(finalCallbackUrl, {
+              error: 'email_verification_required',
+              error_description:
+                'Check your email to verify your account before signing in.',
+              returnTo: statePayload.returnTo,
+            })
+          );
+          return;
+        }
       }
 
       if (!userId) {
@@ -308,6 +512,7 @@ export class OAuthController {
         identity.displayName || identity.email,
         identity.email
       );
+      await this.assertOwnerConsoleAccess(statePayload.appScope, profile.id);
       const issueResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
@@ -322,22 +527,28 @@ export class OAuthController {
         throw new Error('Authentication service did not return a token');
       }
 
+      const callbackCode = await this.createCallbackGrant(
+        token,
+        statePayload.returnTo,
+        statePayload.appScope,
+        stateId,
+        nonce!,
+        statePayload.cookieSession === true
+      );
       response.redirect(
         this.withQuery(finalCallbackUrl, {
-          token,
+          callbackCode,
           returnTo: statePayload.returnTo,
         })
       );
     } catch (error: any) {
-      this.logger.error(
-        'Error in oauthRedirectCallback:',
-        error?.message || error
-      );
+      // OAuth provider errors can contain response details or, in malformed
+      // errors, credentials. Keep callback diagnostics deliberately generic.
+      this.logger.error('OAuth callback failed');
       response.redirect(
         this.withQuery(finalCallbackUrl, {
           error: 'oauth_callback_failed',
-          error_description:
-            error?.message || 'OAuth authentication could not be completed',
+          error_description: 'OAuth authentication could not be completed.',
           returnTo: statePayload.returnTo,
         })
       );
@@ -347,62 +558,104 @@ export class OAuthController {
   @Post('callback')
   @Public()
   @ApiOperation({
-    summary: 'Handle OAuth provider callback',
+    summary: 'Retired legacy OAuth callback endpoint',
     description:
-      'Legacy app-owned callback endpoint. Shared server-owned OAuth should use GET /oauth/start/:provider and GET /oauth/callback/:provider instead.',
+      'OAuth callbacks must use the server-owned GET /oauth/callback/:provider flow.',
   })
   @ApiResponse({
-    status: 201,
-    description: 'OAuth callback processed successfully.',
+    status: 410,
+    description: 'Legacy callback retired; use the server-owned OAuth flow.',
   })
-  @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async oauthCallback(@Body() data: OAuthCallbackRequest) {
-    try {
-      this.logger.debug(`OAuth callback for provider=${data.provider}`);
-      return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.OAuthLogin }, data)
-      );
-    } catch (error) {
-      this.logger.error('Error in oauthCallback:', error?.message || error);
-      throw new HttpException(
-        `OAuth callback failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+  async oauthCallback() {
+    throw new HttpException(
+      'This OAuth callback endpoint has been retired. Start OAuth with GET /oauth/start/:provider.',
+      HttpStatus.GONE
+    );
   }
 
+  @Post('callback/redeem')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Redeem a one-time OAuth callback code' })
+  async redeemCallbackCode(
+    @Body() data: { callbackCode?: unknown },
+    @Req() request: Request,
+    @Res({ passthrough: true }) response?: Response
+  ): Promise<
+    | { token: string; returnOrigin: string }
+    | { session: true; returnOrigin: string }
+  > {
+    const callbackCode =
+      typeof data?.callbackCode === 'string' ? data.callbackCode : '';
+    const [stateId, secret] = callbackCode.split('.');
+    const origin = request.headers.origin;
+    const nonce = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    ).find((entry) => entry.id === stateId)?.nonce;
+    if (
+      callbackCode.length > 512 ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(stateId) ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(secret) ||
+      !nonce ||
+      typeof origin !== 'string'
+    ) {
+      throw new HttpException(
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    const grant = await this.oauthStateStore.consumeCallbackGrant(
+      callbackCode,
+      origin,
+      stateId,
+      this.hashNonce(nonce)
+    );
+    if (!grant) {
+      throw new HttpException(
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    if (
+      (grant.cookieSession ||
+        request.headers['x-ot-session-mode'] === 'cookie') &&
+      response
+    ) {
+      response.cookie('ot_session', grant.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 1000,
+      });
+      return { session: true, returnOrigin: grant.returnOrigin };
+    }
+    return { token: grant.token, returnOrigin: grant.returnOrigin };
+  }
+
+  // Not @Public(): this mutates account state, so AuthGuard MUST reject an
+  // anonymous or invalid-signature request before the handler runs. The
+  // acting identity is read from the guard-verified `request.user` — never
+  // from the `@User()` decorator, which decodes the token WITHOUT verifying
+  // its signature and would let a forged userId link a provider onto an
+  // arbitrary victim's account.
+  @UseGuards(AuthGuard)
   @Post('link')
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Link an OAuth provider to the current user account',
-    description:
-      "Links a new OAuth provider (Google, GitHub, etc.) to the authenticated user's account.",
-  })
-  @ApiResponse({ status: 201, description: 'Provider linked successfully.' })
-  @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async linkProvider(
-    @Body() data: Omit<LinkProviderRequest, 'userId'>,
-    @User() user: UserDetails
-  ) {
-    try {
-      this.logger.debug(
-        `Linking provider=${data.provider} to userId=${user.userId}`
-      );
-      return await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.LinkProvider },
-          { ...data, userId: user.userId }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Error in linkProvider:', error?.message || error);
-      throw new HttpException(
-        `Link provider failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+  @ApiOperation({ summary: 'Retired direct OAuth provider link endpoint' })
+  @ApiResponse({ status: 410, description: 'Use GET /oauth/link/:provider.' })
+  async linkProvider() {
+    throw new HttpException(
+      'Direct provider linking is retired. Start a verified link flow with GET /oauth/link/:provider.',
+      HttpStatus.GONE
+    );
   }
 
+  // Not @Public(): this mutates account state, so AuthGuard MUST reject an
+  // anonymous or invalid-signature request before the handler runs. See
+  // linkProvider above for why identity comes from `request.user`, not
+  // `@User()`.
+  @UseGuards(AuthGuard)
   @Post('unlink')
   @ApiBearerAuth()
   @ApiOperation({
@@ -414,16 +667,17 @@ export class OAuthController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async unlinkProvider(
     @Body() data: Omit<UnlinkProviderRequest, 'userId'>,
-    @User() user: UserDetails
+    @Req() req: { user: { userId: string } }
   ) {
     try {
+      const userId = req.user.userId;
       this.logger.debug(
-        `Unlinking provider=${data.provider} from userId=${user.userId}`
+        `Unlinking provider=${data.provider} from userId=${userId}`
       );
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UnlinkProvider },
-          { ...data, userId: user.userId }
+          { ...data, userId }
         )
       );
     } catch (error) {
@@ -435,6 +689,11 @@ export class OAuthController {
     }
   }
 
+  // Not @Public(): reveals which providers are linked to an account, so
+  // AuthGuard MUST reject an anonymous or invalid-signature request before
+  // the handler runs. See linkProvider above for why identity comes from
+  // `request.user`, not `@User()`.
+  @UseGuards(AuthGuard)
   @Get('providers')
   @ApiBearerAuth()
   @ApiOperation({
@@ -447,13 +706,14 @@ export class OAuthController {
     description: 'Linked providers retrieved successfully.',
   })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async getLinkedProviders(@User() user: UserDetails) {
+  async getLinkedProviders(@Req() req: { user: { userId: string } }) {
     try {
-      this.logger.debug(`Getting linked providers for userId=${user.userId}`);
+      const userId = req.user.userId;
+      this.logger.debug(`Getting linked providers for userId=${userId}`);
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.GetLinkedProviders },
-          { userId: user.userId }
+          { userId }
         )
       );
     } catch (error) {
@@ -505,7 +765,18 @@ export class OAuthController {
 
         result[provider] = {
           clientId: config.clientId,
-          redirectUri: this.resolveProviderRedirectUri(provider, config),
+          redirectUri: this.resolveProviderRedirectUri(
+            provider,
+            config,
+            origin
+              ? this.resolveAppScopeForReturnTo(origin) ?? undefined
+              : undefined
+          ),
+          callbackOrigin: new URL(
+            this.resolveCallbackBase(
+              origin ? this.resolveAppScopeForReturnTo(origin) : undefined
+            )
+          ).origin,
           scopes: config.scopes || [],
           authorizationEndpoint: config.authorizationEndpoint,
           enabled: true,
@@ -537,10 +808,7 @@ export class OAuthController {
       );
     }
 
-    const origin = parsed.origin;
-    const knownOrigin = this.registry.apps.some(
-      (app) => this.safeOrigin(app.uiBaseUrl) === origin
-    );
+    const knownOrigin = this.resolveAppScopeForReturnTo(parsed.toString());
     const isLocalhost =
       ['localhost', '127.0.0.1'].includes(parsed.hostname) ||
       parsed.hostname.endsWith('.localhost');
@@ -601,10 +869,48 @@ export class OAuthController {
 
   private resolveAppScopeForReturnTo(returnTo: string): string | null {
     const origin = this.safeOrigin(returnTo);
+    if (!origin) return null;
+
+    const configuredScope = [...this.configuredAppScopeOrigins()].find(
+      ([, configuredOrigin]) => configuredOrigin === origin
+    )?.[0];
+    if (configuredScope) return configuredScope;
+
+    if (origin === this.safeOrigin(this.resolveClientInterfaceCallbackBase())) {
+      return 'client-interface';
+    }
+
     const app = this.registry.apps.find(
       (entry) => this.safeOrigin(entry.uiBaseUrl) === origin
     );
     return app?.appId ?? null;
+  }
+
+  private configuredAppScopeOrigins(): Map<string, string> {
+    const rawOrigins = process.env.APP_SCOPE_ORIGINS?.trim();
+    if (!rawOrigins) return new Map();
+
+    try {
+      const configuredOrigins = JSON.parse(rawOrigins) as Record<
+        string,
+        unknown
+      >;
+      if (!configuredOrigins || Array.isArray(configuredOrigins)) {
+        return new Map();
+      }
+
+      return new Map(
+        Object.entries(configuredOrigins).flatMap(([scope, origin]) => {
+          if (typeof origin !== 'string') return [];
+          const normalizedOrigin = this.safeOrigin(origin);
+          return normalizedOrigin === origin.replace(/\/$/, '')
+            ? [[scope, normalizedOrigin]]
+            : [];
+        })
+      );
+    } catch {
+      return new Map();
+    }
   }
 
   private resolveClientInterfaceCallbackBase(): string {
@@ -635,10 +941,34 @@ export class OAuthController {
     );
   }
 
+  private resolveCallbackBase(appScope?: string): string {
+    const configuredOrigin = appScope
+      ? this.configuredAppScopeOrigins().get(appScope)
+      : undefined;
+
+    if (configuredOrigin) return configuredOrigin;
+
+    const registeredApp = appScope
+      ? this.registry.apps.find((app) => app.appId === appScope)
+      : undefined;
+    if (registeredApp?.uiBaseUrl && appScope !== 'client-interface') {
+      return registeredApp.uiBaseUrl.replace(/\/$/, '');
+    }
+
+    return this.resolveClientInterfaceCallbackBase();
+  }
+
   private resolveProviderRedirectUri(
     provider: string,
-    config: GatewayOAuthProviderConfig
+    config: GatewayOAuthProviderConfig,
+    appScope?: string
   ): string {
+    if (appScope) {
+      return `${this.resolveCallbackBase(
+        appScope
+      )}/api/oauth/callback/${provider}`;
+    }
+
     const configuredRedirectUri = config.redirectUri?.trim();
     if (configuredRedirectUri) {
       return configuredRedirectUri;
@@ -686,25 +1016,75 @@ export class OAuthController {
     };
   }
 
-  private signState(payload: OAuthStatePayload): string {
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url'
-    );
-    const signature = createHmac('sha256', this.oauthStateSecret())
-      .update(encodedPayload)
+  private async signState(
+    payload: Omit<OAuthStatePayload, 'codeVerifier'>
+  ): Promise<{
+    state: string;
+    stateId: string;
+    nonce: string;
+    codeChallenge: string;
+  }> {
+    const stateId = randomBytes(32).toString('base64url');
+    const nonce = randomBytes(32).toString('base64url');
+    const codeVerifier = randomBytes(32).toString('base64url');
+    const codeChallenge = createHash('sha256')
+      .update(codeVerifier)
       .digest('base64url');
-    return `${encodedPayload}.${signature}`;
+    const nonceHash = this.hashNonce(nonce);
+    const signature = this.signStateArtifact(stateId, nonce);
+    await this.oauthStateStore.create(stateId, {
+      payload: { ...payload, codeVerifier },
+      nonceHash,
+      expiresAt: Date.now() + this.oauthStateTtlMs,
+    });
+    return {
+      state: `${stateId}.${signature}`,
+      stateId,
+      nonce,
+      codeChallenge,
+    };
   }
 
-  private verifyState(state: string, provider: string): OAuthStatePayload {
-    const [encodedPayload, signature] = state.split('.');
-    if (!encodedPayload || !signature) {
+  private async createCallbackGrant(
+    token: string,
+    returnTo: string,
+    appScope: string,
+    stateId: string,
+    nonce: string,
+    cookieSession: boolean
+  ): Promise<string> {
+    const callbackCode = `${stateId}.${randomBytes(32).toString('base64url')}`;
+    await this.oauthStateStore.createCallbackGrant(callbackCode, {
+      token,
+      returnOrigin: new URL(returnTo).origin,
+      redemptionOrigin: new URL(this.resolveCallbackBase(appScope)).origin,
+      cookieSession,
+      stateId,
+      nonceHash: this.hashNonce(nonce),
+      expiresAt: Date.now() + this.callbackGrantTtlMs,
+    });
+    return callbackCode;
+  }
+
+  private async verifyAndConsumeState(
+    state: string,
+    provider: string,
+    nonce: string | undefined
+  ): Promise<OAuthStatePayload> {
+    const [stateId, signature] = state.split('.');
+    if (
+      state.length > 512 ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(stateId) ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(signature) ||
+      !nonce
+    ) {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
 
-    const expectedSignature = createHmac('sha256', this.oauthStateSecret())
-      .update(encodedPayload)
-      .digest('base64url');
+    // The state signature is bound to the browser-only nonce. Validate it
+    // before looking up or consuming the one-time state so an attacker with a
+    // valid callback URL but no nonce cannot invalidate a real login attempt.
+    const expectedSignature = this.signStateArtifact(stateId, nonce);
     if (signature.length !== expectedSignature.length) {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
@@ -716,29 +1096,80 @@ export class OAuthController {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
 
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, 'base64url').toString('utf8')
-    ) as OAuthStatePayload;
-    if (payload.provider !== provider) {
-      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
-    }
-    if (Date.now() - payload.issuedAt > this.oauthStateTtlMs) {
+    const storedState = await this.oauthStateStore.consume(stateId);
+    if (!storedState || storedState.expiresAt <= Date.now()) {
       throw new HttpException(
         'OAuth state has expired',
         HttpStatus.BAD_REQUEST
       );
     }
+    if (!this.valuesMatch(this.hashNonce(nonce), storedState.nonceHash)) {
+      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
+    }
 
+    const payload = storedState.payload;
+    if (payload.provider !== provider) {
+      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
+    }
     payload.returnTo = this.validateReturnTo(payload.returnTo);
     return payload;
   }
 
   private oauthStateSecret(): string {
+    const secret = process.env.OAUTH_STATE_SECRET?.trim();
+    if (!secret) {
+      throw new HttpException(
+        'OAuth state is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+    return secret;
+  }
+
+  private respondInvalidOAuthCallback(response: Response): void {
+    response.status(HttpStatus.BAD_REQUEST).json({
+      error: 'invalid_oauth_callback',
+      error_description: 'OAuth callback could not be validated.',
+    });
+  }
+
+  private signStateArtifact(stateId: string, nonce: string): string {
+    return createHmac('sha256', this.oauthStateSecret())
+      .update(`${stateId}.${nonce}`)
+      .digest('base64url');
+  }
+
+  private hashNonce(nonce: string): string {
+    return createHash('sha256').update(nonce).digest('base64url');
+  }
+
+  private parseNonceCookie(
+    value: unknown
+  ): Array<{ id: string; nonce: string }> {
+    if (typeof value !== 'string' || value.length > 4096) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (entry): entry is { id: string; nonce: string } =>
+            typeof entry?.id === 'string' &&
+            entry.id.length <= 128 &&
+            typeof entry?.nonce === 'string' &&
+            entry.nonce.length <= 128
+        )
+        .slice(-4);
+    } catch {
+      return [];
+    }
+  }
+
+  private valuesMatch(left: string, right: string): boolean {
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
     return (
-      process.env.JWT_SECRET ||
-      this.configService.get<string>('auth.jwtSecret') ||
-      this.configService.get<string>('auth.jwt_secret') ||
-      'default_oauth_state_secret'
+      leftBuffer.length === rightBuffer.length &&
+      timingSafeEqual(leftBuffer, rightBuffer)
     );
   }
 
@@ -750,9 +1181,8 @@ export class OAuthController {
     }
   }
 
-  private buildFinalCallbackUrl(returnTo: string): string {
-    const parsed = new URL(returnTo);
-    return `${parsed.origin}/oauth/callback`;
+  private buildFinalCallbackUrl(appScope?: string): string {
+    return `${this.resolveCallbackBase(appScope)}/oauth/callback`;
   }
 
   private withQuery(
@@ -771,7 +1201,9 @@ export class OAuthController {
   private async exchangeProviderCode(
     provider: string,
     code: string,
-    domain?: string
+    domain?: string,
+    codeVerifier?: string,
+    providerRedirectUri?: string
   ): Promise<OAuthIdentity> {
     const config = this.getProviderConfig(provider, domain);
     if (
@@ -783,19 +1215,24 @@ export class OAuthController {
       throw new Error(`${provider} OAuth credentials are incomplete`);
     }
 
-    const redirectUri = this.resolveProviderRedirectUri(provider, config);
+    const redirectUri =
+      providerRedirectUri || this.resolveProviderRedirectUri(provider, config);
     const tokenParams = new URLSearchParams({
       client_id: config.clientId,
       client_secret: config.clientSecret,
       code,
       redirect_uri: redirectUri,
     });
+    if (!codeVerifier || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
+      throw new Error('OAuth PKCE verifier is invalid');
+    }
+    tokenParams.set('code_verifier', codeVerifier);
 
     if (provider !== 'github') {
       tokenParams.set('grant_type', 'authorization_code');
     }
 
-    const tokenResponse = await fetch(config.tokenEndpoint, {
+    const tokenResponse = await this.fetchProvider(config.tokenEndpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -804,9 +1241,7 @@ export class OAuthController {
       body: tokenParams.toString(),
     });
     if (!tokenResponse.ok) {
-      throw new Error(
-        `${provider} token exchange failed with ${tokenResponse.status}`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
     const tokenPayload = (await tokenResponse.json()) as Record<
@@ -815,30 +1250,22 @@ export class OAuthController {
     >;
     const accessToken = tokenPayload.access_token;
     if (!accessToken) {
-      throw new Error(
-        `${provider} token exchange did not return an access token`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
-    return this.fetchProviderIdentity(
-      provider,
-      accessToken,
-      tokenPayload,
-      config
-    );
+    return this.fetchProviderIdentity(provider, accessToken, config);
   }
 
   private async fetchProviderIdentity(
     provider: string,
     accessToken: string,
-    tokenPayload: Record<string, string | undefined>,
     config: GatewayOAuthProviderConfig
   ): Promise<OAuthIdentity> {
     const userInfoUrl =
       provider === 'facebook'
         ? `${config.userInfoEndpoint}?fields=id,name,email,first_name,last_name`
         : config.userInfoEndpoint!;
-    const userInfoResponse = await fetch(userInfoUrl, {
+    const userInfoResponse = await this.fetchProvider(userInfoUrl, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -849,9 +1276,7 @@ export class OAuthController {
     });
 
     if (!userInfoResponse.ok) {
-      throw new Error(
-        `${provider} user info request failed with ${userInfoResponse.status}`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
     const profile = (await userInfoResponse.json()) as Record<string, unknown>;
@@ -868,8 +1293,6 @@ export class OAuthController {
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.given_name || ''),
           lastName: String(profile.family_name || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       case 'github': {
         const githubEmailInfo = await this.fetchGithubEmail(accessToken);
@@ -889,8 +1312,6 @@ export class OAuthController {
           displayName: String(profile.name || profile.login || githubEmail),
           firstName: '',
           lastName: '',
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       }
       case 'microsoft':
@@ -908,21 +1329,18 @@ export class OAuthController {
           ),
           firstName: String(profile.givenName || ''),
           lastName: String(profile.surname || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       case 'facebook':
         return {
           providerUserId: String(profile.id || ''),
           email: String(profile.email || ''),
-          // Facebook only returns an email address once the user has verified
-          // it, so a present email implies a verified email.
-          emailVerified: Boolean(profile.email),
+          // Facebook's profile response does not carry a standards-based
+          // verification assertion. A returned address remains usable for
+          // new-account verification, but never authorizes auto-linking.
+          emailVerified: false,
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.first_name || ''),
           lastName: String(profile.last_name || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       default:
         throw new Error(`Unsupported provider ${provider}`);
@@ -932,13 +1350,21 @@ export class OAuthController {
   private async fetchGithubEmail(
     accessToken: string
   ): Promise<{ email: string; verified: boolean }> {
-    const response = await fetch('https://api.github.com/user/emails', {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'User-Agent': 'optimistic-tanuki-gateway',
-      },
-    });
+    let response: globalThis.Response;
+    try {
+      response = await this.fetchProvider(
+        'https://api.github.com/user/emails',
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+            'User-Agent': 'optimistic-tanuki-gateway',
+          },
+        }
+      );
+    } catch {
+      return { email: '', verified: false };
+    }
     if (!response.ok) {
       return { email: '', verified: false };
     }
@@ -959,16 +1385,57 @@ export class OAuthController {
     };
   }
 
+  private async fetchProvider(
+    url: string,
+    init: RequestInit
+  ): Promise<globalThis.Response> {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(this.providerRequestTimeoutMs),
+      });
+    } catch {
+      throw new Error('OAuth provider request failed');
+    }
+  }
+
+  private validateProviderIdentity(identity: OAuthIdentity): OAuthIdentity {
+    const providerUserId = identity.providerUserId.trim();
+    if (
+      !providerUserId ||
+      providerUserId.length > 512 ||
+      /\p{Cc}/u.test(providerUserId) ||
+      ['null', 'undefined'].includes(providerUserId.toLowerCase())
+    ) {
+      throw new Error('OAuth provider identity is invalid');
+    }
+    return {
+      ...identity,
+      providerUserId,
+      email: identity.email.trim().toLowerCase(),
+    };
+  }
+
+  private requireUsableOAuthEmail(email: string, provider: string): void {
+    if (!email || !validator.isEmail(email)) {
+      throw new Error(
+        `${provider} OAuth did not return a usable email address`
+      );
+    }
+  }
+
   private async registerOAuthUser(
     appScope: string,
     provider: string,
     identity: OAuthIdentity
-  ): Promise<string> {
-    if (!identity.email) {
+  ): Promise<{ userId: string; emailVerified: boolean }> {
+    if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
       throw new Error(
-        `${provider} OAuth did not return an email address required for registration`
+        'Owner Console accounts must be provisioned by the deployment bootstrap.'
       );
     }
+
+    this.requireUsableOAuthEmail(identity.email, provider);
 
     const { firstName, lastName } = this.splitDisplayName(
       identity.firstName,
@@ -990,7 +1457,10 @@ export class OAuthController {
       registerRequest,
       appScope
     );
-    const userId = registerResult?.data?.user?.id as string | undefined;
+    const user = registerResult?.data?.user as
+      | { id?: string; emailVerifiedAt?: unknown }
+      | undefined;
+    const userId = user?.id;
     if (!userId) {
       throw new Error('OAuth registration did not return a user id');
     }
@@ -1002,15 +1472,49 @@ export class OAuthController {
           userId,
           provider,
           providerUserId: identity.providerUserId,
-          accessToken: identity.accessToken,
-          refreshToken: identity.refreshToken,
           providerEmail: identity.email,
           providerDisplayName: identity.displayName,
+          providerEmailVerified: identity.emailVerified,
         }
       )
     );
 
-    return userId;
+    return {
+      userId,
+      emailVerified: Boolean(user.emailVerifiedAt),
+    };
+  }
+
+  private async assertOwnerConsoleAccess(
+    appScope: string,
+    profileId: string
+  ): Promise<void> {
+    if (appScope !== 'owner-console') {
+      return;
+    }
+
+    const roles = (await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: RoleCommands.GetUserRoles },
+        { profileId, appScope: 'global' }
+      )
+    )) as Array<{ role?: { name?: string } }>;
+    const allowedRoleNames = new Set([
+      'owner_console_owner',
+      'owner',
+      'global_admin',
+      'system_admin',
+    ]);
+
+    if (
+      !roles.some((assignment) =>
+        allowedRoleNames.has(assignment.role?.name || '')
+      )
+    ) {
+      throw new Error(
+        'This account is not authorized for Owner Console access.'
+      );
+    }
   }
 
   private splitDisplayName(

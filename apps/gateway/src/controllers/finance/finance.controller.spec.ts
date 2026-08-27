@@ -13,6 +13,9 @@ import {
   FinanceTenantCommands,
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
+  FinCommanderPlanCommands,
+  FinCommanderProjectionCommands,
+  FinCommanderGoalCommands,
 } from '@optimistic-tanuki/constants';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 
@@ -63,6 +66,64 @@ describe('FinanceController', () => {
         workspace: 'business',
         userId: 'user-1',
         profileId: 'profile-1',
+        appScope: 'finance',
+      }
+    );
+  });
+
+  it('forwards funding directive preview, approval, and cancellation with tenant scope', async () => {
+    financeClient.send.mockReturnValue(of({ id: 'directive-1' }));
+    const user = { userId: 'user-1', profileId: 'profile-1' } as any;
+
+    await (controller as any).previewFinCommanderFundingDirective(
+      user,
+      'goal-1',
+      'finance',
+      'tenant-1'
+    );
+    await (controller as any).approveFinCommanderFundingDirective(
+      user,
+      'goal-1',
+      'finance',
+      'tenant-1'
+    );
+    await (controller as any).cancelFinCommanderFundingDirective(
+      user,
+      'goal-1',
+      'finance',
+      'tenant-1'
+    );
+
+    expect(financeClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_PREVIEW },
+      {
+        goalId: 'goal-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
+    );
+    expect(financeClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_APPROVE },
+      {
+        goalId: 'goal-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
+    );
+    expect(financeClient.send).toHaveBeenNthCalledWith(
+      3,
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_CANCEL },
+      {
+        goalId: 'goal-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
         appScope: 'finance',
       }
     );
@@ -410,6 +471,58 @@ describe('FinanceController', () => {
         tenantId: 'tenant-1',
         appScope: 'finance',
       })
+    );
+  });
+
+  it('forwards the server-derived profileId alongside the client-supplied tenant header on fin-commander plan creation', async () => {
+    financeClient.send.mockReturnValue(of({ id: 'plan-1' }));
+
+    await (controller as any).createFinCommanderPlan(
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'finance',
+      'tenant-1',
+      { name: 'Runway plan' }
+    );
+
+    // The finance microservice is the authority on whether profile-1
+    // actually belongs to tenant-1 (see finance-tenant.service.ts
+    // assertTenantAccess) — the gateway's job is only to forward both
+    // the authenticated profileId and the client-controlled tenant
+    // header so the microservice chokepoint can verify membership.
+    // A client cannot spoof profileId (it's derived from the auth
+    // token), only tenantId, which is exactly the vector the
+    // service-side check closes.
+    expect(financeClient.send).toHaveBeenCalledWith(
+      { cmd: FinCommanderPlanCommands.CREATE },
+      expect.objectContaining({
+        name: 'Runway plan',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      })
+    );
+  });
+
+  it('forwards a cash-flow projection request with the authenticated tenant scope', async () => {
+    financeClient.send.mockReturnValue(of({ openingBalanceCents: 100000 }));
+
+    await (controller as any).getFinCommanderCashFlowProjection(
+      { userId: 'user-1', profileId: 'profile-1' },
+      'plan-1',
+      'finance',
+      'tenant-1'
+    );
+
+    expect(financeClient.send).toHaveBeenCalledWith(
+      { cmd: FinCommanderProjectionCommands.GET },
+      {
+        planId: 'plan-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
     );
   });
 });

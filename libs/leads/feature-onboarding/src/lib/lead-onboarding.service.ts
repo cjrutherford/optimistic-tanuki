@@ -5,14 +5,16 @@ import { Observable } from 'rxjs';
 import {
   ConfirmOnboardingRequest,
   DiscInterviewRequest,
+  DiscInterviewTurn,
   DiscInterviewResponse,
   GeneratedTopicSuggestion,
   LocationAutocompleteSuggestion,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseResult,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
-import { Topic } from '@optimistic-tanuki/leads-contracts';
+import { AspirationalCompany, Topic } from '@optimistic-tanuki/leads-contracts';
 
 @Injectable({ providedIn: 'root' })
 export class LeadOnboardingService {
@@ -28,10 +30,14 @@ export class LeadOnboardingService {
     );
   }
 
-  analyzeMadLib(text: string): Observable<MadLibAnalysisResult> {
+  analyzeMadLib(
+    request: string | MadLibAnalysisRequest
+  ): Observable<MadLibAnalysisResult> {
+    const body: MadLibAnalysisRequest =
+      typeof request === 'string' ? { text: request } : request;
     return this.http.post<MadLibAnalysisResult>(
       `${this.baseUrl}/onboarding/mad-lib/analyze`,
-      { text }
+      body
     );
   }
 
@@ -65,11 +71,33 @@ export class LeadOnboardingService {
     );
   }
 
+  lookupAtsCompany(
+    companyName: string
+  ): Observable<(AspirationalCompany & { openingCount: number })[]> {
+    return this.http.post<(AspirationalCompany & { openingCount: number })[]>(
+      `${this.baseUrl}/ats/company/lookup`,
+      { companyName }
+    );
+  }
+
+  suggestAtsCompanies(): Observable<
+    (AspirationalCompany & { openingCount: number; reason: string })[]
+  > {
+    return this.http.get<
+      (AspirationalCompany & { openingCount: number; reason: string })[]
+    >(`${this.baseUrl}/ats/company/suggestions`);
+  }
+
   confirmOnboarding(
     profile: UserOnboardingProfile,
-    topics: GeneratedTopicSuggestion[]
+    topics: GeneratedTopicSuggestion[],
+    discTranscript: DiscInterviewTurn[] = []
   ): Observable<{ topics: Topic[] }> {
-    const payload: ConfirmOnboardingRequest = { profile, topics };
+    const payload: ConfirmOnboardingRequest = {
+      profile,
+      topics,
+      discTranscript,
+    };
 
     return this.http.post<{ topics: Topic[] }>(
       `${this.baseUrl}/onboarding/confirm`,

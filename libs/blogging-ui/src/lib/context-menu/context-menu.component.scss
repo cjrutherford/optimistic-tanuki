@@ -1,9 +1,11 @@
+@use 'personality' as p;
+
 .context-menu {
   position: fixed;
   background-color: var(--background, #fff);
-  border: 1px solid var(--border-color, #ccc);
-  box-shadow: 2px 2px 10px var(--accent, rgba(0, 0, 0, 0.2));
-  border-radius: 8px;
+  border: 1px solid var(--border, #ccc);
+  @include p.shadow('md');
+  border-radius: var(--border-radius-lg, 8px);
   padding: 8px;
   z-index: 1000;
   display: flex;
@@ -18,7 +20,7 @@
     cursor: pointer;
 
     &:hover {
-      background-color: var(--accent, #f0f0f0);
+      background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
     }
   }
 }

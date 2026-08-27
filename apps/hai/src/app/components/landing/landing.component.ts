@@ -2,6 +2,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
+import { BadgeComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {
   PulseRingsComponent,
   TopographicDriftComponent,
@@ -10,22 +11,26 @@ import { ServicesSectionComponent } from './services-section.component';
 import { ManifestoSectionComponent } from './manifesto-section.component';
 import { PersonalCloudSectionComponent } from './personal-cloud-section.component';
 import { EcosystemSectionComponent } from './ecosystem-section.component';
-import { AcronymSectionComponent } from './acronym-section.component';
 import { ContactSectionComponent } from './contact-section.component';
+import { EngagementSectionComponent } from './engagement-section.component';
+import { PartnerSectionComponent } from './partner-section.component';
 
 @Component({
   selector: 'hai-landing',
   standalone: true,
   imports: [
     CommonModule,
+    CardComponent,
+    BadgeComponent,
     PulseRingsComponent,
     TopographicDriftComponent,
     ServicesSectionComponent,
     ManifestoSectionComponent,
     PersonalCloudSectionComponent,
     EcosystemSectionComponent,
-    AcronymSectionComponent,
     ContactSectionComponent,
+    EngagementSectionComponent,
+    PartnerSectionComponent,
   ],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
@@ -42,63 +47,88 @@ export class LandingComponent {
   readonly servicePillars = [
     {
       icon: '\u25B3',
-      title: 'Software Delivery',
+      title: 'Custom Portals & Workflow Automation',
       description:
-        'Application delivery for founders and teams that need momentum, clearer systems, and senior implementation help.',
+        'Booking and client portals, invoicing workflows, and client communication tools that fit the way your team works.',
     },
     {
       icon: '\u25C7',
-      title: 'Cloud Architecture',
+      title: 'Independent Infrastructure',
       description:
-        'Service boundaries, APIs, delivery pipelines, and production systems designed to stay understandable under load.',
+        'Lightweight VPS or on-premises environments with backups, security maintenance, and a clear path to client-controlled infrastructure.',
     },
     {
       icon: '\u25CB',
-      title: 'Personal Cloud',
+      title: 'Tailored Software',
       description:
-        'Owned compute, self-hosting, backups, and family infrastructure that feels practical instead of experimental.',
+        'Task-specific tools, databases, and internal systems built for field-service contractors, professional offices, and growing local businesses.',
     },
   ];
 
   readonly serviceProof = [
-    'Application and platform work shaped around maintainability, not one-off delivery.',
-    'Cloud decisions that preserve operational clarity instead of hiding complexity behind tooling.',
-    'Personal-cloud systems grounded in backups, local AI, and real household use.',
+    'Keep your customer records and operational data in systems you can export and move, without swearing off useful cloud tools.',
+    'Software documented and scoped so the people who run it, not just the people who built it, can keep it going.',
+    'Hosting and hardware costs shown at cost and explained, with no invented packages or guarantees.',
   ];
 
   readonly ownershipNotes = [
-    'Pre-configured systems for homelab, local AI, backups, and family services.',
-    'Hosted and personal infrastructure designed to complement each other.',
-    'Interfaces and operating patterns shaped for real households, not full-time operators.',
+    'Backups and security maintenance for lightweight VPS or on-premises mini-server environments.',
+    'Client-direct hardware purchasing or cloud resources passed through at cost.',
+    'A practical account and hardware path that keeps infrastructure decisions visible to the client.',
   ];
 
   readonly manifesto = [
     {
-      label: 'Own the stack',
-      value: 'Software that can live in the cloud, at home, or both.',
-    },
-    {
-      label: 'Keep it legible',
+      label: 'Your customer relationships',
       value:
-        'Interfaces and operations that feel understandable under pressure.',
+        'Keep the interactions and workflows that make your business yours.',
     },
     {
-      label: 'Build for staying power',
-      value: 'Tools, systems, and hardware configured to endure.',
+      label: 'Your operational data',
+      value: 'Choose how business information is stored, accessed, and moved.',
     },
+    {
+      label: 'Your infrastructure choices',
+      value:
+        'Use cloud, VPS, or on-premises resources without surrendering the decision.',
+    },
+  ];
+
+  readonly engagementStages = [
+    {
+      number: '01',
+      title: 'Build the foundation',
+      items: [
+        'Discovery',
+        'Architecture',
+        'Configuration or customization',
+        'Installation as applicable',
+      ],
+    },
+    {
+      number: '02',
+      title: 'Maintain and improve',
+      items: ['Maintenance', 'Security patches', 'Backups', 'Direct support'],
+    },
+  ];
+
+  readonly partnerBenefits = [
+    'White-label delivery for local technology partners',
+    'Software engineering and infrastructure support behind your client relationship',
+    'Flexible collaboration for MSPs, web agencies, and IT repair shops',
   ];
 
   readonly contactLead = {
     title: 'Start a Project',
     description:
-      'Talk to HAI about software delivery, cloud architecture, or a practical personal-cloud system that needs to work in the real world.',
+      'Tell us about a project, an infrastructure need, or a partner delivery conversation.',
   };
 
   readonly contactSubjects = [
-    { value: 'software-delivery', label: 'Software Delivery' },
-    { value: 'cloud-architecture', label: 'Cloud Architecture' },
-    { value: 'personal-cloud', label: 'Personal Cloud' },
-    { value: 'general', label: 'General Inquiry' },
+    { value: 'custom-portal', label: 'Custom Portal & Workflow Automation' },
+    { value: 'infrastructure', label: 'Independent Infrastructure' },
+    { value: 'tailored-software', label: 'Tailored Software' },
+    { value: 'partner-inquiry', label: 'Partner Inquiry' },
   ];
 
   get reducedMotion(): boolean {

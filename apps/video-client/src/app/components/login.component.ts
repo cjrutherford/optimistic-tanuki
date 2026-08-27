@@ -163,8 +163,7 @@ export class LoginComponent implements OnDestroy, OnInit {
     };
 
     try {
-      const response = await this.authStateService.login(loginRequest);
-      this.authStateService.setToken(response.data.newToken);
+      await this.authStateService.login(loginRequest);
 
       if (this.authStateService.isAuthenticated) {
         const decoded = this.authStateService.getDecodedTokenValue();
@@ -194,8 +193,9 @@ export class LoginComponent implements OnDestroy, OnInit {
       'video-client'
     );
 
-    if (result.success && result.token) {
-      this.authStateService.setToken(result.token);
+    if (result.success) {
+      if (result.token) this.authStateService.setToken(result.token);
+      await this.authStateService.restoreSession();
       await this.handlePostLogin();
       return;
     }
@@ -211,8 +211,9 @@ export class LoginComponent implements OnDestroy, OnInit {
         ''
       );
 
-      if (regResult.success && regResult.token) {
-        this.authStateService.setToken(regResult.token);
+      if (regResult.success) {
+        if (regResult.token) this.authStateService.setToken(regResult.token);
+        await this.authStateService.restoreSession();
         await this.handlePostLogin();
       }
     }

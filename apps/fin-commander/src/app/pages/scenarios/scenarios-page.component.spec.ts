@@ -24,8 +24,9 @@ function setup() {
     getScope: () => 'personal',
     listPlans: () => [{ id: 'plan-1' }],
     listScenarios: () => [...seedScenarios],
-    saveScenario: jest.fn(),
-    deleteScenario: jest.fn(),
+    refreshScenarios: jest.fn().mockResolvedValue(seedScenarios),
+    saveScenario: jest.fn().mockResolvedValue(seedScenarios[0]),
+    deleteScenario: jest.fn().mockResolvedValue(undefined),
   } as unknown as FinCommanderPlanStore;
 
   TestBed.configureTestingModule({
@@ -63,7 +64,30 @@ describe('ScenariosPageComponent', () => {
     );
   });
 
-  it('requires confirmation before deleting a scenario', () => {
+  it('uses one page-level heading and keeps validation errors as a list', () => {
+    setup();
+    const fixture = TestBed.createComponent(ScenariosPageComponent);
+    fixture.detectChanges();
+
+    const heading = fixture.nativeElement.querySelector('h1');
+    const errors = fixture.nativeElement.querySelector('.hint-errors');
+
+    expect(heading?.textContent).toContain('Model what-if assumptions');
+    expect(errors?.getAttribute('role')).toBeNull();
+    expect(errors?.getAttribute('aria-live')).toBe('assertive');
+  });
+
+  it('uses a sequential heading level for the scenario editor', () => {
+    setup();
+    const fixture = TestBed.createComponent(ScenariosPageComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('h2.editor-title')?.textContent
+    ).toContain('Model a what-if');
+  });
+
+  it('requires confirmation before deleting a scenario', async () => {
     const store = setup();
     const fixture = TestBed.createComponent(ScenariosPageComponent);
     fixture.detectChanges();
@@ -77,7 +101,7 @@ describe('ScenariosPageComponent', () => {
     expect(cmp.pendingDeleteId()).toBeNull();
 
     cmp.requestDelete('sc-existing');
-    cmp.confirmDelete('sc-existing');
+    await cmp.confirmDelete('sc-existing');
     expect(store.deleteScenario as jest.Mock).toHaveBeenCalledWith(
       'sc-existing'
     );

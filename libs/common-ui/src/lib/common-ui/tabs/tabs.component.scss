@@ -1,5 +1,4 @@
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
+@use 'personality' as p;
 
 .tabs-container {
   display: flex;
@@ -11,7 +10,7 @@
     .tabs-header {
       flex-direction: column;
       border-bottom: none;
-      border-right: 1px solid var(--tabs-border-color, var(--border, #ccc));
+      border-right: 1px solid var(--tabs-border-color, var(--border));
     }
 
     .tab-item {
@@ -19,7 +18,7 @@
       border-right: 2px solid transparent;
 
       &.active {
-        border-right-color: var(--tabs-active-color, var(--accent, #3f51b5));
+        border-right-color: var(--tabs-active-color, var(--primary));
         &::after {
           display: none;
         }
@@ -30,7 +29,7 @@
 
 .tabs-header {
   display: flex;
-  border-bottom: 1px solid var(--tabs-border-color, var(--border, #ccc));
+  border-bottom: 1px solid var(--tabs-border-color, var(--border));
   gap: 4px;
 }
 
@@ -41,20 +40,20 @@
   padding: 12px 20px;
   border: none;
   background: transparent;
-  color: var(--tabs-inactive-color, var(--foreground, #666));
+  color: var(--tabs-inactive-color, var(--foreground));
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   position: relative;
-  transition: color 0.2s ease, background-color 0.2s ease;
+  @include p.personality-transition('color, background-color', 'fast');
 
   &:hover:not(.disabled) {
-    color: var(--tabs-active-color, var(--accent, #3f51b5));
+    color: var(--tabs-active-color, var(--primary));
     background: var(--hover-bg, rgba(0, 0, 0, 0.05));
   }
 
   &.active {
-    color: var(--tabs-active-color, var(--accent, #3f51b5));
+    color: var(--tabs-active-color, var(--primary));
 
     &::after {
       content: '';
@@ -63,7 +62,7 @@
       left: 0;
       right: 0;
       height: 2px;
-      background: var(--tabs-active-color, var(--accent, #3f51b5));
+      background: var(--tabs-active-color, var(--primary));
     }
   }
 
@@ -85,7 +84,7 @@
   height: 18px;
   padding: 0 6px;
   border-radius: 9px;
-  background: var(--tabs-active-color, var(--accent, #3f51b5));
+  background: var(--tabs-active-color, var(--primary));
   color: white;
   font-size: 11px;
   font-weight: 600;

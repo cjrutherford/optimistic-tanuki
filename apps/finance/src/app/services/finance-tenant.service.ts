@@ -9,10 +9,12 @@ import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CreateFinanceTenantDto,
+  CreateFinanceTenantMemberDto,
+  UpdateFinanceTenantMemberRoleDto,
   FinanceTenantDto,
   FinanceTenantMemberDto,
 } from '@optimistic-tanuki/models';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FinanceTenant } from '../../entities/finance-tenant.entity';
 import { FinanceTenantMember } from '../../entities/finance-tenant-member.entity';
 import { FinanceScope } from './finance-scope';
@@ -69,8 +71,18 @@ export class FinanceTenantService {
     };
   }
 
+  /**
+   * Resolves the tenant a scope should act on. Tries the profile's *owned*
+   * tenant(s) first (existing, deterministic oldest-first behavior). If
+   * none is owned, falls back to a tenant the profile is an *active
+   * member* of — this keeps `resolveTenant` consistent with
+   * `assertTenantAccess`'s owner-or-active-member model, so a legitimate
+   * non-owner member doesn't get a false 404 from `getCurrentTenant` /
+   * `listMembers` / the create-fallback in `withResolvedTenant` after
+   * having already passed the tenant-access chokepoint.
+   */
   private async resolveTenant(scope: FinanceScope): Promise<FinanceTenant> {
-    const tenant = await this.tenantRepo.findOne({
+    const ownedTenant = await this.tenantRepo.findOne({
       where: {
         ...(scope.tenantId ? { id: scope.tenantId } : {}),
         ...(scope.profileId ? { profileId: scope.profileId } : {}),
@@ -82,11 +94,81 @@ export class FinanceTenantService {
       },
     });
 
-    if (!tenant) {
-      throw new NotFoundException('Active finance tenant not found');
+    if (ownedTenant) {
+      return ownedTenant;
     }
 
-    return tenant;
+    if (scope.profileId) {
+      const memberTenant = await this.resolveMemberTenant(scope);
+      if (memberTenant) {
+        return memberTenant;
+      }
+    }
+
+    throw new NotFoundException('Active finance tenant not found');
+  }
+
+  private async resolveMemberTenant(
+    scope: FinanceScope
+  ): Promise<FinanceTenant | null> {
+    const memberships =
+      (await this.tenantMemberRepo.find({
+        where: {
+          profileId: scope.profileId,
+          isActive: true,
+          ...(scope.tenantId ? { tenantId: scope.tenantId } : {}),
+        },
+      })) ?? [];
+
+    if (!memberships.length) {
+      return null;
+    }
+
+    const tenantIds = memberships.map((membership) => membership.tenantId);
+
+    return this.tenantRepo.findOne({
+      where: {
+        id: In(tenantIds),
+        ...(scope.appScope ? { appScope: scope.appScope } : {}),
+        isActive: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Verifies that a profile is allowed to act within a given finance
+   * tenant, either because it owns the tenant or because it holds an
+   * active membership on it. This is the server-side chokepoint that
+   * closes the cross-tenant hole left open by trusting the client-supplied
+   * `x-finance-tenant-id` header: every handler that resolves a scope with
+   * both a tenantId and a profileId must call this before using the scope.
+   *
+   * A nonexistent tenant and a tenant the profile has no relationship to
+   * are treated identically (404), so the response never confirms whether
+   * a given tenant id exists to a caller who has no access to it.
+   */
+  async assertTenantAccess(profileId: string, tenantId: string): Promise<void> {
+    try {
+      const [ownedTenant, membership] = await Promise.all([
+        this.tenantRepo.findOne({
+          where: { id: tenantId, profileId, isActive: true },
+        }),
+        this.tenantMemberRepo.findOne({
+          where: { tenantId, profileId, isActive: true },
+        }),
+      ]);
+
+      if (!ownedTenant && !membership) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
   }
 
   async getCurrentTenant(scope: FinanceScope): Promise<FinanceTenantDto> {
@@ -130,7 +212,7 @@ export class FinanceTenantService {
 
   async listTenants(scope: FinanceScope): Promise<FinanceTenantDto[]> {
     try {
-      const tenants = await this.tenantRepo.find({
+      const ownedTenants = await this.tenantRepo.find({
         where: {
           ...(scope.profileId ? { profileId: scope.profileId } : {}),
           ...(scope.appScope ? { appScope: scope.appScope } : {}),
@@ -141,7 +223,39 @@ export class FinanceTenantService {
         },
       });
 
-      return tenants.map((tenant) => this.toTenantDto(tenant));
+      const memberships = scope.profileId
+        ? await this.tenantMemberRepo.find({
+            where: { profileId: scope.profileId, isActive: true },
+          })
+        : [];
+      const memberTenantIds = (memberships ?? []).map(
+        (membership) => membership.tenantId
+      );
+      const memberTenants = memberTenantIds.length
+        ? await this.tenantRepo.find({
+            where: {
+              id: In(memberTenantIds),
+              ...(scope.appScope ? { appScope: scope.appScope } : {}),
+              isActive: true,
+            },
+            order: {
+              createdAt: 'ASC',
+            },
+          })
+        : [];
+      const accessibleTenants = Array.from(
+        new Map(
+          [...ownedTenants, ...memberTenants].map((tenant) => [
+            tenant.id,
+            tenant,
+          ])
+        ).values()
+      ).sort(
+        (left, right) =>
+          (left.createdAt?.getTime() ?? 0) - (right.createdAt?.getTime() ?? 0)
+      );
+
+      return accessibleTenants.map((tenant) => this.toTenantDto(tenant));
     } catch (error) {
       throw this.toRpcException(error);
     }
@@ -169,5 +283,103 @@ export class FinanceTenantService {
     } catch (error) {
       throw this.toRpcException(error);
     }
+  }
+
+  async addMember(
+    scope: FinanceScope,
+    dto: CreateFinanceTenantMemberDto
+  ): Promise<FinanceTenantMemberDto> {
+    try {
+      if (!scope.tenantId || !scope.profileId) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+      const tenant = await this.tenantRepo.findOne({
+        where: {
+          id: scope.tenantId,
+          profileId: scope.profileId,
+          isActive: true,
+        },
+      });
+      if (!tenant) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+      const existing = await this.tenantMemberRepo.findOne({
+        where: { tenantId: tenant.id, profileId: dto.memberProfileId },
+      });
+      if (existing?.isActive) {
+        throw new HttpException('Profile is already an active member', 409);
+      }
+      const member = await this.tenantMemberRepo.save({
+        ...(existing ? { id: existing.id } : {}),
+        tenantId: tenant.id,
+        profileId: dto.memberProfileId,
+        role: dto.role,
+        isActive: true,
+      });
+      return {
+        id: member.id,
+        tenantId: member.tenantId,
+        profileId: member.profileId,
+        role: member.role,
+      };
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  async updateMemberRole(
+    scope: FinanceScope,
+    memberId: string,
+    dto: UpdateFinanceTenantMemberRoleDto
+  ): Promise<FinanceTenantMemberDto> {
+    try {
+      const tenant = await this.requireOwner(scope);
+      const member = await this.tenantMemberRepo.findOne({
+        where: { id: memberId, tenantId: tenant.id, isActive: true },
+      });
+      if (!member || member.profileId === tenant.profileId)
+        throw new NotFoundException('Finance tenant member not found');
+      const saved = await this.tenantMemberRepo.save({
+        ...member,
+        role: dto.role,
+      });
+      return {
+        id: saved.id,
+        tenantId: saved.tenantId,
+        profileId: saved.profileId,
+        role: saved.role,
+      };
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  async removeMember(scope: FinanceScope, memberId: string): Promise<void> {
+    try {
+      const tenant = await this.requireOwner(scope);
+      const member = await this.tenantMemberRepo.findOne({
+        where: { id: memberId, tenantId: tenant.id, isActive: true },
+      });
+      if (!member || member.profileId === tenant.profileId)
+        throw new NotFoundException('Finance tenant member not found');
+      await this.tenantMemberRepo.save({ ...member, isActive: false });
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  private async requireOwner(scope: FinanceScope): Promise<FinanceTenant> {
+    if (!scope.tenantId || !scope.profileId)
+      throw new NotFoundException('Finance tenant not found or access denied');
+    const tenant = await this.tenantRepo.findOne({
+      where: { id: scope.tenantId, profileId: scope.profileId, isActive: true },
+    });
+    if (!tenant)
+      throw new NotFoundException('Finance tenant not found or access denied');
+    return tenant;
   }
 }

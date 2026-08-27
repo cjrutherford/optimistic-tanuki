@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 
@@ -12,9 +12,10 @@ import { LoginComponent } from './login.component';
 describe('LoginComponent', () => {
   const login = jest.fn();
   const setToken = jest.fn();
+  const restoreSession = jest.fn();
   const get = jest.fn();
 
-  function createComponent() {
+  function createComponent(queryParams: Record<string, string> = {}) {
     TestBed.configureTestingModule({
       imports: [LoginComponent, RouterTestingModule],
       providers: [
@@ -23,12 +24,20 @@ describe('LoginComponent', () => {
           useValue: {
             login,
             setToken,
+            restoreSession,
           },
         },
         {
           provide: HttpClient,
           useValue: {
             get,
+          },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of(queryParams),
+            snapshot: { queryParams },
           },
         },
       ],
@@ -44,6 +53,7 @@ describe('LoginComponent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     get.mockReturnValue(of({ providers: [] }));
+    restoreSession.mockReturnValue(of(true));
   });
 
   it('shows an inline notice when OAuth provider config cannot be loaded', async () => {
@@ -76,5 +86,91 @@ describe('LoginComponent', () => {
     expect(configureProvidersSpy).toHaveBeenCalledWith({ providers: [] });
 
     configureProvidersSpy.mockRestore();
+  });
+
+  it('does not expose a public owner registration link', () => {
+    const { fixture } = createComponent();
+
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Register as Owner'
+    );
+    expect(
+      fixture.nativeElement.querySelector('a[href="/register"]')
+    ).toBeNull();
+  });
+
+  it('explains that owner accounts must be provisioned after a legacy registration redirect', () => {
+    const { fixture } = createComponent({ provisioning: 'required' });
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Owner accounts must be provisioned by an existing operator.'
+    );
+  });
+
+  it('announces provisioning guidance as a status update', () => {
+    const { fixture } = createComponent({ provisioning: 'required' });
+
+    expect(
+      fixture.nativeElement.querySelector('[role="status"]')?.textContent
+    ).toContain('Owner accounts must be provisioned');
+  });
+
+  it('requires an OAuth user without an owner account to be provisioned', async () => {
+    const initiateOAuthLogin = jest
+      .spyOn(OAuthService.prototype, 'initiateOAuthLogin')
+      .mockResolvedValue({
+        success: false,
+        needsRegistration: true,
+        userData: {
+          displayName: 'New Operator',
+          provider: 'google',
+          providerUserId: 'oauth-user-1',
+          email: 'operator@example.com',
+        },
+      });
+    const completeOAuthRegistration = jest
+      .spyOn(OAuthService.prototype, 'completeOAuthRegistration')
+      .mockResolvedValue({ success: true, token: 'should-not-be-issued' });
+    const { component } = createComponent();
+
+    await component.onOAuthProvider({ provider: 'google' } as any);
+
+    expect(completeOAuthRegistration).not.toHaveBeenCalled();
+    expect(component.error).toContain('provisioned');
+
+    initiateOAuthLogin.mockRestore();
+    completeOAuthRegistration.mockRestore();
+  });
+
+  it('starts OAuth with a cookie session and restores it before navigating', async () => {
+    const initiateOAuthLogin = jest
+      .spyOn(OAuthService.prototype, 'initiateOAuthLogin')
+      .mockResolvedValue({ success: true, session: true });
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    await component.onOAuthProvider({ provider: 'google' } as any);
+
+    expect(initiateOAuthLogin).toHaveBeenCalledWith(
+      'google',
+      'owner-console',
+      true
+    );
+    expect(restoreSession).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+
+    initiateOAuthLogin.mockRestore();
+  });
+
+  it('restores the cookie session after password login before navigating', async () => {
+    login.mockReturnValue(of({ data: {} }));
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'owner@example.com', password: 'password' });
+    await Promise.resolve();
+
+    expect(restoreSession).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 });

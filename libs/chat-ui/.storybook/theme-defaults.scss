@@ -1,26 +1,42 @@
 :root {
   /* Default Theme Variables (mimicking ThemeService defaults) */
+  /* Aligned to the real contract emitted by theme-lib's ThemeService
+     (see theme.service.ts generatePersonalityCSSVariables()) — this used to
+     redeclare --accent/--complement/--card, which ThemeService never
+     actually emits (verified 2026-07-18 personality-styles refactor;
+     components consuming those names get a live per-instance value bound
+     via the Themeable host-binding API instead, e.g. compose-chat.component.ts,
+     chat-window.component.ts). Kept minimal: only vars chat-ui components
+     reference. */
   --theme: light;
 
-  /* Primary Colors */
+  /* Primary / secondary / tertiary */
   --primary: #3f51b5;
   --primary-foreground: #ffffff;
-  --accent: #3f51b5;
-  --complement: #c0af4b;
+  --on-primary: #ffffff;
+  --secondary: #c0af4b;
+  --secondary-foreground: #ffffff;
+  --on-secondary: #ffffff;
   --tertiary: #7e57c2;
+  --tertiary-foreground: #ffffff;
+
+  /* Semantic colors */
   --success: #4caf50;
   --success-foreground: #ffffff;
   --danger: #f44336;
   --danger-foreground: #ffffff;
   --warning: #ff9800;
   --warning-foreground: #ffffff;
+  --info: #2196f3;
+  --info-foreground: #ffffff;
+
+  /* Surfaces */
   --background: #ffffff;
   --foreground: #212121;
   --surface: #f5f5f5;
   --muted: #9e9e9e;
   --muted-foreground: #616161;
   --border: #e0e0e0;
-  --card: #ffffff;
 
   /* Typography */
   --font-heading: system-ui, sans-serif;
@@ -47,6 +63,8 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-color: rgb(0, 0, 0);
+  --shadow-opacity: 0.1;
 
   /* Border */
   --border-width: 1px;
@@ -58,6 +76,10 @@
   --border-radius-lg: 8px;
   --border-radius-xl: 12px;
   --border-radius-full: 9999px;
+
+  /* Personality component radii (chat-ui's message bubbles opt into the
+     card radius token — see message-list.component.scss) */
+  --personality-card-radius: var(--border-radius-xl);
 
   /* Typography Sizes */
   --font-size-xs: 0.75rem;

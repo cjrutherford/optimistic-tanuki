@@ -37,3 +37,8 @@ export const ForumLinkCommands = {
   FIND: 'FIND_FORUM_LINK',
   FIND_MANY: 'FIND_MANY_FORUM_LINK',
 };
+
+export const ForumCommands = {
+  SEED_DEMO_TOPICS: 'SEED_DEMO_FORUM_TOPICS',
+  SEED_PRODUCTION_TOPICS: 'SEED_PRODUCTION_FORUM_TOPICS',
+};

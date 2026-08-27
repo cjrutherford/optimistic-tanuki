@@ -1,16 +1,14 @@
 /* Properly styled link component with design tokens */
+@use 'personality' as p;
+
+// 2026-07 batch 6 legacy-var migration: `--accent`/`--complement` -> the
+// contract's `--primary`/`--secondary` per the refactor plan's Decisions
+// (ThemeService never emits `--accent`/`--complement`; they always fell
+// through to the hardcoded hex fallback below).
 .links-container {
   margin: var(--spacing-sm, 8px);
   padding: var(--spacing-sm, 8px);
-  font-family: var(
-    --font-body,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif
-  );
+  font-family: var(--font-body, system-ui, sans-serif);
 }
 
 .link-input {
@@ -24,31 +22,25 @@
     flex: 1;
     min-width: 200px;
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    border: 1px solid var(--complement, #c0af4b);
-    border-radius: var(--border-radius-md, 4px);
-    background-color: var(--background, #ffffff);
+    border: 1px solid var(--secondary);
+    border-radius: var(
+      --personality-input-radius,
+      var(--border-radius-md, 4px)
+    );
+    background-color: var(--background, #fff);
     color: var(--foreground, #212121);
     font-size: var(--font-size-base, 1rem);
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    font-family: var(--font-body, system-ui, sans-serif);
+    @include p.personality-transition(border-color, 'fast');
 
     &:focus {
       outline: none;
-      border-color: var(--accent, #3f51b5);
-      box-shadow: 0 0 0 3px
-        color-mix(in srgb, var(--accent, #3f51b5) 10%, transparent);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--accent, #3f51b5);
+      outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
   }
@@ -56,30 +48,25 @@
   button {
     margin: 0;
     padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
-    background-color: var(--accent, #3f51b5);
-    color: var(--foreground, #ffffff);
+    background-color: var(--primary);
+    color: var(--foreground, #fff);
     border: none;
-    border-radius: var(--border-radius-md, 4px);
-    cursor: pointer;
-    transition: all 0.15s ease-in-out;
-    font-size: var(--font-size-base, 1rem);
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
+    border-radius: var(
+      --personality-button-radius,
+      var(--border-radius-md, 4px)
     );
+    cursor: pointer;
+    @include p.personality-transition(all, 'fast');
+    font-size: var(--font-size-base, 1rem);
+    font-family: var(--font-body, system-ui, sans-serif);
 
     &:hover {
-      background-color: var(--complement, #c0af4b);
-      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+      background-color: var(--secondary);
+      @include p.shadow('md');
     }
 
     &:focus-visible {
-      outline: 2px solid var(--accent, #3f51b5);
+      outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
   }
@@ -98,29 +85,21 @@ li {
   gap: var(--spacing-sm, 8px);
 
   a {
-    color: var(--accent, #3f51b5);
+    color: var(--primary);
     text-decoration: none;
-    transition: color 0.15s ease-in-out;
+    @include p.personality-transition(color, 'fast');
     word-break: break-all;
-    font-family: var(
-      --font-body,
-      system-ui,
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      Roboto,
-      sans-serif
-    );
+    font-family: var(--font-body, system-ui, sans-serif);
 
     &:hover {
-      color: var(--complement, #c0af4b);
+      color: var(--secondary);
       text-decoration: underline;
     }
 
     &:focus-visible {
-      outline: 2px solid var(--accent, #3f51b5);
+      outline: 2px solid var(--primary);
       outline-offset: 2px;
-      border-radius: 2px;
+      border-radius: var(--border-radius-sm, 2px);
     }
   }
 }
@@ -128,11 +107,22 @@ li {
 // ============================================
 // Personality-Specific Link Enhancements
 // ============================================
+// Usage-map note (2026-07 batch 6): architect's `border-radius: 0` for both
+// `input` and `button` is an EXACT match for `--personality-input-radius`
+// AND `--personality-button-radius` at architect (both 0px — see
+// `personalities.ts` PRESENTATION_BY_ID.architect.components), so it's
+// split per-element and wired to the real vars below. playful (20px vs
+// button 9999px/input 16px), minimal (2px vs button/input 0px), soft-touch
+// (24px vs button 9999px/input 18px), and control-center (2px vs button/
+// input 4px) do NOT match either tier — deliberate link-specific
+// deviations, kept as literals (batch 5's conservative rule).
 
 body.personality-architect {
-  .link-input input,
+  .link-input input {
+    border-radius: var(--personality-input-radius, 0);
+  }
   .link-input button {
-    border-radius: 0;
+    border-radius: var(--personality-button-radius, 0);
   }
   .link-input button:hover {
     box-shadow: 4px 4px 0 var(--primary);
@@ -182,7 +172,8 @@ body.personality-soft-touch {
   }
   .link-input button:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 20px
+      color-mix(in srgb, var(--shadow-color, #000) 12%, transparent);
   }
 }
 
@@ -192,7 +183,8 @@ body.personality-control-center {
     border-radius: 2px;
   }
   .link-input button:hover {
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--shadow-color, #000) 10%, transparent);
   }
   li a:hover {
     border-bottom: 1px solid var(--primary);

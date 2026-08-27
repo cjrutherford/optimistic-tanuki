@@ -5,17 +5,16 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/app-configurator"
+        "webpackConfig": "apps/app-configurator/webpack.config.js",
+        "outputPath": "dist/apps/app-configurator"
       },
       "configurations": {
-        "development": {
-          "args": ["--node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "prune-lockfile": {
       "dependsOn": ["build"],
@@ -73,6 +72,17 @@
         "ci": {
           "ci": true,
           "codeCoverage": true
+        }
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/app-configurator",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
         }
       }
     }

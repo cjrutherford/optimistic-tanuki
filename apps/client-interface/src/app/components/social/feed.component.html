@@ -83,4 +83,21 @@
       }
     </div>
   </div>
+
+  <otui-modal
+    [visible]="!!postPendingDeletion()"
+    heading="Delete post?"
+    size="sm"
+    (close)="cancelPostDeletion()"
+  >
+    <p>This permanently removes the post and its replies.</p>
+    <div modal-footer class="delete-confirmation-actions">
+      <otui-button variant="outlined" (action)="cancelPostDeletion()"
+        >Cancel</otui-button
+      >
+      <otui-button variant="danger" (action)="confirmPostDeletion()"
+        >Delete post</otui-button
+      >
+    </div>
+  </otui-modal>
 </div>

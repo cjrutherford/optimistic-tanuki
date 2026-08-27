@@ -17,6 +17,11 @@ import {
   VariantType,
 } from '../interfaces/variantable.interface';
 import { getDefaultVariantOptions } from '../interfaces/defaultVariantOptions';
+import type {
+  Emphasis,
+  Tone,
+  VariantSize,
+} from '../interfaces/variant.contract';
 import { Subject } from 'rxjs';
 
 @Component({
@@ -62,6 +67,35 @@ export class CardComponent extends Variantable implements OnChanges {
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
   @Input() variantOverrides?: VariantOptions;
+  /**
+   * Opt-in decorative surface texture (paper grain / scanlines / cross-hatch
+   * / circuit accent) rendered for the soft-touch, control-center, architect
+   * and electric personalities via `p.surface-texture()`. Defaults to off so
+   * dense surfaces (compose editors, etc.) stay clean; showcase cards can
+   * opt in explicitly.
+   */
+  @Input() textured = false;
+
+  /**
+   * Canonical semantic tone. The plain `default` {@link CardVariant} is folded
+   * onto this contract: a default card renders on the `neutral` tone surface.
+   * The decorative CardVariants (gradient-glow, electric-border, …) remain an
+   * orthogonal layer and ignore the tone contract entirely.
+   */
+  @Input() tone: Tone = 'neutral';
+  /** Canonical visual treatment (applied on the folded `default` path). */
+  @Input() emphasis: Emphasis = 'soft';
+  /** Canonical physical scale. */
+  @Input() size: VariantSize = 'md';
+
+  /**
+   * True when this card participates in the shared tone/emphasis contract. Only
+   * the plain `default` CardVariant is folded in; every decorative CardVariant
+   * keeps its bespoke surface and opts out of the contract attributes.
+   */
+  get usesContract(): boolean {
+    return this.CardVariant === 'default';
+  }
 
   // Variant properties
   variant!: string;

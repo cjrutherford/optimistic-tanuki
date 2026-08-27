@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EmailService } from '@optimistic-tanuki/email';
+import {
+  EmailService,
+  renderDomainEmailTemplate,
+} from '@optimistic-tanuki/email';
 import {
   Lead,
   LeadFlag,
@@ -11,6 +14,7 @@ import {
 import { Repository } from 'typeorm';
 import {
   LeadQualificationSummary,
+  DiscInterviewTurn,
   LeadAuthContext,
   CreateLeadDto,
   CreateLeadFlagDto,
@@ -25,6 +29,7 @@ import {
   SendLeadResponseDto,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models/leads-contracts';
+import type { AspirationalCompany } from '@optimistic-tanuki/leads-contracts';
 import { LeadQualificationService } from './lead-qualification.service';
 
 @Injectable()
@@ -159,10 +164,17 @@ export class LeadsService {
       };
     }
 
+    const template = renderDomainEmailTemplate({
+      domain: process.env.SMTP_FROM || 'optimistic-tanuki.com',
+      appName: 'Lead Tracker',
+      heading: dto.subject,
+      body: dto.message.split(/\r?\n/).filter(Boolean),
+    });
     const delivery = await this.emailService.sendEmail({
       to: toEmail,
       subject: dto.subject,
-      text: dto.message,
+      text: template.text,
+      html: template.html,
       replyTo: process.env.SMTP_FROM,
     });
 
@@ -265,6 +277,8 @@ export class LeadsService {
       discoveryIntent:
         dto.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources,
+      aspirationalCompanies:
+        this.normalizeAspirationalCompanies(dto.aspirationalCompanies) ?? [],
       googleMapsCities: this.normalizeTopicGoogleMapsList(
         dto.googleMapsCities,
         sources
@@ -312,6 +326,9 @@ export class LeadsService {
         excludedTerms: this.normalizeTopicTerms(dto.excludedTerms),
         discoveryIntent: dto.discoveryIntent,
         sources: nextSources,
+        aspirationalCompanies: this.normalizeAspirationalCompanies(
+          dto.aspirationalCompanies
+        ),
         googleMapsCities: this.normalizeTopicGoogleMapsList(
           dto.googleMapsCities,
           nextSources
@@ -336,6 +353,43 @@ export class LeadsService {
 
   async deleteTopic(id: string, profileId: string): Promise<void> {
     await this.leadTopicRepository.delete({ id, profileId });
+  }
+
+  /**
+   * Only entries with a real provider and token are kept. A blank token would
+   * produce a request to a nonexistent board on every discovery run.
+   */
+  private normalizeAspirationalCompanies(
+    companies?: AspirationalCompany[] | null
+  ): AspirationalCompany[] | undefined {
+    if (companies === undefined) {
+      return undefined;
+    }
+    if (companies === null) {
+      return [];
+    }
+
+    const seen = new Set<string>();
+    return companies
+      .filter(
+        (company) =>
+          (company?.provider === 'greenhouse' ||
+            company?.provider === 'lever') &&
+          Boolean(company?.token?.trim())
+      )
+      .map((company) => ({
+        provider: company.provider,
+        token: company.token.trim(),
+        label: (company.label || company.token).trim(),
+      }))
+      .filter((company) => {
+        const key = `${company.provider}:${company.token}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
   }
 
   private normalizeTopicSources(
@@ -471,11 +525,13 @@ export class LeadsService {
 
   async saveOnboardingProfile(
     profile: UserOnboardingProfile,
-    context: LeadAuthContext
+    context: LeadAuthContext,
+    discTranscript: DiscInterviewTurn[] = []
   ) {
     return this.leadQualificationService.saveOnboardingProfile(
       profile,
-      context
+      context,
+      discTranscript
     );
   }
 

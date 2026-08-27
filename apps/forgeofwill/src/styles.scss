@@ -62,15 +62,18 @@ body {
     var(--font-body, 'Alegreya Sans', system-ui, sans-serif)
   );
   background-color: var(--background);
-  background-image: var(--page-background-pattern, none);
-  background-repeat: repeat;
-  background-size: 40px 40px;
-  background-attachment: fixed;
   color: var(--foreground);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// Workstream C2 (2026-07-18 refactor plan): the personality page-background
+// pattern used to be painted directly here (`background-image:
+// var(--page-background-pattern, none)` + repeat/size/attachment). It now
+// moves to `<lib-personality-backdrop />` (theme-ui), added to
+// app.component.html — a fixed layer behind the app content — so it isn't
+// painted twice.
 
 /* Smooth transitions for theme changes */
 * {

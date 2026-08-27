@@ -342,12 +342,7 @@ describe('TrainerController', () => {
 
     await expect(
       controller.getSiteConfig(undefined, {
-        userId: 'owner-user-handyman',
-        email: 'owner-handyman@localbusiness.test',
-        exp: 0,
-        iat: 0,
-        name: 'Luis Moreno',
-        profileId: 'owner-profile-handyman',
+        user: { profileId: 'owner-profile-handyman' },
       })
     ).resolves.toEqual({
       configId: 'cfg-handyman',
@@ -355,6 +350,32 @@ describe('TrainerController', () => {
         site: { slug: 'steady-hand-contracting', status: 'published' },
         brand: { businessName: 'Steady Hand Contracting' },
       },
+    });
+  });
+
+  it('forwards an undefined profileId for anonymous/forged site-config requests without a slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            profileId: undefined,
+            slug: undefined,
+          });
+
+          return of({ configId: null, config: null });
+        }
+
+        return of(null);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(controller.getSiteConfig(undefined, {})).resolves.toEqual({
+      configId: null,
+      config: null,
     });
   });
 
@@ -720,6 +741,7 @@ describe('TrainerController', () => {
             appScope: 'business-site',
           },
         },
+        requesterProfileId: 'owner-profile-1',
       }
     );
   });
@@ -861,6 +883,7 @@ describe('TrainerController', () => {
             source: 'store',
           },
         },
+        requesterProfileId: 'owner-profile-1',
       }
     );
   });
@@ -1013,7 +1036,14 @@ describe('TrainerController', () => {
         ],
       })
         .overrideGuard(AuthGuard)
-        .useValue({ canActivate: () => true })
+        .useValue({
+          canActivate: (context: {
+            switchToHttp: () => { getRequest: () => Record<string, unknown> };
+          }) => {
+            context.switchToHttp().getRequest().user = operatorTokenPayload;
+            return true;
+          },
+        })
         .overrideGuard(PermissionsGuard)
         .useValue({ canActivate: () => true });
 
@@ -1026,7 +1056,7 @@ describe('TrainerController', () => {
       await app?.close();
     });
 
-    it('accepts catalog-source updates through the business route with bearer-token identity', async () => {
+    it('accepts catalog-source updates through the business route with guard-authenticated identity', async () => {
       storeClient.send.mockImplementation((command: any) => {
         if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
@@ -1087,6 +1117,7 @@ describe('TrainerController', () => {
               source: 'store',
             },
           },
+          requesterProfileId: 'owner-profile-1',
         }
       );
     });
@@ -1327,6 +1358,48 @@ describe('TrainerController', () => {
           appScope: 'business-site',
         },
       }
+    );
+  });
+
+  it('attributes a business lead to the guard-verified identity when the payload omits one', async () => {
+    const storeClient = {
+      send: jest.fn((command: string) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: 'cfg-1',
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of(null);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() => of({ id: 'lead-1' })),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.createLeadIntake(
+      {
+        name: 'Jordan Prospect',
+        email: 'jordan@example.com',
+        goal: 'Build a consistent routine',
+      },
+      { user: { userId: 'verified-user-1', profileId: 'verified-profile-1' } }
+    );
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        context: expect.objectContaining({
+          userId: 'verified-user-1',
+        }),
+      })
     );
   });
 
@@ -1737,7 +1810,7 @@ describe('TrainerController', () => {
     );
   });
 
-  it('loads owner workflow from the hosted tenant slug when provided', async () => {
+  it('loads owner workflow from the hosted tenant slug when the caller owns it', async () => {
     const storeClient = {
       send: jest.fn((command: any, payload: any) => {
         if (command === TrainerConfigCommands.GET_CONFIG) {
@@ -1781,6 +1854,49 @@ describe('TrainerController', () => {
     await expect(
       controller.getOwnerWorkflow(
         {
+          userId: 'owner-user-handyman',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'handyman-profile',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual([]);
+  });
+
+  it('rejects owner workflow requests for a slug the caller does not own', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+              leadContext: {
+                profileId: 'handyman-profile',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerWorkflow(
+        {
           userId: 'owner-user-1',
           email: 'owner@example.com',
           exp: 0,
@@ -1790,7 +1906,13 @@ describe('TrainerController', () => {
         },
         'steady-hand-contracting'
       )
-    ).resolves.toEqual([]);
+    ).rejects.toThrow('You do not have access to this business site.');
+
+    expect(leadClient.send).not.toHaveBeenCalled();
+    expect(storeClient.send).not.toHaveBeenCalledWith(
+      AppointmentCommands.FIND_ALL_APPOINTMENTS,
+      expect.anything()
+    );
   });
 
   it('treats completed free consultations as active clients instead of invoice work', async () => {
@@ -1911,6 +2033,98 @@ describe('TrainerController', () => {
         permissions: ['app-config.update'],
       });
     }
+  });
+
+  it('scopes booking approve/complete/invoice operations to the authenticated owner', async () => {
+    const storeClient = { send: jest.fn(() => of({ id: 'booking-1' })) } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.approveBooking('booking-1', { notes: 'ok' } as any, owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.APPROVE_APPOINTMENT,
+      {
+        id: 'booking-1',
+        approveAppointmentDto: { notes: 'ok' },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.completeBooking('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.COMPLETE_APPOINTMENT,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.generateInvoice('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.GENERATE_INVOICE,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+  });
+
+  it('scopes availability and availability-override mutations to the authenticated owner', async () => {
+    const storeClient = {
+      send: jest.fn(() => of({ id: 'availability-1' })),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.updateOwnerAvailability(
+      'availability-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY,
+      {
+        id: 'availability-1',
+        updateAvailabilityDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailability('availability-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY,
+      { id: 'availability-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.updateOwnerAvailabilityOverride(
+      'override-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE,
+      {
+        id: 'override-1',
+        updateAvailabilityOverrideDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailabilityOverride('override-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
+      { id: 'override-1', requesterOwnerId: 'owner-user-1' }
+    );
   });
 
   it('protects site-config updates with owner permissions', () => {

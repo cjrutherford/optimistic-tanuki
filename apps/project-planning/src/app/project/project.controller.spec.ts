@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ProjectCommands } from '@optimistic-tanuki/constants';
+import { PATTERN_METADATA } from '@nestjs/microservices/constants';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 
@@ -59,5 +61,11 @@ describe('ProjectController', () => {
   it('passes requestingUserId to remove', async () => {
     await controller.remove('p1', 'profile-1');
     expect(service.remove).toHaveBeenCalledWith('p1', 'profile-1');
+  });
+
+  it('registers the canonical remove command used by the gateway', () => {
+    expect(Reflect.getMetadata(PATTERN_METADATA, controller.remove)).toEqual([
+      { cmd: ProjectCommands.REMOVE },
+    ]);
   });
 });

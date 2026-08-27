@@ -2634,6 +2634,38 @@
       "appScope": "video-client"
     },
     {
+      "name": "videos.video.update",
+      "description": "Monitor and retry video processing",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "security.observability.read",
+      "description": "Read public edge security telemetry",
+      "active": true,
+      "resource": "security.observability",
+      "action": "read",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "security.enforcement.manage",
+      "description": "Manage public edge security enforcement",
+      "active": true,
+      "resource": "security.enforcement",
+      "action": "manage",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "videos.video.update",
+      "description": "Monitor and retry video processing (global owner)",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
       "name": "videos.channel.update",
       "description": "Update a video channel community",
       "active": true,
@@ -2952,31 +2984,6 @@
     },
     {
       "role": "community_owner",
-      "permission": "community.create",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "community_owner",
-      "permission": "community.read",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "community_owner",
-      "permission": "community.update",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "community_owner",
-      "permission": "community.delete",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "community_owner",
-      "permission": "community.invite",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "community_owner",
       "permission": "community.manage",
       "permissionAppScope": "community"
     },
@@ -3047,6 +3054,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.task.create",
       "permissionAppScope": "project-planning"
     },
@@ -3058,6 +3070,11 @@
     {
       "role": "forgeofwill_planner",
       "permission": "project-planning.task.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task.delete",
       "permissionAppScope": "project-planning"
     },
     {
@@ -3077,6 +3094,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.risk.create",
       "permissionAppScope": "project-planning"
     },
@@ -3092,6 +3114,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.journal.create",
       "permissionAppScope": "project-planning"
     },
@@ -3102,12 +3129,22 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.timer.create",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
       "permission": "project-planning.timer.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.timer.delete",
       "permissionAppScope": "project-planning"
     },
     {
@@ -3307,6 +3344,21 @@
     },
     {
       "role": "owner_console_owner",
+      "permission": "videos.video.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "security.observability.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "security.enforcement.manage",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
       "permission": "permissions.create",
       "permissionAppScope": "owner-console"
     },
@@ -3433,6 +3485,11 @@
     {
       "role": "owner",
       "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "videos.video.update",
       "permissionAppScope": "global"
     },
     {
@@ -3712,11 +3769,6 @@
     },
     {
       "role": "forum_moderator",
-      "permission": "forum.topic.create",
-      "permissionAppScope": "client-interface"
-    },
-    {
-      "role": "forum_moderator",
       "permission": "forum.topic.read",
       "permissionAppScope": "forum"
     },
@@ -3809,11 +3861,6 @@
       "role": "owner",
       "permission": "forum.post.delete",
       "permissionAppScope": "forum"
-    },
-    {
-      "role": "owner",
-      "permission": "social.post.publish",
-      "permissionAppScope": "global"
     },
     {
       "role": "owner",
@@ -5137,6 +5184,11 @@
     },
     {
       "role": "local_hub_member",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
       "permission": "community.join",
       "permissionAppScope": "local-hub"
     },
@@ -5148,6 +5200,11 @@
     {
       "role": "local_hub_member",
       "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.create",
       "permissionAppScope": "local-hub"
     },
     {
@@ -5279,11 +5336,6 @@
       "role": "local_hub_member",
       "permission": "classified.read",
       "permissionAppScope": "local-hub"
-    },
-    {
-      "role": "local_hub_member",
-      "permission": "store.create",
-      "permissionAppScope": "store"
     },
     {
       "role": "owner_console_owner",
@@ -6263,42 +6315,42 @@
     {
       "role": "video_client_member",
       "permission": "community.join",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_client_member",
       "permission": "community.leave",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_client_member",
       "permission": "community.read",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_client_member",
       "permission": "social.post.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_client_member",
       "permission": "social.post.read",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_client_member",
       "permission": "social.comment.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_client_member",
       "permission": "social.vote.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_client_member",
       "permission": "social.reaction.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_client_member",
@@ -6363,42 +6415,42 @@
     {
       "role": "video_channel_creator",
       "permission": "community.join",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_channel_creator",
       "permission": "community.leave",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_channel_creator",
       "permission": "community.read",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "community"
     },
     {
       "role": "video_channel_creator",
       "permission": "social.post.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_channel_creator",
       "permission": "social.post.read",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_channel_creator",
       "permission": "social.comment.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_channel_creator",
       "permission": "social.vote.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_channel_creator",
       "permission": "social.reaction.create",
-      "permissionAppScope": "video-client"
+      "permissionAppScope": "social"
     },
     {
       "role": "video_channel_creator",

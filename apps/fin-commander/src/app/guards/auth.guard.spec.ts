@@ -20,6 +20,8 @@ describe('AuthGuard', () => {
         {
           provide: AuthStateService,
           useValue: {
+            isAuthenticated: false,
+            restoreSession: jest.fn().mockResolvedValue(false),
             isAuthenticated$: {
               subscribe: (cb: (value: boolean) => void) => cb(false),
             },
@@ -36,5 +38,32 @@ describe('AuthGuard', () => {
 
     await expect(guard.canActivate()).resolves.toBe(false);
     expect(navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('allows a protected route when cookie session restoration succeeds', async () => {
+    const navigate = jest.fn().mockResolvedValue(true);
+    const restoreSession = jest.fn().mockResolvedValue(true);
+
+    TestBed.configureTestingModule({
+      providers: [
+        AuthGuard,
+        { provide: Router, useValue: { navigate } },
+        {
+          provide: AuthStateService,
+          useValue: {
+            isAuthenticated: false,
+            restoreSession,
+            isAuthenticated$: {
+              subscribe: (cb: (value: boolean) => void) => cb(false),
+            },
+          },
+        },
+        { provide: ProfileService, useValue: {} },
+      ],
+    });
+
+    await expect(TestBed.inject(AuthGuard).canActivate()).resolves.toBe(true);
+    expect(restoreSession).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

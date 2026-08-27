@@ -23,16 +23,16 @@
 
   .pagination-item otui-button {
     &:focus-visible {
-      outline: 2px solid var(--local-accent, var(--accent, #3f51b5));
+      outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
 
     &.active {
-      background: var(--local-accent, var(--accent, #3f51b5));
-      color: var(--local-foreground, var(--foreground, #ffffff));
+      background: var(--primary);
+      color: var(--primary-foreground, #fff);
 
       &:focus-visible {
-        outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+        outline: 2px solid var(--primary-foreground, #fff);
         outline-offset: 2px;
       }
     }
@@ -42,7 +42,7 @@
       cursor: not-allowed;
 
       &:focus-visible {
-        outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+        outline: 2px solid var(--foreground);
         outline-offset: 2px;
       }
     }
@@ -78,24 +78,24 @@
   // Style variants
   &.outlined {
     .pagination-item {
-      border: 1px solid var(--local-border, var(--complement, #c0af4b));
+      border: 1px solid var(--border);
       background: transparent;
     }
 
     otui-button {
-      border: 1px solid var(--local-border, var(--complement, #c0af4b));
+      border: 1px solid var(--border);
       background: transparent;
     }
   }
 
   &.filled {
     .pagination-item {
-      background: var(--local-accent, var(--accent, #3f51b5));
+      background: var(--primary);
       border: none;
     }
 
     otui-button {
-      background: var(--local-accent, var(--accent, #3f51b5));
+      background: var(--primary);
       border: none;
     }
   }

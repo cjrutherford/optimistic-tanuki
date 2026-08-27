@@ -12,7 +12,17 @@ pnpm run docker:dev
 
 Primary local URL:
 
-- `http://localhost:8081`
+- `http://forgeofwill.localhost:8081`
+
+Use the dedicated `.localhost` hostname for browser and OAuth work. Plain
+`localhost:8081` is not a supported Forge OAuth origin because cookies are not
+port-scoped.
+
+For local Google OAuth, register both exact gateway callback URIs with the
+provider: `http://localhost:8080/api/oauth/callback/google` for Client
+Interface and `http://forgeofwill.localhost:8081/api/oauth/callback/google`
+for Forge. They keep the initiation nonce host-only on the app that started the
+flow.
 
 For direct Nx work:
 

@@ -95,6 +95,30 @@ export class TenantContextService {
     );
   }
 
+  /**
+   * Hydrates the tenant named by a canonical route without relying on the
+   * versioned background refresh. Route activation can begin while the
+   * profile context is still starting, which intentionally invalidates an
+   * in-flight background load; a route must still be able to establish its
+   * explicit scope before child guards and API requests continue.
+   */
+  async activateRouteTenant(tenantId: string): Promise<boolean> {
+    const tenants = await this.financeService.getTenants();
+    this.availableTenants.set(tenants);
+
+    const tenant =
+      tenantId === 'active'
+        ? this.resolveActiveTenant(tenants, null)
+        : tenants.find((entry) => entry.id === tenantId) ?? null;
+
+    if (!tenant) {
+      return false;
+    }
+
+    this.selectTenant(tenant.id);
+    return true;
+  }
+
   selectTenant(tenantId: string): void {
     const tenant =
       this.availableTenants().find((entry) => entry.id === tenantId) ?? null;

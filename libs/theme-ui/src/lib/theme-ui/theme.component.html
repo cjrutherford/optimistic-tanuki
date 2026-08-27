@@ -1,44 +1,85 @@
-<div class="toggle-container">
-  <form action="none">
-    <div class="theme-switch">
-      <div class="theme-label">☀</div>
-      <label class="switch">
-        <input
-          type="checkbox"
-          [checked]="theme === 'dark'"
-          (change)="toggleTheme()"
-        />
-        <span class="slider round">️</span>
-      </label>
-      <div class="theme-label">🌙</div>
-    </div>
-    <div class="accent-picker">
-      <input
-        type="color"
-        name="accent-color"
-        [(ngModel)]="accentColor"
-        (change)="updateAccentColor()"
-      />
-    </div>
-    <div class="personality-selector">
+<button
+  type="button"
+  class="appearance-trigger"
+  cdkOverlayOrigin
+  #appearanceOrigin="cdkOverlayOrigin"
+  (click)="toggleControls()"
+  [attr.aria-expanded]="showControls"
+  [attr.aria-controls]="controlsId"
+>
+  <span aria-hidden="true">◐</span>
+  <span class="appearance-trigger-label">Appearance</span>
+</button>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="appearanceOrigin"
+  [cdkConnectedOverlayOpen]="showControls"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="appearance-menu-backdrop"
+  (backdropClick)="closeControls()"
+  (detach)="closeControls()"
+>
+  <section
+    [id]="controlsId"
+    class="toggle-container"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Appearance controls"
+    cdkTrapFocus
+    cdkTrapFocusAutoCapture
+  >
+    <div class="appearance-menu-heading">
+      <span>Appearance</span>
       <button
-        class="personality-trigger"
         type="button"
-        (click)="togglePersonalityPicker()"
-        [class.active]="showPersonalityPicker"
-        aria-label="Select personality"
+        class="appearance-close"
+        (click)="closeControls()"
+        aria-label="Close appearance controls"
       >
-        <span class="personality-current">
-          {{ currentPersonality?.name || 'Classic' }}
-        </span>
-        <span class="personality-icon">⚙</span>
+        ×
       </button>
     </div>
-  </form>
-</div>
-
-<!-- CDK Overlay backdrop styling -->
-<div
-  class="cdk-overlay-backdrop personality-picker-backdrop"
-  *ngIf="showPersonalityPicker"
-></div>
+    <form>
+      <fieldset>
+        <legend>Theme settings</legend>
+        <div class="theme-switch">
+          <div class="theme-label">☀</div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              [checked]="theme === 'dark'"
+              (change)="toggleTheme()"
+              aria-label="Use dark theme"
+            />
+            <span class="slider round">️</span>
+          </label>
+          <div class="theme-label">🌙</div>
+        </div>
+        <div class="accent-picker">
+          <input
+            type="color"
+            name="accent-color"
+            [(ngModel)]="accentColor"
+            (change)="updateAccentColor()"
+            aria-label="Accent color"
+          />
+        </div>
+        <div class="personality-selector">
+          <button
+            class="personality-trigger"
+            type="button"
+            (click)="togglePersonalityPicker()"
+            [class.active]="showPersonalityPicker"
+            aria-label="Select personality"
+          >
+            <span class="personality-current">
+              {{ currentPersonality?.name || 'Classic' }}
+            </span>
+            <span class="personality-icon">⚙</span>
+          </button>
+        </div>
+      </fieldset>
+    </form>
+  </section>
+</ng-template>

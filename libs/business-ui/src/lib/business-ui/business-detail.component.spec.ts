@@ -41,4 +41,29 @@ describe('BusinessDetailComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the business name and hides the edit button when not the owner', () => {
+    const title: HTMLElement = fixture.nativeElement.querySelector(
+      '.business-detail__title h1'
+    );
+    const editButton: HTMLElement =
+      fixture.nativeElement.querySelector('.btn-outline');
+
+    expect(title.textContent).toContain('Test Business');
+    expect(editButton).toBeNull();
+  });
+
+  it('emits editClicked when the owner clicks the edit button', () => {
+    componentRef.setInput('isOwner', true);
+    fixture.detectChanges();
+
+    const emitSpy = jest.fn();
+    component.editClicked.subscribe(emitSpy);
+
+    const editButton: HTMLButtonElement =
+      fixture.nativeElement.querySelector('.btn-outline');
+    editButton.click();
+
+    expect(emitSpy).toHaveBeenCalled();
+  });
 });

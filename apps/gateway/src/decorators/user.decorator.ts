@@ -1,43 +1,29 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 
-export const UserDetailsDecorator = (
-  data: unknown,
+export function UserDetailsDecorator(
+  data: null | undefined,
   ctx: ExecutionContext
-): UserDetails => {
+): UserDetails | null;
+export function UserDetailsDecorator<Key extends keyof UserDetails>(
+  data: Key,
+  ctx: ExecutionContext
+): UserDetails[Key] | null;
+export function UserDetailsDecorator(
+  data: keyof UserDetails | null | undefined,
+  ctx: ExecutionContext
+): UserDetails | UserDetails[keyof UserDetails] | null {
   const request = ctx.switchToHttp().getRequest();
-  const token = request.headers['authorization']?.split(' ')[1];
-  if (!token) {
+  // AuthGuard sets this from either a verified bearer token or the HttpOnly
+  // session cookie. Prefer it so controllers never re-parse an untrusted
+  // browser credential and cookie sessions work identically to bearer flows.
+  const user = request.user as UserDetails | undefined;
+  if (!user) {
     return null;
   }
-  return parseToken(token);
-};
+  return data ? user[data] : user;
+}
 
 export const User = createParamDecorator(UserDetailsDecorator);
-
-const parseToken = (token: string): UserDetails => {
-  // Assuming the token is a JWT token
-  try {
-    const tokenParts = token.split('.');
-    if (tokenParts.length !== 3) {
-      throw new Error('Malformed token');
-    }
-    const payload = tokenParts[1];
-    // Use base64url decoding for JWT
-    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(
-      base64.length + ((4 - (base64.length % 4)) % 4),
-      '='
-    );
-    const decoded = Buffer.from(padded, 'base64').toString('utf8');
-    const parsed = JSON.parse(decoded) as any;
-    // Ensure profileId is always present as a first-class claim
-    if (parsed.profileId === undefined || parsed.profileId === null)
-      parsed.profileId = '';
-    return parsed as UserDetails;
-  } catch (e) {
-    throw new Error('Invalid token ' + e);
-  }
-};
 
 export declare type UserDetails = {
   email: string;

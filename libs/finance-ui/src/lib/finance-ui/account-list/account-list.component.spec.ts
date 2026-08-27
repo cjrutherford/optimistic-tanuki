@@ -55,4 +55,17 @@ describe('AccountListComponent', () => {
     expect(text).toContain('Manage your ledger without leaving the workspace');
     expect(fixture.nativeElement.querySelector('otui-ag-grid')).not.toBeNull();
   });
+
+  it('reserves enough fixed width for every account action', () => {
+    const fixture = TestBed.createComponent(AccountListComponent);
+    const actionsColumn = fixture.componentInstance.columnDefs.find(
+      (column) => column.headerName === 'Actions'
+    );
+
+    expect(actionsColumn).toMatchObject({
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
+    });
+  });
 });

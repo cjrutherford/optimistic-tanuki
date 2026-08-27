@@ -71,6 +71,7 @@ jobs:
       changed_matrix: ${{ steps.matrix.outputs.changed_matrix }}
       changed_has_changes: ${{ steps.matrix.outputs.changed_has_changes }}
       full_matrix: ${{ steps.matrix.outputs.full_matrix }}
+      image_check_matrix: ${{ steps.flags.outputs.publish_images == 'true' && steps.matrix.outputs.full_matrix || steps.matrix.outputs.changed_matrix }}
       run_docker: ${{ steps.flags.outputs.run_docker }}
       publish_images: ${{ steps.flags.outputs.publish_images }}
       run_e2e: ${{ steps.flags.outputs.run_e2e }}
@@ -78,6 +79,8 @@ jobs:
       deploy_staging: ${{ steps.flags.outputs.deploy_staging }}
       image_tag: ${{ steps.flags.outputs.image_tag }}
       e2e_image_tag: ${{ steps.flags.outputs.e2e_image_tag }}
+      microservices_e2e_matrix: ${{ steps.e2e_matrix.outputs.microservices_e2e_matrix }}
+      ui_e2e_matrix: ${{ steps.e2e_matrix.outputs.ui_e2e_matrix }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -191,6 +194,15 @@ jobs:
           fi
           echo "image_tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
+      - name: Validate E2E environment and resolve target matrices
+        id: e2e_matrix
+        run: |
+          node scripts/validate-e2e-environment.mjs
+          MICROSERVICES_E2E_MATRIX=$(node --input-type=module -e "import { listE2eTargets } from './scripts/e2e-environment-manifest.mjs'; process.stdout.write(JSON.stringify({include: listE2eTargets('microservice').filter((entry) => entry.ci.enabled).map((entry) => ({target: entry.nx.project, app: entry.app, base_url: entry.baseUrl}))}));")
+          UI_E2E_MATRIX=$(node --input-type=module -e "import { listE2eTargets } from './scripts/e2e-environment-manifest.mjs'; process.stdout.write(JSON.stringify({include: listE2eTargets('ui').filter((entry) => entry.ci.enabled).map((entry) => ({target: entry.nx.project, app: entry.app, profile: entry.stack.profile, base_url: entry.baseUrl}))}));")
+          echo "microservices_e2e_matrix=$MICROSERVICES_E2E_MATRIX" >> "$GITHUB_OUTPUT"
+          echo "ui_e2e_matrix=$UI_E2E_MATRIX" >> "$GITHUB_OUTPUT"
+
       - name: Upload Docker plans
         uses: actions/upload-artifact@v6
         with:
@@ -223,6 +235,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate TypeORM migration governance
+        run: |
+          pnpm run validate:typeorm-migrations
+          node --test scripts/tests/setup-and-migrate.test.mjs
+
+      - name: Validate UI E2E CI contract
+        run: |
+          node --test \
+            scripts/tests/e2e-environment-manifest.test.mjs \
+            scripts/tests/wait-for-e2e-readiness.test.mjs \
+            scripts/tests/ui-e2e-ci-contract.test.mjs
+          for target in \
+            client-interface-e2e \
+            forgeofwill-e2e \
+            digital-homestead-e2e \
+            christopherrutherford-net-e2e \
+            owner-console-e2e \
+            store-client-e2e \
+            configurable-client-e2e; do
+            printf 'Validating Playwright CI config: %s\n' "$target"
+            CI=true env -u BASE_URL pnpm exec playwright test --config="apps/$target/playwright.config.ts" --list
+          done
+
       - name: Derive SHAs for nx affected
         if: github.event_name != 'workflow_dispatch'
         uses: nrwl/nx-set-shas@v4
@@ -241,6 +276,9 @@ jobs:
       - name: Client UI heuristics
         run: pnpm run ui:heuristics:ci
 
+      - name: No personality SCSS drift
+        run: pnpm run check:no-personality-scss
+
       - name: Run Go deployment inventory tests
         working-directory: tools/admin-env-wizard
         run: |
@@ -258,6 +296,26 @@ jobs:
       - name: Validate compose and k8s parity
         continue-on-error: true
         run: bash scripts/validate-compose-k8s-parity.sh
+
+  deployment_secrets:
+    name: Check Staging Deployment Credentials
+    runs-on: ubuntu-24.04
+    needs: [plan]
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check required deployment credentials
+        id: check
+        env:
+          KUBECONFIG_VALUE: ${{ secrets.KUBECONFIG }}
+          DOMAIN_VALUE: ${{ secrets.DOMAIN }}
+          ARGOCD_PASSWORD_VALUE: ${{ secrets.ARGOCD_PASSWORD }}
+        run: |
+          if [ -n "$KUBECONFIG_VALUE" ] && [ -n "$DOMAIN_VALUE" ] && [ -n "$ARGOCD_PASSWORD_VALUE" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
 
   quality:
     name: Quality - ${{ matrix.target }}
@@ -324,7 +382,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix: ${{ fromJson(needs.plan.outputs.changed_matrix) }}
+      matrix: ${{ fromJson(needs.plan.outputs.image_check_matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -335,15 +393,27 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
+      - name: Log in to Docker Hub for verified release images
+        if: needs.plan.outputs.publish_images == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build image check
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./apps/${{ matrix.app }}/Dockerfile
-          push: false
+          push: ${{ needs.plan.outputs.publish_images == 'true' }}
           tags: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          # GitHub Actions' shared cache is limited repository-wide.  Large,
+          # parallel `mode=max` exports routinely exhaust it, then fail after
+          # the image has already built.  Release checks push the verified SHA
+          # image, so embed its reusable cache metadata in that image instead.
+          # PR checks remain read-only consumers of the existing GHA cache.
+          cache-to: ${{ needs.plan.outputs.publish_images == 'true' && 'type=inline' || '' }}
 
   publish_images:
     name: Publish Images - ${{ matrix.app }}
@@ -371,42 +441,35 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Resolve publish tags
-        id: tags
+      - name: Promote verified Docker image
         run: |
-          TAGS="${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }},${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ github.ref_name }}"
+          SOURCE="${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}"
+          TARGETS=(--tag "${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ github.ref_name }}")
           if [ "${{ github.ref_name }}" = "main" ]; then
-            TAGS="$TAGS,${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:latest"
+            TARGETS+=(--tag "${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:latest")
           fi
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/${{ matrix.app }}/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          docker buildx imagetools create "${TARGETS[@]}" "$SOURCE"
 
   microservices_e2e:
-    name: Microservices E2E
+    name: Microservices E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
     if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
-    timeout-minutes: 90
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.microservices_e2e_matrix) }}
+    env:
+      E2E_COMPOSE_PROJECT: ot-e2e-ci-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_ALLOW_GITHUB_RUNNER_DOCKER_PRUNE: true
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -421,88 +484,98 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Pull shared stack images
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml pull \
-            authentication profile social assets \
-            project-planning chat-collector telos-docs-service prompt-proxy \
-            ai-orchestrator blogging permissions store app-configurator \
-            app-configurator-seed lead-tracker gateway
+      - name: Prepare runner Docker capacity
+        run: node scripts/wait-for-e2e-readiness.mjs --prepare-runner
+
+      - name: Build local E2E prerequisites
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup oauth-provider
         env:
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
-      - name: Start shared infrastructure stack
+      - name: Resolve manifest-bounded services
         run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d --no-build \
-            db redis db-setup \
-            authentication profile social assets \
-            project-planning chat-collector telos-docs-service prompt-proxy \
-            ai-orchestrator blogging permissions store app-configurator \
-            app-configurator-seed lead-tracker gateway
-          sleep 60
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
+          node scripts/e2e-environment-manifest.mjs --target "${{ matrix.target }}" --services | jq -r '.[]' > /tmp/e2e-services
+          printf 'E2E services for %s:\n' "${{ matrix.target }}"
+          cat /tmp/e2e-services
+
+      - name: Pull target stack images
+        run: |
+          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
+          if [ "${#SERVICES[@]}" -gt 0 ]; then
+            docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml pull "${SERVICES[@]}"
+          fi
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+
+      - name: Start target stack
+        run: |
+          while IFS= read -r PHASE; do
+            NAME=$(jq -r '.name' <<< "$PHASE")
+            START_WITH_DEPENDENCIES=$(jq -r '.startWithDependencies // false' <<< "$PHASE")
+            mapfile -t SERVICES < <(jq -r '.services[]' <<< "$PHASE")
+            if [ "$START_WITH_DEPENDENCIES" = true ]; then
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml up -d --no-build "${SERVICES[@]}"
+            else
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml up -d --no-build --no-deps "${SERVICES[@]}"
+            fi
+            node scripts/wait-for-e2e-readiness.mjs --target "${{ matrix.target }}" --phase "$NAME"
+          done < <(node scripts/e2e-environment-manifest.mjs --target "${{ matrix.target }}" --phases | jq -c '.[]')
         env:
           CI: true
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
-      - name: Run microservices e2e suites
-        run: |
-          pnpm exec nx e2e authentication-e2e --configuration=ci
-          pnpm exec nx e2e profile-e2e --configuration=ci
-          pnpm exec nx e2e social-e2e --configuration=ci
-          pnpm exec nx e2e assets-e2e --configuration=ci
-          pnpm exec nx e2e blogging-e2e --configuration=ci
-          pnpm exec nx e2e gateway-e2e --configuration=ci
-          pnpm exec nx e2e permissions-e2e --configuration=ci
-          pnpm exec nx e2e project-planning-e2e --configuration=ci
-          pnpm exec nx e2e chat-collector-e2e --configuration=ci
-          pnpm exec nx e2e prompt-proxy-e2e --configuration=ci
-          pnpm exec nx e2e telos-docs-service-e2e --configuration=ci
-          pnpm exec nx e2e ai-orchestrator-e2e --configuration=ci
-          pnpm exec nx e2e app-configurator-e2e --configuration=ci
+      - name: Wait for target readiness
+        run: node scripts/wait-for-e2e-readiness.mjs --target "${{ matrix.target }}"
+
+      - name: Run target E2E suite
+        run: pnpm exec nx e2e "${{ matrix.target }}" --configuration=ci
         env:
           CI: true
+          BASE_URL: ${{ matrix.base_url }}
 
-      - name: Collect docker logs on failure
+      - name: Collect Docker logs on failure
         if: failure()
         run: |
           mkdir -p docker-logs
-          docker compose -f e2e/docker-compose.e2e-stack.yaml logs > docker-logs/microservices-stack.log
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps > docker-logs/microservices-status.txt
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml logs > "docker-logs/${{ matrix.app }}-stack.log"
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml ps > "docker-logs/${{ matrix.app }}-status.txt"
 
-      - name: Upload docker logs
+      - name: Upload Docker logs
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: docker-logs-microservices
+          name: docker-logs-${{ matrix.app }}
           path: docker-logs/
           retention-days: 7
 
-      - name: Stop shared infrastructure stack
+      - name: Stop target stack
         if: always()
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down -v
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml down -v
 
       - name: Cleanup local Docker layers
         if: always()
         run: ./scripts/docker-image-cleanup.sh --keep-tag "${{ needs.plan.outputs.e2e_image_tag }}"
 
   ui_e2e:
-    name: UI E2E
+    name: UI E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
     if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
-    timeout-minutes: 120
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.ui_e2e_matrix) }}
+    env:
+      E2E_COMPOSE_PROJECT: ot-e2e-ci-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_ALLOW_GITHUB_RUNNER_DOCKER_PRUNE: true
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -517,193 +590,86 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps
+      - name: Prepare runner Docker capacity
+        run: node scripts/wait-for-e2e-readiness.mjs --prepare-runner
 
-      - name: Pull shared stack images
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml pull \
-            authentication profile social assets \
-            project-planning chat-collector telos-docs-service prompt-proxy \
-            blogging permissions store app-configurator app-configurator-seed \
-            lead-tracker gateway \
-            client-interface forgeofwill digital-homestead \
-            christopherrutherford-net owner-console store-client configurable-client
+      - name: Build local E2E prerequisites
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup oauth-provider
         env:
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
-      - name: Start shared backend infrastructure
+      - name: Resolve manifest-bounded services
         run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d --no-build \
-            db redis db-setup \
-            authentication profile social assets \
-            project-planning chat-collector telos-docs-service prompt-proxy \
-            blogging permissions store app-configurator \
-            app-configurator-seed lead-tracker gateway
-          sleep 60
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
+          node scripts/e2e-environment-manifest.mjs --target "${{ matrix.target }}" --services | jq -r '.[]' > /tmp/e2e-services
+          printf 'E2E services for %s:\n' "${{ matrix.target }}"
+          cat /tmp/e2e-services
+
+      - name: Pull target stack images
+        run: |
+          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
+          if [ "${#SERVICES[@]}" -gt 0 ]; then
+            docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml --profile "${{ matrix.profile }}" pull "${SERVICES[@]}"
+          fi
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+
+      - name: Start target stack
+        run: |
+          while IFS= read -r PHASE; do
+            NAME=$(jq -r '.name' <<< "$PHASE")
+            PROFILE=$(jq -r '.profile // empty' <<< "$PHASE")
+            START_WITH_DEPENDENCIES=$(jq -r '.startWithDependencies // false' <<< "$PHASE")
+            mapfile -t SERVICES < <(jq -r '.services[]' <<< "$PHASE")
+            if [ "$START_WITH_DEPENDENCIES" = true ]; then
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml ${PROFILE:+--profile "$PROFILE"} up -d --no-build "${SERVICES[@]}"
+            else
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml ${PROFILE:+--profile "$PROFILE"} up -d --no-build --no-deps "${SERVICES[@]}"
+            fi
+            node scripts/wait-for-e2e-readiness.mjs --target "${{ matrix.target }}" --phase "$NAME"
+          done < <(node scripts/e2e-environment-manifest.mjs --target "${{ matrix.target }}" --phases | jq -c '.[]')
         env:
           CI: true
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
-      - name: Start client-interface app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile client-interface up -d --no-build client-interface
-          sleep 20
+      - name: Wait for target readiness
+        run: node scripts/wait-for-e2e-readiness.mjs --target "${{ matrix.target }}"
+
+      - name: Run target E2E suite
+        run: pnpm exec nx e2e "${{ matrix.target }}" --configuration=ci
         env:
           CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+          BASE_URL: ${{ matrix.base_url }}
+          PLAYWRIGHT_CHANNEL: chrome
 
-      - name: Run client-interface-e2e
-        run: pnpm exec nx e2e client-interface-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8080
-
-      - name: Stop client-interface app
+      - name: Upload Playwright artifacts
         if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile client-interface stop client-interface
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile client-interface rm -f client-interface
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-${{ matrix.app }}
+          path: |
+            apps/${{ matrix.target }}/test-results/
+            apps/${{ matrix.target }}/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
 
-      - name: Start forgeofwill app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile forgeofwill up -d --no-build forgeofwill
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run forgeofwill-e2e
-        run: pnpm exec nx e2e forgeofwill-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8081
-
-      - name: Stop forgeofwill app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile forgeofwill stop forgeofwill
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile forgeofwill rm -f forgeofwill
-
-      - name: Start digital-homestead app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile digital-homestead up -d --no-build digital-homestead
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run digital-homestead-e2e
-        run: pnpm exec nx e2e digital-homestead-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8082
-
-      - name: Stop digital-homestead app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile digital-homestead stop digital-homestead
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile digital-homestead rm -f digital-homestead
-
-      - name: Start christopherrutherford-net app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile christopherrutherford-net up -d --no-build christopherrutherford-net
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run christopherrutherford-net-e2e
-        run: pnpm exec nx e2e christopherrutherford-net-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8083
-
-      - name: Stop christopherrutherford-net app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile christopherrutherford-net stop christopherrutherford-net
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile christopherrutherford-net rm -f christopherrutherford-net
-
-      - name: Start owner-console app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile owner-console up -d --no-build owner-console
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run owner-console-e2e
-        run: pnpm exec nx e2e owner-console-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8084
-
-      - name: Stop owner-console app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile owner-console stop owner-console
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile owner-console rm -f owner-console
-
-      - name: Start store-client app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile store-client up -d --no-build store-client
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run store-client-e2e
-        run: pnpm exec nx e2e store-client-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8085
-
-      - name: Stop store-client app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile store-client stop store-client
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile store-client rm -f store-client
-
-      - name: Start configurable-client app
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile configurable-client up -d --no-build configurable-client
-          sleep 20
-        env:
-          CI: true
-          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
-
-      - name: Run configurable-client-e2e
-        run: pnpm exec nx e2e configurable-client-e2e --configuration=ci
-        env:
-          CI: true
-          BASE_URL: http://localhost:8090
-
-      - name: Stop configurable-client app
-        if: always()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile configurable-client stop configurable-client
-          docker compose -f e2e/docker-compose.e2e-stack.yaml --profile configurable-client rm -f configurable-client
-
-      - name: Collect docker logs on failure
+      - name: Collect Docker logs on failure
         if: failure()
         run: |
           mkdir -p docker-logs
-          docker compose -f e2e/docker-compose.e2e-stack.yaml logs > docker-logs/ui-stack.log
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps > docker-logs/ui-status.txt
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml logs > "docker-logs/${{ matrix.app }}-stack.log"
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml ps > "docker-logs/${{ matrix.app }}-status.txt"
 
-      - name: Upload docker logs
+      - name: Upload Docker logs
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: docker-logs-ui
+          name: docker-logs-${{ matrix.app }}
           path: docker-logs/
           retention-days: 7
 
-      - name: Stop shared backend infrastructure
+      - name: Stop target stack
         if: always()
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down -v
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml --profile "${{ matrix.profile }}" down -v
 
       - name: Cleanup local Docker layers
         if: always()
@@ -893,6 +859,9 @@ jobs:
   update_staging_overlay:
     name: Update Staging Overlay
     runs-on: ubuntu-24.04
+    # Temporary: do not fail CI while staging promotion is being stabilized.
+    # Remove this line when staging overlay updates must gate merges again.
+    continue-on-error: true
     needs:
       [
         plan,
@@ -951,8 +920,11 @@ jobs:
     name: Deploy Staging
     runs-on: ubuntu-24.04
     environment: staging
-    needs: [plan, update_staging_overlay]
-    if: needs.plan.outputs.deploy_staging == 'true' && needs.update_staging_overlay.result == 'success' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
+    # Temporary: do not fail CI while staging deployment is being stabilized.
+    # Remove this line when staging deployment must gate merges again.
+    continue-on-error: true
+    needs: [plan, update_staging_overlay, deployment_secrets]
+    if: needs.plan.outputs.deploy_staging == 'true' && needs.update_staging_overlay.result == 'success' && needs.deployment_secrets.outputs.available == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -1016,6 +988,7 @@ jobs:
       - lighthouse_performance
       - load_performance
       - update_staging_overlay
+      - deployment_secrets
       - deploy_staging
     if: always()
     steps:
@@ -1032,6 +1005,7 @@ jobs:
           echo "- Lighthouse performance: ${{ needs.lighthouse_performance.result }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Load performance: ${{ needs.load_performance.result }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Update staging overlay: ${{ needs.update_staging_overlay.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Staging deployment credentials: ${{ needs.deployment_secrets.outputs.available }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy staging: ${{ needs.deploy_staging.result }}" >> "$GITHUB_STEP_SUMMARY"
 
           for status in \

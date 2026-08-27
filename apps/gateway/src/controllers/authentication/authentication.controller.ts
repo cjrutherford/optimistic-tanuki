@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Get,
+  ForbiddenException,
   Inject,
   Post,
   HttpException,
@@ -8,7 +10,9 @@ import {
   Logger,
   UseGuards,
   Headers,
+  Req,
   HttpCode,
+  Res,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -49,6 +53,7 @@ import type {
 import { isApprovedAuthEmailSender } from '@optimistic-tanuki/app-registry-backend';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
 import { Public } from '../../decorators/public.decorator';
+import type { Request, Response } from 'express';
 
 type EmailActionPurpose = 'verification' | 'password-reset' | 'magic-link';
 
@@ -206,14 +211,27 @@ export class AuthenticationController {
   @Public()
   @Throttle(EMAIL_CONFIRM_THROTTLE)
   confirmEmailVerification(@Body() body: { token: string }) {
-    return this.consumeEmailLogin(body.token, 'verification');
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ConfirmEmailVerification },
+        { token: body.token }
+      )
+    );
   }
 
   @Post('magic-link/confirm')
   @Public()
   @Throttle(EMAIL_CONFIRM_THROTTLE)
-  confirmMagicLink(@Body() body: { token: string }) {
-    return this.consumeEmailLogin(body.token, 'magic-link');
+  async confirmMagicLink(
+    @Body() body: { token: string },
+    @Headers('x-ot-session-mode') sessionMode?: string,
+    @Res({ passthrough: true }) response?: Response
+  ) {
+    return this.withBrowserSession(
+      await this.consumeEmailLogin(body.token, 'magic-link'),
+      sessionMode,
+      response
+    );
   }
 
   @Post('password-reset/confirm')
@@ -232,10 +250,19 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Login a user' })
   @ApiResponse({ status: 201, description: 'User logged in successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
+  async loginUser(
+    @Body() data: LoginRequest,
+    @AppScope() appScope: string,
+    @Headers('x-ot-session-mode') sessionMode?: string,
+    @Res({ passthrough: true }) response?: Response
+  ) {
     try {
       this.logger.debug(`loginUser called for email=${data.email}`);
-      return await this.loginBootstrap.login(data, appScope);
+      return this.withBrowserSession(
+        await this.loginBootstrap.login(data, appScope),
+        sessionMode,
+        response
+      );
     } catch (error) {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
@@ -245,6 +272,19 @@ export class AuthenticationController {
     }
   }
 
+  @Get('session')
+  @UseGuards(AuthGuard)
+  currentSession(@User() user: UserDetails) {
+    return {
+      data: {
+        userId: user.userId,
+        email: user.email,
+        name: user.name,
+        profileId: user.profileId,
+      },
+    };
+  }
+
   @Post('issue')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Issue a token for the requested profile' })
@@ -252,14 +292,23 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async issueTokenForProfile(
     @User() user: UserDetails,
-    @Body() body: { profileId?: string }
+    @Body() body: { profileId?: string },
+    @Headers('x-ot-session-mode') sessionMode?: string,
+    @Res({ passthrough: true }) response?: Response
   ) {
     try {
-      return await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.Issue },
-          { userId: user.userId, profileId: body.profileId || user.profileId }
-        )
+      return this.withBrowserSession(
+        await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.Issue },
+            {
+              userId: user.userId,
+              profileId: body.profileId || user.profileId,
+            }
+          )
+        ),
+        sessionMode,
+        response
       );
     } catch (error) {
       this.logger.error(
@@ -333,13 +382,34 @@ export class AuthenticationController {
   async registerUser(
     @Body() data: RegisterRequest,
     @AppScope() appScope: string,
-    @Headers('x-ot-app-id') appId?: string
+    @Headers('x-ot-app-id') appId?: string,
+    @Headers('origin') origin?: string
   ) {
     try {
       this.logger.debug('registerUser called');
+      if (
+        appScope === 'owner-console' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        throw new ForbiddenException(
+          'Owner Console accounts must be provisioned by the deployment bootstrap.'
+        );
+      }
+      const canonicalAppId = this.resolveRegistrationAppId(
+        appId,
+        appScope,
+        origin
+      );
+      if (!canonicalAppId) {
+        throw new HttpException(
+          'Email authentication is not configured for this application',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      this.resolveEmailApp(canonicalAppId);
+
       const result = await this.registerBootstrap.register(data, appScope);
-      const canonicalAppId = appId || this.canonicalAppForScope(appScope);
-      if (canonicalAppId && !result?.data?.user?.emailVerifiedAt) {
+      if (!result?.data?.user?.emailVerifiedAt) {
         try {
           await this.requestEmailAction(canonicalAppId, 'verification', {
             email: data.email,
@@ -351,9 +421,19 @@ export class AuthenticationController {
             this.errorMessage(deliveryError)
           );
         }
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            verificationPending: true,
+          },
+        };
       }
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error(
         'Error in registerUser:',
         error?.message || JSON.stringify(error)
@@ -376,6 +456,12 @@ export class AuthenticationController {
     @User() user: UserDetails,
     @AppScope() appScope: string
   ) {
+    if (appScope === 'owner-console' || appScope === 'global') {
+      throw new ForbiddenException(
+        'Global owner access must be provisioned by an existing platform owner.'
+      );
+    }
+
     const effectiveAppScope =
       appScope === 'owner-console' ? 'global' : appScope;
 
@@ -539,16 +625,28 @@ export class AuthenticationController {
     }
   }
 
+  @Public()
   @Post('logout')
   @ApiOperation({ summary: 'Logout a user and invalidate token' })
   @ApiResponse({ status: 201, description: 'User logged out successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async logoutUser(@Body() data: { token: string }) {
+  async logoutUser(
+    @Body() data: { token?: string },
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response
+  ) {
     try {
       this.logger.debug('logoutUser called');
-      return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Logout }, data)
+      const token = data.token || request.cookies?.ot_session;
+      if (!token) {
+        response.clearCookie('ot_session', this.browserSessionCookieOptions());
+        return { success: true };
+      }
+      response.clearCookie('ot_session', this.browserSessionCookieOptions());
+      const result = await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.Logout }, { token })
       );
+      return result;
     } catch (error) {
       console.error('Error in logoutUser:', error);
       throw new HttpException(
@@ -588,6 +686,43 @@ export class AuthenticationController {
     return path?.startsWith('/') && !path.startsWith('//') ? path : '/';
   }
 
+  private browserSessionCookieOptions() {
+    return {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 60 * 60 * 1000,
+    };
+  }
+
+  private withBrowserSession(
+    result: any,
+    sessionMode: string | undefined,
+    response: Response | undefined
+  ) {
+    if (sessionMode !== 'cookie' || !response) {
+      return result;
+    }
+
+    const token = result?.data?.newToken || result?.newToken || result?.token;
+    if (typeof token !== 'string' || token.length === 0) {
+      throw new HttpException(
+        'Authentication response did not include a session token',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    response.cookie('ot_session', token, this.browserSessionCookieOptions());
+    const data = result?.data;
+    if (data && typeof data === 'object') {
+      const { newToken: _newToken, token: _token, ...safeData } = data;
+      return { ...result, data: safeData };
+    }
+    const { newToken: _newToken, token: _token, ...safeResult } = result;
+    return safeResult;
+  }
+
   private async consumeEmailLogin(
     token: string,
     purpose: 'verification' | 'magic-link'
@@ -599,20 +734,37 @@ export class AuthenticationController {
       )
     )) as { userId: string; email: string; appId: string; returnPath: string };
     this.resolveEmailApp(inspected.appId);
-    const profileScope = this.profileScopeForApp(inspected.appId);
+    // Consume before any profile/role side effects. Concurrent redemptions can
+    // inspect the same token, but only one may advance to profile creation.
+    const consumed = (await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ConsumeEmailAuthAction },
+        { token, purpose }
+      )
+    )) as {
+      appId: string;
+      returnPath: string;
+      data: { userId: string; email: string };
+    };
+    const profileScope = this.profileScopeForApp(consumed.appId);
     const profile = await this.getOrCreateAppScopedProfile(
       {
-        userId: inspected.userId,
-        email: inspected.email,
+        userId: consumed.data.userId,
+        email: consumed.data.email,
       } as UserDetails,
       profileScope
     );
-    return firstValueFrom(
+    const issued = await firstValueFrom(
       this.authClient.send(
-        { cmd: AuthCommands.ConsumeEmailAuthAction },
-        { token, purpose, profileId: profile.id }
+        { cmd: AuthCommands.Issue },
+        { userId: consumed.data.userId, profileId: profile.id }
       )
     );
+    return {
+      ...consumed,
+      message: 'Authentication successful',
+      data: issued.data,
+    };
   }
 
   private profileScopeForApp(appId: string): string {
@@ -641,6 +793,38 @@ export class AuthenticationController {
     return this.appRegistry.apps.some((app) => app.appId === appId)
       ? appId
       : null;
+  }
+
+  private resolveRegistrationAppId(
+    appId?: string,
+    appScope?: string,
+    origin?: string
+  ): string | null {
+    const explicitAppId = appId?.trim();
+    if (explicitAppId) {
+      return this.canonicalAppForScope(explicitAppId);
+    }
+
+    const scopedAppId = appScope?.trim();
+    if (scopedAppId) {
+      return this.canonicalAppForScope(scopedAppId);
+    }
+
+    if (!origin) return null;
+    try {
+      const originUrl = new URL(origin).origin;
+      return (
+        this.appRegistry.apps.find((app) => {
+          try {
+            return new URL(app.uiBaseUrl).origin === originUrl;
+          } catch {
+            return false;
+          }
+        })?.appId || null
+      );
+    } catch {
+      return null;
+    }
   }
 
   private errorMessage(error: unknown): string {

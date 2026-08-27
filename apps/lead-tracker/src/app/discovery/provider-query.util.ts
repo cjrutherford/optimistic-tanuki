@@ -44,8 +44,12 @@ export const buildProviderQueries = (
     .trim();
 
   const queries = new Set<string>();
+  // A recipe may legitimately have no site scopes — funding-news searches the
+  // news feed at large rather than pinning to one domain. Iterating the raw
+  // array would skip the body entirely and silently drop every context signal.
+  const scopes = recipe.siteScopes.length ? recipe.siteScopes : [''];
   for (const term of termsToUse) {
-    for (const scope of recipe.siteScopes) {
+    for (const scope of scopes) {
       for (const signal of recipe.contextSignals) {
         queries.add(
           [scope, quoteIfNeeded(term), signal].filter(Boolean).join(' ').trim()
@@ -72,37 +76,25 @@ export const buildProviderQueries = (
 };
 
 export const getProviderQueryRecipe = (
-  providerName: 'indeed' | 'clutch' | 'crunchbase',
+  providerName: 'funding-news',
   intent: LeadTopicDiscoveryIntent | string | null | undefined
 ): QueryRecipe => {
-  const normalizedIntent = intent || LeadTopicDiscoveryIntent.JOB_OPENINGS;
+  const normalizedIntent = intent || LeadTopicDiscoveryIntent.SERVICE_BUYERS;
 
-  if (providerName === 'indeed') {
-    return {
-      siteScopes: ['site:indeed.com/viewjob', 'site:indeed.com/jobs'],
-      contextSignals:
-        normalizedIntent === LeadTopicDiscoveryIntent.JOB_OPENINGS
-          ? ['remote', '"work from home"', 'hiring']
-          : ['remote', 'contractor'],
-    };
-  }
-
-  if (providerName === 'clutch') {
-    return {
-      siteScopes: [
-        'site:clutch.co',
-        'site:clutch.co/agencies',
-        'site:clutch.co/profile',
-      ],
-      contextSignals:
-        normalizedIntent === LeadTopicDiscoveryIntent.SERVICE_BUYERS
-          ? ['"client reviews"', 'agency', 'services']
-          : ['company', 'development'],
-    };
-  }
+  // The indeed and clutch recipes were removed with their providers: both sites
+  // answer server requests with HTTP 403, so no query against them could ever
+  // return a readable result.
+  //
+  // Funding news is no longer scoped to crunchbase.com. It reads a news feed,
+  // and pinning it to one domain was what made the old source misrepresent
+  // where its data came from — while also discarding most of the signal.
+  void providerName;
 
   return {
-    siteScopes: ['site:crunchbase.com/organization', 'site:crunchbase.com'],
-    contextSignals: ['funding', 'raised', 'series'],
+    siteScopes: [],
+    contextSignals:
+      normalizedIntent === LeadTopicDiscoveryIntent.SERVICE_BUYERS
+        ? ['funding', 'raised', 'series', '"seed round"']
+        : ['funding', 'hiring', 'expansion'],
   };
 };

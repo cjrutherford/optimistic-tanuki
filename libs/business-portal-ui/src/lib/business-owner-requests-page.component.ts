@@ -147,13 +147,13 @@ type WorkflowSection = {
         border-radius: 1.6rem;
         background: radial-gradient(
             circle at top left,
-            color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent),
+            color-mix(in srgb, var(--primary) 14%, transparent),
             transparent 36%
           ),
           linear-gradient(
             135deg,
-            color-mix(in srgb, var(--primary, #1f7a63) 8%, white),
-            var(--background, #fff)
+            color-mix(in srgb, var(--primary) 8%, white),
+            var(--background)
           );
       }
       .queue-hero-copy,
@@ -179,7 +179,7 @@ type WorkflowSection = {
         padding: 1rem;
         border: 1px solid var(--border);
         border-radius: 1rem;
-        background: color-mix(in srgb, var(--background, #fff) 95%, white);
+        background: color-mix(in srgb, var(--background) 95%, white);
       }
       .hero-metric strong {
         font-size: 2rem;
@@ -196,14 +196,9 @@ type WorkflowSection = {
       .status-pill {
         padding: 0.35rem 0.65rem;
         border-radius: 999px;
-        border: 1px solid
-          color-mix(in srgb, var(--primary, #1f7a63) 35%, var(--border));
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 10%,
-          transparent
-        );
-        color: var(--primary, #1f7a63);
+        border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
+        color: var(--primary);
         font-size: 0.78rem;
         font-weight: 700;
         text-transform: capitalize;
@@ -222,7 +217,7 @@ type WorkflowSection = {
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       h1,
       h2 {

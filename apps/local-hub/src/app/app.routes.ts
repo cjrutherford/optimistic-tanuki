@@ -7,7 +7,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('ot-local-hub-authToken'),
+  ...emailAuthRoutes('ot-local-hub-authToken', true),
   {
     path: '',
     loadComponent: () =>
@@ -99,6 +99,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
     component: OAuthCallbackComponent,
   },
   {

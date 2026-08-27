@@ -8,7 +8,13 @@
   <div #mapContainer class="map-container"></div>
 
   <div class="map-controls">
-    <button class="map-control-btn" (click)="resetView()" title="Reset view">
+    <button
+      type="button"
+      class="map-control-btn"
+      (click)="resetView()"
+      title="Reset view"
+      aria-label="Reset map view"
+    >
       <svg
         width="18"
         height="18"
@@ -23,7 +29,7 @@
     </button>
   </div>
 
-  <div class="map-legend">
+  <div class="map-legend" role="group" aria-label="Map legend">
     @if (mode === 'single-location' || mode === 'radius-focus') {
     <div class="legend-item">
       <span class="legend-dot focus"></span>

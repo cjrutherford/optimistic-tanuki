@@ -168,4 +168,57 @@ describe('CardComponent', () => {
 
     expect(component.variant).toBe('gradient-glow');
   });
+
+  it('should default the textured input to false and not add the textured class', () => {
+    expect(component.textured).toBe(false);
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.classList.contains('textured')).toBe(false);
+  });
+
+  it('should add the textured class when the textured input is set', () => {
+    component.textured = true;
+    fixture.detectChanges();
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.classList.contains('textured')).toBe(true);
+  });
+
+  it('should fold the plain default card onto the neutral tone contract', () => {
+    // Legacy `default` CardVariant is folded into the shared contract: a plain
+    // card now renders on the neutral tone/emphasis surface rather than the old
+    // hardcoded gradient default.
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.getAttribute('data-tone')).toBe('neutral');
+    expect(cardEl.getAttribute('data-emphasis')).toBe('soft');
+    expect(cardEl.getAttribute('data-size')).toBe('md');
+  });
+
+  it('should keep decorative CardVariants orthogonal (no contract attrs)', () => {
+    component.CardVariant = 'gradient-glow';
+    fixture.detectChanges();
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.getAttribute('data-tone')).toBeNull();
+    expect(cardEl.getAttribute('data-emphasis')).toBeNull();
+    expect(cardEl.getAttribute('data-size')).toBeNull();
+  });
+
+  it('should emit canonical variant data attributes when tone is set', () => {
+    component.tone = 'brand';
+    component.emphasis = 'soft';
+    component.size = 'lg';
+    fixture.detectChanges();
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.getAttribute('data-tone')).toBe('brand');
+    expect(cardEl.getAttribute('data-emphasis')).toBe('soft');
+    expect(cardEl.getAttribute('data-size')).toBe('lg');
+  });
+
+  it('should default tone to neutral, emphasis to soft and size to md', () => {
+    expect(component.tone).toBe('neutral');
+    expect(component.emphasis).toBe('soft');
+    expect(component.size).toBe('md');
+  });
 });

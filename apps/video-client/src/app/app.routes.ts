@@ -15,11 +15,15 @@ import { MyChannelComponent } from './components/my-channel.component';
 import { authGuard } from './guards/auth.guard';
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('authToken'),
+  ...emailAuthRoutes('authToken', true),
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'oauth/callback', component: OAuthCallbackComponent },
+  {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
   { path: 'watch/:id', component: WatchComponent },
   { path: 'c/:slugOrId', component: ChannelComponent },
   { path: 'channel/:slugOrId', component: ChannelComponent },

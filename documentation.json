@@ -103,12 +103,12 @@
     },
     {
       "name": "PersonalityGridCell",
-      "id": "interface-PersonalityGridCell-7f627c24d1b85cd1e034b6562f02629bcc94be331da0c33bd3cf7456d9aa0ad92fc43a1ff1d591849b8acf7281699cf1a6e4cdb87437628f0f7f4b1195b5982d",
+      "id": "interface-PersonalityGridCell-bdd32c4fca30a3efd18d9dd61c47fa531b76e6c68706dedac3b710cc5f5c4941fb1de6ef2fef798359ed4db8c17f97be977281fc4b9cbbf4599ff1ac2d97a2d9",
       "file": "libs/theme-ui/src/lib/theme-ui/personality-grid.component.ts",
       "deprecated": false,
       "deprecationMessage": "",
       "type": "interface",
-      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  PREDEFINED_PERSONALITIES,\n  Personality,\n  ensureContrast,\n  generatePersonalityColors,\n  getSuggestedTextColor,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generateShadowColor,\n  generateThemeResponsiveColors,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type PersonalityGridMode = 'light' | 'dark';\n\ninterface PersonalityGridCell {\n  personality: Personality;\n  mode: PersonalityGridMode;\n  cssVars: Record<string, string>;\n}\n\n/**\n * Derives the CSS custom properties for a single grid cell from a\n * personality + mode, mirroring `ThemeService`'s pure color/contrast/shadow\n * pipeline but scoped to one element instead of `document.documentElement`.\n */\nfunction buildCellCssVars(\n  personality: Personality,\n  mode: PersonalityGridMode,\n  primaryColor: string\n): Record<string, string> {\n  const colors = generatePersonalityColors(\n    primaryColor,\n    personality.colorHarmony.type,\n    personality.colorHarmony.saturationBoost,\n    personality.colorHarmony.lightnessShift,\n    personality.colorHarmony.accentSaturation,\n    personality.colorHarmony.accentLightness\n  );\n\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode\n  );\n\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  const shadowColor = generateShadowColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n\n  const primaryForeground = getSuggestedTextColor(colors.primary).color;\n  const presentation = personality.presentation;\n  const headingFamily =\n    personality.fonts.heading?.family ?? personality.fonts.body.family;\n  const headingWeights = personality.fonts.heading?.weights ?? [600];\n\n  return {\n    '--cell-background': themeColors.background,\n    '--cell-foreground': foreground,\n    '--cell-surface': themeColors.surface,\n    '--cell-border': themeColors.border,\n    '--cell-muted': themeColors.muted,\n    '--cell-primary': colors.primary,\n    '--cell-primary-foreground': primaryForeground,\n    '--cell-shadow-color': shadowColor,\n    '--cell-font-heading': headingFamily,\n    '--cell-font-body': personality.fonts.body.family,\n    '--cell-font-weight-heading': String(\n      headingWeights[headingWeights.length - 1] ?? 600\n    ),\n    '--cell-line-height': String(personality.tokens.lineHeight),\n    '--cell-letter-spacing': personality.tokens.letterSpacing,\n    '--cell-border-radius': presentation?.border.radiusValue ?? '4px',\n    '--cell-border-style': presentation?.border.styleValue ?? 'solid',\n    '--cell-border-width': presentation?.border.widthValue ?? '1px',\n    '--cell-box-shadow': presentation?.shadow.value ?? 'none',\n    '--cell-transition':\n      presentation?.animation.transition ?? 'all 200ms ease',\n    '--cell-button-radius':\n      presentation?.components.button.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-button-padding':\n      presentation?.components.button.padding ?? '0.5rem 1rem',\n    '--cell-button-weight':\n      presentation?.components.button.fontWeight ?? '600',\n    '--cell-button-transform':\n      presentation?.components.button.textTransform ?? 'none',\n    '--cell-card-radius':\n      presentation?.components.card.borderRadius ??\n      presentation?.border.radiusValue ??\n      '8px',\n    '--cell-card-padding': presentation?.components.card.padding ?? '1rem',\n    '--cell-card-shadow':\n      presentation?.components.card.boxShadow ??\n      presentation?.shadow.value ??\n      'none',\n    '--cell-input-radius':\n      presentation?.components.input.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-input-border-width':\n      presentation?.components.input.borderWidth ??\n      presentation?.border.widthValue ??\n      '1px',\n  };\n}\n\n@Component({\n  selector: 'lib-personality-grid',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"personality-grid__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"personality-grid__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"personality-grid__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"personality-grid__cell\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"personality-grid__cell-header\">\n            <h3 class=\"personality-grid__cell-title\">\n              {{ cell.personality.name }}\n            </h3>\n            <code class=\"personality-grid__cell-id\">{{\n              cell.personality.id\n            }}</code>\n          </header>\n\n          <h4 class=\"personality-grid__heading\">The quick brown fox</h4>\n          <p class=\"personality-grid__body\">\n            Jumps over the lazy dog — body copy at this personality's real\n            weight, line height, and letter spacing.\n          </p>\n\n          <div class=\"personality-grid__row\">\n            <button type=\"button\" class=\"personality-grid__button\">\n              Take action\n            </button>\n            <div class=\"personality-grid__card\">\n              <strong>Card</strong>\n              <span>radius + shadow</span>\n            </div>\n          </div>\n\n          <input\n            type=\"text\"\n            class=\"personality-grid__input\"\n            placeholder=\"Type something…\"\n          />\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .personality-grid__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .personality-grid__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .personality-grid__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .personality-grid__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .personality-grid__section[data-mode='dark']\n        .personality-grid__section-title {\n        color: #f8fafc;\n      }\n\n      .personality-grid__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n        gap: 1rem;\n      }\n\n      .personality-grid__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: var(--cell-border-width) var(--cell-border-style)\n          var(--cell-border);\n        border-radius: var(--cell-border-radius);\n        box-shadow: var(--cell-box-shadow);\n        transition: var(--cell-transition);\n        font-family: var(--cell-font-body);\n        line-height: var(--cell-line-height);\n        letter-spacing: var(--cell-letter-spacing);\n      }\n\n      .personality-grid__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n      }\n\n      .personality-grid__cell-title {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1rem;\n      }\n\n      .personality-grid__cell-id {\n        font-size: 0.7rem;\n        color: var(--cell-muted);\n        white-space: nowrap;\n      }\n\n      .personality-grid__heading {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1.35rem;\n      }\n\n      .personality-grid__body {\n        margin: 0;\n        font-size: 0.875rem;\n      }\n\n      .personality-grid__row {\n        display: flex;\n        align-items: center;\n        gap: 0.75rem;\n        flex-wrap: wrap;\n      }\n\n      .personality-grid__button {\n        border: none;\n        cursor: pointer;\n        font: inherit;\n        background: var(--cell-primary);\n        color: var(--cell-primary-foreground);\n        border-radius: var(--cell-button-radius);\n        padding: var(--cell-button-padding);\n        font-weight: var(--cell-button-weight);\n        text-transform: var(--cell-button-transform);\n        transition: var(--cell-transition);\n      }\n\n      .personality-grid__card {\n        flex: 1;\n        min-width: 120px;\n        display: flex;\n        flex-direction: column;\n        gap: 0.15rem;\n        background: var(--cell-surface);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-card-radius);\n        padding: var(--cell-card-padding);\n        box-shadow: var(--cell-card-shadow);\n        font-size: 0.8rem;\n      }\n\n      .personality-grid__input {\n        font: inherit;\n        color: var(--cell-foreground);\n        background: var(--cell-background);\n        border: var(--cell-input-border-width) solid var(--cell-border);\n        border-radius: var(--cell-input-radius);\n        padding: 0.5rem 0.75rem;\n        transition: var(--cell-transition);\n      }\n    `,\n  ],\n})\nexport class PersonalityGridComponent {\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: PersonalityGridMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's color harmony. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all N at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: PersonalityGridMode;\n    cells: PersonalityGridCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) => ({\n        personality,\n        mode,\n        cssVars: buildCellCssVars(personality, mode, this.primaryColor),\n      })),\n    }));\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: PersonalityGridCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
+      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  PREDEFINED_PERSONALITIES,\n  Personality,\n  ensureContrast,\n  generatePersonalityColors,\n  getSuggestedTextColor,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generateShadowColor,\n  generateThemeResponsiveColors,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type PersonalityGridMode = 'light' | 'dark';\n\ninterface PersonalityGridCell {\n  personality: Personality;\n  mode: PersonalityGridMode;\n  cssVars: Record<string, string>;\n}\n\n/**\n * Derives the CSS custom properties for a single grid cell from a\n * personality + mode, mirroring `ThemeService`'s pure color/contrast/shadow\n * pipeline but scoped to one element instead of `document.documentElement`.\n */\nfunction buildCellCssVars(\n  personality: Personality,\n  mode: PersonalityGridMode,\n  primaryColor: string\n): Record<string, string> {\n  const colors = generatePersonalityColors(\n    primaryColor,\n    personality.colorHarmony.type,\n    personality.colorHarmony.saturationBoost,\n    personality.colorHarmony.lightnessShift,\n    personality.colorHarmony.accentSaturation,\n    personality.colorHarmony.accentLightness\n  );\n\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode\n  );\n\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  const shadowColor = generateShadowColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n\n  const primaryForeground = getSuggestedTextColor(colors.primary).color;\n  const presentation = personality.presentation;\n  const headingFamily =\n    personality.fonts.heading?.family ?? personality.fonts.body.family;\n  const headingWeights = personality.fonts.heading?.weights ?? [600];\n\n  return {\n    '--cell-background': themeColors.background,\n    '--cell-foreground': foreground,\n    '--cell-surface': themeColors.surface,\n    '--cell-border': themeColors.border,\n    '--cell-muted': themeColors.muted,\n    '--cell-primary': colors.primary,\n    '--cell-primary-foreground': primaryForeground,\n    '--cell-shadow-color': shadowColor,\n    '--cell-font-heading': headingFamily,\n    '--cell-font-body': personality.fonts.body.family,\n    '--cell-font-weight-heading': String(\n      headingWeights[headingWeights.length - 1] ?? 600\n    ),\n    '--cell-line-height': String(personality.tokens.lineHeight),\n    '--cell-letter-spacing': personality.tokens.letterSpacing,\n    '--cell-border-radius': presentation?.border.radiusValue ?? '4px',\n    '--cell-border-style': presentation?.border.styleValue ?? 'solid',\n    '--cell-border-width': presentation?.border.widthValue ?? '1px',\n    '--cell-box-shadow': presentation?.shadow.value ?? 'none',\n    '--cell-transition': presentation?.animation.transition ?? 'all 200ms ease',\n    '--cell-button-radius':\n      presentation?.components.button.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-button-padding':\n      presentation?.components.button.padding ?? '0.5rem 1rem',\n    '--cell-button-weight': presentation?.components.button.fontWeight ?? '600',\n    '--cell-button-transform':\n      presentation?.components.button.textTransform ?? 'none',\n    '--cell-card-radius':\n      presentation?.components.card.borderRadius ??\n      presentation?.border.radiusValue ??\n      '8px',\n    '--cell-card-padding': presentation?.components.card.padding ?? '1rem',\n    '--cell-card-shadow':\n      presentation?.components.card.boxShadow ??\n      presentation?.shadow.value ??\n      'none',\n    '--cell-input-radius':\n      presentation?.components.input.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-input-border-width':\n      presentation?.components.input.borderWidth ??\n      presentation?.border.widthValue ??\n      '1px',\n  };\n}\n\n@Component({\n  selector: 'lib-personality-grid',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"personality-grid__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"personality-grid__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"personality-grid__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"personality-grid__cell\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"personality-grid__cell-header\">\n            <h3 class=\"personality-grid__cell-title\">\n              {{ cell.personality.name }}\n            </h3>\n            <code class=\"personality-grid__cell-id\">{{\n              cell.personality.id\n            }}</code>\n          </header>\n\n          <h4 class=\"personality-grid__heading\">The quick brown fox</h4>\n          <p class=\"personality-grid__body\">\n            Jumps over the lazy dog — body copy at this personality's real\n            weight, line height, and letter spacing.\n          </p>\n\n          <div class=\"personality-grid__row\">\n            <button type=\"button\" class=\"personality-grid__button\">\n              Take action\n            </button>\n            <div class=\"personality-grid__card\">\n              <strong>Card</strong>\n              <span>radius + shadow</span>\n            </div>\n          </div>\n\n          <input\n            type=\"text\"\n            class=\"personality-grid__input\"\n            placeholder=\"Type something…\"\n          />\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .personality-grid__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .personality-grid__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .personality-grid__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .personality-grid__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .personality-grid__section[data-mode='dark']\n        .personality-grid__section-title {\n        color: #f8fafc;\n      }\n\n      .personality-grid__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n        gap: 1rem;\n      }\n\n      .personality-grid__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: var(--cell-border-width) var(--cell-border-style)\n          var(--cell-border);\n        border-radius: var(--cell-border-radius);\n        box-shadow: var(--cell-box-shadow);\n        transition: var(--cell-transition);\n        font-family: var(--cell-font-body);\n        line-height: var(--cell-line-height);\n        letter-spacing: var(--cell-letter-spacing);\n      }\n\n      .personality-grid__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n      }\n\n      .personality-grid__cell-title {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1rem;\n      }\n\n      .personality-grid__cell-id {\n        font-size: 0.7rem;\n        color: var(--cell-muted);\n        white-space: nowrap;\n      }\n\n      .personality-grid__heading {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1.35rem;\n      }\n\n      .personality-grid__body {\n        margin: 0;\n        font-size: 0.875rem;\n      }\n\n      .personality-grid__row {\n        display: flex;\n        align-items: center;\n        gap: 0.75rem;\n        flex-wrap: wrap;\n      }\n\n      .personality-grid__button {\n        border: none;\n        cursor: pointer;\n        font: inherit;\n        background: var(--cell-primary);\n        color: var(--cell-primary-foreground);\n        border-radius: var(--cell-button-radius);\n        padding: var(--cell-button-padding);\n        font-weight: var(--cell-button-weight);\n        text-transform: var(--cell-button-transform);\n        transition: var(--cell-transition);\n      }\n\n      .personality-grid__card {\n        flex: 1;\n        min-width: 120px;\n        display: flex;\n        flex-direction: column;\n        gap: 0.15rem;\n        background: var(--cell-surface);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-card-radius);\n        padding: var(--cell-card-padding);\n        box-shadow: var(--cell-card-shadow);\n        font-size: 0.8rem;\n      }\n\n      .personality-grid__input {\n        font: inherit;\n        color: var(--cell-foreground);\n        background: var(--cell-background);\n        border: var(--cell-input-border-width) solid var(--cell-border);\n        border-radius: var(--cell-input-radius);\n        padding: 0.5rem 0.75rem;\n        transition: var(--cell-transition);\n      }\n    `,\n  ],\n})\nexport class PersonalityGridComponent {\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: PersonalityGridMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's color harmony. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all N at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: PersonalityGridMode;\n    cells: PersonalityGridCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) => ({\n        personality,\n        mode,\n        cssVars: buildCellCssVars(personality, mode, this.primaryColor),\n      })),\n    }));\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: PersonalityGridCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
       "properties": [
         {
           "name": "cssVars",
@@ -174,6 +174,73 @@
           "optional": false,
           "description": "",
           "line": 20
+        }
+      ],
+      "indexSignatures": [],
+      "kind": 172,
+      "methods": [],
+      "extends": []
+    },
+    {
+      "name": "TokenShowcaseCell",
+      "id": "interface-TokenShowcaseCell-992e012958370e819b5f5e6fb5917ed8fb463273f4ac802ffefde4df9788424eda107861c4ebba87bc6af15f19d71346f9c135e37e4d823a98ff7ec0f6a532e6",
+      "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+      "deprecated": false,
+      "deprecationMessage": "",
+      "type": "interface",
+      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  ColorGenerationConfig,\n  ensureContrast,\n  Personality,\n  PREDEFINED_PERSONALITIES,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generatePageBackgroundPattern,\n  generatePersonalityShadows,\n  generateShadowTintColor,\n  generateThemeResponsiveColors,\n  resolveShadowOpacity,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type TokenShowcaseMode = 'light' | 'dark';\nexport type TokenShowcaseVariant =\n  | 'shadow-profiles'\n  | 'page-backgrounds'\n  | 'surfaces';\n\ninterface TokenShowcaseCell {\n  personality: Personality;\n  mode: TokenShowcaseMode;\n  cssVars: Record<string, string>;\n  /** Short human-readable caption shown under the personality name. */\n  caption: string;\n  /** `page-backgrounds` only: true for the two documented flat personalities. */\n  flat?: boolean;\n}\n\n/**\n * Encodes an SVG pattern as a `url(\"data:image/svg+xml,...\")` background\n * image the SAME way `ThemeService` does post-C0 fix: `encodeURIComponent`\n * already escapes everything `url(\"...\")` needs except `'`, so only that\n * one character gets a manual replace. (The pre-C0 bug re-escaped every\n * percent sign the encoder had just produced — do not reintroduce that\n * five-way `.replace()` chain here.)\n */\nfunction encodeSvgBackground(svg: string): string {\n  const encoded = encodeURIComponent(svg).replace(/'/g, '%27');\n  return `url(\"data:image/svg+xml,${encoded}\")`;\n}\n\nfunction buildShadowProfileCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const shadowTintRgb = generateShadowTintColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n  const shadowOpacity = resolveShadowOpacity(\n    personality.colorGeneration.shadowOpacity,\n    mode\n  );\n  const shadows = generatePersonalityShadows(\n    personality,\n    shadowTintRgb,\n    shadowOpacity,\n    primaryColor\n  );\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.surface,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-surface': themeColors.surface,\n      '--cell-foreground': foreground,\n      '--cell-border': themeColors.border,\n      '--cell-shadow-sm': shadows.sm,\n      '--cell-shadow-md': shadows.md,\n      '--cell-shadow-lg': shadows.lg,\n      '--cell-border-radius':\n        personality.presentation?.border.radiusValue ?? '8px',\n    },\n    caption: `${personality.tokens.shadowProfile} · ${personality.colorGeneration.shadowTint}`,\n  };\n}\n\nfunction buildPageBackgroundCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const flat = !personality.pageBackground;\n  let backgroundImage = 'none';\n  if (personality.pageBackground) {\n    const svg = generatePageBackgroundPattern(\n      primaryColor,\n      personality.pageBackground.pattern,\n      personality.pageBackground.usePrimaryTint,\n      personality.colorGeneration.pageBackgroundOpacity,\n      mode\n    );\n    backgroundImage = encodeSvgBackground(svg);\n  }\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-foreground': themeColors.foreground,\n      '--cell-border': themeColors.border,\n      '--cell-background-image': backgroundImage,\n    },\n    caption: flat\n      ? 'flat by design'\n      : `opacity ${personality.colorGeneration.pageBackgroundOpacity}`,\n    flat,\n  };\n}\n\nfunction buildSurfaceCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  // \"Elevated\" demo tier: re-run the SAME generator with the personality's\n  // OWN surfaceLuminosityOffset doubled — a surface lifted again, not a\n  // hand-authored color. Shows why a personality with a wide offset (e.g.\n  // playful's -7) reads as dramatically more \"layered\" than one with a\n  // narrow offset (e.g. minimal's -1).\n  const elevatedParams: ColorGenerationConfig = {\n    ...personality.colorGeneration,\n    surfaceLuminosityOffset: personality.colorGeneration.surfaceLuminosityOffset * 2,\n  };\n  const elevatedColors = generateThemeResponsiveColors(\n    primaryColor,\n    elevatedParams,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  // Surface texture (Workstream C3): most personalities declare none, so\n  // most `surface` tiles fall back to `none` and render flat. The curated\n  // few (soft-touch, control-center, architect, electric) render their\n  // texture through the exact same generator + encode path ThemeService\n  // uses for `--surface-texture`.\n  let surfaceTextureImage = 'none';\n  if (personality.surfaceTexture) {\n    const svg = generatePageBackgroundPattern(\n      primaryColor,\n      personality.surfaceTexture.pattern,\n      personality.surfaceTexture.usePrimaryTint,\n      personality.surfaceTexture.opacity,\n      mode\n    );\n    surfaceTextureImage = encodeSvgBackground(svg);\n  }\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-surface': themeColors.surface,\n      '--cell-elevated': elevatedColors.surface,\n      '--cell-foreground': foreground,\n      '--cell-border': themeColors.border,\n      '--cell-surface-texture': surfaceTextureImage,\n    },\n    caption: `${personality.colorGeneration.surfaceHueBias} · Δsat ${personality.colorGeneration.surfaceSaturationShift} · offset ${personality.colorGeneration.surfaceLuminosityOffset}`,\n  };\n}\n\n@Component({\n  selector: 'lib-personality-token-showcase',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"token-showcase__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"token-showcase__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"token-showcase__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"token-showcase__cell\"\n          [class.token-showcase__cell--flat]=\"cell.flat\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"token-showcase__cell-header\">\n            <strong>{{ cell.personality.name }}</strong>\n            <code>{{ cell.personality.id }}</code>\n          </header>\n          <p class=\"token-showcase__cell-caption\">{{ cell.caption }}</p>\n\n          <ng-container [ngSwitch]=\"variant\">\n            <div\n              *ngSwitchCase=\"'shadow-profiles'\"\n              class=\"token-showcase__shadow-swatch\"\n            >\n              <div class=\"token-showcase__shadow-swatch-inner\">Shadow</div>\n            </div>\n\n            <div\n              *ngSwitchCase=\"'page-backgrounds'\"\n              class=\"token-showcase__background-swatch\"\n            >\n              <span *ngIf=\"cell.flat\" class=\"token-showcase__flat-label\"\n                >flat by design</span\n              >\n            </div>\n\n            <div *ngSwitchCase=\"'surfaces'\" class=\"token-showcase__surface-row\">\n              <div class=\"token-showcase__surface-tile\" data-tier=\"background\">\n                background\n              </div>\n              <div class=\"token-showcase__surface-tile\" data-tier=\"surface\">\n                surface\n              </div>\n              <div class=\"token-showcase__surface-tile\" data-tier=\"elevated\">\n                elevated\n              </div>\n            </div>\n          </ng-container>\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .token-showcase__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .token-showcase__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .token-showcase__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .token-showcase__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .token-showcase__section[data-mode='dark'] .token-showcase__section-title {\n        color: #f8fafc;\n      }\n\n      .token-showcase__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));\n        gap: 1rem;\n      }\n\n      .token-showcase__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-border-radius, 8px);\n        font-family: system-ui, sans-serif;\n      }\n\n      .token-showcase__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n        font-size: 0.9rem;\n      }\n\n      .token-showcase__cell-header code {\n        font-size: 0.7rem;\n        opacity: 0.7;\n      }\n\n      .token-showcase__cell-caption {\n        margin: 0;\n        font-size: 0.72rem;\n        opacity: 0.75;\n      }\n\n      /* --- shadow-profiles --- */\n      .token-showcase__shadow-swatch {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 1.5rem 1rem;\n      }\n\n      .token-showcase__shadow-swatch-inner {\n        width: 100%;\n        padding: 1.25rem;\n        text-align: center;\n        font-size: 0.8rem;\n        background: var(--cell-surface);\n        border-radius: var(--cell-border-radius, 8px);\n        box-shadow: var(--cell-shadow-md);\n      }\n\n      /* --- page-backgrounds --- */\n      .token-showcase__background-swatch {\n        position: relative;\n        height: 140px;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n        background-color: var(--cell-background);\n        background-image: var(--cell-background-image, none);\n        background-repeat: repeat;\n        background-position: center;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n\n      .token-showcase__flat-label {\n        font-size: 0.72rem;\n        letter-spacing: 0.02em;\n        text-transform: uppercase;\n        opacity: 0.6;\n      }\n\n      /* --- surfaces --- */\n      .token-showcase__surface-row {\n        display: flex;\n        gap: 0.5rem;\n      }\n\n      .token-showcase__surface-tile {\n        flex: 1;\n        height: 72px;\n        display: flex;\n        align-items: flex-end;\n        padding: 0.4rem;\n        font-size: 0.65rem;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n      }\n\n      .token-showcase__surface-tile[data-tier='background'] {\n        background: var(--cell-background);\n      }\n\n      .token-showcase__surface-tile[data-tier='surface'] {\n        background-color: var(--cell-surface);\n        background-image: var(--cell-surface-texture, none);\n        background-repeat: repeat;\n      }\n\n      .token-showcase__surface-tile[data-tier='elevated'] {\n        background: var(--cell-elevated);\n      }\n    `,\n  ],\n})\nexport class PersonalityTokenShowcaseComponent {\n  /** Which token dimension to render. */\n  @Input() variant: TokenShowcaseVariant = 'shadow-profiles';\n\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: TokenShowcaseMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's derivation. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all 12 at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: TokenShowcaseMode;\n    cells: TokenShowcaseCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) =>\n        this.buildCell(personality, mode)\n      ),\n    }));\n  }\n\n  private buildCell(\n    personality: Personality,\n    mode: TokenShowcaseMode\n  ): TokenShowcaseCell {\n    switch (this.variant) {\n      case 'page-backgrounds':\n        return buildPageBackgroundCell(personality, mode, this.primaryColor);\n      case 'surfaces':\n        return buildSurfaceCell(personality, mode, this.primaryColor);\n      case 'shadow-profiles':\n      default:\n        return buildShadowProfileCell(personality, mode, this.primaryColor);\n    }\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: TokenShowcaseCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
+      "properties": [
+        {
+          "name": "caption",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "type": "string",
+          "indexKey": "",
+          "optional": false,
+          "description": "<p>Short human-readable caption shown under the personality name.</p>\n",
+          "line": 75,
+          "rawdescription": "\nShort human-readable caption shown under the personality name."
+        },
+        {
+          "name": "cssVars",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "type": "Record<string | string>",
+          "indexKey": "",
+          "optional": false,
+          "description": "",
+          "line": 73
+        },
+        {
+          "name": "flat",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "type": "boolean",
+          "indexKey": "",
+          "optional": true,
+          "description": "<p><code>page-backgrounds</code> only: true for the two documented flat personalities.</p>\n",
+          "line": 77,
+          "rawdescription": "\n`page-backgrounds` only: true for the two documented flat personalities."
+        },
+        {
+          "name": "mode",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "type": "TokenShowcaseMode",
+          "indexKey": "",
+          "optional": false,
+          "description": "",
+          "line": 72
+        },
+        {
+          "name": "personality",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "type": "Personality",
+          "indexKey": "",
+          "optional": false,
+          "description": "",
+          "line": 71
         }
       ],
       "indexSignatures": [],
@@ -773,6 +840,42 @@
       "extends": []
     },
     {
+      "name": "PersonalityBackdropComponent",
+      "id": "component-PersonalityBackdropComponent-14a364aff73e8a779f2f6b451babc9d14b0fb0b0fd615643b0ba8faeee0734f69935b844a5915bdc7c65d25404ea12057fc8fa542373e1d455941012fc0d5cb2",
+      "file": "libs/theme-ui/src/lib/theme-ui/personality-backdrop.component.ts",
+      "encapsulation": [],
+      "entryComponents": [],
+      "inputs": [],
+      "outputs": [],
+      "providers": [],
+      "selector": "lib-personality-backdrop",
+      "styleUrls": [],
+      "styles": [],
+      "template": "",
+      "templateUrl": [],
+      "viewProviders": [],
+      "hostDirectives": [],
+      "inputsClass": [],
+      "outputsClass": [],
+      "propertiesClass": [],
+      "methodsClass": [],
+      "deprecated": false,
+      "deprecationMessage": "",
+      "hostBindings": [],
+      "hostListeners": [],
+      "standalone": true,
+      "imports": [],
+      "description": "",
+      "rawdescription": "\n",
+      "type": "component",
+      "sourceCode": "import { Component } from '@angular/core';\n\n@Component({\n  selector: 'lib-personality-backdrop',\n  standalone: true,\n  template: '',\n  styleUrl: './personality-backdrop.component.scss',\n})\nexport class PersonalityBackdropComponent {}\n",
+      "styleUrl": "./personality-backdrop.component.scss",
+      "assetsDirs": [],
+      "styleUrlsData": "",
+      "stylesData": "",
+      "extends": []
+    },
+    {
       "name": "PersonalityComparisonComponent",
       "id": "component-PersonalityComparisonComponent-d36b4c99847f096100bcefa34fc3f143b9a99c84265049c91c8cc0800f9f60c435d2564f3ef7af2e743c86dd6a762bfb80b8d7935f4e9c93533a1dd36fc33b6e",
       "file": "libs/theme-ui/src/lib/theme-ui/personality-comparison.component.ts",
@@ -1148,7 +1251,7 @@
     },
     {
       "name": "PersonalityGridComponent",
-      "id": "component-PersonalityGridComponent-7f627c24d1b85cd1e034b6562f02629bcc94be331da0c33bd3cf7456d9aa0ad92fc43a1ff1d591849b8acf7281699cf1a6e4cdb87437628f0f7f4b1195b5982d",
+      "id": "component-PersonalityGridComponent-bdd32c4fca30a3efd18d9dd61c47fa531b76e6c68706dedac3b710cc5f5c4941fb1de6ef2fef798359ed4db8c17f97be977281fc4b9cbbf4599ff1ac2d97a2d9",
       "file": "libs/theme-ui/src/lib/theme-ui/personality-grid.component.ts",
       "changeDetection": "ChangeDetectionStrategy.OnPush",
       "encapsulation": [],
@@ -1173,7 +1276,7 @@
           "deprecationMessage": "",
           "rawdescription": "\nWhich mode section(s) to render. Defaults to both, side by side.",
           "description": "<p>Which mode section(s) to render. Defaults to both, side by side.</p>\n",
-          "line": 338,
+          "line": 336,
           "type": "PersonalityGridMode[]",
           "decorators": []
         },
@@ -1183,7 +1286,7 @@
           "deprecationMessage": "",
           "rawdescription": "\n\nOptional explicit personality id list. Defaults to every predefined\npersonality so the grid is a true \"all N at a glance\" view.\n",
           "description": "<p>Optional explicit personality id list. Defaults to every predefined\npersonality so the grid is a true &quot;all N at a glance&quot; view.</p>\n",
-          "line": 351,
+          "line": 349,
           "type": "string[]",
           "decorators": []
         },
@@ -1194,7 +1297,7 @@
           "deprecationMessage": "",
           "rawdescription": "\n\nPrimary color used to seed every personality's color harmony. A single\nshared primary keeps the comparison about the *personality*, not about\ndifferent brand colors.\n",
           "description": "<p>Primary color used to seed every personality&#39;s color harmony. A single\nshared primary keeps the comparison about the <em>personality</em>, not about\ndifferent brand colors.</p>\n",
-          "line": 345,
+          "line": 343,
           "type": "string",
           "decorators": []
         }
@@ -1208,7 +1311,7 @@
           "optional": false,
           "returnType": "Personality[]",
           "typeParameters": [],
-          "line": 368,
+          "line": 366,
           "deprecated": false,
           "deprecationMessage": "",
           "modifierKind": [123]
@@ -1236,7 +1339,7 @@
           "optional": false,
           "returnType": "string",
           "typeParameters": [],
-          "line": 376,
+          "line": 374,
           "deprecated": false,
           "deprecationMessage": "",
           "modifierKind": [124],
@@ -1280,7 +1383,7 @@
       "description": "",
       "rawdescription": "\n",
       "type": "component",
-      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  PREDEFINED_PERSONALITIES,\n  Personality,\n  ensureContrast,\n  generatePersonalityColors,\n  getSuggestedTextColor,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generateShadowColor,\n  generateThemeResponsiveColors,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type PersonalityGridMode = 'light' | 'dark';\n\ninterface PersonalityGridCell {\n  personality: Personality;\n  mode: PersonalityGridMode;\n  cssVars: Record<string, string>;\n}\n\n/**\n * Derives the CSS custom properties for a single grid cell from a\n * personality + mode, mirroring `ThemeService`'s pure color/contrast/shadow\n * pipeline but scoped to one element instead of `document.documentElement`.\n */\nfunction buildCellCssVars(\n  personality: Personality,\n  mode: PersonalityGridMode,\n  primaryColor: string\n): Record<string, string> {\n  const colors = generatePersonalityColors(\n    primaryColor,\n    personality.colorHarmony.type,\n    personality.colorHarmony.saturationBoost,\n    personality.colorHarmony.lightnessShift,\n    personality.colorHarmony.accentSaturation,\n    personality.colorHarmony.accentLightness\n  );\n\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode\n  );\n\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  const shadowColor = generateShadowColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n\n  const primaryForeground = getSuggestedTextColor(colors.primary).color;\n  const presentation = personality.presentation;\n  const headingFamily =\n    personality.fonts.heading?.family ?? personality.fonts.body.family;\n  const headingWeights = personality.fonts.heading?.weights ?? [600];\n\n  return {\n    '--cell-background': themeColors.background,\n    '--cell-foreground': foreground,\n    '--cell-surface': themeColors.surface,\n    '--cell-border': themeColors.border,\n    '--cell-muted': themeColors.muted,\n    '--cell-primary': colors.primary,\n    '--cell-primary-foreground': primaryForeground,\n    '--cell-shadow-color': shadowColor,\n    '--cell-font-heading': headingFamily,\n    '--cell-font-body': personality.fonts.body.family,\n    '--cell-font-weight-heading': String(\n      headingWeights[headingWeights.length - 1] ?? 600\n    ),\n    '--cell-line-height': String(personality.tokens.lineHeight),\n    '--cell-letter-spacing': personality.tokens.letterSpacing,\n    '--cell-border-radius': presentation?.border.radiusValue ?? '4px',\n    '--cell-border-style': presentation?.border.styleValue ?? 'solid',\n    '--cell-border-width': presentation?.border.widthValue ?? '1px',\n    '--cell-box-shadow': presentation?.shadow.value ?? 'none',\n    '--cell-transition':\n      presentation?.animation.transition ?? 'all 200ms ease',\n    '--cell-button-radius':\n      presentation?.components.button.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-button-padding':\n      presentation?.components.button.padding ?? '0.5rem 1rem',\n    '--cell-button-weight':\n      presentation?.components.button.fontWeight ?? '600',\n    '--cell-button-transform':\n      presentation?.components.button.textTransform ?? 'none',\n    '--cell-card-radius':\n      presentation?.components.card.borderRadius ??\n      presentation?.border.radiusValue ??\n      '8px',\n    '--cell-card-padding': presentation?.components.card.padding ?? '1rem',\n    '--cell-card-shadow':\n      presentation?.components.card.boxShadow ??\n      presentation?.shadow.value ??\n      'none',\n    '--cell-input-radius':\n      presentation?.components.input.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-input-border-width':\n      presentation?.components.input.borderWidth ??\n      presentation?.border.widthValue ??\n      '1px',\n  };\n}\n\n@Component({\n  selector: 'lib-personality-grid',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"personality-grid__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"personality-grid__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"personality-grid__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"personality-grid__cell\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"personality-grid__cell-header\">\n            <h3 class=\"personality-grid__cell-title\">\n              {{ cell.personality.name }}\n            </h3>\n            <code class=\"personality-grid__cell-id\">{{\n              cell.personality.id\n            }}</code>\n          </header>\n\n          <h4 class=\"personality-grid__heading\">The quick brown fox</h4>\n          <p class=\"personality-grid__body\">\n            Jumps over the lazy dog — body copy at this personality's real\n            weight, line height, and letter spacing.\n          </p>\n\n          <div class=\"personality-grid__row\">\n            <button type=\"button\" class=\"personality-grid__button\">\n              Take action\n            </button>\n            <div class=\"personality-grid__card\">\n              <strong>Card</strong>\n              <span>radius + shadow</span>\n            </div>\n          </div>\n\n          <input\n            type=\"text\"\n            class=\"personality-grid__input\"\n            placeholder=\"Type something…\"\n          />\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .personality-grid__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .personality-grid__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .personality-grid__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .personality-grid__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .personality-grid__section[data-mode='dark']\n        .personality-grid__section-title {\n        color: #f8fafc;\n      }\n\n      .personality-grid__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n        gap: 1rem;\n      }\n\n      .personality-grid__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: var(--cell-border-width) var(--cell-border-style)\n          var(--cell-border);\n        border-radius: var(--cell-border-radius);\n        box-shadow: var(--cell-box-shadow);\n        transition: var(--cell-transition);\n        font-family: var(--cell-font-body);\n        line-height: var(--cell-line-height);\n        letter-spacing: var(--cell-letter-spacing);\n      }\n\n      .personality-grid__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n      }\n\n      .personality-grid__cell-title {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1rem;\n      }\n\n      .personality-grid__cell-id {\n        font-size: 0.7rem;\n        color: var(--cell-muted);\n        white-space: nowrap;\n      }\n\n      .personality-grid__heading {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1.35rem;\n      }\n\n      .personality-grid__body {\n        margin: 0;\n        font-size: 0.875rem;\n      }\n\n      .personality-grid__row {\n        display: flex;\n        align-items: center;\n        gap: 0.75rem;\n        flex-wrap: wrap;\n      }\n\n      .personality-grid__button {\n        border: none;\n        cursor: pointer;\n        font: inherit;\n        background: var(--cell-primary);\n        color: var(--cell-primary-foreground);\n        border-radius: var(--cell-button-radius);\n        padding: var(--cell-button-padding);\n        font-weight: var(--cell-button-weight);\n        text-transform: var(--cell-button-transform);\n        transition: var(--cell-transition);\n      }\n\n      .personality-grid__card {\n        flex: 1;\n        min-width: 120px;\n        display: flex;\n        flex-direction: column;\n        gap: 0.15rem;\n        background: var(--cell-surface);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-card-radius);\n        padding: var(--cell-card-padding);\n        box-shadow: var(--cell-card-shadow);\n        font-size: 0.8rem;\n      }\n\n      .personality-grid__input {\n        font: inherit;\n        color: var(--cell-foreground);\n        background: var(--cell-background);\n        border: var(--cell-input-border-width) solid var(--cell-border);\n        border-radius: var(--cell-input-radius);\n        padding: 0.5rem 0.75rem;\n        transition: var(--cell-transition);\n      }\n    `,\n  ],\n})\nexport class PersonalityGridComponent {\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: PersonalityGridMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's color harmony. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all N at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: PersonalityGridMode;\n    cells: PersonalityGridCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) => ({\n        personality,\n        mode,\n        cssVars: buildCellCssVars(personality, mode, this.primaryColor),\n      })),\n    }));\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: PersonalityGridCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
+      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  PREDEFINED_PERSONALITIES,\n  Personality,\n  ensureContrast,\n  generatePersonalityColors,\n  getSuggestedTextColor,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generateShadowColor,\n  generateThemeResponsiveColors,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type PersonalityGridMode = 'light' | 'dark';\n\ninterface PersonalityGridCell {\n  personality: Personality;\n  mode: PersonalityGridMode;\n  cssVars: Record<string, string>;\n}\n\n/**\n * Derives the CSS custom properties for a single grid cell from a\n * personality + mode, mirroring `ThemeService`'s pure color/contrast/shadow\n * pipeline but scoped to one element instead of `document.documentElement`.\n */\nfunction buildCellCssVars(\n  personality: Personality,\n  mode: PersonalityGridMode,\n  primaryColor: string\n): Record<string, string> {\n  const colors = generatePersonalityColors(\n    primaryColor,\n    personality.colorHarmony.type,\n    personality.colorHarmony.saturationBoost,\n    personality.colorHarmony.lightnessShift,\n    personality.colorHarmony.accentSaturation,\n    personality.colorHarmony.accentLightness\n  );\n\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode\n  );\n\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  const shadowColor = generateShadowColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n\n  const primaryForeground = getSuggestedTextColor(colors.primary).color;\n  const presentation = personality.presentation;\n  const headingFamily =\n    personality.fonts.heading?.family ?? personality.fonts.body.family;\n  const headingWeights = personality.fonts.heading?.weights ?? [600];\n\n  return {\n    '--cell-background': themeColors.background,\n    '--cell-foreground': foreground,\n    '--cell-surface': themeColors.surface,\n    '--cell-border': themeColors.border,\n    '--cell-muted': themeColors.muted,\n    '--cell-primary': colors.primary,\n    '--cell-primary-foreground': primaryForeground,\n    '--cell-shadow-color': shadowColor,\n    '--cell-font-heading': headingFamily,\n    '--cell-font-body': personality.fonts.body.family,\n    '--cell-font-weight-heading': String(\n      headingWeights[headingWeights.length - 1] ?? 600\n    ),\n    '--cell-line-height': String(personality.tokens.lineHeight),\n    '--cell-letter-spacing': personality.tokens.letterSpacing,\n    '--cell-border-radius': presentation?.border.radiusValue ?? '4px',\n    '--cell-border-style': presentation?.border.styleValue ?? 'solid',\n    '--cell-border-width': presentation?.border.widthValue ?? '1px',\n    '--cell-box-shadow': presentation?.shadow.value ?? 'none',\n    '--cell-transition': presentation?.animation.transition ?? 'all 200ms ease',\n    '--cell-button-radius':\n      presentation?.components.button.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-button-padding':\n      presentation?.components.button.padding ?? '0.5rem 1rem',\n    '--cell-button-weight': presentation?.components.button.fontWeight ?? '600',\n    '--cell-button-transform':\n      presentation?.components.button.textTransform ?? 'none',\n    '--cell-card-radius':\n      presentation?.components.card.borderRadius ??\n      presentation?.border.radiusValue ??\n      '8px',\n    '--cell-card-padding': presentation?.components.card.padding ?? '1rem',\n    '--cell-card-shadow':\n      presentation?.components.card.boxShadow ??\n      presentation?.shadow.value ??\n      'none',\n    '--cell-input-radius':\n      presentation?.components.input.borderRadius ??\n      presentation?.border.radiusValue ??\n      '4px',\n    '--cell-input-border-width':\n      presentation?.components.input.borderWidth ??\n      presentation?.border.widthValue ??\n      '1px',\n  };\n}\n\n@Component({\n  selector: 'lib-personality-grid',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"personality-grid__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"personality-grid__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"personality-grid__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"personality-grid__cell\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"personality-grid__cell-header\">\n            <h3 class=\"personality-grid__cell-title\">\n              {{ cell.personality.name }}\n            </h3>\n            <code class=\"personality-grid__cell-id\">{{\n              cell.personality.id\n            }}</code>\n          </header>\n\n          <h4 class=\"personality-grid__heading\">The quick brown fox</h4>\n          <p class=\"personality-grid__body\">\n            Jumps over the lazy dog — body copy at this personality's real\n            weight, line height, and letter spacing.\n          </p>\n\n          <div class=\"personality-grid__row\">\n            <button type=\"button\" class=\"personality-grid__button\">\n              Take action\n            </button>\n            <div class=\"personality-grid__card\">\n              <strong>Card</strong>\n              <span>radius + shadow</span>\n            </div>\n          </div>\n\n          <input\n            type=\"text\"\n            class=\"personality-grid__input\"\n            placeholder=\"Type something…\"\n          />\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .personality-grid__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .personality-grid__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .personality-grid__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .personality-grid__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .personality-grid__section[data-mode='dark']\n        .personality-grid__section-title {\n        color: #f8fafc;\n      }\n\n      .personality-grid__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n        gap: 1rem;\n      }\n\n      .personality-grid__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: var(--cell-border-width) var(--cell-border-style)\n          var(--cell-border);\n        border-radius: var(--cell-border-radius);\n        box-shadow: var(--cell-box-shadow);\n        transition: var(--cell-transition);\n        font-family: var(--cell-font-body);\n        line-height: var(--cell-line-height);\n        letter-spacing: var(--cell-letter-spacing);\n      }\n\n      .personality-grid__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n      }\n\n      .personality-grid__cell-title {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1rem;\n      }\n\n      .personality-grid__cell-id {\n        font-size: 0.7rem;\n        color: var(--cell-muted);\n        white-space: nowrap;\n      }\n\n      .personality-grid__heading {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1.35rem;\n      }\n\n      .personality-grid__body {\n        margin: 0;\n        font-size: 0.875rem;\n      }\n\n      .personality-grid__row {\n        display: flex;\n        align-items: center;\n        gap: 0.75rem;\n        flex-wrap: wrap;\n      }\n\n      .personality-grid__button {\n        border: none;\n        cursor: pointer;\n        font: inherit;\n        background: var(--cell-primary);\n        color: var(--cell-primary-foreground);\n        border-radius: var(--cell-button-radius);\n        padding: var(--cell-button-padding);\n        font-weight: var(--cell-button-weight);\n        text-transform: var(--cell-button-transform);\n        transition: var(--cell-transition);\n      }\n\n      .personality-grid__card {\n        flex: 1;\n        min-width: 120px;\n        display: flex;\n        flex-direction: column;\n        gap: 0.15rem;\n        background: var(--cell-surface);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-card-radius);\n        padding: var(--cell-card-padding);\n        box-shadow: var(--cell-card-shadow);\n        font-size: 0.8rem;\n      }\n\n      .personality-grid__input {\n        font: inherit;\n        color: var(--cell-foreground);\n        background: var(--cell-background);\n        border: var(--cell-input-border-width) solid var(--cell-border);\n        border-radius: var(--cell-input-radius);\n        padding: 0.5rem 0.75rem;\n        transition: var(--cell-transition);\n      }\n    `,\n  ],\n})\nexport class PersonalityGridComponent {\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: PersonalityGridMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's color harmony. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all N at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: PersonalityGridMode;\n    cells: PersonalityGridCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) => ({\n        personality,\n        mode,\n        cssVars: buildCellCssVars(personality, mode, this.primaryColor),\n      })),\n    }));\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: PersonalityGridCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
       "assetsDirs": [],
       "styleUrlsData": "",
       "stylesData": "\n      :host {\n        display: block;\n      }\n\n      .personality-grid__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .personality-grid__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .personality-grid__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .personality-grid__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .personality-grid__section[data-mode='dark']\n        .personality-grid__section-title {\n        color: #f8fafc;\n      }\n\n      .personality-grid__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));\n        gap: 1rem;\n      }\n\n      .personality-grid__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: var(--cell-border-width) var(--cell-border-style)\n          var(--cell-border);\n        border-radius: var(--cell-border-radius);\n        box-shadow: var(--cell-box-shadow);\n        transition: var(--cell-transition);\n        font-family: var(--cell-font-body);\n        line-height: var(--cell-line-height);\n        letter-spacing: var(--cell-letter-spacing);\n      }\n\n      .personality-grid__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n      }\n\n      .personality-grid__cell-title {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1rem;\n      }\n\n      .personality-grid__cell-id {\n        font-size: 0.7rem;\n        color: var(--cell-muted);\n        white-space: nowrap;\n      }\n\n      .personality-grid__heading {\n        margin: 0;\n        font-family: var(--cell-font-heading);\n        font-weight: var(--cell-font-weight-heading);\n        font-size: 1.35rem;\n      }\n\n      .personality-grid__body {\n        margin: 0;\n        font-size: 0.875rem;\n      }\n\n      .personality-grid__row {\n        display: flex;\n        align-items: center;\n        gap: 0.75rem;\n        flex-wrap: wrap;\n      }\n\n      .personality-grid__button {\n        border: none;\n        cursor: pointer;\n        font: inherit;\n        background: var(--cell-primary);\n        color: var(--cell-primary-foreground);\n        border-radius: var(--cell-button-radius);\n        padding: var(--cell-button-padding);\n        font-weight: var(--cell-button-weight);\n        text-transform: var(--cell-button-transform);\n        transition: var(--cell-transition);\n      }\n\n      .personality-grid__card {\n        flex: 1;\n        min-width: 120px;\n        display: flex;\n        flex-direction: column;\n        gap: 0.15rem;\n        background: var(--cell-surface);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-card-radius);\n        padding: var(--cell-card-padding);\n        box-shadow: var(--cell-card-shadow);\n        font-size: 0.8rem;\n      }\n\n      .personality-grid__input {\n        font: inherit;\n        color: var(--cell-foreground);\n        background: var(--cell-background);\n        border: var(--cell-input-border-width) solid var(--cell-border);\n        border-radius: var(--cell-input-radius);\n        padding: 0.5rem 0.75rem;\n        transition: var(--cell-transition);\n      }\n    \n",
@@ -1292,7 +1395,7 @@
             "name": "sections",
             "type": "[]",
             "returnType": "literal type[]",
-            "line": 353
+            "line": 351
           }
         }
       }
@@ -1792,6 +1895,220 @@
       },
       "extends": [],
       "implements": ["OnInit", "OnDestroy"]
+    },
+    {
+      "name": "PersonalityTokenShowcaseComponent",
+      "id": "component-PersonalityTokenShowcaseComponent-992e012958370e819b5f5e6fb5917ed8fb463273f4ac802ffefde4df9788424eda107861c4ebba87bc6af15f19d71346f9c135e37e4d823a98ff7ec0f6a532e6",
+      "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+      "changeDetection": "ChangeDetectionStrategy.OnPush",
+      "encapsulation": [],
+      "entryComponents": [],
+      "inputs": [],
+      "outputs": [],
+      "providers": [],
+      "selector": "lib-personality-token-showcase",
+      "styleUrls": [],
+      "styles": [
+        "\n      :host {\n        display: block;\n      }\n\n      .token-showcase__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .token-showcase__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .token-showcase__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .token-showcase__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .token-showcase__section[data-mode='dark'] .token-showcase__section-title {\n        color: #f8fafc;\n      }\n\n      .token-showcase__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));\n        gap: 1rem;\n      }\n\n      .token-showcase__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-border-radius, 8px);\n        font-family: system-ui, sans-serif;\n      }\n\n      .token-showcase__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n        font-size: 0.9rem;\n      }\n\n      .token-showcase__cell-header code {\n        font-size: 0.7rem;\n        opacity: 0.7;\n      }\n\n      .token-showcase__cell-caption {\n        margin: 0;\n        font-size: 0.72rem;\n        opacity: 0.75;\n      }\n\n      /* --- shadow-profiles --- */\n      .token-showcase__shadow-swatch {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 1.5rem 1rem;\n      }\n\n      .token-showcase__shadow-swatch-inner {\n        width: 100%;\n        padding: 1.25rem;\n        text-align: center;\n        font-size: 0.8rem;\n        background: var(--cell-surface);\n        border-radius: var(--cell-border-radius, 8px);\n        box-shadow: var(--cell-shadow-md);\n      }\n\n      /* --- page-backgrounds --- */\n      .token-showcase__background-swatch {\n        position: relative;\n        height: 140px;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n        background-color: var(--cell-background);\n        background-image: var(--cell-background-image, none);\n        background-repeat: repeat;\n        background-position: center;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n\n      .token-showcase__flat-label {\n        font-size: 0.72rem;\n        letter-spacing: 0.02em;\n        text-transform: uppercase;\n        opacity: 0.6;\n      }\n\n      /* --- surfaces --- */\n      .token-showcase__surface-row {\n        display: flex;\n        gap: 0.5rem;\n      }\n\n      .token-showcase__surface-tile {\n        flex: 1;\n        height: 72px;\n        display: flex;\n        align-items: flex-end;\n        padding: 0.4rem;\n        font-size: 0.65rem;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n      }\n\n      .token-showcase__surface-tile[data-tier='background'] {\n        background: var(--cell-background);\n      }\n\n      .token-showcase__surface-tile[data-tier='surface'] {\n        background-color: var(--cell-surface);\n        background-image: var(--cell-surface-texture, none);\n        background-repeat: repeat;\n      }\n\n      .token-showcase__surface-tile[data-tier='elevated'] {\n        background: var(--cell-elevated);\n      }\n    "
+      ],
+      "template": "<section\n  *ngFor=\"let section of sections\"\n  class=\"token-showcase__section\"\n  [attr.data-mode]=\"section.mode\"\n>\n  <h2 class=\"token-showcase__section-title\">\n    {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n  </h2>\n\n  <div class=\"token-showcase__grid\" role=\"list\">\n    <article\n      *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n      class=\"token-showcase__cell\"\n      [class.token-showcase__cell--flat]=\"cell.flat\"\n      role=\"listitem\"\n      [attr.data-personality]=\"cell.personality.id\"\n      [attr.data-mode]=\"cell.mode\"\n      [style]=\"cell.cssVars\"\n    >\n      <header class=\"token-showcase__cell-header\">\n        <strong>{{ cell.personality.name }}</strong>\n        <code>{{ cell.personality.id }}</code>\n      </header>\n      <p class=\"token-showcase__cell-caption\">{{ cell.caption }}</p>\n\n      <ng-container [ngSwitch]=\"variant\">\n        <div\n          *ngSwitchCase=\"'shadow-profiles'\"\n          class=\"token-showcase__shadow-swatch\"\n        >\n          <div class=\"token-showcase__shadow-swatch-inner\">Shadow</div>\n        </div>\n\n        <div\n          *ngSwitchCase=\"'page-backgrounds'\"\n          class=\"token-showcase__background-swatch\"\n        >\n          <span *ngIf=\"cell.flat\" class=\"token-showcase__flat-label\"\n            >flat by design</span\n          >\n        </div>\n\n        <div *ngSwitchCase=\"'surfaces'\" class=\"token-showcase__surface-row\">\n          <div class=\"token-showcase__surface-tile\" data-tier=\"background\">\n            background\n          </div>\n          <div class=\"token-showcase__surface-tile\" data-tier=\"surface\">\n            surface\n          </div>\n          <div class=\"token-showcase__surface-tile\" data-tier=\"elevated\">\n            elevated\n          </div>\n        </div>\n      </ng-container>\n    </article>\n  </div>\n</section>\n",
+      "templateUrl": [],
+      "viewProviders": [],
+      "hostDirectives": [],
+      "inputsClass": [
+        {
+          "name": "modes",
+          "defaultValue": "['light', 'dark']",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "rawdescription": "\nWhich mode section(s) to render. Defaults to both, side by side.",
+          "description": "<p>Which mode section(s) to render. Defaults to both, side by side.</p>\n",
+          "line": 461,
+          "type": "TokenShowcaseMode[]",
+          "decorators": []
+        },
+        {
+          "name": "personalityIds",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "rawdescription": "\n\nOptional explicit personality id list. Defaults to every predefined\npersonality so the grid is a true \"all 12 at a glance\" view.\n",
+          "description": "<p>Optional explicit personality id list. Defaults to every predefined\npersonality so the grid is a true &quot;all 12 at a glance&quot; view.</p>\n",
+          "line": 474,
+          "type": "string[]",
+          "decorators": []
+        },
+        {
+          "name": "primaryColor",
+          "defaultValue": "'#3f51b5'",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "rawdescription": "\n\nPrimary color used to seed every personality's derivation. A single\nshared primary keeps the comparison about the *personality*, not about\ndifferent brand colors.\n",
+          "description": "<p>Primary color used to seed every personality&#39;s derivation. A single\nshared primary keeps the comparison about the <em>personality</em>, not about\ndifferent brand colors.</p>\n",
+          "line": 468,
+          "type": "string",
+          "decorators": []
+        },
+        {
+          "name": "variant",
+          "defaultValue": "'shadow-profiles'",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "rawdescription": "\nWhich token dimension to render.",
+          "description": "<p>Which token dimension to render.</p>\n",
+          "line": 458,
+          "type": "TokenShowcaseVariant",
+          "decorators": []
+        }
+      ],
+      "outputsClass": [],
+      "propertiesClass": [],
+      "methodsClass": [
+        {
+          "name": "buildCell",
+          "args": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "optional": false,
+          "returnType": "TokenShowcaseCell",
+          "typeParameters": [],
+          "line": 489,
+          "deprecated": false,
+          "deprecationMessage": "",
+          "modifierKind": [123],
+          "jsdoctags": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        },
+        {
+          "name": "resolvePersonalities",
+          "args": [],
+          "optional": false,
+          "returnType": "Personality[]",
+          "typeParameters": [],
+          "line": 504,
+          "deprecated": false,
+          "deprecationMessage": "",
+          "modifierKind": [123]
+        },
+        {
+          "name": "trackByPersonalityId",
+          "args": [
+            {
+              "name": "_index",
+              "type": "number",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "cell",
+              "type": "TokenShowcaseCell",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "optional": false,
+          "returnType": "string",
+          "typeParameters": [],
+          "line": 512,
+          "deprecated": false,
+          "deprecationMessage": "",
+          "modifierKind": [124],
+          "jsdoctags": [
+            {
+              "name": "_index",
+              "type": "number",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "cell",
+              "type": "TokenShowcaseCell",
+              "optional": false,
+              "dotDotDotToken": false,
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        }
+      ],
+      "deprecated": false,
+      "deprecationMessage": "",
+      "hostBindings": [],
+      "hostListeners": [],
+      "standalone": true,
+      "imports": [
+        {
+          "name": "CommonModule",
+          "type": "module"
+        }
+      ],
+      "description": "",
+      "rawdescription": "\n",
+      "type": "component",
+      "sourceCode": "import { CommonModule } from '@angular/common';\nimport { ChangeDetectionStrategy, Component, Input } from '@angular/core';\nimport {\n  ColorGenerationConfig,\n  ensureContrast,\n  Personality,\n  PREDEFINED_PERSONALITIES,\n} from '@optimistic-tanuki/theme-models';\nimport {\n  generatePageBackgroundPattern,\n  generatePersonalityShadows,\n  generateShadowTintColor,\n  generateThemeResponsiveColors,\n  resolveShadowOpacity,\n} from '@optimistic-tanuki/theme-lib';\n\nexport type TokenShowcaseMode = 'light' | 'dark';\nexport type TokenShowcaseVariant =\n  | 'shadow-profiles'\n  | 'page-backgrounds'\n  | 'surfaces';\n\ninterface TokenShowcaseCell {\n  personality: Personality;\n  mode: TokenShowcaseMode;\n  cssVars: Record<string, string>;\n  /** Short human-readable caption shown under the personality name. */\n  caption: string;\n  /** `page-backgrounds` only: true for the two documented flat personalities. */\n  flat?: boolean;\n}\n\n/**\n * Encodes an SVG pattern as a `url(\"data:image/svg+xml,...\")` background\n * image the SAME way `ThemeService` does post-C0 fix: `encodeURIComponent`\n * already escapes everything `url(\"...\")` needs except `'`, so only that\n * one character gets a manual replace. (The pre-C0 bug re-escaped every\n * percent sign the encoder had just produced — do not reintroduce that\n * five-way `.replace()` chain here.)\n */\nfunction encodeSvgBackground(svg: string): string {\n  const encoded = encodeURIComponent(svg).replace(/'/g, '%27');\n  return `url(\"data:image/svg+xml,${encoded}\")`;\n}\n\nfunction buildShadowProfileCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const shadowTintRgb = generateShadowTintColor(\n    primaryColor,\n    personality.colorGeneration.shadowTint,\n    mode\n  );\n  const shadowOpacity = resolveShadowOpacity(\n    personality.colorGeneration.shadowOpacity,\n    mode\n  );\n  const shadows = generatePersonalityShadows(\n    personality,\n    shadowTintRgb,\n    shadowOpacity,\n    primaryColor\n  );\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.surface,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-surface': themeColors.surface,\n      '--cell-foreground': foreground,\n      '--cell-border': themeColors.border,\n      '--cell-shadow-sm': shadows.sm,\n      '--cell-shadow-md': shadows.md,\n      '--cell-shadow-lg': shadows.lg,\n      '--cell-border-radius':\n        personality.presentation?.border.radiusValue ?? '8px',\n    },\n    caption: `${personality.tokens.shadowProfile} · ${personality.colorGeneration.shadowTint}`,\n  };\n}\n\nfunction buildPageBackgroundCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const flat = !personality.pageBackground;\n  let backgroundImage = 'none';\n  if (personality.pageBackground) {\n    const svg = generatePageBackgroundPattern(\n      primaryColor,\n      personality.pageBackground.pattern,\n      personality.pageBackground.usePrimaryTint,\n      personality.colorGeneration.pageBackgroundOpacity,\n      mode\n    );\n    backgroundImage = encodeSvgBackground(svg);\n  }\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-foreground': themeColors.foreground,\n      '--cell-border': themeColors.border,\n      '--cell-background-image': backgroundImage,\n    },\n    caption: flat\n      ? 'flat by design'\n      : `opacity ${personality.colorGeneration.pageBackgroundOpacity}`,\n    flat,\n  };\n}\n\nfunction buildSurfaceCell(\n  personality: Personality,\n  mode: TokenShowcaseMode,\n  primaryColor: string\n): TokenShowcaseCell {\n  const themeColors = generateThemeResponsiveColors(\n    primaryColor,\n    personality.colorGeneration,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  // \"Elevated\" demo tier: re-run the SAME generator with the personality's\n  // OWN surfaceLuminosityOffset doubled — a surface lifted again, not a\n  // hand-authored color. Shows why a personality with a wide offset (e.g.\n  // playful's -7) reads as dramatically more \"layered\" than one with a\n  // narrow offset (e.g. minimal's -1).\n  const elevatedParams: ColorGenerationConfig = {\n    ...personality.colorGeneration,\n    surfaceLuminosityOffset: personality.colorGeneration.surfaceLuminosityOffset * 2,\n  };\n  const elevatedColors = generateThemeResponsiveColors(\n    primaryColor,\n    elevatedParams,\n    mode,\n    personality.contrast.minimumRatio\n  );\n  const foreground = personality.contrast.autoAdjust\n    ? ensureContrast(\n        themeColors.foreground,\n        themeColors.background,\n        personality.contrast.minimumRatio,\n        'auto'\n      )\n    : themeColors.foreground;\n\n  // Surface texture (Workstream C3): most personalities declare none, so\n  // most `surface` tiles fall back to `none` and render flat. The curated\n  // few (soft-touch, control-center, architect, electric) render their\n  // texture through the exact same generator + encode path ThemeService\n  // uses for `--surface-texture`.\n  let surfaceTextureImage = 'none';\n  if (personality.surfaceTexture) {\n    const svg = generatePageBackgroundPattern(\n      primaryColor,\n      personality.surfaceTexture.pattern,\n      personality.surfaceTexture.usePrimaryTint,\n      personality.surfaceTexture.opacity,\n      mode\n    );\n    surfaceTextureImage = encodeSvgBackground(svg);\n  }\n\n  return {\n    personality,\n    mode,\n    cssVars: {\n      '--cell-background': themeColors.background,\n      '--cell-surface': themeColors.surface,\n      '--cell-elevated': elevatedColors.surface,\n      '--cell-foreground': foreground,\n      '--cell-border': themeColors.border,\n      '--cell-surface-texture': surfaceTextureImage,\n    },\n    caption: `${personality.colorGeneration.surfaceHueBias} · Δsat ${personality.colorGeneration.surfaceSaturationShift} · offset ${personality.colorGeneration.surfaceLuminosityOffset}`,\n  };\n}\n\n@Component({\n  selector: 'lib-personality-token-showcase',\n  standalone: true,\n  imports: [CommonModule],\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `\n    <section\n      *ngFor=\"let section of sections\"\n      class=\"token-showcase__section\"\n      [attr.data-mode]=\"section.mode\"\n    >\n      <h2 class=\"token-showcase__section-title\">\n        {{ section.mode === 'dark' ? 'Dark mode' : 'Light mode' }}\n      </h2>\n\n      <div class=\"token-showcase__grid\" role=\"list\">\n        <article\n          *ngFor=\"let cell of section.cells; trackBy: trackByPersonalityId\"\n          class=\"token-showcase__cell\"\n          [class.token-showcase__cell--flat]=\"cell.flat\"\n          role=\"listitem\"\n          [attr.data-personality]=\"cell.personality.id\"\n          [attr.data-mode]=\"cell.mode\"\n          [style]=\"cell.cssVars\"\n        >\n          <header class=\"token-showcase__cell-header\">\n            <strong>{{ cell.personality.name }}</strong>\n            <code>{{ cell.personality.id }}</code>\n          </header>\n          <p class=\"token-showcase__cell-caption\">{{ cell.caption }}</p>\n\n          <ng-container [ngSwitch]=\"variant\">\n            <div\n              *ngSwitchCase=\"'shadow-profiles'\"\n              class=\"token-showcase__shadow-swatch\"\n            >\n              <div class=\"token-showcase__shadow-swatch-inner\">Shadow</div>\n            </div>\n\n            <div\n              *ngSwitchCase=\"'page-backgrounds'\"\n              class=\"token-showcase__background-swatch\"\n            >\n              <span *ngIf=\"cell.flat\" class=\"token-showcase__flat-label\"\n                >flat by design</span\n              >\n            </div>\n\n            <div *ngSwitchCase=\"'surfaces'\" class=\"token-showcase__surface-row\">\n              <div class=\"token-showcase__surface-tile\" data-tier=\"background\">\n                background\n              </div>\n              <div class=\"token-showcase__surface-tile\" data-tier=\"surface\">\n                surface\n              </div>\n              <div class=\"token-showcase__surface-tile\" data-tier=\"elevated\">\n                elevated\n              </div>\n            </div>\n          </ng-container>\n        </article>\n      </div>\n    </section>\n  `,\n  styles: [\n    `\n      :host {\n        display: block;\n      }\n\n      .token-showcase__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .token-showcase__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .token-showcase__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .token-showcase__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .token-showcase__section[data-mode='dark'] .token-showcase__section-title {\n        color: #f8fafc;\n      }\n\n      .token-showcase__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));\n        gap: 1rem;\n      }\n\n      .token-showcase__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-border-radius, 8px);\n        font-family: system-ui, sans-serif;\n      }\n\n      .token-showcase__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n        font-size: 0.9rem;\n      }\n\n      .token-showcase__cell-header code {\n        font-size: 0.7rem;\n        opacity: 0.7;\n      }\n\n      .token-showcase__cell-caption {\n        margin: 0;\n        font-size: 0.72rem;\n        opacity: 0.75;\n      }\n\n      /* --- shadow-profiles --- */\n      .token-showcase__shadow-swatch {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 1.5rem 1rem;\n      }\n\n      .token-showcase__shadow-swatch-inner {\n        width: 100%;\n        padding: 1.25rem;\n        text-align: center;\n        font-size: 0.8rem;\n        background: var(--cell-surface);\n        border-radius: var(--cell-border-radius, 8px);\n        box-shadow: var(--cell-shadow-md);\n      }\n\n      /* --- page-backgrounds --- */\n      .token-showcase__background-swatch {\n        position: relative;\n        height: 140px;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n        background-color: var(--cell-background);\n        background-image: var(--cell-background-image, none);\n        background-repeat: repeat;\n        background-position: center;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n\n      .token-showcase__flat-label {\n        font-size: 0.72rem;\n        letter-spacing: 0.02em;\n        text-transform: uppercase;\n        opacity: 0.6;\n      }\n\n      /* --- surfaces --- */\n      .token-showcase__surface-row {\n        display: flex;\n        gap: 0.5rem;\n      }\n\n      .token-showcase__surface-tile {\n        flex: 1;\n        height: 72px;\n        display: flex;\n        align-items: flex-end;\n        padding: 0.4rem;\n        font-size: 0.65rem;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n      }\n\n      .token-showcase__surface-tile[data-tier='background'] {\n        background: var(--cell-background);\n      }\n\n      .token-showcase__surface-tile[data-tier='surface'] {\n        background-color: var(--cell-surface);\n        background-image: var(--cell-surface-texture, none);\n        background-repeat: repeat;\n      }\n\n      .token-showcase__surface-tile[data-tier='elevated'] {\n        background: var(--cell-elevated);\n      }\n    `,\n  ],\n})\nexport class PersonalityTokenShowcaseComponent {\n  /** Which token dimension to render. */\n  @Input() variant: TokenShowcaseVariant = 'shadow-profiles';\n\n  /** Which mode section(s) to render. Defaults to both, side by side. */\n  @Input() modes: TokenShowcaseMode[] = ['light', 'dark'];\n\n  /**\n   * Primary color used to seed every personality's derivation. A single\n   * shared primary keeps the comparison about the *personality*, not about\n   * different brand colors.\n   */\n  @Input() primaryColor = '#3f51b5';\n\n  /**\n   * Optional explicit personality id list. Defaults to every predefined\n   * personality so the grid is a true \"all 12 at a glance\" view.\n   */\n  @Input() personalityIds?: string[];\n\n  protected get sections(): {\n    mode: TokenShowcaseMode;\n    cells: TokenShowcaseCell[];\n  }[] {\n    const personalities = this.resolvePersonalities();\n    return this.modes.map((mode) => ({\n      mode,\n      cells: personalities.map((personality) =>\n        this.buildCell(personality, mode)\n      ),\n    }));\n  }\n\n  private buildCell(\n    personality: Personality,\n    mode: TokenShowcaseMode\n  ): TokenShowcaseCell {\n    switch (this.variant) {\n      case 'page-backgrounds':\n        return buildPageBackgroundCell(personality, mode, this.primaryColor);\n      case 'surfaces':\n        return buildSurfaceCell(personality, mode, this.primaryColor);\n      case 'shadow-profiles':\n      default:\n        return buildShadowProfileCell(personality, mode, this.primaryColor);\n    }\n  }\n\n  private resolvePersonalities(): Personality[] {\n    if (!this.personalityIds || this.personalityIds.length === 0) {\n      return PREDEFINED_PERSONALITIES;\n    }\n    const ids = new Set(this.personalityIds);\n    return PREDEFINED_PERSONALITIES.filter((p) => ids.has(p.id));\n  }\n\n  protected trackByPersonalityId(\n    _index: number,\n    cell: TokenShowcaseCell\n  ): string {\n    return `${cell.personality.id}-${cell.mode}`;\n  }\n}\n",
+      "assetsDirs": [],
+      "styleUrlsData": "",
+      "stylesData": "\n      :host {\n        display: block;\n      }\n\n      .token-showcase__section {\n        padding: 2rem;\n        margin-bottom: 1rem;\n      }\n\n      .token-showcase__section[data-mode='light'] {\n        background: #f1f5f9;\n      }\n\n      .token-showcase__section[data-mode='dark'] {\n        background: #0b1120;\n      }\n\n      .token-showcase__section-title {\n        margin: 0 0 1.25rem;\n        font-family: system-ui, sans-serif;\n        color: #0f172a;\n      }\n\n      .token-showcase__section[data-mode='dark'] .token-showcase__section-title {\n        color: #f8fafc;\n      }\n\n      .token-showcase__grid {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));\n        gap: 1rem;\n      }\n\n      .token-showcase__cell {\n        display: flex;\n        flex-direction: column;\n        gap: 0.65rem;\n        padding: 1.25rem;\n        background: var(--cell-background);\n        color: var(--cell-foreground);\n        border: 1px solid var(--cell-border);\n        border-radius: var(--cell-border-radius, 8px);\n        font-family: system-ui, sans-serif;\n      }\n\n      .token-showcase__cell-header {\n        display: flex;\n        align-items: baseline;\n        justify-content: space-between;\n        gap: 0.5rem;\n        font-size: 0.9rem;\n      }\n\n      .token-showcase__cell-header code {\n        font-size: 0.7rem;\n        opacity: 0.7;\n      }\n\n      .token-showcase__cell-caption {\n        margin: 0;\n        font-size: 0.72rem;\n        opacity: 0.75;\n      }\n\n      /* --- shadow-profiles --- */\n      .token-showcase__shadow-swatch {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        padding: 1.5rem 1rem;\n      }\n\n      .token-showcase__shadow-swatch-inner {\n        width: 100%;\n        padding: 1.25rem;\n        text-align: center;\n        font-size: 0.8rem;\n        background: var(--cell-surface);\n        border-radius: var(--cell-border-radius, 8px);\n        box-shadow: var(--cell-shadow-md);\n      }\n\n      /* --- page-backgrounds --- */\n      .token-showcase__background-swatch {\n        position: relative;\n        height: 140px;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n        background-color: var(--cell-background);\n        background-image: var(--cell-background-image, none);\n        background-repeat: repeat;\n        background-position: center;\n        display: flex;\n        align-items: center;\n        justify-content: center;\n      }\n\n      .token-showcase__flat-label {\n        font-size: 0.72rem;\n        letter-spacing: 0.02em;\n        text-transform: uppercase;\n        opacity: 0.6;\n      }\n\n      /* --- surfaces --- */\n      .token-showcase__surface-row {\n        display: flex;\n        gap: 0.5rem;\n      }\n\n      .token-showcase__surface-tile {\n        flex: 1;\n        height: 72px;\n        display: flex;\n        align-items: flex-end;\n        padding: 0.4rem;\n        font-size: 0.65rem;\n        border-radius: 6px;\n        border: 1px solid var(--cell-border);\n      }\n\n      .token-showcase__surface-tile[data-tier='background'] {\n        background: var(--cell-background);\n      }\n\n      .token-showcase__surface-tile[data-tier='surface'] {\n        background-color: var(--cell-surface);\n        background-image: var(--cell-surface-texture, none);\n        background-repeat: repeat;\n      }\n\n      .token-showcase__surface-tile[data-tier='elevated'] {\n        background: var(--cell-elevated);\n      }\n    \n",
+      "extends": [],
+      "accessors": {
+        "sections": {
+          "name": "sections",
+          "getSignature": {
+            "name": "sections",
+            "type": "[]",
+            "returnType": "literal type[]",
+            "line": 476
+          }
+        }
+      }
     },
     {
       "name": "ThemeDemoComponent",
@@ -3293,6 +3610,212 @@
             }
           }
         ]
+      },
+      {
+        "name": "buildPageBackgroundCell",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "ctype": "miscellaneous",
+        "subtype": "function",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "",
+        "args": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": ""
+          }
+        ],
+        "returnType": "TokenShowcaseCell",
+        "jsdoctags": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          }
+        ]
+      },
+      {
+        "name": "buildShadowProfileCell",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "ctype": "miscellaneous",
+        "subtype": "function",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "",
+        "args": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": ""
+          }
+        ],
+        "returnType": "TokenShowcaseCell",
+        "jsdoctags": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          }
+        ]
+      },
+      {
+        "name": "buildSurfaceCell",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "ctype": "miscellaneous",
+        "subtype": "function",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "",
+        "args": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": ""
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": ""
+          }
+        ],
+        "returnType": "TokenShowcaseCell",
+        "jsdoctags": [
+          {
+            "name": "personality",
+            "type": "Personality",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "mode",
+            "type": "TokenShowcaseMode",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          },
+          {
+            "name": "primaryColor",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          }
+        ]
+      },
+      {
+        "name": "encodeSvgBackground",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "ctype": "miscellaneous",
+        "subtype": "function",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "<p>Encodes an SVG pattern as a <code>url(&quot;data:image/svg+xml,...&quot;)</code> background\nimage the SAME way <code>ThemeService</code> does post-C0 fix: <code>encodeURIComponent</code>\nalready escapes everything <code>url(&quot;...&quot;)</code> needs except <code>&#39;</code>, so only that\none character gets a manual replace. (The pre-C0 bug re-escaped every\npercent sign the encoder had just produced — do not reintroduce that\nfive-way <code>.replace()</code> chain here.)</p>\n",
+        "args": [
+          {
+            "name": "svg",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": ""
+          }
+        ],
+        "returnType": "string",
+        "jsdoctags": [
+          {
+            "name": "svg",
+            "type": "string",
+            "deprecated": false,
+            "deprecationMessage": "",
+            "tagName": {
+              "text": "param"
+            }
+          }
+        ]
       }
     ],
     "typealiases": [
@@ -3313,6 +3836,28 @@
         "subtype": "typealias",
         "rawtype": "\"light\" | \"dark\"",
         "file": "libs/theme-ui/src/lib/theme-ui/personality-grid.component.ts",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "",
+        "kind": 193
+      },
+      {
+        "name": "TokenShowcaseMode",
+        "ctype": "miscellaneous",
+        "subtype": "typealias",
+        "rawtype": "\"light\" | \"dark\"",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "deprecated": false,
+        "deprecationMessage": "",
+        "description": "",
+        "kind": 193
+      },
+      {
+        "name": "TokenShowcaseVariant",
+        "ctype": "miscellaneous",
+        "subtype": "typealias",
+        "rawtype": "\"shadow-profiles\" | \"page-backgrounds\" | \"surfaces\"",
+        "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
         "deprecated": false,
         "deprecationMessage": "",
         "description": "",
@@ -3395,6 +3940,214 @@
             }
           ]
         }
+      ],
+      "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts": [
+        {
+          "name": "buildPageBackgroundCell",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "ctype": "miscellaneous",
+          "subtype": "function",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "",
+          "args": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "returnType": "TokenShowcaseCell",
+          "jsdoctags": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        },
+        {
+          "name": "buildShadowProfileCell",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "ctype": "miscellaneous",
+          "subtype": "function",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "",
+          "args": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "returnType": "TokenShowcaseCell",
+          "jsdoctags": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        },
+        {
+          "name": "buildSurfaceCell",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "ctype": "miscellaneous",
+          "subtype": "function",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "",
+          "args": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": ""
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "returnType": "TokenShowcaseCell",
+          "jsdoctags": [
+            {
+              "name": "personality",
+              "type": "Personality",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "mode",
+              "type": "TokenShowcaseMode",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            },
+            {
+              "name": "primaryColor",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        },
+        {
+          "name": "encodeSvgBackground",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "ctype": "miscellaneous",
+          "subtype": "function",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "<p>Encodes an SVG pattern as a <code>url(&quot;data:image/svg+xml,...&quot;)</code> background\nimage the SAME way <code>ThemeService</code> does post-C0 fix: <code>encodeURIComponent</code>\nalready escapes everything <code>url(&quot;...&quot;)</code> needs except <code>&#39;</code>, so only that\none character gets a manual replace. (The pre-C0 bug re-escaped every\npercent sign the encoder had just produced — do not reintroduce that\nfive-way <code>.replace()</code> chain here.)</p>\n",
+          "args": [
+            {
+              "name": "svg",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": ""
+            }
+          ],
+          "returnType": "string",
+          "jsdoctags": [
+            {
+              "name": "svg",
+              "type": "string",
+              "deprecated": false,
+              "deprecationMessage": "",
+              "tagName": {
+                "text": "param"
+              }
+            }
+          ]
+        }
       ]
     },
     "groupedEnumerations": {},
@@ -3424,6 +4177,30 @@
           "description": "",
           "kind": 193
         }
+      ],
+      "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts": [
+        {
+          "name": "TokenShowcaseMode",
+          "ctype": "miscellaneous",
+          "subtype": "typealias",
+          "rawtype": "\"light\" | \"dark\"",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "",
+          "kind": 193
+        },
+        {
+          "name": "TokenShowcaseVariant",
+          "ctype": "miscellaneous",
+          "subtype": "typealias",
+          "rawtype": "\"shadow-profiles\" | \"page-backgrounds\" | \"surfaces\"",
+          "file": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+          "deprecated": false,
+          "deprecationMessage": "",
+          "description": "",
+          "kind": 193
+        }
       ]
     }
   },
@@ -3433,7 +4210,7 @@
     "children": []
   },
   "coverage": {
-    "count": 11,
+    "count": 14,
     "status": "low",
     "files": [
       {
@@ -3462,6 +4239,15 @@
         "name": "PaletteSelectorComponent",
         "coveragePercent": 0,
         "coverageCount": "0/9",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-backdrop.component.ts",
+        "type": "component",
+        "linktype": "component",
+        "name": "PersonalityBackdropComponent",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
         "status": "low"
       },
       {
@@ -3546,6 +4332,84 @@
         "name": "GroupedPersonality",
         "coveragePercent": 0,
         "coverageCount": "0/3",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "component",
+        "linktype": "component",
+        "name": "PersonalityTokenShowcaseComponent",
+        "coveragePercent": 50,
+        "coverageCount": "4/8",
+        "status": "medium"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "interface",
+        "linktype": "interface",
+        "name": "TokenShowcaseCell",
+        "coveragePercent": 33,
+        "coverageCount": "2/6",
+        "status": "medium"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "function",
+        "linktype": "miscellaneous",
+        "linksubtype": "function",
+        "name": "buildPageBackgroundCell",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "function",
+        "linktype": "miscellaneous",
+        "linksubtype": "function",
+        "name": "buildShadowProfileCell",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "function",
+        "linktype": "miscellaneous",
+        "linksubtype": "function",
+        "name": "buildSurfaceCell",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "function",
+        "linktype": "miscellaneous",
+        "linksubtype": "function",
+        "name": "encodeSvgBackground",
+        "coveragePercent": 100,
+        "coverageCount": "1/1",
+        "status": "very-good"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "type alias",
+        "linktype": "miscellaneous",
+        "linksubtype": "typealias",
+        "name": "TokenShowcaseMode",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
+        "status": "low"
+      },
+      {
+        "filePath": "libs/theme-ui/src/lib/theme-ui/personality-token-showcase.component.ts",
+        "type": "type alias",
+        "linktype": "miscellaneous",
+        "linksubtype": "typealias",
+        "name": "TokenShowcaseVariant",
+        "coveragePercent": 0,
+        "coverageCount": "0/1",
         "status": "low"
       },
       {

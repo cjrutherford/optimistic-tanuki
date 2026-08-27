@@ -8,14 +8,21 @@ import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TaskNote } from '../entities/task-note.entity';
 import {
-  Repository,
+  Between,
   FindOptionsWhere,
+  In,
   IsNull,
   Like,
   Not,
-  Between,
+  Repository,
 } from 'typeorm';
 import { Task } from '../entities/task.entity';
+import { Project } from '../entities/project.entity';
+import {
+  assertFound,
+  assertProjectAccess,
+  getAccessibleProjectIds,
+} from '../common/project-access.util';
 
 @Injectable()
 export class TaskNoteService {
@@ -23,15 +30,20 @@ export class TaskNoteService {
     @Inject(getRepositoryToken(TaskNote))
     private readonly taskNoteRepository: Repository<TaskNote>,
     @Inject(getRepositoryToken(Task))
-    private readonly taskRepository: Repository<Task>
+    private readonly taskRepository: Repository<Task>,
+    @Inject(getRepositoryToken(Project))
+    private readonly projectRepository: Repository<Project>
   ) {}
 
-  async create(createDto: CreateTaskNoteDto) {
+  async create(createDto: CreateTaskNoteDto, requestingUserId?: string) {
     const task = await this.taskRepository.findOne({
       where: { id: createDto.taskId },
+      relations: ['project'],
     });
-    if (!task) {
-      throw new Error('Task not found');
+    assertFound(task, `Task with id ${createDto.taskId} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(task.project, requestingUserId);
     }
 
     const taskNote = this.taskNoteRepository.create({
@@ -47,14 +59,10 @@ export class TaskNoteService {
     return await this.taskNoteRepository.save(taskNote);
   }
 
-  async findAll(query: QueryTaskNoteDto) {
+  async findAll(query: QueryTaskNoteDto, requestingUserId?: string) {
     const where: FindOptionsWhere<TaskNote> = {
       deletedAt: IsNull(),
     };
-
-    if (query.taskId) {
-      where.task = { id: query.taskId };
-    }
 
     if (query.profileId) {
       where.profileId = query.profileId;
@@ -80,21 +88,60 @@ export class TaskNoteService {
       where.deletedAt = Not(IsNull());
     }
 
+    // Scope to notes whose task belongs to a project the caller can access.
+    // A client-supplied taskId is only honored if it falls within that scope.
+    if (requestingUserId) {
+      const accessibleProjectIds = await getAccessibleProjectIds(
+        this.projectRepository,
+        requestingUserId
+      );
+      if (accessibleProjectIds.length === 0) {
+        return [];
+      }
+      where.task = {
+        ...(query.taskId ? { id: query.taskId } : {}),
+        project: { id: In(accessibleProjectIds) },
+      };
+    } else if (query.taskId) {
+      where.task = { id: query.taskId };
+    }
+
     return await this.taskNoteRepository.find({
       where,
-      relations: ['task'],
+      relations: ['task', 'task.project'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: string) {
-    return await this.taskNoteRepository.findOne({
+  async findOne(id: string, requestingUserId?: string) {
+    const taskNote = await this.taskNoteRepository.findOne({
       where: { id },
-      relations: ['task'],
+      relations: ['task', 'task.project'],
     });
+    assertFound(taskNote, `Task note with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(taskNote.task?.project, requestingUserId);
+    }
+
+    return taskNote;
   }
 
-  async update(id: string, updateDto: UpdateTaskNoteDto) {
+  async update(
+    id: string,
+    updateDto: UpdateTaskNoteDto,
+    requestingUserId?: string
+  ) {
+    const taskNote = await this.taskNoteRepository.findOne({
+      where: { id },
+      relations: ['task', 'task.project'],
+    });
+    assertFound(taskNote, `Task note with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(taskNote.task?.project, requestingUserId);
+    }
+
     const updateData: Partial<TaskNote> = {
       updatedAt: new Date(),
     };
@@ -118,7 +165,17 @@ export class TaskNoteService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestingUserId?: string) {
+    const taskNote = await this.taskNoteRepository.findOne({
+      where: { id },
+      relations: ['task', 'task.project'],
+    });
+    assertFound(taskNote, `Task note with id ${id} not found`);
+
+    if (requestingUserId) {
+      assertProjectAccess(taskNote.task?.project, requestingUserId);
+    }
+
     await this.taskNoteRepository.update(id, { deletedAt: new Date() });
     return `Task note #${id} soft-deleted`;
   }

@@ -12,7 +12,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 async function bootstrap() {
   const configApp = await NestFactory.createApplicationContext(AppModule);
   const configService = configApp.get(ConfigService);
-  const port = configService.get<number>('port') || 3015;
+  const port = configService.getOrThrow<number>('listenPort');
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,

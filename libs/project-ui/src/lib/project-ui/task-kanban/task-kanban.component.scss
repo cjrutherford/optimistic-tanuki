@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .kanban-board {
   width: 100%;
   height: 100%;
@@ -18,9 +20,9 @@
   flex: 1;
   min-width: 280px;
   max-width: 350px;
-  background: var(--background, #f8f9fa);
-  border: 1px solid var(--complement, #dee2e6);
-  border-radius: 8px;
+  background: var(--surface, #f8f9fa);
+  border: 1px solid var(--border, #dee2e6);
+  border-radius: var(--border-radius-lg, 8px);
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 200px);
@@ -28,7 +30,7 @@
 
 .column-header {
   padding: 1rem;
-  border-bottom: 2px solid var(--complement, #dee2e6);
+  border-bottom: 2px solid var(--border, #dee2e6);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -43,9 +45,9 @@
   }
 
   .task-count {
-    background: var(--accent, #007bff);
-    color: var(--background, white);
-    border-radius: 12px;
+    background: var(--primary, #007bff);
+    color: var(--primary-foreground, white);
+    border-radius: var(--border-radius-full, 12px);
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -66,16 +68,16 @@
 .kanban-card {
   background: var(--background, white);
   color: var(--foreground, #212121);
-  border-radius: 6px;
+  border-radius: var(--border-radius-md, 6px);
   padding: 1rem;
   margin-bottom: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  @include p.shadow('sm');
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 4px solid var(--accent, #007bff);
+  @include p.personality-transition(all, 'fast');
+  border-left: 4px solid var(--primary, #007bff);
 
   &:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    @include p.shadow('md');
     transform: translateY(-2px);
   }
 
@@ -92,8 +94,11 @@
     border-left-color: var(--warning, #ffc107);
   }
 
+  // The legacy `--complement` teal fallback here is a status-level accent
+  // (between "medium" warning and "low" success), not the brand secondary —
+  // maps to the semantic `--info` token, matching `.fc-event-todo` above.
   &.priority-medium-low {
-    border-left-color: var(--complement, #17a2b8);
+    border-left-color: var(--info, #17a2b8);
   }
 
   &.priority-low {
@@ -127,11 +132,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: var(--border-radius-sm, 4px);
 
     &:hover {
       background: var(--danger, #dc3545);
-      color: var(--background, white);
+      color: var(--danger-foreground, white);
     }
   }
 }
@@ -139,7 +144,7 @@
 .card-description {
   margin: 0.5rem 0;
   font-size: 0.875rem;
-  color: var(--foreground, #6c757d);
+  color: var(--muted-foreground, #6c757d);
   opacity: 0.8;
   line-height: 1.4;
   overflow: hidden;
@@ -158,64 +163,73 @@
 
   .priority-badge {
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--border-radius-sm, 4px);
     font-weight: 600;
     text-transform: uppercase;
 
     &.priority-high,
     &.priority-critical {
-      background: #dc354520;
-      color: #dc3545;
+      background: color-mix(in srgb, var(--danger) 12%, transparent);
+      color: var(--danger, #dc3545);
     }
 
     &.priority-medium-high {
-      background: #fd7e1420;
-      color: #fd7e14;
+      background: color-mix(in srgb, var(--warning) 12%, transparent);
+      color: var(--warning, #fd7e14);
     }
 
     &.priority-medium {
-      background: #ffc10720;
-      color: #856404;
+      background: color-mix(in srgb, var(--warning) 12%, transparent);
+      color: var(--warning, #856404);
     }
 
+    // Same status-level teal as the border accents above — semantic
+    // `--info`, not the brand `--secondary`.
     &.priority-medium-low {
-      background: #17a2b820;
-      color: #0c5460;
+      background: color-mix(in srgb, var(--info) 12%, transparent);
+      color: var(--info, #0c5460);
     }
 
     &.priority-low {
-      background: #28a74520;
-      color: #155724;
+      background: color-mix(in srgb, var(--success) 12%, transparent);
+      color: var(--success, #155724);
     }
   }
 
   .assignee,
   .due-date {
     padding: 0.25rem 0.5rem;
-    background: #e9ecef;
-    border-radius: 4px;
-    color: #495057;
+    background: var(--surface, #e9ecef);
+    border-radius: var(--border-radius-sm, 4px);
+    color: var(--muted-foreground, #495057);
   }
 }
 
 .empty-column {
   text-align: center;
   padding: 2rem 1rem;
-  color: #6c757d;
+  color: var(--muted-foreground, #6c757d);
   font-style: italic;
 }
 
 .cdk-drag-preview {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  // Custom "lifted" drag shadow — deeper than the card's own hover shadow,
+  // so it keeps its own shape/offsets but tokenizes color via the shared
+  // shadow-tint contract instead of a bare black rgba.
+  box-shadow: 0 5px 15px
+    color-mix(in srgb, var(--shadow-color, #000) 30%, transparent);
   opacity: 0.8;
 }
 
 .cdk-drag-placeholder {
   opacity: 0.4;
-  background: #e9ecef;
-  border: 2px dashed #adb5bd;
+  background: var(--surface, #e9ecef);
+  border: 2px dashed var(--border, #adb5bd);
 }
 
+// CDK drag-reorder physics, not a personality-driven interaction transition:
+// this is Angular Material's standard deceleration curve, tuned to the
+// library's own reflow timing. Kept fixed, same precedent as spinner loops.
 .cdk-drag-animating {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }

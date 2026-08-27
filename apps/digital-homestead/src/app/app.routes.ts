@@ -17,7 +17,7 @@ const forumUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('dh-client-authToken'),
+  ...emailAuthRoutes('dh-client-authToken', true),
   {
     path: '',
     loadComponent: () =>
@@ -51,6 +51,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
     component: OAuthCallbackComponent,
   },
   {

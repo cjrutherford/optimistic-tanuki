@@ -2,6 +2,7 @@ import { of, throwError } from 'rxjs';
 import {
   MarketingEnrichmentApiService,
   MarketingEnrichmentResult,
+  MarketingGenerationResult,
 } from './marketing-enrichment-api.service';
 import { CampaignConcept, GenerationRequest } from '../types';
 
@@ -88,6 +89,12 @@ describe('MarketingEnrichmentApiService', () => {
         of({
           concepts: [{ ...concepts[0], headline: 'Enriched' }],
           enrichmentApplied: true,
+          usage: {
+            model: 'gemma3',
+            promptTokens: 120,
+            completionTokens: 45,
+            totalDurationMs: 900,
+          },
         })
       ),
     } as any;
@@ -105,10 +112,16 @@ describe('MarketingEnrichmentApiService', () => {
     expect(result).toEqual<MarketingEnrichmentResult>({
       concepts: [{ ...concepts[0], headline: 'Enriched' }],
       enrichmentApplied: true,
+      usage: {
+        model: 'gemma3',
+        promptTokens: 120,
+        completionTokens: 45,
+        totalDurationMs: 900,
+      },
     });
   });
 
-  it('falls back to original concepts when the endpoint fails', async () => {
+  it('falls back to original concepts when the enrich endpoint fails', async () => {
     const httpClient = {
       post: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
     } as any;
@@ -119,6 +132,64 @@ describe('MarketingEnrichmentApiService', () => {
     expect(result).toEqual<MarketingEnrichmentResult>({
       concepts,
       enrichmentApplied: false,
+      usage: null,
+    });
+  });
+
+  it('returns LLM-authored concepts from the generate endpoint', async () => {
+    const httpClient = {
+      post: jest.fn().mockReturnValue(
+        of({
+          concepts: [
+            { ...concepts[0], generationMode: 'llm', headline: 'Authored' },
+          ],
+          generationApplied: true,
+          usage: {
+            model: 'gemma3',
+            promptTokens: 300,
+            completionTokens: 150,
+            totalDurationMs: 2100,
+          },
+        })
+      ),
+    } as any;
+
+    const service = new MarketingEnrichmentApiService(httpClient);
+    const result = await service.generateConcepts(request, concepts);
+
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/marketing-generator/generate',
+      {
+        request,
+        concepts,
+      }
+    );
+    expect(result).toEqual<MarketingGenerationResult>({
+      concepts: [
+        { ...concepts[0], generationMode: 'llm', headline: 'Authored' },
+      ],
+      generationApplied: true,
+      usage: {
+        model: 'gemma3',
+        promptTokens: 300,
+        completionTokens: 150,
+        totalDurationMs: 2100,
+      },
+    });
+  });
+
+  it('falls back to the scaffold concepts when the generate endpoint fails', async () => {
+    const httpClient = {
+      post: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+    } as any;
+
+    const service = new MarketingEnrichmentApiService(httpClient);
+    const result = await service.generateConcepts(request, concepts);
+
+    expect(result).toEqual<MarketingGenerationResult>({
+      concepts,
+      generationApplied: false,
+      usage: null,
     });
   });
 });

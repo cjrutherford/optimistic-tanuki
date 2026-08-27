@@ -1,0 +1,56 @@
+// ============================================================================
+// Personality surface texture contract (Workstream C3, 2026-07-18 refactor
+// plan)
+// ----------------------------------------------------------------------------
+// This partial defines NO texture values of its own. It is a thin, documented
+// wrapper over `--surface-texture`, the CSS custom property emitted at
+// runtime by theme-lib's ThemeService (see theme.service.ts
+// `generatePersonalityCSSVariables()`) for the small curated set of
+// personalities whose stated character is literally tactile/textured
+// (soft-touch's paper grain, control-center's scanlines, architect's
+// blueprint cross-hatch, electric's circuit accent). Every other personality
+// leaves the variable cleared, so the mixin's `var(--surface-texture, none)`
+// fallback keeps them texture-free by default — the same "absence is the
+// default" contract `_shadows.scss` documents for shadow profiles.
+//
+// Variable contract (emitted per personality + mode by ThemeService):
+//
+//   --surface-texture
+//       A fully-resolved `background-image` value (a `url("data:image/svg+
+//       xml,...")` data URI) for the small set of personalities that declare
+//       `surfaceTexture`, encoded via the SAME single-`encodeURIComponent`
+//       path `--page-background-pattern` uses. Cleared (emitted as an empty
+//       string, which `CSSStyleDeclaration.setProperty` treats as
+//       `removeProperty`) for every other personality, so the mixin's
+//       fallback below is what actually renders for them.
+//
+// Import via the workspace `stylePreprocessorOptions.includePaths` mechanism
+// (see `nx.json` targetDefaults and `libs/theme-styles/README.md`):
+//
+//   @use 'personality' as p;
+//
+//   .card {
+//     @include p.surface-texture();
+//   }
+// ============================================================================
+
+/// Apply the active personality's surface texture (if any) to the element's
+/// `background-image`. Falls back to `none` for the (default) personalities
+/// that declare no `surfaceTexture`. Disables under `prefers-contrast: more`
+/// and `forced-colors: active` — texture is decorative, not load-bearing,
+/// and both preferences signal the user needs maximum legibility/consistent
+/// system rendering over decorative treatments (mirrors the same guards the
+/// theme-ui `PersonalityBackdropComponent` applies to `--page-background-
+/// pattern`, Workstream C2).
+@mixin surface-texture {
+  background-image: var(--surface-texture, none);
+  background-repeat: repeat;
+
+  @media (prefers-contrast: more) {
+    background-image: none;
+  }
+
+  @media (forced-colors: active) {
+    background-image: none;
+  }
+}

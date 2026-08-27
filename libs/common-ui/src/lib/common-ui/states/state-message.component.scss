@@ -8,7 +8,7 @@
   padding: var(--state-message-padding, 2.5rem 1.5rem);
   background: var(--state-message-background, transparent);
   color: var(--state-message-color, var(--foreground, inherit));
-  border-radius: var(--state-message-radius, var(--radius-md, 12px));
+  border-radius: var(--state-message-radius, var(--border-radius-md, 12px));
   border: 1px dashed
     color-mix(
       in oklab,

@@ -309,7 +309,9 @@ export class TransactionListComponent implements OnInit {
       editable: false,
       sortable: false,
       filter: false,
-      maxWidth: 220,
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
       cellRenderer: (params: { data?: Transaction }) => {
         const data = params.data;
         if (!data) {

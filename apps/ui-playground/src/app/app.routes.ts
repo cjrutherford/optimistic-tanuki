@@ -1,4 +1,5 @@
 import { Routes, UrlSegment } from '@angular/router';
+import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
 
 export function docsSlugMatcher(
   segments: import('@angular/router').UrlSegment[]
@@ -22,6 +23,7 @@ export function docsSlugMatcher(
 }
 
 export const routes: Routes = [
+  ...oauthCallbackRoutes,
   {
     path: '',
     loadComponent: () =>

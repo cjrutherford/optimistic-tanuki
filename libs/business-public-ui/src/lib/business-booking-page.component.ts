@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { EMPTY } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
@@ -11,6 +11,7 @@ import {
   BusinessBusyWindow,
   BusinessClientBookingStatus,
   BusinessSiteConfigStore,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import {
   Availability,
@@ -359,8 +360,7 @@ export class BusinessBookingPageComponent {
   protected readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
 
   readonly site = computed(() => this.siteConfig.site());
   readonly message = signal('');
@@ -384,11 +384,12 @@ export class BusinessBookingPageComponent {
       this.busyWindows()
     )
   );
-  readonly registerRoute = computed(() =>
-    this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'register']
-      : ['/client/register']
-  );
+  readonly registerRoute = computed(() => {
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'register']
+      : ['/client/register'];
+  });
   readonly pageTitle = computed(() =>
     this.isAcceptedClient() ? 'Book session' : 'Request consultation'
   );
@@ -416,7 +417,7 @@ export class BusinessBookingPageComponent {
   };
 
   constructor() {
-    this.api.getOffers(this.siteSlug).subscribe((offers) => {
+    this.api.getOffers(this.siteSlug()).subscribe((offers) => {
       const bookableOffers = offers.filter(
         (offer) => offer.allowOnlineBooking !== false
       );
@@ -424,7 +425,7 @@ export class BusinessBookingPageComponent {
       this.selectedOfferId =
         this.selectedOfferId || bookableOffers[0]?.id || '';
     });
-    this.api.getAvailabilities(this.siteSlug).subscribe((availabilities) => {
+    this.api.getAvailabilities(this.siteSlug()).subscribe((availabilities) => {
       const activeAvailabilities = availabilities.filter(
         (entry) => entry.isActive !== false
       );
@@ -438,12 +439,14 @@ export class BusinessBookingPageComponent {
         )[0]?.key ||
         '';
     });
-    this.api.getAvailabilityOverrides(this.siteSlug).subscribe((overrides) => {
-      this.availabilityOverrides.set(
-        overrides.filter((entry) => entry.isActive !== false)
-      );
-    });
-    this.api.getBusyWindows(this.siteSlug).subscribe((busyWindows) => {
+    this.api
+      .getAvailabilityOverrides(this.siteSlug())
+      .subscribe((overrides) => {
+        this.availabilityOverrides.set(
+          overrides.filter((entry) => entry.isActive !== false)
+        );
+      });
+    this.api.getBusyWindows(this.siteSlug()).subscribe((busyWindows) => {
       this.busyWindows.set(busyWindows);
     });
 
@@ -478,7 +481,7 @@ export class BusinessBookingPageComponent {
       }
 
       this.api
-        .getClientBookingStatus(this.siteSlug)
+        .getClientBookingStatus(this.siteSlug())
         .pipe(
           catchError(() => {
             this.isAcceptedClient.set(false);
@@ -520,7 +523,7 @@ export class BusinessBookingPageComponent {
 
       this.api
         .createBooking({
-          siteSlug: this.siteSlug ?? undefined,
+          siteSlug: this.siteSlug() ?? undefined,
           title:
             this.form.goal ||
             this.selectedOffer()?.label ||
@@ -549,7 +552,7 @@ export class BusinessBookingPageComponent {
 
     this.api
       .createLeadIntake({
-        siteSlug: this.siteSlug ?? undefined,
+        siteSlug: this.siteSlug() ?? undefined,
         name: this.form.name,
         email: this.form.email,
         phone: this.form.phone,

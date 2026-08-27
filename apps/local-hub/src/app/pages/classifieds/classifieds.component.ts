@@ -20,6 +20,10 @@ import {
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  LocalityRouteContext,
+  localityRouteContext,
+} from '../../utils/locality-route-context';
 
 @Component({
   selector: 'app-classifieds',
@@ -48,6 +52,11 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   showPostForm = signal(false);
   retryCount = 0;
   readonly maxRetries = 3;
+  private routeContext: LocalityRouteContext = {
+    slug: '',
+    baseSegments: [],
+  };
+  private loadGeneration = 0;
 
   /** Image upload callback passed to ClassifiedFormComponent */
   uploadImage = async (file: File): Promise<string> => {
@@ -70,32 +79,63 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
         this.isAuthenticated.set(auth);
       });
 
-    const slug = this.route.snapshot.paramMap.get('communitySlug') ?? '';
-    const openForm = this.route.snapshot.data?.['openForm'] === true;
-    this.loadData(slug).then(() => {
-      if (openForm && this.isAuthenticated() && this.isMember()) {
-        this.showPostForm.set(true);
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const generation = ++this.loadGeneration;
+      this.routeContext = localityRouteContext(params);
+      const { slug } = this.routeContext;
+      const openForm = this.route.snapshot.data?.['openForm'] === true;
+      this.community.set(null);
+      this.classifieds.set([]);
+      this.error.set(null);
+      this.loading.set(true);
+      this.isMember.set(false);
+      this.showPostForm.set(false);
+      this.retryCount = 0;
+
+      if (!slug) {
+        this.error.set('Unable to determine the requested locality.');
+        this.loading.set(false);
+        return;
       }
+      this.loadData(slug, generation).then(() => {
+        if (
+          generation === this.loadGeneration &&
+          openForm &&
+          this.isAuthenticated() &&
+          this.isMember()
+        ) {
+          this.showPostForm.set(true);
+        }
+      });
     });
   }
 
   ngOnDestroy(): void {
+    this.loadGeneration++;
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  async loadData(slug: string): Promise<void> {
+  async loadData(
+    slug: string,
+    generation = this.loadGeneration
+  ): Promise<void> {
     try {
       const community = await this.communityService.getCommunityBySlug(slug);
+      if (generation !== this.loadGeneration) return;
       this.community.set(community);
 
       try {
         const result = await this.classifiedService.findByCommunity(
           community.id
         );
+        if (generation !== this.loadGeneration) return;
         const ads = Array.isArray(result) ? result : result.data;
-        this.classifieds.set(await this.enrichSellerProfiles(ads));
+        const enrichedAds = await this.enrichSellerProfiles(ads);
+        if (generation !== this.loadGeneration) return;
+        this.classifieds.set(enrichedAds);
       } catch (classifiedErr) {
+        if (generation !== this.loadGeneration) return;
         console.warn('Failed to load classifieds:', classifiedErr);
         this.classifieds.set([]);
       }
@@ -103,20 +143,22 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
       if (this.isAuthenticated()) {
         try {
           const member = await this.communityService.isMember(community.id);
+          if (generation !== this.loadGeneration) return;
           this.isMember.set(member);
         } catch {
           // non-fatal
         }
       }
-      this.loading.set(false);
+      if (generation === this.loadGeneration) this.loading.set(false);
     } catch (err) {
+      if (generation !== this.loadGeneration) return;
       this.retryCount++;
       if (this.retryCount < this.maxRetries) {
         console.warn(
           `Retrying load (${this.retryCount}/${this.maxRetries})...`
         );
         await new Promise((r) => setTimeout(r, 1000 * this.retryCount));
-        return this.loadData(slug);
+        return this.loadData(slug, generation);
       }
       this.error.set('Unable to load classifieds. Please try again later.');
       this.loading.set(false);
@@ -124,9 +166,8 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   }
 
   navigateToCommunity(): void {
-    const slug = this.community()?.slug;
-    if (slug) {
-      this.router.navigate(['/c', slug]);
+    if (this.routeContext.baseSegments.length > 0) {
+      this.router.navigate(this.routeContext.baseSegments);
     }
   }
 
@@ -165,6 +206,10 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
         content: 'Your classified has been posted!',
         type: 'success',
       });
+      await this.router.navigate([
+        ...this.routeContext.baseSegments,
+        'classifieds',
+      ]);
     } catch {
       this.messageService.addMessage({
         content: 'Failed to post classified. Please try again.',
@@ -179,9 +224,12 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   }
 
   onViewAd(classified: ClassifiedAdDto): void {
-    const slug = this.community()?.slug;
-    if (slug) {
-      this.router.navigate(['/c', slug, 'classifieds', classified.id]);
+    if (this.routeContext.baseSegments.length > 0) {
+      this.router.navigate([
+        ...this.routeContext.baseSegments,
+        'classifieds',
+        classified.id,
+      ]);
     }
   }
 

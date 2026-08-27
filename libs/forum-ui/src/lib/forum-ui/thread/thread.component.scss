@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -7,8 +9,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  transition: color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(color, 'fast');
 
   h4 {
     margin: 0;
@@ -17,7 +18,7 @@
   }
 
   &:hover h4 {
-    color: var(--accent);
+    color: var(--primary);
   }
 }
 
@@ -74,7 +75,7 @@
   }
   .thread-actions {
     border-top-width: 3px;
-    border-top-color: var(--accent);
+    border-top-color: var(--primary);
   }
 }
 
@@ -92,7 +93,7 @@
 
 :host-context([data-personality='electric']) {
   .thread-header:hover h4 {
-    text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--primary) 40%, transparent);
   }
 }
 
@@ -164,7 +165,7 @@ body.personality-minimal {
     .thread-actions {
       border-top: none;
       &:hover {
-        box-shadow: var(--shadow-sm);
+        @include p.shadow('sm');
       }
     }
   }
@@ -191,7 +192,8 @@ body.personality-soft-touch {
     }
     .thread-actions:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 20px
+        color-mix(in srgb, var(--shadow-color) 10%, transparent);
     }
   }
 }
@@ -207,7 +209,8 @@ body.personality-control-center {
       font-family: var(--font-mono);
     }
     .thread-actions:hover {
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: inset 0 2px 4px
+        color-mix(in srgb, var(--shadow-color) 10%, transparent);
     }
   }
 }

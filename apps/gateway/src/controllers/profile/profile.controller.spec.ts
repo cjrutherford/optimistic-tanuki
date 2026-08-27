@@ -119,6 +119,41 @@ describe('ProfileController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('returns only profiles discoverable in the requested app scope', async () => {
+    jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of([
+        { id: 'own-local', userId: 'user-1', appScope: 'client-interface' },
+        { id: 'own-global', userId: 'user-1', appScope: 'global' },
+        { id: 'other-local', userId: 'user-2', appScope: 'client-interface' },
+        { id: 'other-global', userId: 'user-3', appScope: 'global' },
+        { id: 'other-app', userId: 'user-4', appScope: 'forgeofwill' },
+      ])
+    );
+
+    await expect(
+      firstValueFrom(
+        controller.getDiscoverableProfiles(
+          { userId: 'user-1', profileId: 'own-local' } as UserDetails,
+          'client-interface'
+        )
+      )
+    ).resolves.toEqual([
+      { id: 'other-local', userId: 'user-2', appScope: 'client-interface' },
+      { id: 'other-global', userId: 'user-3', appScope: 'global' },
+    ]);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetAll },
+      {
+        where: [
+          { appScope: 'client-interface' },
+          { appScope: 'global' },
+          { appScope: null },
+        ],
+      }
+    );
+  });
+
   it('uses the role init service processNow API during profile creation', async () => {
     const createProfileDto: CreateProfileDto = {
       name: 'Test',

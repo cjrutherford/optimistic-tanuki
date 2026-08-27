@@ -37,11 +37,6 @@ const createTaskSchema = z.object({
     .describe(
       'Priority of the task. MUST be one of: LOW, MEDIUM_LOW, MEDIUM, MEDIUM_HIGH, HIGH. Default: MEDIUM'
     ),
-  createdBy: z
-    .string()
-    .describe(
-      'User who created the task this should be the profile id used to reference the user.'
-    ),
   projectId: z
     .string()
     .describe(
@@ -64,12 +59,6 @@ const updateTaskSchema = z.object({
     .nativeEnum(TaskPriority)
     .optional()
     .describe('The new priority of the task'),
-  createdBy: z
-    .string()
-    .optional()
-    .describe(
-      'User who created the task. this should map to the profileId used to reference the user.'
-    ),
   projectId: z
     .string()
     .optional()
@@ -103,19 +92,39 @@ export class TaskMcpService {
     private readonly projectPlanningService: ClientProxy
   ) {}
 
+  /**
+   * Every MCP tool call gets the raw Express request as its third argument
+   * (mcp-nest invokes tools as `(args, context, rawExpressRequest)`). The
+   * McpAuthGuard wired into NestMcpModule.forRoot attaches `request.user`
+   * for every authenticated call, so identity must always be derived from
+   * there rather than from client-supplied tool arguments.
+   */
+  private requireRequestingUserId(request: any): string {
+    const profileId = request?.user?.profileId;
+    if (!profileId) {
+      throw new Error('Unauthenticated MCP call');
+    }
+    return profileId;
+  }
+
   @McpTool({
     name: 'list_tasks',
     description:
       'List all tasks for a project, this is highly dependent on the project type and the project id should match the id of the project either from the list_projects tool or from an earlier tool call response such as create project.',
     parameters: listTasksSchema,
   })
-  async listTasks({ projectId }: z.infer<typeof listTasksSchema>) {
+  async listTasks(
+    { projectId }: z.infer<typeof listTasksSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Listing tasks for project ${projectId}`);
       const tasks = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: TaskCommands.FIND_ALL },
-          { projectId }
+          { projectId, requestingUserId }
         )
       );
       return {
@@ -135,11 +144,19 @@ export class TaskMcpService {
       'Get details of a specific task by ID. id for tasks could be found via the list_tasks tool or earlier tool call responses.',
     parameters: getTaskSchema,
   })
-  async getTask({ taskId }: z.infer<typeof getTaskSchema>) {
+  async getTask(
+    { taskId }: z.infer<typeof getTaskSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Getting task ${taskId}`);
       const task = await firstValueFrom(
-        this.projectPlanningService.send({ cmd: TaskCommands.FIND_ONE }, taskId)
+        this.projectPlanningService.send(
+          { cmd: TaskCommands.FIND_ONE },
+          { id: taskId, requestingUserId }
+        )
       );
       return {
         success: true,
@@ -156,25 +173,30 @@ export class TaskMcpService {
     description: 'Create a new task for a project.',
     parameters: createTaskSchema,
   })
-  async createTask({
-    title,
-    description,
-    status,
-    priority,
-    createdBy,
-    projectId,
-  }: z.infer<typeof createTaskSchema>) {
+  async createTask(
+    {
+      title,
+      description,
+      status,
+      priority,
+      projectId,
+    }: z.infer<typeof createTaskSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(
         `MCP Tool: Creating task "${title}" for project ${projectId}`
       );
-      const taskData: CreateTaskDto = {
+      const taskData: CreateTaskDto & { requestingUserId: string } = {
         title,
         description: description ?? 'No description provided',
         status: status ?? TaskStatus.TODO,
         priority: priority ?? TaskPriority.MEDIUM,
-        createdBy,
+        createdBy: requestingUserId,
         projectId,
+        requestingUserId,
       };
 
       const task = await firstValueFrom(
@@ -198,31 +220,35 @@ export class TaskMcpService {
       'Update an existing task. all data points are optional except for the id which is required to identify the task to update.',
     parameters: updateTaskSchema,
   })
-  async updateTask({
-    id,
-    title,
-    description,
-    status,
-    priority,
-    createdBy,
-    projectId,
-  }: z.infer<typeof updateTaskSchema>) {
+  async updateTask(
+    {
+      id,
+      title,
+      description,
+      status,
+      priority,
+      projectId,
+    }: z.infer<typeof updateTaskSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Updating task ${id}`);
-      const updates: Partial<UpdateTaskDto> = {};
+      const updates: Partial<UpdateTaskDto> & {
+        id: string;
+        updatedBy: string;
+        requestingUserId: string;
+      } = { id, updatedBy: requestingUserId, requestingUserId };
 
       if (title) updates.title = title;
       if (description) updates.description = description;
       if (status) updates.status = status;
       if (priority) updates.priority = priority;
-      if (createdBy) updates.createdBy = createdBy;
       if (projectId) updates.projectId = projectId;
 
       const task = await firstValueFrom(
-        this.projectPlanningService.send(
-          { cmd: TaskCommands.UPDATE },
-          { id, ...updates }
-        )
+        this.projectPlanningService.send({ cmd: TaskCommands.UPDATE }, updates)
       );
 
       return {
@@ -243,13 +269,18 @@ export class TaskMcpService {
       taskId: z.string().describe('The ID of the task to delete'),
     }),
   })
-  async deleteTask({ taskId }: { taskId: string }) {
+  async deleteTask(
+    { taskId }: { taskId: string },
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting task ${taskId}`);
       await firstValueFrom(
         this.projectPlanningService.send(
-          { cmd: TaskCommands.REMOVE },
-          { taskId }
+          { cmd: TaskCommands.DELETE },
+          { id: taskId, requestingUserId }
         )
       );
       return {
@@ -267,13 +298,21 @@ export class TaskMcpService {
     description: 'Query tasks within a project by title, status, or priority',
     parameters: queryTasksSchema,
   })
-  async queryTasks(query: z.infer<typeof queryTasksSchema>) {
+  async queryTasks(
+    query: z.infer<typeof queryTasksSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(
         `MCP Tool: Querying tasks for project ${query.projectId}`
       );
       const tasks = await firstValueFrom(
-        this.projectPlanningService.send({ cmd: TaskCommands.FIND_ALL }, query)
+        this.projectPlanningService.send(
+          { cmd: TaskCommands.FIND_ALL },
+          { ...query, requestingUserId }
+        )
       );
       return {
         success: true,

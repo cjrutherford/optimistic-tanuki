@@ -1,0 +1,35 @@
+<section class="engagement-panel" data-theme-surface="feature" id="engagement">
+  <div class="section-copy">
+    <p class="eyebrow">Engagement Model</p>
+    <h2>Build it once, then keep it running.</h2>
+    <p>
+      We can take on the build and stay on for the maintenance that keeps it
+      working: patches, backups, and support for as long as that is useful to
+      you.
+    </p>
+  </div>
+  <div class="engagement-flow">
+    @for (stage of stages; track stage.number) {
+    <otui-card
+      class="engagement-stage"
+      CardVariant="default"
+      tone="brand"
+      emphasis="outline"
+    >
+      <otui-badge class="stage-number" tone="brand" emphasis="solid">{{
+        stage.number
+      }}</otui-badge>
+      <h3>{{ stage.title }}</h3>
+      <ul>
+        @for (item of stage.items; track item) {
+        <li>{{ item }}</li>
+        }
+      </ul>
+    </otui-card>
+    }
+  </div>
+  <p class="engagement-note">
+    Hardware and cloud resources are purchased through the client or passed
+    through at cost.
+  </p>
+</section>

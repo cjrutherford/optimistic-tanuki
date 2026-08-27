@@ -34,4 +34,4 @@ if [ "$WATCH" -eq 1 ]; then
   ARGS+=(--watch)
 fi
 
-NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx "${ARGS[@]}"
+NX_WORKSPACE_DATA_DIRECTORY=.nx/workspace-data-build NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx "${ARGS[@]}"

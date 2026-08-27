@@ -83,11 +83,17 @@ export class TrainerConfigController {
 
   @MessagePattern(TrainerConfigCommands.UPDATE_CONFIG)
   async updateConfig(
-    @Payload() payload: { id: string; config: TrainerSiteConfigDto }
+    @Payload()
+    payload: {
+      id: string;
+      config: TrainerSiteConfigDto;
+      requesterProfileId?: string;
+    }
   ) {
     const config = await this.trainerConfigService.updateConfig(
       payload.id,
-      payload.config
+      payload.config,
+      payload.requesterProfileId
     );
     return {
       id: config.id,

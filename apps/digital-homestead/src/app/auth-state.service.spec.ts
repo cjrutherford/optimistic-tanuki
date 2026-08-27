@@ -5,17 +5,11 @@ import {
 } from '@angular/common/http/testing';
 import { AuthStateService, LoginRequest } from './auth-state.service';
 import { PLATFORM_ID } from '@angular/core';
-import * as jwtDecodeModule from 'jwt-decode';
-
-jest.mock('jwt-decode', () => ({
-  jwtDecode: jest.fn(),
-}));
 
 describe('AuthStateService', () => {
   let service: AuthStateService;
   let httpMock: HttpTestingController;
 
-  const mockToken = 'mock-jwt-token';
   const mockUserData = {
     userId: 'user-123',
     name: 'Test User',
@@ -50,7 +44,10 @@ describe('AuthStateService', () => {
 
     service = TestBed.inject(AuthStateService);
     httpMock = TestBed.inject(HttpTestingController);
-    (jwtDecodeModule.jwtDecode as jest.Mock).mockReturnValue(mockUserData);
+    httpMock.expectOne('/api/authentication/session').flush(null, {
+      status: 401,
+      statusText: 'Unauthenticated',
+    });
   });
 
   afterEach(() => {
@@ -68,48 +65,74 @@ describe('AuthStateService', () => {
         username: 'test@example.com',
         password: 'password123',
       };
-      const mockResponse = { data: { newToken: mockToken } };
+      const mockResponse = { data: {} };
 
       const loginPromise = service.login(loginRequest);
 
       const req = httpMock.expectOne('/api/authentication/login');
       expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('X-ot-session-mode')).toBe('cookie');
+      expect(req.request.withCredentials).toBe(true);
       req.flush(mockResponse);
+      await Promise.resolve();
+
+      const sessionRequest = httpMock.expectOne('/api/authentication/session');
+      expect(sessionRequest.request.withCredentials).toBe(true);
+      sessionRequest.flush({ data: mockUserData });
 
       const response = await loginPromise;
       expect(response).toEqual(mockResponse);
-      expect(service.getToken()).toBe(mockToken);
+      expect(service.getToken()).toBeNull();
       expect(service.isAuthenticated).toBe(true);
+    });
+  });
+
+  describe('restoreSession', () => {
+    it('hydrates authenticated state from the HttpOnly session endpoint without storing a token', async () => {
+      const restored = service.restoreSession();
+      const req = httpMock.expectOne('/api/authentication/session');
+      expect(req.request.withCredentials).toBe(true);
+      req.flush({ data: mockUserData });
+
+      await expect(restored).resolves.toBe(true);
+      expect(service.isAuthenticated).toBe(true);
+      expect(service.getToken()).toBeNull();
+      expect(service.getDecodedTokenValue()).toEqual(mockUserData);
     });
   });
 
   describe('logout', () => {
     it('should clear token and authenticated state', () => {
-      service.setToken(mockToken);
+      service.setToken('mock-jwt-token');
       expect(service.isAuthenticated).toBe(true);
 
       service.logout();
 
+      const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+      expect(logoutRequest.request.withCredentials).toBe(true);
+      logoutRequest.flush({});
+
       expect(service.getToken()).toBeNull();
       expect(service.isAuthenticated).toBe(false);
-      expect(localStorage.removeItem).toHaveBeenCalled();
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith(
+        'dh-client-authToken'
+      );
     });
   });
 
   describe('token methods', () => {
-    it('should return decoded token value', () => {
-      service.setToken(mockToken);
-      const decoded = service.getDecodedTokenValue();
-      expect(decoded).toEqual(mockUserData);
-    });
-
-    it('should return profileId', () => {
-      service.setToken(mockToken);
+    it('should return session-derived identity and profileId', async () => {
+      const restore = service.restoreSession();
+      const req = httpMock.expectOne('/api/authentication/session');
+      req.flush({ data: mockUserData });
+      await restore;
+      expect(service.getDecodedTokenValue()).toEqual(mockUserData);
       expect(service.getProfileId()).toBe(mockUserData.profileId);
     });
 
     it('should return null for profileId if not authenticated', () => {
       service.logout();
+      httpMock.expectOne('/api/authentication/logout').flush({});
       expect(service.getProfileId()).toBeNull();
     });
   });

@@ -177,6 +177,38 @@ export interface ColorGenerationConfig {
   shadowOpacity: number;
   /** Page background pattern opacity (0 - 0.2) */
   pageBackgroundOpacity: number;
+  /**
+   * Surface hue bias (Workstream E1, 2026-07-18 refactor plan). Mirrors the
+   * `shadowTint` vocabulary so the two dimensions read as the same family of
+   * concept applied to two different tokens: 'none' keeps the elevated
+   * surface on the same neutral hue `background` already uses (the primary
+   * color's hue at the personality's authored `neutralSaturation` — no
+   * separate character); 'primary' anchors the surface hue to the primary
+   * color as well but lets `surfaceSaturationShift` pull it to a visibly
+   * higher saturation than the neutral background (a faint brand-tinted
+   * lift); 'warm'/'cool' anchor the surface hue to the SAME fixed warm
+   * (~30°) / cool (~210°) hues `generateShadowTintColor`
+   * (`libs/theme-lib/.../color-harmony.ts`) uses for `shadowTint`, so a
+   * personality can read as consistently warm- or cool-leaning across both
+   * its shadows and its surfaces regardless of the user's chosen primary
+   * color. `generateThemeResponsiveColors()` derives the actual surface
+   * color from this plus `surfaceSaturationShift`, and auto-clamps the
+   * shift downward (see that function's doc comment) if the biased surface
+   * would fail the foreground/muted contrast requirement — this field
+   * selects character, not a guaranteed rendered hue.
+   */
+  surfaceHueBias: 'none' | 'primary' | 'warm' | 'cool';
+  /**
+   * Saturation delta (percentage points) applied to the surface relative to
+   * the neutral derivation (`background`'s saturation) before the hue bias
+   * above is applied. Sane authored range is **0-12**: `0` keeps the
+   * surface exactly as saturated as the neutral background (flat/untinted —
+   * e.g. `architect`'s raw paper); higher values (up to ~12) read as a
+   * clearly tinted lift (e.g. `electric`'s faint primary-tinted surface).
+   * Auto-clamped downward at generation time if it would break contrast —
+   * see `surfaceHueBias` and `generateThemeResponsiveColors()`.
+   */
+  surfaceSaturationShift: number;
 }
 
 /**
@@ -236,6 +268,29 @@ export interface ContrastConfig {
 }
 
 /**
+ * Shadow shape/rendering profile (Workstream B2, 2026-07-18 refactor plan).
+ *
+ * `shadowIntensity`/`shadowMultiplier` only scale a single soft-stacked-blur
+ * shape; they cannot express a genuinely different silhouette (a 0-blur
+ * brutalist offset vs. a diffuse warm blur vs. a primary-tinted glow all
+ * "intensify" differently). `shadowProfile` is a separate, explicit
+ * discriminator that `generatePersonalityShadows()`
+ * (`libs/theme-lib/.../theme.service.ts`) switches on to emit structurally
+ * different `--shadow-sm/md/lg/xl` shapes — see that function's doc comment
+ * for the per-profile shape recipe. This is additive: `shadowIntensity` /
+ * `shadowMultiplier` still scale magnitude within whichever profile shape is
+ * selected.
+ */
+export type PersonalityShadowProfile =
+  | 'layered'
+  | 'diffuse'
+  | 'hard-offset'
+  | 'neon'
+  | 'technical'
+  | 'minimal'
+  | 'playful-drop';
+
+/**
  * Design tokens overrides for personality
  */
 export interface PersonalityTokenOverrides {
@@ -247,6 +302,8 @@ export interface PersonalityTokenOverrides {
   borderWidth: string;
   shadowIntensity: ShadowIntensity;
   shadowMultiplier: number;
+  /** Shadow shape/rendering profile — see `PersonalityShadowProfile`. */
+  shadowProfile: PersonalityShadowProfile;
   typography: TypographyStyle;
   lineHeight: number;
   letterSpacing: string;
@@ -310,6 +367,22 @@ export interface PersonalityPresentation {
   };
   shadow: {
     style: PersonalityShadowStyle;
+    /**
+     * Static, hand-authored fallback value. Since Workstream B2/B3
+     * (2026-07-18 refactor plan), `--personality-box-shadow` and
+     * `--personality-card-shadow` (from `components.card.boxShadow` below)
+     * are DERIVED at generation time from the SAME profile-aware
+     * `generatePersonalityShadows()` that produces `--shadow-sm/md/lg/xl`
+     * (`ThemeService`, keyed off `PersonalityTokenOverrides.shadowProfile`) —
+     * they are not read from this literal at runtime. This field remains the
+     * source of truth only for consumers that read `Personality` objects
+     * directly without going through `ThemeService` (e.g. `theme-ui`'s
+     * `personality-comparison` swatch, owner-console) and as the emission
+     * fallback if generation is ever unavailable. Mirrors the
+     * `familyValue` precedent above: don't hand-author this to "fix" a
+     * rendered shadow — change `shadowProfile`/`colorGeneration.shadowTint`
+     * instead.
+     */
     value: string;
   };
   typography: {
@@ -409,6 +482,32 @@ export interface Personality {
     pattern: string;
     /** Whether pattern uses primary color tint */
     usePrimaryTint: boolean;
+  };
+
+  /**
+   * Surface-level texture overlay (SVG, theme-responsive; Workstream C3,
+   * 2026-07-18 refactor plan). Same delivery shape and runtime path as
+   * `pageBackground` above (rendered through the SAME
+   * `generatePageBackgroundPattern` + encode step in `ThemeService`, emitted
+   * as `--surface-texture` instead of `--page-background-pattern`) — but
+   * this one paints on top of `--surface`/`--background-elevated`, which
+   * carries body text in ~198 consumer files. That's a materially tighter
+   * legibility budget than a page backdrop, so the authoring cap here is
+   * **0-0.05**, not `pageBackground`'s 0-0.08: a texture that's still
+   * legible under running copy, not a decorative wash. Optional and
+   * deliberately curated — most personalities have no surface texture at
+   * all (absence is the default, not an omission to flag); only
+   * personalities whose stated character is literally tactile/textured
+   * (soft-touch's paper grain, control-center's scanlines, architect's
+   * blueprint cross-hatch, electric's circuit accent) declare one.
+   */
+  surfaceTexture?: {
+    /** SVG pattern - colors will be replaced with theme colors */
+    pattern: string;
+    /** Whether pattern uses primary color tint */
+    usePrimaryTint: boolean;
+    /** Authored opacity, capped at 0.05 (surfaces carry text) */
+    opacity: number;
   };
 
   // Metadata

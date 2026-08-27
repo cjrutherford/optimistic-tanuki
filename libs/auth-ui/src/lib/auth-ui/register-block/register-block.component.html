@@ -2,10 +2,10 @@
   <otui-card>
     <div class="card-outer">
       <div class="card-inner">
-        <div class="hero">
+        <div class="hero" *ngIf="showHero">
           <h1>{{ registerHeader }}</h1>
           <p>{{ callToAction }}</p>
-          <img [src]="heroSource" alt="Hero Image" width="300px" />
+          <img [src]="heroSource" alt="Hero Image" width="300" />
         </div>
         <div class="form">
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
@@ -34,9 +34,17 @@
               [label]="'Confirm Password'"
               [type]="'password'"
             ></lib-text-input>
+            @if (errorMessage) {
+            <p class="auth-error" role="alert">{{ errorMessage }}</p>
+            }
             <div class="actions">
-              <otui-button mat-raised-button color="primary" type="submit">
-                {{ registerButtonText }}
+              <otui-button
+                mat-raised-button
+                color="primary"
+                type="submit"
+                [disabled]="pending"
+              >
+                {{ pending ? 'Creating account…' : registerButtonText }}
               </otui-button>
             </div>
           </form>

@@ -59,7 +59,8 @@ import { io } from 'socket.io-client';
               socketNamespace,
               socketIoInstance,
               authTokenProvider,
-              authErrorHandler
+              authErrorHandler,
+              platformId
             )
           : null,
       deps: [
@@ -430,22 +431,9 @@ export class ChatComponent implements OnInit, OnDestroy, OnChanges {
       );
     } else {
       this.messageService.addMessage({
-        content: 'Creating new conversation with AI persona...',
+        content: 'AI persona chat is not available yet',
         type: 'info',
       });
-      console.log(
-        'Persona conversation creation not yet implemented for:',
-        personaId
-      );
-
-      this.socketChat?.sendInit(profile.id, personaId, 'forgeofwill');
-
-      // this.socketChat?.sendMessage({
-      //   content: 'Creating new AI assistant conversation...',
-      //   type: 'system',
-      //   senderId: profile.id,
-      //   recipientId: [personaId],
-      // });
     }
   }
 
@@ -477,12 +465,10 @@ export class ChatComponent implements OnInit, OnDestroy, OnChanges {
         aiConversation.id
       );
     } else {
-      // TODO: Create new AI assistant conversation
       this.messageService.addMessage({
-        content: 'Creating new AI assistant conversation...',
+        content: 'AI assistant chat is not available yet',
         type: 'info',
       });
-      console.log('AI assistant conversation creation not yet implemented');
     }
   }
 

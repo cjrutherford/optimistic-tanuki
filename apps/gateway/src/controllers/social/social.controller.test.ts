@@ -184,10 +184,10 @@ describe('SocialController', () => {
 
   it('should get a post by id', async () => {
     const id = '1';
-    await socialController.getPost(id);
+    await socialController.getPost(id, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.FIND },
-      { id }
+      { id, viewerProfileId: mockUser.profileId }
     );
   });
 
@@ -279,16 +279,13 @@ describe('SocialController', () => {
     );
   });
 
-  it('passes viewer profile information when searching posts', async () => {
+  it('forwards the guard-verified viewer profile id when searching posts', async () => {
     const searchCriteria: SearchPostDto = {
       profileId: 'author-1',
     };
+    const req = { user: { profileId: mockUser.profileId } } as any;
 
-    await socialController.searchPosts(
-      searchCriteria,
-      undefined,
-      mockUser as any
-    );
+    await socialController.searchPosts(searchCriteria, undefined, req);
 
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.FIND_MANY },
@@ -302,6 +299,25 @@ describe('SocialController', () => {
     );
   });
 
+  it('forwards an undefined viewer id for anonymous post search (ignores a forged req.user-less request)', async () => {
+    const searchCriteria: SearchPostDto = {
+      profileId: 'author-1',
+    };
+
+    await socialController.searchPosts(searchCriteria, undefined, {} as any);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND_MANY },
+      {
+        criteria: expect.objectContaining({
+          profileId: 'author-1',
+        }),
+        opts: undefined,
+        viewerProfileId: undefined,
+      }
+    );
+  });
+
   it('should search comments', async () => {
     const searchCriteria: SearchCommentDto = {
       content: 'Test Content',
@@ -311,6 +327,58 @@ describe('SocialController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.FIND_MANY },
       searchCriteria
+    );
+  });
+
+  it('forwards the guard-verified viewer profile id when searching comments', async () => {
+    const searchCriteria: SearchCommentDto = {
+      content: 'Test Content',
+      parentId: '1',
+    };
+    const req = { user: { profileId: mockUser.profileId } } as any;
+
+    await socialController.searchComments(searchCriteria, req);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.FIND_MANY },
+      { ...searchCriteria, viewerProfileId: mockUser.profileId }
+    );
+  });
+
+  it('forwards an undefined viewer id for anonymous comment search', async () => {
+    const searchCriteria: SearchCommentDto = {
+      content: 'Test Content',
+      parentId: '1',
+    };
+
+    await socialController.searchComments(searchCriteria, {} as any);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.FIND_MANY },
+      { ...searchCriteria, viewerProfileId: undefined }
+    );
+  });
+
+  it('forwards the guard-verified viewer profile id when getting a shared post', async () => {
+    const id = 'post-1';
+    const req = { user: { profileId: mockUser.profileId } } as any;
+
+    await socialController.getSharedPost(id, req);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      { id, viewerProfileId: mockUser.profileId }
+    );
+  });
+
+  it('forwards an undefined viewer id for anonymous/forged shared post access', async () => {
+    const id = 'post-1';
+
+    await socialController.getSharedPost(id, {} as any);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      { id, viewerProfileId: undefined }
     );
   });
 

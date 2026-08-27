@@ -14,22 +14,33 @@ export class AuthenticationService {
       headers: {
         'x-ot-app-id': 'video-platform',
         'x-ot-appscope': 'video-platform',
+        'X-ot-session-mode': 'cookie',
       },
+      withCredentials: true,
     });
   }
 
   confirmEmail(token: string): Observable<any> {
-    return this.http.post('/api/authentication/confirm', { token });
+    return this.http.post(
+      '/api/authentication/confirm',
+      { token },
+      { headers: { 'X-ot-session-mode': 'cookie' }, withCredentials: true }
+    );
   }
 
   forgotPassword(email: string): Observable<any> {
-    return this.http.post('/api/authentication/forgot-password', { email });
+    return this.http.post(
+      '/api/authentication/forgot-password',
+      { email },
+      { headers: { 'X-ot-session-mode': 'cookie' }, withCredentials: true }
+    );
   }
 
   resetPassword(token: string, newPassword: string): Observable<any> {
-    return this.http.post('/api/authentication/reset-password', {
-      token,
-      newPassword,
-    });
+    return this.http.post(
+      '/api/authentication/reset-password',
+      { token, newPassword },
+      { headers: { 'X-ot-session-mode': 'cookie' }, withCredentials: true }
+    );
   }
 }

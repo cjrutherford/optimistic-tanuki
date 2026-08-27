@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 })
 export class ShimmerBeamComponent {
   @Input() height = '18rem';
-  @Input() speed = 1;
+  @Input() speed = 1.4;
   @Input() intensity = 0.65;
   @Input() reducedMotion = false;
   @Input() direction: 'diagonal' | 'horizontal' = 'diagonal';

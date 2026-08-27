@@ -73,7 +73,7 @@ describe('LeadOnboardingService', () => {
 
     const req = httpMock.expectOne('/api/leads/onboarding/confirm');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ profile, topics });
+    expect(req.request.body).toEqual({ profile, topics, discTranscript: [] });
     req.flush({ topics: [{ id: 'topic-1' }] });
   });
 

@@ -303,6 +303,74 @@ test('docker-build-batched.sh accepts explicit service filters', () => {
   assert.doesNotMatch(result.stdout, /client-interface/);
 });
 
+test('docker-build-batched.sh accepts a Compose profile for profiled UI services', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts/docker-build-batched.sh'),
+    'utf8'
+  );
+
+  assert.match(script, /--profile\)[\s\S]*COMPOSE_PROFILE="\$2"/);
+  assert.match(script, /COMPOSE_FLAGS\+=\(--profile "\$COMPOSE_PROFILE"\)/);
+});
+
+test('development startup rebuilds runtime images that were overwritten by production builds', () => {
+  const buildScript = fs.readFileSync(
+    path.join(repoRoot, 'scripts/docker-build-batched.sh'),
+    'utf8'
+  );
+
+  assert.match(
+    buildScript,
+    /com\.optimistic-tanuki\.runtime=development/,
+    'expected the build planner to require a development runtime marker'
+  );
+  assert.match(
+    buildScript,
+    /dev-runtime-image-mismatch/,
+    'expected stale production-tagged images to be rebuilt for development'
+  );
+});
+
+test('development runtime images carry the marker required by startup validation', () => {
+  for (const dockerfile of [
+    'docker/dev/node-runtime.Dockerfile',
+    'docker/dev/ssr-runtime.Dockerfile',
+  ]) {
+    const contents = fs.readFileSync(path.join(repoRoot, dockerfile), 'utf8');
+    assert.match(contents, /com\.optimistic-tanuki\.runtime=development/);
+  }
+});
+
+test('source-built client dependencies avoid recursive ownership rewrites', () => {
+  for (const app of [
+    'ai-orchestrator',
+    'app-configurator',
+    'assets',
+    'authentication',
+    'blogging',
+    'chat-collector',
+    'client-interface',
+    'forum',
+    'gateway',
+    'lead-tracker',
+    'permissions',
+    'profile',
+    'project-planning',
+    'prompt-proxy',
+    'social',
+    'store',
+    'telos-docs-service',
+  ]) {
+    const dockerfile = fs.readFileSync(
+      path.join(repoRoot, 'apps', app, 'Dockerfile'),
+      'utf8'
+    );
+
+    assert.doesNotMatch(dockerfile, /RUN chown -R node:node \./, app);
+    assert.doesNotMatch(dockerfile, /pnpm add -w/, app);
+  }
+});
+
 test('docker-start-phased.sh dry run still executes the full phased startup path without a plan file', () => {
   const result = spawnSync(
     'bash',
@@ -433,6 +501,18 @@ test('dev-seed.sh does not rely on docker compose run one-off containers', () =>
   assert.doesNotMatch(script, /docker compose .*\brun --rm\b/);
 });
 
+test('dev-seed.sh provisions an idempotent documented local owner account', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts', 'dev-seed.sh'),
+    'utf8'
+  );
+
+  assert.match(script, /DEV_OWNER_EMAIL:-owner@optimistic-tanuki\.local/);
+  assert.match(script, /DEV_OWNER_PASSWORD:-DevOwner!123/);
+  assert.match(script, /x-ot-appscope: owner-console/);
+  assert.match(script, /Owner Console registration is closed/);
+});
+
 test('docker:dev stays incremental while docker:dev:bootstrap owns seeding', () => {
   const packageJsonPath = path.join(repoRoot, 'package.json');
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -462,6 +542,60 @@ test('dev-seed.sh refreshes videos before seeding it', () => {
     refreshIndex < seedIndex,
     'expected videos refresh to happen before videos seed'
   );
+});
+
+test('dev-seed.sh waits for videos to accept connections before video seeding', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts', 'dev-seed.sh'),
+    'utf8'
+  );
+  const refreshIndex = script.indexOf('refresh_service videos');
+  const readyIndex = script.indexOf(
+    'wait_for_videos\nrun_seed_with_media_volume'
+  );
+  const seedIndex = script.indexOf(
+    'run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js'
+  );
+
+  assert.ok(refreshIndex < readyIndex, 'expected videos to be refreshed first');
+  assert.ok(readyIndex < seedIndex, 'expected videos readiness before seeding');
+});
+
+test('the dev videos service uses the case-correct mounted TV directory', () => {
+  const compose = fs.readFileSync(
+    path.join(repoRoot, 'docker-compose.dev.yaml'),
+    'utf8'
+  );
+
+  assert.match(compose, /VIDEO_SEED_SOURCE_DIR=\/media\/TV/);
+  assert.doesNotMatch(compose, /VIDEO_SEED_SOURCE_DIR=\/media\/Tv/);
+});
+
+test('video seed refuses to create fake mp4 fallback assets', () => {
+  const seed = fs.readFileSync(
+    path.join(repoRoot, 'apps', 'videos', 'src', 'seed-videos.ts'),
+    'utf8'
+  );
+
+  assert.doesNotMatch(seed, /Placeholder video asset/);
+  assert.match(seed, /Video seed source directory .* does not exist/);
+});
+
+test('videos build uses the Nx webpack executor required by its webpack plugin', () => {
+  const project = JSON.parse(
+    fs.readFileSync(
+      path.join(repoRoot, 'apps', 'videos', 'project.json'),
+      'utf8'
+    )
+  );
+
+  assert.equal(project.targets.build.executor, '@nx/webpack:webpack');
+  assert.equal(
+    project.targets.build.options.webpackConfig,
+    'apps/videos/webpack.config.js'
+  );
+  assert.equal(project.targets.build.options.outputPath, 'dist/apps/videos');
+  assert.equal(project.targets.build.options.deleteOutputPath, false);
 });
 
 test('prod and generic seed scripts use the business-site seed entrypoint', () => {

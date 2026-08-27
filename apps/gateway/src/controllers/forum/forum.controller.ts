@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -34,6 +35,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -65,6 +67,14 @@ export class ForumController {
     private readonly forumClient: ClientProxy
   ) {}
 
+  private requireAppScope(appScope: string | null): string {
+    if (!appScope) {
+      throw new BadRequestException('x-ot-appscope header is required');
+    }
+
+    return appScope;
+  }
+
   // Topic endpoints
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('topic')
@@ -77,9 +87,14 @@ export class ForumController {
   @Post('topic')
   @RequirePermissions('forum.topic.create')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async createTopic(@User() user, @Body() topicDto: CreateTopicDto) {
+  async createTopic(
+    @User() user,
+    @Body() topicDto: CreateTopicDto,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Creating topic for user: ${user.userId}`);
     topicDto.userId = user.userId;
+    topicDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: TopicCommands.CREATE }, topicDto)
     );
@@ -93,9 +108,13 @@ export class ForumController {
     type: TopicDto,
   })
   @Get('topic/:id')
-  async getTopic(@Param('id') id: string): Promise<TopicDto> {
+  async getTopic(
+    @Param('id') id: string,
+    @AppScope() appScope: string
+  ): Promise<TopicDto> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND }, { id })
+      this.forumClient.send({ cmd: TopicCommands.FIND }, { id, appScope })
     );
   }
 
@@ -108,12 +127,14 @@ export class ForumController {
     type: [ThreadDto],
   })
   async getThreadsByTopic(
-    @Param('topicId') topicId: string
+    @Param('topicId') topicId: string,
+    @AppScope() appScope: string
   ): Promise<ThreadDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ThreadCommands.FIND_MANY },
-        { where: { topicId } }
+        { where: { topicId, appScope } }
       )
     );
   }
@@ -126,9 +147,13 @@ export class ForumController {
     type: [TopicDto],
   })
   @Get('topics')
-  async getAllTopics(): Promise<TopicDto[]> {
+  async getAllTopics(@AppScope() appScope: string): Promise<TopicDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, {})
+      this.forumClient.send(
+        { cmd: TopicCommands.FIND_MANY },
+        { where: { appScope } }
+      )
     );
   }
 
@@ -181,9 +206,14 @@ export class ForumController {
   @Post('thread')
   @RequirePermissions('forum.thread.create')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
-  async createThread(@User() user, @Body() threadDto: CreateThreadDto) {
+  async createThread(
+    @User() user,
+    @Body() threadDto: CreateThreadDto,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Creating thread for user: ${user.userId}`);
     threadDto.userId = user.userId;
+    threadDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.CREATE }, threadDto)
     );
@@ -197,9 +227,13 @@ export class ForumController {
     type: ThreadDto,
   })
   @Get('thread/:id')
-  async getThread(@Param('id') id: string): Promise<ThreadDto> {
+  async getThread(
+    @Param('id') id: string,
+    @AppScope() appScope: string
+  ): Promise<ThreadDto> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND }, { id })
+      this.forumClient.send({ cmd: ThreadCommands.FIND }, { id, appScope })
     );
   }
 
@@ -212,12 +246,14 @@ export class ForumController {
   })
   @Get('thread/:threadId/posts')
   async getPostsByThread(
-    @Param('threadId') threadId: string
+    @Param('threadId') threadId: string,
+    @AppScope() appScope: string
   ): Promise<ForumPostDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ForumPostCommands.FIND_MANY },
-        { where: { threadId } }
+        { where: { threadId, appScope } }
       )
     );
   }
@@ -285,9 +321,14 @@ export class ForumController {
   @Post('post')
   @RequirePermissions('forum.post.create')
   @Throttle({ default: { limit: 50, ttl: 60000 } })
-  async createForumPost(@User() user, @Body() postDto: CreateForumPostDto) {
+  async createForumPost(
+    @User() user,
+    @Body() postDto: CreateForumPostDto,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Creating forum post for user: ${user.userId}`);
     postDto.userId = user.userId;
+    postDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: ForumPostCommands.CREATE }, postDto)
     );

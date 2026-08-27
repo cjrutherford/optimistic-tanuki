@@ -935,6 +935,12 @@ export class OperationsWorkspaceComponent implements OnInit {
         'Inspect city and community records whenever localized network coverage needs operator action.',
       route: '/dashboard/communities',
     },
+    {
+      title: 'Monitor video processing',
+      description:
+        'Watch transcoding queue health, inspect failures, and safely retry failed video jobs.',
+      route: '/dashboard/video-processing',
+    },
   ];
 
   deploymentHealth: DeploymentHealth = {

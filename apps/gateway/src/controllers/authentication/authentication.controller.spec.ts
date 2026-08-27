@@ -23,6 +23,7 @@ import {
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
@@ -113,6 +114,32 @@ describe('AuthenticationController', () => {
                   from: 'no-reply@hopefulaspirationsindustries.com',
                 },
               },
+              {
+                appId: 'opportunity-compass',
+                name: 'Opportunity Compass',
+                domain: 'christopherrutherford.net',
+                uiBaseUrl: 'https://opportunities.example.com',
+                apiBaseUrl: 'https://opportunities.example.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@christopherrutherford.net',
+                },
+              },
+              {
+                appId: 'fin-commander',
+                name: 'Fin Commander',
+                domain: 'christopherrutherford.net',
+                uiBaseUrl: 'https://finance.example.com',
+                apiBaseUrl: 'https://finance.example.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@christopherrutherford.net',
+                },
+              },
             ],
           },
         },
@@ -126,8 +153,50 @@ describe('AuthenticationController', () => {
     controller = module.get<AuthenticationController>(AuthenticationController);
   });
 
+  it('allows logout to clear an expired browser session', () => {
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.logoutUser)).toBe(
+      true
+    );
+  });
+
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('returns the guard-verified identity for a browser session without exposing a token', async () => {
+    expect(
+      controller.currentSession({
+        userId: 'user-1',
+        email: 'session@example.test',
+        name: 'Session User',
+        profileId: 'profile-1',
+      } as any)
+    ).toEqual({
+      data: {
+        userId: 'user-1',
+        email: 'session@example.test',
+        name: 'Session User',
+        profileId: 'profile-1',
+      },
+    });
+  });
+
+  it('confirms email verification without invoking the session-issuing email action', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ message: 'Email verified', code: 0 })
+    );
+
+    await expect(
+      controller.confirmEmailVerification({ token: 'verification-token' })
+    ).resolves.toEqual({ message: 'Email verified', code: 0 });
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConfirmEmailVerification },
+      { token: 'verification-token' }
+    );
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConsumeEmailAuthAction },
+      expect.anything()
+    );
   });
 
   it('should login user', async () => {
@@ -139,6 +208,64 @@ describe('AuthenticationController', () => {
       true
     );
     expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
+  });
+
+  it('contains a cookie-mode login token in an HttpOnly gateway cookie', async () => {
+    const response = { cookie: jest.fn() };
+    loginBootstrap.login.mockResolvedValueOnce({
+      data: { newToken: 'browser-session-token', profileId: 'profile-1' },
+    });
+
+    await expect(
+      controller.loginUser(
+        { email: 'test@test.com', password: 'test' },
+        'test',
+        'cookie',
+        response as any
+      )
+    ).resolves.toEqual({ data: { profileId: 'profile-1' } });
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'ot_session',
+      'browser-session-token',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' })
+    );
+  });
+
+  it('clears browser sessions with the same site-wide cookie scope', async () => {
+    const response = { clearCookie: jest.fn() };
+
+    await expect(
+      controller.logoutUser({}, { cookies: {} } as any, response as any)
+    ).resolves.toEqual({ success: true });
+
+    expect(response.clearCookie).toHaveBeenCalledWith(
+      'ot_session',
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      })
+    );
+  });
+
+  it('returns only non-secret session identity for an authenticated session', () => {
+    expect(
+      controller.currentSession({
+        userId: 'user-1',
+        email: 'user@example.com',
+        name: 'User',
+        profileId: 'profile-1',
+      } as any)
+    ).toEqual({
+      data: {
+        userId: 'user-1',
+        email: 'user@example.com',
+        name: 'User',
+        profileId: 'profile-1',
+      },
+    });
   });
 
   it('should auto-create app-scoped profile for cross-app users and login with it', async () => {
@@ -210,12 +337,38 @@ describe('AuthenticationController', () => {
     };
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
     await expect(
-      controller.registerUser(registerRequest, 'test')
-    ).resolves.toEqual(mockResult);
+      controller.registerUser(registerRequest, 'system-configurator')
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'test'
+      'system-configurator'
     );
+  });
+
+  it('rejects public owner-console registration in production', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Owner',
+          ln: 'User',
+          email: 'owner@example.com',
+          password: 'OwnerPassword!123',
+          confirm: 'OwnerPassword!123',
+          bio: '',
+        },
+        'owner-console',
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
+    process.env.NODE_ENV = previousNodeEnv;
   });
 
   it('sends verification after a successful app registration', async () => {
@@ -231,16 +384,93 @@ describe('AuthenticationController', () => {
       bio: '',
     };
 
-    await controller.registerUser(
-      registration,
-      'system-configurator',
-      'system-configurator'
+    await expect(
+      controller.registerUser(
+        registration,
+        'system-configurator',
+        'system-configurator'
+      )
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ verificationPending: true }),
+      })
     );
 
     expect(requestSpy).toHaveBeenCalledWith(
       'system-configurator',
       'verification',
       { email: 'builder@example.com', returnPath: '/' }
+    );
+  });
+
+  it('keeps an unverified registration usable for a resend when delivery fails', async () => {
+    jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockRejectedValue(new Error('SMTP rejected the sender alias'));
+
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Delivery',
+          ln: 'Retry',
+          email: 'retry@example.com',
+          password: 'long-password',
+          confirm: 'long-password',
+          bio: '',
+        },
+        'system-configurator',
+        'system-configurator'
+      )
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ verificationPending: true }),
+      })
+    );
+  });
+
+  it('rejects registration when no configured application can be resolved', async () => {
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Unroutable',
+          ln: 'User',
+          email: 'unroutable@example.com',
+          password: 'long-password',
+          confirm: 'long-password',
+          bio: '',
+        },
+        null as any,
+        undefined,
+        'https://unregistered.example'
+      )
+    ).rejects.toThrow('Email authentication is not configured');
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
+  });
+
+  it('resolves the registry sender from the browser origin when app headers are absent', async () => {
+    const requestSpy = jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockResolvedValue({ accepted: true });
+
+    await controller.registerUser(
+      {
+        fn: 'Origin',
+        ln: 'Resolved',
+        email: 'origin@example.com',
+        password: 'long-password',
+        confirm: 'long-password',
+        bio: '',
+      },
+      null as any,
+      undefined,
+      'https://hardware.hopefulaspirationsindustries.com'
+    );
+
+    expect(requestSpy).toHaveBeenCalledWith(
+      'system-configurator',
+      'verification',
+      { email: 'origin@example.com', returnPath: '/' }
     );
   });
 
@@ -340,7 +570,10 @@ describe('AuthenticationController', () => {
 
     await expect(
       controller.registerUser(registerRequest, 'leads-app')
-    ).resolves.toEqual(mockResult);
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
@@ -393,6 +626,21 @@ describe('AuthenticationController', () => {
         active: true,
       })
     );
+  });
+
+  it('never lets an authenticated user self-grant global owner access', async () => {
+    await expect(
+      controller.claimOwnerAccess(
+        {
+          userId: 'user-1',
+          email: 'member@example.com',
+          profileId: 'profile-1',
+        } as any,
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(roleInitService.processNow).not.toHaveBeenCalled();
   });
 
   it('does not seed starter products when the owner already has products', async () => {
@@ -462,7 +710,10 @@ describe('AuthenticationController', () => {
 
     await expect(
       controller.registerUser(registerRequest, 'finance')
-    ).resolves.toEqual(mockResult);
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,

@@ -12,6 +12,25 @@ import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { AccordionSection } from '../interfaces/component.interface';
 import { Variantable } from '../interfaces/variantable.interface';
+import type { Emphasis, Tone } from '../interfaces/variant.contract';
+
+/** @deprecated Use `tone` + `emphasis` (+ decorative `surface`). */
+export type AccordionVariant = 'default' | 'glass' | 'gradient';
+
+/** Decorative surface chrome, folded out of the legacy variant. */
+export type AccordionSurface = 'flat' | 'glass' | 'gradient';
+
+/** Accordion emphasis: the shared contract plus a `flat` (no-fill) default. */
+export type AccordionEmphasis = Emphasis | 'flat';
+
+const ACCORDION_VARIANT_BRIDGE: Record<
+  AccordionVariant,
+  { emphasis: AccordionEmphasis; surface: AccordionSurface }
+> = {
+  default: { emphasis: 'flat', surface: 'flat' },
+  glass: { emphasis: 'soft', surface: 'glass' },
+  gradient: { emphasis: 'soft', surface: 'gradient' },
+};
 
 /**
  * Standardized Accordion Component
@@ -52,8 +71,31 @@ export class AccordionComponent
   /** Allow multiple sections to be open simultaneously */
   @Input() multiple = false;
 
-  /** Visual variant */
-  @Input() variant: 'default' | 'glass' | 'gradient' = 'default';
+  /** Canonical semantic tone. */
+  @Input() tone: Tone = 'neutral';
+  /** Canonical visual treatment (`flat` = the borderless default). */
+  @Input() emphasis: AccordionEmphasis = 'flat';
+  /** Decorative surface chrome, folded out of the legacy `variant`. */
+  @Input() surface: AccordionSurface = 'flat';
+
+  /**
+   * Legacy visual variant. Folds onto the canonical `emphasis` axis plus the
+   * decorative `surface` flag via {@link ACCORDION_VARIANT_BRIDGE}.
+   *
+   * @deprecated Use `tone` + `emphasis` (+ `surface`) instead.
+   */
+  @Input() set variant(value: AccordionVariant) {
+    this._variant = value;
+    const binding = ACCORDION_VARIANT_BRIDGE[value];
+    if (binding) {
+      this.emphasis = binding.emphasis;
+      this.surface = binding.surface;
+    }
+  }
+  get variant(): AccordionVariant {
+    return this._variant;
+  }
+  private _variant: AccordionVariant = 'default';
 
   /** Component size */
   @Input() size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
@@ -259,19 +301,9 @@ export class AccordionComponent
 
   // ==================== THEME IMPLEMENTATION ====================
 
-  override applyVariant(colors: ThemeColors, options?: any): void {
-    // Set variant-specific CSS variables
-    this.setLocalCSSVariables({
-      'accordion-border':
-        this.variant === 'glass'
-          ? '1px solid rgba(255,255,255,0.1)'
-          : '1px solid transparent',
-      'accordion-background':
-        this.variant === 'glass' ? 'rgba(255,255,255,0.05)' : 'transparent',
-      'accordion-shadow':
-        this.variant === 'gradient' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
-    });
-
-    // Basic theming is handled by the parent class
+  override applyVariant(_colors: ThemeColors, _options?: any): void {
+    // Surface + emphasis are now rendered from the shared variant contract and
+    // personality/theme CSS variables in SCSS; no per-instance hardcoded
+    // colors are needed here.
   }
 }

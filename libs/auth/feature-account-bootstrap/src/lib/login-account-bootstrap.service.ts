@@ -114,12 +114,24 @@ export class LoginAccountBootstrapService {
     }
 
     if (appScope === 'owner-console') {
-      const roles = (await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: RoleCommands.GetUserRoles },
-          { profileId: profileToUse.id, appScope: 'global' }
-        )
-      )) as Array<{ role?: { name?: string } }>;
+      const [ownerConsoleRoles, globalRoles] = await Promise.all([
+        firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.GetUserRoles },
+            { profileId: profileToUse.id, appScope: 'owner-console' }
+          )
+        ),
+        firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.GetUserRoles },
+            { profileId: profileToUse.id, appScope: 'global' }
+          )
+        ),
+      ]);
+      const roles = [
+        ...((ownerConsoleRoles ?? []) as Array<{ role?: { name?: string } }>),
+        ...((globalRoles ?? []) as Array<{ role?: { name?: string } }>),
+      ];
 
       const allowedRoleNames = new Set([
         'owner_console_owner',
@@ -134,6 +146,19 @@ export class LoginAccountBootstrapService {
       if (!hasOwnerConsoleAccess) {
         throw new Error(
           'This account is not authorized for Owner Console access.'
+        );
+      }
+
+      const hasOwnerConsoleRole = (
+        (ownerConsoleRoles ?? []) as Array<{ role?: { name?: string } }>
+      ).some((assignment) => assignment.role?.name === 'owner_console_owner');
+      if (!hasOwnerConsoleRole) {
+        await this.roleInit.processNow(
+          new RoleInitBuilder()
+            .setScopeName('owner-console')
+            .setProfile(profileToUse.id)
+            .assignOwnerRole()
+            .build()
         );
       }
     }

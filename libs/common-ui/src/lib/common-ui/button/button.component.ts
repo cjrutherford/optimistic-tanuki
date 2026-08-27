@@ -1,6 +1,23 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import {
+  BUTTON_VARIANT_BRIDGE,
+  type Emphasis,
+  type Tone,
+  type VariantSize,
+} from '../interfaces/variant.contract';
+
+/** @deprecated Use the canonical `tone` + `emphasis` axes instead. */
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outlined'
+  | 'text'
+  | 'warning'
+  | 'danger'
+  | 'success'
+  | 'rounded';
 
 @Component({
   selector: 'otui-button',
@@ -10,6 +27,9 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   styleUrls: ['./button.component.scss'],
   host: {
     'class.theme': 'theme',
+    '[attr.data-tone]': 'tone',
+    '[attr.data-emphasis]': 'emphasis',
+    '[attr.data-size]': 'size',
     '[class.variant-primary]': 'variant === "primary"',
     '[class.variant-secondary]': 'variant === "secondary"',
     '[class.variant-outlined]': 'variant === "outlined"',
@@ -31,15 +51,34 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 })
 export class ButtonComponent extends Themeable {
   @Input() disabled = false;
-  @Input() variant:
-    | 'primary'
-    | 'secondary'
-    | 'outlined'
-    | 'text'
-    | 'warning'
-    | 'danger'
-    | 'success'
-    | 'rounded' = 'primary';
+
+  /** Canonical semantic tone. */
+  @Input() tone: Tone = 'brand';
+  /** Canonical visual treatment. */
+  @Input() emphasis: Emphasis = 'solid';
+  /** Canonical physical scale. */
+  @Input() size: VariantSize = 'md';
+
+  /**
+   * Legacy string-union treatment. Retained for the hundreds of existing
+   * `<otui-button variant="...">` usages; setting it maps onto the canonical
+   * `tone` + `emphasis` axes via {@link BUTTON_VARIANT_BRIDGE}.
+   *
+   * @deprecated Use `tone` + `emphasis` instead.
+   */
+  @Input() set variant(value: ButtonVariant) {
+    this._variant = value;
+    const binding = BUTTON_VARIANT_BRIDGE[value];
+    if (binding) {
+      this.tone = binding.tone;
+      this.emphasis = binding.emphasis;
+    }
+  }
+  get variant(): ButtonVariant {
+    return this._variant;
+  }
+  private _variant: ButtonVariant = 'primary';
+
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
   @Input() useGradient = true;
   @Output() action = new EventEmitter<void>();
@@ -47,6 +86,22 @@ export class ButtonComponent extends Themeable {
   buttonGradient = 'none';
   animationEasing = 'cubic-bezier(0.4, 0, 0.2, 1)';
   animationDuration = '300ms';
+
+  /**
+   * True when the flagship brand gradient should paint the surface: brand tone,
+   * solid emphasis, gradient opt-in. Bound as a class so SCSS can rebind
+   * `--variant-bg-source` to the personality gradient.
+   */
+  get gradientActive(): boolean {
+    return (
+      this.useGradient && this.tone === 'brand' && this.emphasis === 'solid'
+    );
+  }
+
+  /** Pill treatment carried over from the legacy `rounded` variant. */
+  get isRounded(): boolean {
+    return this._variant === 'rounded';
+  }
 
   override applyTheme(colors: ThemeColors): void {
     this.foreground = colors.foreground;
@@ -61,67 +116,9 @@ export class ButtonComponent extends Themeable {
     this.animationEasing = animationSettings.easing;
     this.animationDuration = animationSettings.duration;
 
-    this.updateButtonStyle(colors);
-  }
-
-  private updateButtonStyle(colors: ThemeColors): void {
-    switch (this.variant) {
-      case 'primary':
-        if (this.useGradient) {
-          this.buttonGradient = this.themeService.getButtonGradient('primary');
-          this.background = 'var(--button-gradient)';
-        } else {
-          this.background = colors.accent;
-        }
-        this.borderColor = 'transparent';
-        break;
-
-      case 'secondary':
-        if (this.useGradient) {
-          this.buttonGradient =
-            this.themeService.getButtonGradient('secondary');
-          this.background = 'var(--button-gradient)';
-        } else {
-          this.background = colors.complementary;
-        }
-        this.borderColor = 'transparent';
-        break;
-
-      case 'outlined':
-        this.background = 'transparent';
-        this.borderColor = colors.accent;
-        break;
-
-      case 'text':
-        this.background = 'transparent';
-        this.borderColor = 'transparent';
-        break;
-
-      case 'warning':
-        this.background = colors.warning;
-        this.borderColor = 'transparent';
-        break;
-
-      case 'danger':
-        this.background = colors.danger;
-        this.borderColor = 'transparent';
-        break;
-
-      case 'success':
-        this.background = colors.success;
-        this.borderColor = 'transparent';
-        break;
-
-      case 'rounded':
-        if (this.useGradient) {
-          this.buttonGradient = this.themeService.getButtonGradient('primary');
-          this.background = 'var(--button-gradient)';
-        } else {
-          this.background = colors.accent;
-        }
-        this.borderColor = 'transparent';
-        break;
-    }
+    // Compute the personality-driven brand gradient once; SCSS decides whether
+    // to paint with it via the `use-gradient` class.
+    this.buttonGradient = this.themeService.getButtonGradient('primary');
   }
 
   onClick() {

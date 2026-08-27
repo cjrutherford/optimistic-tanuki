@@ -17,6 +17,7 @@ import {
   getPersonalityPreviewColors,
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
+import { IconComponent, IconName } from '@optimistic-tanuki/common-ui';
 import { Subject, takeUntil } from 'rxjs';
 
 interface GroupedPersonality {
@@ -27,7 +28,7 @@ interface GroupedPersonality {
 @Component({
   selector: 'lib-personality-selector',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconComponent],
   template: `
     <div class="personality-overlay-container">
       <div class="overlay-header">
@@ -70,6 +71,13 @@ interface GroupedPersonality {
                 (click)="selectPersonality(personality)"
                 type="button"
               >
+                <span class="personality-icon" aria-hidden="true">
+                  <otui-icon
+                    [name]="getPersonalityIcon(personality)"
+                    [size]="22"
+                    stroke="currentColor"
+                  ></otui-icon>
+                </span>
                 <div class="option-preview">
                   <div
                     class="preview-swatch"
@@ -265,6 +273,17 @@ interface GroupedPersonality {
         flex-shrink: 0;
       }
 
+      .personality-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--border-radius-full, 50%);
+        background: color-mix(in srgb, var(--primary) 14%, var(--background));
+        color: var(--primary);
+      }
+
       .preview-swatch {
         width: 48px;
         height: 48px;
@@ -406,6 +425,25 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
       this.currentPrimaryColor
     );
     return type === 'background' ? colors.light[0] : colors.light[1];
+  }
+
+  getPersonalityIcon(personality: Personality): IconName {
+    const icons: Record<string, IconName> = {
+      classic: 'home',
+      minimal: 'remove',
+      bold: 'flame',
+      soft: 'heart',
+      professional: 'work',
+      playful: 'star',
+      elegant: 'star',
+      architect: 'view-quilt',
+      'soft-touch': 'favorite',
+      electric: 'flame',
+      'control-center': 'settings-applications',
+      foundation: 'shield',
+    };
+
+    return icons[personality.id] ?? 'extension';
   }
 
   private groupPersonalities(): void {

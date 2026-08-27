@@ -30,8 +30,17 @@ export const LeadOnboardingCommands = {
   ADVANCE_DISC: 'leads.onboarding.disc.advance',
   CONFIRM: 'leads.onboarding.confirm',
   AUTOCOMPLETE_LOCATIONS: 'leads.locations.autocomplete',
+  LOOKUP_ATS_COMPANY: 'leads.ats.company.lookup',
+  SUGGEST_ATS_COMPANIES: 'leads.ats.company.suggest',
 } as const;
 
 export const LeadAnalysisCommands = {
   RUN: 'leads.analysis.run',
+} as const;
+
+export const LeadApplicationCommands = {
+  GENERATE: 'leads.application.generate',
+  FIND_LATEST: 'leads.application.findLatest',
+  FIND_HISTORY: 'leads.application.findHistory',
+  EXPORT: 'leads.application.export',
 } as const;

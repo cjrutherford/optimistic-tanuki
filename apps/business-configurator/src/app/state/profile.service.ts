@@ -15,7 +15,7 @@ export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
 
-  private readonly appScope = 'system-configurator';
+  private readonly appScope = 'business-configurator';
   private readonly http = inject(HttpClient);
   private readonly authState = inject(AuthStateService);
 
@@ -95,10 +95,6 @@ export class ProfileService {
     );
 
     const created = 'profile' in response ? response.profile : response;
-    if ('newToken' in response && response.newToken) {
-      this.authState.setToken(response.newToken);
-    }
-
     const profiles = [...this.getCurrentUserProfiles(), created];
     this.currentUserProfiles.set(profiles);
     this.authState.persistProfiles(profiles);

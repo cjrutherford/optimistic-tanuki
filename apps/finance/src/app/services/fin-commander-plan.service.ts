@@ -57,6 +57,13 @@ export class FinCommanderPlanService {
     );
   }
 
+  async assertAccess(id: string, scope?: FinanceScope): Promise<void> {
+    const plan = await this.findOne(id, scope);
+    if (!plan) {
+      throw new NotFoundException(`Plan with ID ${id} not found`);
+    }
+  }
+
   async update(
     id: string,
     updatePlanDto: UpdateFinCommanderPlanDto,

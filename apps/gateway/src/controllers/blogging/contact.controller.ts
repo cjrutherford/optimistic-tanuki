@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -64,12 +65,18 @@ export class ContactController {
     this.l.log('ContactController initialized');
   }
 
+  // Public so anonymous site visitors can submit a contact form, but
+  // AuthGuard still runs to OPTIONALLY attach a signature-verified
+  // `request.user` when a valid token is present. The lead is attributed to
+  // that guard-verified identity — never to the raw `@User()` decode, which
+  // does not verify the token's signature and would let a forged
+  // userId/profileId attribute the submission to an arbitrary victim.
   @Public()
   @UseGuards(AuthGuard)
   @Post()
   async createContact(
     @Body() contactLead: PublicContactLeadIntakeDto,
-    @User() user?: UserDetails | null
+    @Req() req?: { user?: { userId?: string; profileId?: string } }
   ) {
     try {
       if (contactLead.website?.trim()) {
@@ -84,8 +91,8 @@ export class ContactController {
 
       const routing = await this.resolveRouting(contactLead);
       const linkedUserId =
-        user?.userId || `public-contact:${contactLead.appScope}`;
-      const linkedProfileId = user?.profileId || '';
+        req?.user?.userId || `public-contact:${contactLead.appScope}`;
+      const linkedProfileId = req?.user?.profileId || '';
 
       const createLeadDto: CreateLeadDto = {
         name: contactLead.name.trim(),

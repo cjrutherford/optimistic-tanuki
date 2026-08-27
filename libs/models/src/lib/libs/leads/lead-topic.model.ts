@@ -1,3 +1,4 @@
+import { AspirationalCompany } from './aspirational-company.interface';
 import {
   Column,
   CreateDateColumn,
@@ -34,6 +35,14 @@ export class LeadTopic {
 
   @Column({ type: 'text', array: true, default: '{}' })
   sources: LeadDiscoverySource[];
+
+  /**
+   * Employers the user specifically wants to work for, watched on their own ATS
+   * board. Stored as verified `{provider, token, label}` records rather than
+   * bare names, because a company's name is often not its board token.
+   */
+  @Column({ type: 'jsonb', nullable: true })
+  aspirationalCompanies?: AspirationalCompany[] | null;
 
   @Column({ type: 'text', array: true, nullable: true })
   googleMapsCities?: string[] | null;

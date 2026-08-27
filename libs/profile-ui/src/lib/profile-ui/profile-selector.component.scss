@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .outer-card {
   padding: 2px;
   margin-top: 5px;
@@ -13,15 +15,18 @@
   overflow-y: hidden; /* Hide vertical overflow */
   > * {
     flex: 0 0 auto; /* Prevent items from shrinking or growing */
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border: 2px solid var(--border);
+    border-radius: var(--border-radius-md, 8px);
     padding: 20px;
-    box-shadow: 2px 2px 10px var(--accent),
-      inset 10px 5px 10px var(--complement);
+    // Custom two-tone accent/complement shadow; shape kept, colors
+    // tokenized from the legacy --accent/--complement vocab to the
+    // contract's --primary/--secondary.
+    box-shadow: 2px 2px 10px var(--primary),
+      inset 10px 5px 10px var(--secondary);
   }
 }
 .active {
-  box-shadow: 2px 2px 5px var(--complement);
+  box-shadow: 2px 2px 5px var(--secondary);
 }
 .real-profile {
   max-height: 200px;
@@ -67,15 +72,16 @@
 
   // Specific styling for the raw edit button
   button.profile-badge.edit-profile-button {
-    background-color: rgba(
-      220,
-      220,
-      220,
-      0.9
-    ); // Light grey, slightly transparent
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    color: #333;
-    border-radius: 50%;
+    // Neutral floating surface badge; role-mapped from the former literal
+    // rgba(220, 220, 220, 0.9).
+    background-color: color-mix(
+      in srgb,
+      var(--surface, var(--background)) 90%,
+      transparent
+    );
+    border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+    color: var(--foreground, #333);
+    border-radius: var(--border-radius-full, 50%);
     width: 28px;
     height: 28px;
     padding: 0;
@@ -83,24 +89,30 @@
     line-height: 28px; // Vertically center emoji
     text-align: center;
     cursor: pointer;
-    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+    @include p.shadow('sm');
 
     &:hover {
-      background-color: rgba(200, 200, 200, 0.95);
+      background-color: color-mix(
+        in srgb,
+        var(--surface, var(--background)) 95%,
+        transparent
+      );
     }
   }
 
   // Specific styling for the raw add button
   button.profile-badge.add-profile-bubble-button {
-    background-color: rgba(
-      144,
-      238,
-      144,
-      0.9
-    ); // Light green, slightly transparent
-    border: 1px solid rgba(0, 100, 0, 0.2);
-    color: darkgreen;
-    border-radius: 50%;
+    // Success-role badge (add action); role-mapped from the former literal
+    // rgba(144, 238, 144, 0.9).
+    background-color: color-mix(
+      in srgb,
+      var(--success, lightgreen) 90%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--success, darkgreen) 20%, transparent);
+    color: var(--success, darkgreen);
+    border-radius: var(--border-radius-full, 50%);
     width: 28px;
     height: 28px;
     padding: 0;
@@ -109,10 +121,14 @@
     line-height: 26px; // Adjust for vertical centering of '+'
     text-align: center;
     cursor: pointer;
-    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+    @include p.shadow('sm');
 
     &:hover {
-      background-color: rgba(124, 218, 124, 0.95);
+      background-color: color-mix(
+        in srgb,
+        var(--success, lightgreen) 95%,
+        transparent
+      );
     }
   }
 }

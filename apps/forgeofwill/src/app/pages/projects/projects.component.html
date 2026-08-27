@@ -140,6 +140,7 @@
       </div>
       }
 
+      <!-- Project Context -->
       <div class="row-container">
         <otui-tile class="ai-summary-tile">
           <lib-project-summary
@@ -202,5 +203,25 @@
     (submitEvent)="onProjectUpdated($event)"
   >
   </lib-project-form>
+</otui-modal>
+} @if(showDeleteModal() && selectedProject()) {
+<otui-modal
+  [heading]="'Delete Project?'"
+  (close)="cancelDeleteProject()"
+  [visible]="showDeleteModal()"
+  size="sm"
+>
+  <p>
+    Are you sure you want to delete "{{ selectedProject()!.name }}"? This action
+    cannot be undone.
+  </p>
+  <div modal-footer>
+    <otui-button variant="outlined" (action)="cancelDeleteProject()"
+      >Cancel</otui-button
+    >
+    <otui-button variant="danger" (action)="confirmDeleteProject()"
+      >Delete Project</otui-button
+    >
+  </div>
 </otui-modal>
 }

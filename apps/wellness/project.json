@@ -11,21 +11,16 @@
   ],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["node-env=production"],
-        "packageJson": {
-          "dependencies": {
-            "pg": "^8.16.0"
-          }
-        }
+        "webpackConfig": "apps/wellness/webpack.config.js",
+        "outputPath": "dist/apps/wellness"
       },
       "configurations": {
-        "development": {
-          "args": ["node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "serve": {
       "continuous": true,
@@ -49,6 +44,17 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "docker build -t wellness:latest -f apps/wellness/Dockerfile ."
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/wellness",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
       }
     }
   }

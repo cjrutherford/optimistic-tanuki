@@ -1,13 +1,15 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
 
 .forum-compose-card {
   width: 100%;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--primary);
   border-radius: var(--border-radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
 }
 
 .forum-compose-form {
@@ -66,7 +68,7 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: var(--accent);
+  background-color: var(--primary);
   color: var(--primary-foreground);
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-sm);
@@ -86,8 +88,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(background-color, 'fast');
 
   &:hover {
     background-color: color-mix(
@@ -107,13 +108,12 @@
   border-radius: var(--border-radius-md);
   overflow: hidden;
   position: relative;
-  transition: border-color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(border-color, 'fast');
 
   &.dragover {
-    border-color: var(--accent);
+    border-color: var(--primary);
     border-width: 2px;
-    background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 5%, transparent);
 
     &::after {
       content: 'Drop images here';
@@ -122,14 +122,14 @@
       left: 50%;
       transform: translate(-50%, -50%);
       padding: var(--spacing-md) var(--spacing-xl);
-      background: var(--accent);
+      background: var(--primary);
       color: var(--primary-foreground);
       border-radius: var(--border-radius-lg);
       font-weight: bold;
       font-family: var(--font-heading, sans-serif);
       pointer-events: none;
       z-index: var(--z-index-dropdown, 10);
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
 }
@@ -153,7 +153,7 @@
 
     &:focus {
       outline: none;
-      box-shadow: inset 0 0 0 2px var(--accent);
+      box-shadow: inset 0 0 0 2px var(--primary);
     }
 
     p {
@@ -187,13 +187,13 @@
     blockquote {
       margin: var(--spacing-md) 0;
       padding-left: var(--spacing-md);
-      border-left: 3px solid var(--accent);
+      border-left: 3px solid var(--primary);
       font-style: italic;
       color: var(--muted-foreground);
     }
 
     code {
-      background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+      background-color: color-mix(in srgb, var(--primary) 10%, transparent);
       padding: 2px var(--spacing-xs);
       border-radius: var(--border-radius-sm);
       font-family: var(--font-mono, monospace);
@@ -214,7 +214,7 @@
       code {
         background: none;
         padding: 0;
-        border-radius: 0;
+        border-radius: var(--border-radius-none);
       }
     }
   }
@@ -260,37 +260,37 @@
   .forum-compose-card {
     border-width: 1px;
     border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .form-actions {
     border-top: none;
   }
   .tag-chip {
     background-color: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
+    border: 1px solid var(--primary);
+    color: var(--primary);
     border-radius: var(--border-radius-sm);
   }
   .tag-remove {
-    color: var(--accent);
+    color: var(--primary);
   }
 }
 
 :host-context([data-personality='elegant']) {
   .forum-compose-card {
-    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
   }
   .forum-compose-form h3 {
     font-style: italic;
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--primary);
   }
   .tag-chip {
     background-color: transparent;
-    border: 1px solid var(--accent);
-    color: var(--accent);
+    border: 1px solid var(--primary);
+    color: var(--primary);
   }
   .tag-remove {
-    color: var(--accent);
+    color: var(--primary);
   }
 }
 
@@ -305,11 +305,11 @@
     letter-spacing: 0.03em;
     font-weight: 800;
     border-bottom-width: 3px;
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--primary);
   }
   .form-actions {
     border-top-width: 3px;
-    border-top-color: var(--accent);
+    border-top-color: var(--primary);
   }
   .tag-chip {
     font-weight: 700;
@@ -322,14 +322,11 @@
 :host-context([data-personality='playful']) {
   .forum-compose-card {
     border-radius: var(--border-radius-xl);
-    background: var(
-      --gradient-surface,
-      var(--surface-gradient, var(--card, var(--background)))
-    );
-    border-color: var(--accent);
+    background: var(--gradient-surface);
+    border-color: var(--primary);
   }
   .tag-chip {
-    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
+    background: var(--gradient-primary);
     border-radius: var(--border-radius-full);
     font-weight: 600;
   }
@@ -338,19 +335,19 @@
   }
   .editor-container.dragover::after {
     border-radius: var(--border-radius-xl);
-    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
+    background: var(--gradient-primary);
   }
 }
 
 :host-context([data-personality='electric']) {
   .forum-compose-card {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 20%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 20%, transparent);
   }
   .editor-container:focus-within {
-    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
   }
   .tag-chip {
-    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 25%, transparent);
   }
 }
 
@@ -359,9 +356,9 @@
 :host-context([data-personality='soft-touch']) {
   .forum-compose-card {
     border: none;
-    background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 6%, var(--background));
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .forum-compose-form h3 {
     border-bottom: none;
@@ -370,12 +367,12 @@
     border-top: none;
   }
   .tag-chip {
-    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-    color: var(--accent);
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
     border-radius: var(--border-radius-full);
   }
   .tag-remove {
-    color: var(--accent);
+    color: var(--primary);
   }
   .editor-container {
     border-color: color-mix(in srgb, var(--border) 40%, transparent);
@@ -387,8 +384,8 @@
 :host-context([data-personality='architect']) {
   .forum-compose-card {
     border-radius: var(--border-radius-none);
-    box-shadow: var(--shadow-lg);
-    border-top: 3px solid var(--accent);
+    @include p.shadow('lg');
+    border-top: 3px solid var(--primary);
     border-left: none;
     border-right: none;
     border-bottom: none;
@@ -438,7 +435,7 @@ body.personality-architect {
   :host {
     .forum-compose-card {
       border-width: 3px;
-      border-radius: 0;
+      border-radius: var(--border-radius-none);
       &:hover {
         box-shadow: 4px 4px 0 var(--primary);
       }
@@ -450,7 +447,7 @@ body.personality-architect {
     }
     .tag-chip {
       font-family: var(--font-mono);
-      border-radius: 0;
+      border-radius: var(--border-radius-none);
       text-transform: uppercase;
     }
   }
@@ -459,13 +456,13 @@ body.personality-architect {
 body.personality-playful {
   :host {
     .forum-compose-card {
-      border-radius: 24px;
+      border-radius: var(--border-radius-xl);
       &:hover {
         transform: translateY(-4px) scale(1.01);
       }
     }
     .tag-chip {
-      border-radius: 16px;
+      border-radius: var(--border-radius-full);
     }
   }
 }
@@ -474,8 +471,8 @@ body.personality-minimal {
   :host {
     .forum-compose-card {
       border-width: 1px;
-      border-radius: 4px;
-      box-shadow: none;
+      border-radius: var(--border-radius-sm);
+      @include p.shadow('none');
     }
   }
 }
@@ -496,14 +493,15 @@ body.personality-electric {
 body.personality-soft-touch {
   :host {
     .forum-compose-card {
-      border-radius: 28px;
+      border-radius: var(--border-radius-xl);
       &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 12px 28px
+          color-mix(in srgb, var(--shadow-color) 10%, transparent);
       }
     }
     .tag-chip {
-      border-radius: 20px;
+      border-radius: var(--border-radius-full);
     }
   }
 }
@@ -511,7 +509,7 @@ body.personality-soft-touch {
 body.personality-control-center {
   :host {
     .forum-compose-card {
-      border-radius: 2px;
+      border-radius: var(--border-radius-none);
     }
     .forum-compose-form {
       gap: var(--spacing-sm);
@@ -519,7 +517,7 @@ body.personality-control-center {
     }
     .tag-chip {
       font-family: var(--font-mono);
-      border-radius: 0;
+      border-radius: var(--border-radius-none);
     }
     &:hover {
       box-shadow: inset 0 0 0 1px var(--primary);

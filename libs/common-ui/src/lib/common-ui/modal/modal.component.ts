@@ -15,6 +15,26 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import type { Emphasis, Tone } from '../interfaces/variant.contract';
+
+/** @deprecated Use `tone` + `emphasis` (+ decorative `surface`). */
+export type ModalVariant = 'default' | 'glass' | 'gradient' | 'bordered';
+
+/** Decorative surface chrome, folded out of the legacy variant. */
+export type ModalSurface = 'flat' | 'glass' | 'gradient' | 'bordered';
+
+/** Modal emphasis: the shared contract plus a `flat` (default) treatment. */
+export type ModalEmphasis = Emphasis | 'flat';
+
+const MODAL_VARIANT_BRIDGE: Record<
+  ModalVariant,
+  { emphasis: ModalEmphasis; surface: ModalSurface }
+> = {
+  default: { emphasis: 'flat', surface: 'flat' },
+  glass: { emphasis: 'soft', surface: 'glass' },
+  gradient: { emphasis: 'soft', surface: 'gradient' },
+  bordered: { emphasis: 'outline', surface: 'bordered' },
+};
 
 /**
  * Modal size options
@@ -60,10 +80,6 @@ export type ModalPosition =
   styleUrls: ['./modal.component.scss'],
   host: {
     '[class.theme]': 'theme',
-    '[class.variant-default]': 'variant === "default"',
-    '[class.variant-glass]': 'variant === "glass"',
-    '[class.variant-gradient]': 'variant === "gradient"',
-    '[class.variant-bordered]': 'variant === "bordered"',
     '[class.size-sm]': 'size === "sm"',
     '[class.size-md]': 'size === "md"',
     '[class.size-lg]': 'size === "lg"',
@@ -103,8 +119,31 @@ export class ModalComponent
   /** Modal position */
   @Input() position: ModalPosition = 'center';
 
-  /** Visual variant */
-  @Input() variant: 'default' | 'glass' | 'gradient' | 'bordered' = 'default';
+  /** Canonical semantic tone. */
+  @Input() tone: Tone = 'neutral';
+  /** Canonical visual treatment (`flat` = the default surface). */
+  @Input() emphasis: ModalEmphasis = 'flat';
+  /** Decorative surface chrome, folded out of the legacy `variant`. */
+  @Input() surface: ModalSurface = 'flat';
+
+  /**
+   * Legacy visual variant. Folds onto the canonical `emphasis` axis plus the
+   * decorative `surface` flag via {@link MODAL_VARIANT_BRIDGE}.
+   *
+   * @deprecated Use `tone` + `emphasis` (+ `surface`) instead.
+   */
+  @Input() set variant(value: ModalVariant) {
+    this._variant = value;
+    const binding = MODAL_VARIANT_BRIDGE[value];
+    if (binding) {
+      this.emphasis = binding.emphasis;
+      this.surface = binding.surface;
+    }
+  }
+  get variant(): ModalVariant {
+    return this._variant;
+  }
+  private _variant: ModalVariant = 'default';
 
   /** Show close button */
   @Input() closable = true;

@@ -13,7 +13,7 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('hai-system-configurator-authToken'),
+  ...emailAuthRoutes('hai-system-configurator-authToken', true),
   { path: '', component: LandingComponent, title: 'HAI Computer' },
   {
     path: 'configure/:chassisId',
@@ -32,6 +32,10 @@ export const appRoutes: Route[] = [
     path: 'oauth/callback',
     component: OAuthCallbackComponent,
     title: 'OAuth Callback',
+  },
+  {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'profile-gate',

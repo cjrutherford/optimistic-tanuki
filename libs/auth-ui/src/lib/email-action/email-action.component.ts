@@ -1,7 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Routes } from '@angular/router';
 import { EmailAuthClientService } from '../services/email-auth.service';
 
@@ -9,22 +9,25 @@ export function parseEmailActionToken(fragment: string): string {
   return new URLSearchParams(fragment.replace(/^#/, '')).get('token') || '';
 }
 
-export function emailAuthRoutes(storageKey: string): Routes {
+export function emailAuthRoutes(
+  storageKey: string,
+  cookieSession = false
+): Routes {
   return [
     {
       path: 'auth/verify',
       component: EmailActionComponent,
-      data: { purpose: 'verification', storageKey },
+      data: { purpose: 'verification', storageKey, cookieSession },
     },
     {
       path: 'auth/magic-link',
       component: EmailActionComponent,
-      data: { purpose: 'magic-link', storageKey },
+      data: { purpose: 'magic-link', storageKey, cookieSession },
     },
     {
       path: 'auth/reset-password',
       component: EmailActionComponent,
-      data: { purpose: 'password-reset', storageKey },
+      data: { purpose: 'password-reset', storageKey, cookieSession },
     },
   ];
 }
@@ -32,32 +35,47 @@ export function emailAuthRoutes(storageKey: string): Routes {
 @Component({
   selector: 'lib-email-action',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <main class="email-action-shell">
-      <section class="email-action-card" aria-live="polite">
+    <main class="email-action-shell" aria-labelledby="email-action-heading">
+      <section class="email-action-card" aria-live="polite" aria-atomic="true">
         <p class="eyebrow">Secure account access</p>
-        <h1>{{ heading }}</h1>
-        <p>{{ message }}</p>
+        <h1 id="email-action-heading">{{ heading }}</h1>
+        <p id="email-action-message" role="status">{{ message }}</p>
 
         @if (purpose === 'password-reset' && token && state === 'ready') {
         <form [formGroup]="resetForm" (ngSubmit)="submitReset()">
           <label
             >New password<input
               type="password"
+              name="password"
               formControlName="password"
               autocomplete="new-password"
           /></label>
           <label
             >Confirm password<input
               type="password"
+              name="confirmation"
               formControlName="confirmation"
               autocomplete="new-password"
           /></label>
           <button type="submit">Reset password</button>
         </form>
         } @else if (token && state === 'ready') {
-        <button type="button" (click)="confirm()">Continue securely</button>
+        <button type="button" (click)="confirm()">
+          Sign in with magic link
+        </button>
+        } @else if (token && state === 'error') {
+        <button type="button" (click)="retry()">Try again</button>
+        } @if ( (purpose === 'verification' || purpose === 'password-reset') &&
+        state === 'success' ) {
+        <a class="email-action-link" [routerLink]="continuationPath">
+          Continue to sign in
+        </a>
+        } @if (token && state === 'error' && purpose !== 'password-reset') {
+        <button type="button" class="email-action-retry" (click)="retry()">
+          Try again
+        </button>
         }
       </section>
     </main>
@@ -67,38 +85,57 @@ export function emailAuthRoutes(storageKey: string): Routes {
       :host {
         display: block;
         min-height: 100%;
+        color: var(--foreground);
+        --email-action-background: var(--background);
+        --email-action-surface: var(--surface);
+        --email-action-border: var(
+          --border,
+          color-mix(in srgb, var(--foreground) 22%, transparent)
+        );
+        --email-action-muted: var(
+          --foreground-muted,
+          color-mix(in srgb, var(--foreground) 68%, transparent)
+        );
+        --email-action-accent: var(--primary);
+        --email-action-accent-foreground: var(--primary-foreground);
+        --email-action-shadow: var(
+          --shadow-card,
+          var(--shadow-sm, 0 1rem 2rem rgba(15, 23, 42, 0.12))
+        );
       }
       .email-action-shell {
         min-height: 100vh;
         display: grid;
         place-items: center;
         padding: 2rem;
-        background: radial-gradient(
+        background-color: var(--email-action-background);
+        background-image: radial-gradient(
           circle at top left,
-          color-mix(in srgb, currentColor 8%, transparent),
+          color-mix(in srgb, var(--email-action-accent) 8%, transparent),
           transparent 42%
         );
       }
       .email-action-card {
         width: min(34rem, 100%);
         padding: clamp(1.5rem, 5vw, 3rem);
-        border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+        border: 1px solid var(--email-action-border);
         border-radius: 1rem;
-        background: color-mix(in srgb, Canvas 94%, transparent);
-        box-shadow: 0 1.5rem 4rem
-          color-mix(in srgb, currentColor 12%, transparent);
+        background: var(--email-action-surface);
+        box-shadow: var(--email-action-shadow);
       }
       .eyebrow {
         font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--email-action-muted);
         opacity: 0.68;
       }
       h1 {
         margin: 0.4rem 0 1rem;
         font-size: clamp(2rem, 7vw, 3.5rem);
         line-height: 0.98;
+        text-wrap: balance;
       }
       form,
       label {
@@ -111,9 +148,11 @@ export function emailAuthRoutes(storageKey: string): Routes {
       }
       input {
         min-height: 2.75rem;
-        border: 1px solid currentColor;
+        border: 1px solid var(--email-action-border);
         border-radius: 0.45rem;
         padding: 0.65rem 0.8rem;
+        background: var(--email-action-surface);
+        color: inherit;
         font: inherit;
       }
       button {
@@ -122,11 +161,35 @@ export function emailAuthRoutes(storageKey: string): Routes {
         border: 0;
         border-radius: 999px;
         padding: 0.7rem 1.2rem;
-        background: currentColor;
-        color: Canvas;
+        background: var(--email-action-accent);
+        color: var(--email-action-accent-foreground);
         cursor: pointer;
         font: inherit;
         font-weight: 700;
+        touch-action: manipulation;
+      }
+      button:hover,
+      .email-action-link:hover {
+        filter: brightness(1.12);
+      }
+      button:focus-visible,
+      .email-action-link:focus-visible {
+        outline: 3px solid var(--email-action-accent);
+        outline-offset: 3px;
+      }
+      .email-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        margin-top: 1rem;
+        border-radius: 999px;
+        padding: 0.7rem 1.2rem;
+        color: var(--email-action-accent-foreground);
+        background: var(--email-action-accent);
+        font-weight: 700;
+        text-decoration: none;
+        touch-action: manipulation;
       }
     `,
   ],
@@ -140,6 +203,7 @@ export class EmailActionComponent implements OnInit {
 
   purpose: 'verification' | 'magic-link' | 'password-reset' = 'verification';
   token = '';
+  continuationPath = '/';
   state: 'ready' | 'pending' | 'success' | 'error' = 'ready';
   message = 'Review this secure request before continuing.';
   resetForm = this.fb.group({ password: [''], confirmation: [''] });
@@ -155,31 +219,71 @@ export class EmailActionComponent implements OnInit {
   ngOnInit() {
     this.purpose = this.route.snapshot.data['purpose'] || 'verification';
     if (!isPlatformBrowser(this.platformId)) return;
-    this.token = parseEmailActionToken(window.location.hash);
+    this.token =
+      this.route.snapshot.queryParamMap.get('token') ||
+      parseEmailActionToken(window.location.hash);
     if (!this.token) {
       this.state = 'error';
       this.message = 'The secure token is missing from this link.';
+      return;
+    }
+    if (this.purpose === 'verification') {
+      this.confirmVerification();
     }
   }
 
   confirm() {
-    if (!this.token || this.purpose === 'password-reset') return;
+    if (
+      !this.token ||
+      this.purpose === 'password-reset' ||
+      this.purpose === 'verification'
+    )
+      return;
     this.state = 'pending';
     this.message = 'Confirming your request…';
-    this.emailAuth.confirmLogin(this.purpose, this.token).subscribe({
+    const cookieSession = this.route.snapshot.data['cookieSession'] === true;
+    this.emailAuth
+      .confirmLogin(this.purpose, this.token, cookieSession)
+      .subscribe({
+        next: (result) => {
+          if (!cookieSession && result.data.newToken) {
+            const storageKey =
+              this.route.snapshot.data['storageKey'] || 'auth_token';
+            localStorage.setItem(storageKey, result.data.newToken);
+          }
+          this.state = 'success';
+          this.removeTokenFromAddress();
+          this.message =
+            'Your email is verified and your secure session is ready.';
+          const path = this.safeContinuationPath(result.returnPath);
+          if (cookieSession) {
+            // The host auth state may have been created before this request set
+            // the HttpOnly cookie. Reloading at the safe continuation path
+            // recreates it, so its normal /authentication/session bootstrap sees
+            // the newly established session before any route guard runs.
+            window.location.assign(path);
+            return;
+          }
+          void this.router.navigateByUrl(path);
+        },
+        error: () => {
+          this.state = 'error';
+          this.message =
+            'This link is invalid, expired, or has already been used.';
+        },
+      });
+  }
+
+  private confirmVerification() {
+    this.state = 'pending';
+    this.message = 'Verifying your email address…';
+    this.emailAuth.confirmVerification(this.token).subscribe({
       next: (result) => {
-        const storageKey =
-          this.route.snapshot.data['storageKey'] || 'auth_token';
-        localStorage.setItem(storageKey, result.data.newToken);
+        this.continuationPath = this.safeContinuationPath(result.returnPath);
         this.state = 'success';
+        this.removeTokenFromAddress();
         this.message =
-          'Your email is verified and your secure session is ready.';
-        const path =
-          result.returnPath?.startsWith('/') &&
-          !result.returnPath.startsWith('//')
-            ? result.returnPath
-            : '/';
-        void this.router.navigateByUrl(path);
+          'Your email address has been verified. You can now sign in.';
       },
       error: () => {
         this.state = 'error';
@@ -195,8 +299,10 @@ export class EmailActionComponent implements OnInit {
     this.emailAuth
       .resetPassword(this.token, password || '', confirmation || '')
       .subscribe({
-        next: () => {
+        next: (result) => {
+          this.continuationPath = this.safeContinuationPath(result.returnPath);
           this.state = 'success';
+          this.removeTokenFromAddress();
           this.message =
             'Your password was reset. Sign in again on every device.';
         },
@@ -206,5 +312,31 @@ export class EmailActionComponent implements OnInit {
             'This link is invalid, expired, or the passwords do not meet policy.';
         },
       });
+  }
+
+  retry() {
+    if (!this.token || this.state !== 'error') return;
+    this.state = 'ready';
+    if (this.purpose === 'verification') {
+      this.confirmVerification();
+      return;
+    }
+    if (this.purpose === 'password-reset') return;
+    this.confirm();
+  }
+
+  private safeContinuationPath(path?: string): string {
+    return path?.startsWith('/') && !path.startsWith('//') ? path : '/';
+  }
+
+  private removeTokenFromAddress(): void {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('token');
+    currentUrl.hash = '';
+    window.history.replaceState(
+      null,
+      '',
+      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    );
   }
 }

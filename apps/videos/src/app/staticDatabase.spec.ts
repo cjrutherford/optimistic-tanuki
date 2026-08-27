@@ -7,7 +7,8 @@ import {
   Video,
   VideoView,
 } from '../entities';
-import { CommunityBroadcast20260417143000 } from '../../migrations/20260417143000-community-broadcast';
+import { CommunityBroadcast1786715103205 } from '../../migrations/1786715103205-community-broadcast';
+import { VideoProcessingPipeline1786715106275 } from '../../migrations/1786715106275-video-processing-pipeline';
 
 const createQueryRunnerMock = () => {
   const executed: string[] = [];
@@ -36,8 +37,8 @@ describe('videos static datasource', () => {
 
     expect(migrations.map((migration) => migration.name)).toEqual([
       'Initial1770152975983',
-      'CommunityBroadcast20260417143000',
-      'VideoProcessingPipeline20260418170000',
+      'CommunityBroadcast1786715103205',
+      'VideoProcessingPipeline1786715106275',
     ]);
   });
 
@@ -61,24 +62,10 @@ describe('videos static datasource', () => {
     ).toBe('uuid');
   });
 
-  it('bootstraps baseline tables when community broadcast runs first', async () => {
-    const queryRunner = createQueryRunnerMock();
-
-    await new CommunityBroadcast20260417143000().up(queryRunner as never);
-
-    expect(queryRunner.hasTable).toHaveBeenCalledWith('channel');
-    expect(queryRunner.executed[0]).toContain(
-      'CREATE TABLE IF NOT EXISTS "video_view"'
-    );
-    expect(queryRunner.executed).toContain(
-      'ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communityId" character varying'
-    );
-  });
-
   it('backfills collision-safe community slugs before adding the unique constraint', async () => {
     const queryRunner = createQueryRunnerMock();
 
-    await new CommunityBroadcast20260417143000().up(queryRunner as never);
+    await new CommunityBroadcast1786715103205().up(queryRunner as never);
 
     const slugBackfill = queryRunner.executed.find(
       (sql) => sql.includes('UPDATE "channel"') && sql.includes('communitySlug')
@@ -89,5 +76,27 @@ describe('videos static datasource', () => {
     expect(slugBackfill).toContain(
       "COALESCE(NULLIF(trim(both '-' from regexp_replace"
     );
+  });
+
+  it('does not reapply retired migrations recorded in an existing database', async () => {
+    const queryRunner = {
+      query: jest.fn(async () => [{ exists: true }]),
+    };
+
+    await new CommunityBroadcast1786715103205().up(queryRunner as never);
+    await new VideoProcessingPipeline1786715106275().up(queryRunner as never);
+
+    expect(queryRunner.query).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not revert resources owned by retired migrations', async () => {
+    const queryRunner = {
+      query: jest.fn(async () => [{ exists: true }]),
+    };
+
+    await new CommunityBroadcast1786715103205().down(queryRunner as never);
+    await new VideoProcessingPipeline1786715106275().down(queryRunner as never);
+
+    expect(queryRunner.query).toHaveBeenCalledTimes(2);
   });
 });

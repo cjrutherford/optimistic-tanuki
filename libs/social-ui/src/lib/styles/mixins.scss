@@ -2,6 +2,49 @@
 // Personality-Driven Social Mixins (social-ui)
 // Uses CSS custom properties for theming
 // ============================================
+//
+// 2026-07 personality token adoption (batch 6) — mixin inventory
+// ----------------------------------------------------------------------------
+// Every `electric-*` mixin/keyframe that used to live here (electric-fonts,
+// electric-glow, electric-soft-glow, electric-border, electric-gradient,
+// electric-warm-gradient, electric-button, electric-card, electric-bounce,
+// electric-pulse, electric-shimmer, electric-input, electric-avatar,
+// electric-vote-button, electric-tag, plus the duplicate `electric-bounce` /
+// `electric-pulse` / `electric-shimmer` @keyframes) was a thin
+// `@include social-*` passthrough alias with zero real `@include electric-*`
+// consumers anywhere in this repo (verified via
+// `grep -rn "@include electric-" --include=*.scss .` and the equivalent
+// `animation: electric-*` search for the keyframes — zero matches outside
+// this file). Deleted per this repo's curation rule (see
+// `libs/theme-styles/src/lib/personality/_index.scss`: "only forwards what
+// has a real consumer").
+//
+// A follow-up usage-map pass (re-grepping every mixin name in this file
+// against `@include <name>` across `libs/social-ui/src/lib/social-ui/**`,
+// the only place that ever `@use`s this partial) found the SAME rule applied
+// to several `social-*` mixins that were never actually reintroduced as
+// `electric-*` aliases but were themselves never `@include`d by any real
+// component: `social-fonts`, `social-glow`, `social-soft-glow`,
+// `social-border`, `social-gradient`, `social-warm-gradient`, `social-card`,
+// `social-input`, `social-avatar`, and the mixin forms of `social-bounce`,
+// `social-pulse`, `social-shimmer` (their `@keyframes` counterparts below
+// ARE real consumers — comment.component.scss and post.component.scss
+// reference `animation: social-bounce/social-pulse/social-shimmer` directly
+// by name, without ever `@include`-ing the matching mixin). Also removed:
+// `social-glow` referenced a `--shadow-glow` custom property that
+// `ThemeService` never emits (grep confirms zero occurrences of
+// `--shadow-glow` anywhere outside this file, past or present) — it was
+// always silently falling back to its hardcoded literal, i.e. NOT actually
+// themed despite looking tokenized.
+//
+// Only 4 mixins have real consumers and survive: `reduced-motion`,
+// `social-button`, `social-tag`, `social-vote-button` — plus the 3
+// `@keyframes` referenced directly by name. Their internals below are
+// rewritten onto `p.shadow()` / `p.personality-transition()` (dropping
+// hardcoded box-shadow/transition fallbacks now that every consumer runs
+// under `ThemeService`, the shadow/motion contract's single source of
+// truth — see `libs/theme-styles/src/lib/personality/_shadows.scss`).
+@use 'personality' as p;
 
 @mixin reduced-motion {
   @media (prefers-reduced-motion: reduce) {
@@ -9,115 +52,24 @@
   }
 }
 
-// Social fonts
-@mixin social-fonts {
-  font-family: var(--font-body, system-ui, sans-serif);
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-heading, system-ui, sans-serif);
-  }
-}
-
-/// @deprecated Use social-fonts instead
-@mixin electric-fonts {
-  @include social-fonts;
-}
-
-// Social glow
-@mixin social-glow {
-  box-shadow: var(
-    --shadow-glow,
-    0 0 20px color-mix(in srgb, var(--primary) 40%, transparent),
-    0 0 40px color-mix(in srgb, var(--primary) 20%, transparent),
-    0 0 60px color-mix(in srgb, var(--primary) 10%, transparent)
-  );
-}
-
-/// @deprecated Use social-glow instead
-@mixin electric-glow($color: null, $intensity: null) {
-  @include social-glow;
-}
-
-// Social soft glow
-@mixin social-soft-glow {
-  box-shadow: var(
-    --shadow-lg,
-    0 4px 20px color-mix(in srgb, var(--primary) 30%, transparent),
-    0 8px 40px color-mix(in srgb, var(--primary) 15%, transparent)
-  );
-}
-
-/// @deprecated Use social-soft-glow instead
-@mixin electric-soft-glow($color: null) {
-  @include social-soft-glow;
-}
-
-// Social border
-@mixin social-border {
-  border: var(--border-width, 2px) solid var(--border);
-  border-radius: var(--border-radius-md, 12px);
-}
-
-/// @deprecated Use social-border instead
-@mixin electric-border {
-  @include social-border;
-}
-
-// Social gradient background
-@mixin social-gradient($direction: 135deg) {
-  background: linear-gradient(
-    $direction,
-    var(--primary) 0%,
-    var(--secondary) 50%,
-    var(--tertiary, var(--secondary)) 100%
-  );
-}
-
-/// @deprecated Use social-gradient instead
-@mixin electric-gradient($direction: 135deg) {
-  @include social-gradient($direction);
-}
-
-// Social warm gradient
-@mixin social-warm-gradient {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary) 10%, transparent) 0%,
-    color-mix(in srgb, var(--secondary) 10%, transparent) 100%
-  );
-}
-
-/// @deprecated Use social-warm-gradient instead
-@mixin electric-warm-gradient {
-  @include social-warm-gradient;
-}
-
 // Social button
 @mixin social-button {
-  border-radius: var(--border-radius-md, 12px);
+  border-radius: var(
+    --personality-button-radius,
+    var(--border-radius-md, 12px)
+  );
   padding: 12px 24px;
   font-family: var(--font-heading, system-ui, sans-serif);
   font-weight: 600;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: var(--primary-foreground, #fff);
   border: none;
-  box-shadow: var(
-    --shadow-md,
-    0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent)
-  );
-  transition: all 300ms var(--animation-easing, ease);
+  @include p.shadow('md');
+  @include p.personality-transition(all, 'normal');
 
   &:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: var(
-      --shadow-lg,
-      0 8px 30px color-mix(in srgb, var(--primary) 40%, transparent)
-    );
+    @include p.shadow('lg');
   }
 
   &:active {
@@ -125,113 +77,12 @@
   }
 }
 
-/// @deprecated Use social-button instead
-@mixin electric-button {
-  @include social-button;
-}
-
-// Social card
-@mixin social-card {
-  border-radius: var(--border-radius-md, 16px);
-  border: var(--border-width, 2px) solid
-    color-mix(in srgb, var(--primary) 30%, transparent);
-  background: var(
-    --card,
-    linear-gradient(
-      180deg,
-      var(--background) 0%,
-      color-mix(in srgb, var(--primary) 5%, var(--background)) 100%
-    )
-  );
-  box-shadow: var(
-    --shadow-sm,
-    0 4px 20px color-mix(in srgb, var(--primary) 10%, transparent)
-  );
-  transition: all 300ms var(--animation-easing, ease);
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
-    box-shadow: var(
-      --shadow-lg,
-      0 8px 40px color-mix(in srgb, var(--primary) 20%, transparent)
-    );
-    transform: translateY(-2px);
-  }
-}
-
-/// @deprecated Use social-card instead
-@mixin electric-card {
-  @include social-card;
-}
-
-// Social bounce animation
-@mixin social-bounce {
-  animation: social-bounce 0.4s var(--animation-easing, ease);
-}
-
-/// @deprecated Use social-bounce instead
-@mixin electric-bounce {
-  @include social-bounce;
-}
-
-// Social pulse
-@mixin social-pulse {
-  animation: social-pulse 2s ease-in-out infinite;
-}
-
-/// @deprecated Use social-pulse instead
-@mixin electric-pulse {
-  @include social-pulse;
-}
-
-// Social shimmer
-@mixin social-shimmer {
-  position: relative;
-  overflow: hidden;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
-    animation: social-shimmer 2s ease-in-out infinite;
-  }
-}
-
-/// @deprecated Use social-shimmer instead
-@mixin electric-shimmer {
-  @include social-shimmer;
-}
-
-// Keyframes for social animations
+// Social bounce, pulse, shimmer keyframes — consumed directly via
+// `animation: social-bounce/social-pulse/social-shimmer ...` (see
+// comment.component.scss and post.component.scss). No wrapping mixin: the
+// original mixin forms had zero `@include` consumers (see file header) and
+// were deleted; keep only what's actually referenced.
 @keyframes social-bounce {
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.15);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  70% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-// @deprecated - kept for backward compatibility
-@keyframes electric-bounce {
   0% {
     transform: scale(1);
   }
@@ -252,34 +103,10 @@
 @keyframes social-pulse {
   0%,
   100% {
-    box-shadow: var(
-      --shadow-md,
-      0 4px 20px color-mix(in srgb, var(--primary) 20%, transparent)
-    );
+    box-shadow: var(--shadow-md);
   }
   50% {
-    box-shadow: var(
-        --shadow-lg,
-        0 4px 30px color-mix(in srgb, var(--primary) 40%, transparent)
-      ),
-      0 0 60px color-mix(in srgb, var(--secondary) 20%, transparent);
-  }
-}
-
-// @deprecated - kept for backward compatibility
-@keyframes electric-pulse {
-  0%,
-  100% {
-    box-shadow: var(
-      --shadow-md,
-      0 4px 20px color-mix(in srgb, var(--primary) 20%, transparent)
-    );
-  }
-  50% {
-    box-shadow: var(
-        --shadow-lg,
-        0 4px 30px color-mix(in srgb, var(--primary) 40%, transparent)
-      ),
+    box-shadow: var(--shadow-lg),
       0 0 60px color-mix(in srgb, var(--secondary) 20%, transparent);
   }
 }
@@ -294,67 +121,14 @@
   }
 }
 
-// @deprecated - kept for backward compatibility
-@keyframes electric-shimmer {
-  0% {
-    left: -100%;
-  }
-  50%,
-  100% {
-    left: 100%;
-  }
-}
-
-// Social input
-@mixin social-input {
-  border-radius: var(--border-radius-md, 12px);
-  border: var(--border-width, 2px) solid
-    color-mix(in srgb, var(--primary) 30%, transparent);
-  background: var(--input, var(--background));
-  padding: 12px 16px;
-  transition: all 200ms ease;
-
-  &:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 10%, transparent),
-      var(
-        --shadow-md,
-        0 4px 20px color-mix(in srgb, var(--primary) 15%, transparent)
-      );
-    outline: none;
-  }
-}
-
-/// @deprecated Use social-input instead
-@mixin electric-input {
-  @include social-input;
-}
-
-// Social avatar
-@mixin social-avatar {
-  border-radius: 50%;
-  border: 3px solid transparent;
-  background: linear-gradient(var(--background), var(--background)) padding-box,
-    linear-gradient(135deg, var(--primary), var(--secondary)) border-box;
-  box-shadow: var(
-    --shadow-sm,
-    0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent)
-  );
-}
-
-/// @deprecated Use social-avatar instead
-@mixin electric-avatar {
-  @include social-avatar;
-}
-
 // Social vote button
 @mixin social-vote-button {
-  border-radius: 8px;
+  border-radius: var(--border-radius-sm, 8px);
   padding: 8px 16px;
   border: var(--border-width, 2px) solid transparent;
   background: transparent;
   color: var(--muted-foreground, #6b7280);
-  transition: all 200ms var(--animation-easing, ease);
+  @include p.personality-transition(all, 'fast');
 
   &:hover {
     background: linear-gradient(
@@ -375,16 +149,8 @@
     );
     color: var(--primary-foreground, #fff);
     border-color: transparent;
-    box-shadow: var(
-      --shadow-md,
-      0 4px 16px color-mix(in srgb, var(--primary) 40%, transparent)
-    );
+    @include p.shadow('md');
   }
-}
-
-/// @deprecated Use social-vote-button instead
-@mixin electric-vote-button {
-  @include social-vote-button;
 }
 
 // Social tag/label
@@ -392,7 +158,7 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
-  border-radius: 20px;
+  border-radius: var(--border-radius-full, 20px);
   font-size: 0.75rem;
   font-weight: 600;
   background: linear-gradient(
@@ -402,9 +168,4 @@
   );
   color: var(--primary);
   border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
-}
-
-/// @deprecated Use social-tag instead
-@mixin electric-tag {
-  @include social-tag;
 }

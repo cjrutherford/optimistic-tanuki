@@ -5,17 +5,16 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/finance"
+        "webpackConfig": "apps/finance/webpack.config.js",
+        "outputPath": "dist/apps/finance"
       },
       "configurations": {
-        "development": {
-          "args": ["--node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "prune-lockfile": {
       "dependsOn": ["build"],
@@ -65,6 +64,50 @@
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/finance/jest.config.ts"
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/finance",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:run -d src/app/staticDatabase.ts",
+        "cwd": "apps/finance",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:revert -d src/app/staticDatabase.ts",
+        "cwd": "apps/finance",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:show": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:show -d src/app/staticDatabase.ts",
+        "cwd": "apps/finance",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
       }
     }
   },

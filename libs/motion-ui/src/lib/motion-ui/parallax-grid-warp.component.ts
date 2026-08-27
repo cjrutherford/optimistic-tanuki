@@ -17,8 +17,8 @@ type WarpBeam = {
 })
 export class ParallaxGridWarpComponent {
   @Input() height = '24rem';
-  @Input() density = 6;
-  @Input() speed = 1;
+  @Input() density = 8;
+  @Input() speed = 1.4;
   @Input() intensity = 0.7;
   @Input() reducedMotion = false;
 

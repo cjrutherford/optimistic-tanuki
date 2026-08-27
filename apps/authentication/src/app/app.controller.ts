@@ -26,6 +26,16 @@ export class AppController {
     private readonly l: Logger
   ) {}
 
+  @MessagePattern({ cmd: AuthCommands.GetAllUsers })
+  getAllUsersForNotifications() {
+    return this.appService.getAllUsersForNotifications();
+  }
+
+  @MessagePattern({ cmd: AuthCommands.GetUsersByIds })
+  getUsersByIdsForNotifications(@Payload() data: { userIds?: string[] }) {
+    return this.appService.getUsersByIdsForNotifications(data?.userIds ?? []);
+  }
+
   @MessagePattern({ cmd: AuthCommands.RequestEmailAuthAction })
   requestEmailAuthAction(
     @Payload()
@@ -75,6 +85,11 @@ export class AppController {
       data.purpose,
       data.profileId
     );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ConfirmEmailVerification })
+  confirmEmailVerification(@Payload() data: { token: string }) {
+    return this.emailAuthService.confirmVerification(data.token);
   }
 
   @MessagePattern({ cmd: AuthCommands.ConfirmPasswordReset })
@@ -168,6 +183,26 @@ export class AppController {
       }
       throw new RpcException(e);
     }
+  }
+
+  @MessagePattern({ cmd: AuthCommands.BootstrapOwner })
+  bootstrapOwner(
+    @Payload()
+    data: {
+      email: string;
+      fn: string;
+      ln: string;
+      password: string;
+      bio?: string;
+    }
+  ) {
+    return this.appService.bootstrapOwner(
+      data.email,
+      data.fn,
+      data.ln,
+      data.password,
+      data.bio
+    );
   }
 
   @MessagePattern({ cmd: AuthCommands.ResetPassword })
@@ -288,8 +323,6 @@ export class AppController {
       providerUserId: string;
       email: string;
       displayName: string;
-      accessToken?: string;
-      refreshToken?: string;
       profileId?: string;
       emailVerified?: boolean;
     }
@@ -309,8 +342,6 @@ export class AppController {
         data.providerUserId,
         data.email,
         data.displayName,
-        data.accessToken,
-        data.refreshToken,
         data.profileId,
         data.emailVerified ?? false
       );
@@ -337,10 +368,9 @@ export class AppController {
         data.userId,
         data.provider,
         data.providerUserId,
-        data.accessToken,
-        data.refreshToken,
         data.providerEmail,
-        data.providerDisplayName
+        data.providerDisplayName,
+        data.providerEmailVerified === true
       );
     } catch (e) {
       if (e instanceof RpcException) throw e;

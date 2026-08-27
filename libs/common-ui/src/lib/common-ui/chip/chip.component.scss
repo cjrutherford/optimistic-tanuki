@@ -1,41 +1,33 @@
+@use 'personality' as p;
+@use '../interfaces/variant' as variant;
+
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 13px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-full, 16px);
   font-weight: 500;
-  transition: all 0.2s ease;
+  @include p.personality-transition(all, 'fast');
+  @include variant.variant-surface;
+
+  // ---- Size ----
+  &[data-size='sm'] {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  &[data-size='md'] {
+    padding: 4px 12px;
+    font-size: 13px;
+  }
+  &[data-size='lg'] {
+    padding: 6px 16px;
+    font-size: 14px;
+  }
 
   &.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  &.chip-primary {
-    background: var(--chip-primary-bg, rgba(63, 81, 181, 0.15));
-    color: var(--chip-primary-color, #3f51b5);
-  }
-
-  &.chip-secondary {
-    background: var(--chip-secondary-bg, rgba(192, 175, 75, 0.15));
-    color: var(--chip-secondary-color, #c0af4b);
-  }
-
-  &.chip-success {
-    background: var(--chip-success-bg, #4caf50);
-    color: white;
-  }
-
-  &.chip-warning {
-    background: var(--chip-warning-bg, #ff9800);
-    color: black;
-  }
-
-  &.chip-error {
-    background: var(--chip-error-bg, #f44336);
-    color: white;
   }
 }
 
@@ -53,7 +45,7 @@
   background: transparent;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  @include p.personality-transition(background-color, 'fast');
   padding: 0;
 
   &:hover:not(:disabled) {

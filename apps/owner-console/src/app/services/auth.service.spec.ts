@@ -36,7 +36,65 @@ describe('AuthService', () => {
 
     const req = httpMock.expectOne('/api/authentication/login');
     expect(req.request.headers.get('x-ot-appscope')).toBe('owner-console');
-    req.flush({ data: { newToken: 'token' } });
+    expect(req.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush({ data: {} });
+    expect(localStorage.getItem('auth_token')).toBeNull();
+  });
+
+  it('restores browser authentication and session user from the cookie-backed session endpoint', () => {
+    service.restoreSession().subscribe();
+
+    const req = httpMock.expectOne('/api/authentication/session');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush({
+      data: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+        name: 'Owner',
+      },
+    });
+
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.getSessionUser()).toEqual({
+      userId: 'owner-1',
+      profileId: 'profile-1',
+      email: 'owner@example.com',
+      name: 'Owner',
+    });
+  });
+
+  it('restores the owner identity when the gateway returns the legacy nested session shape', () => {
+    service.restoreSession().subscribe();
+
+    const req = httpMock.expectOne('/api/authentication/session');
+    req.flush({
+      data: {
+        user: {
+          userId: 'owner-2',
+          profileId: 'profile-2',
+          email: 'owner@example.com',
+        },
+      },
+    });
+
+    expect(service.getSessionUser()).toEqual({
+      userId: 'owner-2',
+      profileId: 'profile-2',
+      email: 'owner@example.com',
+    });
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
+  it('clears the cookie-backed session on logout', () => {
+    service.logout();
+
+    const req = httpMock.expectOne('/api/authentication/logout');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush({ data: {} });
   });
 
   it('sends the owner-console app scope header on registration', () => {
@@ -46,6 +104,10 @@ describe('AuthService', () => {
 
     const req = httpMock.expectOne('/api/authentication/register');
     expect(req.request.headers.get('x-ot-appscope')).toBe('owner-console');
-    req.flush({ data: { newToken: 'token' } });
+    expect(req.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(req.request.withCredentials).toBe(true);
+    req.flush({ data: {} });
+    expect(service.isAuthenticated()).toBe(false);
+    expect(localStorage.getItem('auth_token')).toBeNull();
   });
 });

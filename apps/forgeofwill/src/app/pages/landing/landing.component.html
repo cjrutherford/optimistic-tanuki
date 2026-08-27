@@ -1,6 +1,6 @@
 <div class="landing-page">
   <!-- Animated Background Layers -->
-  <div class="forge-background">
+  <div class="forge-background" aria-hidden="true">
     <!-- Gradient mesh with molten colors -->
     <div class="gradient-mesh">
       <div class="mesh-layer layer-1"></div>
@@ -8,34 +8,6 @@
       <div class="mesh-layer layer-3"></div>
       <div class="mesh-layer layer-4"></div>
     </div>
-
-    <!-- Floating crystalline orbs -->
-    <div class="crystalline-orbs">
-      <div class="orb orb-primary">
-        <div class="orb-inner"></div>
-        <div class="orb-glow"></div>
-      </div>
-      <div class="orb orb-secondary">
-        <div class="orb-inner"></div>
-        <div class="orb-glow"></div>
-      </div>
-      <div class="orb orb-tertiary">
-        <div class="orb-inner"></div>
-        <div class="orb-glow"></div>
-      </div>
-      <div class="orb orb-accent">
-        <div class="orb-inner"></div>
-        <div class="orb-glow"></div>
-      </div>
-    </div>
-
-    <!-- Particle field -->
-    <otui-murmuration-scene
-      class="particle-field"
-      [count]="58"
-      [speed]="0.42"
-      height="100vh"
-    ></otui-murmuration-scene>
 
     <!-- Noise texture overlay -->
     <div class="noise-overlay"></div>
@@ -114,8 +86,8 @@
         <article class="proof-card">
           <span class="proof-label">Keep momentum</span>
           <p>
-            Timer flows, notes, and AI assistance reinforce execution instead of
-            interrupting it.
+            Timer flows, notes, and clear decisions reinforce execution instead
+            of interrupting it.
           </p>
         </article>
         <article class="proof-card">
@@ -132,7 +104,7 @@
           class="btn-forge btn-primary-ember"
           (click)="navigateToRegister()"
         >
-          <span class="btn-text">Begin Your Journey</span>
+          <span class="btn-text">Create Your Account</span>
           <span class="btn-spark">
             <svg
               viewBox="0 0 24 24"
@@ -189,7 +161,9 @@
         >
           <div class="crystal-faces">
             <div class="crystal-face face-front">
-              <div class="crystal-icon">{{ feature.icon }}</div>
+              <div class="crystal-icon">
+                <otui-icon [name]="feature.icon" [size]="28"></otui-icon>
+              </div>
               <h3 class="crystal-title">{{ feature.title }}</h3>
               <p class="crystal-desc">{{ feature.description }}</p>
             </div>
@@ -208,6 +182,7 @@
 
     <!-- Trust Indicators -->
     <section class="forge-trust">
+      <h2 class="visually-hidden">Built for deliberate execution</h2>
       <div class="trust-divider">
         <span class="divider-line"></span>
         <span class="divider-text"

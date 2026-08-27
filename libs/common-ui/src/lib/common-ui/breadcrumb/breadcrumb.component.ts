@@ -22,13 +22,13 @@ export class BreadcrumbComponent {
   @Input() nodes: string[] = [];
   @Input() variant: 'default' | 'glass' | 'gradient' = 'default';
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
-  @Input() background = 'var(--background, #222)';
-  @Input() foreground = 'var(--foreground, #fff)';
-  @Input() accent = 'var(--accent, #b1baec)';
-  @Input() complement = 'var(--complement, #919ee4)';
-  @Input() borderColor = 'var(--border-color, #b1baec)';
+  @Input() background = 'var(--background)';
+  @Input() foreground = 'var(--foreground)';
+  @Input() accent = 'var(--primary)';
+  @Input() complement = 'var(--secondary)';
+  @Input() borderColor = 'var(--border)';
   @Input() borderGradient =
-    'var(--border-gradient, linear-gradient(90deg, #b1baec, #919ee4))';
+    'var(--gradient-border, linear-gradient(90deg, var(--primary), var(--secondary)))';
   @Input() transitionDuration = '0.3s';
   showPopup = false;
 

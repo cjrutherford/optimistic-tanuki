@@ -119,6 +119,44 @@ describe('TrainerConfigController', () => {
     expect((service as any).getConfig).not.toHaveBeenCalled();
   });
 
+  it('forwards the requester profile id to the service on update', async () => {
+    const service = {
+      updateConfig: jest.fn().mockResolvedValue({
+        id: 'cfg-1',
+        configKey: 'default',
+        businessType: 'consulting',
+        site: {},
+        leadContext: {
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+        brand: {},
+        contact: {},
+        features: {},
+        serviceCatalog: {},
+        services: [],
+        landingPage: {},
+        clientPortal: {},
+        testimonials: [],
+        theme: {},
+      }),
+    } as unknown as TrainerConfigService;
+
+    const controller = new TrainerConfigController(service);
+
+    await controller.updateConfig({
+      id: 'cfg-1',
+      config: { brand: { businessName: 'North Star Advisory' } },
+      requesterProfileId: 'owner-profile-1',
+    });
+
+    expect((service as any).updateConfig).toHaveBeenCalledWith(
+      'cfg-1',
+      { brand: { businessName: 'North Star Advisory' } },
+      'owner-profile-1'
+    );
+  });
+
   it('returns null config when the requested owner profile has no site config', async () => {
     const service = {
       getConfigBySiteSlug: jest.fn(),

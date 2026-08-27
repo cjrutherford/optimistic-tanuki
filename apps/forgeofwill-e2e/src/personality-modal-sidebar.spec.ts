@@ -39,11 +39,7 @@ test.describe('Personality Rendering - Forge of Will', () => {
     const body = page.locator('body');
     await expect(body).toBeVisible();
 
-    const initialClasses = await body.getAttribute('class');
-    console.log(`Initial body classes: ${initialClasses}`);
-
-    const hasPersonality = initialClasses?.includes('personality-');
-    console.log(`Has personality class: ${hasPersonality}`);
+    await expect(body).toHaveAttribute('data-personality', 'bold');
   });
 
   test('should find personality selector in UI', async ({ page }) => {
@@ -65,14 +61,6 @@ test.describe('Personality Rendering - Forge of Will', () => {
   test('should render personality-specific CSS variables', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-
-    const borderRadiusStyle = await page.evaluate(() => {
-      return getComputedStyle(document.body)
-        .getPropertyValue('--personality-border-radius-style')
-        .trim();
-    });
-
-    console.log(`Border radius style: "${borderRadiusStyle}"`);
   });
 
   test('should apply distinct border-radius for different personalities', async ({

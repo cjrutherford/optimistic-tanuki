@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -13,19 +15,16 @@
 }
 
 .category-card {
-  background-color: var(--card, var(--surface, var(--background)));
+  background-color: var(--surface);
   color: var(--foreground);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
   border: var(--border-width, 1px) solid var(--border);
-  transition: box-shadow var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease);
+  @include p.personality-transition((box-shadow, transform), 'fast');
 
   &:hover {
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
   }
 }
 
@@ -38,11 +37,10 @@
   font-size: var(--font-size-lg);
   font-family: var(--font-heading, sans-serif);
   cursor: pointer;
-  transition: color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(color, 'fast');
 
   &:hover {
-    color: var(--accent);
+    color: var(--primary);
   }
 
   .count {
@@ -68,11 +66,10 @@
   justify-content: space-between;
   cursor: pointer;
   color: var(--muted-foreground);
-  transition: color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(color, 'fast');
 
   &:hover {
-    color: var(--accent);
+    color: var(--primary);
   }
 
   .count {
@@ -93,7 +90,7 @@
 
 :host-context([data-personality='minimal']) {
   .category-card {
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
     border-radius: var(--border-radius-sm);
   }
 }
@@ -103,17 +100,17 @@
     font-style: italic;
   }
   .category-card {
-    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
   }
 }
 
 // Creative
 :host-context([data-personality='bold']) {
   .category-card {
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--primary);
     border-radius: var(--border-radius-sm);
     &:hover {
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
       transform: translateY(-2px);
     }
   }
@@ -126,13 +123,10 @@
 :host-context([data-personality='playful']) {
   .category-card {
     border-radius: var(--border-radius-xl);
-    background: var(
-      --gradient-surface,
-      var(--surface-gradient, var(--card, var(--background)))
-    );
+    background: var(--gradient-surface);
     &:hover {
       transform: translateY(-3px) rotate(-0.5deg);
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
   .subtopic-item:hover {
@@ -145,7 +139,7 @@
 :host-context([data-personality='electric']) {
   .category-card:hover {
     box-shadow: var(--shadow-md),
-      0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+      0 0 12px color-mix(in srgb, var(--primary) 25%, transparent);
   }
 }
 
@@ -154,11 +148,11 @@
 :host-context([data-personality='soft-touch']) {
   .category-card {
     border: none;
-    background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 6%, var(--background));
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
     &:hover {
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
     }
   }
   .subtopic-item {
@@ -170,8 +164,8 @@
 :host-context([data-personality='architect']) {
   .category-card {
     border-radius: var(--border-radius-none);
-    box-shadow: var(--shadow-lg);
-    border-top: 3px solid var(--accent);
+    @include p.shadow('lg');
+    border-top: 3px solid var(--primary);
   }
 }
 

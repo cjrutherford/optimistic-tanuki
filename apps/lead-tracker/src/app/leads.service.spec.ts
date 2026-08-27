@@ -346,12 +346,15 @@ describe('LeadsService', () => {
 
       await service.sendResponse(mockLead.id, dto, authContext);
 
-      expect(emailService.sendEmail).toHaveBeenCalledWith({
-        to: mockLead.email,
-        subject: dto.subject,
-        text: dto.message,
-        replyTo: process.env.SMTP_FROM,
-      });
+      expect(emailService.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: mockLead.email,
+          subject: dto.subject,
+          text: expect.stringContaining(dto.message),
+          html: expect.stringContaining('Lead Tracker'),
+          replyTo: process.env.SMTP_FROM,
+        })
+      );
       expect(repository.update).toHaveBeenCalledWith(
         { id: mockLead.id, profileId: authContext.profileId },
         expect.objectContaining({

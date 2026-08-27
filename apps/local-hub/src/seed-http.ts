@@ -532,12 +532,14 @@ async function main() {
       token = data?.token || data?.newToken;
 
       if (token) {
+        // There is no /authentication/me route on the gateway; decode the
+        // userId directly from the JWT token payload instead.
         try {
-          const meRes = await http.get('/authentication/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const me = meRes.data?.data || meRes.data;
-          userId = me?.userId || me?.id;
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            userId = payload?.sub || payload?.userId;
+          }
         } catch {
           /* ignore */
         }

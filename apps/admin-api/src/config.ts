@@ -10,6 +10,8 @@ export default registerAs('admin-api', () => ({
     process.env.ADMIN_API_GATEWAY_URL ||
     process.env.GATEWAY_URL ||
     'http://gateway:3000',
+  jwtSecret: process.env.ADMIN_API_JWT_SECRET || process.env.JWT_SECRET || '',
+  bootstrapToken: process.env.ADMIN_API_BOOTSTRAP_TOKEN || '',
   services: {
     authentication: {
       host: process.env.AUTHENTICATION_HOST || 'authentication',

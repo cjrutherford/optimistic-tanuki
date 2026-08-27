@@ -7,7 +7,6 @@ import { AuthStateService } from './auth-state.service';
 import { AuthenticationService } from '../authentication.service';
 
 describe('AuthStateService', () => {
-  const tokenKey = 'fin-commander-auth-authToken';
   const profilesKey = 'fin-commander-auth-profiles';
   const selectedProfileKey = 'fin-commander-auth-selectedProfile';
 
@@ -26,14 +25,6 @@ describe('AuthStateService', () => {
     appScope: 'finance',
   };
 
-  const createToken = (payload: Record<string, unknown>) => {
-    const header = Buffer.from(
-      JSON.stringify({ alg: 'none', typ: 'JWT' })
-    ).toString('base64url');
-    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    return `${header}.${body}.signature`;
-  };
-
   beforeEach(() => {
     localStorage.clear();
 
@@ -46,6 +37,7 @@ describe('AuthStateService', () => {
           provide: AuthenticationService,
           useValue: {
             login: jest.fn(),
+            currentSession: jest.fn(),
             setToken: jest.fn(),
           },
         },
@@ -53,6 +45,7 @@ describe('AuthStateService', () => {
           provide: HttpClient,
           useValue: {
             post: jest.fn().mockReturnValue(of({})),
+            get: jest.fn().mockReturnValue(of({ data: null })),
           },
         },
       ],
@@ -68,22 +61,26 @@ describe('AuthStateService', () => {
     expect(service.getPersistedSelectedProfile()).toBeNull();
   });
 
-  it('persists and restores token and selected profile state', () => {
-    const token = createToken({
-      userId: 'user-1',
-      name: 'Captain Ledger',
-      email: 'captain@example.com',
-      profileId: profile.id,
-    });
-
-    localStorage.setItem(tokenKey, token);
+  it('restores identity from the cookie-backed session without persisting a token', async () => {
     localStorage.setItem(profilesKey, JSON.stringify([profile]));
     localStorage.setItem(selectedProfileKey, JSON.stringify(profile));
 
+    const authentication = TestBed.inject(AuthenticationService) as unknown as {
+      currentSession: jest.Mock;
+    };
+    authentication.currentSession.mockResolvedValue({
+      data: {
+        userId: 'user-1',
+        name: 'Captain Ledger',
+        email: 'captain@example.com',
+        profileId: profile.id,
+      },
+    });
     const service = TestBed.inject(AuthStateService);
+    await service.restoreSession();
 
     expect(service.isAuthenticated).toBe(true);
-    expect(service.getToken()).toBe(token);
+    expect(service.getToken()).toBeNull();
     expect(service.getPersistedProfiles()).toEqual([
       expect.objectContaining({
         id: profile.id,
@@ -104,6 +101,47 @@ describe('AuthStateService', () => {
       userId: 'user-1',
       email: 'captain@example.com',
       profileId: profile.id,
+    });
+  });
+
+  it('keeps a successful post-login restoration when an older session probe fails', async () => {
+    let rejectStartupProbe: (reason?: unknown) => void = () => undefined;
+    const authentication = TestBed.inject(AuthenticationService) as unknown as {
+      currentSession: jest.Mock;
+    };
+    authentication.currentSession
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectStartupProbe = reject;
+          })
+      )
+      .mockResolvedValueOnce({
+        data: {
+          userId: 'user-1',
+          name: 'Captain Ledger',
+          email: 'captain@example.com',
+          profileId: profile.id,
+        },
+      });
+
+    const service = TestBed.inject(AuthStateService);
+
+    await expect(
+      (
+        service as unknown as {
+          restoreSession: (options: { force: boolean }) => Promise<boolean>;
+        }
+      ).restoreSession({ force: true })
+    ).resolves.toBe(true);
+    rejectStartupProbe(new Error('anonymous session expired'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(service.isAuthenticated).toBe(true);
+    expect(service.getDecodedTokenValue()).toMatchObject({
+      userId: 'user-1',
+      email: 'captain@example.com',
     });
   });
 });

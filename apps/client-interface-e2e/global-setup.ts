@@ -1,11 +1,10 @@
 import { FullConfig } from '@playwright/test';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join } from 'path';
+import {
+  shouldManageE2eEnvironment,
+  startClientInterfaceE2eEnvironment,
+} from './e2e-lifecycle';
 
-const execAsync = promisify(exec);
-
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   if (process.env['CI']) {
     console.log(
       '\n[Playwright Global Setup] Skipping docker-compose because CI environment detected'
@@ -20,18 +19,14 @@ async function globalSetup(config: FullConfig) {
     return;
   }
 
-  const composeFile = join(
-    __dirname,
-    '../e2e/docker-compose.client-interface-e2e.yaml'
+  if (!shouldManageE2eEnvironment()) return;
+
+  console.log(
+    '\n[Playwright Global Setup] Starting isolated manifest-defined E2E environment'
   );
-  console.log(`
-[Playwright Global Setup] Starting docker-compose: ${composeFile}`);
 
   try {
-    await execAsync(`docker compose -f ${composeFile} down --remove-orphans`);
-    await execAsync(`docker compose -f ${composeFile} up -d --build`);
-    console.log('Waiting for backend services to be ready (15s)...');
-    await new Promise((resolve) => setTimeout(resolve, 15000));
+    await startClientInterfaceE2eEnvironment();
   } catch (error) {
     console.error('Failed to start E2E environment:', error);
     throw error;

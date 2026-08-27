@@ -145,7 +145,7 @@ type LeadsProfileFormState = {
       }
       .saved {
         margin: 0;
-        color: #166534;
+        color: var(--app-success);
       }
       @media (max-width: 720px) {
         .header,

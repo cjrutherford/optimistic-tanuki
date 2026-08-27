@@ -125,6 +125,8 @@ describe('OnboardingPageComponent', () => {
 
     expect(leadsServiceStub.confirmOnboarding).toHaveBeenCalledWith(
       profile,
+      expect.any(Array),
+      // The interview transcript now travels with the confirmation.
       expect.any(Array)
     );
     expect(onboardingGateServiceStub.markComplete).toHaveBeenCalled();

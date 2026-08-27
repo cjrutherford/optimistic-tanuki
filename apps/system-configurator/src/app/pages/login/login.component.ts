@@ -48,8 +48,7 @@ export class LoginComponent implements OnInit {
 
   async onLoginSubmit(event: LoginType): Promise<void> {
     try {
-      const response = await this.authService.login(event);
-      this.authState.setToken(response.data.newToken);
+      await this.authState.login(event);
       await this.profileService.getAllProfiles();
 
       const effectiveProfile = this.profileService.getEffectiveProfile();
@@ -85,8 +84,8 @@ export class LoginComponent implements OnInit {
         'system-configurator'
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success) {
+        await this.authState.restoreSession();
         await this.handleAuthenticatedUser();
         return;
       }

@@ -144,9 +144,13 @@ describe('AgGridUiComponent', () => {
     component.theme = 'light';
     component.applyTheme(mockColors);
 
-    expect(component.background).toBe('#ffffff');
-    expect(component.foreground).toBe('#000000');
-    expect(component.accent).toBe('#ff0000');
+    // The theme bridge (see ag-grid-ui.component.ts `applyTheme`) forwards the
+    // personality contract's CSS custom properties directly rather than the
+    // concrete hex resolved by ThemeService — this is what lets AG Grid's
+    // Theming API repaint on personality/mode change without a JS recompute.
+    expect(component.background).toBe('var(--surface)');
+    expect(component.foreground).toBe('var(--foreground)');
+    expect(component.accent).toBe('var(--primary)');
   });
 
   it('derives internal grid CSS tokens from the theme system', () => {

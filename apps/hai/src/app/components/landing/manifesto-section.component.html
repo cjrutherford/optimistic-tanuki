@@ -1,10 +1,12 @@
-<section class="manifesto-rail" data-theme-surface="feature">
+<section class="manifesto-rail" data-theme-surface="feature" id="approach">
   <div class="manifesto-copy">
-    <p class="eyebrow">HAI Approach</p>
-    <h2>Cloud fluency without surrendering ownership.</h2>
+    <p class="eyebrow">Digital Sovereignty</p>
+    <h2>Own the decisions that are hard to undo.</h2>
     <p>
-      We design systems that let hosted platforms and personal infrastructure
-      reinforce each other instead of competing for control.
+      Off-the-shelf SaaS can quietly take custody of your customer list, your
+      records, and your hosting choices. We design a deliberate mix of hosted
+      and self-run systems. Cloud where it earns its place, owned where it
+      matters.
     </p>
   </div>
 
@@ -19,11 +21,21 @@
     ></otui-shimmer-beam>
 
     <div class="manifesto-grid">
-      @for (item of manifesto; track item.label) {
-      <article class="manifesto-card" data-theme-surface="card">
-        <span class="manifesto-label">{{ item.label }}</span>
+      @for (item of manifesto; track item.label; let index = $index) {
+      <otui-card
+        class="manifesto-card"
+        CardVariant="default"
+        tone="brand"
+        emphasis="outline"
+      >
+        <otui-badge
+          class="manifesto-label"
+          [tone]="manifestoLabelTones[index]"
+          emphasis="soft"
+          >{{ item.label }}</otui-badge
+        >
         <p>{{ item.value }}</p>
-      </article>
+      </otui-card>
       }
     </div>
   </div>

@@ -165,4 +165,39 @@ describe('AccordionComponent', () => {
     // Should not throw error
     expect(component.isSectionExpanded(0)).toBe(false);
   });
+
+  it('should expose canonical tone/emphasis with neutral/flat defaults', () => {
+    expect(component.tone).toBe('neutral');
+    expect(component.emphasis).toBe('flat');
+    expect(component.surface).toBe('flat');
+  });
+
+  it('should fold legacy variant onto emphasis + surface', () => {
+    component.variant = 'glass';
+    expect(component.emphasis).toBe('soft');
+    expect(component.surface).toBe('glass');
+
+    component.variant = 'gradient';
+    expect(component.emphasis).toBe('soft');
+    expect(component.surface).toBe('gradient');
+
+    component.variant = 'default';
+    expect(component.emphasis).toBe('flat');
+    expect(component.surface).toBe('flat');
+  });
+
+  it('should render data-tone/emphasis/surface on each section', () => {
+    fixture.componentRef.setInput('sections', [
+      { heading: 'S1', content: 'C1' },
+    ]);
+    fixture.componentRef.setInput('tone', 'brand');
+    fixture.componentRef.setInput('variant', 'glass');
+    fixture.detectChanges();
+
+    const section: HTMLElement =
+      fixture.nativeElement.querySelector('.accordion-section');
+    expect(section.getAttribute('data-tone')).toBe('brand');
+    expect(section.getAttribute('data-emphasis')).toBe('soft');
+    expect(section.getAttribute('data-surface')).toBe('glass');
+  });
 });

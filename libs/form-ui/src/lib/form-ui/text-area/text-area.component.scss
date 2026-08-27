@@ -1,6 +1,5 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Text Area Component
@@ -31,15 +30,18 @@
   font-size: 0.9375rem;
   color: var(--foreground);
   background: var(--surface, var(--background));
-  border: var(--border-width, 0.5px) solid
+  border: var(--personality-input-border-width, 0.5px) solid
     color-mix(in srgb, var(--primary) 15%, transparent);
-  border-radius: var(--border-radius-lg, 20px);
+  border-radius: var(--personality-input-radius, var(--border-radius-lg, 20px));
   outline: none;
   resize: vertical;
   line-height: 1.6;
-  transition: all var(--animation-duration-normal, 250ms)
-    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
-  box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03));
+  @include p.personality-transition(all, 'normal');
+  box-shadow: var(
+    --shadow-sm,
+    inset 0 1px 3px
+      color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+  );
 
   @include reduced-motion {
     transition: none;
@@ -47,7 +49,11 @@
 
   &:focus {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03)),
+    box-shadow: var(
+        --shadow-sm,
+        inset 0 1px 3px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
       var(
         --shadow-lg,
         0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
@@ -76,11 +82,19 @@
   &.has-error {
     border-color: color-mix(in srgb, var(--danger) 50%, transparent);
     background: color-mix(in srgb, var(--danger) 6%, var(--background));
-    box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03)),
+    box-shadow: var(
+        --shadow-sm,
+        inset 0 1px 3px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
       0 4px 16px color-mix(in srgb, var(--danger) 10%, transparent);
 
     &:focus {
-      box-shadow: var(--shadow-sm, inset 0 1px 3px rgba(0, 0, 0, 0.03)),
+      box-shadow: var(
+          --shadow-sm,
+          inset 0 1px 3px
+            color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+        ),
         0 8px 24px color-mix(in srgb, var(--danger) 15%, transparent);
     }
   }
@@ -99,7 +113,8 @@
   &.filled {
     background: var(--surface);
     border-color: transparent;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--shadow-color, #000) 4%, transparent);
 
     &:focus {
       background: var(--background);
@@ -182,7 +197,7 @@
     font-size: 0.9375rem;
     color: var(--muted, rgba(107, 114, 128, 0.7));
     pointer-events: none;
-    transition: all var(--animation-duration-fast, 200ms) ease;
+    @include p.personality-transition(all, 'fast');
     background: transparent;
   }
 
@@ -219,10 +234,15 @@
 // ============================================
 // Personality-Specific Textarea Enhancements
 // ============================================
+// The base `textarea` (`.form-control-textarea`) border-radius above already
+// reads `--personality-input-radius`. Only the blocks below whose literal
+// radius was an EXACT match for that contract value (architect: 0px,
+// control-center: 4px) had their radius line removed as truly redundant.
+// playful (12px) and soft-touch (16px) are kept hardcoded because the
+// contract's own input radius for those personalities (16px / 18px) differs
+// enough to be a visible change, not a no-op.
 
 body.personality-architect textarea {
-  border-radius: 0;
-
   &:focus {
     border-width: 2px;
     box-shadow: 4px 4px 0 var(--primary);
@@ -239,6 +259,8 @@ body.personality-playful textarea {
 
 body.personality-minimal textarea {
   border-radius: 2px;
+  // Deliberately thinner than the contract's own minimal input border-width
+  // (1px) — "minimal" wants a near-invisible line, not just a bit less bold.
   border-width: 0.5px;
 
   &:focus {
@@ -263,7 +285,6 @@ body.personality-soft-touch textarea {
 }
 
 body.personality-control-center textarea {
-  border-radius: 4px;
   font-family: var(--font-mono);
 
   &:focus {

@@ -52,4 +52,19 @@ describe('OrderManagementComponent', () => {
 
     expect(fixture.nativeElement.querySelector('otui-ag-grid')).toBeTruthy();
   });
+
+  it('renders an accessible, dismissible dialog for order details', () => {
+    const fixture = TestBed.createComponent(OrderManagementComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.viewOrder(fixture.componentInstance.orders[0]);
+    fixture.detectChanges();
+
+    const dialog = fixture.nativeElement.querySelector('[role="dialog"]');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('order-details-title');
+    expect(
+      fixture.nativeElement.querySelector(
+        'button[aria-label="Close order details"]'
+      )
+    ).toBeTruthy();
+  });
 });

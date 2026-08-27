@@ -1,6 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { Lead, LeadContactPoint } from './leads.types';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import type { GeneratedApplication } from '@optimistic-tanuki/models';
+import {
+  getLeadSourceDescriptor,
+  Lead,
+  LeadContactPoint,
+  LeadDiscoverySource,
+} from './leads.types';
 
 @Component({
   selector: 'app-lead-detail-modal',
@@ -23,7 +29,7 @@ import { Lead, LeadContactPoint } from './leads.types';
             <p class="lead-meta">
               <span *ngIf="lead?.company">{{ lead?.company }}</span>
               <span *ngIf="lead?.company && lead?.source">•</span>
-              <span *ngIf="lead?.source">{{ lead?.source }}</span>
+              <span *ngIf="lead?.source">{{ sourceLabel }}</span>
             </p>
           </div>
           <button class="close-btn" type="button" (click)="closed.emit()">
@@ -47,6 +53,112 @@ import { Lead, LeadContactPoint } from './leads.types';
             <ng-template #noPosting>
               <p class="empty-state">No original posting link is available.</p>
             </ng-template>
+            <p class="source-attribution" *ngIf="attributionNote">
+              {{ attributionNote }}
+            </p>
+          </section>
+
+          <section class="detail-section application-section">
+            <div class="application-head">
+              <h3>Application documents</h3>
+              <button
+                type="button"
+                class="generate-btn"
+                (click)="onGenerateRequested()"
+                [disabled]="applicationPending"
+              >
+                {{
+                  applicationPending
+                    ? 'Generating…'
+                    : application
+                    ? 'Regenerate'
+                    : 'Generate'
+                }}
+              </button>
+            </div>
+
+            <p class="empty-state" *ngIf="applicationError">
+              {{ applicationError }}
+            </p>
+
+            <ng-container *ngIf="application">
+              <p class="application-meta">
+                Version {{ application.version }} ·
+                {{
+                  application.modelGenerated
+                    ? 'model generated'
+                    : 'assembled from your resume'
+                }}
+              </p>
+
+              <!-- What was removed matters as much as what was produced, so it
+                   sits above the draft rather than hidden below it. -->
+              <div
+                class="evidence-warning"
+                *ngIf="!application.evidence.clean"
+                role="status"
+              >
+                <strong>
+                  Unsupported claims were removed before you saw this.
+                </strong>
+                <p *ngFor="let claim of application.evidence.removedClaims">
+                  {{ claim }}
+                </p>
+              </div>
+
+              <div
+                class="evidence-gaps"
+                *ngIf="application.evidence.gaps.length"
+              >
+                <strong>Not evidenced in your resume</strong>
+                <p *ngFor="let gap of application.evidence.gaps">{{ gap }}</p>
+              </div>
+
+              <h4>Resume</h4>
+              <p class="doc-summary" *ngIf="application.resume.summary">
+                {{ application.resume.summary }}
+              </p>
+              <p class="doc-skills" *ngIf="application.resume.skills.length">
+                {{ application.resume.skills.join(' · ') }}
+              </p>
+              <div
+                class="doc-role"
+                *ngFor="let role of application.resume.roles"
+              >
+                <span class="doc-role-title">
+                  {{ role.title
+                  }}<span *ngIf="role.company"> — {{ role.company }}</span>
+                </span>
+                <ul>
+                  <li *ngFor="let highlight of role.highlights">
+                    {{ highlight }}
+                  </li>
+                </ul>
+              </div>
+
+              <h4>Cover letter</h4>
+              <p>{{ application.coverLetter.greeting }}</p>
+              <p *ngIf="application.coverLetter.opening">
+                {{ application.coverLetter.opening }}
+              </p>
+              <p *ngFor="let paragraph of application.coverLetter.body">
+                {{ paragraph }}
+              </p>
+              <p *ngIf="application.coverLetter.closing">
+                {{ application.coverLetter.closing }}
+              </p>
+
+              <div class="export-row">
+                <a
+                  *ngFor="let target of exportTargets"
+                  class="export-link"
+                  [href]="exportUrl(target.kind, target.format)"
+                  [download]="true"
+                >
+                  {{ target.label }}
+                </a>
+              </div>
+            </ng-container>
           </section>
 
           <section class="detail-section">
@@ -187,6 +299,12 @@ import { Lead, LeadContactPoint } from './leads.types';
         color: var(--app-foreground-muted);
       }
 
+      .source-attribution {
+        margin: 0.6rem 0 0;
+        font-size: 0.82rem;
+        color: var(--app-foreground-secondary);
+      }
+
       .detail-section,
       .detail-card {
         display: grid;
@@ -314,5 +432,72 @@ export class LeadDetailModalComponent {
     if (event.target === event.currentTarget) {
       this.closed.emit();
     }
+  }
+
+  // Presentational only. The parent owns fetching and generation; this
+  // component renders what it is given and reports intent.
+  @Input() application: GeneratedApplication | null = null;
+  @Input() applicationPending = false;
+  @Input() applicationError = '';
+  @Output() generateApplication = new EventEmitter<string>();
+
+  readonly exportTargets = [
+    {
+      kind: 'resume' as const,
+      format: 'docx' as const,
+      label: 'Resume (.docx)',
+    },
+    { kind: 'resume' as const, format: 'odt' as const, label: 'Resume (.odt)' },
+    {
+      kind: 'cover-letter' as const,
+      format: 'docx' as const,
+      label: 'Cover letter (.docx)',
+    },
+    {
+      kind: 'cover-letter' as const,
+      format: 'odt' as const,
+      label: 'Cover letter (.odt)',
+    },
+  ];
+
+  onGenerateRequested(): void {
+    if (this.lead?.id && !this.applicationPending) {
+      this.generateApplication.emit(this.lead.id);
+    }
+  }
+
+  /** A plain URL, so no service dependency is needed to build it. */
+  exportUrl(kind: 'resume' | 'cover-letter', format: 'odt' | 'docx'): string {
+    return this.lead?.id
+      ? `/api/leads/${this.lead.id}/application/export?kind=${kind}&format=${format}`
+      : '';
+  }
+
+  /** Registry label, so the UI never shows a raw enum value. */
+  get sourceLabel(): string {
+    if (!this.lead?.source) {
+      return '';
+    }
+    const descriptor = getLeadSourceDescriptor(
+      this.lead.source as unknown as LeadDiscoverySource
+    );
+    return descriptor?.label || this.lead.source;
+  }
+
+  /**
+   * Some sources require visible credit wherever their results are displayed —
+   * Remote OK and Jobicy both do. The registry is the single place that records
+   * the obligation, so it cannot be met in one view and forgotten in another.
+   */
+  get attributionNote(): string | null {
+    if (!this.lead?.source) {
+      return null;
+    }
+    const descriptor = getLeadSourceDescriptor(
+      this.lead.source as unknown as LeadDiscoverySource
+    );
+    return descriptor?.attributionRequired
+      ? descriptor.attributionNote || `Sourced from ${descriptor.label}.`
+      : null;
   }
 }

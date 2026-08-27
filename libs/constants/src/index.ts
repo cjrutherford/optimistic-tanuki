@@ -89,6 +89,7 @@ export {
   ForumPostCommands,
   ForumModerationCommands,
   ForumLinkCommands,
+  ForumCommands,
 } from './lib/libs/forum';
 
 export { VideoCommands } from './lib/libs/videos';
@@ -128,6 +129,7 @@ export {
   LeadFlagCommands,
   LeadOnboardingCommands,
   LeadAnalysisCommands,
+  LeadApplicationCommands,
 } from './lib/libs/leads/lead-commands';
 export {
   AccountCommands,
@@ -145,10 +147,16 @@ export {
   FinCommanderPlanCommands,
   FinCommanderGoalCommands,
   FinCommanderScenarioCommands,
+  FinCommanderProjectionCommands,
   FinCommanderPlanDto,
   CreateFinCommanderPlanDto,
   UpdateFinCommanderPlanDto,
   FinCommanderGoalDto,
+  FinCommanderGoalFundingDirective,
+  FinCommanderFundingDirectivePreview,
+  FinCommanderFundingDirectiveDto,
+  FinCommanderCashFlowEvent,
+  FinCommanderCashFlowProjection,
   CreateFinCommanderGoalDto,
   UpdateFinCommanderGoalDto,
   FinCommanderScenarioAssumptionDto,

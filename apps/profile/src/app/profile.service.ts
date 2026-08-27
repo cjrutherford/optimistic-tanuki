@@ -1,7 +1,15 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { FindManyOptions, FindOneOptions, IsNull, Repository } from 'typeorm';
+import {
+  FindManyOptions,
+  FindOneOptions,
+  ILike,
+  In,
+  IsNull,
+  Not,
+  Repository,
+} from 'typeorm';
 import { firstValueFrom } from 'rxjs';
 import { Profile, BlogRole } from '../profiles/entities/profile.entity';
 import { CreateProfileDto } from '../profiles/dto/create-profile.dto';
@@ -11,6 +19,9 @@ import {
 } from '../profiles/dto/update-profile.dto';
 import { SetBlogRoleDto } from '../profiles/dto/set-blog-role.dto';
 import { RoleCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+
+const DEFAULT_SEARCH_LIMIT = 20;
+const MAX_SEARCH_LIMIT = 100;
 
 interface UserRoleDto {
   id: string;
@@ -38,6 +49,34 @@ export class ProfileService {
 
   async findAll(query?: FindManyOptions<Profile>): Promise<Profile[]> {
     return await this.profileRepository.find(query || {});
+  }
+
+  async searchProfiles(params: {
+    query?: string;
+    excludeIds?: string[];
+    limit?: number;
+    offset?: number;
+  }): Promise<Profile[]> {
+    const { query, excludeIds, limit, offset } = params;
+    const take = Math.min(limit || DEFAULT_SEARCH_LIMIT, MAX_SEARCH_LIMIT);
+    const skip = offset || 0;
+
+    const idFilter =
+      excludeIds && excludeIds.length > 0 ? { id: Not(In(excludeIds)) } : {};
+
+    const where = query
+      ? [
+          { ...idFilter, profileName: ILike(`%${query}%`) },
+          { ...idFilter, bio: ILike(`%${query}%`) },
+        ]
+      : { ...idFilter };
+
+    return await this.profileRepository.find({
+      where,
+      order: { profileName: 'ASC' },
+      take,
+      skip,
+    });
   }
 
   async findOne(id: string, query?: FindOneOptions<Profile>): Promise<Profile> {

@@ -114,7 +114,7 @@ import { AuthStateService } from '../../auth-state.service';
       }
 
       .error {
-        color: #dc3545;
+        color: var(--danger);
       }
     `,
   ],

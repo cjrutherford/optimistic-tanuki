@@ -1,4 +1,5 @@
 @use '../../styles/mixins' as *;
+@use 'personality' as p;
 
 // ==================== NOTIFICATION TOAST ====================
 
@@ -111,10 +112,13 @@
     color: inherit;
     font-size: var(--font-size-xs, 0.75rem);
     cursor: pointer;
-    @include transition-base(all, 0.15s);
+    @include p.personality-transition(all, 'fast');
     @include focus-visible-ring;
 
     &:hover {
+      // Generic lighten-on-hover overlay on a colored toast surface; not
+      // tied to a specific brand color, so this stays a literal translucent
+      // white rather than a contract color-mix.
       background: rgba(255, 255, 255, 0.2);
     }
 
@@ -141,7 +145,7 @@
   cursor: pointer;
   border-radius: var(--border-radius-sm, 4px);
   opacity: 0.7;
-  @include transition-base(all, 0.15s);
+  @include p.personality-transition(all, 'fast');
   @include focus-visible-ring;
 
   &:hover {
@@ -173,52 +177,52 @@
 // ==================== TYPE VARIANTS ====================
 
 .notification-info {
-  background: var(--local-accent-shade-lighten-95, #e3f2fd);
-  border-color: var(--local-accent-shade-lighten-70, #90caf9);
-  color: var(--local-accent-shade-darken-30, #0d47a1);
+  background: color-mix(in srgb, var(--info, #2196f3) 5%, white);
+  border-color: color-mix(in srgb, var(--info, #2196f3) 30%, white);
+  color: color-mix(in srgb, var(--info, #2196f3) 70%, black);
 
   .notification-icon {
-    color: var(--local-accent, #2196f3);
+    color: var(--info, #2196f3);
   }
 }
 
 .notification-success {
-  background: var(--local-success-shade-lighten-95, #e8f5e9);
-  border-color: var(--local-success-shade-lighten-70, #a5d6a7);
-  color: var(--local-success-shade-darken-30, #1b5e20);
+  background: color-mix(in srgb, var(--success, #4caf50) 5%, white);
+  border-color: color-mix(in srgb, var(--success, #4caf50) 30%, white);
+  color: color-mix(in srgb, var(--success, #4caf50) 70%, black);
 
   .notification-icon {
-    color: var(--local-success, #4caf50);
+    color: var(--success, #4caf50);
   }
 }
 
 .notification-warning {
-  background: var(--local-warning-shade-lighten-95, #fff3e0);
-  border-color: var(--local-warning-shade-lighten-70, #ffcc80);
-  color: var(--local-warning-shade-darken-30, #e65100);
+  background: color-mix(in srgb, var(--warning, #ff9800) 5%, white);
+  border-color: color-mix(in srgb, var(--warning, #ff9800) 30%, white);
+  color: color-mix(in srgb, var(--warning, #ff9800) 70%, black);
 
   .notification-icon {
-    color: var(--local-warning, #ff9800);
+    color: var(--warning, #ff9800);
   }
 }
 
 .notification-error {
-  background: var(--local-danger-shade-lighten-95, #ffebee);
-  border-color: var(--local-danger-shade-lighten-70, #ef9a9a);
-  color: var(--local-danger-shade-darken-30, #b71c1c);
+  background: color-mix(in srgb, var(--danger, #f44336) 5%, white);
+  border-color: color-mix(in srgb, var(--danger, #f44336) 30%, white);
+  color: color-mix(in srgb, var(--danger, #f44336) 70%, black);
 
   .notification-icon {
-    color: var(--local-danger, #f44336);
+    color: var(--danger, #f44336);
   }
 }
 
 .notification-neutral {
-  background: var(--local-background-shade-lighten-95, #f5f5f5);
-  border-color: var(--local-border-color, var(--complement, #c0af4b));
-  color: var(--local-foreground, var(--foreground, #212529));
+  background: var(--surface, #f5f5f5);
+  border-color: var(--border);
+  color: var(--foreground);
 
   .notification-icon {
-    color: var(--local-accent, #3f51b5);
+    color: var(--muted);
   }
 }
 
@@ -290,11 +294,11 @@
   height: 44px;
   padding: 0;
   border: none;
-  background: var(--local-background, var(--background, #ffffff));
+  background: var(--background);
   border-radius: var(--border-radius-full, 50%);
   cursor: pointer;
   box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
-  @include transition-base(all, 0.15s);
+  @include p.personality-transition(all, 'fast');
   @include focus-visible-ring;
 
   &:hover {
@@ -314,12 +318,12 @@
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
-    background: var(--local-danger, #f44336);
+    background: var(--danger, #f44336);
     color: #ffffff;
     font-size: var(--font-size-xs, 0.75rem);
     font-weight: 600;
     border-radius: var(--border-radius-full, 50%);
-    border: 2px solid var(--local-background, var(--background, #ffffff));
+    border: 2px solid var(--background);
   }
 }
 
@@ -331,10 +335,10 @@
   right: 0;
   width: 360px;
   max-height: 480px;
-  background: var(--local-background, var(--background, #ffffff));
+  background: var(--background);
   border-radius: var(--border-radius-lg, 12px);
   box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
-  border: 1px solid var(--local-border-color, var(--complement, #c0af4b));
+  border: 1px solid var(--border);
   z-index: var(--z-index-dropdown, 1070);
   overflow: hidden;
   animation: dropdown-appear 0.2s ease-out;
@@ -359,13 +363,13 @@
 .dropdown-header {
   @include flex-between;
   padding: var(--spacing-md, 16px);
-  border-bottom: 1px solid var(--local-border-color, var(--complement, #c0af4b));
+  border-bottom: 1px solid var(--border);
 
   h3 {
     margin: 0;
     font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
-    color: var(--local-foreground, var(--foreground, #212529));
+    color: var(--foreground);
   }
 
   .header-actions {
@@ -376,13 +380,13 @@
       padding: 0;
       border: none;
       background: transparent;
-      color: var(--local-accent, var(--accent, #3f51b5));
+      color: var(--primary);
       font-size: var(--font-size-sm, 0.875rem);
       cursor: pointer;
-      @include transition-base(color, 0.15s);
+      @include p.personality-transition(color, 'fast');
 
       &:hover {
-        color: var(--local-complement, var(--complement, #c0af4b));
+        color: var(--secondary);
         text-decoration: underline;
       }
     }
@@ -393,7 +397,7 @@
 .empty-state {
   padding: var(--spacing-xl, 32px);
   text-align: center;
-  color: var(--local-foreground-muted, var(--foreground-muted, #6c757d));
+  color: var(--muted);
 
   p {
     margin: 0;
@@ -414,40 +418,40 @@
   @include flex-between;
   gap: var(--spacing-sm, 8px);
   padding: var(--spacing-md, 16px);
-  border-bottom: 1px solid var(--local-border-color, var(--complement, #c0af4b));
-  @include transition-base(background-color, 0.15s);
+  border-bottom: 1px solid var(--border);
+  @include p.personality-transition(background-color, 'fast');
 
   &:last-child {
     border-bottom: none;
   }
 
   &:hover {
-    background: var(--local-accent-shade-lighten-98, rgba(63, 81, 181, 0.03));
+    background: color-mix(in srgb, var(--primary) 2%, white);
   }
 
   &.unread {
-    background: var(--local-accent-shade-lighten-95, rgba(63, 81, 181, 0.05));
+    background: color-mix(in srgb, var(--primary) 5%, white);
 
     &:hover {
-      background: var(--local-accent-shade-lighten-90, rgba(63, 81, 181, 0.1));
+      background: color-mix(in srgb, var(--primary) 10%, white);
     }
   }
 
   // Type variants
   &.type-info {
-    border-left: 3px solid var(--local-accent, #2196f3);
+    border-left: 3px solid var(--info, #2196f3);
   }
 
   &.type-success {
-    border-left: 3px solid var(--local-success, #4caf50);
+    border-left: 3px solid var(--success, #4caf50);
   }
 
   &.type-warning {
-    border-left: 3px solid var(--local-warning, #ff9800);
+    border-left: 3px solid var(--warning, #ff9800);
   }
 
   &.type-error {
-    border-left: 3px solid var(--local-danger, #f44336);
+    border-left: 3px solid var(--danger, #f44336);
   }
 
   .item-icon {
@@ -463,13 +467,13 @@
       margin: 0 0 var(--spacing-xs, 4px);
       font-size: var(--font-size-sm, 0.875rem);
       font-weight: 600;
-      color: var(--local-foreground, var(--foreground, #212529));
+      color: var(--foreground);
     }
 
     .item-message {
       margin: 0;
       font-size: var(--font-size-sm, 0.875rem);
-      color: var(--local-foreground-muted, var(--foreground-muted, #6c757d));
+      color: var(--muted);
       line-height: 1.4;
     }
 
@@ -482,7 +486,7 @@
         padding: 2px var(--spacing-xs, 4px);
         border: none;
         background: transparent;
-        color: var(--local-accent, var(--accent, #3f51b5));
+        color: var(--primary);
         font-size: var(--font-size-xs, 0.75rem);
         cursor: pointer;
 
@@ -501,21 +505,21 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--local-foreground-muted, var(--foreground-muted, #6c757d));
+    color: var(--muted);
     font-size: 1rem;
     cursor: pointer;
     border-radius: var(--border-radius-sm, 4px);
-    @include transition-base(all, 0.15s);
+    @include p.personality-transition(all, 'fast');
     @include focus-visible-ring;
 
     &:hover {
-      background: var(--local-accent-shade-lighten-90, rgba(63, 81, 181, 0.1));
-      color: var(--local-foreground, var(--foreground, #212529));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--foreground);
     }
   }
 
   .mark-read-button {
-    color: var(--local-success, #4caf50);
+    color: var(--success, #4caf50);
   }
 }
 
@@ -525,8 +529,8 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background-color: var(--local-background, var(--background, #333));
-  border: 1px solid var(--local-border-color, var(--complement, #b1baec));
+  background-color: var(--background);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
   z-index: 1000;
   min-width: 280px;
@@ -541,8 +545,7 @@
 
   li {
     padding: var(--spacing-md, 16px);
-    border-bottom: 1px solid
-      var(--local-border-color, var(--complement, #b1baec));
+    border-bottom: 1px solid var(--border);
 
     &:last-child {
       border-bottom: none;
@@ -550,22 +553,22 @@
 
     // Legacy variant classes
     .info {
-      background-color: var(--local-accent-shade-lighten-95, #e3f2fd);
-      color: var(--local-foreground, #000);
+      background-color: color-mix(in srgb, var(--info, #2196f3) 5%, white);
+      color: var(--foreground);
       padding: var(--spacing-sm, 8px);
       border-radius: var(--border-radius-sm, 4px);
     }
 
     .warning {
-      background-color: var(--local-warning-shade-lighten-95, #fff3e0);
-      color: var(--local-foreground, #000);
+      background-color: color-mix(in srgb, var(--warning, #ff9800) 5%, white);
+      color: var(--foreground);
       padding: var(--spacing-sm, 8px);
       border-radius: var(--border-radius-sm, 4px);
     }
 
     .error {
-      background-color: var(--local-danger-shade-lighten-95, #ffebee);
-      color: var(--local-foreground, #000);
+      background-color: color-mix(in srgb, var(--danger, #f44336) 5%, white);
+      color: var(--foreground);
       padding: var(--spacing-sm, 8px);
       border-radius: var(--border-radius-sm, 4px);
     }
@@ -577,18 +580,15 @@
 
       button {
         padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-        border: 1px solid var(--local-border-color, var(--complement, #b1baec));
-        background: var(--local-background, var(--background, #ffffff));
-        color: var(--local-foreground, var(--foreground, #212529));
+        border: 1px solid var(--border);
+        background: var(--background);
+        color: var(--foreground);
         border-radius: var(--border-radius-sm, 4px);
         cursor: pointer;
         font-size: var(--font-size-sm, 0.875rem);
 
         &:hover {
-          background: var(
-            --local-accent-shade-lighten-95,
-            rgba(63, 81, 181, 0.05)
-          );
+          background: color-mix(in srgb, var(--primary) 5%, white);
         }
       }
     }
@@ -597,14 +597,15 @@
 
 // Legacy notification class
 .notification {
-  border: 1px solid var(--local-border-color, var(--complement, #b1baec));
+  border: 1px solid var(--border);
   border-radius: var(--border-radius-md, 8px);
   margin: var(--spacing-md, 16px);
   padding: var(--spacing-lg, 24px);
+  // Generic inset depth shadow, independent of brand color.
   box-shadow: inset 0 0 1em rgba(0, 0, 0, 0.1);
-  background-color: var(--local-accent, #5969c3);
-  color: var(--local-foreground, #fff);
-  @include transition-base(box-shadow, 0.3s);
+  background-color: var(--primary);
+  color: var(--primary-foreground, #fff);
+  @include p.personality-transition(box-shadow, 'normal');
 
   &:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -612,32 +613,28 @@
 
   // Legacy theme classes
   &.light-mode {
-    background-color: var(--local-accent-shade-lighten-50, #b1baec);
-    color: var(--local-foreground, #000);
+    background-color: color-mix(in srgb, var(--primary) 50%, white);
+    color: #000;
   }
 
   &.dark-mode {
-    background-color: var(--local-accent-shade-darken-50, #313a6c);
-    color: var(--local-foreground, #fff);
+    background-color: color-mix(in srgb, var(--primary) 50%, black);
+    color: #fff;
   }
 
   &.fast-cycle-mode {
     background: var(
       --gradient-primary,
-      linear-gradient(
-        135deg,
-        var(--accent, #3f51b5),
-        var(--complement, #c0af4b)
-      )
+      linear-gradient(135deg, var(--primary), var(--secondary))
     );
-    color: var(--local-foreground, #fff);
+    color: var(--primary-foreground, #fff);
   }
 }
 
 .notification-header {
   font-size: var(--font-size-lg, 1.25rem);
   margin-bottom: var(--spacing-sm, 8px);
-  color: var(--local-foreground, #fff);
+  color: var(--primary-foreground, #fff);
 }
 
 // ==================== REDUCED MOTION ====================

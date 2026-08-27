@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .tag-selector {
   .tag-list {
     display: flex;
@@ -8,12 +10,12 @@
 
   .tag-item {
     padding: 6px 12px;
-    border-radius: 16px;
+    border-radius: var(--border-radius-full, 16px);
     border: 2px solid;
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 500;
-    transition: all 0.2s ease;
+    @include p.personality-transition(all, 'fast');
     user-select: none;
 
     &:hover {

@@ -1,19 +1,10 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
-import { map } from 'rxjs';
+import { createFeatureGuard } from './feature-guard.factory';
 
-export const ownerFinanceFeatureGuard: CanActivateFn = () => {
-  const siteConfig = inject(BusinessSiteConfigStore);
-  const router = inject(Router);
-
-  return siteConfig
-    .fetch()
-    .pipe(
-      map((site) =>
-        site.features.invoices.enabled
-          ? true
-          : router.createUrlTree(['/owner/dashboard'])
-      )
-    );
-};
+// Gates the owner-side `/owner/finance` route. Shares the `invoices`
+// feature flag with the client-side `/client/billing` route (see
+// invoices-feature.guard.ts) — invoicing is one feature with an owner
+// management side and a client-facing side, not two separate flags.
+export const ownerFinanceFeatureGuard = createFeatureGuard({
+  isFeatureEnabled: (site) => site.features.invoices.enabled,
+  redirectTo: ['/owner/dashboard'],
+});

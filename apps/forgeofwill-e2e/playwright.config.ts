@@ -1,11 +1,15 @@
-import { defineConfig, devices } from '@playwright/test';
+import { chromium, defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
-import { workspaceRoot } from '@nx/devkit';
 import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const isCI = !!process.env['CI'];
+const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:8081';
 const headless = resolvePlaywrightHeadless(!!process.env['CI']);
+const useManagedChromium =
+  process.env['PLAYWRIGHT_USE_MANAGED_CHROMIUM'] === 'true';
+const managedChromiumPath =
+  process.env['PLAYWRIGHT_EXECUTABLE_PATH'] || chromium.executablePath();
 
 /**
  * Read environment variables from file.
@@ -21,26 +25,37 @@ export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   globalTeardown: require.resolve('./global-teardown'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  reporter: [['html', { open: 'never' }]],
+  reporter: [['html', { open: 'never', outputFolder: './playwright-report' }]],
+  outputDir: './test-results',
   use: {
     baseURL,
     headless,
+    launchOptions: {
+      args: ['--disable-crash-reporter'],
+      ...(useManagedChromium ? { executablePath: managedChromiumPath } : {}),
+    },
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
   /* Run your local dev server before starting the tests */
-  webServer: process.env['CI']
-    ? undefined
-    : {
-        command: 'node ./node_modules/nx/bin/nx.js run forgeofwill:serve',
-        url: 'http://localhost:4200',
-        reuseExistingServer: true,
-        cwd: workspaceRoot,
-      },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
-  ],
+  webServer: undefined,
+  projects: isCI
+    ? [
+        {
+          name: 'chromium',
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
+        },
+      ],
 });

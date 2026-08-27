@@ -1,16 +1,26 @@
 import axios from 'axios';
 
+function decodeJwtPayload(token: string): { profileId?: string } {
+  const payload = token.split('.')[1];
+  return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+}
+
 describe('Communities E2E Tests', () => {
   jest.setTimeout(30000);
   const baseURL = process.env.BASE_URL || 'http://localhost:3000';
   const api = axios.create({
     baseURL: `${baseURL}/api`,
+    headers: {
+      'x-ot-appscope': 'client-interface',
+      'x-ot-app-id': 'client-interface',
+    },
     validateStatus: () => true,
   });
 
   let authToken: string;
   let userId: string;
   let profileId: string;
+  let inviteeUserId: string;
   const testUser = {
     email: `community-test-${Date.now()}@example.com`,
     fn: 'Community',
@@ -18,6 +28,12 @@ describe('Communities E2E Tests', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Community test user',
+  };
+  const inviteeUser = {
+    ...testUser,
+    email: `community-invitee-${Date.now()}@example.com`,
+    fn: 'Community',
+    ln: 'Invitee',
   };
   const testCommunity = {
     name: 'Test Community',
@@ -40,7 +56,12 @@ describe('Communities E2E Tests', () => {
         expect(res.status).toBe(201);
         expect(res.data.data).toBeDefined();
         userId = res.data.data.user.id;
-        profileId = res.data.data.profile?.id || userId;
+      });
+
+      it('should register a distinct user to invite', async () => {
+        const res = await api.post('/authentication/register', inviteeUser);
+        expect(res.status).toBe(201);
+        inviteeUserId = res.data.data.user.id;
       });
     });
 
@@ -54,6 +75,22 @@ describe('Communities E2E Tests', () => {
         expect(res.data.data.newToken).toBeDefined();
         authToken = res.data.data.newToken;
         api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+        profileId = decodeJwtPayload(authToken).profileId as string;
+        expect(profileId).toBeDefined();
+      });
+
+      it('should receive the seeded community owner role for this app scope', async () => {
+        const res = await api.get(
+          `/permissions/user-roles/${profileId}?appScope=client-interface`
+        );
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.data)).toBe(true);
+        expect(
+          res.data.some(
+            (assignment: { role?: { name?: string } }) =>
+              assignment.role?.name === 'community_owner'
+          )
+        ).toBe(true);
       });
     });
   });
@@ -85,6 +122,10 @@ describe('Communities E2E Tests', () => {
       it('should fail to create community without auth', async () => {
         const unauthApi = axios.create({
           baseURL: `${baseURL}/api`,
+          headers: {
+            'x-ot-appscope': 'client-interface',
+            'x-ot-app-id': 'client-interface',
+          },
           validateStatus: () => true,
         });
         const res = await unauthApi.post('/communities', testCommunity);
@@ -137,18 +178,18 @@ describe('Communities E2E Tests', () => {
           );
           expect(res.status).toBe(200);
           expect(Array.isArray(res.data)).toBe(true);
-          // The creator should be a member
-          if (res.data.length > 0) {
-            createdMemberId = res.data[0].id;
-          }
+          expect(res.data.length).toBeGreaterThan(0);
+          const creator = res.data.find(
+            (member: { id: string; userId?: string }) =>
+              member.userId === userId
+          );
+          expect(creator).toBeDefined();
+          createdMemberId = creator!.id;
         });
       });
 
       describe('PUT /api/communities/:id/members/:memberId/role', () => {
-        it('should update member role', async () => {
-          if (!createdMemberId) {
-            return; // Skip if no members
-          }
+        it('should update member role through the seeded community owner role', async () => {
           const res = await api.put(
             `/communities/${createdCommunityId}/members/${createdMemberId}/role`,
             { role: 'admin' }
@@ -161,31 +202,9 @@ describe('Communities E2E Tests', () => {
         it('should invite a user to community', async () => {
           const res = await api.post(
             `/communities/${createdCommunityId}/members/invite`,
-            { inviteeUserId: userId }
+            { inviteeUserId }
           );
-          // May fail if user is already a member, which is fine
-          expect([201, 400, 500]).toContain(res.status);
-        });
-      });
-
-      describe('DELETE /api/communities/:id/members/:memberId', () => {
-        it('should remove a member from community', async () => {
-          if (!createdMemberId) {
-            return; // Skip if no members to remove
-          }
-          // Don't remove the owner
-          const membersRes = await api.get(
-            `/communities/${createdCommunityId}/members`
-          );
-          const nonOwnerMember = membersRes.data.find(
-            (m: any) => m.role !== 'owner' && m.id !== createdMemberId
-          );
-          if (nonOwnerMember) {
-            const res = await api.delete(
-              `/communities/${createdCommunityId}/members/${nonOwnerMember.id}`
-            );
-            expect(res.status).toBe(200);
-          }
+          expect(res.status).toBe(201);
         });
       });
     });

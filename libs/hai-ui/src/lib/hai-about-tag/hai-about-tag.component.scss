@@ -109,6 +109,10 @@
   text-transform: uppercase;
 }
 
+// On small screens the full tag is ~11rem wide and, being fixed to the bottom
+// left, sat on top of whatever control happened to be there — on the leads-app
+// login form it covered the "Email me a magic link" action. Collapse it to the
+// mark alone: still visible and tappable, no longer occluding the page.
 @media (max-width: 640px) {
   :host {
     left: max(0.65rem, env(safe-area-inset-left));
@@ -116,11 +120,29 @@
   }
 
   .hai-tag {
-    min-width: 10.8rem;
-    padding-right: 0.8rem;
+    grid-template-columns: auto;
+    min-width: 0;
+    gap: 0;
+    padding: 0.5rem;
   }
 
-  .tag-copy strong {
-    font-size: 0.88rem;
+  // The accessible name lives on the button's aria-label, so hiding the visible
+  // copy does not leave the control unlabelled.
+  .tag-copy {
+    display: none;
+  }
+
+  .tag-hole {
+    top: 0.4rem;
+    left: 0.38rem;
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  .tag-mark {
+    // Keeps the control at a 44px minimum tap target once the copy is gone.
+    width: 2.75rem;
+    font-size: 1.1rem;
+    letter-spacing: 0.16em;
   }
 }

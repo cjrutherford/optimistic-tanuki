@@ -1,62 +1,32 @@
-.ai-assistant-bubble {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--accent) 0%,
-    var(--complement, var(--secondary)) 100%
-  );
-  border: none;
-  cursor: pointer;
+.ai-assistant-unavailable {
+  width: min(100%, 28rem);
+  margin: var(--spacing-lg, 1.5rem) 0 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 24%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--surface) 94%, var(--background));
+  color: var(--foreground);
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  color: white;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 3px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
+  gap: 0.7rem;
+  box-shadow: var(--personality-card-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
 
   svg {
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    color: var(--primary);
   }
 
-  .badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 10px;
-    background-color: var(--danger);
-    color: var(
-      --on-danger,
-      var(--danger-foreground, var(--primary-foreground))
-    );
-    font-size: 11px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  strong,
+  span span {
+    display: block;
   }
-  .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
+
+  span span {
+    margin-top: 0.15rem;
+    color: color-mix(in srgb, var(--foreground) 72%, var(--background));
+    font-size: 0.8rem;
+    line-height: 1.35;
   }
 }

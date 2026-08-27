@@ -1,16 +1,19 @@
 import {
   Body,
+  BadGatewayException,
   Controller,
   Delete,
   Get,
   HttpException,
   Inject,
+  Headers,
   Param,
   Post,
   Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
@@ -20,6 +23,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { Response } from 'express';
 import { firstValueFrom } from 'rxjs';
+import { Readable } from 'node:stream';
 import { RequirePermissions } from '../decorators/permissions.decorator';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { AuthGuard } from '../auth/auth.guard';
@@ -29,7 +33,8 @@ import { LongRunning } from '../decorators/request-timeout.decorator';
 export class AssetController {
   constructor(
     @Inject(ServiceTokens.ASSETS_SERVICE)
-    private readonly assetService: ClientProxy
+    private readonly assetService: ClientProxy,
+    private readonly configService: ConfigService
   ) {}
 
   private toHttpException(
@@ -83,23 +88,64 @@ export class AssetController {
 
   @Get('/:id')
   @LongRunning()
-  async getAssetById(@Param('id') id: string, @Res() res: Response) {
+  async getAssetById(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Headers('range') range?: string
+  ) {
     try {
-      const value = await firstValueFrom(
-        this.assetService.send({ cmd: AssetCommands.READ }, { id })
+      const mediaUrl = this.configService.get<string>(
+        'ASSETS_INTERNAL_MEDIA_URL'
       );
-      const matches = value.match(/^data:(.*?);base64,(.*)$/);
-      if (matches) {
-        const mimeType = matches[1];
-        const base64Data = matches[2];
-        const buffer = Buffer.from(base64Data, 'base64');
-        res.setHeader('Content-Type', mimeType);
-        res.send(buffer);
-      } else {
-        res.status(400).send('Invalid asset format');
+      const mediaToken = this.configService.get<string>(
+        'ASSETS_INTERNAL_MEDIA_TOKEN'
+      );
+
+      if (!mediaUrl || !mediaToken) {
+        throw new BadGatewayException(
+          'Internal media streaming is unavailable'
+        );
       }
+
+      const headers: Record<string, string> = {
+        'X-Internal-Media-Token': mediaToken,
+      };
+      if (range) {
+        headers['Range'] = range;
+      }
+
+      const upstream = await fetch(
+        `${mediaUrl.replace(/\/$/, '')}/internal/media/${encodeURIComponent(
+          id
+        )}`,
+        { headers }
+      );
+
+      for (const [header, responseHeader] of [
+        ['accept-ranges', 'Accept-Ranges'],
+        ['content-length', 'Content-Length'],
+        ['content-range', 'Content-Range'],
+        ['content-type', 'Content-Type'],
+      ]) {
+        const value = upstream.headers.get(header);
+        if (value) {
+          res.setHeader(responseHeader, value);
+        }
+      }
+      res.status(upstream.status);
+
+      if (!upstream.body) {
+        return res.end();
+      }
+
+      Readable.fromWeb(upstream.body as never).pipe(res);
     } catch (error) {
-      res.status(500).send(`Failed to get asset: ${this.errorMessage(error)}`);
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+      throw new BadGatewayException(
+        `Failed to stream asset: ${this.errorMessage(error)}`
+      );
     }
   }
 

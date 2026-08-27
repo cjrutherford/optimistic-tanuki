@@ -88,13 +88,16 @@ describe('AppService', () => {
           recipients: ['user2'],
           content: 'Hello',
           type: MessageType.CHAT,
+          conversation: expect.objectContaining({
+            id: 'test-conversation-id',
+          }),
         })
       );
       expect(messageRepository.save).toHaveBeenCalled();
       expect(conversationRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'test-conversation-id',
-          title: 'User Two, User Two',
+          title: 'User Two',
           participants: ['user1', 'user2'],
           messages: expect.any(Array),
           updatedAt: expect.any(Date),
@@ -118,7 +121,11 @@ describe('AppService', () => {
       };
       const result = await service.postMessage(chatMessageWithConvId);
 
-      expect(messageRepository.create).toHaveBeenCalled();
+      expect(messageRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversation: existingConversation,
+        })
+      );
       expect(messageRepository.save).toHaveBeenCalled();
       expect(conversationRepository.create).not.toHaveBeenCalled();
       expect(conversationRepository.save).toHaveBeenCalledWith(
@@ -191,6 +198,20 @@ describe('AppService', () => {
         })
       );
       expect(result).toEqual(mockConversation);
+    });
+  });
+
+  describe('createDirectChat', () => {
+    it('rejects direct conversations that do not have exactly two distinct participants', async () => {
+      await expect(service.createDirectChat(['profile-1'])).rejects.toThrow(
+        'exactly two distinct participants'
+      );
+      await expect(
+        service.createDirectChat(['profile-1', 'profile-1'])
+      ).rejects.toThrow('exactly two distinct participants');
+      await expect(
+        service.createDirectChat(['profile-1', 'profile-2', 'profile-3'])
+      ).rejects.toThrow('exactly two distinct participants');
     });
   });
 

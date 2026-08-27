@@ -52,8 +52,8 @@ export const withScopeWhere = <T>(
   base: FindOptionsWhere<T>,
   scope?: FinanceScope
 ): FindOptionsWhere<T> => ({
-  ...scopeWhere<T>(scope),
   ...base,
+  ...scopeWhere<T>(scope),
 });
 
 export const mergeScopedWhere = <T>(

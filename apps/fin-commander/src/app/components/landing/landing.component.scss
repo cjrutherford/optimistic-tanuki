@@ -16,8 +16,7 @@
   grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
   gap: 2rem;
   padding: clamp(2rem, 4vw, 3rem);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(20px);
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
   border: var(--fc-border-width, 2px) solid
     color-mix(in srgb, var(--primary) 25%, transparent);
   border-radius: var(--fc-card-radius, 18px);
@@ -71,14 +70,7 @@ h1 {
   font-size: clamp(2.8rem, 6vw, 4.5rem);
   font-weight: 700;
   line-height: 0.95;
-  background: linear-gradient(
-    135deg,
-    var(--foreground) 0%,
-    color-mix(in srgb, var(--foreground) 60%, var(--primary)) 100%
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--foreground);
 }
 
 h2 {
@@ -129,24 +121,19 @@ h2 {
 }
 
 .cta.primary {
-  background: linear-gradient(
-    135deg,
-    var(--primary),
-    color-mix(in srgb, var(--primary) 70%, var(--accent, var(--secondary)))
-  );
+  background: var(--primary);
   color: var(--background);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 35%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 25%, transparent);
 
   &:hover {
-    box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 45%, transparent);
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 30%, transparent);
   }
 }
 
 .cta.secondary {
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
   border-color: color-mix(in srgb, var(--border) 70%, transparent);
   color: var(--foreground);
-  backdrop-filter: blur(8px);
 
   &:hover {
     border-color: var(--primary);
@@ -206,8 +193,7 @@ h2 {
   display: flex;
   gap: 1rem;
   padding: 1.3rem;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   border-radius: var(--fc-card-radius, 18px);
   transition: var(--fc-transition, all 0.22s cubic-bezier(0.16, 1, 0.3, 1));
@@ -243,7 +229,6 @@ h2 {
   justify-content: center;
   width: 48px;
   height: 48px;
-  font-size: 1.4rem;
   border-radius: 12px;
 }
 

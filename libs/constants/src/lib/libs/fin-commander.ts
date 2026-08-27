@@ -11,10 +11,59 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-// Mirrors `FinanceWorkspace` from '@optimistic-tanuki/models'. Defined locally
+// Mirrors the `FinanceWorkspace` shape declared by the models library. Defined locally
 // because libs/constants is a low-level library and must not depend on
 // libs/models (doing so breaks its rootDir-scoped build — TS6059).
 type FinanceWorkspace = 'personal' | 'business' | 'net-worth';
+
+export interface FinCommanderGoalFundingDirective {
+  fundingAccountId: string;
+  fundingAccountName: string;
+  fundingAccountBalanceCents: number;
+  remainingAmountCents: number;
+  monthsRemaining: number;
+  requiredMonthlyContributionCents: number;
+  isOverdue: boolean;
+}
+
+export interface FinCommanderFundingDirectivePreview {
+  goalId: string;
+  amountCents: number;
+  cadence: 'monthly';
+  startDate: string;
+  fundingAccountId: string;
+  fundingAccountName: string;
+  effect: 'forecast-only; no transaction or account balance change';
+}
+
+export interface FinCommanderFundingDirectiveDto
+  extends FinCommanderFundingDirectivePreview {
+  id: string;
+  recurringItemId: string | null;
+  status: 'approved' | 'cancelled';
+  approvedAt: string | null;
+  approvedByUserId: string | null;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+}
+
+export interface FinCommanderCashFlowEvent {
+  date: string;
+  amountCents: number;
+  kind: 'recurring-income' | 'recurring-expense' | 'goal-funding';
+  label: string;
+  sourceId: string;
+}
+
+export interface FinCommanderCashFlowProjection {
+  calculatedAt: string;
+  workspace: FinanceWorkspace;
+  openingBalanceCents: number;
+  projectedBalanceCents: number;
+  horizonDays: number;
+  events: FinCommanderCashFlowEvent[];
+  dailyBalances: Array<{ date: string; closingBalanceCents: number }>;
+}
 
 export const FinCommanderPlanCommands = {
   CREATE: 'CREATE_FIN_COMMANDER_PLAN',
@@ -30,6 +79,9 @@ export const FinCommanderGoalCommands = {
   DELETE: 'DELETE_FIN_COMMANDER_GOAL',
   FIND: 'FIND_FIN_COMMANDER_GOAL',
   FIND_MANY: 'FIND_MANY_FIN_COMMANDER_GOAL',
+  FUNDING_DIRECTIVE_PREVIEW: 'PREVIEW_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
+  FUNDING_DIRECTIVE_APPROVE: 'APPROVE_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
+  FUNDING_DIRECTIVE_CANCEL: 'CANCEL_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
 };
 
 export const FinCommanderScenarioCommands = {
@@ -38,6 +90,10 @@ export const FinCommanderScenarioCommands = {
   DELETE: 'DELETE_FIN_COMMANDER_SCENARIO',
   FIND: 'FIND_FIN_COMMANDER_SCENARIO',
   FIND_MANY: 'FIND_MANY_FIN_COMMANDER_SCENARIO',
+};
+
+export const FinCommanderProjectionCommands = {
+  GET: 'GET_FIN_COMMANDER_CASH_FLOW_PROJECTION',
 };
 
 /**
@@ -177,6 +233,17 @@ export class FinCommanderGoalDto {
   @ApiProperty()
   @IsString()
   strategy: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Tenant account dedicated to funding this goal',
+  })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string | null;
+
+  fundingDirective?: FinCommanderGoalFundingDirective | null;
 }
 
 export class CreateFinCommanderGoalDto {
@@ -213,6 +280,15 @@ export class CreateFinCommanderGoalDto {
   @IsString()
   @IsOptional()
   strategy?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Tenant account dedicated to funding this goal',
+  })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string;
 
   @ApiProperty()
   @IsString()
@@ -272,6 +348,12 @@ export class UpdateFinCommanderGoalDto {
   @IsString()
   @IsOptional()
   strategy?: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string | null;
 }
 
 /**

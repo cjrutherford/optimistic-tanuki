@@ -15,6 +15,8 @@ import { provideClientHydration } from '@angular/platform-browser';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { AuthService } from './services/auth.service';
+import { firstValueFrom } from 'rxjs';
 
 function initializeTheme() {
   // Lazy load ThemeService to avoid SSR issues
@@ -36,6 +38,13 @@ export const appConfig: ApplicationConfig = {
     },
     provideAnimationsAsync(),
     provideClientHydration(),
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [AuthService],
+      useFactory: (auth: AuthService) => () =>
+        firstValueFrom(auth.restoreSession()),
+    },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeTheme,

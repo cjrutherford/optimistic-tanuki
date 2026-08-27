@@ -5,15 +5,18 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/videos"
+        "webpackConfig": "apps/videos/webpack.config.js",
+        "outputPath": "dist/apps/videos",
+        "deleteOutputPath": false
       },
       "configurations": {
         "development": {
-          "args": ["--node-env=development"]
+          "optimization": false
+        },
+        "production": {
+          "optimization": true
         }
       }
     },
@@ -66,6 +69,58 @@
       "options": {
         "jestConfig": "apps/videos/jest.config.ts",
         "tsConfig": "apps/videos/tsconfig.spec.json"
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/videos",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:create": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:create",
+        "cwd": "apps/videos",
+        "env": { "TS_NODE_PROJECT": "tsconfig.app.json" }
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:run -d src/app/staticDatabase.ts",
+        "cwd": "apps/videos",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:revert -d src/app/staticDatabase.ts",
+        "cwd": "apps/videos",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
+    },
+    "typeorm:migration:show": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:show -d src/app/staticDatabase.ts",
+        "cwd": "apps/videos",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
       }
     }
   },

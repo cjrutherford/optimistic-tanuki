@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ImagesService, ImageInfo } from './images.service';
+import { OwnerAuthorizationGuard } from '../auth/owner-authorization.guard';
 
 @ApiTags('images')
 @Controller()
+@UseGuards(OwnerAuthorizationGuard)
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 

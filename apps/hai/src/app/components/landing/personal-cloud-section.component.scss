@@ -2,15 +2,9 @@
   display: block;
 }
 
-.personal-cloud-panel,
-.ownership-card {
-  border-radius: var(--hai-radius-panel);
-  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
-  box-shadow: var(--hai-shadow-panel);
-}
-
 .personal-cloud-panel {
   margin-top: clamp(2.5rem, 5vw, 4rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
   padding: clamp(1.6rem, 3vw, 2.8rem);
   background: var(--hai-panel-background);
   backdrop-filter: blur(14px);
@@ -57,12 +51,9 @@ h2 {
 }
 
 .ownership-card {
-  padding: 1.6rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background: var(--hai-panel-background);
-  backdrop-filter: blur(14px);
 }
 
 .ownership-list {

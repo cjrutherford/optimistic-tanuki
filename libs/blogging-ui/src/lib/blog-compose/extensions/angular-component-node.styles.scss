@@ -1,23 +1,25 @@
 /* Angular Component Node Styles */
+@use 'personality' as p;
+
 .angular-component-container {
   position: relative;
   margin: var(--spacing-md, 16px) 0;
-  border: 2px solid var(--local-complement, var(--complement, #c0af4b));
+  border: 2px solid var(--secondary, #c0af4b);
   border-radius: var(--border-radius-lg, 8px);
-  background: var(--local-background, var(--background, #ffffff));
-  transition: all 0.15s ease-in-out;
+  background: var(--background, #ffffff);
+  @include p.personality-transition(all);
   cursor: pointer;
 
   &:hover {
-    border-color: var(--local-accent, var(--accent, #667eea));
-    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    border-color: var(--primary, #667eea);
+    @include p.shadow('md');
     transform: translateY(-1px);
   }
 
   &.selected {
-    border-color: var(--local-accent, var(--accent, #667eea));
-    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
-    background: rgba(102, 126, 234, 0.05);
+    border-color: var(--primary, #667eea);
+    @include p.shadow('lg');
+    background: color-mix(in srgb, var(--primary) 5%, transparent);
   }
 }
 
@@ -26,8 +28,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  background: var(--local-complement, var(--complement, #c0af4b));
-  color: var(--local-background, var(--background, #ffffff));
+  background: var(--secondary, #c0af4b);
+  color: var(--background, #ffffff);
   border-radius: var(--border-radius-md, 4px) var(--border-radius-md, 4px) 0 0;
   font-size: var(--font-size-sm, 0.875rem);
   font-weight: 500;
@@ -45,15 +47,23 @@
     cursor: pointer;
     padding: var(--spacing-xs, 4px);
     border-radius: var(--border-radius-sm, 2px);
-    transition: background-color 0.15s ease-in-out;
+    @include p.personality-transition(background-color);
     font-size: 14px;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: color-mix(
+        in srgb,
+        var(--secondary-foreground) 20%,
+        transparent
+      );
     }
 
     &:active {
-      background: rgba(255, 255, 255, 0.3);
+      background: color-mix(
+        in srgb,
+        var(--secondary-foreground) 30%,
+        transparent
+      );
     }
   }
 }
@@ -68,13 +78,13 @@
 
 .component-preview {
   text-align: center;
-  color: var(--local-foreground, var(--foreground, #333333));
+  color: var(--foreground, #333333);
 
   h4 {
     margin: 0 0 var(--spacing-xs, 4px) 0;
     font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
-    color: var(--local-accent, var(--accent, #667eea));
+    color: var(--primary, #667eea);
   }
 
   p {
@@ -108,8 +118,8 @@
 }
 
 .angular-component-container.drag-over {
-  border-color: var(--local-accent, var(--accent, #667eea));
-  background: rgba(102, 126, 234, 0.1);
+  border-color: var(--primary, #667eea);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 /* Animation for component insertion */
@@ -125,7 +135,8 @@
 }
 
 .angular-component-container.inserting {
-  animation: componentInsert 0.3s ease-out;
+  animation: componentInsert var(--animation-duration-normal, 300ms)
+    var(--animation-easing, ease-out);
 }
 
 /* Responsive adjustments */

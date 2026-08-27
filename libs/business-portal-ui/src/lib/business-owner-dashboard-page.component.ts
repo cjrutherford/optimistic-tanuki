@@ -64,7 +64,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         letter-spacing: 0.12em;
         font-size: 0.72rem;
         font-weight: 800;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       .next-step p {
         margin: 0;

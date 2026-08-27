@@ -3,7 +3,7 @@
 > **Last Updated**: January 2026  
 > **Overall Status**: Core MVP features complete, polish and expansion in progress
 
-This document tracks the MVP (Minimum Viable Product) implementation status for the Optimistic Tanuki platform. The platform consists of multiple microservices providing digital homestead, project management, blogging, and AI-powered features.
+This document tracks the MVP (Minimum Viable Product) implementation status for the Optimistic Tanuki platform. The platform consists of multiple microservices providing digital homestead, project management, blogging, and AI-assisted marketing generation with template fallback and token-usage visibility via local LLM (Ollama).
 
 ## Current Implementation Status
 

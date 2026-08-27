@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,6 +11,7 @@ import {
   Query,
   RawBodyRequest,
   Req,
+  NotFoundException,
   UnauthorizedException,
   UseGuards,
   Logger,
@@ -130,6 +132,58 @@ export class PaymentsController {
         port: serviceConfig.port,
       },
     });
+  }
+
+  private async sendOfferCommand<T>(
+    pattern: { cmd: string },
+    payload: unknown,
+    notFoundMessage?: string
+  ): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.paymentsClient.send<T>(pattern, payload)
+      );
+    } catch (error) {
+      const statusCode =
+        typeof error === 'object' && error !== null && 'statusCode' in error
+          ? Number((error as { statusCode?: unknown }).statusCode)
+          : undefined;
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? (error as { message?: unknown }).message
+          : undefined;
+      const normalizedMessage =
+        typeof message === 'string' ? message : 'Offer request failed';
+
+      if (statusCode === 400) {
+        throw new BadRequestException(normalizedMessage);
+      }
+      if (statusCode === 404) {
+        throw new NotFoundException(notFoundMessage ?? normalizedMessage);
+      }
+      throw error;
+    }
+  }
+
+  private async sendPaymentRead<T>(
+    pattern: { cmd: string },
+    payload: unknown
+  ): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.paymentsClient.send<T>(pattern, payload)
+      );
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'statusCode' in error &&
+        Number((error as { statusCode?: unknown }).statusCode) === 404
+      ) {
+        throw new NotFoundException('Payment not found');
+      }
+      throw error;
+    }
   }
 
   @Get('donations/goal')
@@ -305,7 +359,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.RELEASE_FUNDS },
         {
           paymentId,
-          sellerId: user.userId,
+          userId: user.userId,
         }
       )
     );
@@ -336,12 +390,13 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get payment details' })
-  async getPayment(@Param('paymentId') paymentId: string) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_PAYMENT },
-        { paymentId }
-      )
+  async getPayment(
+    @User() user: UserDetails,
+    @Param('paymentId') paymentId: string
+  ) {
+    return this.sendPaymentRead(
+      { cmd: PaymentCommands.GET_PAYMENT },
+      { paymentId, userId: user.userId }
     );
   }
 
@@ -566,14 +621,9 @@ export class PaymentsController {
     @User() user: UserDetails,
     @Param('offerId') offerId: string
   ) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.ACCEPT_OFFER },
-        {
-          offerId,
-          sellerId: user.userId,
-        }
-      )
+    return this.sendOfferCommand(
+      { cmd: PaymentCommands.ACCEPT_OFFER },
+      { offerId, sellerId: user.userId }
     );
   }
 
@@ -585,14 +635,9 @@ export class PaymentsController {
     @User() user: UserDetails,
     @Param('offerId') offerId: string
   ) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.REJECT_OFFER },
-        {
-          offerId,
-          sellerId: user.userId,
-        }
-      )
+    return this.sendOfferCommand(
+      { cmd: PaymentCommands.REJECT_OFFER },
+      { offerId, sellerId: user.userId }
     );
   }
 
@@ -605,16 +650,14 @@ export class PaymentsController {
     @Param('offerId') offerId: string,
     @Body() dto: CounterOfferDto
   ) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.COUNTER_OFFER },
-        {
-          offerId,
-          sellerId: user.userId,
-          counterAmount: dto.counterAmount,
-          message: dto.message,
-        }
-      )
+    return this.sendOfferCommand(
+      { cmd: PaymentCommands.COUNTER_OFFER },
+      {
+        offerId,
+        sellerId: user.userId,
+        counterAmount: dto.counterAmount,
+        message: dto.message,
+      }
     );
   }
 
@@ -626,14 +669,9 @@ export class PaymentsController {
     @User() user: UserDetails,
     @Param('offerId') offerId: string
   ) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.WITHDRAW_OFFER },
-        {
-          offerId,
-          buyerId: user.userId,
-        }
-      )
+    return this.sendOfferCommand(
+      { cmd: PaymentCommands.WITHDRAW_OFFER },
+      { offerId, buyerId: user.userId }
     );
   }
 
@@ -641,12 +679,14 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get offers for a classified' })
-  async getOffersForClassified(@Param('classifiedId') classifiedId: string) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_OFFERS_FOR_CLASSIFIED },
-        { classifiedId }
-      )
+  async getOffersForClassified(
+    @User() user: UserDetails,
+    @Param('classifiedId') classifiedId: string
+  ) {
+    return this.sendOfferCommand(
+      { cmd: PaymentCommands.GET_OFFERS_FOR_CLASSIFIED },
+      { classifiedId, userId: user.userId },
+      'Classified offers not found'
     );
   }
 
@@ -671,7 +711,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_WALLET },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }
@@ -688,7 +728,7 @@ export class PaymentsController {
       this.paymentsClient.send(
         { cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO },
         {
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
           bankAccountLast4: dto.bankAccountLast4,
@@ -710,7 +750,7 @@ export class PaymentsController {
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_PAYOUT_REQUEST },
         {
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
           amount: dto.amount,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
@@ -729,7 +769,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }
@@ -747,7 +787,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.CANCEL_PAYOUT_REQUEST },
         {
           payoutRequestId,
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
         }
       )
     );
@@ -761,7 +801,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }

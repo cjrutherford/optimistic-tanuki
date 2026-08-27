@@ -176,50 +176,6 @@ async function bootstrap() {
     },
   });
 
-  const getUserRoles = async (profileId: string, token: string) => {
-    const response = await httpClient.get(
-      `/permissions/user-roles/${profileId}`,
-      {
-        params: { appScope },
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-    return response.data?.data || response.data;
-  };
-
-  const ensureRoleAssignment = async (
-    role: any,
-    profileId: string,
-    token: string,
-    targetId: string | null = null
-  ) => {
-    if (!role?.id) {
-      return false;
-    }
-
-    const assignments = await getUserRoles(profileId, token);
-    const alreadyAssigned = Array.isArray(assignments)
-      ? assignments.some((assignment: any) => assignment.role?.id === role.id)
-      : false;
-
-    if (alreadyAssigned) {
-      return false;
-    }
-
-    await httpClient.post(
-      '/permissions/assignment',
-      {
-        roleId: role.id,
-        profileId,
-        appScopeId: role.appScope?.id || appScope,
-        targetId,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    return true;
-  };
-
   try {
     await httpClient.get('/health');
     logger.log('Gateway connectivity: OK');
@@ -268,12 +224,14 @@ async function bootstrap() {
       token = data?.token || data?.newToken;
 
       if (token) {
+        // There is no /authentication/me route on the gateway; decode the
+        // userId directly from the JWT token payload instead.
         try {
-          const meRes = await httpClient.get('/authentication/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const me = meRes.data?.data || meRes.data;
-          userId = me?.userId || me?.id;
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            userId = payload?.sub || payload?.userId || payload?.user_id;
+          }
         } catch {
           /* ignore */
         }
@@ -356,76 +314,6 @@ async function bootstrap() {
     return;
   }
   logger.log(`Authenticated ${authenticatedUsers.length} users`);
-
-  // ── Step 1.5: Assign local_hub_admin role to seed user ────────────────────
-  logger.log('=== Step 1.5: Assign local_hub_admin Role ===');
-  const seedUser = authenticatedUsers[0];
-  let localHubMemberRole: any = null;
-  let localHubPosterRole: any = null;
-
-  try {
-    const rolesRes = await httpClient.get('/permissions/role', {
-      headers: { Authorization: `Bearer ${seedUser.token}` },
-    });
-    const roles = rolesRes.data?.data || rolesRes.data;
-    const localHubAdminRole = Array.isArray(roles)
-      ? roles.find((r: any) => r.name === 'local_hub_admin')
-      : null;
-    localHubMemberRole = Array.isArray(roles)
-      ? roles.find((r: any) => r.name === 'local_hub_member')
-      : null;
-    localHubPosterRole = Array.isArray(roles)
-      ? roles.find((r: any) => r.name === 'local_hub_community_poster')
-      : null;
-
-    if (localHubAdminRole?.id) {
-      try {
-        const assigned = await ensureRoleAssignment(
-          localHubAdminRole,
-          seedUser.profileId,
-          seedUser.token
-        );
-        logger.log(
-          assigned
-            ? `Assigned local_hub_admin role to ${seedUser.email}`
-            : `User already has local_hub_admin role`
-        );
-      } catch (assignErr: any) {
-        const message =
-          assignErr.response?.data?.message || assignErr.message || '';
-        if (
-          assignErr.response?.status === 409 ||
-          `${message}`.toLowerCase().includes('duplicate')
-        ) {
-          logger.log(`User already has local_hub_admin role`);
-        } else {
-          logger.warn(`Failed to assign role: ${assignErr.message}`);
-        }
-      }
-    } else {
-      logger.warn(`local_hub_admin role not found`);
-    }
-
-    for (const user of authenticatedUsers) {
-      if (localHubMemberRole?.id) {
-        await ensureRoleAssignment(
-          localHubMemberRole,
-          user.profileId,
-          seedUser.token
-        );
-      }
-
-      if (localHubPosterRole?.id) {
-        await ensureRoleAssignment(
-          localHubPosterRole,
-          user.profileId,
-          seedUser.token
-        );
-      }
-    }
-  } catch (roleErr: any) {
-    logger.warn(`Failed to get roles: ${roleErr.message}`);
-  }
 
   // ── Step 2: Ensure city community (Savannah, GA) exists ──────────────────
   logger.log('=== Step 2: Ensure City Community (Savannah, GA) ===');

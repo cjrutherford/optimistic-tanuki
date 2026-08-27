@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
   BusinessSiteConfigStore,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -118,12 +118,8 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         border-radius: 999px;
         font-size: 0.78rem;
         font-weight: 700;
-        color: var(--primary, #1f7a63);
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 10%,
-          transparent
-        );
+        color: var(--primary);
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
       }
     `,
   ],
@@ -132,8 +128,7 @@ export class BusinessClientTasksPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly route = inject(ActivatedRoute, { optional: true });
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   private readonly clientId = computed(
     () => this.auth.clientUser()?.userId ?? ''
   );
@@ -153,12 +148,12 @@ export class BusinessClientTasksPageComponent {
         return;
       }
 
-      this.api.getClientRoutines(id, this.siteSlug).subscribe((routines) => {
+      this.api.getClientRoutines(id, this.siteSlug()).subscribe((routines) => {
         this.routines.set(routines);
       });
     });
 
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 
   submitCheckIn(): void {
@@ -172,7 +167,7 @@ export class BusinessClientTasksPageComponent {
         assignmentId: this.assignmentId,
         notes: this.notes,
         energy: this.energy,
-        siteSlug: this.siteSlug ?? undefined,
+        siteSlug: this.siteSlug() ?? undefined,
       })
       .subscribe(() => {
         this.notes = 'Check-in saved.';
@@ -185,7 +180,7 @@ export class BusinessClientTasksPageComponent {
     }
 
     this.api
-      .completeClientRoutine(id, this.siteSlug)
+      .completeClientRoutine(id, this.siteSlug())
       .subscribe((updatedRoutine) => {
         this.routines.update((routines) =>
           routines.map((routine) =>

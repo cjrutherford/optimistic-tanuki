@@ -1,6 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { API_BASE_URL, LoginRequest } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  LoginRequest,
+  UserDto,
+} from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({
@@ -12,10 +16,25 @@ export class AuthenticationService {
 
   login(data: LoginRequest) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
+      this.http.post<{ data: Record<string, never> }>(
         `${this.baseUrl}/login`,
-        data
+        data,
+        { headers: { 'X-ot-session-mode': 'cookie' }, withCredentials: true }
       )
+    );
+  }
+
+  currentSession() {
+    return firstValueFrom(
+      this.http.get<{ data: UserDto }>(`${this.baseUrl}/session`, {
+        withCredentials: true,
+      })
+    );
+  }
+
+  logout() {
+    return firstValueFrom(
+      this.http.post(`${this.baseUrl}/logout`, {}, { withCredentials: true })
     );
   }
 }

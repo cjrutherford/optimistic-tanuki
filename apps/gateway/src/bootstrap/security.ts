@@ -19,6 +19,28 @@ export const parseConfiguredOrigins = (
     .map((entry) => trimOrigin(entry))
     .filter((entry) => entry.length > 0 && entry !== '*');
 
+const addLoopbackOriginAliases = (
+  origins: Set<string>,
+  origin: string
+): void => {
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (!normalizedOrigin) {
+    return;
+  }
+
+  origins.add(normalizedOrigin);
+  const host = originHost(normalizedOrigin);
+  if (!host || !LOCALHOST_HOSTNAMES.has(host)) {
+    return;
+  }
+
+  const parsed = new URL(normalizedOrigin);
+  for (const loopbackHost of LOCALHOST_HOSTNAMES) {
+    parsed.hostname = loopbackHost;
+    origins.add(parsed.origin);
+  }
+};
+
 export const getTrustedOrigins = ({
   configuredOrigins = parseConfiguredOrigins(),
   registry,
@@ -29,20 +51,45 @@ export const getTrustedOrigins = ({
   const trustedOrigins = new Set<string>();
 
   for (const origin of configuredOrigins) {
-    const normalizedOrigin = normalizeOrigin(origin);
-    if (normalizedOrigin) {
-      trustedOrigins.add(normalizedOrigin);
-    }
+    addLoopbackOriginAliases(trustedOrigins, origin);
   }
 
   for (const app of registry?.apps ?? []) {
-    const normalizedOrigin = normalizeOrigin(app.uiBaseUrl);
-    if (normalizedOrigin) {
-      trustedOrigins.add(normalizedOrigin);
-    }
+    addLoopbackOriginAliases(trustedOrigins, app.uiBaseUrl);
   }
 
   return [...trustedOrigins];
+};
+
+export const assertProductionOwnerConsoleOrigin = ({
+  configuredOrigins = parseConfiguredOrigins(),
+  nodeEnv = process.env['NODE_ENV'],
+  registry,
+}: {
+  configuredOrigins?: string[];
+  nodeEnv?: string;
+  registry?: AppRegistry;
+} = {}): void => {
+  if (nodeEnv !== 'production') {
+    return;
+  }
+
+  const ownerConsole = registry?.apps.find(
+    (app) => app.appId === 'owner-console'
+  );
+  const ownerOrigin = ownerConsole && normalizeOrigin(ownerConsole.uiBaseUrl);
+  if (!ownerOrigin) {
+    return;
+  }
+
+  const configuredOwnerOrigin = configuredOrigins.some(
+    (origin) => normalizeOrigin(origin) === ownerOrigin
+  );
+  if (!configuredOwnerOrigin) {
+    throw new Error(
+      `CORS_ALLOWED_ORIGINS must include the Owner Console origin ${ownerOrigin}.`
+    );
+  }
 };
 
 export const originHost = (origin: string): string | null => {
@@ -175,7 +222,10 @@ export const applyGatewaySecurityHeaders = (
     'Permissions-Policy',
     'camera=(), geolocation=(), microphone=(), payment=(), usb=()'
   );
-  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // OAuth providers navigate popup windows to a different origin. `same-origin`
+  // makes that live window appear closed to its opener, so keep popups in the
+  // opener's browsing-context group while retaining the other security headers.
+  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-site');
 
   if (request.path.startsWith('/api')) {

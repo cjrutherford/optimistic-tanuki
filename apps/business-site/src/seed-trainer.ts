@@ -141,30 +141,15 @@ async function bootstrap() {
       const data = loginResponse.data?.data || loginResponse.data;
       token = data?.token || data?.newToken;
 
-      // Fetch user details from /authentication/me
-      if (!userId || !profileId) {
-        try {
-          const meResponse = await httpClient.get('/authentication/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const meData = meResponse.data?.data || meResponse.data;
-          userId = meData?.userId || meData?.id || userId;
-        } catch (e: any) {
-          logger.warn(
-            `Could not fetch /authentication/me: ${
-              e?.response?.data?.message || e.message
-            }`
-          );
-        }
-      }
-
-      // Decode token if still no userId
-      if (!userId && token) {
+      // There is no /authentication/me route on the gateway; decode the
+      // userId directly from the JWT token payload instead.
+      if ((!userId || !profileId) && token) {
         try {
           const tokenParts = token.split('.');
           if (tokenParts.length === 3) {
             const payload = JSON.parse(atob(tokenParts[1]));
-            userId = payload?.sub || payload?.userId || payload?.user_id;
+            userId =
+              payload?.sub || payload?.userId || payload?.user_id || userId;
             logger.log(`Extracted userId from token: ${userId}`);
           }
         } catch (e) {

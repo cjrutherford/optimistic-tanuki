@@ -26,14 +26,6 @@ export class OAuthProviderEntity {
   @Column({ nullable: true })
   providerDisplayName?: string;
 
-  // Note: OAuth tokens should be encrypted at rest in production environments.
-  // Consider using application-level encryption before persisting these values.
-  @Column({ type: 'text', nullable: true })
-  accessToken?: string;
-
-  @Column({ type: 'text', nullable: true })
-  refreshToken?: string;
-
   @Column()
   userId: string;
 

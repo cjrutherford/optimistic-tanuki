@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Harness Correction Escalation Analysis</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101418;
+        --panel: #192127;
+        --line: #33404a;
+        --text: #edf3f7;
+        --muted: #aab7c0;
+        --accent: #82d8c2;
+        --warn: #f3c969;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(145deg, #101418, #18252a);
+        color: var(--text);
+        font: 16px/1.55 system-ui, -apple-system, Segoe UI, sans-serif;
+      }
+      main {
+        max-width: 1100px;
+        margin: auto;
+        padding: 42px 22px 64px;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.2;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 4rem);
+        max-width: 850px;
+        margin: 0.2rem 0 1rem;
+      }
+      h2 {
+        margin-top: 2.6rem;
+      }
+      h3 {
+        margin-bottom: 0.35rem;
+      }
+      .eyebrow {
+        color: var(--accent);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 1.18rem;
+        max-width: 850px;
+      }
+      .callout,
+      .card {
+        background: rgba(25, 33, 39, 0.9);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 20px;
+      }
+      .callout {
+        border-left: 4px solid var(--accent);
+        margin: 24px 0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+      .timeline {
+        border-left: 2px solid var(--line);
+        margin: 22px 0;
+        padding-left: 22px;
+      }
+      .timeline article {
+        position: relative;
+        margin: 0 0 18px;
+      }
+      .timeline article::before {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        left: -29px;
+        top: 7px;
+      }
+      .status {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .status.partial {
+        color: var(--warn);
+      }
+      .metric {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--accent);
+        display: block;
+      }
+      .label,
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 0.9rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0;
+        background: rgba(25, 33, 39, 0.75);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 13px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        color: var(--accent);
+      }
+      blockquote {
+        margin: 14px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--warn);
+        color: #f3f6f8;
+        background: #202a30;
+      }
+      code {
+        color: #c8f1e6;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible {
+        outline: 3px solid var(--warn);
+        outline-offset: 3px;
+      }
+      footer {
+        margin-top: 3rem;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+      }
+      @media (max-width: 650px) {
+        main {
+          padding: 28px 14px 44px;
+        }
+        th,
+        td {
+          padding: 10px;
+          font-size: 0.92rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Local harness audit · generated 2026-08-13</div>
+      <h1>
+        Correction and frustration patterns across Claude, Codex, and
+        Antigravity
+      </h1>
+      <p class="lede">
+        An incident-level review of locally available AI-harness histories for
+        corrective messaging, escalation, issue context, resolution, and future
+        prevention. The evidence shows repeated operational correction, but no
+        clear profanity, insults, or overtly abusive language.
+      </p>
+
+      <section class="callout" aria-labelledby="outcome">
+        <h2 id="outcome">Outcome</h2>
+        <p>
+          Your escalation style is primarily operational: you identify the
+          failed behavior, restate the constraint, narrow the requested scope,
+          and demand direct verification. The strongest emotional signal is
+          contradiction—especially “you’re wrong”—rather than anger. The
+          expanded review also shows that the expensive part is usually not one
+          message; it is a chain of short corrective messages after a premature
+          “fixed” claim.
+        </p>
+      </section>
+
+      <section aria-labelledby="metrics">
+        <h2 id="metrics">Evidence summary</h2>
+        <div class="grid">
+          <div class="card">
+            <span class="metric">159</span
+            ><span class="label">Claude user-message records reviewed</span>
+          </div>
+          <div class="card">
+            <span class="metric">15</span
+            ><span class="label">Claude correction/escalation candidates</span>
+          </div>
+          <div class="card">
+            <span class="metric">2,587</span
+            ><span class="label">Codex user-message records reviewed</span>
+          </div>
+          <div class="card">
+            <span class="metric">68</span
+            ><span class="label">Codex correction/escalation candidates</span>
+          </div>
+          <div class="card">
+            <span class="metric">110</span
+            ><span class="label"
+              >Longest highlighted corrective message, in words</span
+            >
+          </div>
+          <div class="card">
+            <span class="metric">8h 25m</span
+            ><span class="label">Longest highlighted incident window</span>
+          </div>
+          <div class="card">
+            <span class="metric">0</span
+            ><span class="label">Clear profanity or anger markers found</span>
+          </div>
+        </div>
+        <p class="muted small">
+          Counts are record-level and may include imported/continued sessions.
+          Candidate matching used correction markers such as “still broken,”
+          “wrong,” “again,” “stop,” explicit scope constraints, and repeated
+          verification requests. Message lengths are normalized whitespace word
+          counts. Incident duration is the span between the first and last
+          relevant user message visible in the local record; it is not
+          continuous time spent actively typing.
+        </p>
+      </section>
+
+      <section aria-labelledby="harnesses">
+        <h2 id="harnesses">Harness comparison</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Harness</th>
+              <th>Observed pattern</th>
+              <th>Assessment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Claude</td>
+              <td>
+                Focused escalation around the business-site CSP/style regression
+                and slug-preserving navigation. One explicit contradiction: “but
+                you’re wrong, it’s not a static root.”
+              </td>
+              <td>
+                Most concentrated correction episode; still task-focused rather
+                than abusive.
+              </td>
+            </tr>
+            <tr>
+              <td>Codex</td>
+              <td>
+                Higher volume of iterative correction: seed failures, OAuth
+                handoff, mobile behavior, validation, sockets, CSP styling, and
+                tenant-slug navigation. Repeated workflow boundary: “do not use
+                work trees.”
+              </td>
+              <td>
+                Most frequent corrective pressure, largely driven by
+                long-running debugging loops.
+              </td>
+            </tr>
+            <tr>
+              <td>Antigravity</td>
+              <td>
+                Accessible local data is mainly trajectory summaries and
+                generated task artifacts, not complete raw dialogue turns.
+              </td>
+              <td>
+                Insufficient raw evidence for reliable emotional classification;
+                available summaries show ordinary fix/verify cycles.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="incidents">
+        <h2 id="incidents">Expanded incident analysis</h2>
+        <p class="muted">
+          The table distinguishes message length from incident duration.
+          “Resolution” reflects the strongest evidence available in the local
+          follow-up records, not an assumption that a later agent claim was
+          correct.
+        </p>
+        <div class="timeline">
+          <article>
+            <h3>Claude · July 21 · business-site CSP/style regression</h3>
+            <p>
+              <strong>Corrective messaging:</strong> 110-word initial report,
+              followed by short recheck messages including “there are still
+              style issues. please load in a browser and verify.”
+              <strong>Window:</strong> approximately 8h 25m, from 02:55 to 11:20
+              across the related record. <strong>Issue:</strong> nonce-based CSP
+              blocked inline animation styles; the page rendered unstyled.
+              <strong>Resolution:</strong> later agent summaries report inline
+              styles moved into classes, followed by route/slug fixes and
+              browser verification.
+              <span class="status">Verified in follow-up records.</span>
+            </p>
+            <blockquote>
+              “but you’re wrong, it’s not a static root. it’s the endpoint for
+              the SSR app in the docker container.”
+            </blockquote>
+          </article>
+          <article>
+            <h3>Claude · July 21 · tenant slug and branding navigation</h3>
+            <p>
+              <strong>Corrective messaging:</strong> 56 words.
+              <strong>Issue:</strong> clicking Contact transformed the URL into
+              a malformed encoded fragment and lost tenant branding.
+              <strong>Resolution:</strong> later records describe replacing
+              stale route snapshots with a reactive site-slug signal and
+              correcting route construction.
+              <span class="status">Verified in follow-up records.</span>
+            </p>
+            <blockquote>
+              “the URL gets broken and the tenant branding gets broken. please
+              fix just those two issues.”
+            </blockquote>
+          </article>
+          <article>
+            <h3>Claude · July 15 · seed/bootstrap failures</h3>
+            <p>
+              <strong>Corrective messaging:</strong> 81 words listing five
+              concrete error classes. <strong>Issue:</strong> unknown
+              authentication errors, registration 500s, overlapping
+              availability, and appointments outside published availability.
+              <strong>Resolution:</strong> subsequent session summaries report
+              the listed seed error classes were driven to zero and verified.
+              <span class="status">Verified by later summary.</span>
+            </p>
+          </article>
+          <article>
+            <h3>Codex · April 2 · container seed gateway address</h3>
+            <p>
+              <strong>Corrective messaging:</strong> two short messages of
+              approximately 12 and 26 words, one hour apart.
+              <strong>Issue:</strong> the seed progressed through store setup,
+              then looked for the gateway at <code>127.0.0.1</code> from inside
+              a container, where that address was wrong.
+              <strong>Resolution:</strong> later seed work continued with
+              container-aware service addressing and the broader seed cluster
+              was eventually reported as passing.
+              <span class="status"
+                >Resolved in later work; exact first-fix boundary is
+                unclear.</span
+              >
+            </p>
+            <blockquote>
+              “this is still wrong the seed continues through the store seed
+              step, but the next one is looking for the gateway on 127.0.0.1
+              which will fail if run inside the container”
+            </blockquote>
+          </article>
+          <article>
+            <h3>Codex · July 6 · messages path and mobile chat</h3>
+            <p>
+              <strong>Corrective messaging:</strong> 20 words.
+              <strong>Issue:</strong> a change broke message loading while the
+              chat area remained non-responsive.
+              <strong>Resolution:</strong> the history shows continued
+              socket/chat debugging and later E2E work, but not a clean,
+              isolated closeout for this exact report.
+              <span class="status partial"
+                >Partially verified / attribution uncertain.</span
+              >
+            </p>
+            <blockquote>
+              “those changes have broken the load on the messages path and the
+              community chat area is still not mobile ready... check the logs”
+            </blockquote>
+          </article>
+          <article>
+            <h3>
+              Codex · August 3 · OAuth popup, handoff, session, and logout
+            </h3>
+            <p>
+              <strong>Corrective messaging:</strong> a multi-message same-day
+              sequence spanning roughly 5 hours. <strong>Issue:</strong> false
+              “popup closed” events, callback handoff requiring refresh,
+              premature “session expired” messages, and logout returning a
+              generic 500. <strong>Resolution:</strong> Microsoft login was
+              validated; GitHub was not fully tested, and the record shows
+              iterative fixes for polling and logout behavior.
+              <span class="status partial">Partially verified.</span>
+            </p>
+          </article>
+          <article>
+            <h3>Codex · July 24 · unwanted worktree workflow</h3>
+            <p>
+              <strong>Corrective messaging:</strong> repeated 4-word boundary
+              messages across at least 1h 40m of logged activity.
+              <strong>Issue:</strong> the harness kept selecting worktrees
+              despite the branch being intended for in-place work.
+              <strong>Resolution:</strong> the preference was repeatedly
+              restated, but recurrence indicates the process was not reliably
+              enforced.
+              <span class="status partial"
+                >Process-level issue; not fully prevented.</span
+              >
+            </p>
+            <blockquote>“do not use work trees”</blockquote>
+          </article>
+          <article>
+            <h3>
+              Codex · August 12 · business-site CSP and encoded slug regression
+            </h3>
+            <p>
+              <strong>Corrective messaging:</strong> a short sequence of
+              targeted reports after the visual fix.
+              <strong>Issue:</strong> styles still required browser
+              verification, then navigation generated
+              <code>/sites/canopy-tree-service%23results#contact</code>,
+              breaking slug preservation and tenant branding.
+              <strong>Resolution:</strong> the related records show focused
+              fixes to route construction and browser checks.
+              <span class="status">Verified in follow-up records.</span>
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="length">
+        <h2 id="length">How long was the corrective messaging?</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Measure</th>
+              <th>What the records show</th>
+              <th>Interpretation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Single-message length</td>
+              <td>
+                Highlighted examples range from 4 words (“do not use work
+                trees”) to 110 words (the CSP failure report).
+              </td>
+              <td>
+                You tend to become more detailed when supplying evidence; you
+                become shorter when correcting process behavior.
+              </td>
+            </tr>
+            <tr>
+              <td>Correction-chain length</td>
+              <td>
+                Most incidents contain 2–5 corrective user messages before the
+                next plan or verification step. The OAuth and seed episodes
+                contain longer multi-step chains.
+              </td>
+              <td>
+                The burden is usually repeated correction, not unusually long
+                individual messages.
+              </td>
+            </tr>
+            <tr>
+              <td>Incident duration</td>
+              <td>
+                Representative windows range from about 1 hour for the seed
+                addressing issue to about 8h 25m for the Claude business-site
+                styling/routing cluster.
+              </td>
+              <td>
+                Long windows usually reflect multiple fixes, rebuilds, browser
+                checks, or context continuation—not uninterrupted conversation.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section aria-labelledby="skill">
+        <h2 id="skill">Could a skill prevent this?</h2>
+        <div class="callout">
+          <p>
+            <strong>Yes—especially for recurring process failures.</strong> A
+            skill will not eliminate genuine bugs, but it can reduce the need
+            for repeated corrective messaging by making constraints and closeout
+            checks executable parts of the workflow.
+          </p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Recurring failure</th>
+              <th>Better future skill behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Premature “fixed” claims</td>
+              <td>
+                Require evidence before closeout: focused test, affected app
+                build, live browser check where UX changed, and explicit
+                residual-risk statement.
+              </td>
+            </tr>
+            <tr>
+              <td>Worktree/in-branch violations</td>
+              <td>
+                Read branch/workspace constraints first, assert the current
+                checkout, and refuse to create or use a worktree when the task
+                says in-branch.
+              </td>
+            </tr>
+            <tr>
+              <td>Container-vs-host confusion</td>
+              <td>
+                Classify every endpoint as host, container, LAN, or Tailnet
+                before changing seed/bootstrap commands; verify from the same
+                network namespace as the failing process.
+              </td>
+            </tr>
+            <tr>
+              <td>Repeated browser regressions</td>
+              <td>
+                After a UI fix, run a browser acceptance slice against the live
+                app, capture the URL, console errors, and key visual/route
+                assertions before reporting completion.
+              </td>
+            </tr>
+            <tr>
+              <td>Long debugging loops</td>
+              <td>
+                Maintain an incident ledger: symptom, hypothesis, test, result,
+                next action, and resolution status. Do not restart from a
+                summary without rechecking the live state.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Recommended implementation: a reusable “harness closeout and
+          constraint ledger” skill composed from systematic debugging,
+          verification-before-completion, frontend testing, and the repository’s
+          stack-verification workflow. It should be applied before
+          implementation begins and again before any “fixed” response.
+        </p>
+      </section>
+
+      <section aria-labelledby="interpretation">
+        <h2 id="interpretation">Interpretation</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Primary trigger</h3>
+            <p>
+              Repeated failure after an earlier fix was declared complete,
+              especially when the agent did not verify the live stack or browser
+              state.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Escalation method</h3>
+            <p>
+              Shorter commands, explicit constraints, “check again,” direct
+              log/browser requests, and narrowed scope.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Emotional ceiling</h3>
+            <p>
+              The reviewed records do not show a transition into insults,
+              profanity, threats, or sustained personal attack.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Most useful intervention</h3>
+            <p>
+              Make the agent prove the fix in the affected execution environment
+              before it declares completion. This directly targets the pattern
+              that produces “still broken” and “check again” messages.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="limitations">
+        <h2 id="limitations">Evidence and limitations</h2>
+        <ul>
+          <li>
+            Claude evidence came from project JSONL histories under
+            <code>~/.claude/projects/</code>.
+          </li>
+          <li>
+            Codex evidence came from rollout JSONL histories under
+            <code>~/.codex/sessions/2026/</code>.
+          </li>
+          <li>
+            Antigravity evidence came from its VS Code-style state database and
+            Gemini/Antigravity brain artifacts; full raw conversational turns
+            were not available in the local stores inspected.
+          </li>
+          <li>
+            Some sessions are imported or continued, so totals indicate observed
+            records, not unique conversations.
+          </li>
+          <li>
+            The analysis is linguistic and behavioral, not a clinical or
+            psychological assessment.
+          </li>
+        </ul>
+      </section>
+
+      <footer>
+        Artifact: AI Harness Correction Escalation Analysis · Scope: Claude,
+        Codex, Antigravity · No source logs or secrets are embedded in this
+        report.
+      </footer>
+    </main>
+  </body>
+</html>

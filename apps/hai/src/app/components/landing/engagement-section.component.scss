@@ -1,0 +1,65 @@
+:host {
+  display: block;
+}
+.engagement-panel {
+  display: grid;
+  gap: 2rem;
+  margin-top: 2rem;
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
+  padding: clamp(1.4rem, 4vw, 3rem);
+  border: var(--hai-border-width, 1px) var(--hai-border-style, solid)
+    color-mix(in srgb, var(--border, var(--primary)) 42%, transparent);
+  border-radius: var(--personality-card-radius, 1.75rem);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 94%,
+    var(--primary) 6%
+  );
+}
+.section-copy {
+  max-width: 46rem;
+}
+.eyebrow {
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+h2,
+h3 {
+  font-family: var(--font-heading, Georgia, serif);
+}
+h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1;
+}
+.section-copy p:last-child {
+  max-width: 38rem;
+  line-height: 1.7;
+}
+.engagement-flow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+.stage-number {
+  display: inline-flex;
+}
+h3 {
+  margin: 1.5rem 0 1rem;
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+}
+ul {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.55;
+}
+.engagement-note {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 68%, transparent);
+}
+@media (max-width: 640px) {
+  .engagement-flow {
+    grid-template-columns: 1fr;
+  }
+}

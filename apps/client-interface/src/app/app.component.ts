@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Component,
   computed,
@@ -34,6 +33,7 @@ import {
   ChatContact,
   ChatConversation,
   ChatMessage,
+  SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import {
   NotificationBellComponent,
@@ -147,6 +147,7 @@ export class AppComponent implements OnInit, OnDestroy {
   public currentUrl$!: Observable<string>;
 
   private chatService = inject(ChatService);
+  private socketChatService = inject(SocketChatService);
   private http = inject(HttpClient);
   private notificationService = inject(NotificationService);
 
@@ -279,6 +280,10 @@ export class AppComponent implements OnInit, OnDestroy {
       },
     });
 
+    this.socketChatService.onMessage((message) => {
+      this.appendFloatingChatMessage(message);
+    });
+
     // Subscribe to currentUrl$ to update active state
     this.currentUrl$.subscribe((url) => {
       this.currentPath.set(url);
@@ -343,7 +348,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
     try {
       const conversation = await this.chatService.startDirectChat(
-        currentProfile.id,
         otherProfileId
       );
 
@@ -390,6 +394,29 @@ export class AppComponent implements OnInit, OnDestroy {
     if (contact) {
       this.openChat(contact.id);
     }
+  }
+
+  handleFloatingMessageSubmitted(event: {
+    conversationId: string;
+    content: string;
+  }): void {
+    const senderId = this.selectedProfile()?.id;
+    const conversation = this.chatConversations.find(
+      (item) => item.id === event.conversationId
+    );
+    if (!senderId || !conversation) {
+      return;
+    }
+
+    this.socketChatService.sendMessage({
+      conversationId: event.conversationId,
+      content: event.content,
+      senderId,
+      recipientId: conversation.participants.filter(
+        (participantId) => participantId !== senderId
+      ),
+      type: 'chat',
+    });
   }
 
   private async fetchProfile(profileId: string): Promise<ProfileDto | null> {
@@ -458,6 +485,23 @@ export class AppComponent implements OnInit, OnDestroy {
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     }));
+  }
+
+  private appendFloatingChatMessage(message: ChatMessage): void {
+    this.chatConversations = this.chatConversations.map((conversation) => {
+      if (
+        conversation.id !== message.conversationId ||
+        conversation.messages.some((existing) => existing.id === message.id)
+      ) {
+        return conversation;
+      }
+
+      return {
+        ...conversation,
+        messages: [...conversation.messages, message],
+        updatedAt: message.timestamp,
+      };
+    });
   }
 
   private async fetchProfiles(profileIds: string[]): Promise<ProfileDto[]> {

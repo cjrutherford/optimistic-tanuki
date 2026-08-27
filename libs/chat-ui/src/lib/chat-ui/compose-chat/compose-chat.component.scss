@@ -1,3 +1,12 @@
+// This component extends Themeable and binds --accent/--complement/
+// --border-color/--background/--foreground/--transition-duration directly
+// on its own host (see compose-chat.component.ts) — unlike the rest of
+// chat-ui, which namespaces the same mechanism as --local-*. These names are
+// this component's own live per-instance values, not the dead global
+// contract-vocabulary vars the rest of the estate is migrating away from, so
+// they stay as-is here.
+@use 'personality' as p;
+
 .compose-editor-container {
   display: flex;
   flex-direction: column;
@@ -5,12 +14,11 @@
   border: 1px solid var(--border-color, var(--border));
   border-radius: var(--border-radius-lg, 12px);
   overflow: hidden;
-  transition: border-color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(border-color, 'fast');
 
   &:focus-within {
     border-color: var(--accent);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
 }
 
@@ -34,8 +42,7 @@
   color: var(--foreground);
   border-radius: var(--border-radius-md, 6px);
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(all, 'fast');
 
   &:hover {
     background: color-mix(in srgb, var(--complement) 15%, transparent);

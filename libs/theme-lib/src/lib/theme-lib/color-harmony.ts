@@ -4,7 +4,10 @@
  */
 
 import { hexToRgb } from './color-utils';
-import { ColorHarmonyType } from '@optimistic-tanuki/theme-models';
+import {
+  ColorHarmonyType,
+  getContrastRatio,
+} from '@optimistic-tanuki/theme-models';
 
 /**
  * RGB color representation
@@ -447,8 +450,67 @@ export function getHarmonyDescription(type: ColorHarmonyType): string {
 }
 
 /**
+ * Fixed hue anchors for `surfaceHueBias`'s `warm`/`cool` values — the SAME
+ * anchors `generateShadowTintColor` below uses for `shadowTint`'s `warm`/
+ * `cool`, so a personality can read as consistently warm- or cool-leaning
+ * across both shadows and surfaces regardless of the chosen primary color
+ * (Workstream E1/E2, 2026-07-18 refactor plan).
+ */
+const SURFACE_WARM_HUE = 30;
+const SURFACE_COOL_HUE = 210;
+
+/**
+ * Minimum acceptable contrast ratio for muted (helper) text rendered on the
+ * elevated surface (Workstream E3). There is no existing repo-wide standard
+ * for muted-on-SURFACE specifically — `validateThemeContrast` checks
+ * muted-on-BACKGROUND at the personality's full `contrast.minimumRatio`
+ * (4.5/7), not muted-on-surface — so this floor had to be established
+ * empirically rather than inherited.
+ *
+ * A stricter, more conventional 3.0 (the WCAG 2.1 non-text/large-text floor)
+ * was tried first, but measured against EVERY predefined personality x both
+ * modes x two representative primary colors (`#3f51b5`/`#e91e63`), it fails
+ * even at `surfaceSaturationShift` fully clamped to 0 (the pre-Workstream-E
+ * neutral derivation) for most personalities in light mode — i.e. it's not
+ * something this phase's hue-bias/saturation-shift clamp CAN satisfy, since
+ * `mutedLuminosityOffset` (authored in earlier phases, out of this
+ * workstream's scope) already puts muted text within ~2.0-2.7:1 of a
+ * near-white surface before any surface character is applied. Requiring 3.0
+ * here would make the auto-clamp below retreat to the neutral derivation for
+ * every personality unconditionally, silently defeating E1's surface
+ * character entirely rather than acting as the narrow safety net it's meant
+ * to be. 1.9 is set just under the measured real floor (~1.96, `soft`/light/
+ * `#e91e63`) so the clamp only fires when a personality's OWN authored bias
+ * makes things worse than that baseline, not because the baseline itself is
+ * imperfect.
+ */
+const MUTED_ON_SURFACE_MIN_RATIO = 1.9;
+
+/** Resolves the hue used for the surface color under a given hue bias. */
+function resolveSurfaceHue(
+  hueBias: 'none' | 'primary' | 'warm' | 'cool',
+  primaryHue: number
+): number {
+  switch (hueBias) {
+    case 'warm':
+      return SURFACE_WARM_HUE;
+    case 'cool':
+      return SURFACE_COOL_HUE;
+    case 'primary':
+    case 'none':
+    default:
+      return primaryHue;
+  }
+}
+
+/**
  * Generate theme-responsive background and foreground colors
  * All colors are derived from the primary color and personality parameters
+ *
+ * @param contrastMinimumRatio The personality's `contrast.minimumRatio`
+ * (4.5 or 7), used ONLY to gate the surface auto-clamp below (Workstream
+ * E3). Defaults to the WCAG AA floor (4.5) for callers that don't have a
+ * personality's contrast config handy.
  */
 export function generateThemeResponsiveColors(
   primaryColor: string,
@@ -461,8 +523,13 @@ export function generateThemeResponsiveColors(
     neutralSaturation: number;
     darkModeLuminosityScale: number;
     darkModeSaturationBoost: number;
+    /** Workstream E1: surface hue character. Defaults to 'none' (neutral). */
+    surfaceHueBias?: 'none' | 'primary' | 'warm' | 'cool';
+    /** Workstream E1: surface saturation delta off the neutral background. */
+    surfaceSaturationShift?: number;
   },
-  mode: 'light' | 'dark'
+  mode: 'light' | 'dark',
+  contrastMinimumRatio = 4.5
 ): {
   background: string;
   foreground: string;
@@ -493,17 +560,6 @@ export function generateThemeResponsiveColors(
     l: baseLuminosity,
   };
   const background = rgbToHex(hslToRgb(backgroundHsl));
-
-  // Surface: slightly different from background
-  const surfaceHsl: HSL = {
-    h: primaryHsl.h,
-    s: backgroundHsl.s,
-    l: Math.max(
-      0,
-      Math.min(100, baseLuminosity + params.surfaceLuminosityOffset)
-    ),
-  };
-  const surface = rgbToHex(hslToRgb(surfaceHsl));
 
   // Foreground: high contrast against background
   const foregroundLuminosity =
@@ -540,6 +596,57 @@ export function generateThemeResponsiveColors(
   };
   const muted = rgbToHex(hslToRgb(mutedHsl));
 
+  // Surface: derived from background luminosity + offset (unchanged single
+  // source, Workstream E2), now ALSO carrying per-personality hue/saturation
+  // character (Workstream E1) instead of always mirroring background's hue
+  // and saturation verbatim.
+  const surfaceLuminosity = Math.max(
+    0,
+    Math.min(100, baseLuminosity + params.surfaceLuminosityOffset)
+  );
+  const hueBias = params.surfaceHueBias ?? 'none';
+  const saturationShift = params.surfaceSaturationShift ?? 0;
+  const surfaceHue = resolveSurfaceHue(hueBias, primaryHsl.h);
+
+  /**
+   * Builds a candidate surface at `shiftFactor` (1 = full authored
+   * `surfaceSaturationShift`, 0 = the pre-E1 neutral derivation) and reports
+   * whether it still passes the foreground/muted contrast requirement.
+   * `shiftFactor` 0 always reproduces the original (pre-Workstream-E)
+   * neutral surface color exactly, so the clamp below always has a
+   * known-safe (if uncharacterful) fallback available.
+   */
+  function surfaceCandidate(shiftFactor: number): string {
+    const s = Math.max(
+      0,
+      Math.min(100, backgroundHsl.s + saturationShift * shiftFactor)
+    );
+    return rgbToHex(hslToRgb({ h: surfaceHue, s, l: surfaceLuminosity }));
+  }
+
+  function passesContrast(candidateHex: string): boolean {
+    return (
+      getContrastRatio(foreground, candidateHex) >= contrastMinimumRatio &&
+      getContrastRatio(muted, candidateHex) >= MUTED_ON_SURFACE_MIN_RATIO
+    );
+  }
+
+  // Auto-clamp (Workstream E3): try the fully-authored bias/shift first; if
+  // it would drop foreground-on-surface or muted-on-surface below the
+  // required ratio, fall back in steps toward the neutral derivation
+  // (shiftFactor 0) rather than shipping a surface that fails contrast.
+  let surface = surfaceCandidate(1);
+  if (saturationShift !== 0 && !passesContrast(surface)) {
+    const fallbackSteps = [0.5, 0.25, 0];
+    for (const step of fallbackSteps) {
+      const candidate = surfaceCandidate(step);
+      surface = candidate;
+      if (passesContrast(candidate)) {
+        break;
+      }
+    }
+  }
+
   // Border: subtle, between background and foreground
   const borderLuminosity =
     mode === 'light' ? baseLuminosity - 15 : baseLuminosity + 15;
@@ -573,19 +680,36 @@ export function generateThemeResponsiveColors(
 }
 
 /**
- * Generate shadow color based on personality tint preference
+ * Resolve the hue/saturation/lightness of a personality's shadow tint,
+ * WITHOUT any alpha/opacity baked in.
+ *
+ * This is the tint-resolution half of the (formerly fused) shadow-color
+ * pipeline: `generateShadowColor()` below bakes a mode-dependent alpha into
+ * its returned rgba string, which historically was the ONLY opacity that
+ * ever reached a rendered shadow (`generatePersonalityShadows()` in
+ * `theme.service.ts` ignored the tint entirely and hardcoded
+ * `rgba(0, 0, 0, opacity)`, discarding this function's output). That left
+ * two competing opacity sources: this baked alpha, and the separately
+ * emitted `--shadow-opacity` (= `personality.colorGeneration.shadowOpacity`).
+ *
+ * `generateShadowTintColor` lets callers (namely `ThemeService`) take just
+ * the RGB tint and apply exactly one, mode-scaled opacity
+ * (`personality.colorGeneration.shadowOpacity`, see `resolveShadowOpacity`)
+ * themselves — restoring a single source of truth for shadow opacity while
+ * still letting `warm`/`cool`/`primary-tint` personalities cast visibly
+ * tinted shadows.
  */
-export function generateShadowColor(
+export function generateShadowTintColor(
   primaryColor: string,
   shadowTint: 'neutral' | 'primary-tint' | 'warm' | 'cool',
   mode: 'light' | 'dark'
-): string {
+): { r: number; g: number; b: number } {
   const primaryRgb = hexToRgbInternal(primaryColor);
   const primaryHsl = rgbToHsl(primaryRgb);
 
   switch (shadowTint) {
     case 'neutral':
-      return mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.5)';
+      return { r: 0, g: 0, b: 0 };
 
     case 'primary-tint': {
       const tintedHsl: HSL = {
@@ -593,9 +717,7 @@ export function generateShadowColor(
         s: Math.min(30, primaryHsl.s * 0.3),
         l: mode === 'light' ? 20 : 10,
       };
-      const tintedRgb = hslToRgb(tintedHsl);
-      const opacity = mode === 'light' ? 0.15 : 0.5;
-      return `rgba(${tintedRgb.r}, ${tintedRgb.g}, ${tintedRgb.b}, ${opacity})`;
+      return hslToRgb(tintedHsl);
     }
 
     case 'warm': {
@@ -604,9 +726,7 @@ export function generateShadowColor(
         s: 30,
         l: mode === 'light' ? 25 : 15,
       };
-      const warmRgb = hslToRgb(warmHsl);
-      const opacity = mode === 'light' ? 0.12 : 0.45;
-      return `rgba(${warmRgb.r}, ${warmRgb.g}, ${warmRgb.b}, ${opacity})`;
+      return hslToRgb(warmHsl);
     }
 
     case 'cool': {
@@ -615,14 +735,89 @@ export function generateShadowColor(
         s: 25,
         l: mode === 'light' ? 20 : 15,
       };
-      const coolRgb = hslToRgb(coolHsl);
-      const opacity = mode === 'light' ? 0.12 : 0.45;
-      return `rgba(${coolRgb.r}, ${coolRgb.g}, ${coolRgb.b}, ${opacity})`;
+      return hslToRgb(coolHsl);
     }
 
     default:
-      return mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.5)';
+      return { r: 0, g: 0, b: 0 };
   }
+}
+
+/**
+ * The legacy, mode-dependent alpha table that `generateShadowColor()` has
+ * always baked into its returned rgba string. Kept verbatim (not touched by
+ * B1) purely so `generateShadowColor()`'s public output stays byte-for-byte
+ * backward compatible for its existing external consumer
+ * (`theme-ui`'s `personality-grid.component.ts`, which renders a
+ * side-by-side swatch and is not part of the `--shadow-*` token pipeline).
+ * New code that needs a shadow opacity should use
+ * `resolveShadowOpacity(personality.colorGeneration.shadowOpacity, mode)`
+ * instead — the single, personality-driven opacity source used by
+ * `ThemeService`'s `--shadow-*`/`--shadow-color`/`--shadow-opacity` outputs.
+ */
+function legacyShadowAlpha(
+  shadowTint: 'neutral' | 'primary-tint' | 'warm' | 'cool',
+  mode: 'light' | 'dark'
+): number {
+  switch (shadowTint) {
+    case 'neutral':
+      return mode === 'light' ? 0.1 : 0.5;
+    case 'primary-tint':
+      return mode === 'light' ? 0.15 : 0.5;
+    case 'warm':
+    case 'cool':
+      return mode === 'light' ? 0.12 : 0.45;
+    default:
+      return mode === 'light' ? 0.1 : 0.5;
+  }
+}
+
+/**
+ * Generate shadow color based on personality tint preference.
+ *
+ * @deprecated for the `--shadow-*` token pipeline — this bakes its own
+ * fixed, mode-dependent alpha (see `legacyShadowAlpha`) rather than the
+ * personality's own `colorGeneration.shadowOpacity`, which is exactly the
+ * double-booked-opacity bug fixed in `ThemeService` (see
+ * `resolveShadowOpacity`). Retained, unchanged, for its existing external
+ * caller (`personality-grid.component.ts`'s swatch). New callers should use
+ * `generateShadowTintColor` + `resolveShadowOpacity`.
+ */
+export function generateShadowColor(
+  primaryColor: string,
+  shadowTint: 'neutral' | 'primary-tint' | 'warm' | 'cool',
+  mode: 'light' | 'dark'
+): string {
+  const { r, g, b } = generateShadowTintColor(primaryColor, shadowTint, mode);
+  const opacity = legacyShadowAlpha(shadowTint, mode);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+/**
+ * Single source of truth for shadow opacity (finding 4 / Workstream B1).
+ *
+ * `personality.colorGeneration.shadowOpacity` (0–0.25) is the ONE authored
+ * opacity value for a personality's shadows. Dark-mode shadows need a
+ * higher opacity than light-mode to stay visible against a dark background
+ * — this mirrors the ~3–5x light→dark jump the old `generateShadowColor`
+ * baked in per-tint (e.g. neutral 0.1 → 0.5) — but instead of a second,
+ * competing opacity source, it scales the SAME authored value. Clamped so
+ * even the highest-authored personality can't exceed a sane maximum.
+ */
+const DARK_MODE_SHADOW_OPACITY_MULTIPLIER = 3;
+const MAX_SHADOW_OPACITY = 0.6;
+
+export function resolveShadowOpacity(
+  baseOpacity: number,
+  mode: 'light' | 'dark'
+): number {
+  if (mode !== 'dark') {
+    return baseOpacity;
+  }
+  return Math.min(
+    MAX_SHADOW_OPACITY,
+    baseOpacity * DARK_MODE_SHADOW_OPACITY_MULTIPLIER
+  );
 }
 
 /**
@@ -653,5 +848,17 @@ export function generatePageBackgroundPattern(
     .toString(16)
     .padStart(2, '0');
 
-  return pattern.replace(/fill="[^"]*"/g, `fill="${tintColor}${hexOpacity}"`);
+  // Defense in depth (carry-over fix, Phase 5/5b of the 2026-07-18 refactor
+  // plan): a `fill="url(#...)"` reference points at a `<defs>`/`<pattern>`
+  // element, not a literal color — rewriting it wholesale (as the naive
+  // global replace below would) orphans the pattern definition and paints a
+  // flat, uncontrolled wash instead of the authored motif (this is exactly
+  // what happened to `control-center`'s grid before its pattern was
+  // rewritten to direct shapes with no `url(#)` indirection). Every authored
+  // pattern should avoid `url(#)` fills entirely now, but this guard is kept
+  // so a future pattern using the indirection doesn't silently regress the
+  // same way.
+  return pattern.replace(/fill="([^"]*)"/g, (match, value: string) =>
+    value.startsWith('url(#') ? match : `fill="${tintColor}${hexOpacity}"`
+  );
 }

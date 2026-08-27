@@ -56,6 +56,14 @@ import {
 } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
 
+// IMPORTANT: overrides must be keyed to a throttler NAME configured in the
+// gateway's ThrottlerModule (`short`/`medium`/`long` in app.module.ts). The
+// guard only consults metadata for configured names, so `{ default: ... }`
+// is silently ignored here. We override `long` (the 60s window throttler).
+const VOTE_THROTTLE = {
+  long: { limit: 20, ttl: 60000 }, // 20 votes per minute
+};
+
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('social')
 @Controller('social')
@@ -111,10 +119,11 @@ export class SocialController {
   })
   @Post('vote')
   @RequirePermissions('social.vote.create')
-  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 votes per minute
+  @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
     this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
     voteDto.userId = user.userId;
+    voteDto.profileId = user.profileId;
     const commandMap = {
       '-1': VoteCommands.DOWNVOTE,
       '0': VoteCommands.UNVOTE,
@@ -266,9 +275,15 @@ export class SocialController {
     type: PostDto,
   })
   @Get('post/:id')
-  async getPost(@Param('id') id: string): Promise<PostDto> {
+  async getPost(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<PostDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id, viewerProfileId: user?.profileId }
+      )
     );
   }
 
@@ -279,10 +294,23 @@ export class SocialController {
     description: 'The shared post has been successfully retrieved.',
     type: PostDto,
   })
+  // Public so anonymous viewers and shared-by-link access still work, but the
+  // class-level AuthGuard still runs to OPTIONALLY attach a signature-verified
+  // `request.user` when a valid token is present. We read the viewer id from
+  // that guard-verified context — never from the `@User()` decorator, which
+  // decodes the token WITHOUT verifying its signature and would let a forged
+  // `profileId` unlock another owner's private/unlisted post.
+  @Public()
   @Get('post/:id/shared')
-  async getSharedPost(@Param('id') id: string): Promise<PostDto> {
+  async getSharedPost(
+    @Param('id') id: string,
+    @Req() req?: { user?: { profileId?: string } }
+  ): Promise<PostDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id, viewerProfileId: req?.user?.profileId }
+      )
     );
   }
 
@@ -295,9 +323,15 @@ export class SocialController {
     type: CommentDto,
   })
   @Get('comment/:id')
-  async getComment(@Param('id') id: string): Promise<CommentDto> {
+  async getComment(
+    @Param('id') id: string,
+    @User() user?: UserDetails
+  ): Promise<CommentDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND },
+        { id, viewerProfileId: user?.profileId }
+      )
     );
   }
 
@@ -375,12 +409,15 @@ export class SocialController {
     description: 'The posts have been successfully retrieved.',
     type: [PostDto],
   })
+  // Public + guard-verified-optional identity, same rationale as
+  // getSharedPost above: never trust the raw `@User()` decode for the
+  // viewer-scoped visibility filter applied by the social service.
   @Public()
   @Post('post/find')
   async searchPosts(
     @Body('criteria') searchCriteria: SearchPostDto,
     @Body('opts') opts?: SearchPostOptions,
-    @User() user?: UserDetails
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<PostDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
@@ -388,7 +425,7 @@ export class SocialController {
         {
           criteria: searchCriteria,
           opts: opts,
-          viewerProfileId: user?.profileId,
+          viewerProfileId: req?.user?.profileId,
         }
       )
     );
@@ -436,13 +473,20 @@ export class SocialController {
     description: 'The comments have been successfully retrieved.',
     type: [CommentDto],
   })
+  // Public + guard-verified-optional identity, same rationale as
+  // getSharedPost above: never trust the raw `@User()` decode for the
+  // viewer-scoped visibility filter applied by the social service.
   @Public()
   @Post('comments/find')
   async searchComments(
-    @Body() searchCriteria: SearchCommentDto
+    @Body() searchCriteria: SearchCommentDto,
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<CommentDto[]> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommentCommands.FIND_MANY }, searchCriteria)
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND_MANY },
+        { ...searchCriteria, viewerProfileId: req?.user?.profileId }
+      )
     );
   }
 

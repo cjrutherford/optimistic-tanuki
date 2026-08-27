@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Component,
   inject,
@@ -65,6 +64,7 @@ export class LoginComponent implements OnDestroy, OnInit {
 
   ngOnInit() {
     this.loadOAuthConfig();
+    void this.restoreExistingSession();
   }
 
   ngOnDestroy() {
@@ -92,7 +92,6 @@ export class LoginComponent implements OnDestroy, OnInit {
     try {
       const response = await this.authStateService.login(loginRequest);
       console.log(response);
-      this.authStateService.setToken(response.data.newToken);
       if (this.authStateService.isAuthenticated) {
         const decoded = this.authStateService.getDecodedTokenValue();
         // If profileId is empty string, show only the profile creation modal
@@ -138,7 +137,8 @@ export class LoginComponent implements OnDestroy, OnInit {
     try {
       const result = await this.oauthService?.initiateOAuthLogin(
         event.provider,
-        'client-interface'
+        'client-interface',
+        true
       );
       if (!result) {
         this.messageService.addMessage({
@@ -148,45 +148,19 @@ export class LoginComponent implements OnDestroy, OnInit {
         return;
       }
 
-      if (result.success && result.token) {
-        this.authStateService.setToken(result.token);
-
-        if (this.authStateService.isAuthenticated) {
-          const decoded = this.authStateService.getDecodedTokenValue();
-          if (decoded && decoded.profileId === '') {
-            this.router.navigate(['/settings'], {
-              state: {
-                showProfileModal: false,
-                profileMessage: 'Please create your profile to continue.',
-              },
-            });
-            return;
-          }
-
-          await this.profileService.getAllProfiles();
-          const currentProfiles = this.profileService.getCurrentUserProfiles();
-          if (!currentProfiles.length) {
-            this.router.navigate(['/settings'], {
-              state: {
-                showProfileModal: true,
-                profileMessage:
-                  'No profiles found. Please create a profile to continue.',
-              },
-            });
-            this.messageService.addMessage({
-              content:
-                'No profiles found. Please create a profile to continue.',
-              type: 'warning',
-            });
-          } else {
-            this.profileService.selectProfile(currentProfiles[0]);
-            this.router.navigate(['/feed']);
-            this.messageService.addMessage({
-              content: 'Login successful! Welcome back.',
-              type: 'success',
-            });
-          }
+      if (result.success && (result.token || result.session)) {
+        if (result.token) {
+          this.authStateService.setToken(result.token);
+        } else if (!(await this.authStateService.restoreSession())) {
+          this.messageService.addMessage({
+            content:
+              'OAuth login could not restore your session. Please try again.',
+            type: 'error',
+          });
+          return;
         }
+
+        await this.completeAuthenticatedLogin();
       } else if (result.needsRegistration) {
         this.messageService.addMessage({
           content: 'OAuth login did not complete. Please try again.',
@@ -204,5 +178,52 @@ export class LoginComponent implements OnDestroy, OnInit {
         type: 'error',
       });
     }
+  }
+
+  private async restoreExistingSession(): Promise<void> {
+    if (await this.authStateService.restoreSession()) {
+      await this.completeAuthenticatedLogin();
+    }
+  }
+
+  private async completeAuthenticatedLogin(): Promise<void> {
+    if (!this.authStateService.isAuthenticated) {
+      return;
+    }
+
+    const decoded = this.authStateService.getDecodedTokenValue();
+    if (decoded && decoded.profileId === '') {
+      this.router.navigate(['/settings'], {
+        state: {
+          showProfileModal: false,
+          profileMessage: 'Please create your profile to continue.',
+        },
+      });
+      return;
+    }
+
+    await this.profileService.getAllProfiles();
+    const currentProfiles = this.profileService.getCurrentUserProfiles();
+    if (!currentProfiles.length) {
+      this.router.navigate(['/settings'], {
+        state: {
+          showProfileModal: true,
+          profileMessage:
+            'No profiles found. Please create a profile to continue.',
+        },
+      });
+      this.messageService.addMessage({
+        content: 'No profiles found. Please create a profile to continue.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    this.profileService.selectProfile(currentProfiles[0]);
+    this.router.navigate(['/feed']);
+    this.messageService.addMessage({
+      content: 'Login successful! Welcome back.',
+      type: 'success',
+    });
   }
 }

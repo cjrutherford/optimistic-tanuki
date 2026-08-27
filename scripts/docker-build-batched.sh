@@ -5,6 +5,7 @@ DRY_RUN=0
 FORCE_ALL=0
 BATCH_SIZE=${DOCKER_BATCH_SIZE:-10}
 COMPOSE_FILE="docker-compose.yaml"
+COMPOSE_PROFILE=""
 SELECTED_SERVICES=()
 
 while [ "$#" -gt 0 ]; do
@@ -28,6 +29,10 @@ while [ "$#" -gt 0 ]; do
             ;;
         --service)
             SELECTED_SERVICES+=("$2")
+            shift 2
+            ;;
+        --profile)
+            COMPOSE_PROFILE="$2"
             shift 2
             ;;
         -*)
@@ -58,6 +63,9 @@ fi
 COMPOSE_FLAGS=("-f" "$COMPOSE_FILE")
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     COMPOSE_FLAGS=("-f" "docker-compose.yaml" "-f" "docker-compose.dev.yaml")
+fi
+if [ -n "$COMPOSE_PROFILE" ]; then
+    COMPOSE_FLAGS+=(--profile "$COMPOSE_PROFILE")
 fi
 
 echo "=== Batched Docker Build ==="
@@ -116,19 +124,41 @@ if [ -z "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     docker compose "${COMPOSE_FLAGS[@]}" build --print > "$BAKE_FILE"
 fi
 
-MISSING_IMAGE_SERVICES=$(node - <<'NODE' "$PLAN_FILE" "$BAKE_FILE"
+MISSING_IMAGE_SERVICES=$(node - <<'NODE' "$PLAN_FILE" "$BAKE_FILE" "$COMPOSE_FILE"
 const fs = require('fs');
 const { execFileSync } = require('child_process');
 
 const planFile = process.argv[2];
 const bakeFile = process.argv[3];
+const composeFile = process.argv[4];
 const plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
 const bake = JSON.parse(fs.readFileSync(bakeFile, 'utf8'));
+const isDevelopmentCompose = composeFile.includes('dev');
+const developmentRuntimeMarker = 'com.optimistic-tanuki.runtime=development';
 
 function imageExists(tag) {
   try {
     execFileSync('docker', ['image', 'inspect', tag], { stdio: 'ignore' });
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function imageHasDevelopmentRuntime(tag) {
+  try {
+    const marker = execFileSync(
+      'docker',
+      [
+        'image',
+        'inspect',
+        '--format',
+        '{{ index .Config.Labels "com.optimistic-tanuki.runtime" }}',
+        tag,
+      ],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+    ).trim();
+    return marker === developmentRuntimeMarker.split('=', 2)[1];
   } catch {
     return false;
   }
@@ -151,7 +181,14 @@ for (const [serviceName, target] of Object.entries(bake.target || {})) {
 
   const tags = Array.isArray(target.tags) ? target.tags.filter(Boolean) : [];
   const hasLocalImage = tags.length > 0 && tags.some((tag) => imageExists(tag));
-  if (hasLocalImage) {
+  const usesDevelopmentRuntime =
+    isDevelopmentCompose &&
+    /\/docker\/dev\/(node|ssr)-runtime\.Dockerfile$/.test(target.dockerfile || '');
+  const hasExpectedDevelopmentRuntime =
+    !usesDevelopmentRuntime ||
+    tags.some((tag) => imageHasDevelopmentRuntime(tag));
+
+  if (hasLocalImage && hasExpectedDevelopmentRuntime) {
     continue;
   }
 
@@ -164,7 +201,9 @@ for (const [serviceName, target] of Object.entries(bake.target || {})) {
   if (plan.services[serviceName].appId) {
     buildApps.add(plan.services[serviceName].appId);
   }
-  plan.reasons[serviceName] = 'missing-local-image';
+  plan.reasons[serviceName] = hasLocalImage
+    ? 'dev-runtime-image-mismatch'
+    : 'missing-local-image';
 }
 
 plan.buildServices = [...buildServices].sort();

@@ -11,31 +11,31 @@ export class ProfileGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
   private profileService = inject(ProfileService);
-  private isAuthenticated = false;
-
-  constructor() {
-    this.authStateService.isAuthenticated$().subscribe((isAuthenticated) => {
-      this.isAuthenticated = isAuthenticated;
-    });
-  }
 
   async canActivate(): Promise<boolean> {
-    if (this.isAuthenticated) {
-      try {
-        await this.profileService.getAllProfiles();
-        const selectedProfile = localStorage.getItem('selectedProfile');
-        if (selectedProfile) {
-          this.profileService.selectProfile(JSON.parse(selectedProfile));
-        }
-        return true;
-      } catch (error) {
-        this.router.navigate(['/profile']);
-        console.error('Error fetching profiles:', error);
-        return false;
-      }
+    if (!this.authStateService.isInitialSessionRestoreComplete) {
+      await this.authStateService.waitForInitialSessionRestore();
     }
-    // If the user is not authenticated, navigate to the login page
-    this.router.navigate(['/settings']);
-    return false;
+
+    if (
+      !this.authStateService.isAuthenticated &&
+      !(await this.authStateService.restoreSessionAfterInitialFailure())
+    ) {
+      this.router.navigate(['/settings']);
+      return false;
+    }
+
+    try {
+      await this.profileService.getAllProfiles();
+      const selectedProfile = localStorage.getItem('selectedProfile');
+      if (selectedProfile) {
+        this.profileService.selectProfile(JSON.parse(selectedProfile));
+      }
+      return true;
+    } catch (error) {
+      this.router.navigate(['/profile']);
+      console.error('Error fetching profiles:', error);
+      return false;
+    }
   }
 }

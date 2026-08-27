@@ -45,6 +45,11 @@ export class LoginBlockComponent extends Themeable {
   @Input() heroSrc =
     'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGxvZ298ZW58MHx8fHwxNjg3NTY5NzA1&ixlib=rb-4.0.3&q=80&w=1080';
   @Input() heroAlt = 'login-block works!';
+  // Hosts that render their own marketing column suppress the in-card hero so
+  // the page does not end up with two headlines competing for the same job.
+  @Input() showHero = true;
+  @Input() errorMessage = '';
+  @Input() pending = false;
   @Input() showOAuth = true;
   @Input() appId = '';
   @Input() returnPath = '/';
@@ -89,12 +94,9 @@ export class LoginBlockComponent extends Themeable {
     this.borderColor = colors.complementary;
   }
 
-  onFormChange(e: string) {
-    console.log(e);
-  }
+  onFormChange(_e: string) {}
 
   onSubmit() {
-    console.log(this.loginForm.value);
     this.submitEvent.emit(this.loginForm.value);
   }
 

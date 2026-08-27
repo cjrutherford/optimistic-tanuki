@@ -39,7 +39,11 @@ import { ProfileService } from '../../profile.service';
       >
         <div class="activity-list">
           @for (activity of filteredActivities(); track activity.id) {
-          <div class="activity-item" (click)="navigateTo(activity)">
+          <button
+            type="button"
+            class="activity-item"
+            (click)="navigateTo(activity)"
+          >
             <div class="activity-icon" [class]="activity.type">
               <svg
                 viewBox="0 0 24 24"
@@ -94,7 +98,7 @@ import { ProfileService } from '../../profile.service';
             >
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
-          </div>
+          </button>
           } @empty {
           <div class="empty-state">No activity yet</div>
           }
@@ -122,7 +126,16 @@ import { ProfileService } from '../../profile.service';
                 >Saved {{ item.savedAt | date : 'mediumDate' }}</span
               >
             </div>
-            <button class="icon-button" (click)="unsaveItem(item, $event)">
+            <button
+              type="button"
+              class="icon-button"
+              [attr.aria-label]="
+                'Remove ' +
+                (item.itemTitle || item.itemType) +
+                ' from saved items'
+              "
+              (click)="unsaveItem(item, $event)"
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -174,6 +187,12 @@ import { ProfileService } from '../../profile.service';
           color-mix(in srgb, var(--border, var(--muted)) 80%, transparent);
       }
       .activity-item {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -183,6 +202,10 @@ import { ProfileService } from '../../profile.service';
         transition: background 0.2s;
         &:hover {
           background: var(--hover-bg);
+        }
+        &:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: -2px;
         }
       }
       .activity-icon {
@@ -203,10 +226,10 @@ import { ProfileService } from '../../profile.service';
           color: color-mix(in srgb, var(--primary) 82%, white);
         }
         &.comment {
-          color: color-mix(in srgb, var(--success, #22c55e) 82%, white);
+          color: color-mix(in srgb, var(--success) 82%, white);
         }
         &.like {
-          color: color-mix(in srgb, var(--error, #ef4444) 82%, white);
+          color: color-mix(in srgb, var(--error) 82%, white);
         }
         &.follow {
           color: color-mix(
@@ -216,7 +239,7 @@ import { ProfileService } from '../../profile.service';
           );
         }
         &.mention {
-          color: color-mix(in srgb, var(--warning, #f59e0b) 82%, white);
+          color: color-mix(in srgb, var(--warning) 82%, white);
         }
         &.share {
           color: color-mix(

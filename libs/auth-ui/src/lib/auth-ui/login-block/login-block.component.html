@@ -2,10 +2,10 @@
   <otui-card>
     <div class="card-outer">
       <div class="card-inner">
-        <div class="hero">
+        <div class="hero" *ngIf="showHero">
           <h1>{{ title }}</h1>
           <p>{{ description }}</p>
-          <img width="300px" src="{{ heroSrc }}" alt="{{ heroAlt }}" />
+          <img width="300" src="{{ heroSrc }}" alt="{{ heroAlt }}" />
         </div>
         <div class="form">
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
@@ -18,7 +18,12 @@
               label="Password"
               type="password"
             ></lib-text-input>
-            <otui-button type="submit">Login</otui-button>
+            @if (errorMessage) {
+            <p class="auth-error" role="alert">{{ errorMessage }}</p>
+            }
+            <otui-button type="submit" [disabled]="pending">
+              {{ pending ? 'Signing in…' : 'Login' }}
+            </otui-button>
           </form>
           <div class="email-auth-actions" aria-label="Email sign in options">
             <button

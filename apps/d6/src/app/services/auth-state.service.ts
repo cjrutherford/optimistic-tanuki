@@ -1,5 +1,7 @@
 import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
@@ -7,10 +9,11 @@ export class AuthStateService {
   private readonly PROFILES_KEY = 'ot-d6_profiles';
   private readonly SELECTED_PROFILE_KEY = 'ot-d6_selectedProfile';
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
 
-  private _token = signal<string | null>(this.loadToken());
-  private _isAuthenticated = signal<boolean>(!!this.loadToken());
-  private _user = signal<any>(this.loadUserData());
+  private _token = signal<string | null>(null);
+  private _isAuthenticated = signal<boolean>(false);
+  private _user = signal<any>(null);
   private _selectedProfile = signal<any>(this.loadSelectedProfile());
 
   get token() {
@@ -31,6 +34,32 @@ export class AuthStateService {
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  constructor() {
+    if (this.isBrowser()) {
+      void this.restoreSession();
+    }
+  }
+
+  async restoreSession(): Promise<boolean> {
+    if (!this.isBrowser()) return false;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: any }>('/api/authentication/session', {
+          withCredentials: true,
+        })
+      );
+      this._token.set(null);
+      this._user.set(response.data);
+      this._isAuthenticated.set(true);
+      return true;
+    } catch {
+      this._token.set(null);
+      this._user.set(null);
+      this._isAuthenticated.set(false);
+      return false;
+    }
   }
 
   private loadToken(): string | null {
@@ -72,10 +101,14 @@ export class AuthStateService {
     return this._token();
   }
 
-  setToken(token: string): void {
+  setToken(token?: string): void {
+    if (!token) {
+      void this.restoreSession();
+      return;
+    }
     this._token.set(token);
     if (this.isBrowser()) {
-      localStorage.setItem(this.TOKEN_KEY, token);
+      localStorage.removeItem(this.TOKEN_KEY);
     }
     this._isAuthenticated.set(true);
 
@@ -113,6 +146,12 @@ export class AuthStateService {
   }
 
   logout(): void {
+    const token = this.getToken();
+    this.http
+      .post('/api/authentication/logout', token ? { token } : {}, {
+        withCredentials: true,
+      })
+      .subscribe({ error: () => {} });
     this._token.set(null);
     this._isAuthenticated.set(false);
     this._user.set(null);

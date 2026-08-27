@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
-import loadConfig from '../config';
+import loadConfig, { PaymentsConfigType } from '../config';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import loadDatabase from './loadDatabase';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -101,6 +103,22 @@ import { BillingReconciliationService } from './services/billing-reconciliation.
       provide: getRepositoryToken(LemonSqueezyProduct),
       useFactory: (ds: DataSource) => ds.getRepository(LemonSqueezyProduct),
       inject: ['PAYMENTS_CONNECTION'],
+    },
+    {
+      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const config = configService.get<
+          PaymentsConfigType['services']['classifieds']
+        >('services.classifieds');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: config.host,
+            port: config.port,
+          },
+        });
+      },
+      inject: [ConfigService],
     },
     BusinessThemeService,
     BillingReconciliationService,

@@ -18,6 +18,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 
 import { AuthStateService } from './auth-state.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { ChatComponent } from './chat.component';
 import { ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
@@ -75,6 +76,7 @@ const FORGE_AUTH_NAV_LINKS = [
     DevInfoComponent,
     HaiAboutTagComponent,
     PulseRingsComponent,
+    PersonalityBackdropComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',

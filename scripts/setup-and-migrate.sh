@@ -32,6 +32,9 @@ if [ ! -d "$ROOT_DIR/node_modules" ]; then
   (cd "$ROOT_DIR" && corepack enable && pnpm install --frozen-lockfile)
 fi
 
+echo "Validating TypeORM migration definitions..."
+node "$ROOT_DIR/scripts/validate-typeorm-migrations.mjs"
+
 # Run database creation script
 (cd "$ROOT_DIR" && sh ./scripts/create-dbs.sh)
 

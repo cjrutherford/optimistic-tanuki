@@ -18,4 +18,10 @@ describe('BusinessUiComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders its template content', () => {
+    const paragraph: HTMLElement = fixture.nativeElement.querySelector('p');
+
+    expect(paragraph.textContent).toContain('BusinessUi works!');
+  });
 });

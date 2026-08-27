@@ -111,5 +111,7 @@ export * from './gradient-factory';
 export {
   generateThemeResponsiveColors,
   generateShadowColor,
+  generateShadowTintColor,
+  resolveShadowOpacity,
   generatePageBackgroundPattern,
 } from './color-harmony';

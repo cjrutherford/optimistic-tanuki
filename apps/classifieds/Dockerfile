@@ -7,7 +7,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/classifieds/ ./apps/classifieds/
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
-RUN pnpm exec nx build classifieds --configuration=development
+RUN pnpm exec nx build classifieds --configuration=production
 
 FROM base AS runner
 WORKDIR /app

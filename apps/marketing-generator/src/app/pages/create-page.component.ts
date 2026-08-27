@@ -1015,28 +1015,38 @@ export class CreatePageComponent {
     const workspaceName = this.summaryOffering();
     this.state.createWorkspace(workspaceName);
     this.state.setRequest(normalizedRequest);
+    const baseConcepts = await this.generator.generateConcepts(
+      normalizedRequest
+    );
+    const generationResult = normalizedRequest.includeAiPolish
+      ? await this.enrichmentApi.generateConcepts(
+          normalizedRequest,
+          baseConcepts
+        )
+      : null;
+    const concepts = generationResult
+      ? this.applyProvenance(
+          generationResult.concepts,
+          true,
+          generationResult.generationApplied
+        )
+      : this.applyProvenance(baseConcepts, false, false);
+    this.state.setConcepts(concepts);
     this.insights.logEvent({
       type: 'generation_requested',
       workspaceId: this.state.currentWorkspace()?.id || undefined,
       metadata: {
         channel: normalizedRequest.channel,
         bundledChannels: normalizedRequest.secondaryChannels.join(','),
+        ...(generationResult?.usage
+          ? {
+              promptTokens: generationResult.usage.promptTokens,
+              completionTokens: generationResult.usage.completionTokens,
+              model: generationResult.usage.model,
+            }
+          : {}),
       },
     });
-    const baseConcepts = await this.generator.generateConcepts(
-      normalizedRequest
-    );
-    const enrichmentResult = normalizedRequest.includeAiPolish
-      ? await this.enrichmentApi.enrichConcepts(normalizedRequest, baseConcepts)
-      : null;
-    const concepts = enrichmentResult
-      ? this.applyProvenance(
-          enrichmentResult.concepts,
-          true,
-          enrichmentResult.enrichmentApplied
-        )
-      : this.applyProvenance(baseConcepts, false, false);
-    this.state.setConcepts(concepts);
     await this.router.navigate(['/offers', this.state.currentWorkspace()?.id]);
   }
 
@@ -1054,15 +1064,17 @@ export class CreatePageComponent {
       ReturnType<MarketingGeneratorService['generateConcepts']>
     >,
     includeAiPolish: boolean,
-    enrichmentApplied: boolean
+    generationApplied: boolean
   ): Awaited<ReturnType<MarketingGeneratorService['generateConcepts']>> {
     return concepts.map((concept) => ({
       ...concept,
       generationProvenance: !includeAiPolish
         ? ('template-only' as const)
-        : enrichmentApplied && concept.generationMode === 'hybrid'
+        : generationApplied && concept.generationMode === 'llm'
+        ? ('ai-generated' as const)
+        : generationApplied && concept.generationMode === 'hybrid'
         ? ('ai-enriched' as const)
-        : enrichmentApplied
+        : generationApplied
         ? ('template-only' as const)
         : ('ai-fallback' as const),
     }));

@@ -6,21 +6,42 @@ import {
 } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  authorizeOwnerConsoleAdminRequest,
+  getOwnerAuthorizationHeader,
+} from './admin-api-authorization';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
+// OAuth providers navigate the popup across origins. Keeping it in the same
+// browsing-context group lets the callback deliver its token to the window
+// that initiated sign-in instead of falling back to a stranded popup.
+app.use((_request, response, next) => {
+  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
 const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'owner-console',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
 const adminApiUrl =
   process.env['ADMIN_API_URL'] ||
   process.env['ADMIN_ENV_API_URL'] ||
   'http://admin-api:8098';
+const ownerConsoleJwtSecret =
+  process.env['OWNER_CONSOLE_JWT_SECRET'] || process.env['JWT_SECRET'];
 const getRequestUrl = (req: express.Request): string => {
   const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
   const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
@@ -57,6 +78,40 @@ app.use(
     },
   })
 );
+
+// Bootstrap operations must never be exposed through the public Owner Console
+// proxy. They are reached only from the deployment host over Admin API loopback.
+app.use('/admin-api/api/bootstrap', (_req, response) => {
+  response.status(404).end();
+});
+
+app.use('/admin-api', async (request, response, next) => {
+  // Deployment status is intentionally public; every other control-center
+  // operation requires a current token for a global owner role.
+  if (request.path === '/api/status/public') {
+    next();
+    return;
+  }
+
+  const authorization = await authorizeOwnerConsoleAdminRequest({
+    authorization: request.get('authorization'),
+    cookieHeader: request.get('cookie'),
+    jwtSecret: ownerConsoleJwtSecret,
+    gatewayUrl,
+  });
+  if (!authorization.authorized) {
+    response.status(authorization.status).end();
+    return;
+  }
+  const bearerHeader = getOwnerAuthorizationHeader(
+    request.get('authorization'),
+    request.get('cookie')
+  );
+  if (bearerHeader) {
+    request.headers.authorization = bearerHeader;
+  }
+  next();
+});
 
 app.use(
   '/admin-api',

@@ -8,7 +8,7 @@ import { CreateProfileDto } from '../profiles/dto/create-profile.dto';
 import { UpdateProfileDto } from '../profiles/dto/update-profile.dto';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
-import { IsNull } from 'typeorm';
+import { ILike, In, IsNull, Not } from 'typeorm';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -235,6 +235,77 @@ describe('ProfileService', () => {
           { userId: 'user-123', appScope: 'global' },
           { userId: 'user-123', appScope: IsNull() },
         ],
+      });
+    });
+  });
+
+  describe('searchProfiles', () => {
+    it('builds an ILike where on profileName OR bio for a text query', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      await service.searchProfiles({ query: 'chris' });
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: [{ profileName: ILike('%chris%') }, { bio: ILike('%chris%') }],
+        order: { profileName: 'ASC' },
+        take: 20,
+        skip: 0,
+      });
+    });
+
+    it('applies excludeIds only when non-empty', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      await service.searchProfiles({ query: 'chris', excludeIds: ['a', 'b'] });
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: [
+          { id: Not(In(['a', 'b'])), profileName: ILike('%chris%') },
+          { id: Not(In(['a', 'b'])), bio: ILike('%chris%') },
+        ],
+        order: { profileName: 'ASC' },
+        take: 20,
+        skip: 0,
+      });
+    });
+
+    it('ignores an empty excludeIds array', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      await service.searchProfiles({ query: 'chris', excludeIds: [] });
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: [{ profileName: ILike('%chris%') }, { bio: ILike('%chris%') }],
+        order: { profileName: 'ASC' },
+        take: 20,
+        skip: 0,
+      });
+    });
+
+    it('caps the limit at the hard maximum', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      await service.searchProfiles({ limit: 5000 });
+
+      expect(repository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 100 })
+      );
+    });
+
+    it('returns paged results without a text predicate when query is empty', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      await service.searchProfiles({
+        excludeIds: ['a'],
+        limit: 10,
+        offset: 20,
+      });
+
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { id: Not(In(['a'])) },
+        order: { profileName: 'ASC' },
+        take: 10,
+        skip: 20,
       });
     });
   });

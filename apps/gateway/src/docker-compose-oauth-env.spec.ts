@@ -22,10 +22,10 @@ describe('docker compose oauth environment wiring', () => {
     ];
 
     const authenticationSection = compose.match(
-      /authentication:\n([\s\S]*?)(?:\n\s{2}[a-z0-9-]+:|$)/i
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
     const gatewaySection = compose.match(
-      /gateway:\n([\s\S]*?)(?:\n\s{2}[a-z0-9-]+:|$)/i
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
 
     expect(authenticationSection).toBeTruthy();
@@ -35,5 +35,116 @@ describe('docker compose oauth environment wiring', () => {
       expect(gatewaySection).toContain(line);
       expect(authenticationSection).not.toContain(line);
     }
+  });
+
+  it('disables automatic email verification by default in the production stack', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const authenticationSection = compose.match(
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(authenticationSection).toContain(
+      'AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}'
+    );
+  });
+
+  it('includes the default owner-console origin in production CORS origins', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,'
+    );
+  });
+
+  it('keeps the Forge production origin in the base compose stack without a local scope override', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain('https://forgeofwill.com');
+    expect(gatewaySection).not.toContain('forgeofwill.localhost');
+    expect(gatewaySection).not.toContain('APP_SCOPE_ORIGINS');
+  });
+
+  it('supplies a development-only OAuth state secret when the dev override replaces gateway environment', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../docker-compose.dev.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}'
+    );
+  });
+
+  it('keeps the dev default callback proxy neutral while registering Forge as an exact app origin', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../docker-compose.dev.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081"}'
+    );
+    expect(gatewaySection).toContain(
+      'CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081'
+    );
+    expect(gatewaySection).toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080'
+    );
+    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN=localhost');
+    expect(gatewaySection).toContain(
+      'GOOGLE_REDIRECT_URI=http://localhost:8080/oauth/callback/google'
+    );
+    expect(gatewaySection).not.toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL=http://forgeofwill.localhost:8081'
+    );
+  });
+
+  it('keeps the deterministic E2E provider on a different host from the app while aligning the callback origin', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../e2e/docker-compose.e2e-stack.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toBeTruthy();
+    expect(gatewaySection).toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080'
+    );
+    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN: localhost');
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_CLIENT_ID: e2e-google-client-id'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_CLIENT_SECRET: e2e-google-client-secret'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_TOKEN_ENDPOINT: http://oauth-provider:3016/token'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo'
+    );
   });
 });

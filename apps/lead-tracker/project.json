@@ -6,17 +6,16 @@
   "tags": ["type:app"],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/lead-tracker"
+        "webpackConfig": "apps/lead-tracker/webpack.config.js",
+        "outputPath": "dist/apps/lead-tracker"
       },
       "configurations": {
-        "development": {
-          "args": ["--node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "add-pg-dependency": {
       "executor": "nx:run-commands",
@@ -44,11 +43,13 @@
       }
     },
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "nx:run-commands",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "apps/lead-tracker/jest.config.ts",
-        "passWithNoTests": true
+        "command": "jest --config apps/lead-tracker/jest.config.ts --passWithNoTests",
+        "env": {
+          "NODE_OPTIONS": "--experimental-vm-modules"
+        }
       }
     },
     "typeorm:migration:generate": {
@@ -75,6 +76,16 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert",
+        "cwd": "apps/lead-tracker",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
+    },
+    "probe-sources": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register src/tools/probe-sources.ts",
         "cwd": "apps/lead-tracker",
         "env": {
           "TS_NODE_PROJECT": "tsconfig.app.json"

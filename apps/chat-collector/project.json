@@ -6,16 +6,16 @@
   "tags": ["type:app"],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["node-env=production"]
+        "webpackConfig": "apps/chat-collector/webpack.config.js",
+        "outputPath": "dist/apps/chat-collector"
       },
       "configurations": {
-        "development": {
-          "args": ["node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "serve": {
       "continuous": true,
@@ -41,6 +41,17 @@
       "options": {
         "jestConfig": "apps/chat-collector/jest.config.ts",
         "passWithNoTests": true
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/chat-collector",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
       }
     }
   }

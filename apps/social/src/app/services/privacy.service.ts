@@ -74,6 +74,13 @@ export class PrivacyService {
     });
   }
 
+  async getBlockersOf(blockedId: string): Promise<UserBlock[]> {
+    return await this.userBlockRepo.find({
+      where: { blockedId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async isUserBlocked(blockerId: string, blockedId: string): Promise<boolean> {
     const block = await this.userBlockRepo.findOne({
       where: { blockerId, blockedId },

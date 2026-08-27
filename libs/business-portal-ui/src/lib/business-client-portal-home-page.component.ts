@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { EMPTY, catchError } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -15,6 +15,7 @@ import {
   BusinessAuthService,
   BusinessClientBookingStatus,
   BusinessSiteConfigStore,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -65,7 +66,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       h2,
       h3 {
@@ -83,7 +84,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 1rem;
         margin: 0;
         padding-left: 1.1rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 74%, transparent);
+        color: color-mix(in srgb, var(--foreground) 74%, transparent);
       }
       .actions {
         display: flex;
@@ -102,8 +103,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 700;
       }
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
       .cta-secondary {
         border: var(--personality-border-width, 1px) solid var(--border);
@@ -120,10 +121,9 @@ export class BusinessClientPortalHomePageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly destroyRef = inject(DestroyRef);
   readonly site = this.siteConfig.site;
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   readonly clientStatus = signal<BusinessClientBookingStatus | null>(null);
   readonly consultationCtaLabel = computed(() =>
     this.clientStatus()?.accepted ? 'Book session' : 'Request consultation'
@@ -134,17 +134,19 @@ export class BusinessClientPortalHomePageComponent {
   );
 
   dashboardRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'dashboard']
       : ['/client/dashboard'];
   }
 
   bookingRoute(): string[] {
-    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : ['/'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'book'] : ['/'];
   }
 
   constructor() {
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
 
     effect(() => {
       if (!this.auth.clientUser()) {
@@ -153,7 +155,7 @@ export class BusinessClientPortalHomePageComponent {
       }
 
       this.api
-        .getClientBookingStatus(this.siteSlug)
+        .getClientBookingStatus(this.siteSlug())
         .pipe(
           catchError(() => {
             this.clientStatus.set(null);

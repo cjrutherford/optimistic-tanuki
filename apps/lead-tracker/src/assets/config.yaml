@@ -2,9 +2,20 @@ listenPort: 3020
 ollama:
   host: prompt-proxy
   port: 11434
-  model: gemma3
+  # granite4:tiny-h conforms to the response schema with no prompt priming
+  # (3/3 bare in the --structured pilot). The previous default here was gemma3,
+  # which was never on the candidate list at all.
+  model: granite4:tiny-h
+  # Retried when the primary returns output the schema rejects.
+  fallbackModel: qwen3.5:4b-q8_0
+  # The DISC turns run here instead: qwen's follow-ups build on the answer just
+  # given, where granite's stay grounded in the profile. Slower, and worth it
+  # for the only tasks the user experiences as a conversation.
+  conversationalModel: qwen3.5:4b-q8_0
   temperature: 0.3
-  timeoutMs: 120000
+  # Matches the gateway's model-bound preset. 120000 was too tight: topic
+  # analysis measured 164-332s against a local 4b model.
+  timeoutMs: 600000
 database:
   host: db
   port: 5432
@@ -28,15 +39,9 @@ leadDiscovery:
     enabled: true
   weWorkRemotely:
     enabled: true
-  justRemote:
-    enabled: true
   jobicy:
     enabled: true
-  clutch:
-    enabled: true
-  crunchbase:
-    enabled: true
-  indeed:
+  fundingNews:
     enabled: true
   googleMaps:
     enabled: true

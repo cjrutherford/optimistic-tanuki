@@ -442,6 +442,36 @@ export class FinanceService {
     );
   }
 
+  async addTenantMember(input: {
+    memberProfileId: string;
+    role: 'finance_admin' | 'finance_member';
+  }): Promise<FinanceTenantMember> {
+    return firstValueFrom(
+      this.http.post<FinanceTenantMember>(
+        `${this.baseUrl}/tenant/members`,
+        input
+      )
+    );
+  }
+
+  async updateTenantMemberRole(
+    memberId: string,
+    role: 'finance_admin' | 'finance_member'
+  ): Promise<FinanceTenantMember> {
+    return firstValueFrom(
+      this.http.put<FinanceTenantMember>(
+        `${this.baseUrl}/tenant/members/${memberId}`,
+        { role }
+      )
+    );
+  }
+
+  async removeTenantMember(memberId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${this.baseUrl}/tenant/members/${memberId}`)
+    );
+  }
+
   async getCategorySuggestions(workspace: FinanceWorkspace): Promise<string[]> {
     const [transactions, budgets, recurringItems] = await Promise.all([
       this.getTransactions(workspace),

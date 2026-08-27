@@ -7,7 +7,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { ProfileGuard } from './guards/profile.guard';
 
 export const appRoutes: Routes = [
-  ...emailAuthRoutes('ot-d6_authToken'),
+  ...emailAuthRoutes('ot-d6_authToken', true),
   {
     path: '',
     loadComponent: () =>
@@ -76,6 +76,10 @@ export const appRoutes: Routes = [
   },
   {
     path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
     component: OAuthCallbackComponent,
   },
   {

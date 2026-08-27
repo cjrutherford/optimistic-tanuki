@@ -3,7 +3,6 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
 import { LoginRequest, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
-import { jwtDecode } from 'jwt-decode';
 import { isPlatformBrowser } from '@angular/common';
 
 export interface UserData {
@@ -20,6 +19,10 @@ export class AuthStateService {
   private tokenSubject: BehaviorSubject<string | null>;
   private isAuthenticatedSubject: BehaviorSubject<boolean>;
   private decodedTokenSubject: BehaviorSubject<UserData | null>;
+  private readonly initialSessionRestore: Promise<boolean>;
+  private guardSessionRetry: Promise<boolean> | undefined;
+  private initialSessionRestoreComplete = false;
+  private sessionRestoreGeneration = 0;
   private _isAuthenticated = false;
   private readonly namespace = 'fow-client';
   private readonly tokenKey = `${this.namespace}-authToken`;
@@ -31,28 +34,15 @@ export class AuthStateService {
   private platformId: object = inject(PLATFORM_ID);
 
   constructor() {
-    if (!isPlatformBrowser(this.platformId)) {
-      // Initialize with default values if not in a browser environment
-      this.tokenSubject = new BehaviorSubject<string | null>(null);
-      this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-      this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
-      return;
-    }
-
-    this.tokenSubject = new BehaviorSubject<string | null>(
-      localStorage.getItem(this.tokenKey)
-    );
-    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(
-      !!localStorage.getItem(this.tokenKey)
-    );
-    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
-      this.getDecodedToken()
-    );
-
-    const token = localStorage.getItem(this.tokenKey);
-    if (token) {
-      this.setToken(token);
-    }
+    this.tokenSubject = new BehaviorSubject<string | null>(null);
+    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
+    const initialSessionRestore = isPlatformBrowser(this.platformId)
+      ? this.restoreSession()
+      : Promise.resolve(false);
+    this.initialSessionRestore = initialSessionRestore.finally(() => {
+      this.initialSessionRestoreComplete = true;
+    });
   }
 
   isAuthenticated$(): Observable<boolean> {
@@ -76,15 +66,65 @@ export class AuthStateService {
     return this._isAuthenticated;
   }
 
-  login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
+  async login(
+    loginRequest: LoginRequest
+  ): Promise<{ data: Record<string, never> }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
-    return this.authService.login(loginRequest).then((response) => {
-      const token = response.data.newToken;
-      this.setToken(token);
-      return response;
-    });
+    const response = await this.authService.login(loginRequest);
+    await this.restoreSession();
+    return response;
+  }
+
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+
+    const restoreGeneration = ++this.sessionRestoreGeneration;
+
+    try {
+      const response = await this.authService.currentSession();
+      if (restoreGeneration !== this.sessionRestoreGeneration) {
+        return this._isAuthenticated;
+      }
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(true);
+      this.decodedTokenSubject.next(response.data as UserData);
+      this._isAuthenticated = true;
+      return true;
+    } catch {
+      if (restoreGeneration !== this.sessionRestoreGeneration) {
+        return this._isAuthenticated;
+      }
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.decodedTokenSubject.next(null);
+      this._isAuthenticated = false;
+      return false;
+    }
+  }
+
+  waitForInitialSessionRestore(): Promise<boolean> {
+    return this.initialSessionRestore;
+  }
+
+  /**
+   * A client-only route can start after SSR's unauthenticated initialization.
+   * Coalesce the guards' one browser retry so concurrent guards issue at most
+   * one credentialed session request before they redirect.
+   */
+  restoreSessionAfterInitialFailure(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId) || this._isAuthenticated) {
+      return Promise.resolve(this._isAuthenticated);
+    }
+
+    return (this.guardSessionRetry ??= this.restoreSession());
+  }
+
+  get isInitialSessionRestoreComplete(): boolean {
+    return this.initialSessionRestoreComplete;
   }
 
   setToken(token: string) {
@@ -93,10 +133,11 @@ export class AuthStateService {
       console.log('setToken called on non-browser platform');
       return;
     }
-    localStorage.setItem(this.tokenKey, token);
+    ++this.sessionRestoreGeneration;
+    localStorage.removeItem(this.tokenKey);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
-    this.decodedTokenSubject.next(this.getDecodedToken());
+    this.decodedTokenSubject.next(null);
     this._isAuthenticated = true;
   }
 
@@ -104,35 +145,35 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    ++this.sessionRestoreGeneration;
+    this.guardSessionRetry = undefined;
+    const token = this.getToken();
+    this.http
+      .post('/api/authentication/logout', token ? { token } : {}, {
+        withCredentials: true,
+      })
+      .subscribe();
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
+    this._isAuthenticated = false;
   }
 
   private getDecodedToken(): UserData | null {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const token = localStorage.getItem(this.tokenKey);
-    if (!token) return null;
-    const decoded: any = jwtDecode(token);
-    if (decoded.profileId === undefined || decoded.profileId === null)
-      decoded.profileId = '';
-    return decoded as UserData;
+    return this.decodedTokenSubject.value;
   }
 
   getToken() {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const subjectValue = this.tokenSubject.value;
-    if (!subjectValue) {
-      return localStorage.getItem(this.tokenKey);
-    }
-    return subjectValue;
+    return this.tokenSubject.value;
   }
 
   getDecodedTokenValue() {

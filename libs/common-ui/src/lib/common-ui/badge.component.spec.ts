@@ -39,6 +39,20 @@ describe('BadgeComponent', () => {
     expect(rootEl().getAttribute('data-size')).toBe('lg');
   });
 
+  it('exposes canonical emphasis aliased to shape', () => {
+    expect(component.emphasis).toBe('soft');
+    component.emphasis = 'solid';
+    fixture.detectChanges();
+    expect(component.shape).toBe('solid');
+    expect(rootEl().getAttribute('data-emphasis')).toBe('solid');
+
+    // Setting the deprecated shape keeps emphasis in sync.
+    component.shape = 'outline';
+    fixture.detectChanges();
+    expect(component.emphasis).toBe('outline');
+    expect(rootEl().getAttribute('data-emphasis')).toBe('outline');
+  });
+
   it('maps deprecated variant inputs to tone', () => {
     component.variant = 'primary';
     fixture.detectChanges();

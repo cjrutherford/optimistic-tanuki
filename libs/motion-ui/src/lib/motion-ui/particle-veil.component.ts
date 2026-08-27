@@ -22,9 +22,9 @@ type ParticleModel = {
 })
 export class ParticleVeilComponent {
   @Input() height = '24rem';
-  @Input() density = 24;
-  @Input() speed = 1;
-  @Input() intensity = 0.6;
+  @Input() density = 28;
+  @Input() speed = 1.4;
+  @Input() intensity = 0.65;
   @Input() reducedMotion = false;
 
   protected get particles(): ParticleModel[] {

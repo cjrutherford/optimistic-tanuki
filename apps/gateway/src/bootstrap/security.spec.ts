@@ -2,6 +2,7 @@ import type { Request } from 'express';
 import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 import {
   applyGatewaySecurityHeaders,
+  assertProductionOwnerConsoleOrigin,
   enforceTrustedBrowserOrigins,
   getTrustedOrigins,
   isAllowedOrigin,
@@ -75,6 +76,70 @@ describe('gateway security helpers', () => {
         'https://business.experiments.christopherrutherford.net',
       ])
     );
+  });
+
+  it('adds loopback aliases for every local client endpoint in the registry', () => {
+    const localRegistry: AppRegistry = {
+      ...registry,
+      apps: [
+        {
+          ...registry.apps[0],
+          uiBaseUrl: 'http://localhost:8080',
+        },
+        {
+          ...registry.apps[1],
+          uiBaseUrl: 'http://localhost:8081',
+        },
+      ],
+    };
+
+    expect(getTrustedOrigins({ registry: localRegistry })).toEqual(
+      expect.arrayContaining([
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://0.0.0.0:8080',
+        'http://localhost:8081',
+        'http://127.0.0.1:8081',
+        'http://0.0.0.0:8081',
+      ])
+    );
+  });
+
+  it('requires the production owner-console registry origin in configured origins', () => {
+    const productionRegistry: AppRegistry = {
+      ...registry,
+      apps: [
+        ...registry.apps,
+        {
+          appId: 'owner-console',
+          name: 'Owner Console',
+          domain: '203.0.113.10',
+          uiBaseUrl: 'http://203.0.113.10:8084',
+          apiBaseUrl: 'http://203.0.113.10:8084/api',
+          appType: 'admin',
+          visibility: 'internal',
+        },
+      ],
+    };
+
+    expect(() =>
+      assertProductionOwnerConsoleOrigin({
+        configuredOrigins: ['https://optimistic-tanuki.com'],
+        nodeEnv: 'production',
+        registry: productionRegistry,
+      })
+    ).toThrow('CORS_ALLOWED_ORIGINS must include');
+
+    expect(() =>
+      assertProductionOwnerConsoleOrigin({
+        configuredOrigins: [
+          'https://optimistic-tanuki.com',
+          'http://203.0.113.10:8084',
+        ],
+        nodeEnv: 'production',
+        registry: productionRegistry,
+      })
+    ).not.toThrow();
   });
 
   it('allows configured origins', () => {
@@ -160,6 +225,9 @@ describe('gateway security helpers', () => {
     expect(headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(headers.get('Content-Security-Policy')).toContain(
       "default-src 'none'"
+    );
+    expect(headers.get('Cross-Origin-Opener-Policy')).toBe(
+      'same-origin-allow-popups'
     );
     expect(next).toHaveBeenCalled();
   });

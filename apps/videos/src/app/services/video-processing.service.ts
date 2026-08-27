@@ -1,4 +1,9 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -31,7 +36,14 @@ type ProcessingConfig = {
 export const VIDEO_PROCESSING_CONFIG = 'VIDEO_PROCESSING_CONFIG';
 
 @Injectable()
-export class VideoProcessingService {
+export class VideoProcessingService implements OnApplicationBootstrap {
+  private readonly queuedVideoIds = new Set<string>();
+  private readonly queue: string[] = [];
+  private activeJobs = 0;
+  private readonly maxConcurrentJobs = Math.max(
+    1,
+    Number.parseInt(process.env['VIDEO_PROCESSING_CONCURRENCY'] || '2', 10) || 2
+  );
   constructor(
     @InjectRepository(Video)
     private readonly videoRepository: Repository<Video>,
@@ -45,6 +57,63 @@ export class VideoProcessingService {
         process.env['LOCAL_STORAGE_PATH'] || '/usr/src/app/storage',
     }
   ) {}
+
+  /**
+   * Resume work that was in-memory when this service last stopped. The queue
+   * enforces the normal concurrency limit, so a restart cannot flood the
+   * transcoder with every pending upload at once.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    const recoverableVideos = await this.videoRepository.find({
+      where: [
+        { processingStatus: VideoProcessingStatus.PENDING },
+        { processingStatus: VideoProcessingStatus.PROCESSING },
+      ],
+      order: { updatedAt: 'ASC' },
+    });
+
+    for (const video of recoverableVideos) {
+      this.enqueue(video.id);
+    }
+  }
+
+  getQueueMetrics(): {
+    activeJobs: number;
+    queuedJobs: number;
+    maxConcurrentJobs: number;
+  } {
+    return {
+      activeJobs: this.activeJobs,
+      queuedJobs: this.queue.length,
+      maxConcurrentJobs: this.maxConcurrentJobs,
+    };
+  }
+
+  enqueue(videoId: string): void {
+    if (this.queuedVideoIds.has(videoId)) {
+      return;
+    }
+
+    this.queuedVideoIds.add(videoId);
+    this.queue.push(videoId);
+    this.drainQueue();
+  }
+
+  private drainQueue(): void {
+    while (this.activeJobs < this.maxConcurrentJobs && this.queue.length > 0) {
+      const videoId = this.queue.shift();
+      if (!videoId) {
+        continue;
+      }
+
+      this.activeJobs += 1;
+      void this.processVideo(videoId).finally(() => {
+        this.activeJobs -= 1;
+        this.queuedVideoIds.delete(videoId);
+        this.drainQueue();
+      });
+    }
+  }
 
   async processVideo(videoId: string): Promise<void> {
     const video = await this.videoRepository.findOne({

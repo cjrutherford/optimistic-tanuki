@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -16,10 +18,10 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--spacing-md);
-  background: var(--card, var(--surface, var(--background)));
+  background: var(--surface);
   border-bottom: var(--border-width, 1px) solid var(--border);
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
 }
 
 .breadcrumb {
@@ -33,17 +35,16 @@
   .back-button {
     background: none;
     border: none;
-    color: var(--accent);
+    color: var(--primary);
     cursor: pointer;
     text-decoration: underline;
     padding: 0;
     font-size: inherit;
     font-family: inherit;
-    transition: color var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease);
+    @include p.personality-transition(color, 'fast');
 
     &:hover {
-      color: var(--complement);
+      color: var(--secondary);
     }
   }
 
@@ -111,18 +112,16 @@
 
 .topic-card {
   cursor: pointer;
-  transition: border-color var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    box-shadow var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease);
+  @include p.personality-transition(
+    (border-color, box-shadow, transform),
+    'fast'
+  );
   border: var(--border-width, 1px) solid var(--border);
   border-radius: var(--border-radius-lg);
 
   &:hover {
-    border-color: var(--accent);
-    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+    @include p.shadow('md');
   }
 
   h3 {
@@ -180,16 +179,13 @@
 
 .thread-card {
   cursor: pointer;
-  transition: border-color var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    background-color var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease);
+  @include p.personality-transition((border-color, background-color), 'fast');
   border: var(--border-width, 1px) solid var(--border);
   border-radius: var(--border-radius-md);
 
   &:hover {
-    border-color: var(--accent);
-    background-color: color-mix(in srgb, var(--accent) 4%, var(--background));
+    border-color: var(--primary);
+    background-color: color-mix(in srgb, var(--primary) 4%, var(--background));
   }
 }
 
@@ -323,12 +319,12 @@
 
 :host-context([data-personality='minimal']) {
   .forum-header {
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .topic-card {
     border-radius: var(--border-radius-sm);
     &:hover {
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
     }
   }
   .thread-card {
@@ -343,12 +339,12 @@
 
 :host-context([data-personality='elegant']) {
   .forum-header {
-    border-bottom-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--primary) 20%, transparent);
   }
   .topic-card {
-    border-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 15%, transparent);
     &:hover {
-      border-color: var(--accent);
+      border-color: var(--primary);
     }
     h3 {
       font-style: italic;
@@ -368,14 +364,14 @@
 :host-context([data-personality='bold']) {
   .forum-header {
     border-bottom-width: 3px;
-    border-bottom-color: var(--accent);
-    box-shadow: var(--shadow-md);
+    border-bottom-color: var(--primary);
+    @include p.shadow('md');
   }
   .topic-card {
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--primary);
     border-radius: var(--border-radius-sm);
     &:hover {
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
       transform: translateY(-2px);
     }
     h3 {
@@ -385,9 +381,9 @@
     }
   }
   .thread-card {
-    border-left: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
     &:hover {
-      border-left-color: var(--accent);
+      border-left-color: var(--primary);
     }
   }
   .badge {
@@ -398,22 +394,16 @@
 
 :host-context([data-personality='playful']) {
   .forum-header {
-    background: var(
-      --gradient-surface,
-      var(--surface-gradient, var(--card, var(--background)))
-    );
+    background: var(--gradient-surface);
     border-bottom: none;
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
   }
   .topic-card {
     border-radius: var(--border-radius-xl);
-    background: var(
-      --gradient-surface,
-      var(--surface-gradient, var(--card, var(--background)))
-    );
+    background: var(--gradient-surface);
     &:hover {
       transform: translateY(-3px) rotate(-0.5deg);
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
   .thread-card {
@@ -437,15 +427,15 @@
 
 :host-context([data-personality='electric']) {
   .forum-header {
-    border-bottom-color: color-mix(in srgb, var(--accent) 40%, transparent);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 10%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 10%, transparent);
   }
   .topic-card:hover {
     box-shadow: var(--shadow-md),
-      0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+      0 0 12px color-mix(in srgb, var(--primary) 25%, transparent);
   }
   .thread-card:hover {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 15%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 15%, transparent);
   }
   .badge {
     box-shadow: 0 0 4px color-mix(in srgb, currentColor 25%, transparent);
@@ -457,28 +447,32 @@
 :host-context([data-personality='soft-touch']) {
   .forum-header {
     border-bottom: none;
-    background-color: color-mix(in srgb, var(--accent) 4%, var(--background));
-    box-shadow: var(--shadow-none);
+    background-color: color-mix(in srgb, var(--primary) 4%, var(--background));
+    @include p.shadow('none');
   }
   .topic-card {
     border: none;
-    background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 6%, var(--background));
     border-radius: var(--border-radius-xl);
     &:hover {
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
       background-color: color-mix(
         in srgb,
-        var(--accent) 10%,
+        var(--primary) 10%,
         var(--background)
       );
     }
   }
   .thread-card {
     border: none;
-    background-color: color-mix(in srgb, var(--accent) 4%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 4%, var(--background));
     border-radius: var(--border-radius-lg);
     &:hover {
-      background-color: color-mix(in srgb, var(--accent) 8%, var(--background));
+      background-color: color-mix(
+        in srgb,
+        var(--primary) 8%,
+        var(--background)
+      );
     }
   }
   .badge {
@@ -491,22 +485,22 @@
   }
   .composer-container {
     border-bottom: none;
-    background-color: color-mix(in srgb, var(--accent) 4%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 4%, var(--background));
   }
 }
 
 // Technical
 :host-context([data-personality='architect']) {
   .forum-header {
-    box-shadow: var(--shadow-md);
-    border-top: 3px solid var(--accent);
+    @include p.shadow('md');
+    border-top: 3px solid var(--primary);
     border-bottom: var(--border-width, 1px) solid var(--border);
   }
   .topic-card {
     border-radius: var(--border-radius-none);
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     &:hover {
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
   .thread-card {

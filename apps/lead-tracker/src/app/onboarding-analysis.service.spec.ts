@@ -1,3 +1,4 @@
+import { RpcException } from '@nestjs/microservices';
 import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
@@ -23,6 +24,7 @@ describe('OnboardingAnalysisService', () => {
       analyzeMadLib: jest.fn(),
       parseResumeText: jest.fn(),
       assessDiscInterview: jest.fn(),
+      generateNextDiscQuestion: jest.fn(),
     } as unknown as jest.Mocked<LlmOnboardingAnalysisService>;
 
     service = new OnboardingAnalysisService(llmAnalysisService);
@@ -188,22 +190,155 @@ describe('OnboardingAnalysisService', () => {
     );
   });
 
-  it('strips non-printing characters out of binary-looking resume uploads', async () => {
+  it('prefills the title without the name attached to it', async () => {
+    // Resume headings read "Jane Rivera - Senior Platform Engineer". The whole
+    // line is fine as a heading but wrong for an intro that reads "I am a ...".
+    const text = [
+      'Jane Rivera - Senior Platform Engineer',
+      'Acme Robotics, 2019-2024',
+      'Led migration of billing to Kubernetes, cutting deploy time 40%.',
+      'Skills: TypeScript, PostgreSQL, Terraform, AWS',
+    ].join('\n');
+
+    const result = await service.parseResume({
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: Buffer.from(text, 'utf8').toString('base64'),
+    });
+
+    expect(result.suggestedProfile.professionalTitle).toBe(
+      'Senior Platform Engineer'
+    );
+  });
+
+  it('does not classify a skills line as a certification', async () => {
+    // "aws" alone used to match, so the skills line was reported as a credential.
+    const text = [
+      'Dana Okafor - Staff Engineer',
+      'Skills: TypeScript, PostgreSQL, Terraform, AWS',
+      'Built deployment tooling used by four teams.',
+    ].join('\n');
+
+    const result = await service.parseResume({
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: Buffer.from(text, 'utf8').toString('base64'),
+    });
+
+    expect(result.certifications).toEqual([]);
+  });
+
+  it('survives a model returning evidence as a string instead of a list', async () => {
+    // Observed in production against granite: the same prompt returns
+    // {"idealCustomer": ["..."]} on most runs and {"idealCustomer": "..."} on
+    // others, and the string form threw `values.map is not a function` out of
+    // sanitizeStringArray, taking down the whole mad-lib step. Model output is
+    // an expectation, not a guarantee, so a wrong shape is coerced.
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      configurable: true,
+      value: true,
+    });
+    llmAnalysisService.analyzeMadLib.mockResolvedValue({
+      summary: 'I help SaaS teams modernize React frontends.',
+      suggestedServiceOffer: 'React modernization',
+      suggestedSkills: 'React, TypeScript',
+      suggestedProfile: { idealCustomer: 'VP Engineering' },
+      evidenceByField: {
+        idealCustomer: 'VP Engineering at mid-size SaaS',
+        skills: ['React'],
+      },
+    } as never);
+
+    const result = await service.analyzeMadLib({
+      text: 'I help SaaS teams modernize React frontends.',
+    });
+
+    // The stray string becomes a single-entry list rather than an exception.
+    expect(result.evidenceByField?.idealCustomer).toEqual([
+      'VP Engineering at mid-size SaaS',
+    ]);
+    expect(result.evidenceByField?.skills).toEqual(['React']);
+    expect(result.suggestedSkills).toEqual(['React, TypeScript']);
+  });
+
+  it('analyzes a profile whose budgetRange is a bare string', async () => {
+    // The wizard's single-select wrote a string into a string[] field, and both
+    // the LLM path and the deterministic fallback called array methods on it,
+    // so the whole final step 500'd with "unable to analyze your profile".
+    const profile = {
+      serviceOffer: 'React modernization',
+      yearsExperience: '10+ years',
+      skills: ['React'],
+      certifications: [],
+      idealCustomer: 'VP Engineering',
+      companySizeTarget: ['51-200'],
+      industries: ['SaaS'],
+      problemsSolved: ['slow releases'],
+      outcomes: ['faster releases'],
+      budgetRange: '$25k-$100k',
+      geographicFocus: 'North America',
+      salesApproach: 'Consultative',
+      outreachMethod: ['Email'],
+      communicationStyle: 'Direct',
+      leadSignalTypes: ['Company growth'],
+      excludedCompanies: [],
+      excludedIndustries: [],
+      currentStep: 0,
+    } as never;
+
+    const topics = await service.analyzeProfile(profile);
+
+    expect(topics.length).toBeGreaterThan(0);
+  });
+
+  it('refuses an upload whose bytes are not a document it can read', async () => {
+    // This used to be accepted: the old extractor scraped printable runs out of
+    // arbitrary bytes, which is exactly how PDF scaffolding ended up being
+    // treated as the candidate's own words. Refusing is the point now.
     const noisyBinary = Buffer.from(
       'Principal Consultant\x00\x01\x02 Northstar Digital\u200BSavannah, GA\x7F\x1FReact TypeScript',
       'binary'
     );
 
+    const refusal = await service
+      .parseResume({
+        filename: 'resume.pdf',
+        mimeType: 'application/pdf',
+        contentBase64: noisyBinary.toString('base64'),
+      })
+      .then(
+        () => null,
+        (error: RpcException) => error
+      );
+
+    // The payload has to survive the microservice transport, so it is asserted
+    // through getError() rather than as an HTTP exception body.
+    expect(refusal).toBeInstanceOf(RpcException);
+    expect(refusal?.getError()).toMatchObject({
+      statusCode: 400,
+      reason: 'unsupported-format',
+    });
+  });
+
+  it('strips non-printing characters out of readable resume text', async () => {
+    const noisyText = Buffer.from(
+      'Principal Consultant\u200B at Northstar Digital\n' +
+        'Savannah, GA \u00A0 React, TypeScript, PostgreSQL\n' +
+        'Led platform work across three product teams.',
+      'utf8'
+    );
+
     const result = await service.parseResume({
-      filename: 'resume.pdf',
-      mimeType: 'application/pdf',
-      contentBase64: noisyBinary.toString('base64'),
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: noisyText.toString('base64'),
     });
 
     expect(result.summary).toContain('Principal Consultant');
     expect(result.summary).toContain('Northstar Digital');
     // eslint-disable-next-line no-control-regex
     expect(result.summary).not.toMatch(/[\x00-\x1F\x7F]/);
+    expect(result.summary).not.toContain('\u200B');
   });
 
   it('sanitizes llm resume evidence and summaries before returning them', async () => {
@@ -235,9 +370,15 @@ describe('OnboardingAnalysisService', () => {
     } as any);
 
     const result = await service.parseResume({
-      filename: 'resume.pdf',
-      mimeType: 'application/pdf',
-      contentBase64: Buffer.from('stub').toString('base64'),
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      // The subject here is sanitising what the model returns, but extraction
+      // still has to succeed first, so this is a readable resume rather than a
+      // four-byte stub.
+      contentBase64: Buffer.from(
+        'Principal Consultant at Northstar Digital, Savannah GA. React and TypeScript.',
+        'utf8'
+      ).toString('base64'),
     });
 
     expect(result.summary).toBe('Principal Consultant');
@@ -248,13 +389,265 @@ describe('OnboardingAnalysisService', () => {
     expect(hasInvisibleCharacters(JSON.stringify(result))).toBe(false);
   });
 
+  it('takes composer slot values as fact rather than re-inferring them', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I help plant managers in Manufacturing solve line downtime by delivering automation retrofits.',
+      composition: {
+        sentence: 'ignored',
+        values: {
+          idealCustomer: 'Plant managers',
+          industries: ['Manufacturing'],
+          problemsSolved: ['line downtime'],
+          serviceOffer: 'automation retrofits',
+          skills: ['PLC', 'Robotics'],
+        },
+        unfilledFields: [],
+      },
+    });
+
+    // The heuristic extractor would have guessed "Manufacturing" as a skill and
+    // produced its own serviceOffer phrasing; the explicit slots win.
+    expect(result.suggestedProfile.serviceOffer).toBe('automation retrofits');
+    expect(result.suggestedProfile.idealCustomer).toBe('Plant managers');
+    expect(result.suggestedProfile.skills).toEqual(['PLC', 'Robotics']);
+    expect(result.suggestedProfile.problemsSolved).toEqual(['line downtime']);
+    expect(result.suggestedServiceOffer).toBe('automation retrofits');
+  });
+
+  it('still infers the fields a composer slot was left blank', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I am a consultant who helps SaaS teams modernize React frontends using TypeScript.',
+      composition: {
+        sentence: 'ignored',
+        values: { idealCustomer: 'VP Engineering' },
+        unfilledFields: ['skills', 'industries'],
+      },
+    });
+
+    expect(result.suggestedProfile.idealCustomer).toBe('VP Engineering');
+    // Not supplied by the user, so inference still fills it in.
+    expect(result.suggestedProfile.skills).toEqual(
+      expect.arrayContaining(['React', 'TypeScript'])
+    );
+  });
+
+  it('ignores empty slots so they cannot wipe out an inferred value', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I help SaaS teams modernize React frontends.',
+      composition: {
+        sentence: 'ignored',
+        values: {
+          serviceOffer: '   ',
+          industries: [],
+          idealCustomer: 'SaaS teams',
+        },
+        unfilledFields: [],
+      },
+    });
+
+    expect(result.suggestedProfile.idealCustomer).toBe('SaaS teams');
+    expect(result.suggestedProfile.serviceOffer).toBeTruthy();
+    expect(String(result.suggestedProfile.serviceOffer ?? '').trim()).not.toBe(
+      ''
+    );
+  });
+
+  it('accepts a plain string for the freeform escape hatch', async () => {
+    const result = await service.analyzeMadLib(
+      'I help SaaS teams modernize React frontends using TypeScript.'
+    );
+
+    expect(result.summary).toContain('React');
+    expect(result.suggestedSkills.length).toBeGreaterThan(0);
+  });
+
   it('returns the next DISC question until enough transcript exists', async () => {
     const result = await service.advanceDiscInterview({
       transcript: [{ role: 'user', text: 'I like making fast decisions.' }],
     });
 
     expect(result.complete).toBe(false);
-    expect(result.nextQuestion).toContain('teammate misses a deadline');
+    expect(result.nextQuestion).toBeTruthy();
+    // The first quadrant is already probed, so the next question moves on.
+    expect(result.nextQuestionDimension).toBe('I');
+  });
+
+  it('varies the offline interview by profile instead of replaying one script', async () => {
+    const askFor = async (profile: Record<string, unknown>) =>
+      (
+        await service.advanceDiscInterview({
+          transcript: [],
+          profile: profile as never,
+        })
+      ).nextQuestion;
+
+    const questions = await Promise.all(
+      [
+        { serviceOffer: 'React modernization', industries: ['SaaS'] },
+        { serviceOffer: 'Executive coaching', industries: ['Healthcare'] },
+        { serviceOffer: 'SEO services', industries: ['Ecommerce'] },
+        { serviceOffer: 'Fractional CFO', industries: ['Finance'] },
+        { serviceOffer: 'Brand strategy', industries: ['Manufacturing'] },
+        { serviceOffer: 'Data platform builds', industries: ['Education'] },
+      ].map(askFor)
+    );
+
+    expect(questions.every(Boolean)).toBe(true);
+    // The old flow handed every user the identical first question. Any spread
+    // at all proves the profile is now feeding question selection.
+    expect(new Set(questions).size).toBeGreaterThan(1);
+  });
+
+  it('asks the model for each question and reports the quadrant it targets', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'Tell me about the last time you overruled your own team.',
+      targetDimension: 'D',
+      sufficientSignal: false,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: [],
+      profile: { serviceOffer: 'React modernization' } as never,
+    });
+
+    expect(llmAnalysisService.generateNextDiscQuestion).toHaveBeenCalled();
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestion).toBe(
+      'Tell me about the last time you overruled your own team.'
+    );
+    expect(result.nextQuestionDimension).toBe('D');
+  });
+
+  it('will not finish while a DISC quadrant is still unprobed', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    // The model claims it has enough, but only D and I have been answered.
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'How do you handle a shifting deadline?',
+      targetDimension: 'S',
+      sufficientSignal: true,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: [
+        { role: 'assistant', text: 'q1', targetDimension: 'D' },
+        { role: 'user', text: 'I decide fast.' },
+        { role: 'assistant', text: 'q2', targetDimension: 'I' },
+        { role: 'user', text: 'I win people over.' },
+      ],
+    });
+
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestionDimension).toBe('S');
+  });
+
+  it('terminates at the turn cap even if the model never reports enough signal', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'One more question?',
+      targetDimension: 'C',
+      sufficientSignal: false,
+    });
+    llmAnalysisService.assessDiscInterview.mockResolvedValue({
+      dScore: 30,
+      iScore: 20,
+      sScore: 20,
+      cScore: 30,
+      primaryType: 'C',
+      summary: 'Analytical and deliberate.',
+      confidence: 80,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: Array.from({ length: 6 }, () => ({
+        role: 'user' as const,
+        text: 'I plan carefully and use data to clarify expectations.',
+      })),
+    });
+
+    expect(result.complete).toBe(true);
+    expect(result.assessment).toBeDefined();
+  });
+
+  it('tells the model which questions this profile was already asked', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'Something new.',
+      targetDimension: 'D',
+      sufficientSignal: false,
+    });
+
+    const previouslyAsked = ['What did you do when the launch slipped?'];
+    await service.advanceDiscInterview({ transcript: [] }, previouslyAsked);
+
+    expect(llmAnalysisService.generateNextDiscQuestion).toHaveBeenCalledWith(
+      undefined,
+      [],
+      [],
+      previouslyAsked
+    );
+  });
+
+  it('does not repeat an offline question the profile already answered', async () => {
+    const profile = { serviceOffer: 'React modernization' } as never;
+
+    const first = await service.advanceDiscInterview({
+      transcript: [],
+      profile,
+    });
+
+    // Same profile, but now that question is on record from a previous run.
+    const second = await service.advanceDiscInterview(
+      { transcript: [], profile },
+      [first.nextQuestion as string]
+    );
+
+    expect(second.nextQuestion).toBeTruthy();
+    expect(second.nextQuestion).not.toBe(first.nextQuestion);
+    expect(second.nextQuestionDimension).toBe(first.nextQuestionDimension);
+  });
+
+  it('still returns a question when a re-run has exhausted the offline bank', async () => {
+    const profile = { serviceOffer: 'React modernization' } as never;
+    const everyDQuestion = [
+      'Tell me about a recent decision you pushed through when other people were hesitating. What did you do?',
+      'Describe a time you took over something that was stalling. What was your first move?',
+      'When was the last time you overruled a group to keep something moving?',
+    ];
+
+    const result = await service.advanceDiscInterview(
+      { transcript: [], profile },
+      everyDQuestion
+    );
+
+    expect(result.complete).toBe(false);
+    expect(everyDQuestion).toContain(result.nextQuestion);
+  });
+
+  it('falls back to a generated question when the model call fails', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockRejectedValue(
+      new Error('ollama unreachable')
+    );
+
+    const result = await service.advanceDiscInterview({
+      transcript: [],
+      profile: { serviceOffer: 'React modernization' } as never,
+    });
+
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestion).toBeTruthy();
+    expect(result.nextQuestionDimension).toBe('D');
   });
 
   it('produces a lightweight DISC behavioral profile with quadrant percentages', async () => {

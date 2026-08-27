@@ -331,7 +331,9 @@ export class AccountListComponent implements OnInit {
       sortable: false,
       filter: false,
       editable: false,
-      maxWidth: 260,
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
       cellRenderer: (params: { data?: Account }) => {
         const data = params.data;
         if (!data) {

@@ -28,7 +28,10 @@
     width: 100%;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(
+      --personality-input-radius,
+      var(--border-radius-md, 6px)
+    );
     background: var(--surface);
     color: var(--foreground);
     font-size: 0.875rem;
@@ -37,7 +40,13 @@
     &:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: var(--ring-primary);
+      // `--ring-primary` is this app's own focus-ring token (see
+      // apps/local-hub/src/styles.scss); fall back to a personality-tokenized
+      // ring for consumers that only provide the contract's --primary.
+      box-shadow: var(
+        --ring-primary,
+        0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)
+      );
     }
 
     &::placeholder {

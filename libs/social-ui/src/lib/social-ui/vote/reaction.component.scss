@@ -1,4 +1,5 @@
 @use '../../styles/mixins' as *;
+@use 'personality' as p;
 
 .reaction-container {
   display: flex;
@@ -10,7 +11,7 @@
   background: transparent;
   cursor: pointer;
   position: relative;
-  transition: all 200ms ease;
+  @include p.personality-transition(all, 'normal');
   font-family: var(--font-body, system-ui, sans-serif);
 
   @include reduced-motion {
@@ -40,7 +41,7 @@
   gap: 1px;
   padding: 2px 4px;
   border-radius: 12px;
-  transition: background 200ms ease;
+  @include p.personality-transition(background, 'normal');
 
   .emoji {
     font-size: 1rem;
@@ -77,7 +78,7 @@
 .add-reaction {
   font-size: 1.25rem;
   opacity: 0.5;
-  transition: opacity 200ms ease;
+  @include p.personality-transition(opacity, 'normal');
 
   &:hover {
     opacity: 1;
@@ -96,10 +97,10 @@
   border-radius: 24px;
   border: var(--border-width, 2px) solid
     color-mix(in srgb, var(--primary) 30%, transparent);
-  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.15));
+  @include p.shadow('lg');
   z-index: 100;
   margin-bottom: 8px;
-  animation: picker-appear 200ms ease;
+  animation: picker-appear var(--animation-duration-normal, 200ms) ease;
 
   @include reduced-motion {
     animation: none;
@@ -134,11 +135,11 @@
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--border-radius-full, 50%);
   background: transparent;
   font-size: 1.25rem;
   cursor: pointer;
-  transition: all 200ms ease;
+  @include p.personality-transition(all, 'normal');
   position: relative;
 
   @include reduced-motion {
@@ -168,10 +169,10 @@
     bottom: -4px;
     right: -4px;
     font-size: 0.625rem;
-    background: var(--primary, #333);
+    background: var(--primary);
     color: var(--primary-foreground, #fff);
     padding: 1px 4px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm, 8px);
     font-weight: 600;
   }
 }
@@ -183,13 +184,13 @@
   width: 24px;
   height: 24px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--border-radius-full, 50%);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
   font-size: 0.75rem;
   cursor: pointer;
   margin-left: 4px;
   color: var(--foreground, #666);
-  transition: all 200ms ease;
+  @include p.personality-transition(all, 'normal');
 
   @include reduced-motion {
     transition: none;
@@ -203,10 +204,17 @@
 // ============================================
 // Personality-Specific Enhancements
 // ============================================
+// Usage-map note (2026-07 batch 6): architect's `.reaction-container`
+// `border-radius: 0` is an EXACT match for `--personality-button-radius`
+// at architect (0px — see `personalities.ts`
+// PRESENTATION_BY_ID.architect.components.button), converted to reference
+// the real var. Every other override here does NOT match its
+// personality's button-radius tier — deliberate deviations for this small
+// pill control, kept as literals (batch 5's conservative rule).
 
 body.personality-architect {
   .reaction-container {
-    border-radius: 0;
+    border-radius: var(--personality-button-radius, 0);
     &:hover {
       box-shadow: 4px 4px 0 var(--primary);
       transform: translate(-2px, -2px);
@@ -249,7 +257,8 @@ body.personality-electric {
     }
   }
   .reaction-btn.selected {
-    animation: pulse-glow 0.5s ease-in-out infinite;
+    animation: pulse-glow var(--animation-duration-slow, 0.5s) ease-in-out
+      infinite;
   }
 }
 
@@ -268,7 +277,8 @@ body.personality-soft-touch {
     border-radius: 24px;
     &:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 20px
+        color-mix(in srgb, var(--shadow-color, #000) 12%, transparent);
     }
   }
 }

@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: flex;
   flex: 1 1 auto;
@@ -23,10 +25,10 @@
 
   &::-webkit-scrollbar-thumb {
     background: var(--border);
-    border-radius: 3px;
+    border-radius: var(--border-radius-sm, 3px);
 
     &:hover {
-      background: var(--accent);
+      background: var(--primary);
     }
   }
 }
@@ -36,7 +38,8 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  animation: message-appear 0.25s ease-out;
+  animation: message-appear var(--animation-duration-normal, 250ms)
+    var(--animation-easing, ease-out);
 
   @keyframes message-appear {
     from {
@@ -62,17 +65,24 @@
       max-width: 75%;
 
       .message-content {
-        background: color-mix(
-          in srgb,
-          var(--local-complement) 15%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--secondary) 15%, transparent);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid var(--local-border-color);
-        border-radius: var(--border-radius-xl, 18px);
+        // --local-border-color is this component tree's live accent-tinted
+        // border (see chat-window.component.ts applyTheme()), not a plain
+        // alias of --border, so it stays the primary source; the fallback
+        // mirrors its 18%-alpha accent tint.
+        border: 1px solid
+          var(
+            --local-border-color,
+            color-mix(in srgb, var(--primary) 18%, transparent)
+          );
+        border-radius: var(
+          --personality-card-radius,
+          var(--border-radius-xl, 18px)
+        );
         border-top-left-radius: var(--border-radius-sm, 4px);
-        box-shadow: var(--shadow-sm);
+        @include p.shadow('sm');
       }
     }
   }
@@ -90,15 +100,17 @@
       max-width: 75%;
 
       .message-content {
-        background: color-mix(in srgb, var(--local-accent) 20%, transparent);
+        background: color-mix(in srgb, var(--primary) 20%, transparent);
         color: var(--on-primary, var(--foreground));
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid
-          color-mix(in srgb, var(--local-accent) 30%, transparent);
-        border-radius: var(--border-radius-xl, 18px);
+        border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+        border-radius: var(
+          --personality-card-radius,
+          var(--border-radius-xl, 18px)
+        );
         border-top-right-radius: var(--border-radius-sm, 4px);
-        box-shadow: var(--shadow-sm);
+        @include p.shadow('sm');
       }
     }
   }
@@ -200,7 +212,7 @@
 .status-icon {
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: var(--border-radius-full, 50%);
   border: 2px solid currentColor;
   position: relative;
   display: flex;
@@ -281,25 +293,40 @@
   margin-top: 4px;
 }
 
+// --local-border-color / --local-accent-transparent are this component
+// tree's live per-instance values (accent-tinted border, alpha-tinted accent
+// — see chat-window.component.ts applyTheme()), not plain aliases of a
+// single contract var, so they stay the primary source; fallbacks mirror
+// their tint intent using contract colors.
 .reaction-badge {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   padding: 2px 6px;
-  border: 1px solid var(--local-border-color);
-  border-radius: 12px;
+  border: 1px solid
+    var(
+      --local-border-color,
+      color-mix(in srgb, var(--primary) 18%, transparent)
+    );
+  border-radius: var(--border-radius-full, 12px);
   background: var(--surface, var(--background));
   font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  @include p.personality-transition(all);
 
   &:hover {
-    background: var(--local-accent-transparent);
+    background: var(
+      --local-accent-transparent,
+      color-mix(in srgb, var(--primary) 14%, transparent)
+    );
   }
 
   &.active {
-    background: var(--local-accent-transparent);
-    border-color: var(--local-accent);
+    background: var(
+      --local-accent-transparent,
+      color-mix(in srgb, var(--primary) 14%, transparent)
+    );
+    border-color: var(--primary);
   }
 }
 
@@ -309,17 +336,24 @@
   justify-content: center;
   width: 20px;
   height: 20px;
-  border: 1px solid var(--local-border-color);
-  border-radius: 50%;
+  border: 1px solid
+    var(
+      --local-border-color,
+      color-mix(in srgb, var(--primary) 18%, transparent)
+    );
+  border-radius: var(--border-radius-full, 50%);
   background: var(--surface, var(--background));
   font-size: 0.75rem;
   cursor: pointer;
   opacity: 0.6;
-  transition: all 0.15s ease;
+  @include p.personality-transition(all);
 
   &:hover {
     opacity: 1;
-    background: var(--local-accent-transparent);
+    background: var(
+      --local-accent-transparent,
+      color-mix(in srgb, var(--primary) 14%, transparent)
+    );
   }
 }
 
@@ -328,8 +362,12 @@
   gap: 4px;
   padding: 8px;
   background: var(--surface, var(--background));
-  border: 1px solid var(--local-border-color);
-  border-radius: 8px;
+  border: 1px solid
+    var(
+      --local-border-color,
+      color-mix(in srgb, var(--primary) 18%, transparent)
+    );
+  border-radius: var(--border-radius-lg, 8px);
   margin-top: 4px;
 }
 
@@ -339,11 +377,14 @@
   background: transparent;
   font-size: 1.25rem;
   cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.15s ease;
+  border-radius: var(--border-radius-sm, 4px);
+  @include p.personality-transition(background);
 
   &:hover {
-    background: var(--local-accent-transparent);
+    background: var(
+      --local-accent-transparent,
+      color-mix(in srgb, var(--primary) 14%, transparent)
+    );
   }
 }
 
@@ -365,7 +406,7 @@
     width: 6px;
     height: 6px;
     background: var(--foreground);
-    border-radius: 50%;
+    border-radius: var(--border-radius-full, 50%);
     animation: typing-bounce 1.4s infinite ease-in-out;
 
     &:nth-child(1) {

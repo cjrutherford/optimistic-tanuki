@@ -10,6 +10,8 @@ ENV NODE_ENV=development
 ENV PORT=4000
 ENV GIT_SHA=${GIT_SHA}
 
+LABEL com.optimistic-tanuki.runtime=development
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile

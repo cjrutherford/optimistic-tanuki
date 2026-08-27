@@ -1,6 +1,6 @@
 import { Component, Input, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 import { AppComponent } from './app.component';
@@ -25,6 +25,12 @@ class StubHaiAboutTagComponent {
   @Input() config: unknown;
 }
 
+@Component({
+  standalone: true,
+  template: '',
+})
+class StubOnboardingRouteComponent {}
+
 describe('AppComponent', () => {
   beforeEach(async () => {
     TestBed.overrideComponent(AppComponent, {
@@ -39,7 +45,10 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([
+          { path: 'onboarding', component: StubOnboardingRouteComponent },
+          { path: 'plans', component: StubOnboardingRouteComponent },
+        ]),
         { provide: PLATFORM_ID, useValue: 'browser' },
         {
           provide: ThemeService,
@@ -78,6 +87,30 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.app-content')).not.toBeNull();
+  });
+
+  it('hides the persistent title bar while onboarding is active', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const router = TestBed.inject(Router);
+
+    fixture.detectChanges();
+    await router.navigateByUrl('/onboarding');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('fc-title-bar')).toBeNull();
+  });
+
+  it('restores the persistent title bar after leaving onboarding', async () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const router = TestBed.inject(Router);
+
+    fixture.detectChanges();
+    await router.navigateByUrl('/onboarding');
+    fixture.detectChanges();
+    await router.navigateByUrl('/plans');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('fc-title-bar')).not.toBeNull();
   });
 
   it('defaults Fin Commander to the classic personality when no theme is stored', () => {

@@ -1,34 +1,43 @@
 :root {
   /* Default Theme Variables (mimicking ThemeService defaults) */
+  /* Aligned to the real contract emitted by theme-lib's ThemeService
+     (see theme.service.ts generatePersonalityCSSVariables()) — this used to
+     redeclare --accent/--complement/--card/--success/--info/--muted, which
+     ThemeService never actually emits under those names (verified 2026-07-19
+     forum-ui personality-adoption pass; the lib's SCSS uses --primary/
+     --secondary/--surface/--muted-foreground instead — see compose-forum-
+     post.component.scss, forum-shell.component.scss, poster-profile.
+     component.scss). Kept minimal, mirroring chat-ui's aligned mock
+     (libs/chat-ui/.storybook/theme-defaults.scss): only vars forum-ui
+     components reference, directly or via the shared
+     `p.shadow()`/`p.personality-transition()` partials. */
   --theme: light;
 
-  /* Primary Colors */
+  /* Primary / secondary / tertiary */
   --primary: #3f51b5;
   --primary-foreground: #ffffff;
-  --accent: #3f51b5;
-  --complement: #c0af4b;
+  --secondary: #c0af4b;
   --tertiary: #7e57c2;
-  --success: #4caf50;
-  --success-foreground: #ffffff;
+
+  /* Semantic colors (danger/warning — the only two forum-ui references, for
+     locked/pinned badges and error messages) */
   --danger: #f44336;
   --danger-foreground: #ffffff;
   --warning: #ff9800;
   --warning-foreground: #ffffff;
+
+  /* Surfaces */
   --background: #ffffff;
   --foreground: #212121;
   --surface: #fafafa;
-  --card: #ffffff;
-  --muted: #f5f5f5;
   --muted-foreground: #757575;
   --border: #e0e0e0;
 
-  /* Gradients */
+  /* Gradients (playful personality overrides — forum-compose-post tag-chip
+     and card backgrounds, poster-profile role badge) */
   --gradient-primary: linear-gradient(135deg, #3f51b5, #7e57c2);
   --gradient-secondary: linear-gradient(135deg, #c0af4b, #ff9800);
   --gradient-surface: linear-gradient(135deg, #fafafa, #ffffff);
-  --primary-gradient: var(--gradient-primary);
-  --secondary-gradient: var(--gradient-secondary);
-  --surface-gradient: var(--gradient-surface);
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -36,14 +45,16 @@
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
-  --spacing-xxl: 48px;
 
-  /* Shadows */
+  /* Shadows — none/sm/md/lg only; forum-ui has no `xl` consumer */
   --shadow-none: none;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-color: rgb(0, 0, 0);
+
+  /* Border */
+  --border-width: 1px;
 
   /* Border Radius */
   --border-radius-none: 0;
@@ -52,9 +63,6 @@
   --border-radius-lg: 8px;
   --border-radius-xl: 12px;
   --border-radius-full: 9999px;
-
-  /* Border */
-  --border-width: 1px;
 
   /* Typography */
   --font-heading: 'Inter', system-ui, sans-serif;
@@ -67,16 +75,11 @@
   --font-size-xl: 1.25rem;
   --font-size-xxl: 1.5rem;
 
-  /* Animation */
+  /* Animation — only 'fast' speed is consumed (via
+     p.personality-transition()); normal/slow have no forum-ui consumer */
   --animation-duration-fast: 150ms;
-  --animation-duration-normal: 300ms;
-  --animation-duration-slow: 500ms;
   --animation-easing: ease;
 
   /* Z-Index */
-  --z-index-base: 0;
   --z-index-dropdown: 1000;
-  --z-index-modal: 1050;
-  --z-index-tooltip: 1070;
-  --z-index-overlay: 1080;
 }

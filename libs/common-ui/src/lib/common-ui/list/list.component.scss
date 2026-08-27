@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -6,31 +8,27 @@ ul {
   list-style: none;
   padding: 0;
   margin: 0;
-  border: var(--local-list-divider, none);
+  border: none;
   font-family: var(--font-body, system-ui, sans-serif);
 }
 
 .list-item {
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   cursor: default;
-  transition: var(--local-transition-duration, 0.15s) background-color,
-    transform;
-  border-bottom: var(--local-list-divider, none);
+  @include p.personality-transition('background-color, transform', 'fast');
+  border-bottom: none;
   position: relative;
 
   &.clickable {
     cursor: pointer;
 
     &:hover:not(.disabled) {
-      background: var(
-        --local-list-hover-bg,
-        rgba(var(--local-accent-rgb, 177, 186, 236), 0.1)
-      );
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
       transform: translateX(4px);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--local-accent, var(--accent, #3f51b5));
+      outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
   }
@@ -40,17 +38,17 @@ ul {
     cursor: not-allowed;
 
     &:focus-visible {
-      outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+      outline: 2px solid var(--foreground);
       outline-offset: 2px;
     }
   }
 
   &.selected {
-    background: var(--local-accent, var(--accent, #3f51b5));
-    color: var(--local-foreground, var(--foreground, #ffffff));
+    background: var(--primary);
+    color: var(--primary-foreground, #fff);
 
     &:focus-visible {
-      outline: 2px solid var(--local-foreground, var(--foreground, #ffffff));
+      outline: 2px solid var(--primary-foreground, #fff);
       outline-offset: 2px;
     }
   }
@@ -122,7 +120,7 @@ ul.horizontal {
 
   .list-item {
     border-bottom: none;
-    border-right: var(--local-list-divider, none);
+    border-right: none;
   }
 }
 
@@ -154,7 +152,7 @@ ul.xl .list-item {
 
 /* Dividers */
 ul.dividers .list-item {
-  border-bottom: 1px solid var(--local-border, var(--complement, #c0af4b));
+  border-bottom: 1px solid var(--border);
 
   &:last-child {
     border-bottom: none;
@@ -169,27 +167,26 @@ ul.glass {
 
   .list-item {
     &.selected {
-      background: rgba(var(--local-accent-rgb, 63, 81, 181), 0.3);
+      background: color-mix(in srgb, var(--primary) 30%, transparent);
     }
 
     &.clickable:hover:not(.disabled) {
-      background: rgba(var(--local-accent-rgb, 63, 81, 181), 0.15);
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
     }
   }
 }
 
 /* Variant: gradient */
 ul.gradient {
-  background: linear-gradient(
-    135deg,
-    var(--local-accent, var(--accent, #3f51b5)) 0%,
-    var(--local-complement, var(--complement, #c0af4b)) 100%
+  background: var(
+    --gradient-primary,
+    linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)
   );
   border-radius: var(--border-radius-md, 8px);
-  color: var(--local-foreground, var(--foreground, #ffffff));
+  color: var(--primary-foreground, #fff);
 
   .list-item {
-    color: var(--local-foreground, var(--foreground, #ffffff));
+    color: var(--primary-foreground, #fff);
 
     &.clickable:hover:not(.disabled) {
       background: rgba(255, 255, 255, 0.2);
@@ -200,7 +197,7 @@ ul.gradient {
     }
 
     &:focus-visible {
-      outline-color: var(--local-foreground, var(--foreground, #ffffff));
+      outline-color: var(--primary-foreground, #fff);
     }
   }
 

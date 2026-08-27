@@ -1,9 +1,9 @@
 import { FullConfig } from '@playwright/test';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 async function globalSetup(config: FullConfig) {
   if (process.env['CI']) {
@@ -28,9 +28,25 @@ async function globalSetup(config: FullConfig) {
 [Playwright Global Setup] Starting docker-compose: ${composeFile}`);
 
   try {
-    await execAsync(`docker compose -f ${composeFile} up -d --build`);
-    console.log('Waiting for backend services to be ready (15s)...');
-    await new Promise((resolve) => setTimeout(resolve, 15000));
+    await execFileAsync('docker', [
+      'compose',
+      '-f',
+      composeFile,
+      'up',
+      '-d',
+      '--build',
+    ]);
+    await execFileAsync('node', [
+      resolve(__dirname, '../../scripts/wait-for-e2e-readiness.mjs'),
+      '--compose-file',
+      composeFile,
+      '--service',
+      'db-setup,authentication,profile,project-planning,permissions,gateway,oauth-provider,forgeofwill-client-interface',
+      '--url',
+      // Node does not consistently resolve subdomains of .localhost on every
+      // runner; the published Forge port is still reached through loopback.
+      'http://127.0.0.1:8081',
+    ]);
   } catch (error) {
     console.error('Failed to start E2E environment:', error);
     throw error;

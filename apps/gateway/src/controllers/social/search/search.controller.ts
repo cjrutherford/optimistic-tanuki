@@ -106,10 +106,14 @@ export class SearchController {
     description: 'Trending posts retrieved successfully.',
   })
   async getTrending(
-    @Query('limit') limit: number = 10
+    @Query('limit') limit: number = 10,
+    @User() user: UserDetails
   ): Promise<SearchResult[]> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: SearchCommands.GET_TRENDING }, { limit })
+      this.socialClient.send(
+        { cmd: SearchCommands.GET_TRENDING },
+        { limit, profileId: user.profileId }
+      )
     );
   }
 

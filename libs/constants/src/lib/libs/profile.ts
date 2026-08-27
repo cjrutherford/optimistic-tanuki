@@ -4,6 +4,7 @@ export const ProfileCommands = {
   Delete: 'Delete:Profile',
   Get: 'Get:Profile',
   GetAll: 'GetAll:Profile',
+  Search: 'Search:Profile',
   GetPhoto: 'Get:ProfilePhoto',
   GetCover: 'Get:ProfileCover',
   SetBlogRole: 'Set:BlogRole',

@@ -6,6 +6,7 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { loadConfig, TcpServiceConfig } from '../../config';
 import { ChangeMcpService } from './change-mcp.service';
 import { JournalMcpService } from './journal-mcp.service';
+import { McpAuthGuard } from './mcp-auth.guard';
 import { PersonaMcpService } from './persona-mcp.service';
 import { ProjectMcpService } from './project-mcp.service';
 import { ProjectSchemaResource } from './resources';
@@ -18,6 +19,7 @@ import { TaskMcpService } from './task-mcp.service';
     NestMcpModule.forRoot({
       name: 'forgeofwill-mcp-server',
       version: '1.0.0',
+      guards: [McpAuthGuard],
     }),
   ],
 })

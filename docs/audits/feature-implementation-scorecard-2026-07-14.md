@@ -1,5 +1,10 @@
 # Feature & Implementation Scorecard — 2026-07-14
 
+> **This is the baseline audit.** A follow-up re-evaluation after the remediation batches —
+> with a new 11th Design Quality domain — is at
+> [feature-implementation-scorecard-2026-07-16.md](./feature-implementation-scorecard-2026-07-16.md).
+> This document is preserved unchanged as the historical baseline.
+
 Realistic due-diligence evaluation of the repository's feature domains. Each domain was
 evaluated by an independent first-pass reviewer (score /10 plus sub-scores), then the
 load-bearing claims were verified by a second validation pass against the actual code.
@@ -30,10 +35,11 @@ payment-path integrity, and backend test substance ("should be defined" stubs).
 
 ---
 
-## Remediation status — updated 2026-07-15
+## Remediation status — updated 2026-07-16
 
-Remediation has shipped in batches since this audit. All changes are currently in the
-working tree (uncommitted); a full `pnpm build:dev` across all 42 projects passes.
+Remediation has shipped in batches since this audit. The first three batches are committed
+in `2d800b92` (191 files); the seed-cluster fixes below are still uncommitted in the working
+tree. A full `pnpm build:dev` across all 42 projects passes.
 
 **Completed workstreams**
 
@@ -53,6 +59,41 @@ working tree (uncommitted); a full `pnpm build:dev` across all 42 projects passe
   replacing the localStorage stub; 50 unit tests added for the previously-untested 810-line
   local-hub PaymentService; two latent PaymentService bugs fixed (swallowed server error
   messages; donation-route consistency).
+- **Dev environment & seeds:** `docker:dev:bootstrap` validated end-to-end; nine seed error
+  classes fixed and verified at zero — auth-seed 500s, availability overlaps, out-of-window
+  appointments, dead `/authentication/me` calls, public-post 400s (`visibility` field not in
+  DTO), community-create denial, and role-assign 403s. `local_hub_member` now grants
+  `community.create` (local-hub scope) and `social.post.create` (social scope) in both
+  `default-permissions.json` and `scripts/seed-permissions.sh`; the impossible seed
+  self-elevation block was removed. Remaining non-fatal warnings: seeds probe
+  `GET /health`, which the gateway does not define, and one pg `DeprecationWarning`.
+- **LLM generation made real** (2026-07-16, all three phases of
+  `docs/plans/2026-07-16-llm-generation-real.md`): the marketing generator now has genuine
+  LLM authorship — a `POST /api/marketing-generator/generate` pass where the model writes
+  the creative copy into the template scaffold from the brief (`generationMode: 'llm'`,
+  provenance "AI-generated") — alongside the existing enrichment polish; every LLM response
+  is zod-schema-validated before merging (no more regex + blind `JSON.parse`); token usage
+  (prompt/completion counts, model, duration) is captured per call, aggregated at
+  `GET /api/marketing-generator/usage`, logged structurally, recorded on insight events, and
+  shown in the results UI; failures and id-mismatched payloads fall back honestly to
+  "AI-fallback"; brief free-text is sanitized (control chars stripped, 500-char caps) before
+  prompt embedding; the configured temperature is now actually sent; prompt-proxy's 1-hour
+  timeout became `PROMPT_PROXY_TIMEOUT_MS` (default 120 s) with per-call usage log lines;
+  `signal-foundry.md` and `mvp-overview.md` now describe the real behavior. Verified
+  end-to-end against a mock Ollama: authorship merge, honest fallback, and usage counters.
+- **Social authorization & privacy** implemented (2026-07-16, all three phases of
+  `docs/plans/2026-07-15-social-authorization-privacy.md`): shared post-visibility scope
+  (`apps/social/src/app/common/post-visibility.util.ts`) enforcing moderation/followers-only/
+  scheduled/block rules across search, trending, feeds, and single-post fetch; vote identity
+  server-derived at the gateway with upsert semantics + partial unique indexes + de-dup/orphan
+  cleanup migration (`1775100000000-vote-dedup.ts`) — also fixed votes silently creating
+  orphan rows (handlers read `Payload('id')` but the gateway sends `postId`); vote-route
+  throttle now uses a working named-throttler override; profile search pushed down to a new
+  `Search:Profile` command (SQL `ILike` + exclude-list + capped paging), eliminating both
+  1,000-row in-memory scans. Verified live end-to-end (idempotent re-vote → one row; junk
+  client profileId overridden). Corrections to the plan discovered during implementation:
+  `Post` has no `deleted` column (hard delete), and unpublished _scheduled_ posts were an
+  additional leak, now filtered.
 
 **Per-domain headline status**
 
@@ -65,13 +106,14 @@ working tree (uncommitted); a full `pnpm build:dev` across all 42 projects passe
 | 10  | Billing & Finance        | Forgeable webhooks                             | ✅ resolved (+ money-correctness done)             |
 | 8   | DevOps & Tooling         | Committed Tailscale secret                     | 🟡 code shipped · **owner must rotate credential** |
 | 2   | Towne Square / Local Hub | 810-line PaymentService, zero tests            | 🟡 unit tests added · offer-lifecycle E2E open     |
-| 4   | Social & Community       | Search ignores visibility/moderation           | ❌ open                                            |
-| 5   | AI & Marketing           | Templates presented as LLM; no cost tracking   | ❌ open                                            |
+| 4   | Social & Community       | Search ignores visibility/moderation           | ✅ resolved (2026-07-16, all 3 plan phases)        |
+| 5   | AI & Marketing           | Templates presented as LLM; no cost tracking   | ✅ resolved (2026-07-16, LLM authorship + usage)   |
 | 6   | Video & Media            | No upload validation; unauth transcoder socket | ❌ open                                            |
 
-**Still open (next drill-in):** Social authorization/privacy (search filter, vote dedup,
-WebSocket backend), Video ingest hardening, AI cost tracking + LLM response validation, Local
-Hub offer E2E, money-handling docs. **Owner action:** rotate the exposed Tailscale credential.
+**Still open (next drill-in):** Video ingest hardening, Social WebSocket backend-or-docs
+decision, Local Hub offer E2E, gateway `/api/health` endpoint, circuit breakers at service
+boundaries (incl. prompt-proxy), money-handling docs. **Owner action:** rotate the exposed
+Tailscale credential.
 
 ---
 

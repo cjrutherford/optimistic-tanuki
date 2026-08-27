@@ -1,0 +1,21 @@
+name: Workflow Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-lint:
+    name: Lint GitHub Actions Workflows
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: docker://rhysd/actionlint:1.7.10
+        with:
+          args: -shellcheck=

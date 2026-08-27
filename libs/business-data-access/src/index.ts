@@ -3,15 +3,14 @@ import { BusinessApiService } from './lib/business-api.service';
 import { BusinessAuthService } from './lib/business-auth.service';
 import { businessHttpInterceptor } from './lib/business-http.interceptor';
 import { BusinessSiteConfigStore } from './lib/business-site-config.store';
+import { injectSiteSlugSignal } from './lib/site-slug.util';
 
 export { DEFAULT_BUSINESS_SITE_CONFIG };
-export { DEFAULT_BUSINESS_SITE_CONFIG as DEFAULT_TRAINER_SITE_CONFIG };
 export { BusinessSiteConfigStore };
 export { BusinessApiService };
-export { BusinessApiService as TrainerApiService };
 export { BusinessAuthService };
-export { BusinessAuthService as TrainerAuthService };
 export { businessHttpInterceptor };
+export { injectSiteSlugSignal };
 export {
   cloneBusinessSiteConfig,
   mergeBusinessSiteConfig,
@@ -23,7 +22,6 @@ export {
   configDocumentToBusinessSiteConfig,
 } from './lib/business-site-blocks';
 export type { BusinessSiteConfig } from './lib/business-site.config';
-export type { BusinessSiteConfig as TrainerSiteConfig } from './lib/business-site.config';
 
 export type {
   BusinessFeatures,

@@ -19,8 +19,8 @@ type ContourBand = {
 })
 export class TopographicDriftComponent {
   @Input() height = '24rem';
-  @Input() density = 6;
-  @Input() speed = 1;
+  @Input() density = 8;
+  @Input() speed = 1.4;
   @Input() intensity = 0.64;
   @Input() reducedMotion = false;
 

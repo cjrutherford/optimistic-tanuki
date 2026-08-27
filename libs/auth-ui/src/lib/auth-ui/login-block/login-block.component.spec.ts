@@ -199,8 +199,9 @@ describe('LoginBlockComponent', () => {
     expect(component.borderGradient).toBe('light-gradient');
   });
 
-  it('should emit submitEvent on onSubmit', () => {
+  it('emits credentials without writing them to the console', () => {
     jest.spyOn(component.submitEvent, 'emit');
+    const consoleSpy = jest.spyOn(console, 'log');
     component.loginForm.setValue({
       email: 'test@example.com',
       password: 'password',
@@ -210,12 +211,13 @@ describe('LoginBlockComponent', () => {
       email: 'test@example.com',
       password: 'password',
     });
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
-  it('should log onFormChange', () => {
+  it('does not log form changes', () => {
     const consoleSpy = jest.spyOn(console, 'log');
     component.onFormChange('test');
-    expect(consoleSpy).toHaveBeenCalledWith('test');
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
   it('should have showOAuth true by default', () => {

@@ -15,6 +15,7 @@ import { TopicService } from './services/topic.service';
 import { ThreadService } from './services/thread.service';
 import { ForumPostService } from './services/forum-post.service';
 import { ForumModerationService } from './services/forum-moderation.service';
+import { ForumSeedService } from './services/forum-seed.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ForumModerationService } from './services/forum-moderation.service';
     ThreadService,
     ForumPostService,
     ForumModerationService,
+    ForumSeedService,
     {
       provide: getRepositoryToken(Topic),
       useFactory: (ds: DataSource) => ds.getRepository(Topic),

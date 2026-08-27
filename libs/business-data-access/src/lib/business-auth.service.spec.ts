@@ -31,13 +31,13 @@ describe('BusinessAuthService', () => {
     localStorage.clear();
   });
 
-  it('exchanges owner login tokens into the business-site app scope', () => {
-    let storedToken: string | null = null;
+  it('creates a cookie session for owner login without persisting a token', () => {
+    let storedUser: unknown = null;
 
     service
       .loginAndExchange('owner@example.com', 'secret')
       .subscribe((user) => {
-        storedToken = user.token;
+        storedUser = user;
       });
 
     const loginRequest = httpMock.expectOne('/api/authentication/login');
@@ -48,19 +48,29 @@ describe('BusinessAuthService', () => {
     expect(loginRequest.request.headers.get('x-ot-appscope')).toBe(
       'business-site'
     );
-    loginRequest.flush({ token: 'base-token', email: 'owner@example.com' });
-
-    const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
-    expect(exchangeRequest.request.body).toEqual({
-      targetAppId: 'business-site',
-    });
-    expect(exchangeRequest.request.headers.get('Authorization')).toBe(
-      'Bearer base-token'
+    expect(loginRequest.request.headers.get('X-ot-session-mode')).toBe(
+      'cookie'
     );
-    exchangeRequest.flush({ token: 'business-token', profileId: 'profile-1' });
+    expect(loginRequest.request.withCredentials).toBe(true);
+    loginRequest.flush({ data: {} });
 
-    expect(storedToken).toBe('business-token');
-    expect(localStorage.getItem('business-site:token')).toBe('business-token');
+    const sessionRequest = httpMock.expectOne('/api/authentication/session');
+    expect(sessionRequest.request.withCredentials).toBe(true);
+    sessionRequest.flush({
+      data: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+      },
+    });
+
+    expect(storedUser).toEqual({
+      userId: 'owner-1',
+      profileId: 'profile-1',
+      email: 'owner@example.com',
+      name: '',
+    });
+    expect(localStorage.getItem('business-site:token')).toBeNull();
   });
 
   it('registers client accounts in the business-site app scope', () => {
@@ -149,41 +159,42 @@ describe('BusinessAuthService', () => {
     expect(claimRequest.request.headers.get('x-ot-appscope')).toBe(
       'business-site'
     );
-    expect(claimRequest.request.headers.get('Authorization')).toBe(
-      'Bearer business-token'
+    expect(claimRequest.request.headers.get('Authorization')).toBeNull();
+    expect(claimRequest.request.headers.get('x-ot-session-mode')).toBe(
+      'cookie'
     );
+    expect(claimRequest.request.withCredentials).toBe(true);
     claimRequest.flush({ ownerAccess: true });
   });
 
-  it('waits for the app-scope exchange before emitting client login success', () => {
-    let emittedToken = '';
+  it('waits for the cookie session restore before emitting client login success', () => {
+    let emittedUser: { userId?: string } | null = null;
 
     service.loginClient('client@example.com', 'secret').subscribe((user) => {
-      emittedToken = user.token;
+      emittedUser = user;
     });
 
     const loginRequest = httpMock.expectOne('/api/authentication/login');
-    loginRequest.flush({
-      token: 'base-token-without-user-claims',
-      userId: 'client-user-1',
-      email: 'client@example.com',
+    loginRequest.flush({ data: {} });
+
+    expect(emittedUser).toBeNull();
+
+    const sessionRequest = httpMock.expectOne('/api/authentication/session');
+    sessionRequest.flush({
+      data: {
+        userId: 'client-user-1',
+        profileId: 'client-profile-1',
+        email: 'client@example.com',
+      },
     });
 
-    expect(emittedToken).toBe('');
-
-    const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
-    exchangeRequest.flush({
-      token: 'business-token',
-      profileId: 'client-profile-1',
-    });
-
-    expect(emittedToken).toBe('business-token');
-    expect(localStorage.getItem('business-site:client-token')).toBe(
-      'business-token'
+    expect(emittedUser).toEqual(
+      expect.objectContaining({ userId: 'client-user-1' })
     );
+    expect(localStorage.getItem('business-site:client-token')).toBeNull();
   });
 
-  it('persists the client userId from the login response when token claims do not include it', () => {
+  it('hydrates the client userId from the cookie session response', () => {
     let clientUserId = '';
 
     service.loginClient('client@example.com', 'secret').subscribe((user) => {
@@ -195,24 +206,18 @@ describe('BusinessAuthService', () => {
       email: 'client@example.com',
       password: 'secret',
     });
-    loginRequest.flush({
-      token: 'base-token-without-user-claims',
-      userId: 'client-user-1',
-      email: 'client@example.com',
-    });
+    loginRequest.flush({ data: {} });
 
-    const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
-    expect(exchangeRequest.request.body).toEqual({
-      targetAppId: 'business-site',
-    });
-    exchangeRequest.flush({
-      token: 'business-token',
-      profileId: 'client-profile-1',
+    const sessionRequest = httpMock.expectOne('/api/authentication/session');
+    sessionRequest.flush({
+      data: {
+        userId: 'client-user-1',
+        profileId: 'client-profile-1',
+        email: 'client@example.com',
+      },
     });
 
     expect(clientUserId).toBe('client-user-1');
-    expect(localStorage.getItem('business-site:client-user')).toContain(
-      'client-user-1'
-    );
+    expect(localStorage.getItem('business-site:client-user')).toBeNull();
   });
 });

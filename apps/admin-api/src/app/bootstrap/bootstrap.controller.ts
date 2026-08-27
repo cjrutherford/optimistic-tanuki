@@ -10,13 +10,18 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { BootstrapService, BootstrapStatus } from './bootstrap.service';
+import { OwnerAuthorizationGuard } from '../auth/owner-authorization.guard';
+import { LoopbackBootstrap } from '../auth/admin-api-access.decorator';
 
 @ApiTags('bootstrap')
 @Controller()
+@UseGuards(OwnerAuthorizationGuard)
+@LoopbackBootstrap()
 export class BootstrapController {
   constructor(private readonly bootstrapService: BootstrapService) {}
 

@@ -4,7 +4,8 @@ import {
   fakeAsync,
   tick,
 } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { By } from '@angular/platform-browser';
+import { of, Subject, throwError } from 'rxjs';
 
 import { ProjectsComponent } from './projects.component';
 import { ProjectService } from '../../project/project.service';
@@ -13,6 +14,7 @@ import { RiskService } from '../../risk/risk.service';
 import { ChangeService } from '../../change/change.service';
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { ProjectSelectorComponent } from '@optimistic-tanuki/project-ui';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
@@ -194,6 +196,16 @@ describe('ProjectsComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('labels the static project context truthfully without attributing it to AI', () => {
+    component.selectedProject.set(mockProject);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Project context');
+    expect(compiled.textContent).not.toContain('AI Project Summary');
+    expect(compiled.textContent).not.toContain('AI Project Manager');
+  });
+
   it('should load projects on init', fakeAsync(() => {
     component.ngOnInit();
     tick();
@@ -234,6 +246,47 @@ describe('ProjectsComponent', () => {
     expect(component.showDeleteModal()).toBe(true);
   });
 
+  it('opens the edit UI for the project emitted by the selector', () => {
+    const selector = fixture.debugElement.query(
+      By.directive(ProjectSelectorComponent)
+    ).componentInstance as ProjectSelectorComponent;
+
+    selector.editProject.emit(mockProject);
+    fixture.detectChanges();
+
+    expect(component.selectedProject()).toEqual(mockProject);
+    expect(component.showEditModal()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Edit Project');
+  });
+
+  it('renders a confirmation before deleting the selected project', () => {
+    component.selectedProject.set(mockProject);
+    component.onDeleteProject();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Delete Project?');
+  });
+
+  it('deletes only after confirmation and selects the next remaining project', fakeAsync(() => {
+    const remainingProject = { ...mockProject, id: '2', name: 'Remaining' };
+    component.projects.set([mockProject, remainingProject]);
+    component.selectedProject.set(mockProject);
+    component.onDeleteProject();
+
+    const confirmDelete = (
+      component as unknown as { confirmDeleteProject?: () => void }
+    ).confirmDeleteProject;
+    expect(confirmDelete).toEqual(expect.any(Function));
+
+    confirmDelete?.call(component);
+    tick();
+
+    expect(projectService.deleteProject).toHaveBeenCalledWith(mockProject.id);
+    expect(component.projects()).toEqual([remainingProject]);
+    expect(component.selectedProject()).toEqual(remainingProject);
+    expect(component.showDeleteModal()).toBe(false);
+  }));
+
   it('should handle project creation', fakeAsync(() => {
     const createProjectDto: CreateProject = {
       name: 'New',
@@ -252,12 +305,45 @@ describe('ProjectsComponent', () => {
   }));
 
   it('should handle project update', fakeAsync(() => {
+    const refreshedProject = { id: mockProject.id, name: 'Updated' } as Project;
+    projectService.updateProject.mockReturnValue(of(refreshedProject));
     component.selectedProject.set(mockProject);
     component.onProjectUpdated({ name: 'Updated' } as any);
     tick();
-    expect(projectService.updateProject).toHaveBeenCalled();
+    expect(projectService.updateProject).toHaveBeenCalledWith({
+      id: mockProject.id,
+      name: 'Updated',
+      description: mockProject.description,
+      startDate: mockProject.startDate,
+      endDate: mockProject.endDate,
+      status: mockProject.status,
+    });
     expect(component.showEditModal()).toBe(false);
+    expect(component.selectedProject()).toEqual({
+      ...mockProject,
+      ...refreshedProject,
+    });
   }));
+
+  it('keeps a newly selected project visible when an earlier edit response arrives', () => {
+    const projectA = mockProject;
+    const projectB = { ...mockProject, id: '2', name: 'Project B' };
+    const refreshedProjectA = { id: projectA.id, name: 'Updated A' } as Project;
+    const updateResponse = new Subject<Project>();
+    projectService.updateProject.mockReturnValue(updateResponse);
+    component.projects.set([projectA, projectB]);
+    component.selectedProject.set(projectA);
+
+    component.onProjectUpdated({ name: 'Updated A' } as any);
+    component.onProjectSelected(projectB.id);
+    updateResponse.next(refreshedProjectA);
+
+    expect(component.projects()).toEqual([
+      { ...projectA, ...refreshedProjectA },
+      projectB,
+    ]);
+    expect(component.selectedProject()).toEqual(projectB);
+  });
 
   it('should handle creating a task', fakeAsync(() => {
     component.selectedProject.set(mockProject);

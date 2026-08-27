@@ -2,20 +2,31 @@ import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import cookieParser from 'cookie-parser';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
+import { createGatewaySessionValidator } from './server-session-validation';
+import { createProtectedRouteGate } from './server-route-guard';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 const indexHtml = join(serverDistFolder, 'index.server.html');
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'local-hub',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const validateGatewaySession = createGatewaySessionValidator({ gatewayUrl });
 const getRequestUrl = (req: express.Request): string => {
   const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
   const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
@@ -52,78 +63,7 @@ app.use(
   })
 );
 
-const PROTECTED_ROUTES = [
-  '/account',
-  '/seller-dashboard',
-  '/messages',
-  '/messages/new',
-];
-
-const MEMBER_ROUTES = [
-  '/city/:slug/classifieds/new',
-  '/c/:communitySlug/classifieds/new',
-];
-
-function isAuthenticated(req: express.Request): boolean {
-  const token =
-    req.cookies['ot-local-hub-authToken'] ||
-    req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return false;
-  }
-
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return false;
-    }
-    const payload = JSON.parse(atob(parts[1]));
-    const expiresAt = payload.exp * 1000;
-    return expiresAt > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-function isProtectedRoute(path: string): boolean {
-  return PROTECTED_ROUTES.some((route) => {
-    if (route.includes(':')) {
-      const pattern = route.replace(/:[^/]+/g, '[^/]+');
-      return new RegExp(`^${pattern}$`).test(path);
-    }
-    return path.startsWith(route);
-  });
-}
-
-function requiresMemberRoute(path: string): boolean {
-  return MEMBER_ROUTES.some((route) => {
-    const pattern = route.replace(/:[^/]+/g, '[^/]+');
-    return new RegExp(`^${pattern}$`).test(path);
-  });
-}
-
-function getReturnUrl(req: express.Request): string {
-  return (req.query['returnUrl'] as string) || req.originalUrl;
-}
-
-app.use((req, res, next) => {
-  const path = req.path;
-
-  if (isProtectedRoute(path) || requiresMemberRoute(path)) {
-    if (!isAuthenticated(req)) {
-      const returnUrl = getReturnUrl(req);
-      const loginUrl = `/login${
-        returnUrl && returnUrl !== '/'
-          ? `?returnUrl=${encodeURIComponent(returnUrl)}`
-          : ''
-      }`;
-      return res.redirect(loginUrl);
-    }
-  }
-
-  next();
-});
+app.use(createProtectedRouteGate({ validateSession: validateGatewaySession }));
 
 app.get(
   '**',

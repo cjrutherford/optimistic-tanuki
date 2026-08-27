@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import {
   Lead,
   LeadFlag,
+  LeadApplicationRecord,
   LeadOnboardingProfileRecord,
   LeadQualification,
   LeadTopic,
@@ -21,6 +22,7 @@ export default new DataSource({
     LeadTopic,
     LeadTopicLink,
     LeadQualification,
+    LeadApplicationRecord,
     LeadOnboardingProfileRecord,
   ],
   migrations: ['src/migrations/*.ts', 'migrations/*.ts'],

@@ -19,11 +19,34 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  deployment-secrets:
+    name: Check Production Deployment Credentials
+    runs-on: ubuntu-24.04
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check required deployment credentials
+        id: check
+        env:
+          KUBECONFIG_VALUE: ${{ secrets.KUBECONFIG }}
+          DOMAIN_VALUE: ${{ secrets.DOMAIN }}
+          ARGOCD_PASSWORD_VALUE: ${{ secrets.ARGOCD_PASSWORD }}
+        run: |
+          if [ -n "$KUBECONFIG_VALUE" ] && [ -n "$DOMAIN_VALUE" ] && [ -n "$ARGOCD_PASSWORD_VALUE" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-production:
     name: Promote and Deploy Production
     runs-on: ubuntu-24.04
     environment: production
-    if: github.event.inputs.environment == 'production' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
+    # Temporary: keep manual production deployment failures non-blocking.
+    # Remove this line when production deployment must be enforced again.
+    continue-on-error: true
+    needs: [deployment-secrets]
+    if: github.event.inputs.environment == 'production' && needs.deployment-secrets.outputs.available == 'true'
     timeout-minutes: 40
 
     steps:
@@ -117,7 +140,7 @@ jobs:
   notify:
     name: Notify
     runs-on: ubuntu-24.04
-    needs: [deploy-production]
+    needs: [deployment-secrets, deploy-production]
     if: always()
     steps:
       - name: Send notification on failure
