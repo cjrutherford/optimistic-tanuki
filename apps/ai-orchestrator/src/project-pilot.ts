@@ -3,36 +3,51 @@
  * Model pilot for the project-planning AI features.
  *
  * Answers one question before anything is built on top: can any model on the
- * configured Ollama host hold a JSON schema and say something about a project
- * that a person could not read off the screen already.
+ * configured Ollama host hold a schema and say something about a project that
+ * a person could not read off the screen already.
  *
- * Scores four things per model, on both a summary and a change-proposal task:
+ * Runs through LangChain, because that is what this platform standardises on
+ * for model work. `withStructuredOutput` for the two shaped tasks and
+ * `bindTools` for the tool-calling one, so the pilot measures the same path a
+ * real implementation here would take rather than a mechanism we would not
+ * ship.
  *
- *   parsed     the reply came back as JSON matching the schema
- *   grounded   it cited ids that really exist in the project, not invented ones
- *   noticed    it found the problems actually planted in the fixture
- *   latency    how long it took
+ * Three tasks per model:
  *
- * `grounded` is the one that matters. A model that writes a fluent paragraph
- * about a project it has cited nothing from is the failure mode this whole
+ *   summary    structured output, a headline and grounded concerns
+ *   proposal   structured output, changes each tied to a task or risk
+ *   tools      bindTools, which is what LangGraph's react agent needs to work
+ *
+ * Scored on:
+ *
+ *   parsed     came back in the requested shape at all
+ *   cited      ids that really exist in the project, against ids invented
+ *   noticed    which of the problems planted in the fixture it found
+ *   latency
+ *
+ * `cited` and `noticed` are the ones that matter. A model that writes a fluent
+ * paragraph about a project it has cited nothing from is the failure this
  * exercise exists to catch, and it reads perfectly well.
  *
  * Usage:
  *   npx nx run ai-orchestrator:pilot
- *   OLLAMA_HOST=... OLLAMA_PORT=... npx nx run ai-orchestrator:pilot
  *   npx nx run ai-orchestrator:pilot --args="--models=qwen3:8b,llama3.2:3b"
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ChatOllama } from '@langchain/ollama';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import {
   GROUNDING_SIGNALS,
-  PROPOSAL_SCHEMA,
+  ProposalSchema,
+  ProposeChangeTool,
   SAMPLE_PROJECT,
-  SUMMARY_SCHEMA,
+  SummarySchema,
   personaSystemPrompt,
   projectManagerPersona,
   proposalUserPrompt,
   summaryUserPrompt,
+  toolUserPrompt,
   validEvidenceIds,
 } from './project-scenarios';
 
@@ -42,11 +57,12 @@ const BASE = `http://${HOST}:${PORT}`;
 const WORKSPACE = process.env.NX_WORKSPACE_ROOT || process.cwd();
 const TIMEOUT_MS = Number(process.env.PILOT_TIMEOUT_MS || 180_000);
 
+type TaskName = 'summary' | 'proposal' | 'tools';
+
 interface TaskScore {
-  task: 'summary' | 'proposal';
+  task: TaskName;
   parsed: boolean;
-  grounded: number;
-  groundedOf: number;
+  cited: number;
   invented: string[];
   noticed: string[];
   latencyMs: number;
@@ -59,61 +75,47 @@ interface ModelScore {
   tasks: TaskScore[];
 }
 
-async function chat(
-  model: string,
-  system: string,
-  user: string,
-  schema: unknown
-): Promise<{ content: string; ms: number }> {
-  const started = Date.now();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const response = await fetch(`${BASE}/api/chat`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        stream: false,
-        format: schema,
-        // Same options the marking path settled on. temperature 0 alone made a
-        // model loop inside one field until it ran out of room, so the repeat
-        // penalty is load bearing rather than decorative.
-        options: { temperature: 0, repeat_penalty: 1.1, num_predict: 1024 },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-    });
-    const body = await response.json();
-    return { content: body?.message?.content ?? '', ms: Date.now() - started };
-  } finally {
-    clearTimeout(timer);
-  }
+function model(name: string): ChatOllama {
+  return new ChatOllama({
+    model: name,
+    baseUrl: BASE,
+    // temperature 0 alone made a model loop inside one field until it ran out
+    // of room when the marking path was tuned, so the repeat penalty is load
+    // bearing rather than decorative.
+    temperature: 0,
+    repeatPenalty: 1.1,
+  });
+}
+
+function withDeadline<T>(work: Promise<T>): Promise<T> {
+  return Promise.race([
+    work,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), TIMEOUT_MS)
+    ),
+  ]);
 }
 
 /** Ids the model cited, split into real and invented. */
-function citations(parsed: unknown): { cited: string[]; invented: string[] } {
+function citations(value: unknown): { cited: string[]; invented: string[] } {
   const valid = validEvidenceIds();
   const cited: string[] = [];
   const invented: string[] = [];
   const walk = (node: unknown): void => {
     if (Array.isArray(node)) return node.forEach(walk);
     if (node && typeof node === 'object') {
-      for (const [key, value] of Object.entries(
+      for (const [key, item] of Object.entries(
         node as Record<string, unknown>
       )) {
-        if (key === 'evidenceId' && typeof value === 'string') {
-          (valid.has(value) ? cited : invented).push(value);
+        if (key === 'evidenceId' && typeof item === 'string') {
+          (valid.has(item) ? cited : invented).push(item);
         } else {
-          walk(value);
+          walk(item);
         }
       }
     }
   };
-  walk(parsed);
+  walk(value);
   return { cited, invented };
 }
 
@@ -125,53 +127,87 @@ function noticed(text: string): string[] {
   ).map((signal) => signal.id);
 }
 
-async function scoreTask(
-  model: string,
+function scoreFrom(
+  task: TaskName,
+  value: unknown,
+  latencyMs: number
+): TaskScore {
+  const { cited, invented } = citations(value);
+  const text = JSON.stringify(value);
+  return {
+    task,
+    parsed: true,
+    cited: new Set(cited).size,
+    invented: [...new Set(invented)],
+    noticed: noticed(text),
+    latencyMs,
+    sample: text.slice(0, 160),
+  };
+}
+
+function failure(task: TaskName, error: unknown, latencyMs: number): TaskScore {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    task,
+    parsed: false,
+    cited: 0,
+    invented: [],
+    noticed: [],
+    latencyMs,
+    error: message.slice(0, 120),
+  };
+}
+
+async function runStructured(
+  name: string,
   task: 'summary' | 'proposal',
   system: string
 ): Promise<TaskScore> {
-  const user = task === 'summary' ? summaryUserPrompt() : proposalUserPrompt();
-  const schema = task === 'summary' ? SUMMARY_SCHEMA : PROPOSAL_SCHEMA;
+  const started = Date.now();
   try {
-    const { content, ms } = await chat(model, system, user, schema);
-    let parsedBody: unknown;
-    try {
-      parsedBody = JSON.parse(content);
-    } catch {
+    const schema = task === 'summary' ? SummarySchema : ProposalSchema;
+    const user =
+      task === 'summary' ? summaryUserPrompt() : proposalUserPrompt();
+    const structured = model(name).withStructuredOutput(schema, {
+      name: task,
+    });
+    const result = await withDeadline(
+      structured.invoke([new SystemMessage(system), new HumanMessage(user)])
+    );
+    return scoreFrom(task, result, Date.now() - started);
+  } catch (error) {
+    return failure(task, error, Date.now() - started);
+  }
+}
+
+async function runTools(name: string, system: string): Promise<TaskScore> {
+  const started = Date.now();
+  try {
+    const bound = model(name).bindTools([ProposeChangeTool]);
+    const reply = await withDeadline(
+      bound.invoke([
+        new SystemMessage(system),
+        new HumanMessage(toolUserPrompt()),
+      ])
+    );
+    const calls = reply.tool_calls ?? [];
+    if (calls.length === 0) {
       return {
-        task,
-        parsed: false,
-        grounded: 0,
-        groundedOf: 0,
-        invented: [],
-        noticed: [],
-        latencyMs: ms,
-        error: 'unparseable',
-        sample: content.slice(0, 160),
+        ...failure(
+          'tools',
+          new Error('answered in prose, no tool call'),
+          Date.now() - started
+        ),
+        sample: String(reply.content).slice(0, 160),
       };
     }
-    const { cited, invented } = citations(parsedBody);
-    return {
-      task,
-      parsed: true,
-      grounded: new Set(cited).size,
-      groundedOf: new Set([...cited, ...invented]).size,
-      invented: [...new Set(invented)],
-      noticed: noticed(content),
-      latencyMs: ms,
-      sample: JSON.stringify(parsedBody).slice(0, 160),
-    };
+    return scoreFrom(
+      'tools',
+      calls.map((call) => call.args),
+      Date.now() - started
+    );
   } catch (error) {
-    return {
-      task,
-      parsed: false,
-      grounded: 0,
-      groundedOf: 0,
-      invented: [],
-      noticed: [],
-      latencyMs: TIMEOUT_MS,
-      error: (error as Error).name === 'AbortError' ? 'timeout' : String(error),
-    };
+    return failure('tools', error, Date.now() - started);
   }
 }
 
@@ -191,7 +227,7 @@ async function main(): Promise<void> {
   const persona = projectManagerPersona(WORKSPACE);
   const system = personaSystemPrompt(persona);
 
-  console.log(`Ollama:  ${BASE}`);
+  console.log(`Ollama:  ${BASE} (via LangChain ChatOllama)`);
   console.log(`Persona: ${persona.name} (from the seeded personas.json)`);
   console.log(
     `Project: ${SAMPLE_PROJECT.name}, ${SAMPLE_PROJECT.tasks.length} tasks, ${SAMPLE_PROJECT.risks.length} risks`
@@ -199,15 +235,16 @@ async function main(): Promise<void> {
   console.log(`Models:  ${models.length}\n`);
 
   const scores: ModelScore[] = [];
-  for (const model of models) {
-    const tasks: TaskScore[] = [];
-    for (const task of ['summary', 'proposal'] as const) {
-      const score = await scoreTask(model, task, system);
-      tasks.push(score);
-      const flag = score.parsed ? 'ok  ' : 'FAIL';
+  for (const name of models) {
+    const tasks: TaskScore[] = [
+      await runStructured(name, 'summary', system),
+      await runStructured(name, 'proposal', system),
+      await runTools(name, system),
+    ];
+    for (const score of tasks) {
       console.log(
-        `${flag} ${model.padEnd(58)} ${task.padEnd(9)} ` +
-          `cited ${score.grounded}/${score.groundedOf} ` +
+        `${score.parsed ? 'ok  ' : 'FAIL'} ${name.padEnd(58)} ` +
+          `${score.task.padEnd(9)} cited ${score.cited} ` +
           `noticed ${score.noticed.length}/${GROUNDING_SIGNALS.length} ` +
           `${(score.latencyMs / 1000).toFixed(0)}s` +
           (score.error ? `  ${score.error}` : '') +
@@ -216,13 +253,17 @@ async function main(): Promise<void> {
             : '')
       );
     }
-    scores.push({ model, tasks });
+    scores.push({ model: name, tasks });
   }
 
   const out = join(WORKSPACE, 'project-pilot-results.json');
   writeFileSync(
     out,
-    JSON.stringify({ host: BASE, persona: persona.name, scores }, null, 2)
+    JSON.stringify(
+      { host: BASE, via: 'langchain', persona: persona.name, scores },
+      null,
+      2
+    )
   );
   console.log(`\nWrote ${out}`);
 }

@@ -2,7 +2,7 @@
  * Project-planning scenarios for the model pilot.
  *
  * These exist to answer one question before any AI project feature is built:
- * can anything on the Ollama host hold a JSON schema and say something about a
+ * can anything on the Ollama host hold a schema and say something about a
  * project that a person could not already read off the screen.
  *
  * Two decisions worth knowing about.
@@ -14,15 +14,16 @@
  * advice is general rather than project specific, which is exactly the kind of
  * thing a copy would have quietly dropped.
  *
- * The calls go straight to Ollama with `format` carrying a JSON schema, not
- * through LangChain and not through prompt-proxy. That is what a real
- * implementation would have to do: prompt-proxy types its `format` field as
- * the string 'json' and cannot carry a schema, which the learning service hit
- * and worked around the same way. Piloting through a different mechanism than
- * the one we would ship would measure the wrong thing.
+ * The schemas are Zod, because the platform standardises on LangChain and
+ * LangGraph for model work. `withStructuredOutput` takes a Zod schema and
+ * handles the schema plumbing per provider, so the pilot exercises the same
+ * path a real implementation in this repository would use. An earlier draft of
+ * this file called Ollama directly with a raw JSON schema, which measured a
+ * mechanism we would not ship.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { z } from 'zod';
 
 export interface SeedPersona {
   name: string;
@@ -66,11 +67,11 @@ export function projectManagerPersona(workspaceRoot: string): SeedPersona {
 /**
  * A project with things genuinely wrong with it.
  *
- * Deliberately not a tidy fixture. Two tasks are overdue, one has nobody on
- * it, a high impact risk has no mitigation, and one task has been in progress
- * far longer than the others. A model that says something useful will name at
- * least one of those. A model that says "the project has 6 tasks and is
- * progressing well" has told the reader nothing they could not count.
+ * Deliberately not a tidy fixture. Two tasks are overdue against the stated
+ * date, two have nobody on them, and a high impact risk has no mitigation. A
+ * model that says something useful will name at least one of those. A model
+ * that says "the project has 6 tasks and is progressing well" has told the
+ * reader nothing they could not count.
  */
 export const SAMPLE_PROJECT = {
   id: 'proj-forge-1',
@@ -148,7 +149,7 @@ export const SAMPLE_PROJECT = {
 /**
  * What a grounded answer has to touch.
  *
- * Scoring against these rather than against fluency, because a well written
+ * Scored against these rather than against fluency, because a well written
  * paragraph restating the task count is the easy failure here and reads fine.
  */
 export const GROUNDING_SIGNALS: {
@@ -187,55 +188,58 @@ export const GROUNDING_SIGNALS: {
   },
 ];
 
-export const SUMMARY_SCHEMA = {
-  type: 'object',
-  properties: {
-    headline: { type: 'string' },
-    concerns: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          about: { type: 'string' },
-          why: { type: 'string' },
-          evidenceId: { type: 'string' },
-        },
-        required: ['about', 'why', 'evidenceId'],
-      },
-    },
-  },
-  required: ['headline', 'concerns'],
-};
+export const SummarySchema = z.object({
+  headline: z.string().describe('One line on where the project stands'),
+  concerns: z
+    .array(
+      z.object({
+        about: z.string().describe('What the concern is'),
+        why: z.string().describe('Why it matters, from the data'),
+        evidenceId: z
+          .string()
+          .describe('The id of the task or risk this comes from'),
+      })
+    )
+    .describe('Concerns a project manager should raise'),
+});
 
-export const PROPOSAL_SCHEMA = {
-  type: 'object',
-  properties: {
-    proposals: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          operation: {
-            type: 'string',
-            enum: ['create_task', 'update_task', 'assign_task'],
-          },
-          reason: { type: 'string' },
-          evidenceId: { type: 'string' },
-          payload: {
-            type: 'object',
-            properties: {
-              taskId: { type: 'string' },
-              title: { type: 'string' },
-              assignee: { type: 'string' },
-              dueDate: { type: 'string' },
-            },
-          },
-        },
-        required: ['operation', 'reason', 'evidenceId', 'payload'],
-      },
-    },
-  },
-  required: ['proposals'],
+export const ProposalSchema = z.object({
+  proposals: z.array(
+    z.object({
+      operation: z.enum(['create_task', 'update_task', 'assign_task']),
+      reason: z.string().describe('Why this change, from the data'),
+      evidenceId: z
+        .string()
+        .describe('The id of the task or risk that prompted this'),
+      payload: z.object({
+        taskId: z.string().optional(),
+        title: z.string().optional(),
+        assignee: z.string().optional(),
+        dueDate: z.string().optional(),
+      }),
+    })
+  ),
+});
+
+/**
+ * The tool a LangGraph agent would be given for slice D.
+ *
+ * Bound with `bindTools` rather than described in prose, because that is what
+ * `createReactAgent` does and tool calling is the capability that decides
+ * whether an agent can propose anything at all.
+ */
+export const ProposeChangeTool = {
+  name: 'propose_change',
+  description:
+    'Propose one change to the project for a human to approve. Never applies ' +
+    'anything. Every proposal must cite the id of the task or risk it comes from.',
+  schema: z.object({
+    operation: z.enum(['create_task', 'update_task', 'assign_task']),
+    evidenceId: z
+      .string()
+      .describe('id of the task or risk that prompted this'),
+    reason: z.string(),
+  }),
 };
 
 /** Every id a model may legitimately cite as evidence. */
@@ -258,9 +262,8 @@ export function personaSystemPrompt(persona: SeedPersona): string {
     '',
     // Patricia's seeded limitations include "advice is general, not
     // project-specific". The project is supplied here, so that limitation is
-    // addressed rather than ignored. If it were left in place unqualified the
-    // model would be right to refuse, and the pilot would be measuring the
-    // persona rather than the model.
+    // addressed rather than ignored. Left unqualified the model would be right
+    // to refuse, and the pilot would be measuring the persona, not the model.
     'The project below is supplied to you in full, so you can and should be',
     'specific about it. Refer to tasks and risks by their id.',
     '',
@@ -270,12 +273,18 @@ export function personaSystemPrompt(persona: SeedPersona): string {
   ].join('\n');
 }
 
-export function summaryUserPrompt(): string {
+function projectBlock(): string {
   return [
     `Today is ${SAMPLE_PROJECT.today}.`,
     '',
     'PROJECT',
     JSON.stringify(SAMPLE_PROJECT, null, 2),
+  ].join('\n');
+}
+
+export function summaryUserPrompt(): string {
+  return [
+    projectBlock(),
     '',
     'Write a short headline about where this project stands, then list the',
     'concerns that a project manager should raise. Cite the id of the task or',
@@ -285,13 +294,19 @@ export function summaryUserPrompt(): string {
 
 export function proposalUserPrompt(): string {
   return [
-    `Today is ${SAMPLE_PROJECT.today}.`,
-    '',
-    'PROJECT',
-    JSON.stringify(SAMPLE_PROJECT, null, 2),
+    projectBlock(),
     '',
     'Propose changes that would move this project forward. Each proposal names',
     'one operation, the id of the task or risk that prompted it, and the fields',
     'to change. Propose nothing you cannot tie to something in the project.',
+  ].join('\n');
+}
+
+export function toolUserPrompt(): string {
+  return [
+    projectBlock(),
+    '',
+    'Call propose_change for each change this project needs. Do not answer in',
+    'prose. Use the tool.',
   ].join('\n');
 }
