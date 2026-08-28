@@ -43,6 +43,7 @@ import {
   ProposeChangeTool,
   SAMPLE_PROJECT,
   SummarySchema,
+  payloadApplicable,
   personaSystemPrompt,
   projectManagerPersona,
   proposalUserPrompt,
@@ -65,6 +66,9 @@ interface TaskScore {
   cited: number;
   invented: string[];
   noticed: string[];
+  /** Payloads an executor could actually apply, over payloads produced. */
+  applicable: number;
+  payloads: number;
   latencyMs: number;
   error?: string;
   sample?: string;
@@ -127,6 +131,24 @@ function noticed(text: string): string[] {
   ).map((signal) => signal.id);
 }
 
+/** Every payload in a result, wherever it sits in the shape. */
+function payloadsIn(value: unknown): unknown[] {
+  const found: unknown[] = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (node && typeof node === 'object') {
+      for (const [key, item] of Object.entries(
+        node as Record<string, unknown>
+      )) {
+        if (key === 'payload') found.push(item);
+        else walk(item);
+      }
+    }
+  };
+  walk(value);
+  return found;
+}
+
 function scoreFrom(
   task: TaskName,
   value: unknown,
@@ -134,14 +156,17 @@ function scoreFrom(
 ): TaskScore {
   const { cited, invented } = citations(value);
   const text = JSON.stringify(value);
+  const payloads = payloadsIn(value);
   return {
     task,
     parsed: true,
     cited: new Set(cited).size,
     invented: [...new Set(invented)],
     noticed: noticed(text),
+    applicable: payloads.filter(payloadApplicable).length,
+    payloads: payloads.length,
     latencyMs,
-    sample: text.slice(0, 160),
+    sample: text.slice(0, 220),
   };
 }
 
@@ -153,6 +178,8 @@ function failure(task: TaskName, error: unknown, latencyMs: number): TaskScore {
     cited: 0,
     invented: [],
     noticed: [],
+    applicable: 0,
+    payloads: 0,
     latencyMs,
     error: message.slice(0, 120),
   };
@@ -246,6 +273,9 @@ async function main(): Promise<void> {
         `${score.parsed ? 'ok  ' : 'FAIL'} ${name.padEnd(58)} ` +
           `${score.task.padEnd(9)} cited ${score.cited} ` +
           `noticed ${score.noticed.length}/${GROUNDING_SIGNALS.length} ` +
+          (score.payloads
+            ? `applicable ${score.applicable}/${score.payloads} `
+            : '') +
           `${(score.latencyMs / 1000).toFixed(0)}s` +
           (score.error ? `  ${score.error}` : '') +
           (score.invented.length

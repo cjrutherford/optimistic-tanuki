@@ -203,6 +203,24 @@ export const SummarySchema = z.object({
     .describe('Concerns a project manager should raise'),
 });
 
+/**
+ * The people who exist. A proposal naming anyone else cannot be applied.
+ */
+export const KNOWN_ASSIGNEES = ['sam', 'dana'] as const;
+
+/**
+ * Deliberately tight, and tighter than the first draft.
+ *
+ * The first version had no `status` field, so a model that wanted to move a
+ * task put that intent in the reason text where nothing could act on it. It
+ * also took plain strings for assignee and dueDate, and the models filled them
+ * with things like "null (Assign resource)" and "2026-08-01 (Updated to
+ * current date or completion)". Those read fine and cannot be applied.
+ *
+ * An enum for the assignee and a date pattern for the due date turn that class
+ * of answer into a schema violation the model has to resolve, rather than
+ * something that reaches the executor and fails there.
+ */
 export const ProposalSchema = z.object({
   proposals: z.array(
     z.object({
@@ -212,14 +230,50 @@ export const ProposalSchema = z.object({
         .string()
         .describe('The id of the task or risk that prompted this'),
       payload: z.object({
-        taskId: z.string().optional(),
+        taskId: z.string().optional().describe('Existing task id, for updates'),
         title: z.string().optional(),
-        assignee: z.string().optional(),
-        dueDate: z.string().optional(),
+        assignee: z
+          .enum(KNOWN_ASSIGNEES)
+          .optional()
+          .describe('Must be someone who exists. Omit if nobody suits.'),
+        // Described rather than pattern-constrained on purpose. A regex here
+        // compiles to a grammar Ollama rejects outright, failing every model
+        // with "failed to parse grammar" before it generates a token, so the
+        // constraint would measure the schema rather than the model.
+        // payloadApplicable catches the bad values instead.
+        dueDate: z
+          .string()
+          .optional()
+          .describe('YYYY-MM-DD only, no commentary, no parentheses'),
+        status: z
+          .enum(['TODO', 'IN_PROGRESS', 'DONE'])
+          .optional()
+          .describe('Only when the change is a status change'),
       }),
     })
   ),
 });
+
+/**
+ * Whether a payload could actually be handed to the executor.
+ *
+ * Scored separately from grounding, because the pilot's first run rated a
+ * model highly on citing real ids while every payload it produced carried
+ * prose inside the value. Grounded and applicable are different properties and
+ * conflating them is how a feature ships that cannot apply anything.
+ */
+export function payloadApplicable(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object') return false;
+  const values = Object.values(payload as Record<string, unknown>);
+  if (values.length === 0) return false;
+  return values.every((value) => {
+    if (value === null || value === undefined) return true;
+    if (typeof value !== 'string') return true;
+    // Parenthetical commentary, "N/A", or a literal "null" inside the value
+    // are all things a human would read past and an executor cannot.
+    return !/\(|\bN\/A\b|^null$/i.test(value.trim());
+  });
+}
 
 /**
  * The tool a LangGraph agent would be given for slice D.
