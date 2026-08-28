@@ -110,7 +110,9 @@
     <div class="narrative-head">
       <h4>What a model makes of this</h4>
       @if (narrative?.model) {
-      <span class="by">written by {{ narrative?.model }}</span>
+      <span class="by" [title]="narrative?.model"
+        >written by {{ modelLabel }}</span
+      >
       }
     </div>
 
@@ -134,8 +136,14 @@
       <li>
         <strong>{{ concern.about }}</strong>
         <span>{{ concern.why }}</span>
-        <!-- The citation, resolved to a title, so the claim is checkable. -->
+        <!--
+          The citation, resolved to a title, so the claim is checkable. Hidden
+          when the concern already names it, which it usually does now that
+          labels are replaced with titles before rendering.
+        -->
+        @if (showsEvidence(concern)) {
         <em>from {{ evidenceFor(concern.evidenceId) }}</em>
+        }
       </li>
       }
     </ul>

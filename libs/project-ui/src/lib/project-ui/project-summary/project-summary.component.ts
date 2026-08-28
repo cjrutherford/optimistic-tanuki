@@ -46,6 +46,37 @@ export class ProjectSummaryComponent {
   @Output() entitySelected = new EventEmitter<ProjectSummaryEntity>();
   @Output() narrativeRequested = new EventEmitter<void>();
 
+  /**
+   * The model name, short enough to read.
+   *
+   * These arrive as a full registry path, "hf.co/bartowski/DeepSeek-R1-\
+   * Distill-Qwen-7B-GGUF:Q4_K_M", which overflowed its line on the page. The
+   * full string stays in the payload for anyone who needs it.
+   */
+  get modelLabel(): string {
+    const name = this.narrative?.model ?? '';
+    return name
+      .replace(/^hf\.co\//i, '')
+      .replace(/^[^/]+\//, '')
+      .replace(/-?GGUF.*$/i, '')
+      .replace(/:.*$/, '');
+  }
+
+  /**
+   * Whether the citation is worth showing under a concern.
+   *
+   * The prose now names the task, because labels are substituted for titles
+   * before this gets here. Repeating it as "from Book the crane for lift-in"
+   * directly underneath says the same thing a third time. Shown only when the
+   * concern does not already name what it came from.
+   */
+  showsEvidence(concern: { about: string; evidenceId: string }): boolean {
+    const title = this.evidenceFor(concern.evidenceId);
+    return (
+      !!title && !concern.about.toLowerCase().includes(title.toLowerCase())
+    );
+  }
+
   /** The task or risk a concern points at, so the reader can check it. */
   evidenceFor(id: string): string {
     const task = (this.project?.tasks ?? []).find((item) => item.id === id);
