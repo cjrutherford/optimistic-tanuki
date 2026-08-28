@@ -41,6 +41,46 @@
   opacity: 0.85;
 }
 
+.instruct {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.instruct input {
+  flex: 1 1 16rem;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.88rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.instruct button {
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.instruct button:disabled,
+.instruct input:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.said {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+
 .empty {
   font-size: 0.88rem;
   opacity: 0.75;

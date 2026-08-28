@@ -163,8 +163,11 @@
             [changes]="aiChanges()"
             [busyId]="aiChangeBusyId()"
             [asking]="askingForSuggestions()"
+            [working]="assistantWorking()"
+            [assistantSaid]="assistantSaid()"
             (decided)="onAiChangeDecided($event)"
             (suggestionsRequested)="onSuggestionsRequested()"
+            (instructionGiven)="onInstructionGiven($event)"
           ></lib-ai-change-review>
         </otui-tile>
       </div>

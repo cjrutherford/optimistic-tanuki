@@ -83,12 +83,19 @@ export class ProjectAgentService {
       const agent = createReactAgent({
         llm: this.models.getModel(ModelType.TOOL_CALLING),
         tools,
+        // Given only as a leading message, the id was not attended to: the
+        // model asked which project to work on, having been told twice.
+        // createReactAgent carries this on every turn instead.
+        prompt: this.systemPrompt(projectId),
       });
 
       const run = await agent.invoke({
         messages: [
           new SystemMessage(this.systemPrompt(projectId)),
-          new HumanMessage(instruction),
+          // The id goes in the instruction as well. It is the one fact the
+          // tools cannot proceed without, and repeating it costs nothing next
+          // to a turn spent asking for it.
+          new HumanMessage(`${instruction}\n\nprojectId: ${projectId}`),
         ],
       });
 
@@ -171,9 +178,13 @@ export class ProjectAgentService {
   private systemPrompt(projectId: string): string {
     return [
       'You are working on one project for the person who asked you.',
-      `Its id is ${projectId}. Use that id wherever a tool asks for one.`,
       '',
-      'Use the tools to do what was asked. Do not describe what you would do.',
+      `The project id is ${projectId}.`,
+      'Use exactly that string wherever a tool asks for projectId. You already',
+      'have it, so never ask which project this is.',
+      '',
+      'Use the tools to do what was asked. Do not describe what you would do,',
+      'and do not ask questions you can answer from what you were given.',
       '',
       // Without this the model reports the intent it had rather than the
       // answer it got, and a proposal waiting for a person reads to the

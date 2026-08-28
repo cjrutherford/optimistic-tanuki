@@ -102,6 +102,8 @@ export class ProjectsComponent implements OnInit {
   aiChanges = signal<AiChange[]>([]);
   aiChangeBusyId = signal<string | null>(null);
   askingForSuggestions = signal<boolean>(false);
+  assistantWorking = signal<boolean>(false);
+  assistantSaid = signal<string | null>(null);
   narrative = signal<ProjectNarrative | null>(null);
   narrativeLoading = signal<boolean>(false);
 
@@ -151,6 +153,7 @@ export class ProjectsComponent implements OnInit {
     if (changed) {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
+      this.assistantSaid.set(null);
       this.aiChanges.set([]);
       this.aiChangeBusyId.set(null);
     }
@@ -205,6 +208,41 @@ export class ProjectsComponent implements OnInit {
         this.askingForSuggestions.set(false);
         this.messageService.addMessage({
           content: 'Suggestions could not be fetched.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Hands an instruction to the assistant.
+   *
+   * Whatever it does goes through the same tools and the same gate, so on a
+   * project that requires approval the result is a proposal in the list rather
+   * than a change on the board. The pending list is re-read either way,
+   * because that is where its work lands.
+   */
+  onInstructionGiven(instruction: string): void {
+    const project = this.selectedProject();
+    if (!project || this.assistantWorking()) return;
+
+    this.assistantWorking.set(true);
+    this.assistantSaid.set(null);
+    this.projectService.instructAssistant(project.id, instruction).subscribe({
+      next: (result) => {
+        this.assistantWorking.set(false);
+        this.assistantSaid.set(result.said || result.unavailable || null);
+        this.loadAiChanges(project.id);
+        if (!result.awaitingApproval && result.used?.length) {
+          // It did the work outright, which happens on a project that does not
+          // require approval. The board has changed underneath the page.
+          this.refreshSelectedProject();
+        }
+      },
+      error: () => {
+        this.assistantWorking.set(false);
+        this.messageService.addMessage({
+          content: 'The assistant could not be reached.',
           type: 'error',
         });
       },

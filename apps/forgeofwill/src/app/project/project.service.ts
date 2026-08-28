@@ -88,6 +88,23 @@ export class ProjectService {
     }>(`${this.baseUrl}/${projectId}/ai-proposals`, {});
   }
 
+  /**
+   * Tells the assistant to do something on this project.
+   *
+   * It acts through the same MCP tools as any other client and as the signed
+   * in person, so the approval gate applies: on a project that requires
+   * approval nothing it does reaches the board until somebody agrees.
+   */
+  instructAssistant(projectId: string, instruction: string) {
+    return this.http.post<{
+      said: string;
+      used: { tool: string; result: string }[];
+      awaitingApproval: boolean;
+      model: string | null;
+      unavailable?: string;
+    }>(`${this.baseUrl}/${projectId}/ai-act`, { instruction });
+  }
+
   getProjectById(id: string) {
     return this.http.get<Project>(`${this.baseUrl}/${id}`);
   }

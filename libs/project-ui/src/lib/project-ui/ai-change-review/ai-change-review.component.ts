@@ -49,8 +49,26 @@ export class AiChangeReviewComponent {
   @Input() busyId: string | null = null;
   /** True while a model is being asked what the project needs. */
   @Input() asking = false;
+  /** True while the assistant is working on an instruction. */
+  @Input() working = false;
+  /** What the assistant said last, once it has finished. */
+  @Input() assistantSaid: string | null = null;
   @Output() decided = new EventEmitter<AiChangeDecision>();
   @Output() suggestionsRequested = new EventEmitter<void>();
+  @Output() instructionGiven = new EventEmitter<string>();
+
+  instruction = '';
+
+  instructionChanged(event: Event): void {
+    this.instruction = (event.target as HTMLInputElement).value;
+  }
+
+  giveInstruction(): void {
+    const asked = this.instruction.trim();
+    if (!asked || this.working) return;
+    this.instructionGiven.emit(asked);
+    this.instruction = '';
+  }
 
   notes: Record<string, string> = {};
 
