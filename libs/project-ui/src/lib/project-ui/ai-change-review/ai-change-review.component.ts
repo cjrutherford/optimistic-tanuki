@@ -31,6 +31,24 @@ export interface AiChange {
   createdAt?: string;
 }
 
+/**
+ * Fields a reviewer should not be shown.
+ *
+ * Ids of people and projects are how the change is wired up, not what it does.
+ * Left in, the panel put a bare UUID under "Created By" in front of the person
+ * deciding, which is the same noise the summary panel was cleaned of.
+ */
+const PLUMBING = [
+  'projectId',
+  'requestingUserId',
+  'createdBy',
+  'updatedBy',
+  'profileId',
+  'riskOwner',
+  'requestor',
+  'approver',
+];
+
 export interface AiChangeDecision {
   id: string;
   status: 'APPROVED' | 'REJECTED';
@@ -46,6 +64,16 @@ export interface AiChangeDecision {
 })
 export class AiChangeReviewComponent {
   @Input() changes: AiChange[] = [];
+  /**
+   * The project the changes are against, so an id can be named.
+   *
+   * A change to a task shows the id of that task, which tells a reviewer
+   * nothing. Given the project, it can say which task by its title instead.
+   */
+  @Input() project: {
+    tasks?: { id: string; title?: string }[];
+    risks?: { id: string; description?: string }[];
+  } | null = null;
   @Input() busyId: string | null = null;
   /** True while a model is being asked what the project needs. */
   @Input() asking = false;
@@ -101,15 +129,28 @@ export class AiChangeReviewComponent {
   /** The payload as rows, so a reviewer sees the actual values. */
   fields(change: AiChange): { key: string; value: string }[] {
     return Object.entries(change.payload ?? {})
-      .filter(([key]) => !['projectId', 'requestingUserId'].includes(key))
+      .filter(([key]) => !PLUMBING.includes(key))
       .filter(
         ([, value]) => value !== null && value !== undefined && value !== ''
       )
       .map(([key, value]) => ({
-        key: this.label(key),
+        key: key === 'id' ? 'Which one' : this.label(key),
         value:
-          typeof value === 'object' ? JSON.stringify(value) : String(value),
+          key === 'id'
+            ? this.nameFor(String(value))
+            : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value),
       }));
+  }
+
+  /** The title behind an id, falling back to the id rather than to nothing. */
+  private nameFor(id: string): string {
+    const task = this.project?.tasks?.find((one) => one.id === id);
+    if (task?.title) return task.title;
+    const risk = this.project?.risks?.find((one) => one.id === id);
+    if (risk?.description) return risk.description;
+    return id;
   }
 
   private label(key: string): string {

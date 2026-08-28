@@ -24,6 +24,10 @@ describe('AiChangeReviewComponent', () => {
   function componentWith(changes: AiChange[]) {
     const component = new AiChangeReviewComponent();
     component.changes = changes;
+    component.project = {
+      tasks: [{ id: 'task-uuid', title: 'Book the crane' }],
+      risks: [{ id: 'risk-uuid', description: 'Crane availability' }],
+    };
     return component;
   }
 
@@ -72,6 +76,11 @@ describe('AiChangeReviewComponent', () => {
               title: 'x',
               projectId: 'p1',
               requestingUserId: 'u1',
+              // Ids of people are how the change is wired up, not what it
+              // does. Shown, they put a bare UUID in front of the reviewer.
+              createdBy: 'u1',
+              profileId: 'u1',
+              riskOwner: 'u1',
               description: '',
               assigneeId: null,
             },
@@ -80,6 +89,37 @@ describe('AiChangeReviewComponent', () => {
         .map((field) => field.key);
 
       expect(keys).toEqual(['Title']);
+    });
+  });
+
+  describe('saying which thing a change is about', () => {
+    // The id of a task tells a reviewer nothing. Given the project, the panel
+    // can name it.
+    it('names the task behind an id', () => {
+      const fields = componentWith([]).fields(
+        change({
+          operation: 'task.update',
+          payload: { id: 'task-uuid', status: 'DONE' },
+        })
+      );
+
+      expect(fields[0]).toEqual({ key: 'Which one', value: 'Book the crane' });
+    });
+
+    it('names a risk by its description, since risks carry no title', () => {
+      const fields = componentWith([]).fields(
+        change({ operation: 'risk.update', payload: { id: 'risk-uuid' } })
+      );
+
+      expect(fields[0].value).toBe('Crane availability');
+    });
+
+    it('falls back to the id rather than showing nothing', () => {
+      const fields = componentWith([]).fields(
+        change({ operation: 'task.update', payload: { id: 'unknown' } })
+      );
+
+      expect(fields[0].value).toBe('unknown');
     });
   });
 

@@ -161,6 +161,7 @@
         <otui-tile class="ai-changes-tile">
           <lib-ai-change-review
             [changes]="aiChanges()"
+            [project]="selectedProject()"
             [busyId]="aiChangeBusyId()"
             [asking]="askingForSuggestions()"
             [working]="assistantWorking()"
