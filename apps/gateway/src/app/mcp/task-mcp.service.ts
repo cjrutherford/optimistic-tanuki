@@ -1,7 +1,11 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
-import { TaskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ProjectCommands,
+  TaskCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   CreateTaskDto,
   TaskPriority,
@@ -199,6 +203,44 @@ export class TaskMcpService {
         requestingUserId,
       };
 
+      // The gate. A project can require that changes are approved by a person
+      // before they happen, and this is the path an agent uses, so this is
+      // where the flag has to be honoured. Enforcing it only on the ai-changes
+      // route would leave the tool free to create tasks directly, which is
+      // exactly what it did before: the flag was written at project creation
+      // and read by nothing.
+      const project = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: ProjectCommands.FIND_ONE },
+          { id: projectId, requestingUserId }
+        )
+      );
+
+      if (project?.requireHumanApproval) {
+        const proposal = await firstValueFrom(
+          this.projectPlanningService.send(
+            { cmd: ProjectCommands.CREATE_AI_CHANGE },
+            {
+              projectId,
+              proposedBy: requestingUserId,
+              operation: 'task.create',
+              payload: taskData,
+            }
+          )
+        );
+
+        return {
+          success: true,
+          // Said plainly, because an agent told "created successfully" will
+          // tell the person the same, and nothing was created.
+          message:
+            `Task "${title}" was proposed and is waiting for approval. ` +
+            `It has not been created yet.`,
+          proposal,
+          awaitingApproval: true,
+        };
+      }
+
       const task = await firstValueFrom(
         this.projectPlanningService.send({ cmd: TaskCommands.CREATE }, taskData)
       );
@@ -207,6 +249,7 @@ export class TaskMcpService {
         success: true,
         message: `Task "${title}" created successfully`,
         task,
+        awaitingApproval: false,
       };
     } catch (error) {
       this.logger.error('Error creating task:', error);

@@ -37,6 +37,7 @@ import { loadConfig } from './config';
 import loadDatabase from './loadDatabase';
 import { AiChange } from './entities/ai-change.entity';
 import { AiChangeService } from './ai-change/ai-change.service';
+import { AiChangeExecutor } from './ai-change/ai-change.executor';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { AiChangeService } from './ai-change/ai-change.service';
     TaskNoteService,
     AnalyticsService,
     AiChangeService,
+    AiChangeExecutor,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),

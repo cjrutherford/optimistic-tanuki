@@ -32,6 +32,24 @@ export class AiChange {
   @Column({ type: 'text', nullable: true })
   reviewNote?: string;
 
+  /**
+   * What happened when the approval was carried out.
+   *
+   * Approving used to be the end of the story, so there was nothing to record.
+   * Now that an approved change is applied, an apply that fails has to be
+   * visible: otherwise a reviewer sees APPROVED and reasonably believes the
+   * board changed, when it did not.
+   */
+  @Column({ default: false })
+  applied: boolean;
+
+  /** The row this change created or altered, when it created one. */
+  @Column({ nullable: true })
+  appliedEntityId?: string;
+
+  @Column({ type: 'text', nullable: true })
+  applyError?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

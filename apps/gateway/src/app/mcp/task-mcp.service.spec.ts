@@ -1,5 +1,5 @@
 import { of } from 'rxjs';
-import { TaskCommands } from '@optimistic-tanuki/constants';
+import { ProjectCommands, TaskCommands } from '@optimistic-tanuki/constants';
 import { TaskPriority, TaskStatus } from '@optimistic-tanuki/models';
 import { TaskMcpService } from './task-mcp.service';
 
@@ -185,6 +185,87 @@ describe('TaskMcpService', () => {
         )
       ).rejects.toThrow(/Failed to query tasks/);
       expect(clientProxy.send).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The gate that makes requireHumanApproval mean something.
+   *
+   * The flag was written when a project was created and read by nothing. This
+   * is the path an agent uses to create work, so enforcing it anywhere else
+   * would leave the agent free to act directly, which is what it did.
+   */
+  describe('create_task when the project requires approval', () => {
+    function respondPerCommand(project: Record<string, unknown>) {
+      clientProxy.send.mockImplementation((pattern: { cmd: string }) => {
+        if (pattern.cmd === ProjectCommands.FIND_ONE) return of(project);
+        if (pattern.cmd === ProjectCommands.CREATE_AI_CHANGE)
+          return of({ id: 'proposal-1', status: 'PENDING' });
+        return of({ id: 'new-task' });
+      });
+    }
+
+    const args = {
+      title: 'Do the thing',
+      description: 'details',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM,
+      projectId: 'proj-1',
+    };
+
+    it('proposes instead of creating', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.objectContaining({
+          projectId: 'proj-1',
+          operation: 'task.create',
+          proposedBy: profileId,
+        })
+      );
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.CREATE },
+        expect.anything()
+      );
+      expect(result.awaitingApproval).toBe(true);
+    });
+
+    it('says the task was not created, in words an agent will repeat', async () => {
+      // An agent told "created successfully" tells the person the same, and
+      // nothing was created.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.message).toMatch(/waiting for approval/i);
+      expect(result.message).toMatch(/not been created/i);
+    });
+
+    it('creates directly when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.CREATE },
+        expect.objectContaining({ projectId: 'proj-1' })
+      );
+      expect(result.awaitingApproval).toBe(false);
     });
   });
 });
