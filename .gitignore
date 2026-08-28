@@ -111,3 +111,4 @@ ops/
 .playwright-mcp/
 .setup-complete
 .setup-operator.json
+project-pilot-results.json
