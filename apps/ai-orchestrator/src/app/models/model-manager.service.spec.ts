@@ -95,6 +95,19 @@ describe('ModelManager configuration', () => {
     expect(manager.getConfiguredTypes()).toEqual([]);
   });
 
+  it('carries the tuning the pilot actually ran with', () => {
+    // The pilot chose these models at temperature 0 with a repeat penalty.
+    // This service had no repeat penalty field at all and took 0.2 from
+    // config, so the first end-to-end run produced a worse summary that
+    // crammed three ids into one evidence field and took 61s instead of 23s.
+    // Piloted numbers only transfer if the service uses the piloted settings.
+    const manager = new ModelManager(realConfigService());
+    const analysis = manager.getModelConfig(ModelType.PROJECT_ANALYSIS);
+
+    expect(analysis.temperature).toBe(0);
+    expect(analysis.repeatPenalty).toBe(1.1);
+  });
+
   it('gives the summary job its own type, separate from the classifiers', () => {
     // A project summary is not conversation, tool calling, or classification,
     // and it wants depth where those want speed. The pilot picked different

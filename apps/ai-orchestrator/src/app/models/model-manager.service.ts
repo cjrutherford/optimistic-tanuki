@@ -29,6 +29,16 @@ export interface ModelConfig {
   temperature: number;
   baseUrl: string;
   maxTokens?: number;
+  /**
+   * Ollama's repeat penalty.
+   *
+   * Carried here because it is not a nicety. At temperature 0 a model was
+   * observed looping inside a single field until it ran out of room, producing
+   * unterminated JSON. The pilot that chose these models ran with this set,
+   * and this service did not, so the pilot's results did not transfer until it
+   * did.
+   */
+  repeatPenalty?: number;
 }
 
 @Injectable()
@@ -81,6 +91,9 @@ export class ModelManager {
           this.configService.get<number>(`models.${type}.temperature`) ?? 0.3,
         baseUrl,
         maxTokens: this.configService.get<number>(`models.${type}.maxTokens`),
+        repeatPenalty: this.configService.get<number>(
+          `models.${type}.repeatPenalty`
+        ),
       });
     }
 
@@ -134,6 +147,7 @@ export class ModelManager {
       model: config.name,
       baseUrl: config.baseUrl,
       temperature: config.temperature,
+      repeatPenalty: config.repeatPenalty,
       maxRetries: 3,
     });
   }

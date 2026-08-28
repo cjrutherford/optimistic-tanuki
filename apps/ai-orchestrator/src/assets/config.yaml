@@ -42,6 +42,7 @@ models:
     pullOnStartup: true
   tool_calling:
     name: 'qwen3:8b'
+    repeatPenalty: 1.1
     description: 'The only model that emitted a valid tool call on every pass
       of the pilot, with every payload applicable. Slow at roughly 36s, so
       callers should treat it as background work.'
@@ -57,10 +58,20 @@ models:
     description: 'The only model that found all three planted problems on every
       pilot pass. Roughly 23s. Cannot call tools at all, which does not matter
       for reading and summarising.'
-    temperature: 0.2
+    # These two are what the pilot actually ran with. Set to 0.2 and no repeat
+    # penalty first, which produced a visibly worse summary that crammed three
+    # ids into one evidence field. Piloted settings only mean something if the
+    # service uses them.
+    temperature: 0
+    repeatPenalty: 1.1
     pullOnStartup: false
 ollama:
-  host: 192.168.50.14
+  # shangrila on the tailnet. The IP rather than the MagicDNS name on purpose:
+  # this service runs in a container, and containers here do not resolve
+  # tailscale names. Checked both from inside a running container, where
+  # `shangrila` does not resolve and this address does. OLLAMA_HOST overrides
+  # it, which is the right lever if the address changes.
+  host: 100.89.87.124
   port: 11434
 redis:
   host: redis
