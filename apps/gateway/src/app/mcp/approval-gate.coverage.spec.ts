@@ -327,3 +327,53 @@ describe('the approval gate across every writing tool', () => {
     );
   });
 });
+
+/**
+ * Acting as the caller when the caller is a browser.
+ *
+ * The app signs in with a cookie, not a bearer header. Reading the token off
+ * the Authorization header made the agent route work from a script and fail
+ * for every real user, with an error that read like the assistant being down.
+ */
+describe('the token the agent acts with', () => {
+  it('comes from the credential the guard resolved, however it arrived', async () => {
+    const { ProjectPlanningController } = await import(
+      '../../controllers/project-planning/project-planning.controller'
+    );
+    const sent: unknown[] = [];
+    const ai = {
+      send: jest.fn((_pattern, payload) => {
+        sent.push(payload);
+        return of({ said: 'ok', used: [] });
+      }),
+    };
+    const controller = new ProjectPlanningController(
+      { send: jest.fn(() => of({ id: 'proj-1' })) } as never,
+      ai as never
+    );
+
+    await controller.actOnProject(
+      'proj-1',
+      { instruction: 'do a thing' },
+      { credential: 'the-cookie-token' }
+    );
+
+    expect(sent[0]).toMatchObject({ token: 'the-cookie-token' });
+  });
+
+  it('refuses rather than calling out with no token at all', async () => {
+    const { ProjectPlanningController } = await import(
+      '../../controllers/project-planning/project-planning.controller'
+    );
+    const ai = { send: jest.fn() };
+    const controller = new ProjectPlanningController(
+      { send: jest.fn() } as never,
+      ai as never
+    );
+
+    await expect(
+      controller.actOnProject('proj-1', { instruction: 'do a thing' }, {})
+    ).rejects.toThrow(/signed in caller/);
+    expect(ai.send).not.toHaveBeenCalled();
+  });
+});

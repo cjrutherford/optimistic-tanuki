@@ -8,7 +8,7 @@ import {
   Body,
   Param,
   UseGuards,
-  Headers,
+  Req,
   BadRequestException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -289,13 +289,14 @@ export class ProjectPlanningController {
   async actOnProject(
     @Param('id') id: string,
     @Body() body: { instruction?: string },
-    @Headers('authorization') authorization?: string
+    @Req() request: { credential?: string }
   ) {
-    const token = authorization?.split(' ')[1];
+    // From the guard rather than the headers. The browser signs in with a
+    // cookie, so reading the Authorization header meant this route worked for
+    // a script and failed for every real user.
+    const token = request.credential;
     if (!token) {
-      // The guard already required one, so this is a shape problem rather than
-      // an authorisation one, and saying so beats a confusing 401 from MCP.
-      throw new BadRequestException('A bearer token is required to act.');
+      throw new BadRequestException('A signed in caller is required to act.');
     }
     if (!body?.instruction?.trim()) {
       throw new BadRequestException('An instruction is required.');
