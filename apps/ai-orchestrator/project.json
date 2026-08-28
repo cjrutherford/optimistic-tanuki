@@ -44,6 +44,14 @@
         "passWithNoTests": true,
         "runInBand": true
       }
+    },
+    "pilot": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register apps/ai-orchestrator/src/project-pilot.ts",
+        "cwd": "{workspaceRoot}"
+      },
+      "configurations": {}
     }
   }
 }
