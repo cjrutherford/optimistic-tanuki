@@ -245,12 +245,43 @@ async function availableModels(): Promise<string[]> {
 }
 
 async function main(): Promise<void> {
-  const requested = process.argv
-    .find((arg) => arg.startsWith('--models='))
-    ?.split('=')[1]
-    ?.split(',')
+  // nx splits a comma-separated --args value into separate argv entries, so a
+  // model list arrives as one flag plus a trail of bare tokens. Collect those
+  // too rather than silently running the first model only, which is what the
+  // earlier parse did.
+  const flagIndex = process.argv.findIndex((arg) =>
+    arg.startsWith('--models=')
+  );
+  const requested =
+    flagIndex === -1
+      ? []
+      : [
+          process.argv[flagIndex].split('=').slice(1).join('='),
+          ...process.argv
+            .slice(flagIndex + 1)
+            .filter((arg) => !arg.startsWith('--')),
+        ].filter(Boolean);
+
+  const excluded = process.argv
+    .filter((arg) => arg.startsWith('--exclude='))
+    .map((arg) => arg.split('=')[1].toLowerCase())
     .filter(Boolean);
-  const models = requested?.length ? requested : await availableModels();
+
+  const models = (
+    requested.length ? requested : await availableModels()
+  ).filter(
+    (name) => !excluded.some((needle) => name.toLowerCase().includes(needle))
+  );
+
+  // Repeats, because one shot hides the thing that matters most here. The
+  // strongest model on a single pass returned clean structured output for the
+  // proposal task and then, minutes later at temperature 0 on the same prompt,
+  // answered in markdown prose that could not be parsed. A model that works
+  // four times in five is a different proposition from one that works, and the
+  // difference is invisible without asking twice.
+  const repeats = Number(
+    process.argv.find((arg) => arg.startsWith('--repeat='))?.split('=')[1] ?? 1
+  );
   const persona = projectManagerPersona(WORKSPACE);
   const system = personaSystemPrompt(persona);
 
@@ -263,11 +294,14 @@ async function main(): Promise<void> {
 
   const scores: ModelScore[] = [];
   for (const name of models) {
-    const tasks: TaskScore[] = [
-      await runStructured(name, 'summary', system),
-      await runStructured(name, 'proposal', system),
-      await runTools(name, system),
-    ];
+    const tasks: TaskScore[] = [];
+    for (let pass = 0; pass < repeats; pass += 1) {
+      tasks.push(
+        await runStructured(name, 'summary', system),
+        await runStructured(name, 'proposal', system),
+        await runTools(name, system)
+      );
+    }
     for (const score of tasks) {
       console.log(
         `${score.parsed ? 'ok  ' : 'FAIL'} ${name.padEnd(58)} ` +
