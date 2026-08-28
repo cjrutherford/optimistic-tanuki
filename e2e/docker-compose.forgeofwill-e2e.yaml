@@ -219,6 +219,46 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  # The orchestrator keeps conversation state in redis. This stack had none,
+  # because nothing in it used a model before now.
+  redis:
+    image: redis:7-alpine
+    container_name: e2e_redis_fow
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # The AI orchestrator, so the project summary has something to talk to. The
+  # stack ran without it, which is why nothing in this app could reach a model.
+  # OLLAMA_HOST is the tailnet address rather than the MagicDNS name because
+  # containers here do not resolve tailscale names.
+  ai-orchestration:
+    container_name: e2e_ai_orchestration_fow
+    build:
+      context: ..
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - '3010:3010'
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3010, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      redis:
+        condition: service_healthy
+
   gateway:
     container_name: e2e_gateway_fow
     build:
@@ -268,6 +308,8 @@ services:
       FORUM_PORT: 3015
       PERMISSIONS_HOST: permissions
       PERMISSIONS_PORT: 3012
+      AI_ORCHESTRATION_HOST: ai-orchestration
+      AI_ORCHESTRATION_PORT: 3010
     depends_on:
       db:
         condition: service_healthy
@@ -287,6 +329,8 @@ services:
         condition: service_healthy
       permissions-seed:
         condition: service_completed_successfully
+      ai-orchestration:
+        condition: service_healthy
 
   oauth-provider:
     image: cjrutherford/optimistic_tanuki_oauth-provider:${E2E_IMAGE_TAG:-latest}
