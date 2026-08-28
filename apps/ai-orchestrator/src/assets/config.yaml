@@ -24,22 +24,41 @@ ai-enabled-apps:
   forgeofwill: The Forge of Will is a personal project management platform to allow users to plan, track, collaborate, and achieve their goals effectively. It combines task management, goal setting, and collaboration tools to help individuals and teams stay organized and productive.
 toolSources:
   gateway: http://gateway:3000/api/mcp
+# Keys here must match the ModelType enum values exactly. ModelManager derives
+# the lookup from the enum, so a key that does not match leaves that type
+# unconfigured and its requests are refused rather than quietly served by
+# something else. Chosen from the slice A pilot: nx run ai-orchestrator:pilot
 models:
   workflow_control:
     name: 'llama3.2:3b'
-    description: 'Fast model for detecting if a prompt requires tool calling'
+    description: 'Fast classifier. Latency matters more than depth here.'
     temperature: 0.3
     pullOnStartup: true
-  tool_calling:
+  intent_analysis:
     name: 'llama3.2:3b'
-    description: 'Model optimized for tool calling and function execution'
-    temperature: 0.5
+    description: 'Also a classifier. Was never configured at all, so it fell
+      back to a model that is not installed.'
+    temperature: 0.2
+    pullOnStartup: true
+  tool_calling:
+    name: 'qwen3:8b'
+    description: 'The only model that emitted a valid tool call on every pass
+      of the pilot, with every payload applicable. Slow at roughly 36s, so
+      callers should treat it as background work.'
+    temperature: 0.3
     pullOnStartup: true
   conversational:
     name: 'llama3.2:3b'
     description: 'Model for generating conversational responses'
     temperature: 0.7
     pullOnStartup: true
+  project_analysis:
+    name: 'hf.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M'
+    description: 'The only model that found all three planted problems on every
+      pilot pass. Roughly 23s. Cannot call tools at all, which does not matter
+      for reading and summarising.'
+    temperature: 0.2
+    pullOnStartup: false
 ollama:
   host: 192.168.50.14
   port: 11434
