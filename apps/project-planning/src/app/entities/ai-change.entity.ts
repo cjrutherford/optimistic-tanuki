@@ -23,6 +23,10 @@ export class AiChange {
   @Column({ type: 'jsonb' })
   payload: Record<string, unknown>;
 
+  /** Why it was proposed. A reviewer needs the argument, not just the change. */
+  @Column({ type: 'text', nullable: true })
+  reason?: string;
+
   @Column({ default: 'PENDING' })
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
 

@@ -65,6 +65,56 @@ export interface ProjectSummaryResult {
   unavailable?: string;
 }
 
+/**
+ * What the model is allowed to propose.
+ *
+ * One flat shape for every operation rather than a union of payload shapes.
+ * A 7B model given six different field sets mixes them, and a proposal with
+ * a task's fields under a risk's operation is not something a reviewer can
+ * be shown. The mapping into real payloads happens here, in code, where the
+ * shape is not a matter of the model's judgement.
+ */
+export const ProposedChangesSchema = z.object({
+  proposals: z
+    .array(
+      z.object({
+        operation: z
+          .enum([
+            'task.create',
+            'risk.create',
+            'projectJournal.create',
+            'taskNote.create',
+          ])
+          .describe('What kind of thing to add'),
+        title: z.string().describe('A short title or heading'),
+        detail: z.string().describe('The body, description or mitigation'),
+        reason: z
+          .string()
+          .describe('Why this project needs it, from its own data'),
+        relatesTo: z
+          .string()
+          .optional()
+          .describe('The label of the task or risk this comes from, if any'),
+      })
+    )
+    .describe('Changes worth making to this project'),
+});
+
+export type ProposedChange = {
+  operation: string;
+  payload: Record<string, unknown>;
+  /** Shown to the reviewer, so the proposal argues for itself. */
+  reason: string;
+};
+
+export interface ProposalResult {
+  proposals: ProposedChange[];
+  model: string | null;
+  /** Proposals dropped because they could not be turned into a real change. */
+  discarded: number;
+  unavailable?: string;
+}
+
 @Injectable()
 export class ProjectAiService {
   private readonly logger = new Logger(ProjectAiService.name);
@@ -141,6 +191,178 @@ export class ProjectAiService {
         unavailable: 'The summary could not be generated just now.',
       };
     }
+  }
+
+  /**
+   * Proposes changes to a project, for a person to accept or refuse.
+   *
+   * Nothing here writes anything. The result is a list of proposals the caller
+   * files for approval, and the gate in project-planning is what decides
+   * whether any of them ever becomes a row. This service produces an argument,
+   * not a change.
+   *
+   * Same relabelling as the summary, and for the same reason: the model never
+   * sees a real id, so a reference it invented resolves to nothing and the
+   * proposal is dropped rather than filed against something that does not
+   * exist.
+   */
+  async proposeChanges(
+    project: SummarisableProject,
+    today = new Date().toISOString().slice(0, 10)
+  ): Promise<ProposalResult> {
+    let config;
+    try {
+      config = this.models.getModelConfig(ModelType.TOOL_CALLING);
+    } catch (error) {
+      this.logger.warn(`Cannot propose: ${(error as Error).message}`);
+      return {
+        proposals: [],
+        model: null,
+        discarded: 0,
+        unavailable: 'No model is configured for this.',
+      };
+    }
+
+    try {
+      const { view, toRealId, toTitle } = this.relabel(project);
+
+      const model = this.models.getModel(ModelType.TOOL_CALLING);
+      const raw = (await model
+        .withStructuredOutput(ProposedChangesSchema, { name: 'proposals' })
+        .invoke([
+          new SystemMessage(this.proposalSystemPrompt()),
+          new HumanMessage(this.proposalUserPrompt(view, today)),
+        ])) as z.infer<typeof ProposedChangesSchema>;
+
+      const { proposals, discarded } = this.toApplicablePayloads(
+        raw.proposals ?? [],
+        project.id,
+        toRealId,
+        toTitle
+      );
+
+      return { proposals, model: config.name, discarded };
+    } catch (error) {
+      this.logger.warn(
+        `Proposals failed for project ${project.id}: ${
+          (error as Error).message
+        }`
+      );
+      return {
+        proposals: [],
+        model: config.name,
+        discarded: 0,
+        unavailable: 'Suggestions could not be generated just now.',
+      };
+    }
+  }
+
+  /**
+   * Turns what the model wrote into payloads the executor can apply.
+   *
+   * A proposal that cannot be turned into a real change is dropped here rather
+   * than filed. Putting it in front of a reviewer would be asking them to
+   * approve something that fails the moment they do, and the failure would
+   * look like theirs.
+   */
+  private toApplicablePayloads(
+    written: z.infer<typeof ProposedChangesSchema>['proposals'],
+    projectId: string,
+    toRealId: Map<string, string>,
+    toTitle: Map<string, string>
+  ): { proposals: ProposedChange[]; discarded: number } {
+    const proposals: ProposedChange[] = [];
+
+    for (const item of written) {
+      const title = this.namesInsteadOfLabels(item.title ?? '', toTitle);
+      const detail = this.namesInsteadOfLabels(item.detail ?? '', toTitle);
+      const reason = this.namesInsteadOfLabels(item.reason ?? '', toTitle);
+      if (!title.trim()) continue;
+
+      // A label the model invented maps to nothing, which is the whole point
+      // of never showing it the real ids.
+      const relatedId = item.relatesTo
+        ? toRealId.get(item.relatesTo.trim())
+        : undefined;
+
+      switch (item.operation) {
+        case 'task.create':
+          proposals.push({
+            operation: 'task.create',
+            reason,
+            payload: { projectId, title, description: detail },
+          });
+          break;
+        case 'risk.create':
+          proposals.push({
+            operation: 'risk.create',
+            reason,
+            payload: { projectId, title, description: detail },
+          });
+          break;
+        case 'projectJournal.create':
+          proposals.push({
+            operation: 'projectJournal.create',
+            reason,
+            payload: { projectId, title, content: detail },
+          });
+          break;
+        case 'taskNote.create':
+          // A note has to belong to a task. Without one there is nothing to
+          // attach it to, so it is dropped rather than guessed at.
+          if (!relatedId || !item.relatesTo?.startsWith('t')) continue;
+          proposals.push({
+            operation: 'taskNote.create',
+            reason,
+            payload: { projectId, taskId: relatedId, content: detail || title },
+          });
+          break;
+      }
+    }
+
+    return { proposals, discarded: written.length - proposals.length };
+  }
+
+  private proposalSystemPrompt(): string {
+    return [
+      'You are a project manager suggesting what a project is missing.',
+      '',
+      'Nothing you suggest happens on its own. A person reads each suggestion',
+      'and decides. Write them so that decision is easy to make.',
+      '',
+      "Suggest only what this project's own data calls for. Do not invent",
+      'people, dates or work that has nothing to do with what you were given.',
+      '',
+      'Use task.create for work that needs doing, risk.create for something',
+      'that could go wrong and is not recorded, projectJournal.create for a',
+      'note about the project as a whole, and taskNote.create for a note on',
+      "one task. A taskNote must set relatesTo to that task's label.",
+      '',
+      'Every suggestion carries a reason drawn from the data. "The board looks',
+      'thin" is not a reason. "Nothing covers the inspection the permit',
+      'requires" is.',
+      '',
+      'Two or three worth doing beat six that pad the board. If the project',
+      'needs nothing, return none.',
+      '',
+      'Never write a label such as t1 or r2 inside title or detail. Name the',
+      'task or risk by its title. Labels belong in relatesTo and nowhere else.',
+    ].join('\n');
+  }
+
+  private proposalUserPrompt(
+    project: SummarisableProject,
+    today: string
+  ): string {
+    return [
+      `Today is ${today}.`,
+      '',
+      'PROJECT',
+      JSON.stringify(project, null, 2),
+      '',
+      'Suggest the changes this project needs. Each one names what to add and',
+      'why this project needs it.',
+    ].join('\n');
   }
 
   /**

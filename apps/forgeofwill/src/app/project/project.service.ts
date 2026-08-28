@@ -4,7 +4,11 @@ import {
   QueryProject,
 } from '@optimistic-tanuki/ui-models';
 
-import { ProjectNarrative } from '@optimistic-tanuki/project-ui';
+import {
+  AiChange,
+  AiChangeDecision,
+  ProjectNarrative,
+} from '@optimistic-tanuki/project-ui';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
@@ -49,6 +53,39 @@ export class ProjectService {
    */
   getProjectSummary(id: string) {
     return this.http.get<ProjectNarrative>(`${this.baseUrl}/${id}/summary`);
+  }
+
+  /**
+   * Changes an agent proposed on this project, decided and undecided.
+   *
+   * A project can require approval before anything is written. Nothing in the
+   * app could read those proposals until this, so the flag meant work stopped
+   * somewhere a person could not reach it.
+   */
+  getAiChanges(projectId: string) {
+    return this.http.get<AiChange[]>(`${this.baseUrl}/${projectId}/ai-changes`);
+  }
+
+  /** Approving carries the change out, so this is not only a status write. */
+  reviewAiChange(decision: AiChangeDecision) {
+    const { id, ...rest } = decision;
+    return this.http.patch<AiChange>(`${this.baseUrl}/ai-changes/${id}`, rest);
+  }
+
+  /**
+   * Asks a model what the project needs. Everything it answers is filed for
+   * approval, so this proposes and never applies.
+   *
+   * Slow like the summary, and marked model bound on the gateway for the same
+   * reason.
+   */
+  requestAiProposals(projectId: string) {
+    return this.http.post<{
+      model: string | null;
+      discarded: number;
+      unavailable?: string;
+      changes?: AiChange[];
+    }>(`${this.baseUrl}/${projectId}/ai-proposals`, {});
   }
 
   getProjectById(id: string) {

@@ -203,32 +203,13 @@ export class TaskMcpService {
         requestingUserId,
       };
 
-      // The gate. A project can require that changes are approved by a person
-      // before they happen, and this is the path an agent uses, so this is
-      // where the flag has to be honoured. Enforcing it only on the ai-changes
-      // route would leave the tool free to create tasks directly, which is
-      // exactly what it did before: the flag was written at project creation
-      // and read by nothing.
-      const project = await firstValueFrom(
-        this.projectPlanningService.send(
-          { cmd: ProjectCommands.FIND_ONE },
-          { id: projectId, requestingUserId }
-        )
+      const proposal = await this.proposeIfGated(
+        projectId,
+        'task.create',
+        taskData,
+        requestingUserId
       );
-
-      if (project?.requireHumanApproval) {
-        const proposal = await firstValueFrom(
-          this.projectPlanningService.send(
-            { cmd: ProjectCommands.CREATE_AI_CHANGE },
-            {
-              projectId,
-              proposedBy: requestingUserId,
-              operation: 'task.create',
-              payload: taskData,
-            }
-          )
-        );
-
+      if (proposal) {
         return {
           success: true,
           // Said plainly, because an agent told "created successfully" will
@@ -290,6 +271,31 @@ export class TaskMcpService {
       if (priority) updates.priority = priority;
       if (projectId) updates.projectId = projectId;
 
+      // The task's own project decides, not the one the caller happened to
+      // pass. projectId is optional on this tool, and an update to a gated
+      // project must not slip through because the argument was left out.
+      const owningProjectId =
+        projectId ?? (await this.projectOfTask(id, requestingUserId));
+
+      if (owningProjectId) {
+        const proposal = await this.proposeIfGated(
+          owningProjectId,
+          'task.update',
+          updates,
+          requestingUserId
+        );
+        if (proposal) {
+          return {
+            success: true,
+            message:
+              'The change was proposed and is waiting for approval. ' +
+              'The task has not been changed yet.',
+            proposal,
+            awaitingApproval: true,
+          };
+        }
+      }
+
       const task = await firstValueFrom(
         this.projectPlanningService.send({ cmd: TaskCommands.UPDATE }, updates)
       );
@@ -320,6 +326,32 @@ export class TaskMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting task ${taskId}`);
+
+      // Deleting is not something a proposal can become, so on a project that
+      // requires approval there is no safe version of this and it is refused.
+      // Leaving it open would mean the one operation nobody can review is also
+      // the only irreversible one.
+      const owningProjectId = await this.projectOfTask(
+        taskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const project = await this.projectOrNull(
+          owningProjectId,
+          requestingUserId
+        );
+        if (project?.requireHumanApproval) {
+          return {
+            success: false,
+            message:
+              'This project requires changes to be approved by a person, and ' +
+              'deleting a task cannot be proposed for approval. A person has ' +
+              'to delete it.',
+            awaitingApproval: false,
+          };
+        }
+      }
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: TaskCommands.DELETE },
@@ -366,5 +398,67 @@ export class TaskMcpService {
       this.logger.error('Error querying tasks:', error);
       throw new Error(`Failed to query tasks: ${error.message}`);
     }
+  }
+
+  /**
+   * The gate.
+   *
+   * A project can require that changes are approved by a person before they
+   * happen, and the MCP tools are the path an agent takes, so this is where
+   * the flag has to be honoured. Enforcing it only on the ai-changes route
+   * would leave the tools free to write directly, which is what they did
+   * before: the flag was set at project creation and read by nothing.
+   *
+   * Returns the proposal when the change was filed for review, or null when
+   * the caller should go ahead and do the work.
+   */
+  private async proposeIfGated(
+    projectId: string,
+    operation: string,
+    payload: object,
+    requestingUserId: string
+  ): Promise<unknown | null> {
+    const project = await this.projectOrNull(projectId, requestingUserId);
+    if (!project?.requireHumanApproval) return null;
+
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        { projectId, proposedBy: requestingUserId, operation, payload }
+      )
+    );
+  }
+
+  private async projectOrNull(
+    projectId: string,
+    requestingUserId: string
+  ): Promise<{ requireHumanApproval?: boolean } | null> {
+    try {
+      return await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: ProjectCommands.FIND_ONE },
+          { id: projectId, requestingUserId }
+        )
+      );
+    } catch (error) {
+      // A project that cannot be read is not a project without a gate. Say so
+      // rather than letting the write past.
+      throw new Error(
+        `Could not check whether project ${projectId} requires approval: ${error.message}`
+      );
+    }
+  }
+
+  private async projectOfTask(
+    taskId: string,
+    requestingUserId: string
+  ): Promise<string | null> {
+    const task = await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskCommands.FIND_ONE },
+        { id: taskId, requestingUserId }
+      )
+    );
+    return task?.projectId ?? task?.project?.id ?? null;
   }
 }

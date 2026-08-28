@@ -30,4 +30,18 @@ export class ProjectAiController {
     }
     return await this.projectAi.summarise(data.project, data.today);
   }
+
+  @MessagePattern({ cmd: ProjectAiCommands.PROPOSE })
+  async propose(data: { project: SummarisableProject; today?: string }) {
+    this.logger.log(`Proposing changes for project ${data?.project?.id}`);
+    if (!data?.project?.id) {
+      return {
+        proposals: [],
+        model: null,
+        discarded: 0,
+        unavailable: 'No project was supplied.',
+      };
+    }
+    return await this.projectAi.proposeChanges(data.project, data.today);
+  }
 }

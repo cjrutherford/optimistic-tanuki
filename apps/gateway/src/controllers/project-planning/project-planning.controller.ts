@@ -201,6 +201,73 @@ export class ProjectPlanningController {
     );
   }
 
+  /**
+   * Asks a model what this project is missing, and files each answer for
+   * approval.
+   *
+   * Nothing is applied here. Every proposal lands as a pending change, and a
+   * person decides. That is the whole point of the feature: the agent argues,
+   * the human agrees.
+   *
+   * Model bound for the same reason as the summary. The gateway's ordinary
+   * timeout is 30 seconds and this takes longer, and a route that reports a
+   * failure while the work succeeds leaves the caller and the system
+   * disagreeing about what happened.
+   */
+  @ApiOperation({ summary: 'Ask a model to propose changes to a project' })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-proposals')
+  async proposeAiChanges(@User() user: UserDetails, @Param('id') id: string) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      return {
+        proposals: [],
+        model: null,
+        discarded: 0,
+        unavailable: 'That project could not be read.',
+      };
+    }
+
+    const result = await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.PROPOSE },
+        { project }
+      )
+    );
+
+    const filed = [];
+    for (const proposal of result?.proposals ?? []) {
+      filed.push(
+        await firstValueFrom(
+          this.projectPlanningService.send(
+            { cmd: ProjectCommands.CREATE_AI_CHANGE },
+            {
+              projectId: id,
+              proposedBy: user.profileId,
+              operation: proposal.operation,
+              payload: proposal.payload,
+              reason: proposal.reason,
+            }
+          )
+        )
+      );
+    }
+
+    return {
+      model: result?.model ?? null,
+      discarded: result?.discarded ?? 0,
+      unavailable: result?.unavailable,
+      changes: filed,
+    };
+  }
+
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })
   @RequirePermissions('project-planning.project.read')
   @Get('projects/:id/ai-changes')

@@ -1,0 +1,155 @@
+.ai-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.head .count {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+}
+
+.head .ask {
+  margin-left: auto;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.head .ask:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.reason {
+  margin: 0;
+  font-size: 0.88rem;
+  opacity: 0.85;
+}
+
+.empty {
+  font-size: 0.88rem;
+  opacity: 0.75;
+}
+
+.change {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.35));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.change header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.pending-tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.75;
+}
+
+.change dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr;
+  gap: 0.25rem 0.8rem;
+  font-size: 0.86rem;
+}
+
+.change dl > div {
+  display: contents;
+}
+
+.change dt {
+  opacity: 0.7;
+}
+
+.change dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.note input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.actions button {
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  border-radius: var(--personality-border-radius, 4px);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.settled {
+  font-size: 0.86rem;
+}
+
+.settled-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0;
+}
+
+.outcome {
+  opacity: 0.8;
+}
+
+.outcome.failed {
+  font-weight: 600;
+}
+
+.why-failed,
+.note-shown {
+  opacity: 0.7;
+  font-size: 0.8rem;
+}

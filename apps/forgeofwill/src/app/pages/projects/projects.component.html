@@ -153,6 +153,22 @@
         </otui-tile>
       </div>
 
+      <!--
+        The approval gate. A project can require that changes are approved
+        before anything is written, and this is where that decision is made.
+      -->
+      <div class="row-container">
+        <otui-tile class="ai-changes-tile">
+          <lib-ai-change-review
+            [changes]="aiChanges()"
+            [busyId]="aiChangeBusyId()"
+            [asking]="askingForSuggestions()"
+            (decided)="onAiChangeDecided($event)"
+            (suggestionsRequested)="onSuggestionsRequested()"
+          ></lib-ai-change-review>
+        </otui-tile>
+      </div>
+
       <!-- Project Journal -->
       <div class="row-container">
         <otui-tile class="journal-tile">

@@ -268,4 +268,117 @@ describe('TaskMcpService', () => {
       expect(result.awaitingApproval).toBe(false);
     });
   });
+
+  /**
+   * The same gate on the other two ways an agent can change a board.
+   *
+   * Gating only creation would leave an agent able to rewrite or delete
+   * whatever it liked on a project whose whole point is that a person decides.
+   */
+  describe('update_task and delete_task when the project requires approval', () => {
+    function respondPerCommand(
+      project: Record<string, unknown>,
+      task: Record<string, unknown> = { id: 'task-1', projectId: 'proj-1' }
+    ) {
+      clientProxy.send.mockImplementation((pattern: { cmd: string }) => {
+        if (pattern.cmd === ProjectCommands.FIND_ONE) return of(project);
+        if (pattern.cmd === TaskCommands.FIND_ONE) return of(task);
+        if (pattern.cmd === ProjectCommands.CREATE_AI_CHANGE)
+          return of({ id: 'proposal-1', status: 'PENDING' });
+        return of({ id: 'task-1' });
+      });
+    }
+
+    it('proposes an update instead of making it', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.updateTask(
+        { id: 'task-1', title: 'Renamed' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.objectContaining({ operation: 'task.update' })
+      );
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.UPDATE },
+        expect.anything()
+      );
+      expect(result.awaitingApproval).toBe(true);
+      expect(result.message).toMatch(/not been changed/i);
+    });
+
+    it('finds the project from the task when the caller did not name one', async () => {
+      // projectId is optional on this tool. An update to a gated project must
+      // not slip through because the argument was left out.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      await service.updateTask(
+        { id: 'task-1', status: TaskStatus.DONE },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.FIND_ONE },
+        expect.objectContaining({ id: 'proj-1' })
+      );
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.anything()
+      );
+    });
+
+    it('updates directly when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.updateTask(
+        { id: 'task-1', title: 'Renamed' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.UPDATE },
+        expect.objectContaining({ title: 'Renamed' })
+      );
+      expect(result.awaitingApproval).toBeFalsy();
+    });
+
+    it('refuses to delete rather than deleting unreviewed', async () => {
+      // Deletion cannot be proposed, so leaving it open would make the one
+      // operation nobody can review also the only irreversible one.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.deleteTask(
+        { taskId: 'task-1' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.success).toBe(false);
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.DELETE },
+        expect.anything()
+      );
+    });
+
+    it('deletes when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.deleteTask(
+        { taskId: 'task-1' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.success).toBe(true);
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.DELETE },
+        { id: 'task-1', requestingUserId: profileId }
+      );
+    });
+  });
 });

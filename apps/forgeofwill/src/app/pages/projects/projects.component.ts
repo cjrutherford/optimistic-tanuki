@@ -31,6 +31,9 @@ import {
   MindMapComponent,
   ProjectSummaryComponent,
   ProjectNarrative,
+  AiChangeReviewComponent,
+  AiChange,
+  AiChangeDecision,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -65,6 +68,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ProjectFormComponent,
     GlassContainerComponent,
     ProjectSummaryComponent,
+    AiChangeReviewComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -95,6 +99,9 @@ export class ProjectsComponent implements OnInit {
    * model, so running it on every project selection would spend that on
    * people who never looked at the panel.
    */
+  aiChanges = signal<AiChange[]>([]);
+  aiChangeBusyId = signal<string | null>(null);
+  askingForSuggestions = signal<boolean>(false);
   narrative = signal<ProjectNarrative | null>(null);
   narrativeLoading = signal<boolean>(false);
 
@@ -144,7 +151,127 @@ export class ProjectsComponent implements OnInit {
     if (changed) {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
+      this.aiChanges.set([]);
+      this.aiChangeBusyId.set(null);
     }
+    if (project) this.loadAiChanges(project.id);
+  }
+
+  private loadAiChanges(projectId: string): void {
+    this.projectService.getAiChanges(projectId).subscribe({
+      next: (changes) => this.aiChanges.set(changes ?? []),
+      // A project with nothing proposed and a project whose proposals could
+      // not be fetched look the same on screen, so say which happened.
+      error: () => {
+        this.aiChanges.set([]);
+        this.messageService.addMessage({
+          content: 'Proposed changes could not be loaded for this project.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Asks a model what the project is missing.
+   *
+   * Slow, roughly the same as a summary, because a model is reading the whole
+   * project. Nothing it says is applied: every suggestion lands in the list
+   * above waiting for a decision.
+   */
+  onSuggestionsRequested(): void {
+    const project = this.selectedProject();
+    if (!project || this.askingForSuggestions()) return;
+
+    this.askingForSuggestions.set(true);
+    this.projectService.requestAiProposals(project.id).subscribe({
+      next: (result) => {
+        this.askingForSuggestions.set(false);
+        if (result.changes?.length) {
+          this.aiChanges.update((changes) => [
+            ...(result.changes ?? []),
+            ...changes,
+          ]);
+          return;
+        }
+        this.messageService.addMessage({
+          content:
+            result.unavailable ??
+            'Nothing was suggested for this project just now.',
+          type: 'info',
+        });
+      },
+      error: () => {
+        this.askingForSuggestions.set(false);
+        this.messageService.addMessage({
+          content: 'Suggestions could not be fetched.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * The human half of the approval gate.
+   *
+   * Approving does the work rather than only recording a decision, so the
+   * project has to be re-read afterwards: the board now has a row on it that
+   * the page has never seen.
+   */
+  onAiChangeDecided(decision: AiChangeDecision): void {
+    if (this.aiChangeBusyId()) return;
+    this.aiChangeBusyId.set(decision.id);
+
+    this.projectService.reviewAiChange(decision).subscribe({
+      next: (reviewed) => {
+        this.aiChanges.update((changes) =>
+          changes.map((change) =>
+            change.id === reviewed.id ? reviewed : change
+          )
+        );
+        this.aiChangeBusyId.set(null);
+
+        if (reviewed.status === 'REJECTED') {
+          this.messageService.addMessage({
+            content: 'Rejected. Nothing was changed.',
+            type: 'info',
+          });
+          return;
+        }
+
+        if (reviewed.applied) {
+          this.messageService.addMessage({
+            content: 'Approved and done.',
+            type: 'success',
+          });
+          this.refreshSelectedProject();
+        } else {
+          // Approved but not carried out. Saying "approved" here would tell
+          // the reviewer the board changed when it did not.
+          this.messageService.addMessage({
+            content: `Approved, but it did not go through: ${
+              reviewed.applyError ?? 'no reason was given'
+            }`,
+            type: 'error',
+          });
+        }
+      },
+      error: () => {
+        this.aiChangeBusyId.set(null);
+        this.messageService.addMessage({
+          content: 'That decision could not be recorded.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  private refreshSelectedProject(): void {
+    const current = this.selectedProject();
+    if (!current) return;
+    this.projectService.getProjectById(current.id).subscribe({
+      next: (project) => this.selectedProject.set(project),
+    });
   }
 
   onNarrativeRequested(): void {
@@ -267,7 +394,7 @@ export class ProjectsComponent implements OnInit {
     console.log('Selected project ID:', projectId);
     const project = this.projects().find((p) => p.id === projectId);
     if (project) {
-      this.selectedProject.set(project);
+      this.chooseProject(project);
       console.log('Selected project:', project);
     }
   }

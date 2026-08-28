@@ -20,6 +20,18 @@ export class CreateAiChangeDto {
   @ApiProperty({ type: Object })
   @IsObject()
   payload!: Record<string, unknown>;
+
+  /**
+   * Why this was proposed, in the proposer's own words.
+   *
+   * A reviewer looking at a payload can see what would happen but not why
+   * anyone thought it should. Without this the only honest answer to "why am
+   * I being asked this" is that a model said so.
+   */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 
 export class ReviewAiChangeDto {

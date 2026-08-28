@@ -24,3 +24,4 @@ export * from './lib/project-ui/tag-selector/tag-selector.component';
 export * from './lib/project-ui/time-tracker/time-tracker.component';
 export * from './lib/project-ui/analytics-dashboard/analytics-dashboard.component';
 export * from './lib/project-ui/project-summary/project-summary.component';
+export * from './lib/project-ui/ai-change-review/ai-change-review.component';
