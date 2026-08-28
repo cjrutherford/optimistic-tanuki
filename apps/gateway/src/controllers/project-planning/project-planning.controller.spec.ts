@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectPlanningController } from './project-planning.controller';
 import {
   ChangeCommands,
+  ProjectAiCommands,
   ProjectCommands,
   ProjectJournalCommands,
   RiskCommands,
@@ -51,6 +52,7 @@ import { UserDetails } from '../../decorators/user.decorator';
 describe('ProjectPlanningController', () => {
   let controller: ProjectPlanningController;
   let projectPlanningService: any;
+  let aiOrchestrationService: { send: jest.Mock };
 
   const mockUser: UserDetails = {
     userId: 'user-id',
@@ -69,6 +71,9 @@ describe('ProjectPlanningController', () => {
     projectPlanningService = {
       send: jest.fn().mockImplementation(() => of({})),
     };
+    aiOrchestrationService = {
+      send: jest.fn().mockImplementation(() => of({})),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectPlanningController],
@@ -76,6 +81,10 @@ describe('ProjectPlanningController', () => {
         {
           provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
           useValue: projectPlanningService,
+        },
+        {
+          provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
+          useValue: aiOrchestrationService,
         },
       ],
     })
@@ -534,5 +543,40 @@ describe('ProjectPlanningController', () => {
       { cmd: TaskTimeEntryCommands.REMOVE },
       { id: '1', requestingUserId }
     );
+  });
+
+  /**
+   * The summary route reads the project through the same permission-checked
+   * path every other route here uses, then hands it to the orchestrator.
+   * The orchestrator has no database and no business deciding who may read a
+   * project, so the authorisation question stays answered in one place.
+   */
+  describe('summarising a project', () => {
+    it('reads the project as the caller before asking a model about it', async () => {
+      projectPlanningService.send.mockReturnValue(
+        of({ id: '1', name: 'Kiln' })
+      );
+
+      await controller.summariseProject(mockUser, '1');
+
+      expect(projectPlanningService.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: '1', requestingUserId }
+      );
+      expect(aiOrchestrationService.send).toHaveBeenCalledWith(
+        { cmd: ProjectAiCommands.SUMMARISE },
+        { project: { id: '1', name: 'Kiln' } }
+      );
+    });
+
+    it('asks no model about a project the caller cannot read', async () => {
+      projectPlanningService.send.mockReturnValue(of(null));
+
+      const result = await controller.summariseProject(mockUser, 'nope');
+
+      expect(aiOrchestrationService.send).not.toHaveBeenCalled();
+      expect(result.summary).toBeNull();
+      expect(result.unavailable).toBeTruthy();
+    });
   });
 });

@@ -145,7 +145,10 @@
         <otui-tile class="project-summary-tile">
           <lib-project-summary
             [project]="selectedProject()!"
+            [narrative]="narrative()"
+            [narrativeLoading]="narrativeLoading()"
             (entitySelected)="onSummaryEntitySelected($event)"
+            (narrativeRequested)="onNarrativeRequested()"
           ></lib-project-summary>
         </otui-tile>
       </div>

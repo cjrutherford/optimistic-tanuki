@@ -4,6 +4,7 @@ import {
   QueryProject,
 } from '@optimistic-tanuki/ui-models';
 
+import { ProjectNarrative } from '@optimistic-tanuki/project-ui';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
@@ -36,6 +37,18 @@ export class ProjectService {
 
   queryProjects(query: QueryProject) {
     return this.http.post<Project[]>(`${this.baseUrl}/query`, query);
+  }
+
+  /**
+   * A model's read of one project.
+   *
+   * Slow by nature, roughly 25 seconds, because a model is reading the whole
+   * project. The gateway route is marked model bound for that reason. Callers
+   * should treat it as something the reader asks for rather than something the
+   * page fetches on load.
+   */
+  getProjectSummary(id: string) {
+    return this.http.get<ProjectNarrative>(`${this.baseUrl}/${id}/summary`);
   }
 
   getProjectById(id: string) {

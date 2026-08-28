@@ -5,7 +5,7 @@ import {
   tick,
 } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { of, Subject, throwError } from 'rxjs';
+import { NEVER, of, Subject, throwError } from 'rxjs';
 
 import { ProjectsComponent } from './projects.component';
 import { ProjectService } from '../../project/project.service';
@@ -113,6 +113,18 @@ describe('ProjectsComponent', () => {
       updateProject: jest.fn().mockReturnValue(of(mockProject)),
       getProjectById: jest.fn().mockReturnValue(of(mockProject)),
       deleteProject: jest.fn().mockReturnValue(of(undefined)),
+      getProjectSummary: jest.fn().mockReturnValue(
+        of({
+          summary: {
+            headline: 'Behind on the crane',
+            concerns: [
+              { about: 'unassigned', why: 'nobody on it', evidenceId: '1' },
+            ],
+          },
+          model: 'test-model',
+          discarded: 0,
+        })
+      ),
     };
     const taskServiceMock = {
       createTask: jest.fn().mockReturnValue(of(mockTask)),
@@ -670,4 +682,63 @@ describe('ProjectsComponent', () => {
       expect.objectContaining({ type: 'error' })
     );
   }));
+
+  /**
+   * The model read is opt-in and must never outlive the project it describes.
+   */
+  describe('the model read of a project', () => {
+    it('asks for nothing until the reader asks', () => {
+      expect(projectService.getProjectSummary).not.toHaveBeenCalled();
+      expect(component.narrative()).toBeNull();
+    });
+
+    it('fetches for the selected project and keeps what came back', () => {
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+
+      expect(projectService.getProjectSummary).toHaveBeenCalledWith(
+        mockProject.id
+      );
+      expect(component.narrative()?.model).toBe('test-model');
+      expect(component.narrativeLoading()).toBe(false);
+    });
+
+    it('says so when the read fails, and keeps the page up', () => {
+      projectService.getProjectSummary.mockReturnValue(
+        throwError(() => new Error('gateway down'))
+      );
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+
+      expect(component.narrative()?.summary).toBeNull();
+      expect(component.narrative()?.unavailable).toBeTruthy();
+      expect(component.narrativeLoading()).toBe(false);
+    });
+
+    it('does not ask twice while one read is in flight', () => {
+      projectService.getProjectSummary.mockReturnValue(NEVER);
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+      component.onNarrativeRequested();
+
+      expect(projectService.getProjectSummary).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops the read when a different project is selected', () => {
+      // Otherwise it sits under the new project's name reading as though it
+      // were about that one, which is worse than showing nothing.
+      component.selectedProject.set(mockProject);
+      component.onNarrativeRequested();
+      expect(component.narrative()).not.toBeNull();
+
+      (
+        component as never as { chooseProject: (p: unknown) => void }
+      ).chooseProject({ ...mockProject, id: 'a-different-project' });
+
+      expect(component.narrative()).toBeNull();
+    });
+  });
 });

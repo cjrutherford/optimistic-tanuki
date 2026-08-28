@@ -30,6 +30,7 @@ import {
   TaskKanbanComponent,
   MindMapComponent,
   ProjectSummaryComponent,
+  ProjectNarrative,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -87,6 +88,16 @@ export class ProjectsComponent implements OnInit {
 
   projects = signal<Project[]>([]);
 
+  /**
+   * The model's read of the selected project.
+   *
+   * Null until the reader asks. It takes roughly 25 seconds and occupies a
+   * model, so running it on every project selection would spend that on
+   * people who never looked at the panel.
+   */
+  narrative = signal<ProjectNarrative | null>(null);
+  narrativeLoading = signal<boolean>(false);
+
   showCreateModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);
   showDeleteModal = signal<boolean>(false);
@@ -118,6 +129,46 @@ export class ProjectsComponent implements OnInit {
   setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
     console.log('Setting task view mode:', mode);
     this.taskViewMode.set(mode);
+  }
+
+  /**
+   * Changing project clears any model read along with it.
+   *
+   * Both places that set the selection go through here. A narrative left in
+   * place would sit under a different project's name and read as though it
+   * were about that one, which is worse than showing nothing.
+   */
+  private chooseProject(project: Project | null): void {
+    const changed = this.selectedProject()?.id !== project?.id;
+    this.selectedProject.set(project);
+    if (changed) {
+      this.narrative.set(null);
+      this.narrativeLoading.set(false);
+    }
+  }
+
+  onNarrativeRequested(): void {
+    const project = this.selectedProject();
+    if (!project || this.narrativeLoading()) return;
+
+    this.narrativeLoading.set(true);
+    this.projectService.getProjectSummary(project.id).subscribe({
+      next: (narrative) => {
+        this.narrative.set(narrative);
+        this.narrativeLoading.set(false);
+      },
+      error: () => {
+        // The panel says so and the computed figures stay. A failed read is
+        // not a reason to take the rest of the page down with it.
+        this.narrative.set({
+          summary: null,
+          model: null,
+          discarded: 0,
+          unavailable: 'The summary could not be reached just now.',
+        });
+        this.narrativeLoading.set(false);
+      },
+    });
   }
 
   onSummaryEntitySelected(entity: 'tasks' | 'risks' | 'changes' | 'journal') {
@@ -176,7 +227,7 @@ export class ProjectsComponent implements OnInit {
       next: (projects) => {
         console.log('Projects loaded:', projects);
         this.projects.set(projects);
-        this.selectedProject.set(projects.length > 0 ? projects[0] : null);
+        this.chooseProject(projects.length > 0 ? projects[0] : null);
       },
       error: (error) => {
         console.error('Error loading projects:', error);
@@ -195,7 +246,7 @@ export class ProjectsComponent implements OnInit {
       next: (project) => {
         console.log('Project reloaded:', project);
         // Update the selected project
-        this.selectedProject.set(project);
+        this.chooseProject(project);
         // Also update in the projects list
         this.projects.update((projects) =>
           projects.map((p) => (p.id === projectId ? project : p))

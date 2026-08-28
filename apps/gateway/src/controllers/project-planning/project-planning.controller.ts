@@ -52,7 +52,9 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { ProjectAiCommands } from '@optimistic-tanuki/constants';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -61,8 +63,52 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class ProjectPlanningController {
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
+    private readonly aiOrchestrationService: ClientProxy
   ) {}
+
+  /**
+   * A model's read of one project.
+   *
+   * Model bound, because a summary takes roughly 23 seconds against the
+   * configured analysis model and the gateway's ordinary timeout is 30. A
+   * route that answers an error while the work succeeds is worse than a slow
+   * one: the caller and the system end up disagreeing about what happened.
+   *
+   * The project is fetched here and passed to the orchestrator rather than
+   * having it fetch by id. project-planning owns the data and decides who may
+   * read it, so the authorisation question is answered once, by the same
+   * permission check every other route on this controller uses.
+   */
+  @ApiOperation({ summary: 'A model-written summary of one project' })
+  @RequirePermissions('project-planning.project.read')
+  @ModelBound()
+  @Get('projects/:id/summary')
+  async summariseProject(@User() user: UserDetails, @Param('id') id: string) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      return {
+        summary: null,
+        model: null,
+        discarded: 0,
+        unavailable: 'That project could not be read.',
+      };
+    }
+
+    return await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.SUMMARISE },
+        { project }
+      )
+    );
+  }
 
   @ApiOperation({ summary: 'Find project by ID' })
   @ApiResponse({ status: 200, description: 'Project found' })

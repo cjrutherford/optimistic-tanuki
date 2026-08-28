@@ -4,6 +4,26 @@ import { Project, Task, Risk, Change } from '@optimistic-tanuki/ui-models';
 
 export type ProjectSummaryEntity = 'tasks' | 'risks' | 'changes' | 'journal';
 
+/**
+ * What a model said about this project, if anything did.
+ *
+ * `unavailable` and `summary` are deliberately separate. A panel that renders
+ * a fallback paragraph in the same place a model's words would go teaches the
+ * reader to trust one as the other. When there is nothing, the panel says so
+ * and the computed figures above it carry the page on their own.
+ */
+export interface ProjectNarrative {
+  summary: {
+    headline: string;
+    concerns: { about: string; why: string; evidenceId: string }[];
+  } | null;
+  /** The model that wrote it, shown so the reader knows what did. */
+  model: string | null;
+  /** Concerns dropped for citing something not in this project. */
+  discarded: number;
+  unavailable?: string;
+}
+
 interface Activity {
   date: Date;
   type: ProjectSummaryEntity;
@@ -20,7 +40,20 @@ interface Activity {
 })
 export class ProjectSummaryComponent {
   @Input() project!: Project;
+  /** Absent until asked for. The panel is opt-in, not something that runs on load. */
+  @Input() narrative: ProjectNarrative | null = null;
+  @Input() narrativeLoading = false;
   @Output() entitySelected = new EventEmitter<ProjectSummaryEntity>();
+  @Output() narrativeRequested = new EventEmitter<void>();
+
+  /** The task or risk a concern points at, so the reader can check it. */
+  evidenceFor(id: string): string {
+    const task = (this.project?.tasks ?? []).find((item) => item.id === id);
+    if (task) return task.title;
+    // Risks carry a description rather than a title, unlike tasks.
+    const risk = (this.project?.risks ?? []).find((item) => item.id === id);
+    return risk ? risk.description : id;
+  }
 
   get activeTasks(): Task[] {
     return (this.project?.tasks ?? []).filter(

@@ -99,4 +99,52 @@
       </p>
     </div>
   </div>
+
+  <!--
+    The model's read, kept visually separate from the figures above. Those are
+    computed and always true. This is written by a language model and might not
+    be, so it is labelled, attributed, and never rendered in the same place as
+    the counts.
+  -->
+  <div class="narrative">
+    <div class="narrative-head">
+      <h4>What a model makes of this</h4>
+      @if (narrative?.model) {
+      <span class="by">written by {{ narrative?.model }}</span>
+      }
+    </div>
+
+    @if (narrativeLoading) {
+    <p class="narrative-state">Reading the project. This takes a moment.</p>
+    } @else if (!narrative) {
+    <button type="button" class="ask" (click)="narrativeRequested.emit()">
+      Ask for a read
+    </button>
+    } @else if (narrative.unavailable) {
+    <p class="narrative-state">
+      {{ narrative.unavailable }} The figures above are unaffected.
+    </p>
+    <button type="button" class="ask" (click)="narrativeRequested.emit()">
+      Try again
+    </button>
+    } @else if (narrative.summary) {
+    <p class="headline">{{ narrative.summary.headline }}</p>
+    <ul class="concerns">
+      @for (concern of narrative.summary.concerns; track concern.evidenceId) {
+      <li>
+        <strong>{{ concern.about }}</strong>
+        <span>{{ concern.why }}</span>
+        <!-- The citation, resolved to a title, so the claim is checkable. -->
+        <em>from {{ evidenceFor(concern.evidenceId) }}</em>
+      </li>
+      }
+    </ul>
+    @if (narrative.discarded) {
+    <p class="narrative-state">
+      {{ narrative.discarded }} further
+      {{ narrative.discarded === 1 ? 'point was' : 'points were' }}
+      left out for not pointing at anything in this project.
+    </p>
+    } }
+  </div>
 </section>
