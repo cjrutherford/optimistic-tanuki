@@ -83,7 +83,7 @@ export class AiChangeExecutor {
 
     // The reviewer approved a change filed against this project. Whatever the
     // payload says about which project it belongs to, this is the answer.
-    const scoped = { ...payload, projectId };
+    const scoped = this.withOwner({ ...payload, projectId }, approvedBy);
 
     try {
       const created = await this.dispatch(operation, scoped, approvedBy);
@@ -96,6 +96,32 @@ export class AiChangeExecutor {
       );
       return { applied: false, error: (error as Error).message };
     }
+  }
+
+  /**
+   * Fills in who is responsible, from the person who approved it.
+   *
+   * These services need an owner and will not save without one: a risk takes
+   * riskOwner and uses it as createdBy, a journal entry and a note take
+   * profileId, a change takes requestor. A proposal is written by a model and
+   * carries none of them, so without this every approval of those three ends
+   * in a not-null violation, which is the exact shape of failure this flow was
+   * built to avoid: approved, and then nothing on the board.
+   *
+   * The approver is the right answer rather than the proposer. They are the
+   * one taking responsibility for it happening.
+   */
+  private withOwner(
+    payload: Record<string, unknown>,
+    approvedBy: string
+  ): Record<string, unknown> {
+    return {
+      ...payload,
+      riskOwner: payload.riskOwner ?? approvedBy,
+      profileId: payload.profileId ?? approvedBy,
+      requestor: payload.requestor ?? approvedBy,
+      createdBy: payload.createdBy ?? approvedBy,
+    };
   }
 
   private async dispatch(

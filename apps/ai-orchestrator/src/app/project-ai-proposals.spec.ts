@@ -76,6 +76,71 @@ describe('ProjectAiService proposals', () => {
     }
   });
 
+  /**
+   * The shapes these services actually take. A risk is one description with no
+   * title column, and a journal entry is content alone. Sending a title to
+   * either puts half of what the model wrote somewhere nothing reads it.
+   */
+  it('folds a risk into the one description it has room for', async () => {
+    const { service } = serviceReturning([
+      {
+        operation: 'risk.create',
+        title: 'Weather',
+        detail: 'A lift in high wind',
+        reason: 'No mitigation recorded',
+      },
+    ]);
+
+    const payload = (await service.proposeChanges(project)).proposals[0]
+      .payload;
+
+    expect(payload).toEqual({
+      projectId: 'p1',
+      description: 'Weather. A lift in high wind',
+    });
+  });
+
+  it('folds a journal entry into content, which is all it stores', async () => {
+    const { service } = serviceReturning([
+      {
+        operation: 'projectJournal.create',
+        title: 'Week one',
+        detail: 'What happened',
+        reason: 'No entries yet',
+      },
+    ]);
+
+    const payload = (await service.proposeChanges(project)).proposals[0]
+      .payload;
+
+    expect(payload).toEqual({
+      projectId: 'p1',
+      content: 'Week one\n\nWhat happened',
+    });
+  });
+
+  it('names a risk by its description, since it has no title', async () => {
+    // Reading risk.title anyway wrote the string "undefined" wherever the
+    // model cited a risk.
+    const { service } = serviceReturning([
+      {
+        operation: 'task.create',
+        title: 'Chase the supplier',
+        detail: 'Because of r1',
+        reason: 'x',
+      },
+    ]);
+
+    const result = await service.proposeChanges({
+      ...project,
+      risks: [{ id: 'risk-uuid', description: 'Crane availability' }],
+    });
+
+    expect(result.proposals[0].payload.description).toBe(
+      'Because of Crane availability'
+    );
+  });
+
   it('resolves a note to the real task it belongs to', async () => {
     const { service } = serviceReturning([
       {

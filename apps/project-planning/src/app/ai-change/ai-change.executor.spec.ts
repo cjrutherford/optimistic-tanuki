@@ -127,4 +127,49 @@ describe('AiChangeExecutor', () => {
     expect(result.applied).toBe(false);
     expect(result.error).toBe('database is down');
   });
+
+  /**
+   * The fields these services will not save without.
+   *
+   * A risk takes riskOwner and uses it as createdBy. A journal entry and a
+   * note take profileId. A change takes requestor. None of them is nullable,
+   * and a model writing a proposal supplies none of them, so without this
+   * every approval of those ends in a not-null violation: approved, and
+   * nothing on the board.
+   */
+  describe('who is recorded as responsible', () => {
+    it.each([
+      ['risk.create', 'risks', 'riskOwner'],
+      ['projectJournal.create', 'journals', 'profileId'],
+      ['taskNote.create', 'taskNotes', 'profileId'],
+      ['change.create', 'changes', 'requestor'],
+    ])('fills %s with the approver', async (op, key, field) => {
+      const { executor, services } = executorWith();
+
+      await executor.apply(op, { title: 'x' }, 'p1', 'the-reviewer');
+
+      expect(
+        (services as Record<string, { create: jest.Mock }>)[key].create
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ [field]: 'the-reviewer' }),
+        'the-reviewer'
+      );
+    });
+
+    it('leaves an owner the payload already names alone', async () => {
+      const { executor, services } = executorWith();
+
+      await executor.apply(
+        'projectJournal.create',
+        { content: 'x', profileId: 'somebody-else' },
+        'p1',
+        'the-reviewer'
+      );
+
+      expect(services.journals.create).toHaveBeenCalledWith(
+        expect.objectContaining({ profileId: 'somebody-else' }),
+        'the-reviewer'
+      );
+    });
+  });
 });

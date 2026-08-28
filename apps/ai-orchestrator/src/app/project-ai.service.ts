@@ -48,7 +48,9 @@ export interface SummarisableProject {
   }[];
   risks?: {
     id: string;
-    title: string;
+    /** Risks carry no title in project-planning; the description names them. */
+    title?: string;
+    description?: string;
     impact?: string;
     status?: string;
     mitigation?: string | null;
@@ -294,17 +296,26 @@ export class ProjectAiService {
           });
           break;
         case 'risk.create':
+          // A risk is one description, not a title and a body. Splitting it
+          // would put half the risk somewhere the service does not read.
           proposals.push({
             operation: 'risk.create',
             reason,
-            payload: { projectId, title, description: detail },
+            payload: {
+              projectId,
+              description: detail ? `${title}. ${detail}` : title,
+            },
           });
           break;
         case 'projectJournal.create':
+          // A journal entry is content alone. There is no title column.
           proposals.push({
             operation: 'projectJournal.create',
             reason,
-            payload: { projectId, title, content: detail },
+            payload: {
+              projectId,
+              content: detail ? `${title}\n\n${detail}` : title,
+            },
           });
           break;
         case 'taskNote.create':
@@ -388,7 +399,9 @@ export class ProjectAiService {
     const risks = (project.risks ?? []).map((risk, index) => {
       const label = `r${index + 1}`;
       toRealId.set(label, risk.id);
-      toTitle.set(label, risk.title);
+      // A risk has no title of its own. Reading one anyway put the string
+      // "undefined" wherever the model cited a risk by its label.
+      toTitle.set(label, risk.title ?? risk.description ?? label);
       return { ...risk, id: label };
     });
     return {
