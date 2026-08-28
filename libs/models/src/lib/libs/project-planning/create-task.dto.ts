@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
@@ -7,6 +8,7 @@ import {
   MinLength,
   IsArray,
   IsOptional,
+  IsDate,
   IsDateString,
 } from 'class-validator';
 
@@ -57,9 +59,16 @@ export class CreateTaskDto {
   @IsUUID()
   assignee?: string;
 
+  // IsDate with a Type transform, not IsDateString. The gateway's
+  // ValidationPipe runs with enableImplicitConversion, so a string arriving
+  // for a property declared as Date is converted to a Date before validation.
+  // IsDateString then rejects it for not being a string, and no due date could
+  // be set through the gateway at all. startDate on CreateProjectDto already
+  // does it this way.
   @ApiPropertyOptional({ description: 'Due date of the task' })
   @IsOptional()
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   dueDate?: Date;
 
   @ApiProperty({ description: 'User who created the task' })

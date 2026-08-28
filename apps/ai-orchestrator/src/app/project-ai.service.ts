@@ -92,15 +92,31 @@ export class ProjectAiService {
     }
 
     try {
+      // The model never sees a real id. Tasks and risks are relabelled t1, r1
+      // and so on for the call, and the labels are mapped back afterwards.
+      //
+      // Two reasons. Models inline the id they are citing into their prose, so
+      // a real project put "Task 0e5d1f75-c0b8-4830-b98f-185cbc88ee4c (strip
+      // the old liner)" on the page. And the pilot that chose this model
+      // measured it on short labels, so sending it something else is not what
+      // was validated.
+      const { view, toRealId, toTitle } = this.relabel(project);
+
       const model = this.models.getModel(ModelType.PROJECT_ANALYSIS);
       const raw = (await model
         .withStructuredOutput(ProjectSummarySchema, { name: 'summary' })
         .invoke([
           new SystemMessage(this.systemPrompt()),
-          new HumanMessage(this.userPrompt(project, today)),
+          new HumanMessage(this.userPrompt(view, today)),
         ])) as ProjectSummary;
 
-      const { summary, discarded } = this.keepOnlyGrounded(raw, project);
+      const { summary, discarded } = this.keepOnlyGrounded(raw, toRealId);
+      summary.headline = this.namesInsteadOfLabels(summary.headline, toTitle);
+      summary.concerns = summary.concerns.map((concern) => ({
+        ...concern,
+        about: this.namesInsteadOfLabels(concern.about, toTitle),
+        why: this.namesInsteadOfLabels(concern.why, toTitle),
+      }));
       if (summary.concerns.length === 0 && discarded > 0) {
         // Every concern pointed at something that is not in this project. A
         // headline on its own is worth less than the facts the page already
@@ -128,6 +144,77 @@ export class ProjectAiService {
   }
 
   /**
+   * Gives everything a short label for the duration of one call.
+   *
+   * Returns the project as the model should see it, plus the map back. The map
+   * is the only thing that can turn a cited label into a real id, so a label
+   * the model invented resolves to nothing and the concern is dropped.
+   */
+  private relabel(project: SummarisableProject): {
+    view: SummarisableProject;
+    toRealId: Map<string, string>;
+    toTitle: Map<string, string>;
+  } {
+    const toRealId = new Map<string, string>();
+    const toTitle = new Map<string, string>();
+    const tasks = (project.tasks ?? []).map((task, index) => {
+      const label = `t${index + 1}`;
+      toRealId.set(label, task.id);
+      toTitle.set(label, task.title);
+      return { ...task, id: label };
+    });
+    const risks = (project.risks ?? []).map((risk, index) => {
+      const label = `r${index + 1}`;
+      toRealId.set(label, risk.id);
+      toTitle.set(label, risk.title);
+      return { ...risk, id: label };
+    });
+    return {
+      view: { ...project, id: 'this-project', tasks, risks },
+      toRealId,
+      toTitle,
+    };
+  }
+
+  /**
+   * Puts titles back where the model wrote a label.
+   *
+   * Asking it not to write ids in the prose did not work. Told plainly, twice,
+   * it still returned "Task t2" and "Tasks t3 and possibly t2". A 7B model is
+   * not reliable enough at that kind of instruction to leave it to chance, and
+   * a reader seeing "t2" is no better off than one seeing a UUID.
+   *
+   * So the substitution is done here, where it cannot fail. Longer labels are
+   * replaced first so t10 is not mangled by the rule for t1.
+   */
+  private namesInsteadOfLabels(
+    text: string,
+    toTitle: Map<string, string>
+  ): string {
+    const labels = [...toTitle.keys()].sort((a, b) => b.length - a.length);
+    return (
+      labels
+        .reduce(
+          (prose, label) =>
+            prose.replace(
+              // The prefix takes its own space with it. An unconditional
+              // \\s* swallowed the space before a bare label, turning
+              // "and t2" into "andBook crane".
+              new RegExp(`\\b(?:(?:task|risk)s?\\s+)?${label}\\b`, 'gi'),
+              toTitle.get(label) as string
+            ),
+          text
+        )
+        // The model writes "Task t2 (Book the crane)", naming the thing twice
+        // once the label becomes a title. Collapse the repeat rather than put
+        // "Book the crane (Book the crane)" in front of a reader.
+        .replace(/['"]?([^()'"]+?)['"]?\s*\(\s*['"]?\1['"]?\s*\)/gi, '$1')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+    );
+  }
+
+  /**
    * Drops any concern citing an id this project does not contain.
    *
    * Models put several ids in one field, "t4,t5,t6" and "t3, r1" were both
@@ -137,15 +224,14 @@ export class ProjectAiService {
    */
   private keepOnlyGrounded(
     summary: ProjectSummary,
-    project: SummarisableProject
+    toRealId: Map<string, string>
   ): { summary: ProjectSummary; discarded: number } {
-    const known = new Set([
-      ...(project.tasks ?? []).map((task) => task.id),
-      ...(project.risks ?? []).map((risk) => risk.id),
-    ]);
-    const concerns = summary.concerns.filter((concern) =>
-      known.has(concern.evidenceId?.trim())
-    );
+    const concerns = summary.concerns
+      .map((concern) => {
+        const realId = toRealId.get(concern.evidenceId?.trim());
+        return realId ? { ...concern, evidenceId: realId } : null;
+      })
+      .filter((concern): concern is NonNullable<typeof concern> => !!concern);
     return {
       summary: { ...summary, concerns },
       discarded: summary.concerns.length - concerns.length,
@@ -156,12 +242,29 @@ export class ProjectAiService {
     return [
       'You are a project manager reading one project.',
       '',
-      'The project is supplied in full below, so be specific about it. Refer',
-      'to tasks and risks by their id.',
+      'Say only what the data supports. Do not invent tasks, people or dates',
+      'that are not in the project.',
       '',
-      'Say only what the data supports. Every concern must cite the id of the',
-      'single task or risk it comes from. One id per concern, never a list.',
-      'Do not invent tasks, people or dates that are not in the project.',
+      'Every concern carries exactly one id in the evidenceId field. One id,',
+      'never a list, never several joined by commas.',
+      '',
+      // Observed on a real project: the model wrote "Task
+      // 0e5d1f75-c0b8-4830-b98f-185cbc88ee4c (strip the old liner) was due..."
+      // The id belongs in evidenceId, which the page resolves to a title. In
+      // the prose it is noise the reader has to look past.
+      'Never write an id inside about or why. Name the task or risk by its',
+      'title instead. The id goes in evidenceId and nowhere else.',
+      '',
+      // "Marked TODO but not started" is true of every TODO task and told the
+      // reader nothing they could not see in the status column.
+      'Raise a concern only where the data shows something a reader would not',
+      'get from glancing at the board. Work that is past its due date, work',
+      'nobody is assigned to, an open risk with no mitigation, a dependency',
+      'that will not be met in time. Restating a status is not a concern.',
+      '',
+      'Two or three real concerns are better than five padded ones. If',
+      'nothing is genuinely wrong, say so in the headline and return no',
+      'concerns.',
     ].join('\n');
   }
 
