@@ -254,4 +254,65 @@ describe('ProjectAiService proposals', () => {
       expect(result.unavailable).toBeTruthy();
     });
   });
+
+  /**
+   * The two operations the executor could already apply but nothing could
+   * propose. A gate on the update tools with no way to suggest an update is
+   * half a feature.
+   */
+  describe('changing work that is already there', () => {
+    it('proposes an update against the real task', async () => {
+      const { service } = serviceReturning([
+        {
+          operation: 'task.update',
+          title: 'Push the crane booking',
+          detail: 'Move it behind the inspection',
+          reason: 'The permit lands first',
+          relatesTo: 't1',
+        },
+      ]);
+
+      const result = await service.proposeChanges(project);
+
+      expect(result.proposals[0]).toMatchObject({
+        operation: 'task.update',
+        payload: { id: 'task-uuid', projectId: 'p1' },
+      });
+    });
+
+    it('drops an update that names no task, since there is nothing to change', async () => {
+      const { service } = serviceReturning([
+        {
+          operation: 'task.update',
+          title: 'Change something',
+          detail: 'x',
+          reason: 'y',
+        },
+      ]);
+
+      const result = await service.proposeChanges(project);
+
+      expect(result.proposals).toHaveLength(0);
+      expect(result.discarded).toBe(1);
+    });
+
+    it('folds a change record into the description it stores', async () => {
+      const { service } = serviceReturning([
+        {
+          operation: 'change.create',
+          title: 'Scope cut',
+          detail: 'Drop the second chamber',
+          reason: 'Budget will not carry it',
+        },
+      ]);
+
+      const payload = (await service.proposeChanges(project)).proposals[0]
+        .payload;
+
+      expect(payload).toEqual({
+        projectId: 'p1',
+        changeDescription: 'Scope cut. Drop the second chamber',
+      });
+    });
+  });
 });

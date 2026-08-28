@@ -15,17 +15,31 @@ describe('AiChangeExecutor', () => {
         create: jest.fn(async () => ({ id: 'new-task' })),
         update: jest.fn(async () => ({ id: 't1' })),
       },
-      risks: { create: jest.fn(async () => ({ id: 'new-risk' })) },
-      changes: { create: jest.fn(async () => ({ id: 'new-change' })) },
-      journals: { create: jest.fn(async () => ({ id: 'new-journal' })) },
-      taskNotes: { create: jest.fn(async () => ({ id: 'new-note' })) },
+      risks: {
+        create: jest.fn(async () => ({ id: 'new-risk' })),
+        update: jest.fn(async () => ({ id: 'r1' })),
+      },
+      changes: {
+        create: jest.fn(async () => ({ id: 'new-change' })),
+        update: jest.fn(async () => ({ id: 'c1' })),
+      },
+      journals: {
+        create: jest.fn(async () => ({ id: 'new-journal' })),
+        update: jest.fn(async () => ({ id: 'j1' })),
+      },
+      taskNotes: {
+        create: jest.fn(async () => ({ id: 'new-note' })),
+        update: jest.fn(async () => ({ id: 'n1' })),
+      },
+      projects: { update: jest.fn(async () => ({ id: 'p1' })) },
     };
     const executor = new AiChangeExecutor(
       services.tasks as never,
       services.risks as never,
       services.changes as never,
       services.journals as never,
-      services.taskNotes as never
+      services.taskNotes as never,
+      services.projects as never
     );
     return { executor, services };
   }
@@ -44,7 +58,7 @@ describe('AiChangeExecutor', () => {
     expect(result.applied).toBe(true);
     expect(result.entityId).toBeTruthy();
     expect(
-      (services as Record<string, { create: jest.Mock }>)[key].create
+      (services as unknown as Record<string, { create: jest.Mock }>)[key].create
     ).toHaveBeenCalled();
   });
 
@@ -149,7 +163,8 @@ describe('AiChangeExecutor', () => {
       await executor.apply(op, { title: 'x' }, 'p1', 'the-reviewer');
 
       expect(
-        (services as Record<string, { create: jest.Mock }>)[key].create
+        (services as unknown as Record<string, { create: jest.Mock }>)[key]
+          .create
       ).toHaveBeenCalledWith(
         expect.objectContaining({ [field]: 'the-reviewer' }),
         'the-reviewer'
@@ -171,5 +186,97 @@ describe('AiChangeExecutor', () => {
         'the-reviewer'
       );
     });
+  });
+
+  /**
+   * The rest of what a gated tool can now propose.
+   *
+   * Gating the update tools is only half a feature: an approved update that
+   * nothing can carry out is a row that can only ever be approved and then
+   * fail.
+   */
+  describe('changing things that already exist', () => {
+    it.each([
+      ['risk.update', 'risks'],
+      ['change.update', 'changes'],
+      ['projectJournal.update', 'journals'],
+      ['taskNote.update', 'taskNotes'],
+    ])('applies %s through the service that owns it', async (op, key) => {
+      const { executor, services } = executorWith();
+
+      const result = await executor.apply(
+        op,
+        { id: 'e1', content: 'changed' },
+        'p1',
+        'reviewer'
+      );
+
+      expect(result.applied).toBe(true);
+      expect(
+        (services as unknown as Record<string, { update: jest.Mock }>)[key]
+          .update
+      ).toHaveBeenCalledWith(
+        'e1',
+        expect.objectContaining({ content: 'changed' }),
+        'reviewer'
+      );
+    });
+
+    it.each(['risk.update', 'change.update', 'projectJournal.update'])(
+      'refuses %s with nothing to change',
+      async (op) => {
+        const { executor } = executorWith();
+
+        const result = await executor.apply(op, { x: 1 }, 'p1', 'r');
+
+        expect(result.applied).toBe(false);
+        expect(result.error).toMatch(/needs the id/);
+      }
+    );
+  });
+
+  describe('changing the project itself', () => {
+    it('changes the project the proposal was filed against', async () => {
+      const { executor, services } = executorWith();
+
+      await executor.apply(
+        'project.update',
+        { id: 'some-other-project', name: 'Renamed' },
+        'the-approved-project',
+        'reviewer'
+      );
+
+      expect(services.projects.update).toHaveBeenCalledWith(
+        'the-approved-project',
+        expect.objectContaining({ name: 'Renamed' }),
+        'reviewer'
+      );
+    });
+
+    it.each(['requireHumanApproval', 'owner', 'createdBy'])(
+      'will not let an approved change set %s',
+      async (field) => {
+        // requireHumanApproval is the gate. A proposal able to turn it off
+        // would be one approval away from removing the need for any further
+        // approval: the whole protection spent in a single use.
+        const { executor, services } = executorWith();
+
+        await executor.apply(
+          'project.update',
+          {
+            [field]: field === 'requireHumanApproval' ? false : 'somebody',
+            name: 'Renamed',
+          },
+          'p1',
+          'reviewer'
+        );
+
+        expect(services.projects.update).toHaveBeenCalledWith(
+          'p1',
+          expect.not.objectContaining({ [field]: expect.anything() }),
+          'reviewer'
+        );
+      }
+    );
   });
 });

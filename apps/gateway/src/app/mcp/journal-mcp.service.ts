@@ -10,6 +10,7 @@ import {
   UpdateProjectJournalDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
@@ -50,7 +51,8 @@ export class JournalMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -123,6 +125,16 @@ export class JournalMcpService {
         profileId: requestingUserId,
         requestingUserId,
       };
+
+      const proposed = await this.gate.proposeIfGated(
+        params.projectId,
+        'projectJournal.create',
+        journalData,
+        requestingUserId,
+        'A journal entry'
+      );
+      if (proposed) return proposed;
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectJournalCommands.CREATE },
@@ -162,6 +174,21 @@ export class JournalMcpService {
         updatedBy: requestingUserId,
         requestingUserId,
       };
+      const owningProjectId = await this.gate.projectOfJournalEntry(
+        params.id,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'projectJournal.update',
+          journalData,
+          requestingUserId,
+          'The change to this journal entry'
+        );
+        if (proposed) return proposed;
+      }
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectJournalCommands.UPDATE },

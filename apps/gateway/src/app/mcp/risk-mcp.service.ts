@@ -10,6 +10,7 @@ import {
   UpdateRiskDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
@@ -86,7 +87,8 @@ export class RiskMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -170,6 +172,15 @@ export class RiskMcpService {
         `RiskMcpService sending riskData: ${JSON.stringify(riskData)}`
       );
 
+      const proposed = await this.gate.proposeIfGated(
+        projectId,
+        'risk.create',
+        riskData,
+        requestingUserId,
+        `Risk "${name}"`
+      );
+      if (proposed) return proposed;
+
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.CREATE }, riskData)
       );
@@ -217,6 +228,21 @@ export class RiskMcpService {
       if (likelihood) updates.likelihood = likelihood;
       if (status) updates.status = status;
 
+      const owningProjectId = await this.gate.projectOfRisk(
+        riskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'risk.update',
+          updates,
+          requestingUserId,
+          'The change to this risk'
+        );
+        if (proposed) return proposed;
+      }
+
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.UPDATE }, updates)
       );
@@ -247,6 +273,20 @@ export class RiskMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting risk ${riskId}`);
+
+      const owningProjectId = await this.gate.projectOfRisk(
+        riskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const refused = await this.gate.refuseIfGated(
+          owningProjectId,
+          requestingUserId,
+          'deleting a risk'
+        );
+        if (refused) return refused;
+      }
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: RiskCommands.REMOVE },

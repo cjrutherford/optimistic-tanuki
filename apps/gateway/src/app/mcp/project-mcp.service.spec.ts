@@ -6,6 +6,7 @@ import {
   RiskCommands,
   TaskCommands,
 } from '@optimistic-tanuki/constants';
+import { ApprovalGate } from './approval-gate.service';
 import { ProjectMcpService } from './project-mcp.service';
 
 describe('ProjectMcpService', () => {
@@ -20,7 +21,7 @@ describe('ProjectMcpService', () => {
     clientProxy = {
       send: jest.fn().mockReturnValue(of([])),
     };
-    service = new ProjectMcpService(clientProxy);
+    service = new ProjectMcpService(clientProxy, new ApprovalGate(clientProxy));
   });
 
   describe('list_projects', () => {

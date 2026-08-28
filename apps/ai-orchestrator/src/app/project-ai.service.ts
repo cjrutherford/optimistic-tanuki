@@ -83,7 +83,9 @@ export const ProposedChangesSchema = z.object({
         operation: z
           .enum([
             'task.create',
+            'task.update',
             'risk.create',
+            'change.create',
             'projectJournal.create',
             'taskNote.create',
           ])
@@ -293,6 +295,27 @@ export class ProjectAiService {
             operation: 'task.create',
             reason,
             payload: { projectId, title, description: detail },
+          });
+          break;
+        case 'task.update':
+          // An update needs something to update. Without a task named, there
+          // is nothing to change, so it is dropped rather than guessed at.
+          if (!relatedId || !item.relatesTo?.startsWith('t')) continue;
+          proposals.push({
+            operation: 'task.update',
+            reason,
+            payload: { projectId, id: relatedId, description: detail || title },
+          });
+          break;
+        case 'change.create':
+          // A change record is one description, like a risk.
+          proposals.push({
+            operation: 'change.create',
+            reason,
+            payload: {
+              projectId,
+              changeDescription: detail ? `${title}. ${detail}` : title,
+            },
           });
           break;
         case 'risk.create':

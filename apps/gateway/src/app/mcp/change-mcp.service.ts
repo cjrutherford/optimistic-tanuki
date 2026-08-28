@@ -8,6 +8,7 @@ import {
   ChangeStatus,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
@@ -118,7 +119,8 @@ export class ChangeMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -191,6 +193,16 @@ export class ChangeMcpService {
         approver: requestingUserId,
         requestingUserId,
       };
+
+      const proposed = await this.gate.proposeIfGated(
+        params.projectId,
+        'change.create',
+        changeData,
+        requestingUserId,
+        `Change "${params.changeName}"`
+      );
+      if (proposed) return proposed;
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.CREATE },
@@ -221,15 +233,32 @@ export class ChangeMcpService {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Updating change ${params.changeId}`);
       const { changeId, ...rest } = params;
+      const updates = {
+        id: changeId,
+        ...rest,
+        updatedBy: requestingUserId,
+        requestingUserId,
+      };
+
+      const owningProjectId = await this.gate.projectOfChange(
+        changeId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'change.update',
+          updates,
+          requestingUserId,
+          'The change to this change record'
+        );
+        if (proposed) return proposed;
+      }
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.UPDATE },
-          {
-            id: changeId,
-            ...rest,
-            updatedBy: requestingUserId,
-            requestingUserId,
-          }
+          updates
         )
       );
       return {
@@ -255,6 +284,20 @@ export class ChangeMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting change ${changeId}`);
+
+      const owningProjectId = await this.gate.projectOfChange(
+        changeId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const refused = await this.gate.refuseIfGated(
+          owningProjectId,
+          requestingUserId,
+          'deleting a change record'
+        );
+        if (refused) return refused;
+      }
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.REMOVE },

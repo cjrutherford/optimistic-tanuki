@@ -10,6 +10,7 @@ import {
   ProjectJournalCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
 
@@ -70,7 +71,8 @@ export class ProjectMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -271,6 +273,12 @@ export class ProjectMcpService {
         startDate: startDate ? new Date(startDate) : new Date(),
         status,
         members,
+        // A new project has no project to gate against, so this one cannot be
+        // proposed for approval. It is allowed, but never ungated: an agent
+        // able to create a project with the flag off would be one call away
+        // from a workspace it can write to freely, which is the gate removed
+        // rather than honoured.
+        requireHumanApproval: true,
         requestingUserId,
       };
 
@@ -326,6 +334,15 @@ export class ProjectMcpService {
       if (status) updates.status = status;
       if (endDate) updates.endDate = new Date(endDate);
 
+      const proposed = await this.gate.proposeIfGated(
+        projectId,
+        'project.update',
+        updates,
+        requestingUserId,
+        'The change to this project'
+      );
+      if (proposed) return proposed;
+
       const project = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.UPDATE },
@@ -357,6 +374,14 @@ export class ProjectMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting project ${projectId}`);
+
+      const refused = await this.gate.refuseIfGated(
+        projectId,
+        requestingUserId,
+        'deleting a project'
+      );
+      if (refused) return refused;
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.REMOVE },

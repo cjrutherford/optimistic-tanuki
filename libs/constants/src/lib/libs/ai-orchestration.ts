@@ -24,4 +24,5 @@ export const WellnessAiCommands = {
 export const ProjectAiCommands = {
   SUMMARISE: 'project-ai:summarise',
   PROPOSE: 'project-ai:propose',
+  ACT: 'project-ai:act',
 };

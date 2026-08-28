@@ -4,6 +4,7 @@ import { RiskService } from '../risk/risk.service';
 import { ChangeService } from '../change/change.service';
 import { ProjectJournalService } from '../project-journal/project-journal.service';
 import { TaskNoteService } from '../task-note/task-note.service';
+import { ProjectService } from '../project/project.service';
 
 /**
  * Performs a change a human has approved.
@@ -29,18 +30,38 @@ export type ApplicableOperation =
   | 'task.create'
   | 'task.update'
   | 'risk.create'
+  | 'risk.update'
   | 'change.create'
+  | 'change.update'
   | 'projectJournal.create'
-  | 'taskNote.create';
+  | 'projectJournal.update'
+  | 'taskNote.create'
+  | 'taskNote.update'
+  | 'project.update';
 
 export const APPLICABLE_OPERATIONS: ApplicableOperation[] = [
   'task.create',
   'task.update',
   'risk.create',
+  'risk.update',
   'change.create',
+  'change.update',
   'projectJournal.create',
+  'projectJournal.update',
   'taskNote.create',
+  'taskNote.update',
+  'project.update',
 ];
+
+/**
+ * Fields an approved change may never set on a project.
+ *
+ * requireHumanApproval is the gate itself. A proposal able to turn it off
+ * would be one approval away from removing the need for any further approval,
+ * which is the whole protection undone by using it once. Ownership is the same
+ * shape of problem one step removed.
+ */
+const NEVER_FROM_A_PROPOSAL = ['requireHumanApproval', 'owner', 'createdBy'];
 
 export interface ApplyResult {
   applied: boolean;
@@ -58,7 +79,8 @@ export class AiChangeExecutor {
     private readonly risks: RiskService,
     private readonly changes: ChangeService,
     private readonly journals: ProjectJournalService,
-    private readonly taskNotes: TaskNoteService
+    private readonly taskNotes: TaskNoteService,
+    private readonly projects: ProjectService
   ) {}
 
   canApply(operation: string): operation is ApplicableOperation {
@@ -86,7 +108,12 @@ export class AiChangeExecutor {
     const scoped = this.withOwner({ ...payload, projectId }, approvedBy);
 
     try {
-      const created = await this.dispatch(operation, scoped, approvedBy);
+      const created = await this.dispatch(
+        operation,
+        scoped,
+        projectId,
+        approvedBy
+      );
       return { applied: true, entityId: (created as { id?: string })?.id };
     } catch (error) {
       this.logger.warn(
@@ -124,28 +151,60 @@ export class AiChangeExecutor {
     };
   }
 
+  /** update takes the id separately, unlike the create methods. */
+  private idAnd(
+    payload: Record<string, unknown>,
+    operation: string
+  ): { id: string; rest: Record<string, unknown> } {
+    const { id, ...rest } = payload as { id?: string };
+    if (!id) throw new Error(`${operation} needs the id of what to change`);
+    return { id, rest };
+  }
+
   private async dispatch(
     operation: ApplicableOperation,
     payload: Record<string, unknown>,
+    projectId: string,
     approvedBy: string
   ): Promise<unknown> {
     switch (operation) {
       case 'task.create':
         return await this.tasks.create(payload as never, approvedBy);
       case 'task.update': {
-        // update takes the id separately, unlike the create methods.
-        const { id, ...rest } = payload as { id?: string };
-        if (!id) throw new Error('task.update needs the id of a task');
+        const { id, rest } = this.idAnd(payload, 'task.update');
         return await this.tasks.update(id, rest as never, approvedBy);
       }
       case 'risk.create':
         return await this.risks.create(payload as never, approvedBy);
+      case 'risk.update': {
+        const { id, rest } = this.idAnd(payload, 'risk.update');
+        return await this.risks.update(id, rest as never, approvedBy);
+      }
       case 'change.create':
         return await this.changes.create(payload as never, approvedBy);
+      case 'change.update': {
+        const { id, rest } = this.idAnd(payload, 'change.update');
+        return await this.changes.update(id, rest as never, approvedBy);
+      }
       case 'projectJournal.create':
         return await this.journals.create(payload as never, approvedBy);
+      case 'projectJournal.update': {
+        const { id, rest } = this.idAnd(payload, 'projectJournal.update');
+        return await this.journals.update(id, rest as never, approvedBy);
+      }
       case 'taskNote.create':
         return await this.taskNotes.create(payload as never, approvedBy);
+      case 'taskNote.update': {
+        const { id, rest } = this.idAnd(payload, 'taskNote.update');
+        return await this.taskNotes.update(id, rest as never, approvedBy);
+      }
+      case 'project.update': {
+        // The project being changed is the one the change was filed against,
+        // and the fields that protect the gate are stripped before it runs.
+        const { projectId: _ignored, ...rest } = payload;
+        for (const field of NEVER_FROM_A_PROPOSAL) delete rest[field];
+        return await this.projects.update(projectId, rest as never, approvedBy);
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { loadConfig, TcpServiceConfig } from '../../config';
+import { ApprovalGate } from './approval-gate.service';
 import { ChangeMcpService } from './change-mcp.service';
 import { JournalMcpService } from './journal-mcp.service';
 import { McpAuthGuard } from './mcp-auth.guard';
@@ -44,6 +45,7 @@ export class McpServerModule {}
       },
       inject: [ConfigService],
     },
+    ApprovalGate,
     ProjectMcpService,
     TaskMcpService,
     RiskMcpService,

@@ -8,6 +8,8 @@ import {
   Body,
   Param,
   UseGuards,
+  Headers,
+  BadRequestException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -266,6 +268,45 @@ export class ProjectPlanningController {
       unavailable: result?.unavailable,
       changes: filed,
     };
+  }
+
+  /**
+   * Tells an agent to do something on this project.
+   *
+   * The caller's own bearer token goes through to the orchestrator, which uses
+   * it to open an MCP session and act as them. Nothing here decides what the
+   * agent may touch: the MCP tools answer that from who is asking, and the
+   * approval gate lives on those tools, so an agent on a project that requires
+   * approval files proposals instead of writing.
+   *
+   * Model bound. An agent loop is several model calls and several tool calls,
+   * which is well past the gateway's ordinary 30 seconds.
+   */
+  @ApiOperation({ summary: 'Have an agent work on a project through MCP' })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-act')
+  async actOnProject(
+    @Param('id') id: string,
+    @Body() body: { instruction?: string },
+    @Headers('authorization') authorization?: string
+  ) {
+    const token = authorization?.split(' ')[1];
+    if (!token) {
+      // The guard already required one, so this is a shape problem rather than
+      // an authorisation one, and saying so beats a confusing 401 from MCP.
+      throw new BadRequestException('A bearer token is required to act.');
+    }
+    if (!body?.instruction?.trim()) {
+      throw new BadRequestException('An instruction is required.');
+    }
+
+    return await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.ACT },
+        { instruction: body.instruction, projectId: id, token }
+      )
+    );
   }
 
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })

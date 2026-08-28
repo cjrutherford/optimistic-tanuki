@@ -1,6 +1,7 @@
 import { of } from 'rxjs';
 import { ProjectCommands, TaskCommands } from '@optimistic-tanuki/constants';
 import { TaskPriority, TaskStatus } from '@optimistic-tanuki/models';
+import { ApprovalGate } from './approval-gate.service';
 import { TaskMcpService } from './task-mcp.service';
 
 describe('TaskMcpService', () => {
@@ -15,7 +16,7 @@ describe('TaskMcpService', () => {
     clientProxy = {
       send: jest.fn().mockReturnValue(of([])),
     };
-    service = new TaskMcpService(clientProxy);
+    service = new TaskMcpService(clientProxy, new ApprovalGate(clientProxy));
   });
 
   describe('list_tasks', () => {
@@ -249,7 +250,7 @@ describe('TaskMcpService', () => {
       );
 
       expect(result.message).toMatch(/waiting for approval/i);
-      expect(result.message).toMatch(/not been created/i);
+      expect(result.message).toMatch(/not happened yet/i);
     });
 
     it('creates directly when the project does not require approval', async () => {
@@ -307,7 +308,7 @@ describe('TaskMcpService', () => {
         expect.anything()
       );
       expect(result.awaitingApproval).toBe(true);
-      expect(result.message).toMatch(/not been changed/i);
+      expect(result.message).toMatch(/not happened yet/i);
     });
 
     it('finds the project from the task when the caller did not name one', async () => {
