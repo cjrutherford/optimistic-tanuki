@@ -313,11 +313,14 @@ export class ProjectPlanningController {
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })
   @RequirePermissions('project-planning.project.read')
   @Get('projects/:id/ai-changes')
-  async findAiChanges(@Param('id') projectId: string) {
+  async findAiChanges(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.FIND_AI_CHANGES },
-        { projectId }
+        { projectId, requestingUserId: user.profileId }
       )
     );
   }
@@ -335,7 +338,12 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.CREATE_AI_CHANGE },
-        { ...dto, projectId, proposedBy: user.profileId }
+        {
+          ...dto,
+          projectId,
+          proposedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -353,7 +361,12 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.REVIEW_AI_CHANGE },
-        { ...dto, id, reviewedBy: user.profileId }
+        {
+          ...dto,
+          id,
+          reviewedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -987,6 +1000,27 @@ export class ProjectPlanningController {
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
+      )
+    );
+  }
+
+  /**
+   * Stops a running time entry.
+   *
+   * The service could always do this and nothing could reach it: stopping was
+   * done through update, which meant the client decided the duration. It sent
+   * only an end time, so every finished entry recorded zero seconds. Here the
+   * server reads the clock, which is the only way the number means anything.
+   */
+  @ApiOperation({ summary: 'Stop a running time entry' })
+  @ApiResponse({ status: 200, description: 'Time entry stopped' })
+  @RequirePermissions('project-planning.task-time-entry.update')
+  @Patch('task-time-entries/:id/stop')
+  async stopTaskTimeEntry(@User() user: UserDetails, @Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.STOP },
+        { id, updatedBy: user.profileId, requestingUserId: user.profileId }
       )
     );
   }

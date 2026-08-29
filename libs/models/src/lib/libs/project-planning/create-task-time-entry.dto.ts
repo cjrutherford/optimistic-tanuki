@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsUUID,
   IsOptional,
@@ -21,12 +22,30 @@ export class CreateTaskTimeEntryDto {
   @MaxLength(500)
   description?: string;
 
-  @ApiProperty({ description: 'User who created the time entry' })
-  @IsString()
+  /**
+   * Who is recording the time.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrived, so requiring it only meant a caller had to send a value
+   * that was then ignored. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  createdBy!: string;
+  createdBy?: string;
 
-  @ApiProperty({ description: 'Start time of the task time entry' })
+  /**
+   * When the work started, for an entry being recorded after the fact.
+   *
+   * Required once, and the service overwrote it with the current time anyway,
+   * so a caller had to send a value that did nothing and was refused without
+   * it. Starting a timer now is the ordinary case and needs no start time.
+   */
+  @ApiPropertyOptional({
+    description: 'When the work started. Defaults to now.',
+  })
+  @IsOptional()
   @IsDate()
-  startTime!: Date;
+  @Type(() => Date)
+  startTime?: Date;
 }

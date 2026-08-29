@@ -20,6 +20,7 @@ import {
 } from './bootstrap/security';
 import { loadConfiguredRegistry } from './controllers/registry/registry.config';
 import { assertOAuthStateEnvironment } from './controllers/oauth/oauth-state.store';
+import { MicroserviceExceptionFilter } from './filters/microservice-exception.filter';
 
 async function bootstrap() {
   assertOAuthStateEnvironment();
@@ -30,6 +31,9 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Enable global validation pipe for DTO validation
+  // Without this every error a microservice raised became a 500, so a refusal
+  // read as a fault and the reason never reached the caller.
+  app.useGlobalFilters(new MicroserviceExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Strip properties not defined in DTO

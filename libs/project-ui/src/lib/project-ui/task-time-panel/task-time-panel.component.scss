@@ -1,0 +1,58 @@
+.task-time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-time header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.total {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.total.running {
+  opacity: 1;
+  font-weight: 600;
+}
+
+.empty {
+  font-size: 0.88rem;
+  opacity: 0.75;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+}
+
+.row.finished .what {
+  opacity: 0.65;
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 12rem;
+  flex: 1 1 12rem;
+}
+
+.status {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}

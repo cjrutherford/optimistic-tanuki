@@ -92,6 +92,15 @@ export const ProposedChangesSchema = z.object({
           .describe('What kind of thing to add'),
         title: z.string().describe('A short title or heading'),
         detail: z.string().describe('The body, description or mitigation'),
+        status: z
+          .enum(['TODO', 'IN_PROGRESS', 'DONE', 'ARCHIVED'])
+          .optional()
+          .describe('For task.create and task.update only'),
+        priority: z
+          .enum(['LOW', 'MEDIUM_LOW', 'MEDIUM', 'MEDIUM_HIGH', 'HIGH'])
+          .optional()
+          .describe('For task.create and task.update only'),
+        dueDate: z.string().optional().describe('For a task, as YYYY-MM-DD'),
         reason: z
           .string()
           .describe('Why this project needs it, from its own data'),
@@ -294,7 +303,12 @@ export class ProjectAiService {
           proposals.push({
             operation: 'task.create',
             reason,
-            payload: { projectId, title, description: detail },
+            payload: {
+              projectId,
+              title,
+              description: detail,
+              ...this.taskFields(item),
+            },
           });
           break;
         case 'task.update':
@@ -304,7 +318,16 @@ export class ProjectAiService {
           proposals.push({
             operation: 'task.update',
             reason,
-            payload: { projectId, id: relatedId, description: detail || title },
+            payload: {
+              projectId,
+              id: relatedId,
+              description: detail || title,
+              // Without these an update could only ever rewrite a
+              // description, which is not the change anybody wants offered.
+              // Closing a task, raising its priority and moving a due date
+              // are what a reviewer is waiting to be asked about.
+              ...this.taskFields(item),
+            },
           });
           break;
         case 'change.create':
@@ -357,6 +380,27 @@ export class ProjectAiService {
     return { proposals, discarded: written.length - proposals.length };
   }
 
+  /**
+   * The task fields a proposal may carry, when the model set them.
+   *
+   * A due date is only taken when it reads as a date. Models write "next
+   * week" and "TBD" in date fields, and a payload that fails validation on
+   * approval is worse than one that says nothing.
+   */
+  private taskFields(item: {
+    status?: string;
+    priority?: string;
+    dueDate?: string;
+  }): Record<string, unknown> {
+    const fields: Record<string, unknown> = {};
+    if (item.status) fields.status = item.status;
+    if (item.priority) fields.priority = item.priority;
+    if (item.dueDate && /^\d{4}-\d{2}-\d{2}/.test(item.dueDate.trim())) {
+      fields.dueDate = new Date(item.dueDate.trim()).toISOString();
+    }
+    return fields;
+  }
+
   private proposalSystemPrompt(): string {
     return [
       'You are a project manager suggesting what a project is missing.',
@@ -367,10 +411,17 @@ export class ProjectAiService {
       "Suggest only what this project's own data calls for. Do not invent",
       'people, dates or work that has nothing to do with what you were given.',
       '',
-      'Use task.create for work that needs doing, risk.create for something',
-      'that could go wrong and is not recorded, projectJournal.create for a',
-      'note about the project as a whole, and taskNote.create for a note on',
-      "one task. A taskNote must set relatesTo to that task's label.",
+      'Use task.create for work that needs doing, task.update to change work',
+      'that is already there, risk.create for something that could go wrong',
+      'and is not recorded, change.create to record a change of scope or',
+      'plan, projectJournal.create for a note about the project as a whole,',
+      'and taskNote.create for a note on one task. task.update and',
+      "taskNote.create must set relatesTo to that task's label.",
+      '',
+      'A task may carry a status, a priority and a due date. Set them when',
+      'the project calls for it: closing work that is finished, raising the',
+      'priority of what is urgent, dating what has none. Write a due date as',
+      'YYYY-MM-DD and leave it out if you do not know one.',
       '',
       'Every suggestion carries a reason drawn from the data. "The board looks',
       'thin" is not a reason. "Nothing covers the inspection the permit',
@@ -517,8 +568,12 @@ export class ProjectAiService {
       // reader nothing they could not see in the status column.
       'Raise a concern only where the data shows something a reader would not',
       'get from glancing at the board. Work that is past its due date, work',
-      'nobody is assigned to, an open risk with no mitigation, a dependency',
-      'that will not be met in time. Restating a status is not a concern.',
+      'nobody is assigned to, an open risk with no mitigation, several high',
+      // Dependencies were on this list and nothing records one. The only way
+      // to satisfy that instruction was to infer a dependency and present it
+      // as read from the data, and the grounding filter cannot catch it: a
+      // made-up dependency can cite two perfectly real task ids.
+      'priority tasks due at once. Restating a status is not a concern.',
       '',
       'Two or three real concerns are better than five padded ones. If',
       'nothing is genuinely wrong, say so in the headline and return no',

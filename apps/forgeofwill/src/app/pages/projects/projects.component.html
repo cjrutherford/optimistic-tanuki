@@ -154,6 +154,22 @@
       </div>
 
       <!--
+        Time on tasks. The tracker component existed and was on no screen, so
+        nobody could start a timer and nothing displayed a total.
+      -->
+      <div class="row-container">
+        <otui-tile class="task-time-tile">
+          <lib-task-time-panel
+            [tasks]="selectedProject()?.tasks || []"
+            [entries]="timeEntries()"
+            [busyTaskId]="timerBusyTaskId()"
+            (startTimer)="onStartTimer($event)"
+            (stopTimer)="onStopTimer($event)"
+          ></lib-task-time-panel>
+        </otui-tile>
+      </div>
+
+      <!--
         The approval gate. A project can require that changes are approved
         before anything is written, and this is where that decision is made.
       -->

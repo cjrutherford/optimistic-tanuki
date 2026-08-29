@@ -144,18 +144,28 @@ async function main() {
   check('it recorded what it made', !!approved.appliedEntityId);
 
   const afterApproving = await board(project.id);
-  const grew =
-    afterApproving.tasks.length +
-    afterApproving.risks.length +
-    afterApproving.journal.length -
-    (afterSuggesting.tasks.length +
-      afterSuggesting.risks.length +
-      afterSuggesting.journal.length);
-  check(
-    'the board gained exactly the one row that was approved',
-    grew === 1,
-    `${toApprove.operation}`
-  );
+  const rows = (b) => b.tasks.length + b.risks.length + b.journal.length;
+  const grew = rows(afterApproving) - rows(afterSuggesting);
+
+  // A create adds a row and an update changes one, so the count alone cannot
+  // say whether the right thing happened. Now that updates can be proposed,
+  // asserting growth for every operation checked the wrong fact.
+  if (toApprove.operation.endsWith('.create')) {
+    check(
+      'approving a create added exactly one row',
+      grew === 1,
+      toApprove.operation
+    );
+  } else {
+    const target = afterApproving.tasks.find(
+      (task) => task.id === approved.appliedEntityId
+    );
+    check(
+      'approving an update changed the row it named and added none',
+      grew === 0 && !!target,
+      toApprove.operation
+    );
+  }
 
   // --- rejection --------------------------------------------------------
   if (filed[1]) {

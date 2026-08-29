@@ -159,21 +159,23 @@ export interface TaskTimeEntry {
 
 export interface CreateTaskTimeEntry {
   taskId: string;
-  startTime: Date;
+  /** Only for work being recorded after the fact. The server's clock decides. */
+  startTime?: Date;
   description?: string;
-  createdBy: string;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  createdBy?: string;
 }
 
 export interface UpdateTaskTimeEntry {
   id: string;
   endTime?: Date;
-  elapsedSeconds?: number;
   description?: string;
   updatedBy?: string;
 }
 
 export interface QueryTaskTimeEntry {
   taskId?: string;
+  projectId?: string;
   createdBy?: string;
 }
 

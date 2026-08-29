@@ -16,6 +16,7 @@ import {
   ProjectJournal,
   Risk,
   Task,
+  TaskTimeEntry,
   UpdateTask,
 } from '@optimistic-tanuki/ui-models';
 import {
@@ -34,6 +35,7 @@ import {
   AiChangeReviewComponent,
   AiChange,
   AiChangeDecision,
+  TaskTimePanelComponent,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -69,6 +71,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     GlassContainerComponent,
     ProjectSummaryComponent,
     AiChangeReviewComponent,
+    TaskTimePanelComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -99,6 +102,8 @@ export class ProjectsComponent implements OnInit {
    * model, so running it on every project selection would spend that on
    * people who never looked at the panel.
    */
+  timeEntries = signal<TaskTimeEntry[]>([]);
+  timerBusyTaskId = signal<string | null>(null);
   aiChanges = signal<AiChange[]>([]);
   aiChangeBusyId = signal<string | null>(null);
   askingForSuggestions = signal<boolean>(false);
@@ -156,8 +161,31 @@ export class ProjectsComponent implements OnInit {
       this.assistantSaid.set(null);
       this.aiChanges.set([]);
       this.aiChangeBusyId.set(null);
+      this.timeEntries.set([]);
+      this.timerBusyTaskId.set(null);
     }
-    if (project) this.loadAiChanges(project.id);
+    if (project) {
+      this.loadAiChanges(project.id);
+      this.loadTimeEntries(project.id);
+    }
+  }
+
+  /**
+   * Everything recorded against this project, so the panel can show time per
+   * task and a total.
+   */
+  private refreshTimeEntries(): void {
+    const project = this.selectedProject();
+    if (project) this.loadTimeEntries(project.id);
+  }
+
+  private loadTimeEntries(projectId: string): void {
+    this.taskTimeEntryService
+      .getTaskTimeEntriesForProject(projectId)
+      .subscribe({
+        next: (entries) => this.timeEntries.set(entries ?? []),
+        error: () => this.timeEntries.set([]),
+      });
   }
 
   private loadAiChanges(projectId: string): void {
@@ -972,10 +1000,12 @@ export class ProjectsComponent implements OnInit {
   }
 
   onStartTimer(taskId: string) {
-    console.log('Start timer for task:', taskId);
+    if (this.timerBusyTaskId()) return;
+    this.timerBusyTaskId.set(taskId);
     this.taskTimeEntryService.startTimer(taskId).subscribe({
       next: (timeEntry) => {
-        console.log('Timer started successfully:', timeEntry);
+        this.timerBusyTaskId.set(null);
+        this.refreshTimeEntries();
         this.messageService.addMessage({
           content: 'Timer started successfully',
           type: 'success',
@@ -1002,7 +1032,7 @@ export class ProjectsComponent implements OnInit {
         });
       },
       error: (error) => {
-        console.error('Error starting timer:', error);
+        this.timerBusyTaskId.set(null);
         this.messageService.addMessage({
           content:
             'Error starting timer: ' + (error.message || 'Unknown error'),
@@ -1013,10 +1043,13 @@ export class ProjectsComponent implements OnInit {
   }
 
   onStopTimer(timeEntryId: string) {
-    console.log('Stop timer for time entry:', timeEntryId);
+    if (this.timerBusyTaskId()) return;
+    const owning = this.timeEntries().find((one) => one.id === timeEntryId);
+    this.timerBusyTaskId.set(owning?.task?.id ?? owning?.taskId ?? null);
     this.taskTimeEntryService.stopTimer(timeEntryId).subscribe({
       next: (timeEntry) => {
-        console.log('Timer stopped successfully:', timeEntry);
+        this.timerBusyTaskId.set(null);
+        this.refreshTimeEntries();
         this.messageService.addMessage({
           content: 'Timer stopped successfully',
           type: 'success',
@@ -1046,6 +1079,7 @@ export class ProjectsComponent implements OnInit {
         }
       },
       error: (error) => {
+        this.timerBusyTaskId.set(null);
         console.error('Error stopping timer:', error);
         this.messageService.addMessage({
           content:

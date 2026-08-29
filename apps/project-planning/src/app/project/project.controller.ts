@@ -59,19 +59,32 @@ export class ProjectController {
   }
 
   @MessagePattern({ cmd: ProjectCommands.CREATE_AI_CHANGE })
-  createAiChange(@Payload() dto: CreateAiChangeDto) {
-    return this.aiChangeService.create(dto);
+  createAiChange(
+    @Payload() dto: CreateAiChangeDto & { requestingUserId?: string }
+  ) {
+    return this.aiChangeService.create(dto, dto.requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectCommands.FIND_AI_CHANGES })
-  findAiChanges(@Payload('projectId') projectId: string) {
-    return this.aiChangeService.findAll(projectId);
+  findAiChanges(
+    @Payload('projectId') projectId: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return this.aiChangeService.findAll(projectId, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectCommands.REVIEW_AI_CHANGE })
   reviewAiChange(
-    @Payload() payload: ReviewAiChangeDto & { reviewedBy: string }
+    @Payload()
+    payload: ReviewAiChangeDto & {
+      reviewedBy: string;
+      requestingUserId?: string;
+    }
   ) {
-    return this.aiChangeService.review(payload, payload.reviewedBy);
+    return this.aiChangeService.review(
+      payload,
+      payload.reviewedBy,
+      payload.requestingUserId
+    );
   }
 }

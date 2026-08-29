@@ -1,13 +1,8 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateTaskTimeEntryDto } from './create-task-time-entry.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsUUID,
-  IsOptional,
-  IsDateString,
-  IsNumber,
-  IsDate,
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsUUID, IsOptional, IsDate } from 'class-validator';
 
 export class UpdateTaskTimeEntryDto extends PartialType(
   CreateTaskTimeEntryDto
@@ -16,15 +11,19 @@ export class UpdateTaskTimeEntryDto extends PartialType(
   @IsUUID()
   id!: string;
 
-  @ApiPropertyOptional({ description: 'End time of the time entry' })
+  /**
+   * When the work stopped.
+   *
+   * The elapsed time is computed from this and the start, not sent alongside
+   * it. elapsedSeconds used to be accepted from the caller and stored
+   * unchecked, so a three minute entry could claim forty hours, or minus five
+   * hundred seconds, and the column meant nothing.
+   */
+  @ApiPropertyOptional({ description: 'When the work stopped' })
   @IsOptional()
   @IsDate()
+  @Type(() => Date)
   endTime?: Date;
-
-  @ApiPropertyOptional({ description: 'Elapsed time in seconds' })
-  @IsOptional()
-  @IsNumber()
-  elapsedSeconds?: number;
 
   @ApiPropertyOptional({ description: 'User who last updated the time entry' })
   @IsOptional()
@@ -37,6 +36,17 @@ export class QueryTaskTimeEntryDto {
   @IsOptional()
   @IsUUID()
   taskId?: string;
+
+  /**
+   * Everything recorded against one project.
+   *
+   * A screen showing time per task needs the whole project's entries, and
+   * asking task by task would be one request per row.
+   */
+  @ApiPropertyOptional({ description: 'Project ID to filter by' })
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
 
   @ApiPropertyOptional({ description: 'User who created the time entry' })
   @IsOptional()

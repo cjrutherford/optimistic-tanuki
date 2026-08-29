@@ -47,6 +47,17 @@ const createTaskSchema = z.object({
     .describe(
       'ID of the related project. use the project id from list_projects or the context.'
     ),
+  // Neither of these was here, so the agent could report that work was
+  // unassigned or overdue and had no way to do anything about it. Those are
+  // the two concerns it raises most.
+  assignee: z
+    .string()
+    .optional()
+    .describe('Profile id of the person responsible, if known'),
+  dueDate: z
+    .string()
+    .optional()
+    .describe('When the task is due, as YYYY-MM-DD'),
 });
 
 const updateTaskSchema = z.object({
@@ -70,6 +81,14 @@ const updateTaskSchema = z.object({
     .describe(
       'ID of the related project. this relates to the id field of the project data type. please use the list_projects tool to get project ids.'
     ),
+  assignee: z
+    .string()
+    .optional()
+    .describe('Profile id of the person responsible'),
+  dueDate: z
+    .string()
+    .optional()
+    .describe('When the task is due, as YYYY-MM-DD'),
 });
 
 const queryTasksSchema = z.object({
@@ -87,6 +106,19 @@ const queryTasksSchema = z.object({
     .optional()
     .describe('Filter tasks by priority'),
 });
+
+/**
+ * A due date, when what the model wrote is one.
+ *
+ * Models put "next week" and "TBD" in date fields. The DTO takes a real Date,
+ * so a phrase would fail validation at the far end and surface to the agent as
+ * an unexplained error rather than as a date it should not have written.
+ */
+function asDueDate(value?: string): { dueDate?: Date } {
+  if (!value) return {};
+  const parsed = new Date(value.trim());
+  return Number.isNaN(parsed.getTime()) ? {} : { dueDate: parsed };
+}
 
 @Injectable()
 export class TaskMcpService {
@@ -186,6 +218,8 @@ export class TaskMcpService {
       status,
       priority,
       projectId,
+      assignee,
+      dueDate,
     }: z.infer<typeof createTaskSchema>,
     _context: unknown,
     request: any
@@ -202,6 +236,8 @@ export class TaskMcpService {
         priority: priority ?? TaskPriority.MEDIUM,
         createdBy: requestingUserId,
         projectId,
+        ...(assignee ? { assignee } : {}),
+        ...asDueDate(dueDate),
         requestingUserId,
       };
 
@@ -244,6 +280,8 @@ export class TaskMcpService {
       status,
       priority,
       projectId,
+      assignee,
+      dueDate,
     }: z.infer<typeof updateTaskSchema>,
     _context: unknown,
     request: any
@@ -262,6 +300,8 @@ export class TaskMcpService {
       if (status) updates.status = status;
       if (priority) updates.priority = priority;
       if (projectId) updates.projectId = projectId;
+      if (assignee) updates.assignee = assignee;
+      Object.assign(updates, asDueDate(dueDate));
 
       // The task's own project decides, not the one the caller happened to
       // pass. projectId is optional on this tool, and an update to a gated
