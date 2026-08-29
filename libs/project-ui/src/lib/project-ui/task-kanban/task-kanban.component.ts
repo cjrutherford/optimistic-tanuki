@@ -15,6 +15,7 @@ import {
   CdkDragDrop,
   DragDropModule,
   moveItemInArray,
+  transferArrayItem,
 } from '@angular/cdk/drag-drop';
 import { Task, CreateTask, UpdateTask } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
@@ -122,10 +123,26 @@ export class TaskKanbanComponent
         event.currentIndex
       );
     } else {
-      // Move to a different column
       const task = event.previousContainer.data[event.previousIndex];
 
-      // Update the task status
+      // Move the card first, then ask the server.
+      //
+      // Emitting alone left the arrays behind the columns untouched, so the
+      // card sprang back to where it came from and only reached the column it
+      // was dropped in once the round trip finished and the parent replaced
+      // the whole task list. Dropping something and watching it bounce back
+      // reads as the drop having failed.
+      //
+      // The parent rebuilds these columns from its own tasks when the update
+      // lands, so this is a prediction the server is free to overrule rather
+      // than a second source of truth.
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
+
       const updatedTask = { id: task.id, status: targetColumn.status };
       this.editTask.emit(updatedTask);
     }

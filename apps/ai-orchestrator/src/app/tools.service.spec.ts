@@ -167,8 +167,10 @@ describe('ToolsService', () => {
   });
 
   describe('error handling', () => {
-    it('should throw error if client not connected', async () => {
-      // Create new service instance without init
+    it('says a session is needed rather than blaming the network', async () => {
+      // The old message pointed at the connection. The connection was never
+      // the problem: the MCP surface is authenticated-only and there is no
+      // shared client to have, so the caller needs to open one with a token.
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           ToolsService,
@@ -183,7 +185,7 @@ describe('ToolsService', () => {
       const uninitService = module.get<ToolsService>(ToolsService);
 
       await expect(uninitService.listTools()).rejects.toThrow(
-        'MCP Client not connected'
+        /session\(token\)/
       );
     });
   });

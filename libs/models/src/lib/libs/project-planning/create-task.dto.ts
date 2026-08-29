@@ -9,7 +9,6 @@ import {
   IsArray,
   IsOptional,
   IsDate,
-  IsDateString,
 } from 'class-validator';
 
 export enum TaskStatus {

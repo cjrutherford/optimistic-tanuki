@@ -51,8 +51,13 @@ export class ToolFactory {
       mcpTools = await this.toolsService.listTools();
       this.logger.log(`Fetched ${mcpTools.length} MCP tools`);
     } catch (error) {
+      // Said in terms of what it costs, because "continuing with empty tools
+      // list" reads like a detail and means the agent can do nothing at all.
+      // It then answers as though it had simply chosen not to act, which is
+      // indistinguishable from working.
       this.logger.error(
-        `Failed to fetch MCP tools: ${error.message}. Continuing with empty tools list.`
+        `No MCP tools could be fetched, so this agent has none and cannot ` +
+          `act on anything: ${error.message}`
       );
     }
 

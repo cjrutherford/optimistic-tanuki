@@ -14,6 +14,20 @@ import { firstValueFrom } from 'rxjs';
 // Polyfill EventSource for Node.js
 global.EventSource = EventSource as any;
 
+/**
+ * What to say when something asks for tools without saying who is asking.
+ *
+ * The MCP surface is authenticated-only. There was a connection attempt at
+ * startup that carried no token, so it was refused ten times on every boot and
+ * left the client undefined; every one of these methods then failed with "MCP
+ * Client not connected", which pointed at the network rather than at the
+ * missing credential. Removing that attempt did not break these paths, it
+ * stopped them pretending. They still cannot work, and now they say why.
+ */
+const NEEDS_A_SESSION =
+  'MCP tools are reached per caller. Open one with session(token) using the ' +
+  'token of whoever is asking; there is no shared unauthenticated client.';
+
 @Injectable()
 export class ToolsService implements OnModuleInit, OnModuleDestroy {
   private readonly l = new Logger(ToolsService.name);
@@ -93,7 +107,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
 
   async listResources() {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       const result = await this.client.listResources();
@@ -109,7 +123,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
 
   async getResource(resourceName: string) {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       this.l.log(`Getting resource ${resourceName} from gateway MCP`);
@@ -126,7 +140,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
    */
   async listTools(): Promise<Tool[]> {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       const result = await this.client.listTools();
@@ -146,7 +160,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
     args: Record<string, any> = {}
   ): Promise<any> {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       this.l.log(`Calling tool ${toolName} with args: ${JSON.stringify(args)}`);

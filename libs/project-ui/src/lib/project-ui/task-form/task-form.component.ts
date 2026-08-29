@@ -27,6 +27,21 @@ import {
 } from '@optimistic-tanuki/form-ui';
 import { TagSelectorComponent } from '../tag-selector/tag-selector.component';
 
+/**
+ * The end of a chosen day, as a fixed instant.
+ *
+ * The date picker gives back YYYY-MM-DD, and appending T23:59:59 to it makes a
+ * Date in whatever zone the browser happens to be in. Two people picking the
+ * same day stored two different instants, and read back somewhere else one of
+ * them showed the day after. The day somebody picked is the day that gets
+ * stored.
+ */
+export function endOfDayUtc(day?: string): Date | undefined {
+  if (!day) return undefined;
+  const parsed = new Date(`${day}T23:59:59.000Z`);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
 @Component({
   selector: 'lib-task-form',
   imports: [
@@ -99,19 +114,14 @@ export class TaskFormComponent implements OnInit {
     } else {
       this.isEditing.set(false);
     }
-    this.taskForm.valueChanges.subscribe((value) => {
-      console.log('Form value changed:', value);
-    });
   }
 
   selectChange(event: any, field: string) {
-    console.log(`Patching value for ${field}:`, event.target.value);
     this.taskForm.patchValue({ [field]: event.target.value });
   }
 
   onTagSelectionChange(tagIds: string[]) {
     this.selectedTagIds = tagIds;
-    console.log('Selected tags:', tagIds);
   }
 
   onSubmit() {
@@ -119,8 +129,6 @@ export class TaskFormComponent implements OnInit {
       this.taskForm.markAllAsTouched();
       return;
     }
-
-    console.log('Form Submitted!', this.taskForm.value);
 
     // Get the selected tags objects
     const selectedTags = this.availableTags.filter((tag) =>
@@ -135,9 +143,7 @@ export class TaskFormComponent implements OnInit {
       createdAt: this.task ? this.task.createdAt : new Date(),
       updatedAt: new Date(),
       assignee: this.taskForm.value.assignee || undefined,
-      dueDate: this.taskForm.value.dueDate
-        ? new Date(`${this.taskForm.value.dueDate}T23:59:59`)
-        : undefined,
+      dueDate: endOfDayUtc(this.taskForm.value.dueDate),
       tags: selectedTags,
     };
     this.formSubmit.emit(emittedValue);

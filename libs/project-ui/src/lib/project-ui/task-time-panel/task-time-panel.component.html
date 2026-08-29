@@ -9,7 +9,10 @@
   @if (!tasks.length) {
   <p class="empty">There is no work here to put time against yet.</p>
   } @for (task of ordered; track task.id) {
-  <article class="row" [class.finished]="task.status === 'DONE'">
+  <article
+    class="row"
+    [class.finished]="task.status === 'DONE' || task.status === 'ARCHIVED'"
+  >
     <div class="what">
       <strong>{{ task.title }}</strong>
       @if (task.status) {
