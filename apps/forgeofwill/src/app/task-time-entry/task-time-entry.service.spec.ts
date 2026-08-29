@@ -128,6 +128,10 @@ describe('TaskTimeEntryService', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body.taskId).toBe('task-123');
       expect(req.request.body.createdBy).toBe('profile-123');
+      // No start time. The server reads its own clock, so a wrong clock here
+      // cannot shift what gets recorded. The comment on startTimer always
+      // claimed this while the code sent one anyway.
+      expect(req.request.body.startTime).toBeUndefined();
       req.flush({ id: 'entry-1' });
     });
 
@@ -140,13 +144,21 @@ describe('TaskTimeEntryService', () => {
   });
 
   describe('stopTimer', () => {
-    it('should stop a timer', () => {
+    /**
+     * Stopping is its own route now, and carries nothing.
+     *
+     * It used to be an update sending an end time, which made the client the
+     * authority on when work ended and how long it took. Since it sent no
+     * duration and nothing derived one, every finished entry recorded zero
+     * seconds. The server reads its own clock instead.
+     */
+    it('asks the server to stop the entry and tells it nothing else', () => {
       service.stopTimer('entry-1').subscribe();
-      const req = httpMock.expectOne(baseUrl);
+
+      const req = httpMock.expectOne(`${baseUrl}/entry-1/stop`);
       expect(req.request.method).toBe('PATCH');
-      expect(req.request.body.id).toBe('entry-1');
-      expect(req.request.body.endTime).toBeDefined();
-      req.flush({ id: 'entry-1' });
+      expect(req.request.body).toEqual({});
+      req.flush({ id: 'entry-1', elapsedSeconds: 42 });
     });
   });
 });

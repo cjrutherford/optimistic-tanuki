@@ -125,6 +125,15 @@ describe('ProjectsComponent', () => {
           discarded: 0,
         })
       ),
+      // Selecting a project reads its pending proposals and its recorded time
+      // as well as the project itself. A mock that does not know about a call
+      // the component makes fails every test that selects anything.
+      getAiChanges: jest.fn().mockReturnValue(of([])),
+      reviewAiChange: jest.fn().mockReturnValue(of({})),
+      requestAiProposals: jest.fn().mockReturnValue(of({ changes: [] })),
+      instructAssistant: jest
+        .fn()
+        .mockReturnValue(of({ said: '', used: [], awaitingApproval: false })),
     };
     const taskServiceMock = {
       createTask: jest.fn().mockReturnValue(of(mockTask)),
@@ -155,6 +164,7 @@ describe('ProjectsComponent', () => {
       stopTimer: jest
         .fn()
         .mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
+      getTaskTimeEntriesForProject: jest.fn().mockReturnValue(of([])),
     };
     const themeServiceMock = {
       getTheme: jest.fn().mockReturnValue('light'),

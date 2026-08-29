@@ -17,7 +17,7 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--primary, #6366f1);
+  color: var(--accent);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -40,11 +40,11 @@ h4 {
   gap: 0.25rem;
   min-width: 8rem;
   padding: 0.75rem;
-  border-left: 3px solid var(--danger, #ef4444);
+  border-left: 3px solid var(--danger);
 }
 
 .health.healthy {
-  border-color: var(--success, #22c55e);
+  border-color: var(--success);
 }
 
 .health span,
@@ -78,7 +78,7 @@ h4 {
 }
 
 .insight-grid button:hover {
-  border-color: var(--primary, #6366f1);
+  border-color: var(--accent);
 }
 
 .insight-grid small {
@@ -108,7 +108,7 @@ h4 {
 }
 
 .timeline button:hover strong {
-  color: var(--primary, #6366f1);
+  color: var(--accent);
 }
 
 .empty {
