@@ -77,6 +77,28 @@ describe('TimeTrackerComponent', () => {
     it('says so plainly when nothing has been recorded', () => {
       expect(componentWith([]).getTotalTimeFormatted()).toBe('none yet');
     });
+
+    it('does not let an impossible entry cancel out real ones', () => {
+      // Rows written before the server derived durations can hold anything.
+      // One at minus five hundred seconds hid every real figure on the task,
+      // and the panel read "none yet" over an hour of recorded work.
+      const component = componentWith([
+        {
+          id: 'bad',
+          startTime: minutesAgo(90),
+          endTime: new Date(),
+          elapsedSeconds: -500,
+        },
+        {
+          id: 'good',
+          startTime: minutesAgo(90),
+          endTime: new Date(),
+          elapsedSeconds: 3600,
+        },
+      ]);
+
+      expect(component.getTotalTimeFormatted()).toBe('1h 0m');
+    });
   });
 
   describe('the buttons', () => {

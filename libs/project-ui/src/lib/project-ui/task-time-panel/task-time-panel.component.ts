@@ -55,7 +55,10 @@ export class TaskTimePanelComponent {
   /** What the whole project has cost, so far as anything was recorded. */
   get total(): string {
     return formatDuration(
-      this.entries.reduce((sum, entry) => sum + (entry.elapsedSeconds || 0), 0)
+      this.entries.reduce(
+        (sum, entry) => sum + Math.max(0, entry.elapsedSeconds || 0),
+        0
+      )
     );
   }
 

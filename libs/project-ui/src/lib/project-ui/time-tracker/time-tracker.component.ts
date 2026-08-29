@@ -91,8 +91,12 @@ export class TimeTrackerComponent implements OnChanges, OnDestroy {
 
   /** Everything recorded against this task, including what is running now. */
   getTotalTimeFormatted(): string {
+    // Each entry contributes what it can, never less than nothing. One row
+    // holding an impossible negative duration, written before the server
+    // started deriving them, otherwise cancelled out every real figure on the
+    // task and the whole panel read "none yet".
     const recorded = this.timeEntries.reduce(
-      (sum, entry) => sum + (entry.elapsedSeconds || 0),
+      (sum, entry) => sum + Math.max(0, entry.elapsedSeconds || 0),
       0
     );
     return formatDuration(recorded + this.runningSeconds());
