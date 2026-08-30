@@ -210,6 +210,7 @@
           <lib-ai-assistant
             [turns]="assistantTurns()"
             [working]="assistantWorking()"
+            [doing]="assistantDoing()"
             [projectName]="selectedProject()?.name || null"
             (asked)="onAssistantAsked($event)"
             (cleared)="onAssistantCleared()"

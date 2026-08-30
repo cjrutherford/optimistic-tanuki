@@ -96,7 +96,16 @@ export class ProjectAgentService {
     instruction: string,
     projectId: string,
     token: string,
-    history: AgentTurn[] = []
+    history: AgentTurn[] = [],
+    /**
+     * Called the moment a tool is used, before the answer exists.
+     *
+     * A question takes a minute or more, and a panel that says only "working
+     * on it" for that long is indistinguishable from a broken one. Whoever is
+     * watching gets to see it reading the project, or proposing a task, while
+     * it happens.
+     */
+    onToolUsed?: (call: { tool: string; result: string }) => void
   ): Promise<AgentRunResult> {
     let config;
     try {
@@ -116,7 +125,7 @@ export class ProjectAgentService {
     try {
       session = await this.tools.session(token);
       const used: AgentRunResult['used'] = [];
-      const tools = await this.toolsFor(session, used);
+      const tools = await this.toolsFor(session, used, onToolUsed);
 
       const agent = createReactAgent({
         llm: this.models.getModel(ModelType.TOOL_CALLING),
@@ -139,10 +148,10 @@ export class ProjectAgentService {
       });
 
       const messages = run.messages ?? [];
-      const said = String(messages[messages.length - 1]?.content ?? '');
+      const itsOwnWords = String(messages[messages.length - 1]?.content ?? '');
 
       return {
-        said,
+        said: await this.compose(instruction, used, itsOwnWords),
         used,
         awaitingApproval: saysAwaitingApproval(used),
         model: config.name,
@@ -162,6 +171,123 @@ export class ProjectAgentService {
   }
 
   /**
+   * The sentence a person reads, written by the model chosen for writing.
+   *
+   * The tool-calling model wrote this too, and it was bad at it in a specific
+   * way: asked for one task's status it fetched the tasks and then described
+   * the JSON it got back, field by field, with a total of every duration on
+   * the project and an offer to draw a Gantt chart. The status was in the data
+   * and never said. Rewriting the prompt to forbid exactly that changed
+   * nothing, which is the point at which prompting stops being the answer.
+   *
+   * qwen3:8b holds the tool-calling slot because it produced correct tool
+   * arguments on every pass of the pilot. Nobody ever measured it on writing a
+   * reply. So it keeps the job it won and hands the answer to the model that
+   * was chosen for conversation, which gets the question, what the tools
+   * returned, and nothing else to do.
+   *
+   * Its own words are kept as the fallback. A composed answer that fails is
+   * worse than a rambling one that arrived.
+   */
+  async compose(
+    question: string,
+    used: AgentRunResult['used'],
+    itsOwnWords: string
+  ): Promise<string> {
+    // Nothing was looked up, so there is nothing to answer from and the
+    // composer would be inventing. Whatever it said stands.
+    if (!used.length) return itsOwnWords;
+
+    try {
+      const model = this.models.getModel(ModelType.CONVERSATIONAL);
+      const reply = await model.invoke([
+        new SystemMessage(this.composerPrompt()),
+        new HumanMessage(this.composerInput(question, used)),
+      ]);
+      const text = String(reply?.content ?? '').trim();
+      return text || itsOwnWords;
+    } catch (error) {
+      this.logger.warn(
+        `Could not compose a reply, using the agent's own: ${
+          (error as Error).message
+        }`
+      );
+      return itsOwnWords;
+    }
+  }
+
+  private composerPrompt(): string {
+    return [
+      'Somebody asked a question about their project. Tools were used to look',
+      'things up. You are given what those tools returned. Answer the',
+      'question.',
+      '',
+      'A sentence or two, the way a colleague would answer across a desk.',
+      '',
+      // Every one of these is something the tool-calling model did when it
+      // was writing the reply itself.
+      'Do not describe the data you were given, list its fields, total things',
+      'nobody asked about, or offer further analysis. Do not use headings or',
+      'bullets unless you are listing several things somebody asked to see.',
+      'Name tasks and people by their names, never by their ids.',
+      '',
+      'If a tool says something is waiting for approval, say that it is',
+      'waiting for approval and has not happened yet. If what you were given',
+      'does not answer the question, say so plainly rather than guessing.',
+      '',
+      // It answered "four tasks" for a project with twelve, having been shown
+      // a shortened list and no reason to doubt it.
+      'If a result is marked SHORTENED, it is part of a longer list. Never',
+      'count it, total it, or say what is or is not in it. Say that you can',
+      'only see part of it and answer what you can from that part.',
+    ].join('\n');
+  }
+
+  /**
+   * How much of one tool result the composer is given.
+   *
+   * Measured, not guessed. At four thousand characters it answered "Strip the
+   * old liner is currently IN_PROGRESS" in one sentence. Raised to sixteen
+   * thousand to stop it miscounting a long list, it began describing the JSON
+   * instead of answering, which is the same failure the tool-calling model
+   * had. More material makes these small models describe rather than answer,
+   * so the cap stays low and a cut result says that it was cut.
+   */
+  private static readonly RESULT_CHARS = 4000;
+
+  /**
+   * The question and what came back, saying so when a result was cut.
+   *
+   * Asked how many tasks a project had, the composer answered four. There were
+   * twelve. The list had been shortened before it ever saw it, and it counted
+   * what was in front of it with no way to know the rest existed. A confident
+   * wrong number is worse than a refusal, so a shortened result now says it is
+   * shortened and the prompt forbids counting from one.
+   */
+  private composerInput(
+    question: string,
+    used: AgentRunResult['used']
+  ): string {
+    const results = used
+      .map((call) => {
+        const cut = call.result.length > ProjectAgentService.RESULT_CHARS;
+        return [
+          `${call.tool} returned${
+            cut ? ' (SHORTENED, not the whole list)' : ''
+          }:`,
+          call.result.slice(0, ProjectAgentService.RESULT_CHARS),
+        ].join('\n');
+      })
+      .join('\n\n');
+
+    return [
+      `QUESTION\n${question}`,
+      '',
+      `WHAT THE TOOLS RETURNED\n${results}`,
+    ].join('\n');
+  }
+
+  /**
    * The MCP tools, as tools the model can call.
    *
    * Every result is recorded on the way past. An agent that reports "created
@@ -171,7 +297,8 @@ export class ProjectAgentService {
    */
   async toolsFor(
     session: McpSession,
-    used: AgentRunResult['used']
+    used: AgentRunResult['used'],
+    onToolUsed?: (call: { tool: string; result: string }) => void
   ): Promise<DynamicStructuredTool[]> {
     const listed = await session.listTools();
 
@@ -184,7 +311,9 @@ export class ProjectAgentService {
           func: async (input: Record<string, unknown>) => {
             const result = await session.callTool(tool.name, input);
             const text = JSON.stringify(result);
-            used.push({ tool: tool.name, result: text });
+            const call = { tool: tool.name, result: text };
+            used.push(call);
+            onToolUsed?.(call);
             return text;
           },
         })

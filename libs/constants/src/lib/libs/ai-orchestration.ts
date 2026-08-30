@@ -25,4 +25,5 @@ export const ProjectAiCommands = {
   SUMMARISE: 'project-ai:summarise',
   PROPOSE: 'project-ai:propose',
   ACT: 'project-ai:act',
+  ACT_STREAM: 'project-ai:act-stream',
 };

@@ -125,6 +125,7 @@ export class ProjectsComponent implements OnInit {
   askingForSuggestions = signal<boolean>(false);
   assistantWorking = signal<boolean>(false);
   assistantTurns = signal<AssistantTurn[]>([]);
+  assistantDoing = signal<string[]>([]);
   narrative = signal<ProjectNarrative | null>(null);
   narrativeLoading = signal<boolean>(false);
 
@@ -175,6 +176,7 @@ export class ProjectsComponent implements OnInit {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
       this.assistantTurns.set([]);
+      this.assistantDoing.set([]);
       this.aiChanges.set([]);
       this.aiChangeBusyId.set(null);
       this.timeEntries.set([]);
@@ -339,44 +341,62 @@ export class ProjectsComponent implements OnInit {
       { role: 'person', text: question },
     ]);
     this.assistantWorking.set(true);
+    this.assistantDoing.set([]);
 
     this.projectService
-      .instructAssistant(project.id, question, history)
-      .subscribe({
-        next: (result) => {
-          this.assistantWorking.set(false);
-          this.assistantTurns.update((turns) => [
-            ...turns,
-            {
-              role: 'assistant',
-              text:
-                result.said ||
-                result.unavailable ||
-                'It finished without saying anything.',
-              used: result.used,
-              awaitingApproval: result.awaitingApproval,
-              failed: !!result.unavailable,
-            },
-          ]);
-          // Its work lands as proposals, so the list has to be re-read whether
-          // it succeeded or not.
-          this.loadAiChanges(project.id);
-          if (!result.awaitingApproval && result.used?.length) {
-            this.refreshSelectedProject();
-          }
-        },
-        error: () => {
-          this.assistantWorking.set(false);
-          this.assistantTurns.update((turns) => [
-            ...turns,
-            {
-              role: 'assistant',
-              text: 'The assistant could not be reached.',
-              failed: true,
-            },
-          ]);
-        },
+      .instructAssistantStreaming(project.id, question, history, (event) => {
+        // Each tool lands as it is used, so the panel shows the assistant
+        // reading the project while it reads it rather than after.
+        if (event.type === 'tool') {
+          this.assistantDoing.update((tools) => [...tools, event.tool]);
+          return;
+        }
+        this.finishAssistantTurn(project.id, event.result);
+      })
+      .catch(() => {
+        this.assistantWorking.set(false);
+        this.assistantDoing.set([]);
+        this.assistantTurns.update((turns) => [
+          ...turns,
+          {
+            role: 'assistant',
+            text: 'The assistant could not be reached.',
+            failed: true,
+          },
+        ]);
       });
+  }
+
+  private finishAssistantTurn(
+    projectId: string,
+    result: {
+      said: string;
+      used: { tool: string; result: string }[];
+      awaitingApproval: boolean;
+      unavailable?: string;
+    }
+  ): void {
+    this.assistantWorking.set(false);
+    this.assistantDoing.set([]);
+    this.assistantTurns.update((turns) => [
+      ...turns,
+      {
+        role: 'assistant',
+        text:
+          result.said ||
+          result.unavailable ||
+          'It finished without saying anything.',
+        used: result.used,
+        awaitingApproval: result.awaitingApproval,
+        failed: !!result.unavailable,
+      },
+    ]);
+    // Its work lands as proposals, so the list has to be re-read whether it
+    // succeeded or not.
+    this.loadAiChanges(projectId);
+    if (!result.awaitingApproval && result.used?.length) {
+      this.refreshSelectedProject();
+    }
   }
 
   onAssistantCleared(): void {

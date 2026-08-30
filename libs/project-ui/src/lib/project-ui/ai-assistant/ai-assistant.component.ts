@@ -41,6 +41,8 @@ export class AiAssistantComponent {
   @Input() turns: AssistantTurn[] = [];
   /** True while the agent is working. It takes a while; say so. */
   @Input() working = false;
+  /** Tools it has used so far this turn, as they happen. */
+  @Input() doing: string[] = [];
   /** Set when there is no assistant to talk to, and why. */
   @Input() unavailable: string | null = null;
   /** What it is working on, so the panel can name it. */

@@ -9,8 +9,10 @@ import {
   Param,
   UseGuards,
   Req,
+  Res,
   BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -361,6 +363,87 @@ export class ProjectPlanningController {
     ]);
 
     return { project, tags };
+  }
+
+  /**
+   * The same run, streamed, so the panel is not silent for a minute.
+   *
+   * Written to the response as it arrives rather than through @Sse, because
+   * that decorator is GET only and EventSource cannot carry a request body.
+   * The instruction and the thread belong in a body, so this stays a POST and
+   * writes newline-delimited JSON that a reader can parse a line at a time.
+   *
+   * Model bound for the same reason as the unstreamed version: the work behind
+   * it is unchanged, only its reporting.
+   */
+  @ApiOperation({
+    summary: 'Have an agent work on a project, reporting as it goes',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-act/stream')
+  async actOnProjectStreaming(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+    },
+    @Req() request: { credential?: string },
+    @Res() response: Response
+  ) {
+    const token = request.credential;
+    if (!token) {
+      throw new BadRequestException('A signed in caller is required to act.');
+    }
+    if (!body?.instruction?.trim()) {
+      throw new BadRequestException('An instruction is required.');
+    }
+
+    response.setHeader('Content-Type', 'application/x-ndjson');
+    response.setHeader('Cache-Control', 'no-cache');
+    // Proxies that buffer would hold every line until the end, which is the
+    // silence this exists to remove.
+    response.setHeader('X-Accel-Buffering', 'no');
+
+    await new Promise<void>((resolve) => {
+      this.aiOrchestrationService
+        .send(
+          { cmd: ProjectAiCommands.ACT_STREAM },
+          {
+            instruction: body.instruction,
+            projectId: id,
+            token,
+            history: body.history ?? [],
+          }
+        )
+        .subscribe({
+          next: (event) => response.write(`${JSON.stringify(event)}\n`),
+          error: (error) => {
+            // The reader always ends with something to show, so a failure
+            // here has to look like a finished run rather than a dropped
+            // connection.
+            response.write(
+              `${JSON.stringify({
+                type: 'done',
+                result: {
+                  said: '',
+                  used: [],
+                  awaitingApproval: false,
+                  model: null,
+                  unavailable: `The assistant could not be reached: ${error.message}`,
+                },
+              })}\n`
+            );
+            response.end();
+            resolve();
+          },
+          complete: () => {
+            response.end();
+            resolve();
+          },
+        });
+    });
   }
 
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })

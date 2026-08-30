@@ -1,3 +1,4 @@
+import { ModelType } from './models/model-manager.service';
 import {
   ProjectAgentService,
   rememberedTurns,
@@ -186,5 +187,144 @@ describe('rememberedTurns', () => {
 
   it('copes with no history at all', () => {
     expect(rememberedTurns([], 12)).toEqual([]);
+  });
+});
+
+/**
+ * Who writes the sentence a person reads.
+ *
+ * The tool-calling model wrote it too, and was bad at it in a specific way:
+ * asked for one task's status it fetched the tasks and then described the JSON
+ * field by field, with a total of every duration and an offer to draw a Gantt
+ * chart. The status was in the data and never said. Rewriting the prompt to
+ * forbid exactly that changed nothing, so the job moved to the model chosen
+ * for conversation.
+ */
+describe('ProjectAgentService composing the reply', () => {
+  const RAMBLE = 'Here is a breakdown of the JSON structure…';
+  const FOUND =
+    '{"tasks":[{"title":"Strip the old liner","status":"IN_PROGRESS"}]}';
+
+  function serviceWith({
+    composed = 'Strip the old liner is in progress.',
+    throws = false,
+  } = {}) {
+    const seen: unknown[][] = [];
+    const models = {
+      getModelConfig: jest.fn(() => ({ name: 'qwen3:8b' })),
+      getModel: jest.fn((type: string) => {
+        if (type !== ModelType.CONVERSATIONAL) return { bindTools: () => ({}) };
+        return {
+          invoke: async (messages: unknown[]) => {
+            seen.push(messages);
+            if (throws) throw new Error('conversational model is down');
+            return { content: composed };
+          },
+        };
+      }),
+    };
+    const service = new ProjectAgentService(models as never, {} as never);
+    return { service, models, seen };
+  }
+
+  it('answers in the words of the model chosen for writing', async () => {
+    const { service, models } = serviceWith();
+
+    const said = await service.compose(
+      'what is its status?',
+      [{ tool: 'query_tasks', result: FOUND }],
+      RAMBLE
+    );
+
+    expect(models.getModel).toHaveBeenCalledWith(ModelType.CONVERSATIONAL);
+    expect(said).toBe('Strip the old liner is in progress.');
+    expect(said).not.toContain('breakdown');
+  });
+
+  it('gives the composer the question and what the tools returned', async () => {
+    const { service, seen } = serviceWith();
+
+    await service.compose(
+      'what is its status?',
+      [{ tool: 'query_tasks', result: FOUND }],
+      RAMBLE
+    );
+
+    const sent = seen[0]
+      .map((m) => String((m as { content: unknown }).content))
+      .join('\n');
+    expect(sent).toContain('what is its status?');
+    expect(sent).toContain('Strip the old liner');
+  });
+
+  it("keeps the agent's own words when nothing was looked up", async () => {
+    // With no tool results the composer has nothing to answer from and would
+    // be inventing.
+    const { service, models } = serviceWith();
+
+    const said = await service.compose('hello', [], 'Hello.');
+
+    expect(said).toBe('Hello.');
+    expect(models.getModel).not.toHaveBeenCalled();
+  });
+
+  it('falls back rather than losing the answer when composing fails', async () => {
+    // A composed reply that fails is worse than a rambling one that arrived.
+    const { service } = serviceWith({ throws: true });
+
+    const said = await service.compose(
+      'what is its status?',
+      [{ tool: 'query_tasks', result: FOUND }],
+      RAMBLE
+    );
+
+    expect(said).toBe(RAMBLE);
+  });
+
+  it('falls back when the composer answers with nothing at all', async () => {
+    const { service } = serviceWith({ composed: '   ' });
+
+    const said = await service.compose(
+      'what is its status?',
+      [{ tool: 'query_tasks', result: FOUND }],
+      RAMBLE
+    );
+
+    expect(said).toBe(RAMBLE);
+  });
+
+  it('says so when a result was cut, rather than passing it off as whole', async () => {
+    // Asked how many tasks a project had, it answered four. There were twelve.
+    // The list had been shortened before it ever saw it and it counted what was
+    // in front of it. A confident wrong number is worse than a refusal.
+    const { service, seen } = serviceWith();
+
+    await service.compose(
+      'how many tasks are there?',
+      [{ tool: 'list_tasks', result: 'x'.repeat(40000) }],
+      RAMBLE
+    );
+
+    const sent = seen[0]
+      .map((m) => String((m as { content: unknown }).content))
+      .join('\n');
+    expect(sent).toContain('SHORTENED');
+    expect(sent).toContain('Never');
+  });
+
+  it('does not call a result shortened when all of it fits', async () => {
+    const { service, seen } = serviceWith();
+
+    await service.compose(
+      'what is its status?',
+      [{ tool: 'query_tasks', result: FOUND }],
+      RAMBLE
+    );
+
+    const sent = seen[0]
+      .map((m) => String((m as { content: unknown }).content))
+      .join('\n');
+    expect(sent).toContain('query_tasks returned:');
+    expect(sent).not.toContain('SHORTENED, not the whole list');
   });
 });

@@ -15,6 +15,20 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
+/** What the caller sees while the assistant works, then what it produced. */
+export type AssistantProgress =
+  | { type: 'tool'; tool: string }
+  | {
+      type: 'done';
+      result: {
+        said: string;
+        used: { tool: string; result: string }[];
+        awaitingApproval: boolean;
+        model: string | null;
+        unavailable?: string;
+      };
+    };
+
 @Injectable({
   providedIn: 'root',
 })
@@ -121,6 +135,63 @@ export class ProjectService {
       project: ProjectAnalytics | null;
       tags: TagAnalytics[];
     }>(`${this.baseUrl}/${projectId}/analytics`);
+  }
+
+  /**
+   * The same instruction, reported as the assistant works.
+   *
+   * fetch rather than HttpClient because the response is read a line at a time
+   * as it arrives, and HttpClient hands back a whole body. Cookies carry the
+   * session, the same way every other call here is authenticated.
+   *
+   * Each line is one event. The caller sees the tools being used, then the
+   * result. A run takes a minute or more, and silence for that long looks like
+   * a fault.
+   */
+  async instructAssistantStreaming(
+    projectId: string,
+    instruction: string,
+    history: { role: 'person' | 'assistant'; text: string }[],
+    onEvent: (event: AssistantProgress) => void
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/${projectId}/ai-act/stream`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-ot-appscope': 'forgeofwill',
+      },
+      body: JSON.stringify({ instruction, history }),
+    });
+
+    if (!response.ok || !response.body) {
+      throw new Error(
+        `The assistant could not be reached (${response.status})`
+      );
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // A chunk can end mid-line, so the tail is kept for the next one.
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          onEvent(JSON.parse(line) as AssistantProgress);
+        } catch {
+          // A line that will not parse is one event lost, not a reason to
+          // abandon a run that is still producing them.
+        }
+      }
+    }
   }
 
   getProjectById(id: string) {
