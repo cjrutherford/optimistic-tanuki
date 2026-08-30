@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsUUID,
@@ -8,13 +8,18 @@ import {
 } from 'class-validator';
 
 export class CreateProjectJournalDto {
-  @ApiProperty({
-    type: String,
-    description: 'Profile ID of the journal author',
-  })
-  @IsString()
+  /**
+   * Who wrote the entry.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  profileId!: string;
+  profileId?: string;
 
   @ApiProperty({
     type: String,

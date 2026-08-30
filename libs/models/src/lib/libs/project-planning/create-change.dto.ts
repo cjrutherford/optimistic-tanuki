@@ -1,9 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsDate,
   IsEnum,
+  IsOptional,
   IsString,
   IsUUID,
-  IsDate,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -62,15 +63,31 @@ export class CreateChangeDto {
   @Type(() => Date)
   changeDate!: Date;
 
-  @ApiProperty({ description: 'Requester user profile ID' })
-  @IsString()
+  /**
+   * Who asked for the change.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  requestor!: string; // manual reference to the User Profile Entity from the [Profile Service] representing the requester of the change
+  requestor?: string;
 
-  @ApiProperty({ description: 'Approver user profile ID' })
-  @IsString()
+  /**
+   * Who signed the change off.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  approver!: string; // manual reference to the User Profile Entity from the [Profile Service] representing the approver of the change
+  approver?: string;
 
   @ApiProperty({ description: 'Related project ID' })
   @IsString()

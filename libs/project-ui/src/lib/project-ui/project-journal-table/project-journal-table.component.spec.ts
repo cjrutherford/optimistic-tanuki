@@ -89,17 +89,29 @@ describe('ProjectJournalTableComponent', () => {
     expect(component.selectedJournal()).toBeNull();
   });
 
-  it('should emit createJournalEntry and call closeModal on entryCreated', () => {
+  /**
+   * Only what the reader typed goes out.
+   *
+   * profileId used to leave as an empty string and createdAt is not a field
+   * the endpoint accepts, so every attempt to write an entry from this table
+   * was refused and the feature could not be used at all. Who wrote it and
+   * when are the server's to decide.
+   */
+  it('emits the entry without trying to say who wrote it or when', () => {
     const emitSpy = jest.spyOn(component.createJournalEntry, 'emit');
     const closeModalSpy = jest.spyOn(component, 'closeModal');
-    const newEntry = {
+
+    component.entryCreated({
       projectId: 'new-project',
       profileId: 'new-profile',
       content: 'New journal content',
       createdAt: new Date(),
-    };
-    component.entryCreated(newEntry);
-    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining(newEntry));
+    });
+
+    expect(emitSpy).toHaveBeenCalledWith({
+      projectId: 'new-project',
+      content: 'New journal content',
+    });
     expect(closeModalSpy).toHaveBeenCalled();
   });
 

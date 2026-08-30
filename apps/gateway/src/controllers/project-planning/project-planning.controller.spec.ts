@@ -141,7 +141,13 @@ describe('ProjectPlanningController', () => {
     await controller.createProject(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      // Both come from the session now. owner used to pass through from the
+      // body, which let a caller create a project owned by somebody else.
+      {
+        ...createDto,
+        owner: mockUser.profileId,
+        createdBy: mockUser.profileId,
+      }
     );
   });
 
@@ -200,7 +206,14 @@ describe('ProjectPlanningController', () => {
     await controller.createChange(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
+      // ChangeService derives requestor, approver and createdBy from
+      // requestor, so setting only createdBy left it with no identity at all.
+      {
+        ...createDto,
+        requestor: mockUser.profileId,
+        createdBy: mockUser.profileId,
+        requestingUserId,
+      }
     );
   });
 
@@ -314,7 +327,13 @@ describe('ProjectPlanningController', () => {
     await controller.createRisk(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
+      // RiskService uses riskOwner as the owner and as createdBy.
+      {
+        ...createDto,
+        riskOwner: mockUser.profileId,
+        createdBy: mockUser.profileId,
+        requestingUserId,
+      }
     );
   });
 

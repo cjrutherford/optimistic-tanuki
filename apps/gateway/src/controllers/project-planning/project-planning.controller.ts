@@ -165,7 +165,16 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.CREATE },
-        { ...createProjectDto, createdBy: user.profileId }
+        {
+          ...createProjectDto,
+          // Both, and after the spread. owner came straight from the
+          // body, so a caller could create a project owned by somebody
+          // else and drop it into their workspace. Ownership follows
+          // whoever is signed in; handing a project over is its own
+          // operation with its own check.
+          owner: user.profileId,
+          createdBy: user.profileId,
+        }
       )
     );
   }
@@ -423,6 +432,9 @@ export class ProjectPlanningController {
         { cmd: ChangeCommands.CREATE },
         {
           ...createChangeDto,
+          // ChangeService derives requestor, approver and createdBy from
+          // requestor alone.
+          requestor: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
@@ -521,6 +533,10 @@ export class ProjectPlanningController {
         { cmd: ProjectJournalCommands.CREATE },
         {
           ...createJournalDto,
+          // The journal service reads profileId, not createdBy. Setting
+          // the wrong name meant identity never arrived unless the client
+          // sent it, and the client did not.
+          profileId: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
@@ -619,6 +635,8 @@ export class ProjectPlanningController {
         { cmd: RiskCommands.CREATE },
         {
           ...createRiskDto,
+          // RiskService uses riskOwner as the owner and as createdBy.
+          riskOwner: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }

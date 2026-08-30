@@ -164,13 +164,17 @@ export class TaskKanbanComponent
   }
 
   onCreateFormSubmit(task: any): void {
+    // The form offers a due date and an assignee, and this used to copy
+    // neither, so somebody could fill both in and watch them vanish. The task
+    // table's version of the same form kept them all along.
     const newTask: CreateTask = {
       title: task.title,
       description: task.description,
       status: this.selectedColumnStatus() || 'TODO',
       priority: task.priority,
       projectId: task.projectId,
-      createdBy: task.createdBy,
+      ...(task.assignee ? { assignee: task.assignee } : {}),
+      ...(task.dueDate ? { dueDate: task.dueDate } : {}),
     };
     this.createTask.emit(newTask);
     this.closeModal();

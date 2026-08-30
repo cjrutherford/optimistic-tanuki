@@ -195,13 +195,14 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
 
   onCreateFormSubmit(risk: Risk) {
     // Convert Risk to CreateRisk for creation
+    // createdBy is not a field this endpoint accepts, and sending it had the
+    // whole request refused, so no risk could be raised from here.
     const newRisk: CreateRisk = {
       description: risk.description,
       impact: risk.impact,
       likelihood: risk.likelihood,
       projectId: risk.projectId,
       status: risk.status || 'OPEN',
-      createdBy: risk.createdBy || '',
     };
     this.createRisk.emit(newRisk);
     this.closeModal();

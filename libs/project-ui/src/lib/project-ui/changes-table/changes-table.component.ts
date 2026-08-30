@@ -189,14 +189,13 @@ export class ChangesTableComponent implements OnInit, OnChanges {
       resolution = 'PENDING',
       projectId = '',
     } = change;
+    // Same shape the endpoint refuses as in ag-changes-table: resolution is
+    // not a field it takes, and identity comes from the session.
     const newChange: CreateChange = {
       changeType,
       changeDescription,
       changeStatus,
       changeDate,
-      requestor,
-      approver,
-      resolution,
       projectId,
     };
     this.createChange.emit(newChange);

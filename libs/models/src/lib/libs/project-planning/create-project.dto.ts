@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
@@ -21,15 +21,31 @@ export enum ProjectStatus {
 }
 
 export class CreateProjectDto {
-  @ApiProperty({ type: String, description: 'Owner ID of the project' })
-  @IsString()
+  /**
+   * Who owns the project.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  owner!: string;
+  owner?: string;
 
-  @ApiProperty({ type: String, description: 'Creator ID of the project' })
-  @IsString()
+  /**
+   * Who created the project.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  createdBy!: string;
+  createdBy?: string;
 
   @ApiProperty({
     type: [String],

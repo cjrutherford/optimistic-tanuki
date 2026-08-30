@@ -40,13 +40,18 @@ export enum RiskResolution {
 }
 
 export class CreateRiskDto {
-  @ApiProperty({
-    description:
-      'Manual reference to the User Profile Entity from the [Profile Service] representing owner of the risk',
-  })
-  @IsString()
+  /**
+   * Who owns the risk.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
   @IsUUID()
-  riskOwner!: string;
+  riskOwner?: string;
 
   @ApiProperty({
     description:
@@ -56,14 +61,20 @@ export class CreateRiskDto {
   @IsUUID()
   projectId!: string;
 
-  @ApiProperty({
-    description: 'Name of the risk',
-    example: 'Budget overrun risk',
-  })
+  /**
+   * A short name for the risk.
+   *
+   * Optional because nothing stores it: the risk table has no name column, and
+   * the service uses this only as a fallback when no description was given.
+   * Requiring it meant the risk form, which collects a description and no
+   * name, could not raise a risk at all.
+   */
+  @ApiPropertyOptional({ description: 'Short name; falls back to description' })
+  @IsOptional()
   @IsString()
   @MinLength(3)
   @MaxLength(200)
-  name!: string;
+  name?: string;
 
   @ApiProperty({ description: 'Description of the risk' })
   @IsString()

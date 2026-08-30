@@ -72,7 +72,8 @@ export interface CreateTask {
   description: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
-  createdBy: string;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  createdBy?: string;
   assignee?: string;
   dueDate?: Date;
   tagIds?: string[]; // Optional array of tag IDs to associate
@@ -314,8 +315,9 @@ export interface CreateRisk {
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
-  riskOwner?: string; // Assuming this is a user profile ID
-  createdBy: string;
+  /** Both set by the gateway from the session; sending them changes nothing. */
+  riskOwner?: string;
+  createdBy?: string;
 }
 
 export interface QueryRisk {
@@ -378,9 +380,9 @@ export interface CreateChange {
     | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
-  requestor: string;
+  /** Both set by the gateway from the session; sending them changes nothing. */
+  requestor?: string;
   approver?: string;
-  resolution: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface QueryChange {
@@ -423,9 +425,9 @@ export interface ProjectJournal {
 
 export interface CreateProjectJournal {
   projectId: string; // Foreign key to Project
-  profileId: string; // Assuming this links to a user profile
   content: string; // text
-  createdAt: Date;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  profileId?: string;
 }
 
 export interface QueryProjectJournal {
