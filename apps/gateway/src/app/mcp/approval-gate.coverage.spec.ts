@@ -377,3 +377,157 @@ describe('the token the agent acts with', () => {
     expect(ai.send).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * What a list tool hands back.
+ *
+ * A list used to arrive as whole rows with every id and timestamp on them, and
+ * the count came after the rows, so shortening the result removed the count
+ * while leaving twenty thousand characters of bookkeeping. The assistant then
+ * counted the visible rows by eye and got it wrong.
+ */
+describe('the shape of a list result', () => {
+  const request = { user: { profileId: 'p', userId: 'u' } };
+
+  function tasksService(rows: Record<string, unknown>[]) {
+    const clientProxy = { send: jest.fn(() => of(rows)) };
+    return new TaskMcpService(
+      clientProxy as never,
+      new ApprovalGate(clientProxy as never)
+    );
+  }
+
+  const row = {
+    id: 't1',
+    title: 'Book the crane',
+    status: 'TODO',
+    priority: 'HIGH',
+    createdBy: 'someone',
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-02',
+    deletedAt: null,
+  };
+
+  it('puts the count before the rows, so shortening cannot remove it', async () => {
+    const service = tasksService([row, { ...row, id: 't2' }]);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1' } as never,
+      undefined,
+      request
+    );
+
+    const order = Object.keys(result);
+    expect(order.indexOf('count')).toBeLessThan(order.indexOf('tasks'));
+    expect(result.count).toBe(2);
+  });
+
+  it('narrows each row by default rather than sending the bookkeeping', async () => {
+    const service = tasksService([row]);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1' } as never,
+      undefined,
+      request
+    );
+
+    expect(result.tasks[0]).toHaveProperty('title');
+    expect(result.tasks[0]).not.toHaveProperty('updatedAt');
+    expect(result.omittedFields).toContain('updatedAt');
+  });
+
+  it('hands back whole rows when the caller asks for them', async () => {
+    const service = tasksService([row]);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1', view: 'full' } as never,
+      undefined,
+      request
+    );
+
+    expect(result.tasks[0]).toEqual(row);
+    expect(result.omittedFields).toBeUndefined();
+  });
+});
+
+/**
+ * The tool that answers with a number.
+ *
+ * Asked how many tasks a project had, the assistant answered four, then seven.
+ * There were twelve. Each time it was handed the list and asked to count it by
+ * eye, and each time the count in the payload had been cut off. Counting is
+ * arithmetic; it belongs in one query, not in a model's attention.
+ */
+describe('count_tasks', () => {
+  const request = { user: { profileId: 'p', userId: 'u' } };
+
+  function serviceWith(rows: Record<string, unknown>[]) {
+    const clientProxy = { send: jest.fn(() => of(rows)) };
+    return new TaskMcpService(
+      clientProxy as never,
+      new ApprovalGate(clientProxy as never)
+    );
+  }
+
+  const twelve = [
+    ...Array.from({ length: 7 }, (_, i) => ({
+      id: `t${i}`,
+      status: 'TODO',
+      priority: 'MEDIUM',
+      assignee: 'someone',
+    })),
+    ...Array.from({ length: 5 }, (_, i) => ({
+      id: `d${i}`,
+      status: 'DONE',
+      priority: 'HIGH',
+      assignee: null,
+    })),
+  ];
+
+  it('answers with the total rather than a list to count', async () => {
+    const result = await serviceWith(twelve).countTasks(
+      { projectId: 'p1' },
+      undefined,
+      request
+    );
+
+    expect(result.total).toBe(12);
+    expect(result).not.toHaveProperty('tasks');
+  });
+
+  it('breaks it down the ways somebody actually asks', async () => {
+    const result = await serviceWith(twelve).countTasks(
+      { projectId: 'p1' },
+      undefined,
+      request
+    );
+
+    expect(result.byStatus).toEqual({ TODO: 7, DONE: 5 });
+    expect(result.byPriority).toEqual({ MEDIUM: 7, HIGH: 5 });
+    expect(result.unassigned).toBe(5);
+  });
+
+  it('counts a project with nothing on it as nothing', async () => {
+    const result = await serviceWith([]).countTasks(
+      { projectId: 'p1' },
+      undefined,
+      request
+    );
+
+    expect(result.total).toBe(0);
+    expect(result.byStatus).toEqual({});
+  });
+
+  it('does not drop a row for want of a status', async () => {
+    // A row missing the field it is tallied by would otherwise vanish from a
+    // total that is supposed to account for everything.
+    const result = await serviceWith([{ id: 'x' }]).countTasks(
+      { projectId: 'p1' },
+      undefined,
+      request
+    );
+
+    expect(result.total).toBe(1);
+    expect(result.byStatus).toEqual({ UNKNOWN: 1 });
+  });
+});

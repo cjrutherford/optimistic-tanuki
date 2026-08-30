@@ -3,6 +3,7 @@ import {
   ProjectAgentService,
   rememberedTurns,
   saysAwaitingApproval,
+  shortenKeepingBothEnds,
 } from './project-agent.service';
 
 /**
@@ -326,5 +327,42 @@ describe('ProjectAgentService composing the reply', () => {
       .join('\n');
     expect(sent).toContain('query_tasks returned:');
     expect(sent).not.toContain('SHORTENED, not the whole list');
+  });
+});
+
+/**
+ * Shortening a tool result without throwing away the answer.
+ *
+ * Taking the first N characters cost a correct one. list_tasks returned the
+ * list and then the count, so on a nineteen thousand character result the count
+ * sat at character 19,886 and the cut removed it. The model counted the visible
+ * array by eye and said seven. The payload said twelve.
+ */
+describe('shortenKeepingBothEnds', () => {
+  it('leaves a result that already fits completely alone', () => {
+    expect(shortenKeepingBothEnds('short', 100)).toBe('short');
+  });
+
+  it('keeps the end, which is where a count tends to live', () => {
+    const payload = `{"tasks":[${'x'.repeat(20000)}],"count":12}`;
+
+    const shortened = shortenKeepingBothEnds(payload, 4000);
+
+    expect(shortened).toContain('"count":12');
+    expect(shortened.length).toBeLessThan(4200);
+  });
+
+  it('keeps the start too, which is where a summary tends to live', () => {
+    const payload = `{"count":12,"tasks":[${'x'.repeat(20000)}]}`;
+
+    expect(shortenKeepingBothEnds(payload, 4000)).toContain('"count":12');
+  });
+
+  it('says where the gap is rather than joining two halves silently', () => {
+    // A reader that cannot see the join has no way to know it is looking at
+    // two pieces of one list.
+    const shortened = shortenKeepingBothEnds('y'.repeat(20000), 4000);
+
+    expect(shortened).toContain('middle removed');
   });
 });

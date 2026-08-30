@@ -3,9 +3,12 @@ import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { ChangeCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
-  CreateChangeDto,
-  Changetype,
   ChangeStatus,
+  Changetype,
+  CreateChangeDto,
+  ENTITY_VIEWS,
+  EntityView,
+  applyView,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -14,6 +17,14 @@ import { z } from 'zod';
 // Define Zod schemas outside the class
 export const listChangesSchema = z.object({
   projectId: z.string().describe('The ID of the project whose changes to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
 
 export const createChangeSchema = z.object({
@@ -111,7 +122,31 @@ const queryChangesSchema = z.object({
     .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
     .optional()
     .describe('Filter changes by priority'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewChange(
+  rows: Record<string, unknown>[],
+  view: EntityView
+): { changes: unknown[]; omittedFields?: string[] } {
+  const narrowed = applyView(rows ?? [], 'change', view);
+  return narrowed.omitted
+    ? { changes: narrowed.rows, omittedFields: narrowed.omitted }
+    : { changes: narrowed.rows };
+}
 
 @Injectable()
 export class ChangeMcpService {
@@ -144,7 +179,7 @@ export class ChangeMcpService {
     parameters: listChangesSchema,
   })
   async listChanges(
-    { projectId }: { projectId: string },
+    { projectId, view = 'brief' }: { projectId: string; view?: EntityView },
     _context: unknown,
     request: any
   ) {
@@ -159,8 +194,14 @@ export class ChangeMcpService {
       );
       return {
         success: true,
-        changes,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: changes.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewChange(changes, view),
       };
     } catch (error) {
       this.logger.error('Error listing changes:', error);
@@ -320,7 +361,7 @@ export class ChangeMcpService {
     parameters: queryChangesSchema,
   })
   async queryChanges(
-    query: z.infer<typeof queryChangesSchema>,
+    { view = 'brief', ...query }: z.infer<typeof queryChangesSchema>,
     _context: unknown,
     request: any
   ) {
@@ -337,8 +378,14 @@ export class ChangeMcpService {
       );
       return {
         success: true,
-        changes,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: changes.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewChange(changes, view),
       };
     } catch (error) {
       this.logger.error('Error querying changes:', error);

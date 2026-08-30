@@ -42,3 +42,4 @@ export {
   TagAnalyticsDto,
   QueryAnalyticsDto,
 } from './analytics.dto';
+export * from './entity-views';

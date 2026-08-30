@@ -8,9 +8,12 @@ import {
 } from '@optimistic-tanuki/constants';
 import {
   CreateTaskDto,
+  ENTITY_VIEWS,
+  EntityView,
   TaskPriority,
   TaskStatus,
   UpdateTaskDto,
+  applyView,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -19,6 +22,14 @@ import { z } from 'zod';
 // Define Zod schemas outside the class
 export const listTasksSchema = z.object({
   projectId: z.string().describe('The ID of the project whose tasks to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
 
 // Define Zod schemas for parameters
@@ -105,6 +116,14 @@ const queryTasksSchema = z.object({
     .nativeEnum(TaskPriority)
     .optional()
     .describe('Filter tasks by priority'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
 
 /**
@@ -118,6 +137,22 @@ function asDueDate(value?: string): { dueDate?: Date } {
   if (!value) return {};
   const parsed = new Date(value.trim());
   return Number.isNaN(parsed.getTime()) ? {} : { dueDate: parsed };
+}
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewTask(
+  rows: Record<string, unknown>[],
+  view: EntityView
+): { tasks: unknown[]; omittedFields?: string[] } {
+  const narrowed = applyView(rows ?? [], 'task', view);
+  return narrowed.omitted
+    ? { tasks: narrowed.rows, omittedFields: narrowed.omitted }
+    : { tasks: narrowed.rows };
 }
 
 @Injectable()
@@ -152,7 +187,7 @@ export class TaskMcpService {
     parameters: listTasksSchema,
   })
   async listTasks(
-    { projectId }: z.infer<typeof listTasksSchema>,
+    { projectId, view = 'brief' }: z.infer<typeof listTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -167,8 +202,14 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        tasks,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: tasks.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewTask(tasks, view),
       };
     } catch (error) {
       this.logger.error('Error listing tasks:', error);
@@ -386,12 +427,63 @@ export class TaskMcpService {
   }
 
   @McpTool({
+    name: 'count_tasks',
+    description:
+      'How many tasks a project has, broken down by status and priority. Use ' +
+      'this for any question about how many, rather than listing tasks and ' +
+      'counting them.',
+    parameters: z.object({
+      projectId: z.string().describe('The ID of the project to count'),
+    }),
+  })
+  async countTasks(
+    { projectId }: { projectId: string },
+    _context: unknown,
+    request: any
+  ) {
+    try {
+      const requestingUserId = this.requireRequestingUserId(request);
+      this.logger.log(`MCP Tool: Counting tasks for project ${projectId}`);
+      const tasks = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: TaskCommands.FIND_ALL },
+          { projectId, requestingUserId }
+        )
+      );
+
+      // The arithmetic happens here, once, instead of being handed to a model
+      // as twenty thousand characters of JSON to do by eye. Asked how many
+      // tasks a project had, it answered four, then seven. There were twelve.
+      const rows: { status?: string; priority?: string }[] = tasks ?? [];
+      const tally = (key: 'status' | 'priority') =>
+        rows.reduce<Record<string, number>>((counts, row) => {
+          const value = row[key] ?? 'UNKNOWN';
+          counts[value] = (counts[value] ?? 0) + 1;
+          return counts;
+        }, {});
+
+      return {
+        success: true,
+        total: rows.length,
+        byStatus: tally('status'),
+        byPriority: tally('priority'),
+        unassigned: rows.filter(
+          (row) => !(row as { assignee?: string }).assignee
+        ).length,
+      };
+    } catch (error) {
+      this.logger.error('Error counting tasks:', error);
+      throw new Error(`Failed to count tasks: ${error.message}`);
+    }
+  }
+
+  @McpTool({
     name: 'query_tasks',
     description: 'Query tasks within a project by title, status, or priority',
     parameters: queryTasksSchema,
   })
   async queryTasks(
-    query: z.infer<typeof queryTasksSchema>,
+    { view = 'brief', ...query }: z.infer<typeof queryTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -408,8 +500,14 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        tasks,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: tasks.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewTask(tasks, view),
       };
     } catch (error) {
       this.logger.error('Error querying tasks:', error);

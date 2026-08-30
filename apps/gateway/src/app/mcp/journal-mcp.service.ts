@@ -7,7 +7,10 @@ import {
 } from '@optimistic-tanuki/constants';
 import {
   CreateProjectJournalDto,
+  ENTITY_VIEWS,
+  EntityView,
   UpdateProjectJournalDto,
+  applyView,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -18,6 +21,14 @@ export const listJournalEntriesSchema = z.object({
   projectId: z
     .string()
     .describe('The ID of the project whose journal entries to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
 
 const createJournalEntrySchema = z.object({
@@ -43,7 +54,31 @@ const queryJournalEntriesSchema = z.object({
     .optional()
     .describe('Filter journal entries by content (partial match)'),
   entryDate: z.string().optional().describe('Filter journal entries by date'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewProjectjournal(
+  rows: Record<string, unknown>[],
+  view: EntityView
+): { entries: unknown[]; omittedFields?: string[] } {
+  const narrowed = applyView(rows ?? [], 'projectJournal', view);
+  return narrowed.omitted
+    ? { entries: narrowed.rows, omittedFields: narrowed.omitted }
+    : { entries: narrowed.rows };
+}
 
 @Injectable()
 export class JournalMcpService {
@@ -76,7 +111,7 @@ export class JournalMcpService {
     parameters: listJournalEntriesSchema,
   })
   async listJournalEntries(
-    { projectId }: z.infer<typeof listJournalEntriesSchema>,
+    { projectId, view = 'brief' }: z.infer<typeof listJournalEntriesSchema>,
     _context: unknown,
     request: any
   ) {
@@ -93,8 +128,14 @@ export class JournalMcpService {
       );
       return {
         success: true,
-        entries,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: entries.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewProjectjournal(entries, view),
       };
     } catch (error) {
       this.logger.error('Error listing journal entries:', error);
@@ -211,7 +252,7 @@ export class JournalMcpService {
     parameters: queryJournalEntriesSchema,
   })
   async queryJournalEntries(
-    query: z.infer<typeof queryJournalEntriesSchema>,
+    { view = 'brief', ...query }: z.infer<typeof queryJournalEntriesSchema>,
     _context: unknown,
     request: any
   ) {
@@ -228,8 +269,14 @@ export class JournalMcpService {
       );
       return {
         success: true,
-        entries,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: entries.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewProjectjournal(entries, view),
       };
     } catch (error) {
       this.logger.error('Error querying journal entries:', error);

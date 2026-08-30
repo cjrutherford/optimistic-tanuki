@@ -4,10 +4,13 @@ import { ClientProxy } from '@nestjs/microservices';
 import { RiskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   CreateRiskDto,
+  ENTITY_VIEWS,
+  EntityView,
   RiskImpact,
   RiskLikelihood,
   RiskStatus,
   UpdateRiskDto,
+  applyView,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -16,6 +19,14 @@ import { z } from 'zod';
 // Define Zod schemas outside the class
 export const listRisksSchema = z.object({
   projectId: z.string().describe('The ID of the project whose risks to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
 
 // Define Zod schemas for parameters
@@ -79,7 +90,31 @@ const queryRisksSchema = z.object({
     .nativeEnum(RiskStatus)
     .optional()
     .describe('Filter risks by status'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
 });
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewRisk(
+  rows: Record<string, unknown>[],
+  view: EntityView
+): { risks: unknown[]; omittedFields?: string[] } {
+  const narrowed = applyView(rows ?? [], 'risk', view);
+  return narrowed.omitted
+    ? { risks: narrowed.rows, omittedFields: narrowed.omitted }
+    : { risks: narrowed.rows };
+}
 
 @Injectable()
 export class RiskMcpService {
@@ -112,7 +147,7 @@ export class RiskMcpService {
     parameters: listRisksSchema,
   })
   async listRisks(
-    { projectId }: z.infer<typeof listRisksSchema>,
+    { projectId, view = 'brief' }: z.infer<typeof listRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -127,8 +162,14 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        risks,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: risks.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewRisk(risks, view),
       };
     } catch (error) {
       this.logger.error('Error listing risks:', error);
@@ -311,7 +352,7 @@ export class RiskMcpService {
     parameters: queryRisksSchema,
   })
   async queryRisks(
-    query: z.infer<typeof queryRisksSchema>,
+    { view = 'brief', ...query }: z.infer<typeof queryRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -328,8 +369,14 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        risks,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: risks.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewRisk(risks, view),
       };
     } catch (error) {
       this.logger.error('Error querying risks:', error);

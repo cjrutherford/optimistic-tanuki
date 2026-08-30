@@ -26,6 +26,29 @@ import { McpSession, ToolsService } from './tools.service';
  */
 
 /**
+ * Shortens a tool result without throwing away whichever end matters.
+ *
+ * Taking the first N characters cost a correct answer. list_tasks returns the
+ * task list and then the count, so on a nineteen thousand character result the
+ * count sat at character 19,886 and the cut removed it. The model counted the
+ * visible array by eye and said seven; the payload said twelve. Nothing was
+ * wrong with the question, the model or the window. The useful part was last.
+ *
+ * The tools now put their summaries first, and this keeps both ends anyway,
+ * because the next tool to put something important at the end should not cost
+ * another afternoon to find.
+ */
+export function shortenKeepingBothEnds(text: string, limit: number): string {
+  if (text.length <= limit) return text;
+
+  // Two thirds from the front, where a summary and the first rows are, and a
+  // third from the back, where a total or a closing count tends to be.
+  const front = Math.floor((limit * 2) / 3);
+  const back = limit - front;
+  return `${text.slice(0, front)}\n…[middle removed]…\n${text.slice(-back)}`;
+}
+
+/**
  * Whether any tool answered that a person still has to decide.
  *
  * Read from what the tools returned rather than from what the model said. A
@@ -287,7 +310,7 @@ export class ProjectAgentService {
           `${call.tool} returned${
             cut ? ' (SHORTENED, not the whole list)' : ''
           }:`,
-          call.result.slice(0, ProjectAgentService.RESULT_CHARS),
+          shortenKeepingBothEnds(call.result, ProjectAgentService.RESULT_CHARS),
         ].join('\n');
       })
       .join('\n\n');

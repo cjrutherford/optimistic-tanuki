@@ -12,7 +12,13 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
-import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectDto,
+  ENTITY_VIEWS,
+  EntityView,
+  UpdateProjectDto,
+  applyView,
+} from '@optimistic-tanuki/models';
 
 // Define Zod schemas for parameters
 const getProjectSchema = z.object({
@@ -63,7 +69,32 @@ const deleteProjectSchema = z.object({
 });
 
 // Define Zod schemas outside the class
-export const listProjectsSchema = z.object({});
+export const listProjectsSchema = z.object({
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+});
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewProject(
+  rows: Record<string, unknown>[],
+  view: EntityView
+): { projects: unknown[]; omittedFields?: string[] } {
+  const narrowed = applyView(rows ?? [], 'project', view);
+  return narrowed.omitted
+    ? { projects: narrowed.rows, omittedFields: narrowed.omitted }
+    : { projects: narrowed.rows };
+}
 
 @Injectable()
 export class ProjectMcpService {
@@ -96,7 +127,7 @@ export class ProjectMcpService {
     parameters: listProjectsSchema,
   })
   async listProjects(
-    _args: z.infer<typeof listProjectsSchema>,
+    { view = 'brief' }: z.infer<typeof listProjectsSchema>,
     _context: unknown,
     request: any
   ) {
@@ -113,8 +144,14 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        projects,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: projects.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewProject(projects, view),
       };
     } catch (error) {
       this.logger.error('Error listing projects:', error);
@@ -404,10 +441,17 @@ export class ProjectMcpService {
     description: 'Query projects by name',
     parameters: z.object({
       name: z.string().describe('The name of the project to query'),
+      view: z
+        .enum(ENTITY_VIEWS)
+        .optional()
+        .describe(
+          'How much of each row to return. "brief" is the default; "full" adds ' +
+            'every field including timestamps and who touched it.'
+        ),
     }),
   })
   async queryProjects(
-    query: { name: string },
+    { view, ...query }: { name: string; view?: EntityView },
     _context: unknown,
     request: any
   ) {
@@ -422,8 +466,14 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        projects,
+        // Before the list, not after it. Written last, the
+        // count is the first thing lost when a result has to
+        // be shortened, and it is the answer to every question
+        // about how many there are.
         count: projects.length,
+        // Narrowed unless the caller asked for everything. A whole row per
+        // item is what made a list too long to read and too long to keep.
+        ...viewProject(projects, view),
       };
     } catch (error) {
       this.logger.error('Error querying projects:', error);
