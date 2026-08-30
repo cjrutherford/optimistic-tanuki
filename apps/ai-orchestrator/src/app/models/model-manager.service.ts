@@ -39,6 +39,21 @@ export interface ModelConfig {
    * did.
    */
   repeatPenalty?: number;
+
+  /**
+   * How much the model is allowed to read, in tokens.
+   *
+   * Left unset, Ollama applies its own small default and silently drops the
+   * oldest part of anything longer. Measured on this server: at num_ctx 2048 a
+   * ten thousand token prompt reached the model as 1,026 tokens and the fact
+   * planted at the front was simply gone, with nothing to say it had been. The
+   * model answered confidently from what was left.
+   *
+   * Usable prompt came out at roughly half of whatever num_ctx is set to,
+   * consistently across 2048, 4096, 8192 and 16384, so budget for double what
+   * you mean to send.
+   */
+  numCtx?: number;
 }
 
 @Injectable()
@@ -94,6 +109,7 @@ export class ModelManager {
         repeatPenalty: this.configService.get<number>(
           `models.${type}.repeatPenalty`
         ),
+        numCtx: this.configService.get<number>(`models.${type}.numCtx`),
       });
     }
 
@@ -148,6 +164,7 @@ export class ModelManager {
       baseUrl: config.baseUrl,
       temperature: config.temperature,
       repeatPenalty: config.repeatPenalty,
+      numCtx: config.numCtx,
       maxRetries: 3,
     });
   }

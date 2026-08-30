@@ -237,6 +237,11 @@ export class ProjectAgentService {
       '',
       // It answered "four tasks" for a project with twelve, having been shown
       // a shortened list and no reason to doubt it.
+      // Kept, and known to be unreliable. Asked how many tasks a project had,
+      // with the list cut and marked SHORTENED, it answered seven. There were
+      // twelve. A model this size cannot be talked out of counting what is in
+      // front of it, so the real fix is a tool that returns the number instead
+      // of a list to count.
       'If a result is marked SHORTENED, it is part of a longer list. Never',
       'count it, total it, or say what is or is not in it. Say that you can',
       'only see part of it and answer what you can from that part.',
@@ -248,12 +253,19 @@ export class ProjectAgentService {
    *
    * Measured, not guessed. At four thousand characters it answered "Strip the
    * old liner is currently IN_PROGRESS" in one sentence. Raised to sixteen
-   * thousand to stop it miscounting a long list, it began describing the JSON
-   * instead of answering, which is the same failure the tool-calling model
-   * had. More material makes these small models describe rather than answer,
-   * so the cap stays low and a cut result says that it was cut.
+   * thousand it began describing the JSON instead of answering, the same
+   * failure the tool-calling model had.
+   *
+   * That second measurement was taken against a context window nobody had set,
+   * so the composer was being handed more than it could read and answering
+   * from whatever survived. With the window set deliberately it has room for
+   * roughly eight thousand tokens of prompt, and this sits well inside that.
+   *
+   * Still bounded, because the failure it guards against is real: more
+   * material makes these small models describe rather than answer. A cut
+   * result says that it was cut.
    */
-  private static readonly RESULT_CHARS = 4000;
+  private static readonly RESULT_CHARS = 8000;
 
   /**
    * The question and what came back, saying so when a result was cut.

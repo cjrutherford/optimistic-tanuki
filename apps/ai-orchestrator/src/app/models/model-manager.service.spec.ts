@@ -120,3 +120,62 @@ describe('ModelManager configuration', () => {
     );
   });
 });
+
+/**
+ * How much each model is allowed to read.
+ *
+ * This was never set, so Ollama applied its own small default and silently
+ * dropped the oldest part of anything longer. Measured on the real server: at
+ * num_ctx 2048 a ten thousand token prompt reached the model as 1,026 tokens
+ * and a fact planted at the front was simply gone, with nothing to say it had
+ * been. The model answered confidently from what was left, which is the worst
+ * shape a limit can take.
+ */
+describe('ModelManager and the context window', () => {
+  function managerWith(values: Record<string, unknown>) {
+    const config = {
+      get: jest.fn((key: string) => values[key]),
+    };
+    const { ModelManager } = jest.requireActual('./model-manager.service');
+    return new ModelManager(config as never);
+  }
+
+  const base = {
+    'ollama.host': 'localhost',
+    'ollama.port': 11434,
+    'models.conversational.name': 'llama3.2:3b',
+    'models.conversational.temperature': 0.7,
+  };
+
+  it('carries the configured window into the model config', () => {
+    const manager = managerWith({
+      ...base,
+      'models.conversational.numCtx': 16384,
+    });
+
+    expect(manager.getModelConfig('conversational').numCtx).toBe(16384);
+  });
+
+  it('leaves it unset when nothing is configured, rather than inventing one', () => {
+    // An invented default would be another silent limit, which is the problem
+    // this exists to make visible.
+    const manager = managerWith(base);
+
+    expect(manager.getModelConfig('conversational').numCtx).toBeUndefined();
+  });
+
+  it('lets each model type have its own', () => {
+    // The 8B models are expensive here and the 3B one is not, so they cannot
+    // share a number.
+    const manager = managerWith({
+      ...base,
+      'models.conversational.numCtx': 16384,
+      'models.tool_calling.name': 'qwen3:8b',
+      'models.tool_calling.temperature': 0.3,
+      'models.tool_calling.numCtx': 8192,
+    });
+
+    expect(manager.getModelConfig('conversational').numCtx).toBe(16384);
+    expect(manager.getModelConfig('tool_calling').numCtx).toBe(8192);
+  });
+});

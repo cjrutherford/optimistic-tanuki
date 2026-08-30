@@ -28,19 +28,44 @@ toolSources:
 # the lookup from the enum, so a key that does not match leaves that type
 # unconfigured and its requests are refused rather than quietly served by
 # something else. Chosen from the slice A pilot: nx run ai-orchestrator:pilot
+# How much each model is allowed to read, in tokens.
+#
+# This was never set, so Ollama applied its own small default and silently
+# dropped the oldest part of anything longer. Measured on shangrila with a fact
+# planted at the front of a long prompt: at num_ctx 2048 a ten thousand token
+# prompt reached the model as 1,026 tokens and the fact was gone, with nothing
+# to say it had been. The model answered confidently from what was left.
+#
+# Two things the measurements settled.
+#
+# Usable prompt is roughly half of num_ctx, consistently at 2048, 4096, 8192
+# and 16384. Budget for double what you mean to send.
+#
+# The 7B and 8B models are expensive here and the box holds about one of them
+# at a time with a wide window. Two large windows in flight, which is what the
+# assistant does when the agent hands over to the composer, made both exceed
+# ten minutes. The cheap 3B model is where the width belongs.
 models:
   workflow_control:
+    # A classifier reading a short prompt. Cheap, and nothing to gain from more.
+    numCtx: 4096
     name: 'llama3.2:3b'
     description: 'Fast classifier. Latency matters more than depth here.'
     temperature: 0.3
     pullOnStartup: true
   intent_analysis:
+    # Also a classifier.
+    numCtx: 4096
     name: 'llama3.2:3b'
     description: 'Also a classifier. Was never configured at all, so it fell
       back to a model that is not installed.'
     temperature: 0.2
     pullOnStartup: true
   tool_calling:
+    # Measured: 100 seconds at this width. At 16384 a long prompt either failed
+    # outright or ran past ten minutes, so this is the ceiling in practice
+    # rather than the ceiling on paper, which is 40960.
+    numCtx: 8192
     name: 'qwen3:8b'
     repeatPenalty: 1.1
     description: 'The only model that emitted a valid tool call on every pass
@@ -49,11 +74,19 @@ models:
     temperature: 0.3
     pullOnStartup: true
   conversational:
+    # The one that can afford to be wide. 12 seconds here and it saw the whole
+    # prompt; 32768 saw exactly the same and took 52. This is the model that
+    # reads tool results and writes the reply, so it gets the room.
+    numCtx: 16384
     name: 'llama3.2:3b'
     description: 'Model for generating conversational responses'
     temperature: 0.7
     pullOnStartup: true
   project_analysis:
+    # Reads a whole project to summarise it, which at the old default meant
+    # reading part of one and never saying so. Same family and cost as the
+    # tool-calling model, so the same width.
+    numCtx: 8192
     name: 'hf.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M'
     description: 'The only model that found all three planted problems on every
       pilot pass. Roughly 23s. Cannot call tools at all, which does not matter
