@@ -18,9 +18,6 @@ import { RiskService } from './risk/risk.service';
 import { Task } from './entities/task.entity';
 import { TaskController } from './task/task.controller';
 import { TaskService } from './task/task.service';
-import { Timer } from './entities/timer.entity';
-import { TimerController } from './timer/timer.controller';
-import { TimerService } from './timer/timer.service';
 import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskTimeEntryController } from './task-time-entry/task-time-entry.controller';
 import { TaskTimeEntryService } from './task-time-entry/task-time-entry.service';
@@ -57,7 +54,6 @@ import { AiChangeExecutor } from './ai-change/ai-change.executor';
     ProjectJournalController,
     RiskController,
     TaskController,
-    TimerController,
     TaskTimeEntryController,
     TaskTagController,
     TaskNoteController,
@@ -69,7 +65,6 @@ import { AiChangeExecutor } from './ai-change/ai-change.executor';
     ProjectJournalService,
     RiskService,
     TaskService,
-    TimerService,
     TaskTimeEntryService,
     TaskTagService,
     TaskNoteService,
@@ -100,11 +95,6 @@ import { AiChangeExecutor } from './ai-change/ai-change.executor';
     {
       provide: getRepositoryToken(Change),
       useFactory: (connection: DataSource) => connection.getRepository(Change),
-      inject: ['PROJECT_PLANNING_CONNECTION'],
-    },
-    {
-      provide: getRepositoryToken(Timer),
-      useFactory: (connection: DataSource) => connection.getRepository(Timer),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
     {

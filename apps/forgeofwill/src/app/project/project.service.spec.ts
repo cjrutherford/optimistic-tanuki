@@ -66,7 +66,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
         endDate: new Date(),
       };
 
@@ -118,7 +117,6 @@ describe('ProjectService', () => {
           risks: [],
           changes: [],
           journalEntries: [],
-          timers: [],
         },
       ];
 
@@ -159,7 +157,6 @@ describe('ProjectService', () => {
           risks: [],
           changes: [],
           journalEntries: [],
-          timers: [],
         },
       ];
 
@@ -192,7 +189,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
       };
 
       service.getProjectById('1').subscribe((response) => {
@@ -223,7 +219,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
       };
       const expectedResponse: Project = {
         ...mockProject,

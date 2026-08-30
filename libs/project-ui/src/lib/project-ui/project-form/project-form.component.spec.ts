@@ -48,7 +48,6 @@ describe('ProjectFormComponent', () => {
       risks: [],
       changes: [],
       journalEntries: [],
-      timers: [],
     };
     component.project = mockProject;
     component.ngOnInit(); // Manually call ngOnInit as it's not called on subsequent @Input changes

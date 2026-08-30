@@ -12,14 +12,20 @@ import { Task } from '../entities/task.entity';
 import { TaskTimeEntry } from '../entities/task-time-entry.entity';
 import { TaskTag } from '../entities/task-tag.entity';
 import { Project } from '../entities/project.entity';
+import { getAccessibleProjectIds } from '../common/project-access.util';
 
 /**
- * SECURITY: this service performs NO ownership/membership checks — with no
- * `projectId` filter it aggregates data across every project in the system.
- * It is intentionally NOT wired into the gateway (`AnalyticsCommands` has no
- * HTTP route). Before exposing it externally, add `requestingUserId` scoping
- * via the helpers in ../common/project-access.util.ts, mirroring the other
- * entity services.
+ * Time and tag figures for the work somebody can see.
+ *
+ * This used to perform no ownership check at all and, given no projectId,
+ * aggregated every project in the system. It was kept off the gateway for
+ * exactly that reason, with a note saying to add scoping before exposing it.
+ * That is what happened: every method now takes the caller and narrows to the
+ * projects they own or belong to, the same way every other service here does.
+ *
+ * A caller naming a project they cannot see gets nothing rather than an error,
+ * because whether that project exists is not something they should learn from
+ * the shape of the answer.
  */
 @Injectable()
 export class AnalyticsService {
@@ -34,9 +40,35 @@ export class AnalyticsService {
     private readonly projectRepository: Repository<Project>
   ) {}
 
+  /**
+   * The projects this caller may be told about, intersected with any they
+   * asked for. Returns null when there is nothing to report on, which the
+   * callers treat as an empty answer rather than an error.
+   */
+  private async visibleProjectIds(
+    query: QueryAnalyticsDto,
+    requestingUserId?: string
+  ): Promise<string[] | null> {
+    if (!requestingUserId) {
+      return query.projectId ? [query.projectId] : null;
+    }
+    const accessible = await getAccessibleProjectIds(
+      this.projectRepository,
+      requestingUserId
+    );
+    const scoped = query.projectId
+      ? accessible.filter((id) => id === query.projectId)
+      : accessible;
+    return scoped.length ? scoped : [];
+  }
+
   async getTaskAnalytics(
-    query: QueryAnalyticsDto
+    query: QueryAnalyticsDto,
+    requestingUserId?: string
   ): Promise<TaskAnalyticsDto[]> {
+    const projectIds = await this.visibleProjectIds(query, requestingUserId);
+    if (projectIds?.length === 0) return [];
+
     const whereConditions: any = {
       deletedAt: IsNull(),
     };
@@ -45,8 +77,8 @@ export class AnalyticsService {
       whereConditions.id = In(query.taskIds);
     }
 
-    if (query.projectId) {
-      whereConditions.project = { id: query.projectId };
+    if (projectIds) {
+      whereConditions.project = { id: In(projectIds) };
     }
 
     const tasks = await this.taskRepository.find({
@@ -108,10 +140,17 @@ export class AnalyticsService {
   }
 
   async getProjectAnalytics(
-    query: QueryAnalyticsDto
+    query: QueryAnalyticsDto,
+    requestingUserId?: string
   ): Promise<ProjectAnalyticsDto> {
     if (!query.projectId) {
       throw new Error('Project ID is required for project analytics');
+    }
+
+    const projectIds = await this.visibleProjectIds(query, requestingUserId);
+    if (projectIds?.length === 0) {
+      // Not "forbidden", because that would confirm the project exists.
+      throw new Error('Project not found');
     }
 
     const project = await this.projectRepository.findOne({
@@ -122,7 +161,7 @@ export class AnalyticsService {
       throw new Error('Project not found');
     }
 
-    const taskAnalytics = await this.getTaskAnalytics(query);
+    const taskAnalytics = await this.getTaskAnalytics(query, requestingUserId);
 
     const totalTimeSeconds = taskAnalytics.reduce(
       (sum, task) => sum + task.totalTimeSeconds,
@@ -138,7 +177,13 @@ export class AnalyticsService {
     };
   }
 
-  async getTagAnalytics(query: QueryAnalyticsDto): Promise<TagAnalyticsDto[]> {
+  async getTagAnalytics(
+    query: QueryAnalyticsDto,
+    requestingUserId?: string
+  ): Promise<TagAnalyticsDto[]> {
+    const projectIds = await this.visibleProjectIds(query, requestingUserId);
+    if (projectIds?.length === 0) return [];
+
     const whereConditions: any = {
       deletedAt: IsNull(),
     };
@@ -161,13 +206,17 @@ export class AnalyticsService {
       for (const task of tag.tasks || []) {
         if (task.deletedAt) continue;
 
-        // Apply project filter if specified
-        if (query.projectId) {
+        // A tag can span projects, so each task behind it is checked against
+        // what the caller may see rather than only against the project asked
+        // for. Without this a tag's totals would leak time from projects the
+        // caller has no part in.
+        if (projectIds) {
           const taskWithProject = await this.taskRepository.findOne({
             where: { id: task.id },
             relations: ['project'],
           });
-          if (taskWithProject?.project?.id !== query.projectId) continue;
+          const owning = taskWithProject?.project?.id;
+          if (!owning || !projectIds.includes(owning)) continue;
         }
 
         const timeEntryWhere: any = {

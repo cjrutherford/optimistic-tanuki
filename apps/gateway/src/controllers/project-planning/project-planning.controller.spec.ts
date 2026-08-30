@@ -10,7 +10,6 @@ import {
   TaskCommands,
   TaskNoteCommands,
   TaskTimeEntryCommands,
-  TimerCommands,
 } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -23,7 +22,6 @@ import {
   CreateTaskDto,
   CreateTaskNoteDto,
   CreateTaskTimeEntryDto,
-  CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
@@ -38,7 +36,6 @@ import {
   UpdateTaskDto,
   UpdateTaskNoteDto,
   UpdateTaskTimeEntryDto,
-  UpdateTimerDto,
   RiskImpact,
   RiskLikelihood,
   RiskStatus,
@@ -408,48 +405,6 @@ describe('ProjectPlanningController', () => {
     await controller.deleteTask(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.DELETE },
-      { id: '1', requestingUserId }
-    );
-  });
-
-  it('should find a timer by id', async () => {
-    await controller.findTimerById(mockUser, '1');
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.FIND_ONE },
-      { id: '1', requestingUserId }
-    );
-  });
-
-  it('should find all timers scoped to the caller', async () => {
-    await controller.findAllTimers(mockUser);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.FIND_ALL },
-      { requestingUserId }
-    );
-  });
-
-  it('should create a timer', async () => {
-    const createDto: CreateTimerDto = { taskId: '1' };
-    await controller.createTimer(mockUser, createDto);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
-    );
-  });
-
-  it('should update a timer', async () => {
-    const updateDto: UpdateTimerDto = { id: '1' };
-    await controller.updateTimer(mockUser, updateDto);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
-    );
-  });
-
-  it('should delete a timer', async () => {
-    await controller.deleteTimer(mockUser, '1');
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.DELETE },
       { id: '1', requestingUserId }
     );
   });

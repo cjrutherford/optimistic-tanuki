@@ -46,9 +46,6 @@
       </section>
       }
       <router-outlet></router-outlet>
-      @if (isAuthenticated() && selectedProfile()) {
-      <app-ai-assistant-bubble></app-ai-assistant-bubble>
-      }
     </main>
 
     @if (isAuthenticated() && selectedProfile()) {

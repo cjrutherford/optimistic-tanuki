@@ -38,7 +38,6 @@ export {
   RiskCommands,
   TaskCommands,
   ChangeCommands,
-  TimerCommands,
   TaskTimeEntryCommands,
   TaskTagCommands,
   TaskNoteCommands,

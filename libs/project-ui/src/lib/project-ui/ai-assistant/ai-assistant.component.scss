@@ -1,0 +1,133 @@
+.assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.assistant header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.scope {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.clear {
+  margin-left: auto;
+  padding: 0.2rem 0.55rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.unavailable,
+.empty {
+  font-size: 0.88rem;
+  opacity: 0.75;
+  margin: 0;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-height: 26rem;
+  overflow-y: auto;
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--personality-border-radius, 4px);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.25));
+}
+
+.turn.mine {
+  align-self: flex-end;
+  max-width: 85%;
+  border-color: var(--accent);
+}
+
+.turn.thinking {
+  opacity: 0.75;
+}
+
+.text {
+  margin: 0;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.text.failed {
+  color: var(--danger);
+}
+
+.did {
+  margin: 0;
+  padding-left: 1.05rem;
+  font-size: 0.82rem;
+  opacity: 0.85;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pending {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.gate {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.ask {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ask textarea {
+  flex: 1 1 16rem;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+  resize: vertical;
+}
+
+.ask button {
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.ask button:disabled,
+.ask textarea:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

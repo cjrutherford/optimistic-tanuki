@@ -46,15 +46,6 @@ export const ChangeCommands = {
   FIND_ALL: 'change.findAll',
 };
 
-export const TimerCommands = {
-  CREATE: 'timer.create',
-  UPDATE: 'timer.update',
-  DELETE: 'timer.delete',
-  FIND_ONE: 'timer.findOne',
-  REMOVE: 'timer.remove',
-  FIND_ALL: 'timer.findAll',
-};
-
 export const TaskTimeEntryCommands = {
   CREATE: 'taskTimeEntry.create',
   UPDATE: 'taskTimeEntry.update',

@@ -15,7 +15,10 @@ import {
   Project,
   ProjectJournal,
   Risk,
+  ProjectAnalytics,
+  TagAnalytics,
   Task,
+  TaskNote,
   TaskTimeEntry,
   UpdateTask,
 } from '@optimistic-tanuki/ui-models';
@@ -36,6 +39,10 @@ import {
   AiChange,
   AiChangeDecision,
   TaskTimePanelComponent,
+  TaskNotesPanelComponent,
+  AnalyticsDashboardComponent,
+  AiAssistantComponent,
+  AssistantTurn,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -48,6 +55,7 @@ import { ProjectService } from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
+import { TaskNoteService } from '../../task-note/task-note.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -72,6 +80,9 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ProjectSummaryComponent,
     AiChangeReviewComponent,
     TaskTimePanelComponent,
+    TaskNotesPanelComponent,
+    AnalyticsDashboardComponent,
+    AiAssistantComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -87,6 +98,7 @@ export class ProjectsComponent implements OnInit {
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
     private readonly taskTimeEntryService: TaskTimeEntryService,
+    private readonly taskNoteService: TaskNoteService,
     private readonly messageService: MessageService,
     private readonly themeService: ThemeService
   ) {}
@@ -102,13 +114,17 @@ export class ProjectsComponent implements OnInit {
    * model, so running it on every project selection would spend that on
    * people who never looked at the panel.
    */
+  projectAnalytics = signal<ProjectAnalytics | null>(null);
+  tagAnalytics = signal<TagAnalytics[]>([]);
+  taskNotes = signal<TaskNote[]>([]);
+  noteSavingTaskId = signal<string | null>(null);
   timeEntries = signal<TaskTimeEntry[]>([]);
   timerBusyTaskId = signal<string | null>(null);
   aiChanges = signal<AiChange[]>([]);
   aiChangeBusyId = signal<string | null>(null);
   askingForSuggestions = signal<boolean>(false);
   assistantWorking = signal<boolean>(false);
-  assistantSaid = signal<string | null>(null);
+  assistantTurns = signal<AssistantTurn[]>([]);
   narrative = signal<ProjectNarrative | null>(null);
   narrativeLoading = signal<boolean>(false);
 
@@ -158,15 +174,21 @@ export class ProjectsComponent implements OnInit {
     if (changed) {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
-      this.assistantSaid.set(null);
+      this.assistantTurns.set([]);
       this.aiChanges.set([]);
       this.aiChangeBusyId.set(null);
       this.timeEntries.set([]);
       this.timerBusyTaskId.set(null);
+      this.taskNotes.set([]);
+      this.noteSavingTaskId.set(null);
+      this.projectAnalytics.set(null);
+      this.tagAnalytics.set([]);
     }
     if (project) {
       this.loadAiChanges(project.id);
       this.loadTimeEntries(project.id);
+      this.loadTaskNotes(project.id);
+      this.loadAnalytics(project.id);
     }
   }
 
@@ -174,6 +196,51 @@ export class ProjectsComponent implements OnInit {
    * Everything recorded against this project, so the panel can show time per
    * task and a total.
    */
+  /** Every note on the project, so the panel can show them under their tasks. */
+  private loadTaskNotes(projectId: string): void {
+    this.taskNoteService.getTaskNotesForProject(projectId).subscribe({
+      next: (notes) => this.taskNotes.set(notes ?? []),
+      error: () => this.taskNotes.set([]),
+    });
+  }
+
+  /**
+   * Where the time went. Quiet on failure: a project with no analytics is a
+   * missing panel, not a reason to interrupt somebody working.
+   */
+  private loadAnalytics(projectId: string): void {
+    this.projectService.getProjectAnalytics(projectId).subscribe({
+      next: (result) => {
+        this.projectAnalytics.set(result?.project ?? null);
+        this.tagAnalytics.set(result?.tags ?? []);
+      },
+      error: () => {
+        this.projectAnalytics.set(null);
+        this.tagAnalytics.set([]);
+      },
+    });
+  }
+
+  onNoteAdded({ taskId, content }: { taskId: string; content: string }): void {
+    if (this.noteSavingTaskId()) return;
+    this.noteSavingTaskId.set(taskId);
+
+    this.taskNoteService.createTaskNote({ taskId, content }).subscribe({
+      next: () => {
+        this.noteSavingTaskId.set(null);
+        const project = this.selectedProject();
+        if (project) this.loadTaskNotes(project.id);
+      },
+      error: () => {
+        this.noteSavingTaskId.set(null);
+        this.messageService.addMessage({
+          content: 'That note could not be saved.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
   private refreshTimeEntries(): void {
     const project = this.selectedProject();
     if (project) this.loadTimeEntries(project.id);
@@ -250,31 +317,70 @@ export class ProjectsComponent implements OnInit {
    * than a change on the board. The pending list is re-read either way,
    * because that is where its work lands.
    */
-  onInstructionGiven(instruction: string): void {
+  /**
+   * A turn of the conversation.
+   *
+   * The thread is held here and sent back with each question, so the assistant
+   * can follow "now assign it to me" instead of asking what "it" is. Whatever
+   * it does goes through the same tools and the same gate, so on a project
+   * that requires approval its work lands in the list below rather than on the
+   * board.
+   */
+  onAssistantAsked(question: string): void {
     const project = this.selectedProject();
     if (!project || this.assistantWorking()) return;
 
+    const history = this.assistantTurns().map((turn) => ({
+      role: turn.role,
+      text: turn.text,
+    }));
+    this.assistantTurns.update((turns) => [
+      ...turns,
+      { role: 'person', text: question },
+    ]);
     this.assistantWorking.set(true);
-    this.assistantSaid.set(null);
-    this.projectService.instructAssistant(project.id, instruction).subscribe({
-      next: (result) => {
-        this.assistantWorking.set(false);
-        this.assistantSaid.set(result.said || result.unavailable || null);
-        this.loadAiChanges(project.id);
-        if (!result.awaitingApproval && result.used?.length) {
-          // It did the work outright, which happens on a project that does not
-          // require approval. The board has changed underneath the page.
-          this.refreshSelectedProject();
-        }
-      },
-      error: () => {
-        this.assistantWorking.set(false);
-        this.messageService.addMessage({
-          content: 'The assistant could not be reached.',
-          type: 'error',
-        });
-      },
-    });
+
+    this.projectService
+      .instructAssistant(project.id, question, history)
+      .subscribe({
+        next: (result) => {
+          this.assistantWorking.set(false);
+          this.assistantTurns.update((turns) => [
+            ...turns,
+            {
+              role: 'assistant',
+              text:
+                result.said ||
+                result.unavailable ||
+                'It finished without saying anything.',
+              used: result.used,
+              awaitingApproval: result.awaitingApproval,
+              failed: !!result.unavailable,
+            },
+          ]);
+          // Its work lands as proposals, so the list has to be re-read whether
+          // it succeeded or not.
+          this.loadAiChanges(project.id);
+          if (!result.awaitingApproval && result.used?.length) {
+            this.refreshSelectedProject();
+          }
+        },
+        error: () => {
+          this.assistantWorking.set(false);
+          this.assistantTurns.update((turns) => [
+            ...turns,
+            {
+              role: 'assistant',
+              text: 'The assistant could not be reached.',
+              failed: true,
+            },
+          ]);
+        },
+      });
+  }
+
+  onAssistantCleared(): void {
+    this.assistantTurns.set([]);
   }
 
   /**

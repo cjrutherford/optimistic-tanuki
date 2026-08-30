@@ -19,7 +19,6 @@ export {
   RiskResolution,
 } from './create-risk.dto';
 export { CreateTaskDto, TaskStatus, TaskPriority } from './create-task.dto';
-export { CreateTimerDto } from './create-timer.dto';
 export { CreateTaskTimeEntryDto } from './create-task-time-entry.dto';
 export { CreateTaskTagDto } from './create-task-tag.dto';
 export { CreateTaskNoteDto } from './create-task-note.dto';
@@ -31,7 +30,6 @@ export {
 } from './update-project-journal.dto';
 export { UpdateRiskDto, QueryRiskDto } from './update-risk.dto';
 export { UpdateTaskDto, QueryTaskDto } from './update-task.dto';
-export { UpdateTimerDto } from './update-timer.dto';
 export {
   UpdateTaskTimeEntryDto,
   QueryTaskTimeEntryDto,

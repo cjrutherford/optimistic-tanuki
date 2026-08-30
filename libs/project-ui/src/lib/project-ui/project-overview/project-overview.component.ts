@@ -51,7 +51,6 @@ export class ProjectOverviewComponent implements OnInit {
     risks: [],
     changes: [],
     journalEntries: [],
-    timers: [],
   };
 
   ngOnInit() {

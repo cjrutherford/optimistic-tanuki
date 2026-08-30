@@ -5,7 +5,6 @@ import * as yaml from 'js-yaml';
 import { Project } from './entities/project.entity';
 import { Task } from './entities/task.entity';
 import { Risk } from './entities/risk.entity';
-import { Timer } from './entities/timer.entity';
 import { ProjectJournal } from './entities/project-journal.entity';
 import { Change } from './entities/change.entity';
 import { TaskTag } from './entities/task-tag.entity';
@@ -37,7 +36,6 @@ const entities = [
   Task,
   Risk,
   Change,
-  Timer,
   ProjectJournal,
   TaskTag,
   TaskTimeEntry,

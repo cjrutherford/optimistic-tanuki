@@ -1,7 +1,9 @@
 import {
   CreateProject,
   Project,
+  ProjectAnalytics,
   QueryProject,
+  TagAnalytics,
 } from '@optimistic-tanuki/ui-models';
 
 import {
@@ -95,14 +97,30 @@ export class ProjectService {
    * in person, so the approval gate applies: on a project that requires
    * approval nothing it does reaches the board until somebody agrees.
    */
-  instructAssistant(projectId: string, instruction: string) {
+  instructAssistant(
+    projectId: string,
+    instruction: string,
+    history: { role: 'person' | 'assistant'; text: string }[] = []
+  ) {
     return this.http.post<{
       said: string;
       used: { tool: string; result: string }[];
       awaitingApproval: boolean;
       model: string | null;
       unavailable?: string;
-    }>(`${this.baseUrl}/${projectId}/ai-act`, { instruction });
+    }>(`${this.baseUrl}/${projectId}/ai-act`, { instruction, history });
+  }
+
+  /**
+   * Where the time went on this project, per task and per tag.
+   *
+   * Only meaningful since time entries started recording real durations.
+   */
+  getProjectAnalytics(projectId: string) {
+    return this.http.get<{
+      project: ProjectAnalytics | null;
+      tags: TagAnalytics[];
+    }>(`${this.baseUrl}/${projectId}/analytics`);
   }
 
   getProjectById(id: string) {

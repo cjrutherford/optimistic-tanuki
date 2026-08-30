@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { z } from 'zod';
@@ -35,6 +39,30 @@ export function saysAwaitingApproval(
   return used.some((call) => /waiting for approval/i.test(call.result));
 }
 
+/** One exchange, as the caller keeps it between requests. */
+export interface AgentTurn {
+  role: 'person' | 'assistant';
+  text: string;
+}
+
+/**
+ * The thread so far, as messages the model can read.
+ *
+ * Without this every instruction started cold, so "now assign it to me" had
+ * nothing to attach to and the assistant asked what "it" was. Only the most
+ * recent turns are carried, because the model re-reads all of them on every
+ * request and a thread left to grow eventually costs more than it helps.
+ */
+export function rememberedTurns(history: AgentTurn[], limit: number) {
+  return history
+    .slice(-limit)
+    .map((turn) =>
+      turn.role === 'person'
+        ? new HumanMessage(turn.text)
+        : new AIMessage(turn.text)
+    );
+}
+
 export interface AgentRunResult {
   /** What the agent said it did, in its own words. */
   said: string;
@@ -55,10 +83,20 @@ export class ProjectAgentService {
     private readonly tools: ToolsService
   ) {}
 
+  /**
+   * How much of the thread is carried back in.
+   *
+   * Enough for the assistant to follow a conversation, bounded because every
+   * turn is re-read by the model on every request and a thread left to grow
+   * eventually costs more than it helps.
+   */
+  static readonly TURNS_REMEMBERED = 12;
+
   async act(
     instruction: string,
     projectId: string,
-    token: string
+    token: string,
+    history: AgentTurn[] = []
   ): Promise<AgentRunResult> {
     let config;
     try {
@@ -92,6 +130,7 @@ export class ProjectAgentService {
       const run = await agent.invoke({
         messages: [
           new SystemMessage(this.systemPrompt(projectId)),
+          ...rememberedTurns(history, ProjectAgentService.TURNS_REMEMBERED),
           // The id goes in the instruction as well. It is the one fact the
           // tools cannot proceed without, and repeating it costs nothing next
           // to a turn spent asking for it.
@@ -192,6 +231,19 @@ export class ProjectAgentService {
       'Report what the tools told you, not what you meant to happen. If a',
       'tool says something is waiting for approval, say that it is waiting',
       'for approval and that it has not happened yet.',
+      '',
+      // Asked for one task's status, it called query_tasks and then wrote
+      // several hundred words describing the JSON it got back: a field
+      // inventory, a total of every duration, and an offer to draw a Gantt
+      // chart. The answer was in there and never said.
+      'Answer the question you were actually asked, in a sentence or two, the',
+      'way a colleague would. What the tools return is working material, not',
+      'the answer: never describe it, inventory its fields, total things',
+      'nobody asked about, or offer further analysis.',
+      '',
+      'No headings and no bullet lists unless you are listing several things',
+      'somebody asked to see. Name tasks and people by their names rather',
+      'than their ids.',
     ].join('\n');
   }
 }

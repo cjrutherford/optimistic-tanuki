@@ -1,5 +1,6 @@
 import {
   ProjectAgentService,
+  rememberedTurns,
   saysAwaitingApproval,
 } from './project-agent.service';
 
@@ -127,5 +128,63 @@ describe('ProjectAgentService', () => {
 
       expect(tools.map((t) => t.name)).toEqual(['create_task']);
     });
+  });
+});
+
+/**
+ * Carrying the conversation.
+ *
+ * Every instruction used to start cold, so "now assign it to me" had nothing
+ * to attach to and the assistant asked what "it" was. The thread is held by
+ * whoever is having the conversation and passed back in.
+ */
+describe('rememberedTurns', () => {
+  const textsOf = (messages: unknown[]) =>
+    messages.map((m) => String((m as { content: unknown }).content));
+
+  it('carries earlier turns so a follow-up has something to refer to', () => {
+    const messages = rememberedTurns(
+      [
+        { role: 'person', text: 'what is overdue?' },
+        { role: 'assistant', text: 'Book the crane is overdue.' },
+      ],
+      12
+    );
+
+    expect(textsOf(messages)).toEqual([
+      'what is overdue?',
+      'Book the crane is overdue.',
+    ]);
+  });
+
+  it('tells the model which side said what', () => {
+    const [mine, theirs] = rememberedTurns(
+      [
+        { role: 'person', text: 'a question' },
+        { role: 'assistant', text: 'an answer' },
+      ],
+      12
+    );
+
+    expect(mine.constructor.name).toContain('Human');
+    expect(theirs.constructor.name).toContain('AI');
+  });
+
+  it('keeps only the recent ones, since the model re-reads every turn', () => {
+    // A thread left to grow eventually costs more than it helps.
+    const long = Array.from({ length: 40 }, (_, i) => ({
+      role: 'person' as const,
+      text: `turn ${i}`,
+    }));
+
+    const carried = textsOf(rememberedTurns(long, 12));
+
+    expect(carried).toHaveLength(12);
+    expect(carried).toContain('turn 39');
+    expect(carried).not.toContain('turn 0');
+  });
+
+  it('copes with no history at all', () => {
+    expect(rememberedTurns([], 12)).toEqual([]);
   });
 });

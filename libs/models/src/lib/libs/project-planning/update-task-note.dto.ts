@@ -25,6 +25,17 @@ export class QueryTaskNoteDto extends PartialType(CreateTaskNoteDto) {
   @IsUUID()
   override profileId?: string;
 
+  /**
+   * Every note on one project.
+   *
+   * A screen showing notes per task needs the whole project's notes, and
+   * asking task by task would be one request per row.
+   */
+  @ApiPropertyOptional({ description: 'Filter by project ID' })
+  @IsOptional()
+  @IsUUID()
+  projectId?: string;
+
   @ApiPropertyOptional({ description: 'Updated by user ID' })
   @IsOptional()
   @IsUUID()

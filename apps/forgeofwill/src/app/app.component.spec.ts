@@ -212,7 +212,13 @@ describe('AppComponent', () => {
       expect(compiled.querySelector('main#main-content')).toBeTruthy();
     });
 
-    it('keeps supported chat separate from the unavailable assistant status in the main flow', () => {
+    /**
+     * The assistant used to be a status message in the main flow saying it was
+     * unavailable, which is what it always said. It has been replaced by a
+     * real one on the projects page, where there is a project for it to work
+     * on, so nothing here stands in for it any more.
+     */
+    it('keeps person-to-person chat outside the main flow', () => {
       isAuthenticatedSubject.next(true);
       fixture.detectChanges();
 
@@ -220,10 +226,8 @@ describe('AppComponent', () => {
       const main = compiled.querySelector('main#main-content');
 
       expect(compiled.querySelector('app-chat')).toBeTruthy();
-      expect(
-        main?.querySelector('app-ai-assistant-bubble [role="status"]')
-      ).toBeTruthy();
       expect(main?.querySelector('app-chat')).toBeNull();
+      expect(compiled.querySelector('app-ai-assistant-bubble')).toBeNull();
     });
   });
 

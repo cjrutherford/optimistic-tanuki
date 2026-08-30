@@ -29,7 +29,6 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { filter } from 'rxjs';
-import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
@@ -72,7 +71,6 @@ const FORGE_AUTH_NAV_LINKS = [
     NavSidebarComponent,
     ChatComponent,
     MessageComponent,
-    AiAssistantBubbleComponent,
     DevInfoComponent,
     HaiAboutTagComponent,
     PulseRingsComponent,

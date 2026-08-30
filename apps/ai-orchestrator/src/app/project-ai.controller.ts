@@ -2,7 +2,7 @@ import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
 import { ProjectAiCommands } from '@optimistic-tanuki/constants';
 import { ProjectAiService, SummarisableProject } from './project-ai.service';
-import { ProjectAgentService } from './project-agent.service';
+import { AgentTurn, ProjectAgentService } from './project-agent.service';
 
 /**
  * The project-planning half of this service, alongside the wellness one.
@@ -58,7 +58,12 @@ export class ProjectAiController {
    * somebody other than the caller would be worse than that.
    */
   @MessagePattern({ cmd: ProjectAiCommands.ACT })
-  async act(data: { instruction: string; projectId: string; token: string }) {
+  async act(data: {
+    instruction: string;
+    projectId: string;
+    token: string;
+    history?: AgentTurn[];
+  }) {
     this.logger.log(`Agent acting on project ${data?.projectId}`);
     if (!data?.instruction || !data?.projectId || !data?.token) {
       return {
@@ -69,6 +74,11 @@ export class ProjectAiController {
         unavailable: 'An instruction, a project and a token are all needed.',
       };
     }
-    return await this.agent.act(data.instruction, data.projectId, data.token);
+    return await this.agent.act(
+      data.instruction,
+      data.projectId,
+      data.token,
+      data.history ?? []
+    );
   }
 }

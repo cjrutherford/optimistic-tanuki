@@ -154,6 +154,38 @@
       </div>
 
       <!--
+        Where the time went. The dashboard existed in the library and was
+        rendered nowhere, and its figures would all have been zero anyway
+        until time entries started recording real durations.
+      -->
+      @if (projectAnalytics()) {
+      <div class="row-container">
+        <otui-tile class="analytics-tile">
+          <lib-analytics-dashboard
+            [projectAnalytics]="projectAnalytics()"
+            [tagAnalytics]="tagAnalytics()"
+          ></lib-analytics-dashboard>
+        </otui-tile>
+      </div>
+      }
+
+      <!--
+        Notes on tasks. The landing page has always promised these and no
+        screen ever showed one, so the only way a note reached a task was for
+        the assistant to propose one and a person to approve it.
+      -->
+      <div class="row-container">
+        <otui-tile class="task-notes-tile">
+          <lib-task-notes-panel
+            [tasks]="selectedProject()?.tasks || []"
+            [notes]="taskNotes()"
+            [savingTaskId]="noteSavingTaskId()"
+            (noteAdded)="onNoteAdded($event)"
+          ></lib-task-notes-panel>
+        </otui-tile>
+      </div>
+
+      <!--
         Time on tasks. The tracker component existed and was on no screen, so
         nobody could start a timer and nothing displayed a total.
       -->
@@ -170,6 +202,22 @@
       </div>
 
       <!--
+        The assistant. What stood in for it was a placeholder that always read
+        "AI assistant unavailable", while the agent behind it worked.
+      -->
+      <div class="row-container">
+        <otui-tile class="assistant-tile">
+          <lib-ai-assistant
+            [turns]="assistantTurns()"
+            [working]="assistantWorking()"
+            [projectName]="selectedProject()?.name || null"
+            (asked)="onAssistantAsked($event)"
+            (cleared)="onAssistantCleared()"
+          ></lib-ai-assistant>
+        </otui-tile>
+      </div>
+
+      <!--
         The approval gate. A project can require that changes are approved
         before anything is written, and this is where that decision is made.
       -->
@@ -180,11 +228,8 @@
             [project]="selectedProject()"
             [busyId]="aiChangeBusyId()"
             [asking]="askingForSuggestions()"
-            [working]="assistantWorking()"
-            [assistantSaid]="assistantSaid()"
             (decided)="onAiChangeDecided($event)"
             (suggestionsRequested)="onSuggestionsRequested()"
-            (instructionGiven)="onInstructionGiven($event)"
           ></lib-ai-change-review>
         </otui-tile>
       </div>

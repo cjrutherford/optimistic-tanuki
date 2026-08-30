@@ -15,6 +15,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
   ChangeCommands,
+  AnalyticsCommands,
   ProjectCommands,
   ProjectJournalCommands,
   RiskCommands,
@@ -22,7 +23,6 @@ import {
   TaskCommands,
   TaskNoteCommands,
   TaskTimeEntryCommands,
-  TimerCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateChangeDto,
@@ -32,7 +32,6 @@ import {
   CreateTaskDto,
   CreateTaskNoteDto,
   CreateTaskTimeEntryDto,
-  CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
@@ -47,7 +46,6 @@ import {
   UpdateTaskDto,
   UpdateTaskNoteDto,
   UpdateTaskTimeEntryDto,
-  UpdateTimerDto,
   CreateAiChangeDto,
   ReviewAiChangeDto,
 } from '@optimistic-tanuki/models';
@@ -297,7 +295,11 @@ export class ProjectPlanningController {
   @Post('projects/:id/ai-act')
   async actOnProject(
     @Param('id') id: string,
-    @Body() body: { instruction?: string },
+    @Body()
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+    },
     @Req() request: { credential?: string }
   ) {
     // From the guard rather than the headers. The browser signs in with a
@@ -314,9 +316,51 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.aiOrchestrationService.send(
         { cmd: ProjectAiCommands.ACT },
-        { instruction: body.instruction, projectId: id, token }
+        {
+          instruction: body.instruction,
+          projectId: id,
+          token,
+          // The thread is held by whoever is having the conversation. Keeping
+          // it here would mean deciding whose it is and when it ends, for a
+          // panel that already knows both.
+          history: body.history ?? [],
+        }
       )
     );
+  }
+
+  /**
+   * Where the time went, per task and per tag.
+   *
+   * The service behind this existed with no route, and carried a note saying
+   * to add ownership scoping before exposing it. That has been done, and every
+   * call carries the caller so the figures cover only projects they are part
+   * of.
+   *
+   * Worth having only since time entries started recording real durations.
+   * Every one of these numbers would have been zero before that.
+   */
+  @ApiOperation({ summary: "A project's time and tag figures" })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/analytics')
+  async projectAnalytics(@User() user: UserDetails, @Param('id') id: string) {
+    const query = { projectId: id, requestingUserId: user.profileId };
+    const [project, tags] = await Promise.all([
+      firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: AnalyticsCommands.GET_PROJECT_ANALYTICS },
+          query
+        )
+      ),
+      firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: AnalyticsCommands.GET_TAG_ANALYTICS },
+          query
+        )
+      ),
+    ]);
+
+    return { project, tags };
   }
 
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })
@@ -769,85 +813,6 @@ export class ProjectPlanningController {
     );
   }
 
-  @ApiOperation({ summary: 'Find timer by ID' })
-  @ApiResponse({ status: 200, description: 'Timer found' })
-  @RequirePermissions('project-planning.timer.read')
-  @Get('timers/:id')
-  async findTimerById(@User() user: UserDetails, @Param('id') id: string) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.FIND_ONE },
-        { id, requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Find all timers' })
-  @ApiResponse({ status: 200, description: 'Timers retrieved' })
-  @RequirePermissions('project-planning.timer.read')
-  @Get('timers')
-  async findAllTimers(@User() user: UserDetails) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.FIND_ALL },
-        { requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Create a timer' })
-  @ApiResponse({ status: 201, description: 'Timer created successfully' })
-  @RequirePermissions('project-planning.timer.create')
-  @Post('timers')
-  async createTimer(
-    @User() user: UserDetails,
-    @Body() createTimerDto: CreateTimerDto
-  ) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.CREATE },
-        {
-          ...createTimerDto,
-          createdBy: user.profileId,
-          requestingUserId: user.profileId,
-        }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Update a timer' })
-  @ApiResponse({ status: 200, description: 'Timer updated successfully' })
-  @RequirePermissions('project-planning.timer.update')
-  @Patch('timers')
-  async updateTimer(
-    @User() user: UserDetails,
-    @Body() updateTimerDto: UpdateTimerDto
-  ) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.UPDATE },
-        {
-          ...updateTimerDto,
-          updatedBy: user.profileId,
-          requestingUserId: user.profileId,
-        }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Delete a timer' })
-  @ApiResponse({ status: 200, description: 'Timer deleted successfully' })
-  @RequirePermissions('project-planning.timer.delete')
-  @Delete('timers/:id')
-  async deleteTimer(@User() user: UserDetails, @Param('id') id: string) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.DELETE },
-        { id, requestingUserId: user.profileId }
-      )
-    );
-  }
-
   // Task Notes endpoints
   @ApiOperation({ summary: 'Find task note by ID' })
   @ApiResponse({ status: 200, description: 'Task note found' })
@@ -999,7 +964,15 @@ export class ProjectPlanningController {
     );
   }
 
-  @ApiOperation({ summary: 'Create a task time entry (start timer)' })
+  /**
+   * Stops a running time entry.
+   *
+   * The service could always do this and nothing could reach it: stopping was
+   * done through update, which meant the client decided the duration. It sent
+   * only an end time, so every finished entry recorded zero seconds. Here the
+   * server reads the clock, which is the only way the number means anything.
+   */
+  @ApiOperation({ summary: 'Start a time entry on a task' })
   @ApiResponse({
     status: 201,
     description: 'Task time entry created successfully',
@@ -1022,28 +995,7 @@ export class ProjectPlanningController {
     );
   }
 
-  /**
-   * Stops a running time entry.
-   *
-   * The service could always do this and nothing could reach it: stopping was
-   * done through update, which meant the client decided the duration. It sent
-   * only an end time, so every finished entry recorded zero seconds. Here the
-   * server reads the clock, which is the only way the number means anything.
-   */
-  @ApiOperation({ summary: 'Stop a running time entry' })
-  @ApiResponse({ status: 200, description: 'Time entry stopped' })
-  @RequirePermissions('project-planning.task-time-entry.update')
-  @Patch('task-time-entries/:id/stop')
-  async stopTaskTimeEntry(@User() user: UserDetails, @Param('id') id: string) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TaskTimeEntryCommands.STOP },
-        { id, updatedBy: user.profileId, requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Update a task time entry (stop timer)' })
+  @ApiOperation({ summary: 'Update a task time entry' })
   @ApiResponse({
     status: 200,
     description: 'Task time entry updated successfully',
@@ -1062,6 +1014,19 @@ export class ProjectPlanningController {
           updatedBy: user.profileId,
           requestingUserId: user.profileId,
         }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Stop a running time entry' })
+  @ApiResponse({ status: 200, description: 'Time entry stopped' })
+  @RequirePermissions('project-planning.task-time-entry.update')
+  @Patch('task-time-entries/:id/stop')
+  async stopTaskTimeEntry(@User() user: UserDetails, @Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.STOP },
+        { id, updatedBy: user.profileId, requestingUserId: user.profileId }
       )
     );
   }

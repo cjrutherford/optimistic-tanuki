@@ -26,3 +26,5 @@ export * from './lib/project-ui/analytics-dashboard/analytics-dashboard.componen
 export * from './lib/project-ui/project-summary/project-summary.component';
 export * from './lib/project-ui/ai-change-review/ai-change-review.component';
 export * from './lib/project-ui/task-time-panel/task-time-panel.component';
+export * from './lib/project-ui/task-notes-panel/task-notes-panel.component';
+export * from './lib/project-ui/ai-assistant/ai-assistant.component';

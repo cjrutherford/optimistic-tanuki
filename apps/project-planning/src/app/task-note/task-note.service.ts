@@ -100,10 +100,19 @@ export class TaskNoteService {
       }
       where.task = {
         ...(query.taskId ? { id: query.taskId } : {}),
-        project: { id: In(accessibleProjectIds) },
+        project: {
+          id: query.projectId
+            ? // A project id in the query narrows the scope and never widens
+              // it: it is intersected with what the caller may already see.
+              In(accessibleProjectIds.filter((id) => id === query.projectId))
+            : In(accessibleProjectIds),
+        },
       };
-    } else if (query.taskId) {
-      where.task = { id: query.taskId };
+    } else if (query.taskId || query.projectId) {
+      where.task = {
+        ...(query.taskId ? { id: query.taskId } : {}),
+        ...(query.projectId ? { project: { id: query.projectId } } : {}),
+      };
     }
 
     return await this.taskNoteRepository.find({

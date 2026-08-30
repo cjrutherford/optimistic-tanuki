@@ -5,7 +5,6 @@ import {
   ProjectJournal,
   Risk,
   Task,
-  Timer,
 } from '@optimistic-tanuki/ui-models';
 import {
   Component,

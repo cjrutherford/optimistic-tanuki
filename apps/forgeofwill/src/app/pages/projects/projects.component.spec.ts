@@ -16,6 +16,7 @@ import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectSelectorComponent } from '@optimistic-tanuki/project-ui';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
+import { TaskNoteService } from '../../task-note/task-note.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   Project,
@@ -54,7 +55,6 @@ describe('ProjectsComponent', () => {
     startDate: new Date(),
     endDate: new Date(),
     status: 'IN_PROGRESS',
-    timers: [],
     tasks: [],
     risks: [],
     changes: [],
@@ -134,6 +134,9 @@ describe('ProjectsComponent', () => {
       instructAssistant: jest
         .fn()
         .mockReturnValue(of({ said: '', used: [], awaitingApproval: false })),
+      getProjectAnalytics: jest
+        .fn()
+        .mockReturnValue(of({ project: null, tags: [] })),
     };
     const taskServiceMock = {
       createTask: jest.fn().mockReturnValue(of(mockTask)),
@@ -157,6 +160,10 @@ describe('ProjectsComponent', () => {
       deleteJournalEntry: jest.fn().mockReturnValue(of(undefined)),
     };
     const messageServiceMock = { addMessage: jest.fn() };
+    const taskNoteServiceMock = {
+      getTaskNotesForProject: jest.fn().mockReturnValue(of([])),
+      createTaskNote: jest.fn().mockReturnValue(of({ id: 'note1' })),
+    };
     const taskTimeEntryServiceMock = {
       startTimer: jest
         .fn()
@@ -187,6 +194,7 @@ describe('ProjectsComponent', () => {
         { provide: JournalService, useValue: journalServiceMock },
         { provide: MessageService, useValue: messageServiceMock },
         { provide: TaskTimeEntryService, useValue: taskTimeEntryServiceMock },
+        { provide: TaskNoteService, useValue: taskNoteServiceMock },
         { provide: ThemeService, useValue: themeServiceMock },
       ],
     }).compileComponents();

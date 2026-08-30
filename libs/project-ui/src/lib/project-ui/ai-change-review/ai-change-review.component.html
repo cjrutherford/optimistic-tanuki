@@ -14,29 +14,7 @@
     </button>
   </div>
 
-  <!--
-    Telling the assistant to do something. Whatever it does goes through the
-    same tools and the same gate, so on a project that requires approval the
-    result lands in the list below rather than on the board.
-  -->
-  <div class="instruct">
-    <input
-      type="text"
-      [value]="instruction"
-      (input)="instructionChanged($event)"
-      (keyup.enter)="giveInstruction()"
-      [disabled]="working"
-      placeholder="Ask the assistant to do something on this project"
-      aria-label="Ask the assistant to do something on this project"
-    />
-    <button type="button" [disabled]="working" (click)="giveInstruction()">
-      {{ working ? 'Working…' : 'Ask' }}
-    </button>
-  </div>
-
-  @if (assistantSaid) {
-  <p class="said">{{ assistantSaid }}</p>
-  } @if (!pending.length && !settled.length) {
+  @if (!pending.length && !settled.length) {
   <p class="empty">
     Nothing has been proposed for this project. When something is, it will wait
     here until you decide.
