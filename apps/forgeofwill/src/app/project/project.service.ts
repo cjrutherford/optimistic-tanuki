@@ -149,7 +149,7 @@ export class ProjectService {
    * a fault.
    */
   async instructAssistantStreaming(
-    projectId: string,
+    projectId: string | null,
     instruction: string,
     history: { role: 'person' | 'assistant'; text: string }[],
     onEvent: (event: AssistantProgress) => void

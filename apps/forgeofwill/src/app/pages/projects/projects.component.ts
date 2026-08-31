@@ -41,10 +41,9 @@ import {
   TaskTimePanelComponent,
   TaskNotesPanelComponent,
   AnalyticsDashboardComponent,
-  AiAssistantComponent,
-  AssistantTurn,
+  AssistantContextService,
 } from '@optimistic-tanuki/project-ui';
-import { Component, computed, signal, OnInit } from '@angular/core';
+import { Component, computed, effect, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { ChangeService } from '../../change/change.service';
@@ -56,6 +55,7 @@ import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
 import { TaskNoteService } from '../../task-note/task-note.service';
+import { AssistantService } from '../../assistant/assistant.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -82,7 +82,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     TaskTimePanelComponent,
     TaskNotesPanelComponent,
     AnalyticsDashboardComponent,
-    AiAssistantComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -99,6 +98,8 @@ export class ProjectsComponent implements OnInit {
     private readonly journalService: JournalService,
     private readonly taskTimeEntryService: TaskTimeEntryService,
     private readonly taskNoteService: TaskNoteService,
+    private readonly assistantContext: AssistantContextService,
+    private readonly assistant: AssistantService,
     private readonly messageService: MessageService,
     private readonly themeService: ThemeService
   ) {}
@@ -123,9 +124,6 @@ export class ProjectsComponent implements OnInit {
   aiChanges = signal<AiChange[]>([]);
   aiChangeBusyId = signal<string | null>(null);
   askingForSuggestions = signal<boolean>(false);
-  assistantWorking = signal<boolean>(false);
-  assistantTurns = signal<AssistantTurn[]>([]);
-  assistantDoing = signal<string[]>([]);
   narrative = signal<ProjectNarrative | null>(null);
   narrativeLoading = signal<boolean>(false);
 
@@ -175,8 +173,6 @@ export class ProjectsComponent implements OnInit {
     if (changed) {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
-      this.assistantTurns.set([]);
-      this.assistantDoing.set([]);
       this.aiChanges.set([]);
       this.aiChangeBusyId.set(null);
       this.timeEntries.set([]);
@@ -186,6 +182,12 @@ export class ProjectsComponent implements OnInit {
       this.projectAnalytics.set(null);
       this.tagAnalytics.set([]);
     }
+    // The assistant follows whatever is selected, so it can act on this
+    // project without being told which one twice.
+    this.assistantContext.working(
+      project ? { id: project.id, name: project.name } : null
+    );
+
     if (project) {
       this.loadAiChanges(project.id);
       this.loadTimeEntries(project.id);
@@ -328,81 +330,6 @@ export class ProjectsComponent implements OnInit {
    * that requires approval its work lands in the list below rather than on the
    * board.
    */
-  onAssistantAsked(question: string): void {
-    const project = this.selectedProject();
-    if (!project || this.assistantWorking()) return;
-
-    const history = this.assistantTurns().map((turn) => ({
-      role: turn.role,
-      text: turn.text,
-    }));
-    this.assistantTurns.update((turns) => [
-      ...turns,
-      { role: 'person', text: question },
-    ]);
-    this.assistantWorking.set(true);
-    this.assistantDoing.set([]);
-
-    this.projectService
-      .instructAssistantStreaming(project.id, question, history, (event) => {
-        // Each tool lands as it is used, so the panel shows the assistant
-        // reading the project while it reads it rather than after.
-        if (event.type === 'tool') {
-          this.assistantDoing.update((tools) => [...tools, event.tool]);
-          return;
-        }
-        this.finishAssistantTurn(project.id, event.result);
-      })
-      .catch(() => {
-        this.assistantWorking.set(false);
-        this.assistantDoing.set([]);
-        this.assistantTurns.update((turns) => [
-          ...turns,
-          {
-            role: 'assistant',
-            text: 'The assistant could not be reached.',
-            failed: true,
-          },
-        ]);
-      });
-  }
-
-  private finishAssistantTurn(
-    projectId: string,
-    result: {
-      said: string;
-      used: { tool: string; result: string }[];
-      awaitingApproval: boolean;
-      unavailable?: string;
-    }
-  ): void {
-    this.assistantWorking.set(false);
-    this.assistantDoing.set([]);
-    this.assistantTurns.update((turns) => [
-      ...turns,
-      {
-        role: 'assistant',
-        text:
-          result.said ||
-          result.unavailable ||
-          'It finished without saying anything.',
-        used: result.used,
-        awaitingApproval: result.awaitingApproval,
-        failed: !!result.unavailable,
-      },
-    ]);
-    // Its work lands as proposals, so the list has to be re-read whether it
-    // succeeded or not.
-    this.loadAiChanges(projectId);
-    if (!result.awaitingApproval && result.used?.length) {
-      this.refreshSelectedProject();
-    }
-  }
-
-  onAssistantCleared(): void {
-    this.assistantTurns.set([]);
-  }
-
   /**
    * The human half of the approval gate.
    *
@@ -531,6 +458,22 @@ export class ProjectsComponent implements OnInit {
         (c) => !['COMPLETE', 'DISCARDED'].includes(c.changeStatus)
       )?.length || 0
     );
+  });
+
+  /**
+   * The assistant lives outside this page now, so what it does has to find its
+   * way back. Its work lands as proposals, which is why the list is re-read
+   * whether the run succeeded or not.
+   */
+  private readonly refreshAfterAssistant = effect(() => {
+    const result = this.assistant.lastResult();
+    const project = this.selectedProject();
+    if (!result || !project) return;
+
+    this.loadAiChanges(project.id);
+    if (!result.awaitingApproval && result.used.length) {
+      this.refreshSelectedProject();
+    }
   });
 
   ngOnInit() {

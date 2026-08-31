@@ -65,23 +65,25 @@ export class ProjectAiController {
   @MessagePattern({ cmd: ProjectAiCommands.ACT })
   async act(data: {
     instruction: string;
-    projectId: string;
+    projectId?: string | null;
     token: string;
     history?: AgentTurn[];
   }) {
     this.logger.log(`Agent acting on project ${data?.projectId}`);
-    if (!data?.instruction || !data?.projectId || !data?.token) {
+    // A project is optional: without one the assistant starts by finding out
+    // what projects there are, which needs no project id.
+    if (!data?.instruction || !data?.token) {
       return {
         said: '',
         used: [],
         awaitingApproval: false,
         model: null,
-        unavailable: 'An instruction, a project and a token are all needed.',
+        unavailable: 'An instruction and a signed in caller are both needed.',
       };
     }
     return await this.agent.act(
       data.instruction,
-      data.projectId,
+      data.projectId ?? null,
       data.token,
       data.history ?? []
     );
@@ -101,12 +103,12 @@ export class ProjectAiController {
   @MessagePattern({ cmd: ProjectAiCommands.ACT_STREAM })
   actStreaming(data: {
     instruction: string;
-    projectId: string;
+    projectId?: string | null;
     token: string;
     history?: AgentTurn[];
   }): Observable<AgentProgress> {
     return new Observable<AgentProgress>((subscriber) => {
-      if (!data?.instruction || !data?.projectId || !data?.token) {
+      if (!data?.instruction || !data?.token) {
         subscriber.next({
           type: 'done',
           result: {
@@ -122,11 +124,13 @@ export class ProjectAiController {
         return;
       }
 
-      this.logger.log(`Agent acting on project ${data.projectId}, streaming`);
+      this.logger.log(
+        `Agent acting on ${data.projectId ?? 'no project yet'}, streaming`
+      );
       this.agent
         .act(
           data.instruction,
-          data.projectId,
+          data.projectId ?? null,
           data.token,
           data.history ?? [],
           (call) => subscriber.next({ type: 'tool', tool: call.tool })

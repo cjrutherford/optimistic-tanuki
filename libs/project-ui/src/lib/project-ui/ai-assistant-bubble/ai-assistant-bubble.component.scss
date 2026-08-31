@@ -1,0 +1,71 @@
+.bubble {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+  max-width: min(28rem, calc(100vw - 2.5rem));
+}
+
+.panel {
+  width: min(28rem, calc(100vw - 2.5rem));
+  max-height: min(34rem, calc(100vh - 8rem));
+  overflow-y: auto;
+  padding: 1rem;
+  border-radius: var(--personality-border-radius, 6px);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.35));
+  background: var(--background, Canvas);
+  box-shadow: var(--personality-box-shadow, 0 8px 30px rgba(0, 0, 0, 0.18));
+}
+
+.handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  color: inherit;
+  background: var(--background, Canvas);
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: 999px;
+  box-shadow: var(--personality-box-shadow, 0 4px 14px rgba(0, 0, 0, 0.15));
+}
+
+.unread {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+}
+
+/* Something is happening even with the panel shut. */
+.pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: assistant-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes assistant-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+    opacity: 1;
+  }
+}

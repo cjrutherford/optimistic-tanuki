@@ -202,23 +202,6 @@
       </div>
 
       <!--
-        The assistant. What stood in for it was a placeholder that always read
-        "AI assistant unavailable", while the agent behind it worked.
-      -->
-      <div class="row-container">
-        <otui-tile class="assistant-tile">
-          <lib-ai-assistant
-            [turns]="assistantTurns()"
-            [working]="assistantWorking()"
-            [doing]="assistantDoing()"
-            [projectName]="selectedProject()?.name || null"
-            (asked)="onAssistantAsked($event)"
-            (cleared)="onAssistantCleared()"
-          ></lib-ai-assistant>
-        </otui-tile>
-      </div>
-
-      <!--
         The approval gate. A project can require that changes are approved
         before anything is written, and this is where that decision is made.
       -->

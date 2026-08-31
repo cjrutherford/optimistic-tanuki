@@ -46,6 +46,21 @@
       </section>
       }
       <router-outlet></router-outlet>
+      @if (isAuthenticated() && selectedProfile()) {
+      <!--
+        One assistant, reachable from every page. It picks up whichever
+        project the page is on, and without one it starts by finding out what
+        projects there are.
+      -->
+      <lib-ai-assistant-bubble
+        [turns]="assistant.turns()"
+        [working]="assistant.working()"
+        [doing]="assistant.doing()"
+        [projectName]="assistant.projectName()"
+        (asked)="assistant.ask($event)"
+        (cleared)="assistant.clear()"
+      ></lib-ai-assistant-bubble>
+      }
     </main>
 
     @if (isAuthenticated() && selectedProfile()) {

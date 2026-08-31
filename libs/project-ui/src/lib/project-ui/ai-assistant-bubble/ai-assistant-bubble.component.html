@@ -1,0 +1,30 @@
+<div class="bubble" [class.open]="open">
+  @if (open) {
+  <div class="panel" role="dialog" aria-label="Assistant">
+    <lib-ai-assistant
+      [turns]="turns"
+      [working]="working"
+      [doing]="doing"
+      [unavailable]="unavailable"
+      [projectName]="projectName"
+      (asked)="asked.emit($event)"
+      (cleared)="cleared.emit()"
+    ></lib-ai-assistant>
+  </div>
+  }
+
+  <button
+    type="button"
+    class="handle"
+    [attr.aria-expanded]="open"
+    (click)="toggle()"
+  >
+    @if (working) {
+    <span class="pulse" aria-hidden="true"></span>
+    }
+    <span class="label">{{ open ? 'Close' : 'Assistant' }}</span>
+    @if (!open && unread) {
+    <span class="unread">{{ unread }}</span>
+    }
+  </button>
+</div>

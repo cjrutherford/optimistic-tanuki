@@ -392,6 +392,25 @@ export class ProjectPlanningController {
     @Req() request: { credential?: string },
     @Res() response: Response
   ) {
+    return this.streamAgent(id, body, request, response);
+  }
+
+  /**
+   * One run, written out as it happens, with or without a project.
+   *
+   * Newline-delimited JSON rather than @Sse, because that decorator is GET only
+   * and EventSource cannot carry a request body. The instruction and the thread
+   * belong in a body, so this stays a POST.
+   */
+  private async streamAgent(
+    projectId: string | null,
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+    },
+    request: { credential?: string },
+    response: Response
+  ) {
     const token = request.credential;
     if (!token) {
       throw new BadRequestException('A signed in caller is required to act.');
@@ -412,7 +431,7 @@ export class ProjectPlanningController {
           { cmd: ProjectAiCommands.ACT_STREAM },
           {
             instruction: body.instruction,
-            projectId: id,
+            projectId,
             token,
             history: body.history ?? [],
           }
@@ -420,9 +439,8 @@ export class ProjectPlanningController {
         .subscribe({
           next: (event) => response.write(`${JSON.stringify(event)}\n`),
           error: (error) => {
-            // The reader always ends with something to show, so a failure
-            // here has to look like a finished run rather than a dropped
-            // connection.
+            // The reader always ends with something to show, so a failure here
+            // has to look like a finished run rather than a dropped connection.
             response.write(
               `${JSON.stringify({
                 type: 'done',
@@ -444,6 +462,34 @@ export class ProjectPlanningController {
           },
         });
     });
+  }
+
+  /**
+   * The assistant with no project chosen yet.
+   *
+   * The same run as the route above, without an id. Away from a project the
+   * assistant is not useless, it is starting further back: listing projects
+   * needs no project id, so it can find its way to one and say what it found.
+   *
+   * The approval gate is unaffected. It lives on the tools and keys off the
+   * project each tool is acting on, so nothing here decides what may be
+   * touched.
+   */
+  @ApiOperation({ summary: 'Have an agent work, with no project chosen yet' })
+  @RequirePermissions('project-planning.project.read')
+  @ModelBound()
+  @Post('ai-act/stream')
+  async actAnywhereStreaming(
+    @Body()
+    body: {
+      instruction?: string;
+      projectId?: string | null;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+    },
+    @Req() request: { credential?: string },
+    @Res() response: Response
+  ) {
+    return this.streamAgent(body?.projectId ?? null, body, request, response);
   }
 
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })

@@ -117,7 +117,7 @@ export class ProjectAgentService {
 
   async act(
     instruction: string,
-    projectId: string,
+    projectId: string | null,
     token: string,
     history: AgentTurn[] = [],
     /**
@@ -163,10 +163,14 @@ export class ProjectAgentService {
         messages: [
           new SystemMessage(this.systemPrompt(projectId)),
           ...rememberedTurns(history, ProjectAgentService.TURNS_REMEMBERED),
-          // The id goes in the instruction as well. It is the one fact the
-          // tools cannot proceed without, and repeating it costs nothing next
-          // to a turn spent asking for it.
-          new HumanMessage(`${instruction}\n\nprojectId: ${projectId}`),
+          // The id goes in the instruction as well when there is one. It is
+          // the one fact the tools cannot proceed without, and repeating it
+          // costs nothing next to a turn spent asking for it.
+          new HumanMessage(
+            projectId
+              ? `${instruction}\n\nprojectId: ${projectId}`
+              : instruction
+          ),
         ],
       });
 
@@ -378,13 +382,24 @@ export class ProjectAgentService {
     return z.object(shape);
   }
 
-  private systemPrompt(projectId: string): string {
+  private systemPrompt(projectId: string | null): string {
     return [
-      'You are working on one project for the person who asked you.',
+      "You are working on this person's projects for them.",
       '',
-      `The project id is ${projectId}.`,
-      'Use exactly that string wherever a tool asks for projectId. You already',
-      'have it, so never ask which project this is.',
+      // Without a project the assistant is not useless, it is just starting
+      // further back: listing projects needs no project id. Saying so beats
+      // refusing, and beats inventing an id.
+      ...(projectId
+        ? [
+            `The project id is ${projectId}.`,
+            'Use exactly that string wherever a tool asks for projectId. You',
+            'already have it, so never ask which project this is.',
+          ]
+        : [
+            'No project has been chosen. Use list_projects to see what there',
+            'is. If the question is about one project and you cannot tell',
+            'which, ask which one rather than guessing or picking the first.',
+          ]),
       '',
       'Use the tools to do what was asked. Do not describe what you would do,',
       'and do not ask questions you can answer from what you were given.',
