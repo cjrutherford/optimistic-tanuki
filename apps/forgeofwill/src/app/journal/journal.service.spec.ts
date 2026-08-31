@@ -36,12 +36,13 @@ describe('JournalService', () => {
       const mockJournal: CreateProjectJournal = {
         content: 'Test Entry',
         projectId: '1',
-        profileId: '1',
-        createdAt: new Date(),
       };
+      // When it was written is the server's to decide, and who wrote it comes
+      // from the session. Sending createdAt had the request refused.
       const expectedResponse: ProjectJournal = {
         id: '1',
         ...mockJournal,
+        profileId: '1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
