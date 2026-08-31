@@ -71,6 +71,23 @@ export class AiAssistantComponent {
     }
   }
 
+  /**
+   * What to say while it works, given what it has done so far.
+   *
+   * A run takes a minute or more and the first stretch of it is genuinely
+   * silent: the agent is deciding what to call before it calls anything. Once
+   * tools start arriving there is something true to report, and reporting it
+   * is the difference between waiting and watching.
+   *
+   * This becomes the thinking message when the panel moves onto the shared
+   * chat window, so the wording is worth getting right here.
+   */
+  get thinkingMessage(): string {
+    return this.doing.length
+      ? 'Working on it. So far:'
+      : 'Working on it. This takes a minute.';
+  }
+
   /** The tool name, in words, so the list reads as actions rather than API. */
   describe(tool: string): string {
     const words: Record<string, string> = {

@@ -1,3 +1,5 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
 import { AiAssistantComponent } from './ai-assistant.component';
 
 /**
@@ -110,6 +112,61 @@ describe('AiAssistantComponent', () => {
       ready.submit();
 
       expect(ready.draft).toBe('');
+    });
+  });
+  /**
+   * Rendered rather than called, on purpose.
+   *
+   * Every other test here builds the class directly, which is why the tools
+   * could stream into an input that the template never read: the input was
+   * bound the whole way through and nothing rendered it. A test that asks the
+   * component a question cannot catch that. Only the DOM can.
+   */
+  describe('while it is working', () => {
+    let fixture: ComponentFixture<AiAssistantComponent>;
+
+    function text(): string {
+      return fixture.nativeElement.textContent ?? '';
+    }
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [AiAssistantComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(AiAssistantComponent);
+      fixture.componentInstance.working = true;
+    });
+
+    it('says a run takes a while before any tool has been called', () => {
+      fixture.componentInstance.doing = [];
+      fixture.detectChanges();
+
+      expect(text()).toContain('This takes a minute');
+    });
+
+    it('shows each tool as it is used, in words', () => {
+      fixture.componentInstance.doing = ['list_projects', 'count_tasks'];
+      fixture.detectChanges();
+
+      const shown = text();
+      expect(shown).toContain('looked at your projects');
+      expect(shown).toContain('count tasks');
+    });
+
+    it('stops promising a wait once there is something to report', () => {
+      fixture.componentInstance.doing = ['list_projects'];
+      fixture.detectChanges();
+
+      expect(text()).not.toContain('This takes a minute');
+    });
+
+    it('shows nothing of the sort when it is not working', () => {
+      fixture.componentInstance.working = false;
+      fixture.componentInstance.doing = ['list_projects'];
+      fixture.detectChanges();
+
+      expect(text()).not.toContain('looked at your projects');
     });
   });
 });

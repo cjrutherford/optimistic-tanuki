@@ -70,8 +70,21 @@
       }
     </article>
     } @if (working) {
-    <article class="turn thinking">
-      <p class="text">Working on it. This takes a minute.</p>
+    <!--
+      The tools arrive one at a time while it works and used to be collected
+      and never shown, so a minute of work looked identical to a minute of
+      nothing. Announced politely, because this updates while somebody is
+      reading it.
+    -->
+    <article class="turn thinking" aria-live="polite">
+      <p class="text">{{ thinkingMessage }}</p>
+      @if (doing.length) {
+      <ul class="did">
+        @for (tool of doing; track $index) {
+        <li>{{ describe(tool) }}</li>
+        }
+      </ul>
+      }
     </article>
     }
   </div>
