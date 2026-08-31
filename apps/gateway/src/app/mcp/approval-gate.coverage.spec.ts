@@ -436,6 +436,60 @@ describe('the shape of a list result', () => {
     expect(result.omittedFields).toContain('updatedAt');
   });
 
+  it('keeps the count as the total when only a page comes back', async () => {
+    // The trap. Counting the rows after slicing reports the page size as the
+    // answer, so two hundred tasks would say twenty five and mean it. The
+    // assistant has already answered a count question wrong twice from a list
+    // it could only partly see.
+    const many = Array.from({ length: 200 }, (_, i) => ({
+      ...row,
+      id: `t${i}`,
+    }));
+    const service = tasksService(many);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1' } as never,
+      undefined,
+      request
+    );
+
+    expect(result.count).toBe(200);
+    expect(result.showing).toBe(25);
+    expect(result.tasks).toHaveLength(25);
+    expect(result.more).toBe(true);
+  });
+
+  it('can be asked for the page after the first', async () => {
+    const many = Array.from({ length: 200 }, (_, i) => ({
+      ...row,
+      id: `t${i}`,
+    }));
+    const service = tasksService(many);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1', offset: 190 } as never,
+      undefined,
+      request
+    );
+
+    expect(result.offset).toBe(190);
+    expect(result.showing).toBe(10);
+    expect(result.more).toBe(false);
+    expect(result.count).toBe(200);
+  });
+
+  it('says everything came back when it did', async () => {
+    const service = tasksService([row, { ...row, id: 't2' }]);
+
+    const result = await service.listTasks(
+      { projectId: 'proj-1' } as never,
+      undefined,
+      request
+    );
+
+    expect(result).toMatchObject({ count: 2, showing: 2, more: false });
+  });
+
   it('hands back whole rows when the caller asks for them', async () => {
     const service = tasksService([row]);
 

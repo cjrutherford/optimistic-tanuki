@@ -14,6 +14,7 @@ import {
   TaskStatus,
   UpdateTaskDto,
   applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -30,6 +31,17 @@ export const listTasksSchema = z.object({
         'you would say out loud about it; "full" adds every field including ' +
         'timestamps and who touched it. Ask for full only when you need it.'
     ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 // Define Zod schemas for parameters
@@ -124,6 +136,17 @@ const queryTasksSchema = z.object({
         'you would say out loud about it; "full" adds every field including ' +
         'timestamps and who touched it. Ask for full only when you need it.'
     ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 /**
@@ -147,12 +170,30 @@ function asDueDate(value?: string): { dueDate?: Date } {
  */
 function viewTask(
   rows: Record<string, unknown>[],
-  view: EntityView
-): { tasks: unknown[]; omittedFields?: string[] } {
-  const narrowed = applyView(rows ?? [], 'task', view);
-  return narrowed.omitted
-    ? { tasks: narrowed.rows, omittedFields: narrowed.omitted }
-    : { tasks: narrowed.rows };
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  tasks: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'task', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    tasks: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
 }
 
 @Injectable()
@@ -187,7 +228,12 @@ export class TaskMcpService {
     parameters: listTasksSchema,
   })
   async listTasks(
-    { projectId, view = 'brief' }: z.infer<typeof listTasksSchema>,
+    {
+      projectId,
+      view = 'brief',
+      limit,
+      offset,
+    }: z.infer<typeof listTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -202,14 +248,11 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: tasks.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewTask(tasks, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewTask(tasks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing tasks:', error);
@@ -483,7 +526,12 @@ export class TaskMcpService {
     parameters: queryTasksSchema,
   })
   async queryTasks(
-    { view = 'brief', ...query }: z.infer<typeof queryTasksSchema>,
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: z.infer<typeof queryTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -500,14 +548,11 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: tasks.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewTask(tasks, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewTask(tasks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying tasks:', error);

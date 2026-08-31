@@ -11,6 +11,7 @@ import {
   RiskStatus,
   UpdateRiskDto,
   applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { ApprovalGate } from './approval-gate.service';
@@ -27,6 +28,17 @@ export const listRisksSchema = z.object({
         'you would say out loud about it; "full" adds every field including ' +
         'timestamps and who touched it. Ask for full only when you need it.'
     ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 // Define Zod schemas for parameters
@@ -98,6 +110,17 @@ const queryRisksSchema = z.object({
         'you would say out loud about it; "full" adds every field including ' +
         'timestamps and who touched it. Ask for full only when you need it.'
     ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 /**
@@ -108,12 +131,30 @@ const queryRisksSchema = z.object({
  */
 function viewRisk(
   rows: Record<string, unknown>[],
-  view: EntityView
-): { risks: unknown[]; omittedFields?: string[] } {
-  const narrowed = applyView(rows ?? [], 'risk', view);
-  return narrowed.omitted
-    ? { risks: narrowed.rows, omittedFields: narrowed.omitted }
-    : { risks: narrowed.rows };
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  risks: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'risk', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    risks: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
 }
 
 @Injectable()
@@ -147,7 +188,12 @@ export class RiskMcpService {
     parameters: listRisksSchema,
   })
   async listRisks(
-    { projectId, view = 'brief' }: z.infer<typeof listRisksSchema>,
+    {
+      projectId,
+      view = 'brief',
+      limit,
+      offset,
+    }: z.infer<typeof listRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -162,14 +208,11 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: risks.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewRisk(risks, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewRisk(risks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing risks:', error);
@@ -352,7 +395,12 @@ export class RiskMcpService {
     parameters: queryRisksSchema,
   })
   async queryRisks(
-    { view = 'brief', ...query }: z.infer<typeof queryRisksSchema>,
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: z.infer<typeof queryRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -369,14 +417,11 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: risks.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewRisk(risks, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewRisk(risks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying risks:', error);

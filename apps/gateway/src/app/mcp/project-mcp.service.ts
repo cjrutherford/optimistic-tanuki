@@ -18,6 +18,7 @@ import {
   EntityView,
   UpdateProjectDto,
   applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 
 // Define Zod schemas for parameters
@@ -78,6 +79,17 @@ export const listProjectsSchema = z.object({
         'you would say out loud about it; "full" adds every field including ' +
         'timestamps and who touched it. Ask for full only when you need it.'
     ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 /**
@@ -88,12 +100,30 @@ export const listProjectsSchema = z.object({
  */
 function viewProject(
   rows: Record<string, unknown>[],
-  view: EntityView
-): { projects: unknown[]; omittedFields?: string[] } {
-  const narrowed = applyView(rows ?? [], 'project', view);
-  return narrowed.omitted
-    ? { projects: narrowed.rows, omittedFields: narrowed.omitted }
-    : { projects: narrowed.rows };
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  projects: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'project', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    projects: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
 }
 
 @Injectable()
@@ -127,7 +157,7 @@ export class ProjectMcpService {
     parameters: listProjectsSchema,
   })
   async listProjects(
-    { view = 'brief' }: z.infer<typeof listProjectsSchema>,
+    { view = 'brief', limit, offset }: z.infer<typeof listProjectsSchema>,
     _context: unknown,
     request: any
   ) {
@@ -144,14 +174,11 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: projects.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewProject(projects, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewProject(projects, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing projects:', error);
@@ -451,7 +478,12 @@ export class ProjectMcpService {
     }),
   })
   async queryProjects(
-    { view, ...query }: { name: string; view?: EntityView },
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: { name: string; view?: EntityView; limit?: number; offset?: number },
     _context: unknown,
     request: any
   ) {
@@ -466,14 +498,11 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        // Before the list, not after it. Written last, the
-        // count is the first thing lost when a result has to
-        // be shortened, and it is the answer to every question
-        // about how many there are.
-        count: projects.length,
-        // Narrowed unless the caller asked for everything. A whole row per
-        // item is what made a list too long to read and too long to keep.
-        ...viewProject(projects, view),
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewProject(projects, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying projects:', error);

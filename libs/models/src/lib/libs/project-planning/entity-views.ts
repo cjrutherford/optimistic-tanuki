@@ -90,3 +90,56 @@ export function applyView<T extends Record<string, unknown>>(
     ? { rows: narrowed, omitted: [...omitted].sort() }
     : { rows: narrowed };
 }
+
+/**
+ * How many rows a list tool returns when nobody says otherwise.
+ *
+ * Measured rather than picked: twelve tasks in the brief view came to 3,204
+ * characters, about 270 a row, so this lands near 6,750 and inside the eight
+ * thousand the assistant is given of any one result. A project of two hundred
+ * tasks would otherwise be back to a list too long to read, with the useful
+ * part cut off the end.
+ */
+export const DEFAULT_PAGE_SIZE = 25;
+
+/** The most anybody can ask for at once, so a page cannot become no page. */
+export const MAX_PAGE_SIZE = 100;
+
+export interface Page<T> {
+  /** Every row that matched, not the number on this page. */
+  count: number;
+  /** How many came back this time. */
+  showing: number;
+  offset: number;
+  /** True when there is more behind this page. */
+  more: boolean;
+  rows: T[];
+}
+
+/**
+ * One page of rows, with the total kept separate from the page size.
+ *
+ * The total is the trap. Counting the rows after slicing would report the page
+ * size as the answer, so a project of two hundred tasks would say twenty five
+ * and mean it. The assistant has already answered a count question wrong twice
+ * from a list it could only partly see; this is the same mistake wearing a
+ * different hat, and it is measured here rather than left to whoever writes
+ * the next tool.
+ */
+export function pageOf<T>(
+  rows: T[],
+  { limit, offset }: { limit?: number; offset?: number } = {}
+): Page<T> {
+  const all = rows ?? [];
+  const size = Math.min(Math.max(1, limit ?? DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
+  const from = Math.max(0, offset ?? 0);
+  const page = all.slice(from, from + size);
+
+  return {
+    count: all.length,
+    showing: page.length,
+    offset: from,
+    more: from + page.length < all.length,
+    rows: page,
+  };
+}
