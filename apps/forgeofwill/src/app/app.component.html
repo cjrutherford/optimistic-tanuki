@@ -57,8 +57,13 @@
         [working]="assistant.working()"
         [doing]="assistant.doing()"
         [projectName]="assistant.projectName()"
+        [personaName]="assistant.persona()?.name ?? null"
+        [personaId]="assistant.persona()?.id ?? null"
         (asked)="assistant.ask($event)"
         (cleared)="assistant.clear()"
+        (personaChosen)="
+          assistant.speakTo({ id: $event.id, name: $event.name })
+        "
       ></lib-ai-assistant-bubble>
       }
     </main>

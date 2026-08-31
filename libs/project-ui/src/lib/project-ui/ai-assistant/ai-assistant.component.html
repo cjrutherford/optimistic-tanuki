@@ -1,6 +1,15 @@
 <section class="assistant">
   <header>
-    <h4>Assistant</h4>
+    <!--
+      Named rather than labelled "Assistant", because who is answering is a
+      choice the reader made and the whole reason the menu exists. Before a
+      choice, and when no persona could be read, it is still just the
+      assistant.
+    -->
+    <h4>{{ personaName || 'Assistant' }}</h4>
+    <button type="button" class="switch" (click)="changePersona.emit()">
+      {{ personaName ? 'Change' : 'Choose who' }}
+    </button>
     @if (projectName) {
     <span class="scope">working on {{ projectName }}</span>
     } @if (turns.length && !unavailable) {

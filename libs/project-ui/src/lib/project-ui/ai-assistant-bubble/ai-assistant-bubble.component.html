@@ -7,10 +7,25 @@
       [doing]="doing"
       [unavailable]="unavailable"
       [projectName]="projectName"
+      [personaName]="personaName"
       (asked)="asked.emit($event)"
       (cleared)="cleared.emit()"
+      (changePersona)="showPersonas()"
     ></lib-ai-assistant>
   </div>
+  }
+
+  <!--
+    The menu is its own overlay, so it is a sibling of the panel rather than
+    something inside it. Marking whoever is already open means picking them
+    again reads as going back to that thread rather than starting one.
+  -->
+  @if (choosing) {
+  <lib-persona-selection-menu
+    [chosenId]="personaId"
+    (personaSelected)="choosePersona($event)"
+    (menuClose)="hidePersonas()"
+  ></lib-persona-selection-menu>
   }
 
   <button

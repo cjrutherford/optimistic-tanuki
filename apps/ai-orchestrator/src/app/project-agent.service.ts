@@ -63,6 +63,26 @@ export function saysAwaitingApproval(
   return used.some((call) => /waiting for approval/i.test(call.result));
 }
 
+/**
+ * Tools the MCP server offers that this assistant does not get to hold.
+ *
+ * All four are about choosing a persona, which is the person's job and is done
+ * in the menu. Leaving them bound gave the model a second, competing way to
+ * decide who is speaking, and `refer_to_persona` composed the sentence "Would
+ * you like me to connect you with Sam Codewell?". Nothing here can perform
+ * that handoff, so it was an offer that could not be honoured, made in exactly
+ * the offering voice the rules below exist to suppress.
+ *
+ * They stay on the MCP server, which other clients can use. This is only about
+ * what the assistant reaches for.
+ */
+const NOT_THE_AGENTS_BUSINESS = new Set([
+  'list_ai_personas',
+  'get_ai_persona',
+  'find_specialist_persona',
+  'refer_to_persona',
+]);
+
 /** One exchange, as the caller keeps it between requests. */
 export interface AgentTurn {
   role: 'person' | 'assistant';
@@ -402,9 +422,12 @@ export class ProjectAgentService {
     scope?: string[] | null
   ): Promise<DynamicStructuredTool[]> {
     const all = await session.listTools();
+    const offered = all.filter(
+      (tool) => !NOT_THE_AGENTS_BUSINESS.has(tool.name)
+    );
     const listed = scope
-      ? all.filter((tool) => scope.includes(tool.name))
-      : all;
+      ? offered.filter((tool) => scope.includes(tool.name))
+      : offered;
 
     if (scope && listed.length !== scope.length) {
       this.logger.warn(

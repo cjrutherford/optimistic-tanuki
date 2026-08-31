@@ -272,6 +272,24 @@ describe('ProjectAgentService', () => {
       expect(bound).toEqual([]);
     });
 
+    it('never holds the tools that choose a persona', async () => {
+      // The person chooses who they are talking to, in the menu. Bound here as
+      // well, refer_to_persona offered to connect the reader with somebody
+      // else, which nothing in the application can do.
+      const { service, session } = serviceWith();
+      session.listTools.mockResolvedValue([
+        { name: 'count_tasks', inputSchema: { properties: {} } },
+        { name: 'list_ai_personas', inputSchema: { properties: {} } },
+        { name: 'get_ai_persona', inputSchema: { properties: {} } },
+        { name: 'find_specialist_persona', inputSchema: { properties: {} } },
+        { name: 'refer_to_persona', inputSchema: { properties: {} } },
+      ]);
+
+      const bound = await service.toolsFor(session as never, []);
+
+      expect(bound.map((tool) => tool.name)).toEqual(['count_tasks']);
+    });
+
     it('ignores a name no tool answers to rather than failing the run', async () => {
       // A stale scope should cost a capability, never the whole answer.
       const { service, session } = serviceWith();

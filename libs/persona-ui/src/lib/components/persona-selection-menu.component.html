@@ -43,22 +43,28 @@
     </div>
     } @else {
     <div class="persona-menu-content">
+      @if (getDefaultPersona(); as recommended) {
       <p class="recommendation-text">
-        💡 Not sure which to choose? We recommend
-        <strong>Project Management</strong> for general assistance.
+        Not sure? <strong>{{ recommended.name }}</strong> is the one who works
+        on your projects with you.
       </p>
+      }
 
       <div class="persona-list">
         @for (persona of personas(); track persona.id) {
         <button
           class="persona-item"
           [class.default-persona]="isDefaultPersona(persona)"
+          [class.chosen-persona]="isChosen(persona)"
+          [attr.aria-current]="isChosen(persona) ? 'true' : null"
           (click)="onPersonaSelect(persona)"
         >
           <div class="persona-info">
             <div class="persona-header">
               <h3>{{ persona.name }}</h3>
-              @if (isDefaultPersona(persona)) {
+              @if (isChosen(persona)) {
+              <span class="chosen-badge">Talking to now</span>
+              } @else if (isDefaultPersona(persona)) {
               <span class="default-badge">Recommended</span>
               }
             </div>

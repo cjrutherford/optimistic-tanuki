@@ -47,8 +47,12 @@ export class AiAssistantComponent {
   @Input() unavailable: string | null = null;
   /** What it is working on, so the panel can name it. */
   @Input() projectName: string | null = null;
+  /** Who is answering, when a persona has been chosen or reported. */
+  @Input() personaName: string | null = null;
   @Output() asked = new EventEmitter<string>();
   @Output() cleared = new EventEmitter<void>();
+  /** The reader wants somebody else. Whoever hosts this shows the menu. */
+  @Output() changePersona = new EventEmitter<void>();
 
   draft = '';
 

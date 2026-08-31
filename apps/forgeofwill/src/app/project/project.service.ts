@@ -26,6 +26,8 @@ export type AssistantProgress =
         awaitingApproval: boolean;
         model: string | null;
         unavailable?: string;
+        /** Who answered, present whenever a persona could be read. */
+        spokenBy?: { id: string; name: string; blurb: string };
       };
     };
 
@@ -163,7 +165,9 @@ export class ProjectService {
     projectId: string | null,
     instruction: string,
     history: { role: 'person' | 'assistant'; text: string }[],
-    onEvent: (event: AssistantProgress) => void
+    onEvent: (event: AssistantProgress) => void,
+    /** Who to speak as. Null lets the orchestrator pick its usual persona. */
+    personaId: string | null = null
   ): Promise<void> {
     // With no project chosen the assistant is not stuck, it just starts further
     // back by listing projects. That is a route of its own: interpolating a
@@ -179,7 +183,7 @@ export class ProjectService {
         'Content-Type': 'application/json',
         'x-ot-appscope': 'forgeofwill',
       },
-      body: JSON.stringify({ instruction, history }),
+      body: JSON.stringify({ instruction, history, personaId }),
     });
 
     if (!response.ok || !response.body) {
