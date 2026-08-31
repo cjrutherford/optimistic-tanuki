@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { NgZone } from '@angular/core';
 import {
   HttpClientTestingModule,
   HttpTestingController,
@@ -275,6 +276,103 @@ describe('ProjectService', () => {
         service.inviteMember('1', 'test@example.com', 'user1')
       ).toThrow(
         'No profile selected. Please select a profile before inviting members.'
+      );
+    });
+  });
+  /**
+   * The assistant streamed correctly and painted nothing.
+   *
+   * zone.js does not patch fetch or a ReadableStream reader, so a caller that
+   * writes a signal from one of these events writes it outside Angular and no
+   * change detection follows. Asserting the signal is worthless here: the
+   * signals were always right. What has to be asserted is that the callback
+   * runs somewhere a repaint can happen.
+   */
+  describe('instructAssistantStreaming', () => {
+    /** Serves an ndjson body one chunk at a time, the way the network does. */
+    function respondWith(lines: string[]) {
+      const encoder = new TextEncoder();
+      const chunks = lines.map((line) => encoder.encode(`${line}\n`));
+      let next = 0;
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: {
+          getReader: () => ({
+            read: () =>
+              Promise.resolve(
+                next < chunks.length
+                  ? { done: false, value: chunks[next++] }
+                  : { done: true, value: undefined }
+              ),
+          }),
+        },
+      }) as unknown as typeof fetch;
+    }
+
+    const done = JSON.stringify({
+      type: 'done',
+      result: { said: 'ok', used: [], awaitingApproval: false, model: null },
+    });
+
+    afterEach(() => {
+      delete (global as { fetch?: unknown }).fetch;
+    });
+
+    it('hands every event to the caller inside the Angular zone', async () => {
+      respondWith([
+        JSON.stringify({ type: 'tool', tool: 'query_tasks' }),
+        done,
+      ]);
+
+      const zones: boolean[] = [];
+      const zone = TestBed.inject(NgZone);
+
+      // Started from outside, which is where a click handler's fetch
+      // continuation actually resumes.
+      await zone.runOutsideAngular(() =>
+        service.instructAssistantStreaming('p1', 'how many tasks', [], () => {
+          zones.push(NgZone.isInAngularZone());
+        })
+      );
+
+      expect(zones).toEqual([true, true]);
+    });
+
+    it('asks the route that needs no project when none is chosen', async () => {
+      respondWith([done]);
+
+      await service.instructAssistantStreaming(
+        null,
+        'what is there',
+        [],
+        () => {
+          /* the URL is what is under test */
+        }
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/project-planning/ai-act/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    it('asks the project route when one is chosen', async () => {
+      respondWith([done]);
+
+      await service.instructAssistantStreaming(
+        'p1',
+        'how many tasks',
+        [],
+        () => {
+          /* the URL is what is under test */
+        }
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/project-planning/projects/p1/ai-act/stream',
+        expect.objectContaining({ method: 'POST' })
       );
     });
   });

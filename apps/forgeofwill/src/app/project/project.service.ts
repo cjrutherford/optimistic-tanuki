@@ -12,7 +12,7 @@ import {
   ProjectNarrative,
 } from '@optimistic-tanuki/project-ui';
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { ProfileService } from '../profile/profile.service';
 
 /** What the caller sees while the assistant works, then what it produced. */
@@ -34,6 +34,10 @@ export type AssistantProgress =
 })
 export class ProjectService {
   baseUrl = '/api/project-planning/projects';
+
+  /** Only used to bring streamed events back into Angular. See below. */
+  private readonly zone = inject(NgZone);
+
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
@@ -147,6 +151,13 @@ export class ProjectService {
    * Each line is one event. The caller sees the tools being used, then the
    * result. A run takes a minute or more, and silence for that long looks like
    * a fault.
+   *
+   * Every event is handed to the caller inside Angular's zone. zone.js does not
+   * patch fetch or a ReadableStream reader, so without this the signals a
+   * caller writes from here are set correctly and never painted: no progress,
+   * no tools appearing, and an answer that only shows up when something
+   * unrelated happens to trigger a cycle. Doing it here rather than at each
+   * call site means the next thing built on this stream is right by default.
    */
   async instructAssistantStreaming(
     projectId: string | null,
@@ -154,7 +165,14 @@ export class ProjectService {
     history: { role: 'person' | 'assistant'; text: string }[],
     onEvent: (event: AssistantProgress) => void
   ): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/${projectId}/ai-act/stream`, {
+    // With no project chosen the assistant is not stuck, it just starts further
+    // back by listing projects. That is a route of its own: interpolating a
+    // null id asks the gateway for a project literally named "null".
+    const url = projectId
+      ? `${this.baseUrl}/${projectId}/ai-act/stream`
+      : `${this.baseUrl.replace(/\/projects$/, '')}/ai-act/stream`;
+
+    const response = await fetch(url, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -184,12 +202,18 @@ export class ProjectService {
       buffer = lines.pop() ?? '';
       for (const line of lines) {
         if (!line.trim()) continue;
+
+        // Parsing and handling are caught separately on purpose. Wrapping both
+        // would report a bug in the caller as a malformed line and hide it.
+        let event: AssistantProgress;
         try {
-          onEvent(JSON.parse(line) as AssistantProgress);
+          event = JSON.parse(line) as AssistantProgress;
         } catch {
           // A line that will not parse is one event lost, not a reason to
           // abandon a run that is still producing them.
+          continue;
         }
+        this.zone.run(() => onEvent(event));
       }
     }
   }

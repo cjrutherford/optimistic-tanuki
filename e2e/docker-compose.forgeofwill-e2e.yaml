@@ -281,11 +281,16 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     ports:
       - '3000:3000'
+    # Probes a route that exists, is unauthenticated, and needs no downstream
+    # service, so a pass means Nest booted and is routing. This used to probe
+    # /api/mcp/sse: the MCP transport is mapped at /api/sse, that path has never
+    # existed, and the real one answers 401 anyway. The gateway could therefore
+    # never become healthy, and anything waiting on it never started.
     healthcheck:
       test:
         [
           'CMD-SHELL',
-          'node -e "require(''http'').get(''http://127.0.0.1:3000/api/mcp/sse'', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1));"',
+          'node -e "require(''http'').get(''http://127.0.0.1:3000/api/personalities'', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1));"',
         ]
       interval: 5s
       timeout: 5s
