@@ -68,6 +68,8 @@ export class ProjectAiController {
     projectId?: string | null;
     token: string;
     history?: AgentTurn[];
+    /** Who to speak as. Absent takes the persona whose job is projects. */
+    personaId?: string | null;
   }) {
     this.logger.log(`Agent acting on project ${data?.projectId}`);
     // A project is optional: without one the assistant starts by finding out
@@ -81,12 +83,13 @@ export class ProjectAiController {
         unavailable: 'An instruction and a signed in caller are both needed.',
       };
     }
-    return await this.agent.act(
-      data.instruction,
-      data.projectId ?? null,
-      data.token,
-      data.history ?? []
-    );
+    return await this.agent.act({
+      instruction: data.instruction,
+      projectId: data.projectId ?? null,
+      token: data.token,
+      history: data.history ?? [],
+      personaId: data.personaId ?? null,
+    });
   }
 
   /**
@@ -106,6 +109,8 @@ export class ProjectAiController {
     projectId?: string | null;
     token: string;
     history?: AgentTurn[];
+    /** Who to speak as. Absent takes the persona whose job is projects. */
+    personaId?: string | null;
   }): Observable<AgentProgress> {
     return new Observable<AgentProgress>((subscriber) => {
       if (!data?.instruction || !data?.token) {
@@ -128,13 +133,15 @@ export class ProjectAiController {
         `Agent acting on ${data.projectId ?? 'no project yet'}, streaming`
       );
       this.agent
-        .act(
-          data.instruction,
-          data.projectId ?? null,
-          data.token,
-          data.history ?? [],
-          (call) => subscriber.next({ type: 'tool', tool: call.tool })
-        )
+        .act({
+          instruction: data.instruction,
+          projectId: data.projectId ?? null,
+          token: data.token,
+          history: data.history ?? [],
+          personaId: data.personaId ?? null,
+          onToolUsed: (call) =>
+            subscriber.next({ type: 'tool', tool: call.tool }),
+        })
         .then((result) => {
           subscriber.next({ type: 'done', result });
           subscriber.complete();

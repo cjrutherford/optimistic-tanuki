@@ -47,14 +47,26 @@ describe('ProjectAgentService', () => {
       getModel: jest.fn(() => ({ bindTools: () => ({ invoke }) })),
     };
 
-    const service = new ProjectAgentService(models as never, tools as never);
-    return { service, tools, session, callTool, close, models };
+    const personas = {
+      voiceFor: jest.fn().mockResolvedValue(null),
+    };
+
+    const service = new ProjectAgentService(
+      models as never,
+      tools as never,
+      personas as never
+    );
+    return { service, tools, session, callTool, close, models, personas };
   }
 
   it('opens the session as the caller, not as itself', async () => {
     const { service, tools } = serviceWith();
 
-    await service.act('add a task', 'p1', 'the-callers-token');
+    await service.act({
+      instruction: 'add a task',
+      projectId: 'p1',
+      token: 'the-callers-token',
+    });
 
     expect(tools.session).toHaveBeenCalledWith('the-callers-token');
   });
@@ -67,7 +79,11 @@ describe('ProjectAgentService', () => {
       throw new Error('model is down');
     });
 
-    const result = await service.act('add a task', 'p1', 'token');
+    const result = await service.act({
+      instruction: 'add a task',
+      projectId: 'p1',
+      token: 'token',
+    });
 
     expect(result.unavailable).toBeTruthy();
     expect(close).toHaveBeenCalled();
@@ -79,7 +95,11 @@ describe('ProjectAgentService', () => {
       throw new Error('No model configured for tool_calling');
     });
 
-    const result = await service.act('add a task', 'p1', 'token');
+    const result = await service.act({
+      instruction: 'add a task',
+      projectId: 'p1',
+      token: 'token',
+    });
 
     expect(result.unavailable).toMatch(/No model is configured/);
     expect(tools.session).not.toHaveBeenCalled();
@@ -129,6 +149,139 @@ describe('ProjectAgentService', () => {
       const tools = await service.toolsFor(session as never, []);
 
       expect(tools.map((t) => t.name)).toEqual(['create_task']);
+    });
+  });
+
+  /**
+   * A voice on top of the rules, never instead of them.
+   *
+   * The seeded personas were written when these were advice chatbots, and
+   * feeding one in as behaviour pushes a small model straight back into
+   * describing its tool output and offering further analysis. Those rules are
+   * the outcome of three separate attempts to stop exactly that, so the test
+   * is not "does it have a persona" but "does the persona still leave the
+   * rules standing, and last".
+   */
+  describe('speaking as somebody', () => {
+    const patricia = {
+      id: 'persona-1',
+      name: 'Patricia P. Project',
+      blurb: 'Works on your projects with you.',
+      identityLines: [
+        'You are Patricia P. Project.',
+        'You come across as organized, empathetic and decisive.',
+      ],
+      tools: null,
+    };
+
+    /** The system prompt as the run would build it. */
+    function promptFor(voice: unknown): string {
+      const { service } = serviceWith();
+      return service['systemPrompt']('p1', voice as never);
+    }
+
+    it('says who is speaking', () => {
+      const prompt = promptFor(patricia);
+
+      expect(prompt).toContain('You are Patricia P. Project.');
+    });
+
+    it('keeps every behavioural rule the persona could have displaced', () => {
+      const withVoice = promptFor(patricia);
+      const without = promptFor(null);
+
+      // Whatever the persona adds, nothing it adds may remove.
+      for (const rule of [
+        'Answer the question you were actually asked',
+        'never describe it',
+        'not what you meant to happen',
+        'waiting for approval',
+      ]) {
+        expect(without).toContain(rule);
+        expect(withVoice).toContain(rule);
+      }
+    });
+
+    it('puts the rules after the persona, closest to the task', () => {
+      const prompt = promptFor(patricia);
+
+      expect(prompt.indexOf('You are Patricia P. Project.')).toBeLessThan(
+        prompt.indexOf('Answer the question you were actually asked')
+      );
+    });
+
+    it('answers as nobody rather than not at all', async () => {
+      // The telos service being unreachable costs a name, not a run.
+      const { service, personas } = serviceWith();
+      personas.voiceFor.mockResolvedValue(null);
+
+      const result = await service.act({
+        instruction: 'how many tasks',
+        projectId: 'p1',
+        token: 'token',
+      });
+
+      expect(result.spokenBy).toBeUndefined();
+      expect(result.unavailable).toBeUndefined();
+    });
+
+    it('reports who answered, so a reader can be shown a name', async () => {
+      const { service, personas } = serviceWith();
+      personas.voiceFor.mockResolvedValue(patricia);
+
+      const result = await service.act({
+        instruction: 'how many tasks',
+        projectId: 'p1',
+        token: 'token',
+      });
+
+      expect(result.spokenBy).toEqual({
+        id: 'persona-1',
+        name: 'Patricia P. Project',
+        blurb: 'Works on your projects with you.',
+      });
+    });
+  });
+
+  /**
+   * Choosing a persona is meant to choose what can be done, so the scope is
+   * read even though nothing sets it yet. Building the seam later would mean
+   * every caller that binds tools had been written against the wrong shape.
+   */
+  describe('the tools a persona may reach', () => {
+    it('binds every tool when the scope says nothing', async () => {
+      const { service, session } = serviceWith();
+
+      const bound = await service.toolsFor(
+        session as never,
+        [],
+        undefined,
+        null
+      );
+
+      expect(bound.map((tool) => tool.name)).toEqual(['create_task']);
+    });
+
+    it('binds only the tools in the scope', async () => {
+      const { service, session } = serviceWith();
+
+      const bound = await service.toolsFor(session as never, [], undefined, [
+        'nothing_by_this_name',
+      ]);
+
+      expect(bound).toEqual([]);
+    });
+
+    it('ignores a name no tool answers to rather than failing the run', async () => {
+      // A stale scope should cost a capability, never the whole answer.
+      const { service, session } = serviceWith();
+
+      const bound = await service.toolsFor(session as never, [], undefined, [
+        'create_task',
+        'a_tool_that_was_removed',
+      ]);
+
+      expect(bound.map((tool) => tool.name)).toEqual(['create_task']);
     });
   });
 });

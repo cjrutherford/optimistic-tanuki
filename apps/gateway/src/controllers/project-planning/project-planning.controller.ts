@@ -407,6 +407,7 @@ export class ProjectPlanningController {
     body: {
       instruction?: string;
       history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
     },
     request: { credential?: string },
     response: Response
@@ -434,6 +435,9 @@ export class ProjectPlanningController {
             projectId,
             token,
             history: body.history ?? [],
+            // Absent means the persona whose job is running projects, chosen
+            // by the orchestrator rather than named here.
+            personaId: body.personaId ?? null,
           }
         )
         .subscribe({
@@ -485,6 +489,7 @@ export class ProjectPlanningController {
       instruction?: string;
       projectId?: string | null;
       history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
     },
     @Req() request: { credential?: string },
     @Res() response: Response

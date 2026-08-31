@@ -8,6 +8,7 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { z } from 'zod';
 import { ModelManager, ModelType } from './models/model-manager.service';
+import { PersonaVoiceService, Voice } from './persona-voice.service';
 import { McpSession, ToolsService } from './tools.service';
 
 /**
@@ -86,6 +87,25 @@ export function rememberedTurns(history: AgentTurn[], limit: number) {
     );
 }
 
+/** Everything one run needs to know. */
+export interface AgentRunRequest {
+  instruction: string;
+  projectId: string | null;
+  token: string;
+  history?: AgentTurn[];
+  /** Who to speak as. Null takes the persona whose job is running projects. */
+  personaId?: string | null;
+  /**
+   * Called the moment a tool is used, before the answer exists.
+   *
+   * A question takes a minute or more, and a panel that says only "working on
+   * it" for that long is indistinguishable from a broken one. Whoever is
+   * watching gets to see it reading the project, or proposing a task, while it
+   * happens.
+   */
+  onToolUsed?: (call: { tool: string; result: string }) => void;
+}
+
 export interface AgentRunResult {
   /** What the agent said it did, in its own words. */
   said: string;
@@ -95,6 +115,13 @@ export interface AgentRunResult {
   awaitingApproval: boolean;
   model: string | null;
   unavailable?: string;
+  /**
+   * Who answered, so the panel can show a name and a face rather than "AI".
+   *
+   * Absent when no persona could be read, which is a working state: the
+   * assistant still answers, just as nobody in particular.
+   */
+  spokenBy?: { id: string; name: string; blurb: string };
 }
 
 @Injectable()
@@ -103,7 +130,8 @@ export class ProjectAgentService {
 
   constructor(
     private readonly models: ModelManager,
-    private readonly tools: ToolsService
+    private readonly tools: ToolsService,
+    private readonly personas: PersonaVoiceService
   ) {}
 
   /**
@@ -115,21 +143,24 @@ export class ProjectAgentService {
    */
   static readonly TURNS_REMEMBERED = 12;
 
-  async act(
-    instruction: string,
-    projectId: string | null,
-    token: string,
-    history: AgentTurn[] = [],
-    /**
-     * Called the moment a tool is used, before the answer exists.
-     *
-     * A question takes a minute or more, and a panel that says only "working
-     * on it" for that long is indistinguishable from a broken one. Whoever is
-     * watching gets to see it reading the project, or proposing a task, while
-     * it happens.
-     */
-    onToolUsed?: (call: { tool: string; result: string }) => void
-  ): Promise<AgentRunResult> {
+  /**
+   * One request object rather than six positional arguments.
+   *
+   * This had five and was about to take a sixth, at which point the call sites
+   * stop being readable and the wrong thing lands in the wrong slot without
+   * anything complaining. It also leaves room for the persona's tool scope,
+   * which is coming.
+   */
+  async act(request: AgentRunRequest): Promise<AgentRunResult> {
+    const {
+      instruction,
+      projectId,
+      token,
+      history = [],
+      personaId = null,
+      onToolUsed,
+    } = request;
+
     let config;
     try {
       config = this.models.getModelConfig(ModelType.TOOL_CALLING);
@@ -144,11 +175,21 @@ export class ProjectAgentService {
       };
     }
 
+    // Never allowed to stop a run. Without a persona the assistant answers as
+    // nobody, which is how it has always answered until now.
+    const voice = await this.personas.voiceFor(personaId);
+
     let session: McpSession | undefined;
     try {
       session = await this.tools.session(token);
       const used: AgentRunResult['used'] = [];
-      const tools = await this.toolsFor(session, used, onToolUsed);
+      const tools = await this.toolsFor(
+        session,
+        used,
+        onToolUsed,
+        voice?.tools
+      );
+      const prompt = this.systemPrompt(projectId, voice);
 
       const agent = createReactAgent({
         llm: this.models.getModel(ModelType.TOOL_CALLING),
@@ -156,12 +197,12 @@ export class ProjectAgentService {
         // Given only as a leading message, the id was not attended to: the
         // model asked which project to work on, having been told twice.
         // createReactAgent carries this on every turn instead.
-        prompt: this.systemPrompt(projectId),
+        prompt,
       });
 
       const run = await agent.invoke({
         messages: [
-          new SystemMessage(this.systemPrompt(projectId)),
+          new SystemMessage(prompt),
           ...rememberedTurns(history, ProjectAgentService.TURNS_REMEMBERED),
           // The id goes in the instruction as well when there is one. It is
           // the one fact the tools cannot proceed without, and repeating it
@@ -178,10 +219,13 @@ export class ProjectAgentService {
       const itsOwnWords = String(messages[messages.length - 1]?.content ?? '');
 
       return {
-        said: await this.compose(instruction, used, itsOwnWords),
+        said: await this.compose(instruction, used, itsOwnWords, voice),
         used,
         awaitingApproval: saysAwaitingApproval(used),
         model: config.name,
+        ...(voice
+          ? { spokenBy: { id: voice.id, name: voice.name, blurb: voice.blurb } }
+          : {}),
       };
     } catch (error) {
       this.logger.warn(`Agent run failed: ${(error as Error).message}`);
@@ -219,7 +263,8 @@ export class ProjectAgentService {
   async compose(
     question: string,
     used: AgentRunResult['used'],
-    itsOwnWords: string
+    itsOwnWords: string,
+    voice?: Voice | null
   ): Promise<string> {
     // Nothing was looked up, so there is nothing to answer from and the
     // composer would be inventing. Whatever it said stands.
@@ -228,7 +273,7 @@ export class ProjectAgentService {
     try {
       const model = this.models.getModel(ModelType.CONVERSATIONAL);
       const reply = await model.invoke([
-        new SystemMessage(this.composerPrompt()),
+        new SystemMessage(this.composerPrompt(voice)),
         new HumanMessage(this.composerInput(question, used)),
       ]);
       const text = String(reply?.content ?? '').trim();
@@ -243,8 +288,16 @@ export class ProjectAgentService {
     }
   }
 
-  private composerPrompt(): string {
+  /**
+   * Where the personality actually earns its keep.
+   *
+   * This model writes the sentence a person reads, so this is the one prompt
+   * where a voice changes anything a reader will notice. Same order as the
+   * other: who they are first, what they must do last.
+   */
+  private composerPrompt(voice?: Voice | null): string {
     return [
+      ...(voice ? [...voice.identityLines, ''] : []),
       'Somebody asked a question about their project. Tools were used to look',
       'things up. You are given what those tools returned. Answer the',
       'question.',
@@ -337,9 +390,27 @@ export class ProjectAgentService {
   async toolsFor(
     session: McpSession,
     used: AgentRunResult['used'],
-    onToolUsed?: (call: { tool: string; result: string }) => void
+    onToolUsed?: (call: { tool: string; result: string }) => void,
+    /**
+     * The tools this run may use, or null or undefined for all of them.
+     *
+     * Choosing a persona is meant to choose what can be done, not only who is
+     * speaking, so the scope is read here from the outset even though nothing
+     * sets it yet. A name that no tool answers to is ignored rather than
+     * treated as an error: a stale scope should cost a capability, never a run.
+     */
+    scope?: string[] | null
   ): Promise<DynamicStructuredTool[]> {
-    const listed = await session.listTools();
+    const all = await session.listTools();
+    const listed = scope
+      ? all.filter((tool) => scope.includes(tool.name))
+      : all;
+
+    if (scope && listed.length !== scope.length) {
+      this.logger.warn(
+        `Scope named ${scope.length} tools and ${listed.length} exist`
+      );
+    }
 
     return listed.map(
       (tool) =>
@@ -382,8 +453,20 @@ export class ProjectAgentService {
     return z.object(shape);
   }
 
-  private systemPrompt(projectId: string | null): string {
+  /**
+   * Who is speaking, then what they must do, in that order and never the other
+   * way round.
+   *
+   * The identity goes first and the rules go last, closest to the task, so a
+   * persona can colour how the assistant sounds and can never argue with how
+   * it behaves. The seeded personas would if they were allowed to: they were
+   * written for a chatbot that hands out templates, and the rules below are
+   * the outcome of three separate attempts to stop a small model doing exactly
+   * that. A voice is worth having. It is not worth that.
+   */
+  private systemPrompt(projectId: string | null, voice?: Voice | null): string {
     return [
+      ...(voice ? [...voice.identityLines, ''] : []),
       "You are working on this person's projects for them.",
       '',
       // Without a project the assistant is not useless, it is just starting

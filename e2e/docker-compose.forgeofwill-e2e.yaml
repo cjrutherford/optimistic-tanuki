@@ -245,6 +245,57 @@ services:
       timeout: 3s
       retries: 12
 
+  # Where the personas live. Without it the assistant answers as nobody, which
+  # is a working state and not the one worth testing: the whole point of a
+  # persona is that a reader can tell who they are talking to. The hostname is
+  # fixed rather than configurable because the orchestrator's config names it.
+  telos-docs-service:
+    container_name: e2e_telos_docs_fow
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - '3008:3008'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_telos_docs_service
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3008, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  # The personas themselves. Upserted by name, so running it again is safe and
+  # picks up an edit to the seeded records.
+  telos-persona-seed:
+    container_name: e2e_telos_persona_seed_fow
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    command: ['node', './seed-persona.js']
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_telos_docs_service
+    depends_on:
+      telos-docs-service:
+        condition: service_healthy
+    restart: 'no'
+
   # The AI orchestrator, so the project summary has something to talk to. The
   # stack ran without it, which is why nothing in this app could reach a model.
   # OLLAMA_HOST is the tailnet address rather than the MagicDNS name because
@@ -273,6 +324,9 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      # The personas have to exist before the assistant asks who it is.
+      telos-persona-seed:
+        condition: service_completed_successfully
 
   gateway:
     container_name: e2e_gateway_fow

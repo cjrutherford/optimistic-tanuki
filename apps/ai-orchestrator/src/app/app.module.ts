@@ -5,6 +5,7 @@ import { WellnessController } from './wellness.controller';
 import { ProjectAiController } from './project-ai.controller';
 import { ProjectAiService } from './project-ai.service';
 import { ProjectAgentService } from './project-agent.service';
+import { PersonaVoiceService } from './persona-voice.service';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
@@ -60,6 +61,7 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     WellnessPromptService,
     ProjectAiService,
     ProjectAgentService,
+    PersonaVoiceService,
     LangChainService,
     ContextStorageService,
     LangGraphService,
