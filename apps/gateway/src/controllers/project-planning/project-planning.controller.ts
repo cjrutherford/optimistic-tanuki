@@ -301,6 +301,7 @@ export class ProjectPlanningController {
     body: {
       instruction?: string;
       history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
     },
     @Req() request: { credential?: string }
   ) {
@@ -326,6 +327,11 @@ export class ProjectPlanningController {
           // it here would mean deciding whose it is and when it ends, for a
           // panel that already knows both.
           history: body.history ?? [],
+          // Carried here as well as on the streaming route. This one is not
+          // what the panel calls, and a route that quietly ignored the chosen
+          // persona would answer as the wrong person with nothing to show for
+          // it.
+          personaId: body.personaId ?? null,
         }
       )
     );
