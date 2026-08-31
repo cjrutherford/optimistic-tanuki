@@ -95,4 +95,24 @@ export class AiAssistantComponent {
   wasProposed(call: { result: string }): boolean {
     return /waiting for approval/i.test(call.result);
   }
+
+  /**
+   * Whether the assistant only saw part of a list while answering this turn.
+   *
+   * A list tool returns a page and says whether there is more behind it. The
+   * assistant is not told to mention that and usually does not, so an answer
+   * drawn from the first twenty five of two hundred reads exactly like an
+   * answer drawn from all of them. Saying so is the difference between a
+   * limitation and a wrong answer nobody caught.
+   *
+   * Read from what the tools returned rather than from what the assistant
+   * said, for the same reason the approval notice is: its own account is the
+   * one source that cannot be trusted to reveal what it missed.
+   */
+  sawOnlyPartOfAList(turn: AssistantTurn): boolean {
+    return (turn.used ?? []).some(
+      (call) =>
+        /"more"\s*:\s*true/.test(call.result) || /SHORTENED/.test(call.result)
+    );
+  }
 }

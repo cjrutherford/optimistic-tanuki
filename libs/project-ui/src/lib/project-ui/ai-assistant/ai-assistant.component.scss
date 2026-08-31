@@ -90,6 +90,14 @@
   opacity: 0.8;
 }
 
+.partial {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  border-left: 2px solid var(--warning);
+  padding-left: 0.5rem;
+}
+
 .gate {
   margin: 0;
   font-size: 0.82rem;

@@ -16,9 +16,20 @@
 
   <div class="thread">
     @if (!turns.length) {
+    <!--
+      What it is good at and what it costs, said before somebody waits two
+      minutes to find out. It answers a focused question well and is not an
+      analyst, which is a property of a small model rather than a fault to be
+      reported.
+    -->
     <p class="empty">
-      Ask it to look at this project, or to do something on it. Anything it does
-      still comes to you for approval first.
+      Ask about one thing, or tell it to do something. It is good at a specific
+      question and at carrying out an instruction, less so at questions about a
+      whole project at once.
+    </p>
+    <p class="empty">
+      Answers take a minute or two, and anything it does still comes to you for
+      approval first.
     </p>
     } @for (turn of turns; track $index) {
     <article class="turn" [class.mine]="turn.role === 'person'">
@@ -42,6 +53,19 @@
       } @if (turn.awaitingApproval) {
       <p class="gate">
         Nothing has happened yet. It is in the approval list below.
+      </p>
+      }
+
+      <!--
+        A list tool returns a page and says whether there is more behind it.
+        The assistant rarely mentions that, so an answer drawn from the first
+        twenty five of two hundred reads exactly like one drawn from all of
+        them.
+      -->
+      @if (sawOnlyPartOfAList(turn)) {
+      <p class="partial">
+        It only saw part of that list, so treat anything about totals or all of
+        them with care.
       </p>
       }
     </article>
