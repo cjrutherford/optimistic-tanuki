@@ -65,6 +65,7 @@
         (personaChosen)="
           assistant.speakTo({ id: $event.id, name: $event.name })
         "
+        (decided)="assistant.decide($event.id, $event.approved)"
       ></lib-ai-assistant-bubble>
       }
     </main>

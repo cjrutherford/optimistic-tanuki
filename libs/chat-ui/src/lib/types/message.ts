@@ -27,6 +27,14 @@ export interface AssistantNote {
   awaiting?: string;
   /** A caveat about the answer itself, such as having seen part of a list. */
   caution?: string;
+  /**
+   * Things this message is waiting on a yes or no for.
+   *
+   * Deliberately not "changes" or "proposals": this library does not know what
+   * is being decided, only that a message can carry decisions and that the
+   * reader can make them here rather than somewhere else.
+   */
+  decisions?: { id: string; what: string }[];
 }
 
 /**

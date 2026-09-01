@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
 import { AssistantContextService } from '@optimistic-tanuki/project-ui';
 
 import { AssistantService } from './assistant.service';
@@ -16,6 +17,7 @@ describe('AssistantService', () => {
   let service: AssistantService;
   let projects: {
     instructAssistantStreaming: jest.Mock;
+    reviewAiChange: jest.Mock;
   };
 
   /** The last call's arguments, so a test can answer it when it chooses. */
@@ -43,6 +45,7 @@ describe('AssistantService', () => {
     localStorage.clear();
     projects = {
       instructAssistantStreaming: jest.fn().mockResolvedValue(undefined),
+      reviewAiChange: jest.fn().mockReturnValue(of({ id: 'change-1' })),
     };
 
     TestBed.configureTestingModule({
@@ -189,6 +192,62 @@ describe('AssistantService', () => {
       service.speakTo({ id: 'p2', name: 'Percy' });
 
       expect(service.turns()).toEqual([]);
+    });
+  });
+
+  /**
+   * Answering a proposal where it was made.
+   *
+   * The approval panel lives on the projects page and the assistant floats on
+   * every page, so it could tell somebody that something was waiting for them
+   * somewhere they were not.
+   */
+  describe('deciding in the conversation', () => {
+    it('uses the same route the projects page uses', () => {
+      // One approval path, rather than two that can disagree about what
+      // approving means.
+      service.decide('change-1', true);
+
+      expect(projects.reviewAiChange).toHaveBeenCalledWith({
+        id: 'change-1',
+        status: 'APPROVED',
+      });
+    });
+
+    it('sends a rejection as a rejection', () => {
+      service.decide('change-1', false);
+
+      expect(projects.reviewAiChange).toHaveBeenCalledWith({
+        id: 'change-1',
+        status: 'REJECTED',
+      });
+    });
+
+    it('says what happened rather than quietly dropping the buttons', () => {
+      // A proposal that vanishes is indistinguishable from one that was never
+      // there.
+      service.speakTo({ id: 'p1', name: 'Patricia' });
+
+      service.decide('change-1', true);
+
+      expect(service.turns()[0].text).toMatch(/Approved/);
+    });
+
+    it('says so when the decision could not be recorded', () => {
+      projects.reviewAiChange.mockReturnValue(
+        throwError(() => new Error('nope'))
+      );
+
+      service.decide('change-1', true);
+
+      expect(service.turns()[0].failed).toBe(true);
+      expect(service.turns()[0].text).toMatch(/Nothing has changed/);
+    });
+
+    it('tells a page that its board is now out of date', () => {
+      service.decide('change-1', true);
+
+      expect(service.decided()).toEqual({ id: 'change-1', approved: true });
     });
   });
 

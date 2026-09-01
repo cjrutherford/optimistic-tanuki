@@ -55,6 +55,8 @@ export class AiAssistantBubbleComponent {
   @Output() cleared = new EventEmitter<void>();
   /** Somebody else was chosen to talk to. */
   @Output() personaChosen = new EventEmitter<PersonaTelosDto>();
+  /** A proposal in the thread was approved or rejected. */
+  @Output() decided = new EventEmitter<{ id: string; approved: boolean }>();
 
   open = false;
 

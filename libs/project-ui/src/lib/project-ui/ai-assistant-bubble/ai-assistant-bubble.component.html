@@ -50,6 +50,7 @@
       [aiThinkingMessage]="thinkingMessage"
       windowState="embedded"
       (messageSubmitted)="asked.emit($event)"
+      (decided)="decided.emit($event)"
     ></lib-chat-window>
     }
   </div>

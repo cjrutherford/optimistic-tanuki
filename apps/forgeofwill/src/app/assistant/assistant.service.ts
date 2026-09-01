@@ -52,6 +52,9 @@ export class AssistantService {
   /** The thread of whoever is being spoken to now. */
   readonly turns = computed(() => this.threads()[this.key()] ?? []);
 
+  /** Set when a proposal is answered, so a page can refresh its board. */
+  readonly decided = signal<{ id: string; approved: boolean } | null>(null);
+
   /** Set when a run finishes, so a page can refresh what it is showing. */
   readonly lastResult = signal<{
     awaitingApproval: boolean;
@@ -129,6 +132,39 @@ export class AssistantService {
           text: 'The assistant could not be reached.',
           failed: true,
         });
+      });
+  }
+
+  /**
+   * Answer a proposal from inside the conversation.
+   *
+   * The same gateway route the projects page calls, so there is one approval
+   * path rather than two implementations that can disagree about what
+   * approving means. The panel says what happened rather than silently
+   * removing the buttons, because a proposal that vanishes is
+   * indistinguishable from one that was never there.
+   */
+  decide(id: string, approved: boolean): void {
+    const key = this.key();
+    this.projects
+      .reviewAiChange({ id, status: approved ? 'APPROVED' : 'REJECTED' })
+      .subscribe({
+        next: () => {
+          this.append(key, {
+            role: 'assistant',
+            text: approved
+              ? 'Approved. It has been applied to the project.'
+              : 'Rejected. Nothing was changed.',
+          });
+          this.decided.set({ id, approved });
+        },
+        error: () => {
+          this.append(key, {
+            role: 'assistant',
+            text: 'That could not be recorded. Nothing has changed.',
+            failed: true,
+          });
+        },
       });
   }
 

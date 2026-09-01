@@ -107,6 +107,8 @@ export class ChatWindowComponent
   @Output() windowStateChange: EventEmitter<ChatWindowState> =
     new EventEmitter<ChatWindowState>();
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
+  /** The reader answered something a message in this window was waiting on. */
+  @Output() decided = new EventEmitter<{ id: string; approved: boolean }>();
   @Output() reactionAdded = new EventEmitter<{
     messageId: string;
     emoji: string;

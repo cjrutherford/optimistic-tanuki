@@ -59,6 +59,29 @@
         <p class="assistant-awaiting">{{ note.awaiting }}</p>
         } @if (note.caution) {
         <p class="assistant-caution">{{ note.caution }}</p>
+        }
+        <!--
+          Decided here, where it was proposed. Sending the reader to another
+          page to answer a question this message asked is how a proposal gets
+          forgotten.
+        -->
+        @for (decision of note.decisions; track decision.id) {
+        <div class="assistant-decision">
+          <button
+            type="button"
+            class="decision-yes"
+            (click)="decide(decision.id, true)"
+          >
+            Approve {{ decision.what }}
+          </button>
+          <button
+            type="button"
+            class="decision-no"
+            (click)="decide(decision.id, false)"
+          >
+            Reject
+          </button>
+        </div>
         } }
 
         <!-- Reactions Display -->

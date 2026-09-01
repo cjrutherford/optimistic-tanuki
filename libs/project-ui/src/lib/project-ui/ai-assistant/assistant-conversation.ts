@@ -75,6 +75,85 @@ export function sawOnlyPartOfAList(turn: AssistantTurn): boolean {
   );
 }
 
+/**
+ * The proposal a gated tool filed, dug out of what it returned.
+ *
+ * The gate answers with the change it created, and that answer travels back
+ * through MCP wrapped in a content envelope and then stringified again by the
+ * agent. So the id is real and reachable, two JSON.parse calls down, and
+ * without it the reader is told something is waiting and has to go and find
+ * it on another page.
+ *
+ * Every step is guarded. A tool result that will not parse costs the buttons,
+ * never the answer.
+ */
+export function proposalIn(call: {
+  result: string;
+}): { id: string; what: string } | null {
+  const payload = unwrap(call.result);
+  const proposal = payload?.['proposal'] as Record<string, unknown> | undefined;
+  const id = proposal?.['id'];
+  if (typeof id !== 'string' || !id) return null;
+
+  const operation = proposal['operation'];
+  return {
+    id,
+    what: typeof operation === 'string' ? describeOperation(operation) : 'this',
+  };
+}
+
+/** MCP wraps a tool's answer in a content envelope, then it is stringified. */
+function unwrap(result: string): Record<string, unknown> | null {
+  const outer = parse(result);
+  if (!outer) return null;
+
+  const content = outer['content'];
+  if (Array.isArray(content)) {
+    const text = (content[0] as { text?: unknown } | undefined)?.text;
+    if (typeof text === 'string') return parse(text);
+  }
+  return outer;
+}
+
+function parse(text: string): Record<string, unknown> | null {
+  try {
+    const value = JSON.parse(text);
+    return value && typeof value === 'object' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What a proposed operation would do, for a button that has to be read.
+ *
+ * The keys are the operations the gate actually files, which are dotted and
+ * lowercase. Guessing them as CREATE_TASK put "Approve task.create" on a
+ * button, which is the sort of thing that only shows up when somebody looks at
+ * it: every one of these fell through the fallback and nothing failed.
+ */
+export function describeOperation(operation: string): string {
+  const words: Record<string, string> = {
+    'task.create': 'creating that task',
+    'task.update': 'that change to the task',
+    'task.delete': 'deleting that task',
+    'taskNote.create': 'adding that note',
+    'risk.create': 'recording that risk',
+    'risk.update': 'that change to the risk',
+    'change.create': 'that change record',
+    'projectJournal.create': 'that journal entry',
+  };
+  if (words[operation]) return words[operation];
+
+  // "someEntity.create" reads as "create some entity" rather than as itself.
+  const [entity, verb] = operation.split('.');
+  if (entity && verb) {
+    const words = entity.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+    return `${verb} the ${words}`;
+  }
+  return operation.toLowerCase().replace(/_/g, ' ');
+}
+
 /** The persona speaking, when one is known. */
 export interface Speaker {
   id: string;
@@ -147,8 +226,13 @@ function noteFor(turn: AssistantTurn): ChatMessage['assistant'] {
     pending: wasProposed(call),
   }));
 
+  const decisions = (turn.used ?? [])
+    .map((call) => proposalIn(call))
+    .filter((proposal): proposal is { id: string; what: string } => !!proposal);
+
   return {
     ...(did.length ? { did } : {}),
+    ...(decisions.length ? { decisions } : {}),
     ...(turn.awaitingApproval
       ? {
           awaiting:

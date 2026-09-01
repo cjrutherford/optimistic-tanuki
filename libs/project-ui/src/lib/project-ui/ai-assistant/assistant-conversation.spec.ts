@@ -1,5 +1,7 @@
 import {
   AssistantTurn,
+  describeOperation,
+  proposalIn,
   NOBODY_IN_PARTICULAR,
   READER,
   asConversation,
@@ -166,6 +168,110 @@ describe('asConversation', () => {
         'how many',
         'There are',
       ]);
+    });
+  });
+
+  /**
+   * Digging the proposal out of what the tool returned.
+   *
+   * The gate answers with the change it created, and that travels back wrapped
+   * in an MCP content envelope and stringified again by the agent. Two parses
+   * down. Every step is guarded, because a result that will not parse should
+   * cost the buttons and never the answer.
+   */
+  describe('the proposal a gated tool filed', () => {
+    /** A result shaped exactly as one arrives from the running stack. */
+    function gatedResult(proposal: unknown): string {
+      return JSON.stringify({
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: 'Task was proposed and is waiting for approval.',
+              proposal,
+              awaitingApproval: true,
+            }),
+          },
+        ],
+      });
+    }
+
+    it('finds the id through the envelope and both parses', () => {
+      const found = proposalIn({
+        result: gatedResult({ id: 'change-1', operation: 'task.create' }),
+      });
+
+      expect(found).toEqual({ id: 'change-1', what: 'creating that task' });
+    });
+
+    it('offers a decision on the turn that proposed it', () => {
+      const conversation = asConversation(
+        [
+          {
+            role: 'assistant',
+            text: 'I have proposed that.',
+            awaitingApproval: true,
+            used: [
+              {
+                tool: 'create_task',
+                result: gatedResult({
+                  id: 'change-1',
+                  operation: 'task.create',
+                }),
+              },
+            ],
+          },
+        ],
+        patricia
+      );
+
+      expect(conversation.messages[0].assistant?.decisions).toEqual([
+        { id: 'change-1', what: 'creating that task' },
+      ]);
+    });
+
+    it('offers nothing when the tool simply did the thing', () => {
+      // Ungated projects apply immediately, and there is nothing to decide.
+      const found = proposalIn({
+        result: JSON.stringify({ success: true, taskId: 't1' }),
+      });
+
+      expect(found).toBeNull();
+    });
+
+    it('costs the buttons and not the answer when a result will not parse', () => {
+      expect(proposalIn({ result: 'not json at all' })).toBeNull();
+      expect(
+        proposalIn({ result: '{"content":[{"text":"also not json"}]}' })
+      ).toBeNull();
+      expect(
+        proposalIn({ result: gatedResult({ operation: 'task.create' }) })
+      ).toBeNull();
+      expect(proposalIn({ result: gatedResult({ id: 42 }) })).toBeNull();
+    });
+
+    it('reads an operation it has never seen, rather than showing the constant', () => {
+      // Guessing these as CREATE_TASK put "Approve task.create" on a button.
+      // Every real operation fell through the fallback and nothing failed.
+      const found = proposalIn({
+        result: gatedResult({ id: 'c1', operation: 'kilnLining.archive' }),
+      });
+
+      expect(found?.what).toBe('archive the kiln lining');
+    });
+
+    it('names every operation the gate actually files', () => {
+      const named = [
+        'task.create',
+        'task.update',
+        'taskNote.create',
+        'risk.create',
+        'projectJournal.create',
+      ].map((operation) => describeOperation(operation));
+
+      // None of them may read back as the operation itself.
+      expect(named.some((what) => what.includes('.'))).toBe(false);
     });
   });
 
