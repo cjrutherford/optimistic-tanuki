@@ -18,6 +18,11 @@ import { ProfileService } from '../profile/profile.service';
 /** What the caller sees while the assistant works, then what it produced. */
 export type AssistantProgress =
   | { type: 'tool'; tool: string }
+  /**
+   * A piece of the answer, as it is written. The done event still carries the
+   * whole reply, so nothing depends on every chunk arriving.
+   */
+  | { type: 'text'; chunk: string }
   | {
       type: 'done';
       result: {

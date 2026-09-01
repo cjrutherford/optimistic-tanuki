@@ -139,6 +139,36 @@ describe('asConversation', () => {
     });
   });
 
+  describe('while the answer is being written', () => {
+    it('shows it as a turn, where the finished one will be', () => {
+      const conversation = asConversation([], patricia, 'There are 12');
+
+      expect(conversation.messages).toHaveLength(1);
+      expect(conversation.messages[0].content).toBe('There are 12');
+      expect(conversation.messages[0].senderId).toBe('p1');
+    });
+
+    it('adds nothing when nothing is being written', () => {
+      const conversation = asConversation([answered], patricia, '');
+
+      expect(conversation.messages).toHaveLength(1);
+      expect(conversation.messages[0].id).toBe('turn-0');
+    });
+
+    it('puts the part being written after the turns already said', () => {
+      const conversation = asConversation(
+        [{ role: 'person', text: 'how many' }],
+        patricia,
+        'There are'
+      );
+
+      expect(conversation.messages.map((m) => m.content)).toEqual([
+        'how many',
+        'There are',
+      ]);
+    });
+  });
+
   describe('describeTool', () => {
     it('says what a tool did rather than naming an endpoint', () => {
       expect(describeTool('count_tasks')).toBe('counted the tasks');

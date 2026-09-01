@@ -84,6 +84,16 @@ export interface Speaker {
 export function asConversation(
   turns: AssistantTurn[],
   speaker: Speaker | null,
+  /**
+   * The answer so far, while it is still being written.
+   *
+   * Shown as a turn rather than as a status line, because it is the answer and
+   * belongs where the finished one will be. It is replaced by the real turn
+   * when that arrives, which is also what makes the fallback correct: when
+   * composing fails the agent's own words are used, and those are not what was
+   * streamed.
+   */
+  partial = '',
   readerName = 'You'
 ): ChatConversation {
   const assistantId = speaker?.id ?? NOBODY_IN_PARTICULAR;
@@ -104,6 +114,18 @@ export function asConversation(
       ...(mine ? {} : { assistant: noteFor(turn) }),
     };
   });
+
+  if (partial) {
+    messages.push({
+      id: 'being-written',
+      conversationId: assistantId,
+      senderId: assistantId,
+      recipientId: [READER],
+      content: partial,
+      timestamp: new Date(),
+      type: 'chat',
+    });
+  }
 
   return {
     id: assistantId,

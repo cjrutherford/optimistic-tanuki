@@ -85,6 +85,56 @@ describe('AssistantService', () => {
     expect(lastCall()[4]).toBeNull();
   });
 
+  describe('the answer as it is written', () => {
+    /** Pushes one piece of the reply into the run in flight. */
+    function chunk(text: string) {
+      const [, , , onEvent] = lastCall();
+      onEvent({ type: 'text', chunk: text });
+    }
+
+    it('grows as the pieces arrive', () => {
+      service.ask('how many');
+
+      chunk('There are ');
+      chunk('12 tasks.');
+
+      expect(service.partial()).toBe('There are 12 tasks.');
+    });
+
+    it('gives way to the turn that actually arrived', () => {
+      // The two are usually the same text, and are not when composing failed
+      // and the agent own words were used instead.
+      service.ask('how many');
+      chunk('There are ');
+      answer('Something else entirely.');
+
+      expect(service.partial()).toBe('');
+      expect(service.turns()[1].text).toBe('Something else entirely.');
+    });
+
+    it('leaves nothing behind when the run fails', async () => {
+      projects.instructAssistantStreaming.mockRejectedValueOnce(
+        new Error('unreachable')
+      );
+
+      service.ask('how many');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(service.partial()).toBe('');
+    });
+
+    it('starts each question from nothing', () => {
+      service.ask('first');
+      chunk('half an answer');
+      answer('first answer');
+
+      service.ask('second');
+
+      expect(service.partial()).toBe('');
+    });
+  });
+
   describe('a thread each', () => {
     it('keeps a persona thread intact across a switch and back', () => {
       service.speakTo({ id: 'p1', name: 'Patricia' });

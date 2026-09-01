@@ -141,6 +141,7 @@ export class ProjectAiController {
           personaId: data.personaId ?? null,
           onToolUsed: (call) =>
             subscriber.next({ type: 'tool', tool: call.tool }),
+          onText: (chunk) => subscriber.next({ type: 'text', chunk }),
         })
         .then((result) => {
           subscriber.next({ type: 'done', result });
@@ -168,4 +169,11 @@ export class ProjectAiController {
 /** What the caller sees while the agent works, then what it produced. */
 export type AgentProgress =
   | { type: 'tool'; tool: string }
+  /**
+   * A piece of the answer, as it is written.
+   *
+   * The done event still carries the whole reply, so a client that ignores
+   * these keeps working and nothing depends on every chunk arriving.
+   */
+  | { type: 'text'; chunk: string }
   | { type: 'done'; result: AgentRunResult };

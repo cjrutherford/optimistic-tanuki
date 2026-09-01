@@ -124,6 +124,14 @@ export interface AgentRunRequest {
    * happens.
    */
   onToolUsed?: (call: { tool: string; result: string }) => void;
+  /**
+   * Called with each piece of the answer as it is written.
+   *
+   * The final result still carries the whole thing, so a caller that ignores
+   * this keeps working, and the fallback path when composing fails is
+   * unchanged: whatever was streamed is replaced by what actually arrived.
+   */
+  onText?: (chunk: string) => void;
 }
 
 export interface AgentRunResult {
@@ -179,6 +187,7 @@ export class ProjectAgentService {
       history = [],
       personaId = null,
       onToolUsed,
+      onText,
     } = request;
 
     let config;
@@ -239,7 +248,7 @@ export class ProjectAgentService {
       const itsOwnWords = String(messages[messages.length - 1]?.content ?? '');
 
       return {
-        said: await this.compose(instruction, used, itsOwnWords, voice),
+        said: await this.compose(instruction, used, itsOwnWords, voice, onText),
         used,
         awaitingApproval: saysAwaitingApproval(used),
         model: config.name,
@@ -284,7 +293,16 @@ export class ProjectAgentService {
     question: string,
     used: AgentRunResult['used'],
     itsOwnWords: string,
-    voice?: Voice | null
+    voice?: Voice | null,
+    /**
+     * Called with each piece of the reply as it is written.
+     *
+     * The tools were already reported as they were used, and then the answer
+     * arrived whole after a silent stretch that is most of the wait. This
+     * model produces the reply a token at a time and the tokens were being
+     * thrown away.
+     */
+    onText?: (chunk: string) => void
   ): Promise<string> {
     // Nothing was looked up, so there is nothing to answer from and the
     // composer would be inventing. Whatever it said stands.
@@ -292,12 +310,26 @@ export class ProjectAgentService {
 
     try {
       const model = this.models.getModel(ModelType.CONVERSATIONAL);
-      const reply = await model.invoke([
+      const messages = [
         new SystemMessage(this.composerPrompt(voice)),
         new HumanMessage(this.composerInput(question, used)),
-      ]);
-      const text = String(reply?.content ?? '').trim();
-      return text || itsOwnWords;
+      ];
+
+      // Without a listener there is nobody to stream to, and one call is
+      // cheaper than a stream nobody reads.
+      if (!onText) {
+        const reply = await model.invoke(messages);
+        return String(reply?.content ?? '').trim() || itsOwnWords;
+      }
+
+      let text = '';
+      for await (const piece of await model.stream(messages)) {
+        const chunk = String(piece?.content ?? '');
+        if (!chunk) continue;
+        text += chunk;
+        onText(chunk);
+      }
+      return text.trim() || itsOwnWords;
     } catch (error) {
       this.logger.warn(
         `Could not compose a reply, using the agent's own: ${

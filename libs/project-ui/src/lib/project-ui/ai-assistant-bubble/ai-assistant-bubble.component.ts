@@ -43,6 +43,8 @@ export class AiAssistantBubbleComponent {
   @Input() turns: AssistantTurn[] = [];
   @Input() working = false;
   @Input() doing: string[] = [];
+  /** The answer so far, while it is being written. */
+  @Input() partial = '';
   @Input() unavailable: string | null = null;
   /** The project it is on, when a page has said which. */
   @Input() projectName: string | null = null;
@@ -88,7 +90,8 @@ export class AiAssistantBubbleComponent {
       this.turns,
       this.personaId && this.personaName
         ? { id: this.personaId, name: this.personaName }
-        : null
+        : null,
+      this.partial
     );
   }
 
@@ -102,6 +105,9 @@ export class AiAssistantBubbleComponent {
    */
   get thinkingMessage(): string | null {
     if (!this.working) return null;
+    // Once the answer is arriving it says more than any status line could, so
+    // the indicator gets out of its way.
+    if (this.partial) return null;
     if (!this.doing.length) return 'Working on it. This takes a minute.';
     return `Working on it. So far: ${this.doing.map(describeTool).join(', ')}.`;
   }

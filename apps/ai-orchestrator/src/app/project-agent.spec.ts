@@ -244,6 +244,96 @@ describe('ProjectAgentService', () => {
   });
 
   /**
+   * The answer as it is written, rather than all at once at the end.
+   *
+   * The tools were already reported as they were used and then the reply
+   * arrived whole after a silent stretch that is most of the wait. This model
+   * produces it a token at a time and the tokens were being discarded.
+   */
+  describe('streaming the answer', () => {
+    function composerYielding(pieces: string[]) {
+      const { service, models } = serviceWith();
+      models.getModel.mockReturnValue({
+        bindTools: () => ({ invoke: jest.fn() }),
+        invoke: jest.fn().mockResolvedValue({ content: pieces.join('') }),
+        stream: jest.fn().mockResolvedValue(
+          (async function* () {
+            for (const content of pieces) yield { content };
+          })()
+        ),
+      });
+      return { service, models };
+    }
+
+    const used = [{ tool: 'count_tasks', result: '{"total":12}' }];
+
+    it('reports each piece as it is written', async () => {
+      const { service } = composerYielding(['There are ', '12 tasks.']);
+      const seen: string[] = [];
+
+      await service.compose('how many', used, 'fallback', null, (chunk) =>
+        seen.push(chunk)
+      );
+
+      expect(seen).toEqual(['There are ', '12 tasks.']);
+    });
+
+    it('returns the whole reply as well, so nothing depends on the pieces', async () => {
+      const { service } = composerYielding(['There are ', '12 tasks.']);
+
+      const said = await service.compose(
+        'how many',
+        used,
+        'fallback',
+        null,
+        () => {
+          /* listening, but the result is what is under test */
+        }
+      );
+
+      expect(said).toBe('There are 12 tasks.');
+    });
+
+    it('does not stream when nobody is listening', async () => {
+      // A stream nobody reads costs more than one call.
+      const { service, models } = composerYielding(['whatever']);
+
+      await service.compose('how many', used, 'fallback', null);
+
+      expect(models.getModel().stream).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the agent own words when nothing was written', async () => {
+      // Whatever was streamed is replaced by what actually arrived, which is
+      // what makes an empty compose safe rather than silent.
+      const { service } = composerYielding([]);
+
+      const said = await service.compose(
+        'how many',
+        used,
+        'its own words',
+        null,
+        () => {
+          /* nothing will arrive */
+        }
+      );
+
+      expect(said).toBe('its own words');
+    });
+
+    it('says nothing when there was nothing to answer from', async () => {
+      const { service } = composerYielding(['ignored']);
+      const seen: string[] = [];
+
+      await service.compose('how many', [], 'its own words', null, (chunk) =>
+        seen.push(chunk)
+      );
+
+      expect(seen).toEqual([]);
+    });
+  });
+
+  /**
    * Choosing a persona is meant to choose what can be done, so the scope is
    * read even though nothing sets it yet. Building the seam later would mean
    * every caller that binds tools had been written against the wrong shape.

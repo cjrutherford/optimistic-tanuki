@@ -40,10 +40,13 @@ export class AssistantService {
   private readonly speaking = signal<ChosenPersona | null>(readRemembered());
   private readonly busy = signal(false);
   private readonly tools = signal<string[]>([]);
+  /** The answer so far, while it is being written. */
+  private readonly streaming = signal('');
 
   readonly persona = this.speaking.asReadonly();
   readonly working = this.busy.asReadonly();
   readonly doing = this.tools.asReadonly();
+  readonly partial = this.streaming.asReadonly();
   readonly projectName = computed(() => this.context.project()?.name ?? null);
 
   /** The thread of whoever is being spoken to now. */
@@ -67,6 +70,7 @@ export class AssistantService {
     if (this.busy()) return;
     this.speaking.set(persona);
     this.tools.set([]);
+    this.streaming.set('');
     remember(persona);
   }
 
@@ -75,6 +79,7 @@ export class AssistantService {
     const key = this.key();
     this.threads.update((all) => ({ ...all, [key]: [] }));
     this.tools.set([]);
+    this.streaming.set('');
   }
 
   ask(question: string): void {
@@ -88,6 +93,7 @@ export class AssistantService {
     this.append(key, { role: 'person', text: question });
     this.busy.set(true);
     this.tools.set([]);
+    this.streaming.set('');
 
     // Whatever project the reader is on, or nothing at all. With nothing, the
     // assistant starts by finding out what projects there are.
@@ -104,6 +110,10 @@ export class AssistantService {
             this.tools.update((used) => [...used, event.tool]);
             return;
           }
+          if (event.type === 'text') {
+            this.streaming.update((so) => so + event.chunk);
+            return;
+          }
           // Answered into the thread it was asked in, which is not necessarily
           // the one open by the time it arrives.
           this.finish(key, event.result);
@@ -113,6 +123,7 @@ export class AssistantService {
       .catch(() => {
         this.busy.set(false);
         this.tools.set([]);
+        this.streaming.set('');
         this.append(key, {
           role: 'assistant',
           text: 'The assistant could not be reached.',
@@ -145,6 +156,10 @@ export class AssistantService {
   ): void {
     this.busy.set(false);
     this.tools.set([]);
+    // Whatever was streamed is replaced by what actually arrived. They are
+    // usually the same text, and are not when composing failed and the
+    // agent's own words were used instead.
+    this.streaming.set('');
     this.append(key, {
       role: 'assistant',
       text:
