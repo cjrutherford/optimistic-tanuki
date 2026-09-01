@@ -1,17 +1,57 @@
 <div class="bubble" [class.open]="open">
   @if (open) {
   <div class="panel" role="dialog" aria-label="Assistant">
-    <lib-ai-assistant
-      [turns]="turns"
-      [working]="working"
-      [doing]="doing"
-      [unavailable]="unavailable"
-      [projectName]="projectName"
-      [personaName]="personaName"
-      (asked)="asked.emit($event)"
-      (cleared)="cleared.emit()"
-      (changePersona)="showPersonas()"
-    ></lib-ai-assistant>
+    @if (unavailable) {
+    <p class="unavailable">{{ unavailable }}</p>
+    } @else {
+
+    <!--
+      The assistant's own chrome, above a chat window that is shared with
+      every other conversation in the product. Who is speaking and what they
+      are working on are specific to this assistant, so they live here rather
+      than being pushed into the library.
+    -->
+    <header class="who">
+      <button type="button" class="switch" (click)="showPersonas()">
+        {{ personaName ? 'Talk to somebody else' : 'Choose who' }}
+      </button>
+      @if (projectName) {
+      <span class="scope">working on {{ projectName }}</span>
+      } @if (turns.length) {
+      <button type="button" class="clear" (click)="cleared.emit()">
+        Start over
+      </button>
+      }
+    </header>
+
+    @if (!turns.length) {
+    <!--
+      What it is good at and what it costs, said before somebody waits two
+      minutes to find out.
+    -->
+    <div class="opening">
+      <p>
+        Ask about one thing, or tell it to do something. It is good at a
+        specific question and at carrying out an instruction, less so at
+        questions about a whole project at once.
+      </p>
+      <p>
+        Answers take a minute or two, and anything it does still comes to you
+        for approval first.
+      </p>
+    </div>
+    }
+
+    <lib-chat-window
+      [contact]="speakingWith"
+      [messages]="conversation"
+      [currentUserId]="reader"
+      [aiIsResponding]="working"
+      [aiThinkingMessage]="thinkingMessage"
+      windowState="embedded"
+      (messageSubmitted)="asked.emit($event)"
+    ></lib-chat-window>
+    }
   </div>
   }
 

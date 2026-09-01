@@ -39,6 +39,28 @@
           }
         </span>
 
+        <!--
+          What an assistant did, alongside what it said. Rendered from what it
+          was given: this list knows nothing about projects or approvals, only
+          that a message can carry a note.
+        -->
+        @if (message.assistant; as note) { @if (note.did?.length) {
+        <ul class="assistant-did">
+          @for (step of note.did; track $index) {
+          <li>
+            {{ step.what }}
+            @if (step.pending) {
+            <span class="assistant-pending">waiting for you</span>
+            }
+          </li>
+          }
+        </ul>
+        } @if (note.awaiting) {
+        <p class="assistant-awaiting">{{ note.awaiting }}</p>
+        } @if (note.caution) {
+        <p class="assistant-caution">{{ note.caution }}</p>
+        } }
+
         <!-- Reactions Display -->
         @if (hasReactions(message)) {
         <div class="message-reactions">
