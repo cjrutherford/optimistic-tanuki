@@ -56,3 +56,92 @@ describe('AiAssistantBubbleComponent', () => {
     });
   });
 });
+
+/**
+ * The conversation the chat window is given, and why it must not be new every
+ * time it is asked for.
+ *
+ * This was a plain getter building a fresh conversation with fresh message
+ * objects and fresh timestamps. The window compares that input by reference,
+ * so it scrolled to the bottom on every change detection pass, and the message
+ * list tracked messages by identity, so it tore down and rebuilt every message
+ * in the DOM on every pass. That is what the flashing was: not a render that
+ * looked wrong, a render happening over and over.
+ */
+describe('AiAssistantBubbleComponent conversation', () => {
+  function bubbleWith(turns: { role: 'person' | 'assistant'; text: string }[]) {
+    const bubble = new AiAssistantBubbleComponent();
+    bubble.turns = turns;
+    bubble.personaId = 'p1';
+    bubble.personaName = 'Patricia P. Project';
+    return bubble;
+  }
+
+  it('hands back the same conversation when nothing has changed', () => {
+    const bubble = bubbleWith([{ role: 'person', text: 'how many' }]);
+
+    expect(bubble.conversation).toBe(bubble.conversation);
+  });
+
+  it('keeps timestamps still while nothing changes', () => {
+    // They were minted per call, so the clock beside a message moved on its
+    // own.
+    const bubble = bubbleWith([{ role: 'person', text: 'how many' }]);
+
+    const first = bubble.conversation.messages[0].timestamp;
+
+    expect(bubble.conversation.messages[0].timestamp).toBe(first);
+  });
+
+  it('rebuilds when a turn is added', () => {
+    const bubble = bubbleWith([{ role: 'person', text: 'how many' }]);
+    const before = bubble.conversation;
+
+    bubble.turns = [...bubble.turns, { role: 'assistant', text: 'twelve' }];
+
+    expect(bubble.conversation).not.toBe(before);
+    expect(bubble.conversation.messages).toHaveLength(2);
+  });
+
+  it('rebuilds while the answer is being written', () => {
+    // The content genuinely changes on every chunk, so rebuilding then is
+    // correct rather than wasteful.
+    const bubble = bubbleWith([{ role: 'person', text: 'how many' }]);
+    bubble.partial = 'There';
+    const before = bubble.conversation;
+
+    bubble.partial = 'There are';
+
+    expect(bubble.conversation).not.toBe(before);
+  });
+
+  it('rebuilds when somebody else is being spoken to', () => {
+    const bubble = bubbleWith([{ role: 'person', text: 'how many' }]);
+    const before = bubble.conversation;
+
+    bubble.personaId = 'p2';
+    bubble.personaName = 'Percy Verse';
+
+    expect(bubble.conversation).not.toBe(before);
+  });
+
+  it('rebuilds when a streamed draft is replaced by a different answer', () => {
+    // Same number of turns, different words. Counting turns alone would miss
+    // it and leave the draft on screen.
+    const bubble = bubbleWith([{ role: 'assistant', text: 'a short draft' }]);
+    const before = bubble.conversation;
+
+    bubble.turns = [{ role: 'assistant', text: 'a rather longer real answer' }];
+
+    expect(bubble.conversation).not.toBe(before);
+    expect(bubble.conversation.messages[0].content).toBe(
+      'a rather longer real answer'
+    );
+  });
+
+  it('gives the persona a face rather than an empty photograph', () => {
+    const bubble = bubbleWith([]);
+
+    expect(bubble.speakingWith[0].avatarUrl).toMatch(/^data:image\/svg\+xml/);
+  });
+});

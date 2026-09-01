@@ -1,4 +1,5 @@
 import { ChatConversation, ChatMessage } from '@optimistic-tanuki/chat-ui';
+import { avatarFor } from '@optimistic-tanuki/profile-ui';
 
 /**
  * Turns the assistant's thread into a conversation the chat window can render.
@@ -213,8 +214,12 @@ export function asConversation(
     createdAt: new Date(),
     updatedAt: new Date(),
     participantProfiles: [
-      { id: READER, name: readerName },
-      { id: assistantId, name: assistantName },
+      { id: READER, name: readerName, avatarUrl: avatarFor(readerName) },
+      {
+        id: assistantId,
+        name: assistantName,
+        avatarUrl: avatarFor(assistantName),
+      },
     ],
   };
 }

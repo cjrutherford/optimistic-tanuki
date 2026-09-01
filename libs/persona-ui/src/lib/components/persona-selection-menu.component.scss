@@ -280,3 +280,10 @@
     transform: translateY(0);
   }
 }
+
+// A face beside the name, so the menu reads as a list of people rather than a
+// list of records. Drawn from the name: a persona telos has no photograph.
+.persona-face {
+  flex-shrink: 0;
+  margin-right: 12px;
+}

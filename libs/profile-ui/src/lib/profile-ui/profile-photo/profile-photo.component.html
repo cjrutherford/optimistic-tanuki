@@ -1,5 +1,5 @@
 <img
-  [src]="src || 'https://placehold.co/150x150/grey/white?text=Profile'"
+  [src]="src || fallback"
   [alt]="alt || 'Profile Image'"
   class="profile-photo"
   [class.clickable]="enableChat"

@@ -42,10 +42,9 @@ describe('asConversation', () => {
   it('names the persona, so the window can show who is speaking', () => {
     const conversation = asConversation([answered], patricia);
 
-    expect(conversation.participantProfiles).toContainEqual({
-      id: 'p1',
-      name: 'Patricia P. Project',
-    });
+    expect(conversation.participantProfiles).toContainEqual(
+      expect.objectContaining({ id: 'p1', name: 'Patricia P. Project' })
+    );
   });
 
   it('still attributes turns when no persona could be read', () => {
@@ -54,10 +53,19 @@ describe('asConversation', () => {
     const conversation = asConversation([answered], null);
 
     expect(conversation.messages[0].senderId).toBe(NOBODY_IN_PARTICULAR);
-    expect(conversation.participantProfiles).toContainEqual({
-      id: NOBODY_IN_PARTICULAR,
-      name: 'Assistant',
-    });
+    expect(conversation.participantProfiles).toContainEqual(
+      expect.objectContaining({ id: NOBODY_IN_PARTICULAR, name: 'Assistant' })
+    );
+  });
+
+  it('gives everyone in the thread a face', () => {
+    // A persona telos has no field for a photograph, and an empty one showed
+    // a broken external placeholder.
+    const conversation = asConversation([answered], patricia);
+
+    for (const profile of conversation.participantProfiles ?? []) {
+      expect(profile.avatarUrl).toMatch(/^data:image\/svg\+xml/);
+    }
   });
 
   describe('what it did, beside what it said', () => {

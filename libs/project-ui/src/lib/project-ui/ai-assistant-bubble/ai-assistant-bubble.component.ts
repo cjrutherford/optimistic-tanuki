@@ -6,6 +6,7 @@ import {
   ChatWindowComponent,
 } from '@optimistic-tanuki/chat-ui';
 import { PersonaSelectionMenuComponent } from '@optimistic-tanuki/persona-ui';
+import { avatarFor } from '@optimistic-tanuki/profile-ui';
 import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 
 import {
@@ -77,24 +78,58 @@ export class AiAssistantBubbleComponent {
    * of its own.
    */
   get speakingWith(): ChatContact[] {
+    const name = this.personaName ?? 'Assistant';
     return [
       {
         id: this.personaId ?? NOBODY_IN_PARTICULAR,
-        name: this.personaName ?? 'Assistant',
+        name,
+        // Drawn from the name rather than left empty. A persona telos has no
+        // field for a photograph, and an empty one showed a broken external
+        // placeholder.
+        avatarUrl: avatarFor(name),
         presence: 'online',
       },
     ];
   }
 
-  /** The thread as the chat window wants it. */
+  private built: ChatConversation | null = null;
+  private builtFrom = '';
+
+  /**
+   * The thread as the chat window wants it, built only when it has changed.
+   *
+   * This was a plain getter, so every change detection pass produced a new
+   * conversation holding new message objects with new timestamps. The window
+   * compares the input by reference, so it scrolled to the bottom on every
+   * pass, and the message list tracked messages by identity, so it tore down
+   * and rebuilt every message in the DOM on every pass. That is the flashing:
+   * not a render that looks wrong, a render happening over and over.
+   *
+   * The key is what the conversation is made of. While a run is in flight the
+   * streamed text changes constantly and rebuilding then is correct, because
+   * the content genuinely changed.
+   */
   get conversation(): ChatConversation {
-    return asConversation(
-      this.turns,
-      this.personaId && this.personaName
-        ? { id: this.personaId, name: this.personaName }
-        : null,
-      this.partial
-    );
+    const from = [
+      this.turns.length,
+      this.personaId ?? '',
+      this.personaName ?? '',
+      this.partial,
+      // Turn contents, so an answer replacing a streamed draft is noticed.
+      this.turns.map((turn) => `${turn.role}:${turn.text.length}`).join('|'),
+    ].join('~');
+
+    if (!this.built || from !== this.builtFrom) {
+      this.built = asConversation(
+        this.turns,
+        this.personaId && this.personaName
+          ? { id: this.personaId, name: this.personaName }
+          : null,
+        this.partial
+      );
+      this.builtFrom = from;
+    }
+    return this.built;
   }
 
   /**

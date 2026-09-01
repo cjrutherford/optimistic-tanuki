@@ -8,6 +8,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { PersonaService } from '../services/persona.service';
 import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 
@@ -24,7 +25,7 @@ const DOES_PROJECT_WORK = /project manage/i;
 
 @Component({
   selector: 'lib-persona-selection-menu',
-  imports: [CommonModule],
+  imports: [CommonModule, ProfilePhotoComponent],
   templateUrl: './persona-selection-menu.component.html',
   styleUrl: './persona-selection-menu.component.scss',
 })

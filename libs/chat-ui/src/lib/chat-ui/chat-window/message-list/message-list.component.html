@@ -1,5 +1,5 @@
 <div class="message-list">
-  @for (message of messages; track message; let i = $index) {
+  @for (message of messages; track message.id; let i = $index) {
   <div
     class="message"
     [ngClass]="{

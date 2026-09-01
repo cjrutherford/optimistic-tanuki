@@ -59,6 +59,12 @@
           [attr.aria-current]="isChosen(persona) ? 'true' : null"
           (click)="onPersonaSelect(persona)"
         >
+          <lib-profile-photo
+            class="persona-face"
+            [name]="persona.name"
+            [alt]="persona.name"
+            [size]="40"
+          ></lib-profile-photo>
           <div class="persona-info">
             <div class="persona-header">
               <h3>{{ persona.name }}</h3>
