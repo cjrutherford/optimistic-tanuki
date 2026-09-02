@@ -42,6 +42,9 @@ import {
   TaskNotesPanelComponent,
   AnalyticsDashboardComponent,
   AssistantContextService,
+  ProjectInviteFormComponent,
+  ProjectInviteListComponent,
+  ProjectMembersComponent,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, effect, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -50,7 +53,11 @@ import { ChangeService } from '../../change/change.service';
 
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { ProjectService } from '../../project/project.service';
+import {
+  ProjectInvite,
+  ProjectPerson,
+  ProjectService,
+} from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
@@ -75,6 +82,9 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ButtonComponent,
     TileComponent,
     ProjectSelectorComponent,
+    ProjectInviteFormComponent,
+    ProjectInviteListComponent,
+    ProjectMembersComponent,
     ProjectFormComponent,
     GlassContainerComponent,
     ProjectSummaryComponent,
@@ -132,6 +142,28 @@ export class ProjectsComponent implements OnInit {
   showDeleteModal = signal<boolean>(false);
   selectedProjectIndex = signal<number | null>(null);
   selectedProject = signal<Project | null>(null);
+
+  /**
+   * Who is on the project, and what invitations are outstanding.
+   *
+   * Loaded together whenever the project changes. Invitations are the owner's
+   * to see and the request is refused for anybody else, so a member simply
+   * ends up with an empty list rather than an error worth showing.
+   */
+  people = signal<ProjectPerson[]>([]);
+  invites = signal<ProjectInvite[]>([]);
+  inviting = signal(false);
+  inviteError = signal<string | null>(null);
+
+  /** Whether the reader owns the project they are looking at. */
+  viewerIsOwner = computed(
+    () =>
+      !!this.people().find(
+        (p) => p.isOwner && p.profileId === this.viewerProfileId()
+      )
+  );
+
+  viewerProfileId = signal('');
   detailsShown = signal<boolean>(false); // Whether to show the details section
   shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'>(
     'tasks'
@@ -170,6 +202,14 @@ export class ProjectsComponent implements OnInit {
   private chooseProject(project: Project | null): void {
     const changed = this.selectedProject()?.id !== project?.id;
     this.selectedProject.set(project);
+    // Choosing nothing is a real state here, and asking who is on no project
+    // would answer with somebody else's people.
+    if (project) {
+      this.loadCollaboration(project.id);
+    } else {
+      this.people.set([]);
+      this.invites.set([]);
+    }
     if (changed) {
       this.narrative.set(null);
       this.narrativeLoading.set(false);
@@ -389,7 +429,10 @@ export class ProjectsComponent implements OnInit {
     const current = this.selectedProject();
     if (!current) return;
     this.projectService.getProjectById(current.id).subscribe({
-      next: (project) => this.selectedProject.set(project),
+      next: (project) => {
+        this.selectedProject.set(project);
+        this.loadCollaboration(project.id);
+      },
     });
   }
 
@@ -476,7 +519,78 @@ export class ProjectsComponent implements OnInit {
     }
   });
 
+  /**
+   * Everything about who is on this project.
+   *
+   * The invitation list is asked for even by a member, and refused. Treating
+   * that refusal as an empty list rather than an error keeps the page honest
+   * for both readers without asking it who it is first.
+   */
+  private loadCollaboration(projectId: string): void {
+    this.projectService.getProjectPeople(projectId).subscribe({
+      next: (people) => this.people.set(people),
+      error: () => this.people.set([]),
+    });
+    this.projectService.getProjectInvites(projectId).subscribe({
+      next: (invites) => this.invites.set(invites),
+      error: () => this.invites.set([]),
+    });
+  }
+
+  onInvite(email: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+
+    this.inviting.set(true);
+    this.inviteError.set(null);
+    this.projectService.inviteToProject(project.id, email).subscribe({
+      next: () => {
+        this.inviting.set(false);
+        this.loadCollaboration(project.id);
+      },
+      error: (failure) => {
+        this.inviting.set(false);
+        // Said rather than swallowed. The two that happen are inviting
+        // somebody twice and inviting somebody already here, and a reader who
+        // sees nothing assumes it worked.
+        this.inviteError.set(
+          failure?.error?.message ?? 'That invitation could not be sent.'
+        );
+      },
+    });
+  }
+
+  onRevokeInvite(inviteId: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    this.projectService
+      .revokeProjectInvite(inviteId)
+      .subscribe({ next: () => this.loadCollaboration(project.id) });
+  }
+
+  onRemovePerson(profileId: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    this.projectService
+      .removeProjectMember(project.id, profileId)
+      .subscribe({ next: () => this.loadCollaboration(project.id) });
+  }
+
+  onLeaveProject(): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    // The project goes away for them entirely, so the page reloads its list
+    // rather than showing one they can no longer read.
+    this.projectService
+      .leaveProject(project.id)
+      .subscribe({ next: () => window.location.reload() });
+  }
+
   ngOnInit() {
+    // Who the reader is, so the panel can tell an owner from a member without
+    // asking the server a second time.
+    this.viewerProfileId.set(this.projectService.currentProfileId());
+
     console.log('ProjectsComponent initialized');
     this.loadProjects();
     const theme = this.themeService.getTheme();
@@ -542,6 +656,7 @@ export class ProjectsComponent implements OnInit {
   onEditProject(project: Project) {
     console.log('Edit project clicked');
     this.selectedProject.set(project);
+    this.loadCollaboration(project.id);
     this.showEditModal.set(true);
   }
 

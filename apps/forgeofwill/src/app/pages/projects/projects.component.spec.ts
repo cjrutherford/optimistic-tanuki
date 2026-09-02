@@ -109,6 +109,17 @@ describe('ProjectsComponent', () => {
   beforeEach(async () => {
     const projectServiceMock = {
       getProjects: jest.fn().mockReturnValue(of([mockProject])),
+      // Who is on the project and what invitations are outstanding. The panel
+      // asks for both whenever a project is chosen, and asks for invitations
+      // even as a member, where the server refuses and an empty list is the
+      // right answer rather than an error.
+      getProjectPeople: jest.fn().mockReturnValue(of([])),
+      getProjectInvites: jest.fn().mockReturnValue(of([])),
+      inviteToProject: jest.fn().mockReturnValue(of({})),
+      revokeProjectInvite: jest.fn().mockReturnValue(of({})),
+      removeProjectMember: jest.fn().mockReturnValue(of({})),
+      leaveProject: jest.fn().mockReturnValue(of({})),
+      currentProfileId: jest.fn().mockReturnValue('me'),
       createProject: jest.fn().mockReturnValue(of(mockProject)),
       updateProject: jest.fn().mockReturnValue(of(mockProject)),
       getProjectById: jest.fn().mockReturnValue(of(mockProject)),

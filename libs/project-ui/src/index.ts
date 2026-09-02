@@ -28,5 +28,8 @@ export * from './lib/project-ui/ai-change-review/ai-change-review.component';
 export * from './lib/project-ui/task-time-panel/task-time-panel.component';
 export * from './lib/project-ui/task-notes-panel/task-notes-panel.component';
 export * from './lib/project-ui/ai-assistant/assistant-conversation';
+export * from './lib/project-ui/project-invites/invite-form.component';
+export * from './lib/project-ui/project-invites/invite-list.component';
+export * from './lib/project-ui/project-members/project-members.component';
 export * from './lib/project-ui/ai-assistant/assistant-context.service';
 export * from './lib/project-ui/ai-assistant-bubble/ai-assistant-bubble.component';

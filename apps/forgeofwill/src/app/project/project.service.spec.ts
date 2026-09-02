@@ -347,3 +347,116 @@ describe('ProjectService', () => {
     });
   });
 });
+
+/**
+ * Working on a project with somebody.
+ *
+ * These are thin, and the one thing worth asserting is where each request
+ * goes. Invitations are not under a project on purpose: you read yours before
+ * you are allowed to see the project they are for.
+ */
+describe('ProjectService collaboration', () => {
+  let service: ProjectService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ProjectService,
+        {
+          provide: ProfileService,
+          useValue: { getCurrentUserProfile: () => ({ id: 'me' }) },
+        },
+      ],
+    });
+    service = TestBed.inject(ProjectService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  it('invites somebody to a project', () => {
+    service.inviteToProject('p1', 'someone@example.com').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/invites');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email: 'someone@example.com' });
+    req.flush({});
+  });
+
+  it('reads the invitations on a project', () => {
+    service.getProjectInvites('p1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/invites');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('withdraws one by its own id, not through the project', () => {
+    service.revokeProjectInvite('i1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/invites/i1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('reads your own invitations from outside any project', () => {
+    // You read yours before you are allowed to see the project it is for, so
+    // this cannot hang off a project route.
+    service.getMyInvitations().subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/invitations');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('answers an invitation', () => {
+    service.respondToInvitation('i1', true).subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/invitations/i1');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ accept: true });
+    req.flush({});
+  });
+
+  it('removes somebody from a project', () => {
+    service.removeProjectMember('p1', 'them').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/members/them'
+    );
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('leaves a project without naming anybody', () => {
+    // "me" is resolved from the session on the server. A client that named
+    // itself could name somebody else.
+    service.leaveProject('p1').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/members/me'
+    );
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('reads who is on a project, by name', () => {
+    service.getProjectPeople('p1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/people');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('reads the conversation belonging to a project', () => {
+    service.getProjectConversation('p1').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/conversation'
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({});
+  });
+});

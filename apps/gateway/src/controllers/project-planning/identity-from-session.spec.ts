@@ -36,6 +36,7 @@ describe('identity on the create routes', () => {
         // Sending is a courtesy after the record is safe; this is about
         // where identity comes from.
         { send: jest.fn() } as never,
+        { send: jest.fn() } as never,
         { send: jest.fn() } as never
       ),
       sent,

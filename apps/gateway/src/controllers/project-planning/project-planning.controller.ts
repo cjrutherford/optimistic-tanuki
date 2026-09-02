@@ -19,6 +19,7 @@ import {
   ChangeCommands,
   ChatCommands,
   AnalyticsCommands,
+  ProfileCommands,
   ProjectCommands,
   ProjectInviteCommands,
   ProjectMemberCommands,
@@ -74,6 +75,8 @@ export class ProjectPlanningController {
     private readonly aiOrchestrationService: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatService: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileService: ClientProxy,
     private readonly inviteMailer: ProjectInviteMailer
   ) {}
 
@@ -575,6 +578,61 @@ export class ProjectPlanningController {
         { cmd: ProjectInviteCommands.FIND_FOR_PROJECT },
         { projectId, requestingUserId: user.profileId }
       )
+    );
+  }
+
+  /**
+   * Who is on a project, by name rather than by profile id.
+   *
+   * Membership is stored as profile ids, which is right for deciding access
+   * and useless for showing somebody a list of people. The names are resolved
+   * here because the gateway already talks to the profile service, and
+   * project-planning does not and should not.
+   *
+   * A profile that cannot be read falls back to its id rather than dropping
+   * the person: somebody with no readable name is still on the project, and a
+   * list that quietly loses a member is worse than one with an ugly entry.
+   */
+  @ApiOperation({ summary: 'Who is on a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/people')
+  async projectPeople(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{
+        owner: string;
+        members?: string[];
+      } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      throw new BadRequestException('That project could not be read.');
+    }
+
+    const ids = [
+      ...new Set([project.owner, ...(project.members ?? [])].filter(Boolean)),
+    ];
+
+    return await Promise.all(
+      ids.map(async (profileId) => {
+        const profile = await firstValueFrom(
+          this.profileService.send<{ profileName?: string } | null>(
+            { cmd: ProfileCommands.Get },
+            { id: profileId }
+          )
+        ).catch(() => null);
+
+        return {
+          profileId,
+          name: profile?.profileName || profileId,
+          isOwner: profileId === project.owner,
+        };
+      })
     );
   }
 

@@ -1,0 +1,58 @@
+.invite-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.email {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1 1 16rem;
+  font-size: 0.8rem;
+}
+
+.email input {
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.88rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+}
+
+.email input:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.invite-form button {
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  border-radius: var(--personality-border-radius, 4px);
+  /* Aligns with the input's baseline rather than sitting under its label. */
+  margin-top: 1.35rem;
+}
+
+.invite-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  // A literal fallback rather than currentColor, which is what an app without
+  // a danger token would give: text the same colour as everything around it,
+  // which is not a failure a reader notices. Whichever token an app does
+  // define still wins.
+  color: var(--danger, var(--color-danger, #a3372a));
+}

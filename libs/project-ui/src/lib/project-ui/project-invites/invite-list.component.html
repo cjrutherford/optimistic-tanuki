@@ -1,0 +1,19 @@
+<section class="invite-list">
+  @if (!invites.length) {
+  <p class="empty">Nobody has been invited yet.</p>
+  } @else {
+  <ul>
+    @for (invite of invites; track invite.id) {
+    <li class="invite">
+      <span class="email">{{ invite.email }}</span>
+      <span class="status">{{ words(invite.status) }}</span>
+      @if (canWithdraw(invite)) {
+      <button type="button" class="withdraw" (click)="withdraw(invite)">
+        Withdraw
+      </button>
+      }
+    </li>
+    }
+  </ul>
+  }
+</section>

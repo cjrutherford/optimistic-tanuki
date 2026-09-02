@@ -85,6 +85,12 @@ describe('ProjectPlanningController', () => {
           useValue: aiOrchestrationService,
         },
         {
+          // Names for the member list. Resolved here because the gateway
+          // already talks to profiles and project-planning does not.
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: { send: jest.fn(() => of({ profileName: 'Somebody' })) },
+        },
+        {
           // The project conversation. Access is decided before this is
           // reached, so a stand-in is enough for tests about routes.
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,

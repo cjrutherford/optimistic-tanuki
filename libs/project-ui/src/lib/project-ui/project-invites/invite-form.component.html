@@ -1,0 +1,20 @@
+<form class="invite-form" (submit)="$event.preventDefault(); submit()">
+  <label class="email">
+    <span>Invite by email</span>
+    <input
+      type="email"
+      [value]="email"
+      (input)="emailChanged($event)"
+      [disabled]="busy"
+      placeholder="name@example.com"
+    />
+  </label>
+
+  <button type="submit" [disabled]="busy || !email.trim()">
+    {{ busy ? 'Sending…' : 'Send invite' }}
+  </button>
+
+  @if (error) {
+  <p class="error">{{ error }}</p>
+  }
+</form>

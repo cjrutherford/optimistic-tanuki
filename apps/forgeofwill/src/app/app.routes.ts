@@ -80,6 +80,27 @@ export const appRoutes: Route[] = [
     canActivate: [AuthenticationGuard],
   },
   {
+    path: 'invitations',
+    loadComponent: () =>
+      import('./pages/invitations/invitations.component').then(
+        (m) => m.InvitationsComponent
+      ),
+    title: 'Invitations',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
+    // Where an emailed link lands. The token is not read here: the page asks
+    // for whatever is waiting on the reader's own address, and an invitation
+    // sent to somebody else is not among them however the link was come by.
+    path: 'invitations/:token',
+    loadComponent: () =>
+      import('./pages/invitations/invitations.component').then(
+        (m) => m.InvitationsComponent
+      ),
+    title: 'Invitations',
+    canActivate: [AuthenticationGuard, ProfileGuard],
+  },
+  {
     path: 'messages',
     loadComponent: () =>
       import('./pages/messages/messages.component').then(

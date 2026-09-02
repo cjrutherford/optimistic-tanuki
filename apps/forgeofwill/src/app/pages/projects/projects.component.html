@@ -218,6 +218,43 @@
         </otui-tile>
       </div>
 
+      <!--
+        Who is on this project, and who has been asked.
+
+        An owner sees the invitation controls; a member sees the people and a
+        way out. What a member is not allowed to do is absent rather than
+        disabled, because a control that cannot be used is worse than one that
+        was never offered.
+      -->
+      <div class="row-container">
+        <otui-tile class="collaboration-tile">
+          <h3>People</h3>
+          <p>Who is working on this project with you.</p>
+
+          <lib-project-members
+            [people]="people()"
+            [viewerProfileId]="viewerProfileId()"
+            [viewerIsOwner]="viewerIsOwner()"
+            (removed)="onRemovePerson($event)"
+            (left)="onLeaveProject()"
+          ></lib-project-members>
+
+          @if (viewerIsOwner()) {
+          <h4>Invite somebody</h4>
+          <lib-project-invite-form
+            [busy]="inviting()"
+            [error]="inviteError()"
+            (invited)="onInvite($event)"
+          ></lib-project-invite-form>
+
+          <lib-project-invite-list
+            [invites]="invites()"
+            (revoked)="onRevokeInvite($event)"
+          ></lib-project-invite-list>
+          }
+        </otui-tile>
+      </div>
+
       <!-- Project Journal -->
       <div class="row-container">
         <otui-tile class="journal-tile">

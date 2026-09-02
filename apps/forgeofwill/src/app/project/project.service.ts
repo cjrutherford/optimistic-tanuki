@@ -39,11 +39,40 @@ export type AssistantProgress =
       };
     };
 
+/** An invitation to work on a project with somebody. */
+export interface ProjectInvite {
+  id: string;
+  projectId: string;
+  email: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'LEFT';
+  createdAt?: string;
+  respondedAt?: string;
+  /** Present on your own invitations: you cannot read the project yet. */
+  projectName?: string;
+}
+
+/** Somebody on a project, ready to be shown. */
+export interface ProjectPerson {
+  profileId: string;
+  name?: string;
+  isOwner: boolean;
+}
+
+/** The conversation belonging to a project. */
+export interface ProjectConversation {
+  id: string;
+  title: string;
+  projectId: string;
+  participants: string[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class ProjectService {
   baseUrl = '/api/project-planning/projects';
+  /** Invitations are not under a project: you read yours before you can see it. */
+  invitationsUrl = '/api/project-planning/invitations';
 
   /** Only used to bring streamed events back into Angular. See below. */
   private readonly zone = inject(NgZone);
@@ -242,7 +271,93 @@ export class ProjectService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  // inviteMember lived here and posted to /projects/:id/invite, a route that
-  // has never existed and answered 404. Nothing in the interface called it.
-  // It comes back when there is something behind it to call.
+  /**
+   * Working on a project with somebody.
+   *
+   * Only the owner may invite, list or withdraw, and the service refuses
+   * everyone else in the same words as being unable to reach the project at
+   * all, so nothing here can be used to find out which projects exist.
+   */
+  inviteToProject(projectId: string, email: string) {
+    return this.http.post<ProjectInvite>(
+      `${this.baseUrl}/${projectId}/invites`,
+      { email }
+    );
+  }
+
+  getProjectInvites(projectId: string) {
+    return this.http.get<ProjectInvite[]>(
+      `${this.baseUrl}/${projectId}/invites`
+    );
+  }
+
+  revokeProjectInvite(inviteId: string) {
+    return this.http.delete<ProjectInvite>(
+      `${this.baseUrl}/invites/${inviteId}`
+    );
+  }
+
+  /**
+   * The invitee's side.
+   *
+   * Scoped by the caller's own address on the server, never by anything sent
+   * from here, so an invitation can only be seen and answered by the person it
+   * was addressed to.
+   */
+  getMyInvitations() {
+    return this.http.get<ProjectInvite[]>(`${this.invitationsUrl}`);
+  }
+
+  respondToInvitation(inviteId: string, accept: boolean) {
+    return this.http.patch<ProjectInvite>(
+      `${this.invitationsUrl}/${inviteId}`,
+      {
+        accept,
+      }
+    );
+  }
+
+  /** The owner removing somebody. */
+  removeProjectMember(projectId: string, profileId: string) {
+    return this.http.delete<{ projectId: string; removed: string }>(
+      `${this.baseUrl}/${projectId}/members/${profileId}`
+    );
+  }
+
+  /** A member taking themselves out, which needs nobody else to agree. */
+  leaveProject(projectId: string) {
+    return this.http.delete<{ projectId: string; left: string }>(
+      `${this.baseUrl}/${projectId}/members/me`
+    );
+  }
+
+  /**
+   * The reader's own profile id.
+   *
+   * Every page that shows who is on a project needs to know which of them is
+   * the reader, and the profile service is already injected here.
+   */
+  currentProfileId(): string {
+    return this.profileService.getCurrentUserProfile()?.id ?? '';
+  }
+
+  /**
+   * Who is on a project, by name.
+   *
+   * Membership is stored as profile ids, which is right for deciding access
+   * and useless for showing somebody a list of people. The gateway resolves
+   * the names because it is the one that talks to profiles.
+   */
+  getProjectPeople(projectId: string) {
+    return this.http.get<ProjectPerson[]>(
+      `${this.baseUrl}/${projectId}/people`
+    );
+  }
+
+  /** The conversation belonging to a project, made if it is not there yet. */
+  getProjectConversation(projectId: string) {
+    return this.http.get<ProjectConversation>(
+      `${this.baseUrl}/${projectId}/conversation`
+    );
+  }
 }
