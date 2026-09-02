@@ -42,11 +42,14 @@ export class AssistantService {
   private readonly tools = signal<string[]>([]);
   /** The answer so far, while it is being written. */
   private readonly streaming = signal('');
+  /** What it is chewing on, while it works. Never shown as the answer. */
+  private readonly musing = signal('');
 
   readonly persona = this.speaking.asReadonly();
   readonly working = this.busy.asReadonly();
   readonly doing = this.tools.asReadonly();
   readonly partial = this.streaming.asReadonly();
+  readonly thinking = this.musing.asReadonly();
   readonly projectName = computed(() => this.context.project()?.name ?? null);
 
   /** The thread of whoever is being spoken to now. */
@@ -74,6 +77,7 @@ export class AssistantService {
     this.speaking.set(persona);
     this.tools.set([]);
     this.streaming.set('');
+    this.musing.set('');
     remember(persona);
   }
 
@@ -83,6 +87,7 @@ export class AssistantService {
     this.threads.update((all) => ({ ...all, [key]: [] }));
     this.tools.set([]);
     this.streaming.set('');
+    this.musing.set('');
   }
 
   ask(question: string): void {
@@ -97,6 +102,7 @@ export class AssistantService {
     this.busy.set(true);
     this.tools.set([]);
     this.streaming.set('');
+    this.musing.set('');
 
     // Whatever project the reader is on, or nothing at all. With nothing, the
     // assistant starts by finding out what projects there are.
@@ -117,6 +123,10 @@ export class AssistantService {
             this.streaming.update((so) => so + event.chunk);
             return;
           }
+          if (event.type === 'thinking') {
+            this.musing.update((so) => keepTheTail(so + event.chunk));
+            return;
+          }
           // Answered into the thread it was asked in, which is not necessarily
           // the one open by the time it arrives.
           this.finish(key, event.result);
@@ -127,6 +137,7 @@ export class AssistantService {
         this.busy.set(false);
         this.tools.set([]);
         this.streaming.set('');
+        this.musing.set('');
         this.append(key, {
           role: 'assistant',
           text: 'The assistant could not be reached.',
@@ -196,6 +207,7 @@ export class AssistantService {
     // usually the same text, and are not when composing failed and the
     // agent's own words were used instead.
     this.streaming.set('');
+    this.musing.set('');
     this.append(key, {
       role: 'assistant',
       text:
@@ -226,6 +238,17 @@ export class AssistantService {
       });
     }
   }
+}
+
+/**
+ * The last stretch of what it is thinking, because the whole of it is long,
+ * arrives faster than anybody reads, and is not the answer. A tail says it is
+ * alive and what it is on without pretending to be worth reading in full.
+ */
+const THINKING_SHOWN = 240;
+
+function keepTheTail(text: string): string {
+  return text.length <= THINKING_SHOWN ? text : text.slice(-THINKING_SHOWN);
 }
 
 /**

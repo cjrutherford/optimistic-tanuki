@@ -142,6 +142,7 @@ export class ProjectAiController {
           onToolUsed: (call) =>
             subscriber.next({ type: 'tool', tool: call.tool }),
           onText: (chunk) => subscriber.next({ type: 'text', chunk }),
+          onThinking: (chunk) => subscriber.next({ type: 'thinking', chunk }),
         })
         .then((result) => {
           subscriber.next({ type: 'done', result });
@@ -176,4 +177,10 @@ export type AgentProgress =
    * these keeps working and nothing depends on every chunk arriving.
    */
   | { type: 'text'; chunk: string }
+  /**
+   * The agent's own words while it works, which are not the answer and must
+   * not be shown as one. Across the minute before the first tool is called
+   * they are the only thing there is to report.
+   */
+  | { type: 'thinking'; chunk: string }
   | { type: 'done'; result: AgentRunResult };

@@ -23,6 +23,9 @@ export type AssistantProgress =
    * whole reply, so nothing depends on every chunk arriving.
    */
   | { type: 'text'; chunk: string }
+  /** The agent's own words while it works. Not the answer, and never shown
+   * as one. */
+  | { type: 'thinking'; chunk: string }
   | {
       type: 'done';
       result: {

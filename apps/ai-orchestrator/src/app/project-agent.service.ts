@@ -83,6 +83,12 @@ const NOT_THE_AGENTS_BUSINESS = new Set([
   'refer_to_persona',
 ]);
 
+/** As much of a streamed agent chunk as this reads. */
+interface AgentChunk {
+  content?: unknown;
+  tool_call_chunks?: { name?: string }[];
+}
+
 /** One exchange, as the caller keeps it between requests. */
 export interface AgentTurn {
   role: 'person' | 'assistant';
@@ -132,6 +138,14 @@ export interface AgentRunRequest {
    * unchanged: whatever was streamed is replaced by what actually arrived.
    */
   onText?: (chunk: string) => void;
+  /**
+   * Called with the agent's own words as it works, before any answer exists.
+   *
+   * These are not the answer and must not be shown as one. They are what it is
+   * reading and deciding, which is the only thing there is to report across
+   * the minute before the first tool is called.
+   */
+  onThinking?: (chunk: string) => void;
 }
 
 export interface AgentRunResult {
@@ -188,6 +202,7 @@ export class ProjectAgentService {
       personaId = null,
       onToolUsed,
       onText,
+      onThinking,
     } = request;
 
     let config;
@@ -229,7 +244,7 @@ export class ProjectAgentService {
         prompt,
       });
 
-      const run = await agent.invoke({
+      const input = {
         messages: [
           new SystemMessage(prompt),
           ...rememberedTurns(history, ProjectAgentService.TURNS_REMEMBERED),
@@ -242,9 +257,13 @@ export class ProjectAgentService {
               : instruction
           ),
         ],
-      });
+      };
 
-      const messages = run.messages ?? [];
+      const messages = await this.runReportingProgress(
+        agent,
+        input,
+        onThinking
+      );
       const itsOwnWords = String(messages[messages.length - 1]?.content ?? '');
 
       return {
@@ -439,6 +458,99 @@ export class ProjectAgentService {
    * this whole feature guards against, and the only way to catch it is to keep
    * what the tools actually said.
    */
+  /**
+   * The agent loop, reported while it runs.
+   *
+   * Measured on the running stack, a hundred second answer was sixty seconds
+   * of complete silence before the first tool was called and forty more
+   * between that tool returning and the reply. Both are a model reading and
+   * writing, and neither was reported at all. Streaming only the composed
+   * reply covered well under one percent of the wait.
+   *
+   * What is emitted is the agent's own words as it produces them. They are not
+   * the answer and are never shown as one: this model reads its tool output
+   * back field by field, which is the whole reason the reply is composed by a
+   * different one. As a sign of life and of what it is chewing on, it is worth
+   * a great deal more than a spinner.
+   *
+   * Falls back to a plain invoke if streaming is unavailable or fails, because
+   * a run that finishes silently beats one that does not finish.
+   */
+  async runReportingProgress(
+    agent: {
+      stream?: unknown;
+      invoke: (input: unknown) => Promise<{ messages?: unknown[] }>;
+    },
+    input: unknown,
+    onThinking?: (chunk: string) => void
+  ): Promise<{ content?: unknown }[]> {
+    if (!onThinking || typeof agent.stream !== 'function') {
+      const run = await agent.invoke(input);
+      return (run?.messages ?? []) as { content?: unknown }[];
+    }
+
+    try {
+      const stream = await (
+        agent.stream as (
+          input: unknown,
+          options: unknown
+        ) => Promise<AsyncIterable<unknown>>
+      )(input, { streamMode: ['values', 'messages'] });
+
+      let last: { content?: unknown }[] = [];
+      // The name arrives on many chunks as the call is assembled, and a loop
+      // that calls one tool repeatedly says it again each time. Saying it once
+      // per run of the same tool is the whole of its value.
+      let saidReaching = '';
+      for await (const piece of stream) {
+        // With several stream modes each item is [mode, payload].
+        const [mode, payload] = piece as [string, unknown];
+
+        if (mode === 'values') {
+          const messages = (payload as { messages?: unknown[] })?.messages;
+          if (Array.isArray(messages)) {
+            last = messages as { content?: unknown }[];
+          }
+          continue;
+        }
+
+        if (mode === 'messages') {
+          const [chunk, metadata] = payload as [
+            AgentChunk | undefined,
+            { langgraph_node?: string } | undefined
+          ];
+
+          // A tool's result arrives on this stream too, and its content is a
+          // string, so a check for "is it text" passes and the raw JSON we
+          // shorten elsewhere goes straight to the reader. Only the model's
+          // own node is of interest.
+          if (metadata?.langgraph_node !== 'agent') continue;
+
+          // Deciding which tool to call produces no words at all, which is
+          // most of the first minute. The name it is reaching for is the only
+          // thing there is to report, and it is worth more than silence.
+          const reaching = chunk?.tool_call_chunks?.find((call) => call.name);
+          if (reaching?.name && reaching.name !== saidReaching) {
+            saidReaching = reaching.name;
+            onThinking(`\n[about to use ${reaching.name}]\n`);
+          }
+
+          const text = typeof chunk?.content === 'string' ? chunk.content : '';
+          if (text) onThinking(text);
+        }
+      }
+      return last;
+    } catch (error) {
+      this.logger.warn(
+        `Could not follow the agent as it worked, running it plainly: ${
+          (error as Error).message
+        }`
+      );
+      const run = await agent.invoke(input);
+      return (run?.messages ?? []) as { content?: unknown }[];
+    }
+  }
+
   async toolsFor(
     session: McpSession,
     used: AgentRunResult['used'],

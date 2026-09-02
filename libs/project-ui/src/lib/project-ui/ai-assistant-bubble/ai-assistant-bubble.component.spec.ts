@@ -145,3 +145,64 @@ describe('AiAssistantBubbleComponent conversation', () => {
     expect(bubble.speakingWith[0].avatarUrl).toMatch(/^data:image\/svg\+xml/);
   });
 });
+
+/**
+ * What the indicator says while it works, which is the only thing there is to
+ * read across most of a hundred second wait.
+ */
+describe('AiAssistantBubbleComponent thinking message', () => {
+  function working(doing: string[], thinking = '') {
+    const bubble = new AiAssistantBubbleComponent();
+    bubble.working = true;
+    bubble.doing = doing;
+    bubble.thinking = thinking;
+    return bubble;
+  }
+
+  it('promises a wait before any tool has been called', () => {
+    expect(working([]).thinkingMessage).toContain('This takes a minute');
+  });
+
+  it('names each tool once, however often it was called', () => {
+    // A loop searching the tasks three times read as "searched the tasks,
+    // searched the tasks, searched the tasks", which says nothing the first
+    // one did not.
+    const message = working([
+      'query_tasks',
+      'query_tasks',
+      'query_tasks',
+    ]).thinkingMessage;
+
+    expect(message).toBe('So far: searched the tasks.');
+  });
+
+  it('keeps distinct tools distinct', () => {
+    const message = working(['count_tasks', 'list_risks']).thinkingMessage;
+
+    expect(message).toBe('So far: counted the tasks, listed the risks.');
+  });
+
+  it('adds what it is chewing on', () => {
+    const message = working(
+      ['count_tasks'],
+      'reading the numbers'
+    ).thinkingMessage;
+
+    expect(message).toContain('reading the numbers');
+  });
+
+  it('says nothing at all when it is not working', () => {
+    const bubble = working(['count_tasks']);
+    bubble.working = false;
+
+    expect(bubble.thinkingMessage).toBeNull();
+  });
+
+  it('gets out of the way once the answer is arriving', () => {
+    // Once there is text to read, a status line says less than the answer.
+    const bubble = working(['count_tasks'], 'still musing');
+    bubble.partial = 'There are';
+
+    expect(bubble.thinkingMessage).toBeNull();
+  });
+});

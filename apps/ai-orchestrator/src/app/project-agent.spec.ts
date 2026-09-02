@@ -334,6 +334,160 @@ describe('ProjectAgentService', () => {
   });
 
   /**
+   * Following the agent while it works.
+   *
+   * Measured on the running stack, a hundred second answer was sixty seconds
+   * of silence before the first tool and forty more before the reply. Both are
+   * a model reading and writing, and neither was reported. Streaming only the
+   * composed reply covered well under one percent of the wait.
+   */
+  describe('reporting progress while it runs', () => {
+    function agentYielding(pieces: unknown[]) {
+      return {
+        stream: jest.fn().mockResolvedValue(
+          (async function* () {
+            for (const piece of pieces) yield piece;
+          })()
+        ),
+        invoke: jest.fn().mockResolvedValue({
+          messages: [{ content: 'from invoke' }],
+        }),
+      };
+    }
+
+    it('reports the words as the agent produces them', async () => {
+      const { service } = serviceWith();
+      const agent = agentYielding([
+        ['messages', [{ content: 'I should ' }, { langgraph_node: 'agent' }]],
+        [
+          'messages',
+          [{ content: 'count the tasks' }, { langgraph_node: 'agent' }],
+        ],
+        ['values', { messages: [{ content: 'done' }] }],
+      ]);
+      const heard: string[] = [];
+
+      await service.runReportingProgress(agent as never, {}, (chunk) =>
+        heard.push(chunk)
+      );
+
+      expect(heard).toEqual(['I should ', 'count the tasks']);
+    });
+
+    it('hands back the final messages, not the pieces', async () => {
+      const { service } = serviceWith();
+      const agent = agentYielding([
+        ['messages', [{ content: 'thinking' }, { langgraph_node: 'agent' }]],
+        ['values', { messages: [{ content: 'first' }, { content: 'last' }] }],
+      ]);
+
+      const messages = await service.runReportingProgress(
+        agent as never,
+        {},
+        () => {
+          /* listening */
+        }
+      );
+
+      expect(messages.map((m) => m.content)).toEqual(['first', 'last']);
+    });
+
+    it('does not stream when nobody is following', async () => {
+      const { service } = serviceWith();
+      const agent = agentYielding([]);
+
+      await service.runReportingProgress(agent as never, {});
+
+      expect(agent.stream).not.toHaveBeenCalled();
+      expect(agent.invoke).toHaveBeenCalled();
+    });
+
+    it('finishes plainly when it cannot be followed', async () => {
+      // A run that finishes silently beats one that does not finish.
+      const { service } = serviceWith();
+      const agent = agentYielding([]);
+      agent.stream.mockRejectedValue(new Error('no streaming here'));
+
+      const messages = await service.runReportingProgress(
+        agent as never,
+        {},
+        () => {
+          /* listening */
+        }
+      );
+
+      expect(agent.invoke).toHaveBeenCalled();
+      expect(messages.map((m) => m.content)).toEqual(['from invoke']);
+    });
+
+    it('never repeats a tool result back as thinking', async () => {
+      // A tool's result arrives on this stream too and its content is a
+      // string, so a check for "is it text" passes and the raw JSON goes
+      // straight to the reader.
+      const { service } = serviceWith();
+      const agent = agentYielding([
+        [
+          'messages',
+          [
+            { content: '{"content":[{"type":"text","text":"{...}"}]}' },
+            { langgraph_node: 'tools' },
+          ],
+        ],
+        ['values', { messages: [] }],
+      ]);
+      const heard: string[] = [];
+
+      await service.runReportingProgress(agent as never, {}, (chunk) =>
+        heard.push(chunk)
+      );
+
+      expect(heard).toEqual([]);
+    });
+
+    it('says what it is reaching for while it produces no words', async () => {
+      // Deciding which tool to call produces no text at all, which is most of
+      // the first minute.
+      const { service } = serviceWith();
+      const agent = agentYielding([
+        [
+          'messages',
+          [
+            { content: '', tool_call_chunks: [{ name: 'count_tasks' }] },
+            { langgraph_node: 'agent' },
+          ],
+        ],
+        ['values', { messages: [] }],
+      ]);
+      const heard: string[] = [];
+
+      await service.runReportingProgress(agent as never, {}, (chunk) =>
+        heard.push(chunk)
+      );
+
+      expect(heard.join('')).toContain('count_tasks');
+    });
+
+    it('ignores a piece with nothing readable in it', async () => {
+      const { service } = serviceWith();
+      const agent = agentYielding([
+        ['messages', [{ content: '' }, { langgraph_node: 'agent' }]],
+        [
+          'messages',
+          [{ content: [{ type: 'tool_use' }] }, { langgraph_node: 'agent' }],
+        ],
+        ['values', { messages: [] }],
+      ]);
+      const heard: string[] = [];
+
+      await service.runReportingProgress(agent as never, {}, (chunk) =>
+        heard.push(chunk)
+      );
+
+      expect(heard).toEqual([]);
+    });
+  });
+
+  /**
    * Choosing a persona is meant to choose what can be done, so the scope is
    * read even though nothing sets it yet. Building the seam later would mean
    * every caller that binds tools had been written against the wrong shape.

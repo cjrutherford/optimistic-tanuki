@@ -46,6 +46,8 @@ export class AiAssistantBubbleComponent {
   @Input() doing: string[] = [];
   /** The answer so far, while it is being written. */
   @Input() partial = '';
+  /** What it is chewing on. Shown as thinking, never as the answer. */
+  @Input() thinking = '';
   @Input() unavailable: string | null = null;
   /** The project it is on, when a page has said which. */
   @Input() projectName: string | null = null;
@@ -145,8 +147,19 @@ export class AiAssistantBubbleComponent {
     // Once the answer is arriving it says more than any status line could, so
     // the indicator gets out of its way.
     if (this.partial) return null;
-    if (!this.doing.length) return 'Working on it. This takes a minute.';
-    return `Working on it. So far: ${this.doing.map(describeTool).join(', ')}.`;
+
+    // Named once each. A loop that searches the tasks three times reads as
+    // "searched the tasks, searched the tasks, searched the tasks", which
+    // tells a reader nothing the first one did not.
+    const each = [...new Set(this.doing.map(describeTool))];
+    const sofar = each.length
+      ? `So far: ${each.join(', ')}.`
+      : 'Working on it. This takes a minute.';
+
+    // Its own words while it reads and decides. Not the answer, and shown
+    // where a status line goes rather than where an answer goes, because this
+    // model reads its tool output back field by field.
+    return this.thinking ? `${sofar} ${this.thinking}` : sofar;
   }
 
   showPersonas(): void {
