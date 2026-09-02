@@ -79,6 +79,22 @@ export class PersonaSelectionMenuComponent implements OnInit {
     );
   }
 
+  /**
+   * What this persona can do, in words, so the choice is made knowing it.
+   *
+   * A persona is chosen for a kind of work, and what it can reach is most of
+   * what that means. Saying nothing is right for a record that predates the
+   * scope: it has every tool, which is not a claim worth making on a card.
+   */
+  canDo(persona: PersonaTelosDto): string | null {
+    const capabilities = persona.capabilities;
+    if (!capabilities) return null;
+
+    const changes = capabilities.filter((able) => able !== 'read');
+    if (!changes.length) return 'Reads only';
+    return `Can change ${changes.join(', ')}`;
+  }
+
   /** True for the persona whose conversation is currently open. */
   isChosen(persona: PersonaTelosDto): boolean {
     return this.chosenId === persona.id;

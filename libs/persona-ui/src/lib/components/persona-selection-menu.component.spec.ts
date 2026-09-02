@@ -85,6 +85,32 @@ describe('PersonaSelectionMenuComponent', () => {
     });
   });
 
+  describe('what each one can do', () => {
+    it('says a persona reads only, when that is all it can do', () => {
+      offering([{ ...percy, capabilities: ['read'] }]);
+
+      expect(component.canDo({ ...percy, capabilities: ['read'] })).toBe(
+        'Reads only'
+      );
+      expect(text()).toContain('Reads only');
+    });
+
+    it('names what a persona can change', () => {
+      const able = component.canDo({
+        ...patricia,
+        capabilities: ['read', 'tasks', 'risks'],
+      });
+
+      expect(able).toBe('Can change tasks, risks');
+    });
+
+    it('claims nothing for a record that predates the scope', () => {
+      // No capabilities means every tool, which is not a claim worth making
+      // on a card.
+      expect(component.canDo(patricia)).toBeNull();
+    });
+  });
+
   describe('the one you are already talking to', () => {
     it('marks them, so choosing again is understood as going back', () => {
       component.chosenId = 'p2';

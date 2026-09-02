@@ -524,6 +524,10 @@ export class ProjectAgentService {
       ...(voice ? [...voice.identityLines, ''] : []),
       "You are working on this person's projects for them.",
       '',
+      // What this persona can reach, before it is asked to do anything. The
+      // tools it lacks are simply absent, and a model that cannot find a way
+      // to do what was asked tends to invent one or claim it did it.
+      ...(voice?.limits ? [voice.limits, ''] : []),
       // Without a project the assistant is not useless, it is just starting
       // further back: listing projects needs no project id. Saying so beats
       // refusing, and beats inventing an id.

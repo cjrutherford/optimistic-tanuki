@@ -28,6 +28,8 @@ export interface PersonaTelos {
   strengths?: string[];
   interests?: string[];
   coreObjective?: string;
+  /** What this persona may do. Null means no scope was ever decided. */
+  capabilities?: string[] | null;
 }
 
 /** Who is speaking, ready to be put in a prompt and shown to a reader. */
@@ -39,14 +41,122 @@ export interface Voice {
   /** Identity lines for a prompt. Never instructions. */
   identityLines: string[];
   /**
+   * What this persona can and cannot do, said plainly, or null when no scope
+   * was ever decided. Derived from the scope rather than from the telos text,
+   * which is why it may be behaviour where the identity lines may not.
+   */
+  limits: string | null;
+  /**
    * The tools this persona may reach, or null for all of them.
    *
-   * Always null today. It is here rather than added later because choosing a
-   * persona is meant to choose what can be done, so every caller that binds
-   * tools should be reading a scope from the outset. Filling it in is its own
-   * piece of work; leaving the seam out would mean building it twice.
+   * Worked out from the capabilities on their record. Null is not "unset" by
+   * accident: it is what a persona with no capabilities decided has always
+   * had, and keeping it distinct from an empty list is what lets a persona be
+   * given read access and nothing else.
    */
   tools: string[] | null;
+}
+
+/**
+ * What each capability lets a persona actually reach.
+ *
+ * The persona record names capabilities rather than tools, so that a record
+ * stays readable, survives a tool being renamed, and does not leave a newly
+ * added tool belonging to nobody. Adding a tool here is the one place that has
+ * to change.
+ *
+ * `read` is deliberately generous. Looking at a project is not what the
+ * approval gate exists to control, and a persona that cannot read anything
+ * cannot answer a question either, which makes choosing them pointless rather
+ * than safe.
+ */
+export const TOOLS_BY_CAPABILITY: Record<string, string[]> = {
+  read: [
+    'list_projects',
+    'get_project',
+    'query_projects',
+    'list_tasks',
+    'get_task',
+    'query_tasks',
+    'count_tasks',
+    'list_risks',
+    'query_risks',
+    'list_changes',
+    'query_changes',
+    'list_journal_entries',
+    'query_journal_entries',
+  ],
+  tasks: ['create_task', 'update_task', 'delete_task'],
+  risks: ['create_risk', 'update_risk', 'delete_risk'],
+  changes: ['create_change', 'update_change', 'delete_change'],
+  journal: ['create_journal_entry', 'update_journal_entry'],
+  projects: ['create_project', 'update_project', 'delete_project'],
+};
+
+/**
+ * The tools a set of capabilities adds up to.
+ *
+ * Null in, null out: a persona with no capabilities decided has never had a
+ * scope and keeps every tool, which is what every record did before the column
+ * existed. An empty list is a decision, and means look but do not act.
+ */
+export function toolsFor(
+  capabilities: string[] | null | undefined
+): string[] | null {
+  if (capabilities == null) return null;
+
+  const named = new Set<string>();
+  for (const capability of capabilities) {
+    for (const tool of TOOLS_BY_CAPABILITY[capability] ?? []) {
+      named.add(tool);
+    }
+  }
+  return [...named];
+}
+
+/** What each capability lets a persona change, said in words. */
+const CHANGES_BY_CAPABILITY: Record<string, string> = {
+  tasks: 'tasks',
+  risks: 'risks',
+  changes: 'change records',
+  journal: 'journal entries',
+  projects: 'projects',
+};
+
+/**
+ * What a persona can and cannot do, for the prompt.
+ *
+ * Without this a persona simply does not see the tools it lacks, and a model
+ * that cannot find a way to do what was asked tends to invent one or to claim
+ * it did it. Saying so plainly is cheaper than either.
+ *
+ * This is behaviour, and it is allowed to be, because it is derived from the
+ * scope rather than read out of the persona's own telos text. The rule the
+ * identity lines obey is that a persona may not argue with how the assistant
+ * behaves; a fact about what it can reach is not an argument.
+ */
+export function limitsOf(
+  capabilities: string[] | null | undefined
+): string | null {
+  if (capabilities == null) return null;
+
+  const changes = capabilities
+    .map((capability) => CHANGES_BY_CAPABILITY[capability])
+    .filter(Boolean);
+
+  if (!changes.length) {
+    return (
+      'You can read this project and nothing else. You cannot create or ' +
+      'change anything on it. If you are asked to, say plainly that it is ' +
+      'not something you can do, and do not pretend otherwise.'
+    );
+  }
+
+  return (
+    `You can read this project, and propose changes to ${asList(changes)}. ` +
+    'Anything else is not something you can do, and if you are asked for it, ' +
+    'say so rather than pretending otherwise.'
+  );
 }
 
 /** How the assistant's own persona is recognised among the seeded ones. */
@@ -174,7 +284,8 @@ export class PersonaVoiceService {
       name: persona.name,
       blurb: description || persona.coreObjective || '',
       identityLines,
-      tools: null,
+      limits: limitsOf(persona.capabilities),
+      tools: toolsFor(persona.capabilities),
     };
   }
 }

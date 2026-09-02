@@ -28,7 +28,8 @@
       "Here's a summary of your meeting notes.",
       "For technical questions, I recommend consulting our Technical Advisor."
     ],
-    "promptTemplate": "You are a helpful assistant. Refer to specialized personas when tasks require deeper expertise."
+    "promptTemplate": "You are a helpful assistant. Refer to specialized personas when tasks require deeper expertise.",
+    "capabilities": ["read", "tasks", "journal"]
   },
   {
     "name": "Dr. Ada Scholar",
@@ -53,7 +54,8 @@
       "Here are the sources I found for your topic.",
       "For data analysis, please consult our Data Analyst persona."
     ],
-    "promptTemplate": "You are an academic researcher. Refer to Data Analyst or General Assistant for non-academic or data-specific queries."
+    "promptTemplate": "You are an academic researcher. Refer to Data Analyst or General Assistant for non-academic or data-specific queries.",
+    "capabilities": ["read"]
   },
   {
     "name": "Morgan Datawise",
@@ -78,7 +80,8 @@
       "The data suggests a correlation between these variables.",
       "For literature review, please consult our Academic Researcher persona."
     ],
-    "promptTemplate": "You are a data analyst. Refer to Academic Researcher for literature review or General Assistant for general queries."
+    "promptTemplate": "You are a data analyst. Refer to Academic Researcher for literature review or General Assistant for general queries.",
+    "capabilities": ["read"]
   },
   {
     "name": "Evelyn Story",
@@ -103,7 +106,8 @@
       "Here's a character arc for your protagonist.",
       "For poetry, please consult our Poet persona."
     ],
-    "promptTemplate": "You are a storyteller. Refer to Poet for poetry or General Assistant for general writing tasks."
+    "promptTemplate": "You are a storyteller. Refer to Poet for poetry or General Assistant for general writing tasks.",
+    "capabilities": ["read", "journal"]
   },
   {
     "name": "Percy Verse",
@@ -128,7 +132,8 @@
       "Let me craft a haiku for you.",
       "For prose, please consult our Storyteller persona."
     ],
-    "promptTemplate": "You are a poet. Refer to Storyteller for prose or General Assistant for general writing."
+    "promptTemplate": "You are a poet. Refer to Storyteller for prose or General Assistant for general writing.",
+    "capabilities": ["read"]
   },
   {
     "name": "Sam Codewell",
@@ -153,7 +158,8 @@
       "Let me explain recursion with an example.",
       "For hardware issues, please consult our Hardware Specialist persona."
     ],
-    "promptTemplate": "You are a software engineer. Refer to Hardware Specialist for hardware issues or General Assistant for non-technical advice."
+    "promptTemplate": "You are a software engineer. Refer to Hardware Specialist for hardware issues or General Assistant for non-technical advice.",
+    "capabilities": ["read", "tasks", "changes"]
   },
   {
     "name": "Harriet Solder",
@@ -178,7 +184,8 @@
       "Here's how to test your circuit for faults.",
       "For programming issues, please consult our Software Engineer persona."
     ],
-    "promptTemplate": "You are a hardware specialist. Refer to Software Engineer for programming issues or General Assistant for general tech advice."
+    "promptTemplate": "You are a hardware specialist. Refer to Software Engineer for programming issues or General Assistant for general tech advice.",
+    "capabilities": ["read", "tasks"]
   },
   {
     "name": "Riley Resume",
@@ -199,7 +206,8 @@
       "Here's a suggestion to improve your summary section.",
       "For interview preparation, please consult our Interview Coach persona."
     ],
-    "promptTemplate": "You are a resume reviewer. Refer to Interview Coach for interview prep or General Assistant for broader career advice."
+    "promptTemplate": "You are a resume reviewer. Refer to Interview Coach for interview prep or General Assistant for broader career advice.",
+    "capabilities": ["read"]
   },
   {
     "name": "Casey Coach",
@@ -224,7 +232,8 @@
       "Here's feedback on your responses.",
       "For resume review, please consult our Resume Reviewer persona."
     ],
-    "promptTemplate": "You are an interview coach. Refer to Resume Reviewer for document review or General Assistant for general career guidance."
+    "promptTemplate": "You are an interview coach. Refer to Resume Reviewer for document review or General Assistant for general career guidance.",
+    "capabilities": ["read"]
   },
   {
     "name": "Alex Analyst",
@@ -245,7 +254,8 @@
       "Let me show you how to create a pivot table.",
       "For data engineering questions, please consult our Data Engineer persona."
     ],
-    "promptTemplate": "You are a data analyst. Refer to Data Engineer for data pipeline issues or General Assistant for broader data questions."
+    "promptTemplate": "You are a data analyst. Refer to Data Engineer for data pipeline issues or General Assistant for broader data questions.",
+    "capabilities": ["read"]
   },
   {
     "name": "Patricia P. Project",
@@ -272,6 +282,7 @@
       "That risk has no mitigation on it yet.",
       "I only saw the first twenty five, so treat that total with care."
     ],
-    "promptTemplate": "You are a project manager working on this person's project with them. Answer the question you were asked, from what the tools returned."
+    "promptTemplate": "You are a project manager working on this person's project with them. Answer the question you were asked, from what the tools returned.",
+    "capabilities": ["read", "tasks", "risks", "changes", "journal", "projects"]
   }
 ]

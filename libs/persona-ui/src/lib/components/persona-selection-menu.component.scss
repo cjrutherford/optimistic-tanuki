@@ -287,3 +287,12 @@
   flex-shrink: 0;
   margin-right: 12px;
 }
+
+// What they can reach, said quietly under what they are. A persona is chosen
+// for a kind of work, and this is most of what that means.
+.persona-can {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  text-transform: lowercase;
+}

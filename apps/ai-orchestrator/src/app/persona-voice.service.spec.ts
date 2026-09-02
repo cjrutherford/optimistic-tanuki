@@ -1,6 +1,12 @@
 import { of, throwError } from 'rxjs';
 
-import { PersonaVoiceService, asList } from './persona-voice.service';
+import {
+  PersonaVoiceService,
+  TOOLS_BY_CAPABILITY,
+  asList,
+  limitsOf,
+  toolsFor,
+} from './persona-voice.service';
 
 /**
  * Who the assistant is, and the one rule that keeps a persona from undoing
@@ -116,12 +122,89 @@ describe('PersonaVoiceService', () => {
     expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it('starts with every tool, and says so in a way a caller can read', async () => {
-    // Null rather than a list of everything, so "unscoped" stays distinct from
-    // "scoped to whatever existed when this was written".
+  it('keeps every tool for a persona whose record decided no scope', async () => {
+    // Null rather than a list of everything, so "nobody decided" stays
+    // distinct from "scoped to whatever existed when this was written", and so
+    // a record predating the column is not quietly stripped of its tools.
     const { service } = serviceWith(patricia);
 
     expect((await service.voiceFor('persona-1'))?.tools).toBeNull();
+  });
+
+  /**
+   * What a persona may do, which is the point of choosing one.
+   *
+   * The record names capabilities rather than tools, so it stays readable,
+   * survives a tool being renamed, and does not leave a newly added tool
+   * belonging to nobody.
+   */
+  describe('capabilities', () => {
+    it('turns a capability into the tools it covers', () => {
+      const tools = toolsFor(['tasks']);
+
+      expect(tools).toEqual(
+        expect.arrayContaining(['create_task', 'update_task', 'delete_task'])
+      );
+    });
+
+    it('adds capabilities together without repeating a tool', () => {
+      const tools = toolsFor(['read', 'read', 'tasks']);
+
+      expect(new Set(tools).size).toBe(tools?.length);
+    });
+
+    it('keeps every tool when no scope was ever decided', () => {
+      // Null is what every record carried before the column existed, and must
+      // not quietly become "no tools at all".
+      expect(toolsFor(null)).toBeNull();
+      expect(toolsFor(undefined)).toBeNull();
+    });
+
+    it('gives nothing to a persona whose capabilities are empty', () => {
+      // An empty list is a decision, and a decision distinct from null.
+      expect(toolsFor([])).toEqual([]);
+    });
+
+    it('ignores a capability nobody has defined', () => {
+      // A record edited by hand should cost a capability, never a run.
+      expect(toolsFor(['tasks', 'sorcery'])).toEqual(
+        TOOLS_BY_CAPABILITY['tasks']
+      );
+    });
+
+    it('lets a reader look without letting them act', () => {
+      const tools = toolsFor(['read']) ?? [];
+
+      expect(tools).toContain('count_tasks');
+      expect(tools).not.toContain('create_task');
+    });
+
+    it('reads the scope off the persona record', async () => {
+      const { service } = serviceWith({ ...patricia, capabilities: ['read'] });
+
+      const voice = await service.voiceFor('persona-1');
+
+      expect(voice?.tools).not.toContain('create_task');
+    });
+  });
+
+  describe('what it says it cannot do', () => {
+    it('tells a reader-only persona to say so rather than pretend', () => {
+      // The tools it lacks are simply absent, and a model that cannot find a
+      // way to do what was asked tends to invent one or claim it did it.
+      expect(limitsOf(['read'])).toMatch(/cannot create or change anything/);
+    });
+
+    it('names what a persona can propose', () => {
+      const limits = limitsOf(['read', 'tasks', 'journal']) ?? '';
+
+      expect(limits).toContain('tasks');
+      expect(limits).toContain('journal entries');
+    });
+
+    it('says nothing when no scope was decided', () => {
+      expect(limitsOf(null)).toBeNull();
+    });
   });
 
   describe('asList', () => {

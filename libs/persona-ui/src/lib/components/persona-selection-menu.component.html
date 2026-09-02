@@ -75,7 +75,9 @@
               }
             </div>
             <p class="persona-description">{{ persona.description }}</p>
-            @if (persona.skills && persona.skills.length > 0) {
+            @if (canDo(persona); as able) {
+            <p class="persona-can">{{ able }}</p>
+            } @if (persona.skills && persona.skills.length > 0) {
             <div class="persona-skills">
               @for (skill of persona.skills.slice(0, 3); track skill) {
               <span class="skill-badge">{{ skill }}</span>

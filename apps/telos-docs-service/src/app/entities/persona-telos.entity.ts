@@ -37,4 +37,20 @@ export class PersonaTelos {
 
   @Column()
   promptTemplate: string;
+
+  /**
+   * What this persona is allowed to do, as coarse capabilities.
+   *
+   * Choosing who you are talking to is meant to choose what can be done, not
+   * only who is speaking. These are capabilities rather than tool names on
+   * purpose: a record naming twenty seven tools is unreadable, breaks the day
+   * a tool is renamed, and leaves a newly added tool belonging to nobody. A
+   * capability keeps meaning what it meant.
+   *
+   * Empty means this persona can look but not act. Null means no scope has
+   * been decided and every tool is available, which is what every record
+   * carried before this column existed.
+   */
+  @Column('text', { array: true, nullable: true })
+  capabilities?: string[] | null;
 }
