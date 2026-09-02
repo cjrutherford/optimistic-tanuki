@@ -9,6 +9,7 @@ import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskNote } from './entities/task-note.entity';
 import { AiChange } from './entities/ai-change.entity';
+import { ProjectInvite } from './entities/project-invite.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -23,6 +24,7 @@ const loadDatabase = (config: ConfigService) => {
     TaskTag,
     TaskNote,
     AiChange,
+    ProjectInvite,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`

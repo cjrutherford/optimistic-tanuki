@@ -242,20 +242,7 @@ export class ProjectService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
-  inviteMember(projectId: string, email: string, createdBy: string) {
-    const profile = this.profileService.getCurrentUserProfile();
-    if (!profile) {
-      throw new Error(
-        'No profile selected. Please select a profile before inviting members.'
-      );
-    }
-
-    const invite = {
-      projectId,
-      email,
-      createdBy,
-    };
-
-    return this.http.post(`${this.baseUrl}/${projectId}/invite`, invite);
-  }
+  // inviteMember lived here and posted to /projects/:id/invite, a route that
+  // has never existed and answered 404. Nothing in the interface called it.
+  // It comes back when there is something behind it to call.
 }

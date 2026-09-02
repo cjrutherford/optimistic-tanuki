@@ -11,6 +11,7 @@ import { TaskTag } from './entities/task-tag.entity';
 import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskNote } from './entities/task-note.entity';
 import { AiChange } from './entities/ai-change.entity';
+import { ProjectInvite } from './entities/project-invite.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -41,6 +42,7 @@ const entities = [
   TaskTimeEntry,
   TaskNote,
   AiChange,
+  ProjectInvite,
 ];
 
 console.log(
