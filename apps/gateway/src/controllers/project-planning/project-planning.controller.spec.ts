@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectPlanningController } from './project-planning.controller';
+import { ProjectInviteMailer } from './project-invite.mailer';
 import {
   ChangeCommands,
   ProjectAiCommands,
@@ -82,6 +83,13 @@ describe('ProjectPlanningController', () => {
         {
           provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
           useValue: aiOrchestrationService,
+        },
+        {
+          // Sending is a courtesy that happens after the record is safe, so a
+          // stand-in that does nothing is the honest thing here: these tests
+          // are about the routes, not about the post.
+          provide: ProjectInviteMailer,
+          useValue: { send: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     })

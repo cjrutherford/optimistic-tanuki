@@ -19,6 +19,7 @@ import {
   ChangeCommands,
   AnalyticsCommands,
   ProjectCommands,
+  ProjectInviteCommands,
   ProjectJournalCommands,
   RiskCommands,
   ServiceTokens,
@@ -58,6 +59,7 @@ import { ProjectAiCommands } from '@optimistic-tanuki/constants';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ProjectInviteMailer } from './project-invite.mailer';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('project-planning')
@@ -67,7 +69,8 @@ export class ProjectPlanningController {
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
     private readonly projectPlanningService: ClientProxy,
     @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
-    private readonly aiOrchestrationService: ClientProxy
+    private readonly aiOrchestrationService: ClientProxy,
+    private readonly inviteMailer: ProjectInviteMailer
   ) {}
 
   /**
@@ -501,6 +504,148 @@ export class ProjectPlanningController {
     @Res() response: Response
   ) {
     return this.streamAgent(body?.projectId ?? null, body, request, response);
+  }
+
+  /**
+   * Inviting somebody to work on a project.
+   *
+   * The identity is the session's profile, never anything the caller sent. The
+   * service refuses everyone but the owner, and refuses in the same words as
+   * being unable to reach the project at all, so these routes cannot be used
+   * to find out which projects exist.
+   */
+  @ApiOperation({ summary: 'Invite somebody to a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Post('projects/:id/invites')
+  async inviteToProject(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Body() body: { email?: string }
+  ) {
+    if (!body?.email?.trim()) {
+      throw new BadRequestException('An email address is required.');
+    }
+    const invite = await firstValueFrom(
+      this.projectPlanningService.send<{ email: string; token: string }>(
+        { cmd: ProjectInviteCommands.CREATE },
+        {
+          projectId,
+          email: body.email,
+          requestingUserId: user.profileId,
+        }
+      )
+    );
+
+    // After the record exists, and never allowed to undo it. The invitation is
+    // discoverable inside the application by whoever it was addressed to, so a
+    // failure to send costs a courtesy rather than the invitation.
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{ name?: string } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    ).catch(() => null);
+
+    await this.inviteMailer.send({
+      email: invite.email,
+      token: invite.token,
+      projectName: project?.name,
+      invitedByName: user.name,
+      appId: 'forgeofwill',
+    });
+
+    return invite;
+  }
+
+  @ApiOperation({ summary: 'List the invitations on a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Get('projects/:id/invites')
+  async findProjectInvites(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    // Guarded as tightly as inviting. An invitation carries an email address,
+    // and who is working on a project is not public.
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_FOR_PROJECT },
+        { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * The three below are the invitee's side, and every one of them is scoped by
+   * the caller's own email from the session rather than by anything they sent.
+   * An invitation id is not a secret; the address it was sent to is what makes
+   * it theirs.
+   */
+  @ApiOperation({ summary: 'Invitations waiting on the signed in caller' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('invitations')
+  async findMyInvitations(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_FOR_ME },
+        { email: user.email, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'One invitation, by the token in its link' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('invitations/:token')
+  async findInvitationByToken(
+    @User() user: UserDetails,
+    @Param('token') token: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_BY_TOKEN },
+        { token, email: user.email, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Accept or decline an invitation' })
+  @RequirePermissions('project-planning.project.read')
+  @Patch('invitations/:id')
+  async respondToInvitation(
+    @User() user: UserDetails,
+    @Param('id') id: string,
+    @Body() body: { accept?: boolean }
+  ) {
+    if (typeof body?.accept !== 'boolean') {
+      throw new BadRequestException(
+        'An answer of accept true or false is required.'
+      );
+    }
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.RESPOND },
+        {
+          id,
+          accept: body.accept,
+          email: user.email,
+          requestingUserId: user.profileId,
+        }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Withdraw an invitation' })
+  @RequirePermissions('project-planning.project.update')
+  @Delete('projects/invites/:inviteId')
+  async revokeProjectInvite(
+    @User() user: UserDetails,
+    @Param('inviteId') inviteId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.REVOKE },
+        { id: inviteId, requestingUserId: user.profileId }
+      )
+    );
   }
 
   @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })

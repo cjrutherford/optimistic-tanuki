@@ -10,6 +10,27 @@ export const ProjectCommands = {
   REVIEW_AI_CHANGE: 'project.reviewAiChange',
 };
 
+/**
+ * Inviting somebody to work on a project.
+ *
+ * Separate from ProjectCommands because an invitation is its own thing with
+ * its own life, and folding it in would have every project route carrying a
+ * verb that only makes sense to an owner.
+ */
+export const ProjectInviteCommands = {
+  CREATE: 'projectInvite.create',
+  /** Everything outstanding on a project. Owner only: it lists addresses. */
+  FIND_FOR_PROJECT: 'projectInvite.findForProject',
+  /** Withdrawn by the owner, whether or not it has been answered. */
+  REVOKE: 'projectInvite.revoke',
+  /** Everything waiting on the caller's own address. */
+  FIND_FOR_ME: 'projectInvite.findForMe',
+  /** One invitation, found by the token a link carries. */
+  FIND_BY_TOKEN: 'projectInvite.findByToken',
+  /** The invitee's answer. Accepting is what grants access. */
+  RESPOND: 'projectInvite.respond',
+};
+
 export const ProjectJournalCommands = {
   CREATE: 'projectJournal.create',
   UPDATE: 'projectJournal.update',

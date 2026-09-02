@@ -32,7 +32,10 @@ describe('identity on the create routes', () => {
     return {
       controller: new ProjectPlanningController(
         projectPlanning as never,
-        { send: jest.fn(() => of({})) } as never
+        { send: jest.fn(() => of({})) } as never,
+        // Sending is a courtesy after the record is safe; this is about
+        // where identity comes from.
+        { send: jest.fn() } as never
       ),
       sent,
     };

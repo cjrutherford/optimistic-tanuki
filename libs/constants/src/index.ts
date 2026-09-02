@@ -34,6 +34,7 @@ export { ServiceTokens } from './lib/libs/service.tokens';
 export { AssetCommands } from './lib/libs/asset';
 export {
   ProjectCommands,
+  ProjectInviteCommands,
   ProjectJournalCommands,
   RiskCommands,
   TaskCommands,
