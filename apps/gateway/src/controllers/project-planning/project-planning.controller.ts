@@ -20,6 +20,7 @@ import {
   AnalyticsCommands,
   ProjectCommands,
   ProjectInviteCommands,
+  ProjectMemberCommands,
   ProjectJournalCommands,
   RiskCommands,
   ServiceTokens,
@@ -570,6 +571,46 @@ export class ProjectPlanningController {
       this.projectPlanningService.send(
         { cmd: ProjectInviteCommands.FIND_FOR_PROJECT },
         { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * Ending a collaboration.
+   *
+   * Two routes because they are asked by different people. The owner removes
+   * somebody; a member takes themselves out and needs nobody's agreement to.
+   */
+  // Declared before the one below on purpose. Express takes the first route
+  // that matches, and "me" matches :profileId, so a literal path after a
+  // parameter that swallows it is a route that is never reached.
+  @ApiOperation({ summary: 'Leave a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Delete('projects/:id/members/me')
+  async leaveProject(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectMemberCommands.LEAVE },
+        { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Remove somebody from a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Delete('projects/:id/members/:profileId')
+  async removeProjectMember(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Param('profileId') profileId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectMemberCommands.REMOVE },
+        { projectId, profileId, requestingUserId: user.profileId }
       )
     );
   }

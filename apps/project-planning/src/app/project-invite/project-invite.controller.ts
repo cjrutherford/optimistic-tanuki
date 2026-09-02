@@ -1,6 +1,9 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { ProjectInviteCommands } from '@optimistic-tanuki/constants';
+import {
+  ProjectInviteCommands,
+  ProjectMemberCommands,
+} from '@optimistic-tanuki/constants';
 
 import { ProjectInviteService } from './project-invite.service';
 
@@ -87,6 +90,32 @@ export class ProjectInviteController {
       payload.id,
       payload.accept,
       payload.email,
+      payload.requestingUserId
+    );
+  }
+
+  @MessagePattern({ cmd: ProjectMemberCommands.REMOVE })
+  async removeMember(
+    @Payload()
+    payload: {
+      projectId: string;
+      profileId: string;
+      requestingUserId: string;
+    }
+  ) {
+    return await this.invites.removeMember(
+      payload.projectId,
+      payload.profileId,
+      payload.requestingUserId
+    );
+  }
+
+  @MessagePattern({ cmd: ProjectMemberCommands.LEAVE })
+  async leave(
+    @Payload() payload: { projectId: string; requestingUserId: string }
+  ) {
+    return await this.invites.leave(
+      payload.projectId,
       payload.requestingUserId
     );
   }

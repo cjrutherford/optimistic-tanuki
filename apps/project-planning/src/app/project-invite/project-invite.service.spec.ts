@@ -404,6 +404,135 @@ describe('ProjectInviteService', () => {
     });
   });
 
+  /**
+   * Ending it, from either side.
+   *
+   * Membership is what access is read from, so removing it is the whole of the
+   * effect. Closing the invitation is about the record: one still reading as
+   * accepted describes somebody who is not there.
+   */
+  describe('stopping a collaboration', () => {
+    const GONE = 'member-profile';
+
+    function withMember(members = [GONE], accepted = true) {
+      const project = { id: PROJECT, owner: OWNER, members: [...members] };
+      const invite = accepted
+        ? {
+            id: 'invite-1',
+            projectId: PROJECT,
+            claimedBy: GONE,
+            status: 'ACCEPTED',
+          }
+        : null;
+      const invites = {
+        findOne: jest.fn().mockResolvedValue(invite),
+        find: jest.fn().mockResolvedValue([]),
+        create: jest.fn((row: unknown) => row),
+        save: jest.fn(async (row: unknown) => row),
+      };
+      const projects = {
+        findOne: jest.fn().mockResolvedValue(project),
+        save: jest.fn(async (row: unknown) => row),
+      };
+      return {
+        service: new ProjectInviteService(invites as never, projects as never),
+        invites,
+        projects,
+      };
+    }
+
+    describe('the owner removing somebody', () => {
+      it('takes them out of the members', async () => {
+        const { service, projects } = withMember();
+
+        await service.removeMember(PROJECT, GONE, OWNER);
+
+        expect(projects.save).toHaveBeenCalledWith(
+          expect.objectContaining({ members: [] })
+        );
+      });
+
+      it('closes the invitation that put them there', async () => {
+        // One still reading as accepted describes somebody who is not there.
+        const { service, invites } = withMember();
+
+        await service.removeMember(PROJECT, GONE, OWNER);
+
+        expect(invites.save).toHaveBeenCalledWith(
+          expect.objectContaining({ status: 'REVOKED' })
+        );
+      });
+
+      it('works for somebody with no invitation behind them', async () => {
+        // Membership can predate invitations, and removing has to work anyway.
+        const { service, projects } = withMember([GONE], false);
+
+        await service.removeMember(PROJECT, GONE, OWNER);
+
+        expect(projects.save).toHaveBeenCalled();
+      });
+
+      it('refuses anybody who is not the owner', async () => {
+        const { service, projects } = withMember();
+
+        await expect(
+          service.removeMember(PROJECT, GONE, STRANGER)
+        ).rejects.toMatchObject(refused(403));
+        expect(projects.save).not.toHaveBeenCalled();
+      });
+
+      it('refuses removing the owner', async () => {
+        // A project with nobody responsible for it is worse than one somebody
+        // is stuck with.
+        const { service } = withMember();
+
+        await expect(
+          service.removeMember(PROJECT, OWNER, OWNER)
+        ).rejects.toMatchObject(refused(400));
+      });
+    });
+
+    describe('a member leaving', () => {
+      it('needs nobody else to agree', async () => {
+        const { service, projects } = withMember();
+
+        await service.leave(PROJECT, GONE);
+
+        expect(projects.save).toHaveBeenCalledWith(
+          expect.objectContaining({ members: [] })
+        );
+      });
+
+      it('reads as leaving rather than as being removed', async () => {
+        // Who ended a collaboration is most of what the record is for.
+        const { service, invites } = withMember();
+
+        await service.leave(PROJECT, GONE);
+
+        expect(invites.save).toHaveBeenCalledWith(
+          expect.objectContaining({ status: 'LEFT' })
+        );
+      });
+
+      it('refuses somebody who is not in the project', async () => {
+        const { service } = withMember();
+
+        await expect(service.leave(PROJECT, STRANGER)).rejects.toMatchObject(
+          refused(403)
+        );
+      });
+
+      it('refuses the owner, who is not a member and cannot leave', async () => {
+        const { service, projects } = withMember();
+
+        await expect(service.leave(PROJECT, OWNER)).rejects.toMatchObject(
+          refused(403)
+        );
+        expect(projects.save).not.toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('normaliseEmail', () => {
     it('folds and trims', () => {
       expect(normaliseEmail('  A@B.COM ')).toBe('a@b.com');

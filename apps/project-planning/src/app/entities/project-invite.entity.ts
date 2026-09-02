@@ -57,10 +57,16 @@ export class ProjectInvite {
 
   /**
    * PENDING until answered. ACCEPTED and DECLINED are the invitee's word,
-   * REVOKED is the owner withdrawing it, whether before an answer or after.
+   * REVOKED is the owner withdrawing it, and LEFT is the member's own decision
+   * to stop.
+   *
+   * REVOKED and LEFT end the same way and are kept apart on purpose: who ended
+   * a collaboration is most of what the record is for, and a member who walked
+   * away reading as somebody who was removed is a small lie that outlives
+   * everybody's memory of it.
    */
   @Column({ default: 'PENDING' })
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED' | 'LEFT';
 
   /**
    * The profile that turned out to be behind the address.

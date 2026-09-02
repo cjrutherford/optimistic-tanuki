@@ -31,6 +31,20 @@ export const ProjectInviteCommands = {
   RESPOND: 'projectInvite.respond',
 };
 
+/**
+ * Ending a collaboration, from either side.
+ *
+ * Separate from inviting because the two are asked by different people for
+ * different reasons, and because removing somebody has to work whether or not
+ * an invitation is what put them there.
+ */
+export const ProjectMemberCommands = {
+  /** The owner removing somebody. */
+  REMOVE: 'projectMember.remove',
+  /** A member's own decision to stop. */
+  LEAVE: 'projectMember.leave',
+};
+
 export const ProjectJournalCommands = {
   CREATE: 'projectJournal.create',
   UPDATE: 'projectJournal.update',

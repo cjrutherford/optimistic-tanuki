@@ -35,6 +35,7 @@ export { AssetCommands } from './lib/libs/asset';
 export {
   ProjectCommands,
   ProjectInviteCommands,
+  ProjectMemberCommands,
   ProjectJournalCommands,
   RiskCommands,
   TaskCommands,

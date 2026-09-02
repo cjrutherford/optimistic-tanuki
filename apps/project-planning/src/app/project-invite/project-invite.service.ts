@@ -241,6 +241,89 @@ export class ProjectInviteService {
   }
 
   /**
+   * The owner removing somebody from a project.
+   *
+   * Not the owner themselves, ever. A project with nobody responsible for it
+   * is worse than one somebody is stuck with, and handing ownership over is a
+   * different feature that does not exist yet.
+   */
+  async removeMember(
+    projectId: string,
+    profileId: string,
+    requestingUserId: string
+  ): Promise<{ projectId: string; removed: string }> {
+    const project = await this.projects.findOne({ where: { id: projectId } });
+    assertProjectOwner(project, requestingUserId);
+
+    if (!project || project.owner === profileId) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'A project cannot be left without an owner',
+      });
+    }
+
+    await this.stopCollaboration(project, profileId, 'REVOKED');
+    return { projectId, removed: profileId };
+  }
+
+  /**
+   * A member's own decision to stop.
+   *
+   * Needs no owner and no invitation: somebody who is in a project can always
+   * get out of it. The owner cannot, for the same reason they cannot be
+   * removed.
+   */
+  async leave(
+    projectId: string,
+    requestingUserId: string
+  ): Promise<{ projectId: string; left: string }> {
+    const project = await this.projects.findOne({ where: { id: projectId } });
+    if (!project || !(project.members ?? []).includes(requestingUserId)) {
+      // Word for word what not being able to reach it says, including for the
+      // owner, who is not a member and cannot leave.
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Forbidden: you do not have access to this project',
+      });
+    }
+
+    await this.stopCollaboration(project, requestingUserId, 'LEFT');
+    return { projectId, left: requestingUserId };
+  }
+
+  /**
+   * Take somebody out, and close what put them there.
+   *
+   * The membership is what access is read from, so removing it is the whole of
+   * the effect. Closing the invitation is about the record: one that still
+   * reads as accepted describes somebody who is not there, and the difference
+   * between being removed and walking away is worth keeping.
+   */
+  private async stopCollaboration(
+    project: Project,
+    profileId: string,
+    ending: 'REVOKED' | 'LEFT'
+  ): Promise<void> {
+    project.members = (project.members ?? []).filter(
+      (member) => member !== profileId
+    );
+    await this.projects.save(project);
+
+    const invite = await this.invites.findOne({
+      where: {
+        projectId: project.id,
+        claimedBy: profileId,
+        status: 'ACCEPTED',
+      },
+    });
+    if (invite) {
+      invite.status = ending;
+      invite.respondedAt = new Date();
+      await this.invites.save(invite);
+    }
+  }
+
+  /**
    * Join somebody to a project.
    *
    * Deliberately not through the project service's update, which refuses a
