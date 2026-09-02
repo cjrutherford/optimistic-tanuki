@@ -351,6 +351,7 @@ describe('the token the agent acts with', () => {
       { send: jest.fn(() => of({ id: 'proj-1' })) } as never,
       ai as never,
       // Sending is a courtesy after the record is safe; this is about the gate.
+      { send: jest.fn() } as never,
       { send: jest.fn() } as never
     );
 
@@ -371,6 +372,7 @@ describe('the token the agent acts with', () => {
     const controller = new ProjectPlanningController(
       { send: jest.fn() } as never,
       ai as never,
+      { send: jest.fn() } as never,
       { send: jest.fn() } as never
     );
 

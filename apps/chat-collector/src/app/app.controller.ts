@@ -55,6 +55,25 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: ChatCommands.GET_OR_CREATE_PROJECT_CHAT })
+  async getOrCreateProjectChatTcp(
+    @Payload()
+    data: {
+      projectId: string;
+      ownerId: string;
+      participants: string[];
+      title?: string;
+    }
+  ) {
+    this.l.log(`TCP: Get-or-create project chat for ${data.projectId}`);
+    return await this.appService.getOrCreateProjectChat(
+      data.projectId,
+      data.ownerId,
+      data.participants ?? [],
+      data.title
+    );
+  }
+
   @MessagePattern({ cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT })
   async getOrCreateDirectChatTcp(
     @Payload() data: { participantIds: string[] }

@@ -17,6 +17,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
   ChangeCommands,
+  ChatCommands,
   AnalyticsCommands,
   ProjectCommands,
   ProjectInviteCommands,
@@ -71,6 +72,8 @@ export class ProjectPlanningController {
     private readonly projectPlanningService: ClientProxy,
     @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
     private readonly aiOrchestrationService: ClientProxy,
+    @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
+    private readonly chatService: ClientProxy,
     private readonly inviteMailer: ProjectInviteMailer
   ) {}
 
@@ -571,6 +574,54 @@ export class ProjectPlanningController {
       this.projectPlanningService.send(
         { cmd: ProjectInviteCommands.FIND_FOR_PROJECT },
         { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * The conversation belonging to a project.
+   *
+   * Access is decided here and nowhere else. The project is fetched scoped to
+   * the caller, so somebody who is not on it gets nothing and never reaches
+   * the chat service, which does not know what a project is and is not the
+   * place to answer that question.
+   *
+   * Participants are sent every time rather than kept in step by events, so a
+   * conversation cannot outlive the membership that justified it: somebody
+   * removed from the project is written out of it on the next visit by anyone.
+   */
+  @ApiOperation({ summary: 'The conversation for a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/conversation')
+  async projectConversation(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{
+        id: string;
+        name?: string;
+        owner: string;
+        members?: string[];
+      } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      throw new BadRequestException('That project could not be read.');
+    }
+
+    return await firstValueFrom(
+      this.chatService.send(
+        { cmd: ChatCommands.GET_OR_CREATE_PROJECT_CHAT },
+        {
+          projectId,
+          ownerId: project.owner,
+          participants: project.members ?? [],
+          title: project.name,
+        }
       )
     );
   }

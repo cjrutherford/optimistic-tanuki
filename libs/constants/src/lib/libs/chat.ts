@@ -12,6 +12,8 @@ const ChatCommands = {
   GET_MESSAGES: 'GET_MESSAGES',
   /** REST-friendly: send a message to an existing conversation */
   SEND_MESSAGE: 'SEND_MESSAGE',
+  /** The conversation belonging to a project, made if it is not there yet. */
+  GET_OR_CREATE_PROJECT_CHAT: 'GET_OR_CREATE_PROJECT_CHAT',
 };
 
 export default ChatCommands;

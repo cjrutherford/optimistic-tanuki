@@ -85,6 +85,12 @@ describe('ProjectPlanningController', () => {
           useValue: aiOrchestrationService,
         },
         {
+          // The project conversation. Access is decided before this is
+          // reached, so a stand-in is enough for tests about routes.
+          provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+          useValue: { send: jest.fn(() => of({ id: 'conversation-1' })) },
+        },
+        {
           // Sending is a courtesy that happens after the record is safe, so a
           // stand-in that does nothing is the honest thing here: these tests
           // are about the routes, not about the post.

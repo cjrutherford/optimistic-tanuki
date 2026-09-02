@@ -2,7 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppService } from './app.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Conversation, Message, MessageType } from './entities';
+import {
+  Conversation,
+  ConversationType,
+  Message,
+  MessageType,
+} from './entities';
 import { ChatMessage } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
 
@@ -136,6 +141,105 @@ describe('AppService', () => {
         })
       );
       expect(result).toBeInstanceOf(Conversation);
+    });
+  });
+
+  /**
+   * The conversation belonging to a project.
+   *
+   * Participants are written on every call rather than kept in step by events.
+   * A conversation that drifts out of step with membership is one somebody can
+   * still read after they were taken out of the project.
+   */
+  describe('getOrCreateProjectChat', () => {
+    it('makes one the first time, with everybody in it', async () => {
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      const made = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['member'],
+        'Kiln rebuild'
+      );
+
+      expect(made.type).toBe(ConversationType.PROJECT);
+      expect(made.projectId).toBe('p1');
+      expect(made.participants).toEqual(['owner', 'member']);
+      expect(made.title).toBe('Kiln rebuild');
+    });
+
+    it('does not make a second one for the same project', async () => {
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner', 'member'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+      const create = jest.spyOn(conversationRepository, 'create');
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['member'],
+        'Kiln rebuild'
+      );
+
+      expect(found.id).toBe('c1');
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('writes somebody out who is no longer on the project', async () => {
+      // The whole point. Otherwise a removed member keeps reading it.
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner', 'gone'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        [],
+        'Kiln rebuild'
+      );
+
+      expect(found.participants).toEqual(['owner']);
+    });
+
+    it('writes somebody in who has just joined', async () => {
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['newcomer'],
+        'Kiln rebuild'
+      );
+
+      expect(found.participants).toEqual(['owner', 'newcomer']);
+    });
+
+    it('keeps the owner in it once, even if they are also listed', async () => {
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      const made = await service.getOrCreateProjectChat('p1', 'owner', [
+        'owner',
+        'member',
+      ]);
+
+      expect(made.participants).toEqual(['owner', 'member']);
     });
   });
 

@@ -4,6 +4,7 @@ import { Message } from './message.entity';
 export enum ConversationType {
   DIRECT = 'direct',
   COMMUNITY = 'community',
+  PROJECT = 'project',
 }
 
 @Entity()
@@ -23,6 +24,16 @@ export default class Conversation {
 
   @Column({ nullable: true })
   communityId: string;
+
+  /**
+   * The project this conversation belongs to.
+   *
+   * Its own column rather than reusing communityId, which would be a lie in
+   * the name and would leave the next person reading a project id out of a
+   * field that says community.
+   */
+  @Column({ nullable: true })
+  projectId: string;
 
   @Column({ nullable: true })
   ownerId: string;

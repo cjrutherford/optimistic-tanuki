@@ -222,6 +222,57 @@ export class AppService {
     return await this.conversationRepository.save(conversation);
   }
 
+  /**
+   * The conversation belonging to a project.
+   *
+   * Participants are written on every call rather than kept in step by events.
+   * Who is on a project changes through joining, leaving and being removed,
+   * and a conversation that drifts out of step with that is one somebody can
+   * still read after they were taken out. Deriving it each time means drift
+   * cannot survive a single visit.
+   *
+   * Whoever asks has already been checked against the project by the caller.
+   * This service does not know what a project is and is not the place to
+   * decide who may reach one.
+   */
+  async getOrCreateProjectChat(
+    projectId: string,
+    ownerId: string,
+    participants: string[],
+    title?: string
+  ): Promise<Conversation> {
+    const everyone = [...new Set([ownerId, ...participants].filter(Boolean))];
+
+    const existing = await this.conversationRepository.findOne({
+      where: {
+        type: ConversationType.PROJECT,
+        projectId,
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      const changed =
+        existing.participants?.length !== everyone.length ||
+        !everyone.every((who) => existing.participants?.includes(who));
+      if (changed || (title && existing.title !== title)) {
+        existing.participants = everyone;
+        if (title) existing.title = title;
+        return await this.conversationRepository.save(existing);
+      }
+      return existing;
+    }
+
+    const conversation = this.conversationRepository.create({
+      title: title || 'Project',
+      type: ConversationType.PROJECT,
+      projectId,
+      ownerId,
+      participants: everyone,
+    });
+    return await this.conversationRepository.save(conversation);
+  }
+
   async deleteConversation(
     conversationId: string,
     userId: string
