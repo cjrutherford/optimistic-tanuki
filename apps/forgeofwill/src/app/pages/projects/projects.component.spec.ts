@@ -120,6 +120,11 @@ describe('ProjectsComponent', () => {
       removeProjectMember: jest.fn().mockReturnValue(of({})),
       leaveProject: jest.fn().mockReturnValue(of({})),
       currentProfileId: jest.fn().mockReturnValue('me'),
+      getProjectConversation: jest
+        .fn()
+        .mockReturnValue(of({ id: 'c1', participants: [] })),
+      getConversationMessages: jest.fn().mockReturnValue(of([])),
+      sendConversationMessage: jest.fn().mockReturnValue(of({})),
       createProject: jest.fn().mockReturnValue(of(mockProject)),
       updateProject: jest.fn().mockReturnValue(of(mockProject)),
       getProjectById: jest.fn().mockReturnValue(of(mockProject)),

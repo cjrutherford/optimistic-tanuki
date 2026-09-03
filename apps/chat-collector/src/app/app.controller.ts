@@ -87,11 +87,16 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_MESSAGES })
-  async getMessagesTcp(@Payload() data: { conversationId: string }) {
+  async getMessagesTcp(
+    @Payload() data: { conversationId: string; requestingProfileId?: string }
+  ) {
     this.l.log(
       `TCP: Retrieving messages for conversation: ${data.conversationId}`
     );
-    return await this.appService.getMessages(data.conversationId);
+    return await this.appService.getMessages(
+      data.conversationId,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: ChatCommands.SEND_MESSAGE })

@@ -1,0 +1,11 @@
+@if (unavailable) {
+<p class="unavailable">{{ unavailable }}</p>
+} @else {
+<lib-chat-window
+  [contact]="contact"
+  [messages]="conversation"
+  [currentUserId]="viewerProfileId"
+  windowState="embedded"
+  (messageSubmitted)="sent.emit($event)"
+></lib-chat-window>
+}

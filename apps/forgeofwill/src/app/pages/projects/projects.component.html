@@ -255,6 +255,24 @@
         </otui-tile>
       </div>
 
+      <!--
+        Talking about the project, with the people on it. Refused for anybody
+        who is not, by the chat service rather than by this page.
+      -->
+      <div class="row-container">
+        <otui-tile class="conversation-tile">
+          <h3>Conversation</h3>
+          <lib-project-conversation
+            [messages]="conversationMessages()"
+            [people]="people()"
+            [viewerProfileId]="viewerProfileId()"
+            [title]="selectedProject()!.name"
+            [unavailable]="conversationUnavailable()"
+            (sent)="onSendMessage($event)"
+          ></lib-project-conversation>
+        </otui-tile>
+      </div>
+
       <!-- Project Journal -->
       <div class="row-container">
         <otui-tile class="journal-tile">

@@ -151,6 +151,111 @@ describe('AppService', () => {
    * A conversation that drifts out of step with membership is one somebody can
    * still read after they were taken out of the project.
    */
+  /**
+   * Who may read and write a conversation.
+   *
+   * This used to answer a conversation id with everything in it, and accept a
+   * message from anybody who had one. Proved against the running stack: an
+   * account that had left a project read the owner's message and posted a
+   * reply. The participant list was only ever used to decide delivery.
+   */
+  describe('who may read a conversation', () => {
+    const IN = 'member-profile';
+    const OUT = 'stranger-profile';
+
+    function conversationWith(participants: string[]) {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+      return conversation;
+    }
+
+    it('gives the history to somebody in it', async () => {
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1', IN)).resolves.toEqual([]);
+    });
+
+    it('refuses somebody who is not in it', async () => {
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1', OUT)).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('refuses in the same words when the conversation is not there', async () => {
+      // Otherwise an id can be tried until the wording changes.
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(service.getMessages('nope', OUT)).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('stays unscoped for a trusted internal call', async () => {
+      // Matches how the rest of this workspace scopes: every externally
+      // reachable route supplies an identity, and an absent one is internal.
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1')).resolves.toEqual([]);
+    });
+
+    it('refuses a message from somebody who is not in it', async () => {
+      conversationWith([IN]);
+
+      await expect(
+        service.postMessageHttp({
+          conversationId: 'c1',
+          content: 'I should not be able to write here.',
+          senderId: OUT,
+          recipientIds: [],
+        })
+      ).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('leaves a community conversation alone, since nobody is ever in one', async () => {
+      // ADD_TO_COMMUNITY_CHAT is a command with no implementation and no
+      // caller, so a community conversation has an empty participant list for
+      // life. Checking it would refuse everybody and break the feature.
+      const conversation = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.COMMUNITY,
+        participants: [],
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+
+      await expect(service.getMessages('c1', OUT)).resolves.toEqual([]);
+    });
+
+    it('accepts a message from somebody in it', async () => {
+      conversationWith([IN]);
+
+      const message = await service.postMessageHttp({
+        conversationId: 'c1',
+        content: 'A note for the others.',
+        senderId: IN,
+        recipientIds: [],
+      });
+
+      expect(message.content).toBe('A note for the others.');
+    });
+  });
+
   describe('getOrCreateProjectChat', () => {
     it('makes one the first time, with everybody in it', async () => {
       jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
@@ -323,6 +428,9 @@ describe('AppService', () => {
     it('associates the saved message with its conversation', async () => {
       const conversation = Object.assign(new Conversation(), {
         id: 'conversation-1',
+        // A sender who is in the conversation, which every real one has and
+        // this fixture predated.
+        participants: ['user-1', 'user-2'],
       });
       jest
         .spyOn(conversationRepository, 'findOne')

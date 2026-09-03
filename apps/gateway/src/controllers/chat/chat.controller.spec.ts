@@ -104,11 +104,16 @@ describe('ChatController', () => {
   it('should get messages for a conversation', async () => {
     chatService.send.mockReturnValue(of([{ id: 'message-1' }]));
 
-    await controller.getMessages('conversation-1');
+    await controller.getMessages('conversation-1', {
+      profileId: 'profile-1',
+    } as never);
 
     expect(chatService.send).toHaveBeenCalledWith(
       { cmd: ChatCommands.GET_MESSAGES },
-      { conversationId: 'conversation-1' }
+      // The reader's own profile, so the service can refuse a conversation
+      // they are not in. Without it this route answered any id with
+      // everything in it.
+      { conversationId: 'conversation-1', requestingProfileId: 'profile-1' }
     );
   });
 

@@ -31,5 +31,6 @@ export * from './lib/project-ui/ai-assistant/assistant-conversation';
 export * from './lib/project-ui/project-invites/invite-form.component';
 export * from './lib/project-ui/project-invites/invite-list.component';
 export * from './lib/project-ui/project-members/project-members.component';
+export * from './lib/project-ui/project-conversation/project-conversation.component';
 export * from './lib/project-ui/ai-assistant/assistant-context.service';
 export * from './lib/project-ui/ai-assistant-bubble/ai-assistant-bubble.component';

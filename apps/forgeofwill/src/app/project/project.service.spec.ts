@@ -442,6 +442,29 @@ describe('ProjectService collaboration', () => {
     req.flush({});
   });
 
+  it('reads the messages in a conversation', () => {
+    service.getConversationMessages('c1').subscribe();
+
+    const req = httpMock.expectOne('/api/chat/messages/c1');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('sends one without naming a recipient', () => {
+    // A project conversation has participants rather than recipients, and the
+    // sender comes from the session on the server.
+    service.sendConversationMessage('c1', 'A note for the others.').subscribe();
+
+    const req = httpMock.expectOne('/api/chat/messages');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      conversationId: 'c1',
+      content: 'A note for the others.',
+      recipientIds: [],
+    });
+    req.flush({});
+  });
+
   it('reads who is on a project, by name', () => {
     service.getProjectPeople('p1').subscribe();
 

@@ -58,6 +58,14 @@ export interface ProjectPerson {
   isOwner: boolean;
 }
 
+/** One message in a project's conversation. */
+export interface ProjectMessage {
+  id: string;
+  senderId: string;
+  content: string;
+  createdAt?: string;
+}
+
 /** The conversation belonging to a project. */
 export interface ProjectConversation {
   id: string;
@@ -352,6 +360,26 @@ export class ProjectService {
     return this.http.get<ProjectPerson[]>(
       `${this.baseUrl}/${projectId}/people`
     );
+  }
+
+  /**
+   * The messages in a conversation, and sending one.
+   *
+   * Both are refused for anybody not in the conversation. That check lives in
+   * the chat service, which is the one that knows who is in it.
+   */
+  getConversationMessages(conversationId: string) {
+    return this.http.get<ProjectMessage[]>(
+      `/api/chat/messages/${conversationId}`
+    );
+  }
+
+  sendConversationMessage(conversationId: string, content: string) {
+    return this.http.post<ProjectMessage>('/api/chat/messages', {
+      conversationId,
+      content,
+      recipientIds: [],
+    });
   }
 
   /** The conversation belonging to a project, made if it is not there yet. */

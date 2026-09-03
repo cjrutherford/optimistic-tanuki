@@ -45,6 +45,7 @@ import {
   ProjectInviteFormComponent,
   ProjectInviteListComponent,
   ProjectMembersComponent,
+  ProjectConversationComponent,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, effect, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -55,6 +56,7 @@ import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import {
   ProjectInvite,
+  ProjectMessage,
   ProjectPerson,
   ProjectService,
 } from '../../project/project.service';
@@ -85,6 +87,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ProjectInviteFormComponent,
     ProjectInviteListComponent,
     ProjectMembersComponent,
+    ProjectConversationComponent,
     ProjectFormComponent,
     GlassContainerComponent,
     ProjectSummaryComponent,
@@ -150,6 +153,9 @@ export class ProjectsComponent implements OnInit {
    * to see and the request is refused for anybody else, so a member simply
    * ends up with an empty list rather than an error worth showing.
    */
+  conversationId = signal<string | null>(null);
+  conversationMessages = signal<ProjectMessage[]>([]);
+  conversationUnavailable = signal<string | null>(null);
   people = signal<ProjectPerson[]>([]);
   invites = signal<ProjectInvite[]>([]);
   inviting = signal(false);
@@ -535,6 +541,52 @@ export class ProjectsComponent implements OnInit {
       next: (invites) => this.invites.set(invites),
       error: () => this.invites.set([]),
     });
+    this.loadConversation(projectId);
+  }
+
+  /**
+   * The project's conversation and what has been said in it.
+   *
+   * Asking for the conversation is what creates it the first time, and it
+   * writes the current membership into it, so somebody removed from the
+   * project stops being a participant on the next visit by anybody.
+   */
+  private loadConversation(projectId: string): void {
+    this.conversationUnavailable.set(null);
+    this.projectService.getProjectConversation(projectId).subscribe({
+      next: (conversation) => {
+        this.conversationId.set(conversation.id);
+        this.projectService.getConversationMessages(conversation.id).subscribe({
+          next: (messages) => this.conversationMessages.set(messages),
+          error: () => this.conversationMessages.set([]),
+        });
+      },
+      error: () => {
+        this.conversationId.set(null);
+        this.conversationMessages.set([]);
+        this.conversationUnavailable.set(
+          'The conversation for this project could not be opened.'
+        );
+      },
+    });
+  }
+
+  onSendMessage(content: string): void {
+    const conversationId = this.conversationId();
+    if (!conversationId || !content.trim()) return;
+
+    this.projectService
+      .sendConversationMessage(conversationId, content)
+      .subscribe({
+        // Reloaded rather than appended locally, so what is on screen is what
+        // the server actually kept.
+        next: () =>
+          this.projectService
+            .getConversationMessages(conversationId)
+            .subscribe({
+              next: (messages) => this.conversationMessages.set(messages),
+            }),
+      });
   }
 
   onInvite(email: string): void {
