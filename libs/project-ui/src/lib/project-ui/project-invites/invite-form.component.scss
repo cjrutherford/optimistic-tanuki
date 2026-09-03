@@ -50,9 +50,8 @@
   flex: 1 1 100%;
   margin: 0;
   font-size: 0.82rem;
-  // A literal fallback rather than currentColor, which is what an app without
-  // a danger token would give: text the same colour as everything around it,
-  // which is not a failure a reader notices. Whichever token an app does
-  // define still wins.
-  color: var(--danger, var(--color-danger, #a3372a));
+  // No danger token is defined in every application, so the accent stands in.
+  // currentColor would give text the same colour as everything around it,
+  // which is not a failure a reader notices.
+  color: var(--danger, var(--accent));
 }
