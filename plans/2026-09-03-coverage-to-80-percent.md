@@ -56,7 +56,11 @@ effort can burn effort without moving the number.
 - `libs/classified-ui/src/test-setup.ts` was an **empty stub**, so TestBed was
   never initialised and the project could not run Angular tests at all. Fixed
   on this branch: 0 runnable suites -> 4 suites / 41 tests / 100% lines.
-  Worth auditing other projects for the same stub pattern.
+  **Audited 2026-09-03: classified-ui was the only occurrence.** All 84
+  `test-setup.ts` files were checked, and every project using
+  `jest-preset-angular` initialises a test environment. The non-initialising
+  setups that remain are all backend (Nest) or e2e projects, where that is
+  correct.
 - `apps/christopherrutherford-net` has **5 pre-existing failing suites**
   (`app.component`, `landing`, `hero`, `contact`, `services-grid`) that are
   unrelated to this branch. They must be fixed before that app's coverage can
