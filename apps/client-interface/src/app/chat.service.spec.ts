@@ -107,4 +107,82 @@ describe('ClientInterface ChatService', () => {
       expect.objectContaining({ id: 'conversation-1' })
     );
   });
+
+  it('lists conversations for a profile', async () => {
+    const promise = service.getConversations('profile-1');
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/find?profileId=profile-1'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush([{ id: 'conversation-1' }]);
+
+    await expect(promise).resolves.toEqual([{ id: 'conversation-1' }]);
+  });
+
+  it('reads a single conversation by id', async () => {
+    const promise = service.getConversation('conversation-1');
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/id/conversation-1'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush({ id: 'conversation-1' });
+
+    await expect(promise).resolves.toEqual({ id: 'conversation-1' });
+  });
+
+  it('creates a direct chat through the get-or-create endpoint', async () => {
+    const promise = service.createDirectChat({
+      recipientProfileId: 'profile-2',
+    });
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/direct/get-or-create'
+    );
+    expect(request.request.body).toEqual({ recipientProfileId: 'profile-2' });
+    request.flush({ id: 'conversation-1' });
+
+    await expect(promise).resolves.toEqual({ id: 'conversation-1' });
+  });
+
+  it('starts a direct chat through the get-or-create endpoint', async () => {
+    const promise = service.startDirectChat('profile-2');
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/direct/get-or-create'
+    );
+    request.flush({ id: 'conversation-1' });
+
+    await expect(promise).resolves.toEqual({ id: 'conversation-1' });
+  });
+
+  it('creates a community chat', async () => {
+    const promise = service.createCommunityChat({
+      communityId: 'c1',
+      name: 'General',
+    });
+
+    const request = httpMock.expectOne('/api/chat/conversations/community');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      communityId: 'c1',
+      name: 'General',
+    });
+    request.flush({ id: 'conversation-1' });
+
+    await expect(promise).resolves.toEqual({ id: 'conversation-1' });
+  });
+
+  it('deletes a conversation', async () => {
+    const promise = service.deleteConversation('conversation-1');
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/conversation-1'
+    );
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null);
+
+    await expect(promise).resolves.toBeNull();
+  });
 });
