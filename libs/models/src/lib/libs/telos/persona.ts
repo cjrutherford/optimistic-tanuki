@@ -57,6 +57,19 @@ export class PersonaTelosDto {
   @ApiProperty()
   @IsString()
   promptTemplate!: string;
+
+  /**
+   * What this persona is allowed to do, as coarse capabilities.
+   *
+   * Absent on records that predate the column, which means no scope was ever
+   * decided and every tool is available. An empty list is a decision: look but
+   * do not act.
+   */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  capabilities?: string[] | null;
 }
 
 export class CreatePersonaTelosDto {
@@ -110,6 +123,19 @@ export class CreatePersonaTelosDto {
   @ApiProperty()
   @IsString()
   promptTemplate!: string;
+
+  /**
+   * What this persona is allowed to do, as coarse capabilities.
+   *
+   * Absent on records that predate the column, which means no scope was ever
+   * decided and every tool is available. An empty list is a decision: look but
+   * do not act.
+   */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  capabilities?: string[] | null;
 }
 
 export class UpdatePersonaTelosDto extends PartialType(CreatePersonaTelosDto) {

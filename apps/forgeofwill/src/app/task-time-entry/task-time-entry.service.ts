@@ -53,10 +53,17 @@ export class TaskTimeEntryService {
     return this.queryTaskTimeEntries({ taskId });
   }
 
+  /** Everything recorded on a project, for the panel that shows time per task. */
+  getTaskTimeEntriesForProject(projectId: string) {
+    return this.queryTaskTimeEntries({ projectId });
+  }
+
   /**
-   * Start a timer for a task
-   * Note: startTime is not provided - the backend automatically sets it to the current time
-   * This ensures consistency and prevents client-side time manipulation
+   * Starts a timer on a task.
+   *
+   * No start time goes with it. The server reads its own clock, so the
+   * duration cannot be shifted by a wrong clock or a curious client. The
+   * comment here already said so while the code sent one anyway.
    */
   startTimer(taskId: string) {
     const currentProfile = this.profileService.getCurrentUserProfile();
@@ -65,15 +72,22 @@ export class TaskTimeEntryService {
     }
     return this.createTaskTimeEntry({
       taskId,
-      startTime: new Date(),
       createdBy: currentProfile.id,
     });
   }
 
+  /**
+   * Stops a running timer.
+   *
+   * Its own route rather than an update carrying an end time. Stopping through
+   * update meant the client decided when the work ended and how long it took,
+   * and since it sent only an end time, every finished entry recorded zero
+   * seconds.
+   */
   stopTimer(timeEntryId: string) {
-    return this.updateTaskTimeEntry({
-      id: timeEntryId,
-      endTime: new Date(),
-    });
+    return this.http.patch<TaskTimeEntry>(
+      `${this.baseUrl}/${timeEntryId}/stop`,
+      {}
+    );
   }
 }

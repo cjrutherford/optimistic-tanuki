@@ -2,7 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppService } from './app.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Conversation, Message, MessageType } from './entities';
+import {
+  Conversation,
+  ConversationType,
+  Message,
+  MessageType,
+} from './entities';
 import { ChatMessage } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
 
@@ -139,6 +144,210 @@ describe('AppService', () => {
     });
   });
 
+  /**
+   * The conversation belonging to a project.
+   *
+   * Participants are written on every call rather than kept in step by events.
+   * A conversation that drifts out of step with membership is one somebody can
+   * still read after they were taken out of the project.
+   */
+  /**
+   * Who may read and write a conversation.
+   *
+   * This used to answer a conversation id with everything in it, and accept a
+   * message from anybody who had one. Proved against the running stack: an
+   * account that had left a project read the owner's message and posted a
+   * reply. The participant list was only ever used to decide delivery.
+   */
+  describe('who may read a conversation', () => {
+    const IN = 'member-profile';
+    const OUT = 'stranger-profile';
+
+    function conversationWith(participants: string[]) {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+      return conversation;
+    }
+
+    it('gives the history to somebody in it', async () => {
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1', IN)).resolves.toEqual([]);
+    });
+
+    it('refuses somebody who is not in it', async () => {
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1', OUT)).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('refuses in the same words when the conversation is not there', async () => {
+      // Otherwise an id can be tried until the wording changes.
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(service.getMessages('nope', OUT)).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('stays unscoped for a trusted internal call', async () => {
+      // Matches how the rest of this workspace scopes: every externally
+      // reachable route supplies an identity, and an absent one is internal.
+      conversationWith([IN]);
+
+      await expect(service.getMessages('c1')).resolves.toEqual([]);
+    });
+
+    it('refuses a message from somebody who is not in it', async () => {
+      conversationWith([IN]);
+
+      await expect(
+        service.postMessageHttp({
+          conversationId: 'c1',
+          content: 'I should not be able to write here.',
+          senderId: OUT,
+          recipientIds: [],
+        })
+      ).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+    });
+
+    it('leaves a community conversation alone, since nobody is ever in one', async () => {
+      // ADD_TO_COMMUNITY_CHAT is a command with no implementation and no
+      // caller, so a community conversation has an empty participant list for
+      // life. Checking it would refuse everybody and break the feature.
+      const conversation = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.COMMUNITY,
+        participants: [],
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+
+      await expect(service.getMessages('c1', OUT)).resolves.toEqual([]);
+    });
+
+    it('accepts a message from somebody in it', async () => {
+      conversationWith([IN]);
+
+      const message = await service.postMessageHttp({
+        conversationId: 'c1',
+        content: 'A note for the others.',
+        senderId: IN,
+        recipientIds: [],
+      });
+
+      expect(message.content).toBe('A note for the others.');
+    });
+  });
+
+  describe('getOrCreateProjectChat', () => {
+    it('makes one the first time, with everybody in it', async () => {
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      const made = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['member'],
+        'Kiln rebuild'
+      );
+
+      expect(made.type).toBe(ConversationType.PROJECT);
+      expect(made.projectId).toBe('p1');
+      expect(made.participants).toEqual(['owner', 'member']);
+      expect(made.title).toBe('Kiln rebuild');
+    });
+
+    it('does not make a second one for the same project', async () => {
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner', 'member'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+      const create = jest.spyOn(conversationRepository, 'create');
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['member'],
+        'Kiln rebuild'
+      );
+
+      expect(found.id).toBe('c1');
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('writes somebody out who is no longer on the project', async () => {
+      // The whole point. Otherwise a removed member keeps reading it.
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner', 'gone'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        [],
+        'Kiln rebuild'
+      );
+
+      expect(found.participants).toEqual(['owner']);
+    });
+
+    it('writes somebody in who has just joined', async () => {
+      const existing = Object.assign(new Conversation(), {
+        id: 'c1',
+        type: ConversationType.PROJECT,
+        projectId: 'p1',
+        participants: ['owner'],
+        title: 'Kiln rebuild',
+      });
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(existing);
+
+      const found = await service.getOrCreateProjectChat(
+        'p1',
+        'owner',
+        ['newcomer'],
+        'Kiln rebuild'
+      );
+
+      expect(found.participants).toEqual(['owner', 'newcomer']);
+    });
+
+    it('keeps the owner in it once, even if they are also listed', async () => {
+      jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
+
+      const made = await service.getOrCreateProjectChat('p1', 'owner', [
+        'owner',
+        'member',
+      ]);
+
+      expect(made.participants).toEqual(['owner', 'member']);
+    });
+  });
+
   describe('getConversations', () => {
     it('should return conversations for a given profileId', async () => {
       const profileId = 'user1';
@@ -219,6 +428,9 @@ describe('AppService', () => {
     it('associates the saved message with its conversation', async () => {
       const conversation = Object.assign(new Conversation(), {
         id: 'conversation-1',
+        // A sender who is in the conversation, which every real one has and
+        // this fixture predated.
+        participants: ['user-1', 'user-2'],
       });
       jest
         .spyOn(conversationRepository, 'findOne')

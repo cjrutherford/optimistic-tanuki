@@ -8,19 +8,27 @@ import {
   Body,
   Param,
   UseGuards,
+  Req,
+  Res,
+  BadRequestException,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
   ChangeCommands,
+  ChatCommands,
+  AnalyticsCommands,
+  ProfileCommands,
   ProjectCommands,
+  ProjectInviteCommands,
+  ProjectMemberCommands,
   ProjectJournalCommands,
   RiskCommands,
   ServiceTokens,
   TaskCommands,
   TaskNoteCommands,
   TaskTimeEntryCommands,
-  TimerCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateChangeDto,
@@ -30,7 +38,6 @@ import {
   CreateTaskDto,
   CreateTaskNoteDto,
   CreateTaskTimeEntryDto,
-  CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
@@ -45,13 +52,17 @@ import {
   UpdateTaskDto,
   UpdateTaskNoteDto,
   UpdateTaskTimeEntryDto,
-  UpdateTimerDto,
+  CreateAiChangeDto,
+  ReviewAiChangeDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { ProjectAiCommands } from '@optimistic-tanuki/constants';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ProjectInviteMailer } from './project-invite.mailer';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('project-planning')
@@ -59,8 +70,57 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 export class ProjectPlanningController {
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    @Inject(ServiceTokens.AI_ORCHESTRATION_SERVICE)
+    private readonly aiOrchestrationService: ClientProxy,
+    @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
+    private readonly chatService: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileService: ClientProxy,
+    private readonly inviteMailer: ProjectInviteMailer
   ) {}
+
+  /**
+   * A model's read of one project.
+   *
+   * Model bound, because a summary takes roughly 23 seconds against the
+   * configured analysis model and the gateway's ordinary timeout is 30. A
+   * route that answers an error while the work succeeds is worse than a slow
+   * one: the caller and the system end up disagreeing about what happened.
+   *
+   * The project is fetched here and passed to the orchestrator rather than
+   * having it fetch by id. project-planning owns the data and decides who may
+   * read it, so the authorisation question is answered once, by the same
+   * permission check every other route on this controller uses.
+   */
+  @ApiOperation({ summary: 'A model-written summary of one project' })
+  @RequirePermissions('project-planning.project.read')
+  @ModelBound()
+  @Get('projects/:id/summary')
+  async summariseProject(@User() user: UserDetails, @Param('id') id: string) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      return {
+        summary: null,
+        model: null,
+        discarded: 0,
+        unavailable: 'That project could not be read.',
+      };
+    }
+
+    return await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.SUMMARISE },
+        { project }
+      )
+    );
+  }
 
   @ApiOperation({ summary: 'Find project by ID' })
   @ApiResponse({ status: 200, description: 'Project found' })
@@ -115,7 +175,16 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.CREATE },
-        { ...createProjectDto, createdBy: user.profileId }
+        {
+          ...createProjectDto,
+          // Both, and after the spread. owner came straight from the
+          // body, so a caller could create a project owned by somebody
+          // else and drop it into their workspace. Ownership follows
+          // whoever is signed in; handing a project over is its own
+          // operation with its own check.
+          owner: user.profileId,
+          createdBy: user.profileId,
+        }
       )
     );
   }
@@ -149,6 +218,643 @@ export class ProjectPlanningController {
       this.projectPlanningService.send(
         { cmd: ProjectCommands.REMOVE },
         { id, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * Asks a model what this project is missing, and files each answer for
+   * approval.
+   *
+   * Nothing is applied here. Every proposal lands as a pending change, and a
+   * person decides. That is the whole point of the feature: the agent argues,
+   * the human agrees.
+   *
+   * Model bound for the same reason as the summary. The gateway's ordinary
+   * timeout is 30 seconds and this takes longer, and a route that reports a
+   * failure while the work succeeds leaves the caller and the system
+   * disagreeing about what happened.
+   */
+  @ApiOperation({ summary: 'Ask a model to propose changes to a project' })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-proposals')
+  async proposeAiChanges(@User() user: UserDetails, @Param('id') id: string) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      return {
+        proposals: [],
+        model: null,
+        discarded: 0,
+        unavailable: 'That project could not be read.',
+      };
+    }
+
+    const result = await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.PROPOSE },
+        { project }
+      )
+    );
+
+    const filed = [];
+    for (const proposal of result?.proposals ?? []) {
+      filed.push(
+        await firstValueFrom(
+          this.projectPlanningService.send(
+            { cmd: ProjectCommands.CREATE_AI_CHANGE },
+            {
+              projectId: id,
+              proposedBy: user.profileId,
+              operation: proposal.operation,
+              payload: proposal.payload,
+              reason: proposal.reason,
+            }
+          )
+        )
+      );
+    }
+
+    return {
+      model: result?.model ?? null,
+      discarded: result?.discarded ?? 0,
+      unavailable: result?.unavailable,
+      changes: filed,
+    };
+  }
+
+  /**
+   * Tells an agent to do something on this project.
+   *
+   * The caller's own bearer token goes through to the orchestrator, which uses
+   * it to open an MCP session and act as them. Nothing here decides what the
+   * agent may touch: the MCP tools answer that from who is asking, and the
+   * approval gate lives on those tools, so an agent on a project that requires
+   * approval files proposals instead of writing.
+   *
+   * Model bound. An agent loop is several model calls and several tool calls,
+   * which is well past the gateway's ordinary 30 seconds.
+   */
+  @ApiOperation({ summary: 'Have an agent work on a project through MCP' })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-act')
+  async actOnProject(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
+    },
+    @Req() request: { credential?: string }
+  ) {
+    // From the guard rather than the headers. The browser signs in with a
+    // cookie, so reading the Authorization header meant this route worked for
+    // a script and failed for every real user.
+    const token = request.credential;
+    if (!token) {
+      throw new BadRequestException('A signed in caller is required to act.');
+    }
+    if (!body?.instruction?.trim()) {
+      throw new BadRequestException('An instruction is required.');
+    }
+
+    return await firstValueFrom(
+      this.aiOrchestrationService.send(
+        { cmd: ProjectAiCommands.ACT },
+        {
+          instruction: body.instruction,
+          projectId: id,
+          token,
+          // The thread is held by whoever is having the conversation. Keeping
+          // it here would mean deciding whose it is and when it ends, for a
+          // panel that already knows both.
+          history: body.history ?? [],
+          // Carried here as well as on the streaming route. This one is not
+          // what the panel calls, and a route that quietly ignored the chosen
+          // persona would answer as the wrong person with nothing to show for
+          // it.
+          personaId: body.personaId ?? null,
+        }
+      )
+    );
+  }
+
+  /**
+   * Where the time went, per task and per tag.
+   *
+   * The service behind this existed with no route, and carried a note saying
+   * to add ownership scoping before exposing it. That has been done, and every
+   * call carries the caller so the figures cover only projects they are part
+   * of.
+   *
+   * Worth having only since time entries started recording real durations.
+   * Every one of these numbers would have been zero before that.
+   */
+  @ApiOperation({ summary: "A project's time and tag figures" })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/analytics')
+  async projectAnalytics(@User() user: UserDetails, @Param('id') id: string) {
+    const query = { projectId: id, requestingUserId: user.profileId };
+    const [project, tags] = await Promise.all([
+      firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: AnalyticsCommands.GET_PROJECT_ANALYTICS },
+          query
+        )
+      ),
+      firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: AnalyticsCommands.GET_TAG_ANALYTICS },
+          query
+        )
+      ),
+    ]);
+
+    return { project, tags };
+  }
+
+  /**
+   * The same run, streamed, so the panel is not silent for a minute.
+   *
+   * Written to the response as it arrives rather than through @Sse, because
+   * that decorator is GET only and EventSource cannot carry a request body.
+   * The instruction and the thread belong in a body, so this stays a POST and
+   * writes newline-delimited JSON that a reader can parse a line at a time.
+   *
+   * Model bound for the same reason as the unstreamed version: the work behind
+   * it is unchanged, only its reporting.
+   */
+  @ApiOperation({
+    summary: 'Have an agent work on a project, reporting as it goes',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @ModelBound()
+  @Post('projects/:id/ai-act/stream')
+  async actOnProjectStreaming(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+    },
+    @Req() request: { credential?: string },
+    @Res() response: Response
+  ) {
+    return this.streamAgent(id, body, request, response);
+  }
+
+  /**
+   * One run, written out as it happens, with or without a project.
+   *
+   * Newline-delimited JSON rather than @Sse, because that decorator is GET only
+   * and EventSource cannot carry a request body. The instruction and the thread
+   * belong in a body, so this stays a POST.
+   */
+  private async streamAgent(
+    projectId: string | null,
+    body: {
+      instruction?: string;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
+    },
+    request: { credential?: string },
+    response: Response
+  ) {
+    const token = request.credential;
+    if (!token) {
+      throw new BadRequestException('A signed in caller is required to act.');
+    }
+    if (!body?.instruction?.trim()) {
+      throw new BadRequestException('An instruction is required.');
+    }
+
+    response.setHeader('Content-Type', 'application/x-ndjson');
+    response.setHeader('Cache-Control', 'no-cache');
+    // Proxies that buffer would hold every line until the end, which is the
+    // silence this exists to remove.
+    response.setHeader('X-Accel-Buffering', 'no');
+
+    await new Promise<void>((resolve) => {
+      this.aiOrchestrationService
+        .send(
+          { cmd: ProjectAiCommands.ACT_STREAM },
+          {
+            instruction: body.instruction,
+            projectId,
+            token,
+            history: body.history ?? [],
+            // Absent means the persona whose job is running projects, chosen
+            // by the orchestrator rather than named here.
+            personaId: body.personaId ?? null,
+          }
+        )
+        .subscribe({
+          next: (event) => response.write(`${JSON.stringify(event)}\n`),
+          error: (error) => {
+            // The reader always ends with something to show, so a failure here
+            // has to look like a finished run rather than a dropped connection.
+            response.write(
+              `${JSON.stringify({
+                type: 'done',
+                result: {
+                  said: '',
+                  used: [],
+                  awaitingApproval: false,
+                  model: null,
+                  unavailable: `The assistant could not be reached: ${error.message}`,
+                },
+              })}\n`
+            );
+            response.end();
+            resolve();
+          },
+          complete: () => {
+            response.end();
+            resolve();
+          },
+        });
+    });
+  }
+
+  /**
+   * The assistant with no project chosen yet.
+   *
+   * The same run as the route above, without an id. Away from a project the
+   * assistant is not useless, it is starting further back: listing projects
+   * needs no project id, so it can find its way to one and say what it found.
+   *
+   * The approval gate is unaffected. It lives on the tools and keys off the
+   * project each tool is acting on, so nothing here decides what may be
+   * touched.
+   */
+  @ApiOperation({ summary: 'Have an agent work, with no project chosen yet' })
+  @RequirePermissions('project-planning.project.read')
+  @ModelBound()
+  @Post('ai-act/stream')
+  async actAnywhereStreaming(
+    @Body()
+    body: {
+      instruction?: string;
+      projectId?: string | null;
+      history?: { role: 'person' | 'assistant'; text: string }[];
+      personaId?: string | null;
+    },
+    @Req() request: { credential?: string },
+    @Res() response: Response
+  ) {
+    return this.streamAgent(body?.projectId ?? null, body, request, response);
+  }
+
+  /**
+   * Inviting somebody to work on a project.
+   *
+   * The identity is the session's profile, never anything the caller sent. The
+   * service refuses everyone but the owner, and refuses in the same words as
+   * being unable to reach the project at all, so these routes cannot be used
+   * to find out which projects exist.
+   */
+  @ApiOperation({ summary: 'Invite somebody to a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Post('projects/:id/invites')
+  async inviteToProject(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Body() body: { email?: string }
+  ) {
+    if (!body?.email?.trim()) {
+      throw new BadRequestException('An email address is required.');
+    }
+    const invite = await firstValueFrom(
+      this.projectPlanningService.send<{ email: string; token: string }>(
+        { cmd: ProjectInviteCommands.CREATE },
+        {
+          projectId,
+          email: body.email,
+          requestingUserId: user.profileId,
+        }
+      )
+    );
+
+    // After the record exists, and never allowed to undo it. The invitation is
+    // discoverable inside the application by whoever it was addressed to, so a
+    // failure to send costs a courtesy rather than the invitation.
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{ name?: string } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    ).catch(() => null);
+
+    await this.inviteMailer.send({
+      email: invite.email,
+      token: invite.token,
+      projectName: project?.name,
+      invitedByName: user.name,
+      appId: 'forgeofwill',
+    });
+
+    return invite;
+  }
+
+  @ApiOperation({ summary: 'List the invitations on a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Get('projects/:id/invites')
+  async findProjectInvites(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    // Guarded as tightly as inviting. An invitation carries an email address,
+    // and who is working on a project is not public.
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_FOR_PROJECT },
+        { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * Who is on a project, by name rather than by profile id.
+   *
+   * Membership is stored as profile ids, which is right for deciding access
+   * and useless for showing somebody a list of people. The names are resolved
+   * here because the gateway already talks to the profile service, and
+   * project-planning does not and should not.
+   *
+   * A profile that cannot be read falls back to its id rather than dropping
+   * the person: somebody with no readable name is still on the project, and a
+   * list that quietly loses a member is worse than one with an ugly entry.
+   */
+  @ApiOperation({ summary: 'Who is on a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/people')
+  async projectPeople(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{
+        owner: string;
+        members?: string[];
+      } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      throw new BadRequestException('That project could not be read.');
+    }
+
+    const ids = [
+      ...new Set([project.owner, ...(project.members ?? [])].filter(Boolean)),
+    ];
+
+    return await Promise.all(
+      ids.map(async (profileId) => {
+        const profile = await firstValueFrom(
+          this.profileService.send<{ profileName?: string } | null>(
+            { cmd: ProfileCommands.Get },
+            { id: profileId }
+          )
+        ).catch(() => null);
+
+        return {
+          profileId,
+          name: profile?.profileName || profileId,
+          isOwner: profileId === project.owner,
+        };
+      })
+    );
+  }
+
+  /**
+   * The conversation belonging to a project.
+   *
+   * Access is decided here and nowhere else. The project is fetched scoped to
+   * the caller, so somebody who is not on it gets nothing and never reaches
+   * the chat service, which does not know what a project is and is not the
+   * place to answer that question.
+   *
+   * Participants are sent every time rather than kept in step by events, so a
+   * conversation cannot outlive the membership that justified it: somebody
+   * removed from the project is written out of it on the next visit by anyone.
+   */
+  @ApiOperation({ summary: 'The conversation for a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/conversation')
+  async projectConversation(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    const project = await firstValueFrom(
+      this.projectPlanningService.send<{
+        id: string;
+        name?: string;
+        owner: string;
+        members?: string[];
+      } | null>(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: projectId, requestingUserId: user.profileId }
+      )
+    );
+
+    if (!project) {
+      throw new BadRequestException('That project could not be read.');
+    }
+
+    return await firstValueFrom(
+      this.chatService.send(
+        { cmd: ChatCommands.GET_OR_CREATE_PROJECT_CHAT },
+        {
+          projectId,
+          ownerId: project.owner,
+          participants: project.members ?? [],
+          title: project.name,
+        }
+      )
+    );
+  }
+
+  /**
+   * Ending a collaboration.
+   *
+   * Two routes because they are asked by different people. The owner removes
+   * somebody; a member takes themselves out and needs nobody's agreement to.
+   */
+  // Declared before the one below on purpose. Express takes the first route
+  // that matches, and "me" matches :profileId, so a literal path after a
+  // parameter that swallows it is a route that is never reached.
+  @ApiOperation({ summary: 'Leave a project' })
+  @RequirePermissions('project-planning.project.read')
+  @Delete('projects/:id/members/me')
+  async leaveProject(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectMemberCommands.LEAVE },
+        { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Remove somebody from a project' })
+  @RequirePermissions('project-planning.project.update')
+  @Delete('projects/:id/members/:profileId')
+  async removeProjectMember(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Param('profileId') profileId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectMemberCommands.REMOVE },
+        { projectId, profileId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  /**
+   * The three below are the invitee's side, and every one of them is scoped by
+   * the caller's own email from the session rather than by anything they sent.
+   * An invitation id is not a secret; the address it was sent to is what makes
+   * it theirs.
+   */
+  @ApiOperation({ summary: 'Invitations waiting on the signed in caller' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('invitations')
+  async findMyInvitations(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_FOR_ME },
+        { email: user.email, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'One invitation, by the token in its link' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('invitations/:token')
+  async findInvitationByToken(
+    @User() user: UserDetails,
+    @Param('token') token: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.FIND_BY_TOKEN },
+        { token, email: user.email, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Accept or decline an invitation' })
+  @RequirePermissions('project-planning.project.read')
+  @Patch('invitations/:id')
+  async respondToInvitation(
+    @User() user: UserDetails,
+    @Param('id') id: string,
+    @Body() body: { accept?: boolean }
+  ) {
+    if (typeof body?.accept !== 'boolean') {
+      throw new BadRequestException(
+        'An answer of accept true or false is required.'
+      );
+    }
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.RESPOND },
+        {
+          id,
+          accept: body.accept,
+          email: user.email,
+          requestingUserId: user.profileId,
+        }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Withdraw an invitation' })
+  @RequirePermissions('project-planning.project.update')
+  @Delete('projects/invites/:inviteId')
+  async revokeProjectInvite(
+    @User() user: UserDetails,
+    @Param('inviteId') inviteId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectInviteCommands.REVOKE },
+        { id: inviteId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/ai-changes')
+  async findAiChanges(
+    @User() user: UserDetails,
+    @Param('id') projectId: string
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_AI_CHANGES },
+        { projectId, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Submit an AI-proposed project mutation for approval',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @Post('projects/:id/ai-changes')
+  async createAiChange(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Body() dto: Omit<CreateAiChangeDto, 'projectId' | 'proposedBy'>
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        {
+          ...dto,
+          projectId,
+          proposedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
+      )
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Approve or reject an AI-proposed project mutation',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @Patch('projects/ai-changes/:id')
+  async reviewAiChange(
+    @User() user: UserDetails,
+    @Param('id') id: string,
+    @Body() dto: Omit<ReviewAiChangeDto, 'id'>
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.REVIEW_AI_CHANGE },
+        {
+          ...dto,
+          id,
+          reviewedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -205,6 +911,9 @@ export class ProjectPlanningController {
         { cmd: ChangeCommands.CREATE },
         {
           ...createChangeDto,
+          // ChangeService derives requestor, approver and createdBy from
+          // requestor alone.
+          requestor: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
@@ -303,6 +1012,10 @@ export class ProjectPlanningController {
         { cmd: ProjectJournalCommands.CREATE },
         {
           ...createJournalDto,
+          // The journal service reads profileId, not createdBy. Setting
+          // the wrong name meant identity never arrived unless the client
+          // sent it, and the client did not.
+          profileId: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
@@ -401,6 +1114,8 @@ export class ProjectPlanningController {
         { cmd: RiskCommands.CREATE },
         {
           ...createRiskDto,
+          // RiskService uses riskOwner as the owner and as createdBy.
+          riskOwner: user.profileId,
           createdBy: user.profileId,
           requestingUserId: user.profileId,
         }
@@ -528,85 +1243,6 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskCommands.DELETE },
-        { id, requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Find timer by ID' })
-  @ApiResponse({ status: 200, description: 'Timer found' })
-  @RequirePermissions('project-planning.timer.read')
-  @Get('timers/:id')
-  async findTimerById(@User() user: UserDetails, @Param('id') id: string) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.FIND_ONE },
-        { id, requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Find all timers' })
-  @ApiResponse({ status: 200, description: 'Timers retrieved' })
-  @RequirePermissions('project-planning.timer.read')
-  @Get('timers')
-  async findAllTimers(@User() user: UserDetails) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.FIND_ALL },
-        { requestingUserId: user.profileId }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Create a timer' })
-  @ApiResponse({ status: 201, description: 'Timer created successfully' })
-  @RequirePermissions('project-planning.timer.create')
-  @Post('timers')
-  async createTimer(
-    @User() user: UserDetails,
-    @Body() createTimerDto: CreateTimerDto
-  ) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.CREATE },
-        {
-          ...createTimerDto,
-          createdBy: user.profileId,
-          requestingUserId: user.profileId,
-        }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Update a timer' })
-  @ApiResponse({ status: 200, description: 'Timer updated successfully' })
-  @RequirePermissions('project-planning.timer.update')
-  @Patch('timers')
-  async updateTimer(
-    @User() user: UserDetails,
-    @Body() updateTimerDto: UpdateTimerDto
-  ) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.UPDATE },
-        {
-          ...updateTimerDto,
-          updatedBy: user.profileId,
-          requestingUserId: user.profileId,
-        }
-      )
-    );
-  }
-
-  @ApiOperation({ summary: 'Delete a timer' })
-  @ApiResponse({ status: 200, description: 'Timer deleted successfully' })
-  @RequirePermissions('project-planning.timer.delete')
-  @Delete('timers/:id')
-  async deleteTimer(@User() user: UserDetails, @Param('id') id: string) {
-    return await firstValueFrom(
-      this.projectPlanningService.send(
-        { cmd: TimerCommands.DELETE },
         { id, requestingUserId: user.profileId }
       )
     );
@@ -763,7 +1399,15 @@ export class ProjectPlanningController {
     );
   }
 
-  @ApiOperation({ summary: 'Create a task time entry (start timer)' })
+  /**
+   * Stops a running time entry.
+   *
+   * The service could always do this and nothing could reach it: stopping was
+   * done through update, which meant the client decided the duration. It sent
+   * only an end time, so every finished entry recorded zero seconds. Here the
+   * server reads the clock, which is the only way the number means anything.
+   */
+  @ApiOperation({ summary: 'Start a time entry on a task' })
   @ApiResponse({
     status: 201,
     description: 'Task time entry created successfully',
@@ -786,7 +1430,7 @@ export class ProjectPlanningController {
     );
   }
 
-  @ApiOperation({ summary: 'Update a task time entry (stop timer)' })
+  @ApiOperation({ summary: 'Update a task time entry' })
   @ApiResponse({
     status: 200,
     description: 'Task time entry updated successfully',
@@ -805,6 +1449,19 @@ export class ProjectPlanningController {
           updatedBy: user.profileId,
           requestingUserId: user.profileId,
         }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'Stop a running time entry' })
+  @ApiResponse({ status: 200, description: 'Time entry stopped' })
+  @RequirePermissions('project-planning.task-time-entry.update')
+  @Patch('task-time-entries/:id/stop')
+  async stopTaskTimeEntry(@User() user: UserDetails, @Param('id') id: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: TaskTimeEntryCommands.STOP },
+        { id, updatedBy: user.profileId, requestingUserId: user.profileId }
       )
     );
   }

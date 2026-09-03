@@ -5,6 +5,44 @@ export const ProjectCommands = {
   FIND_ONE: 'project.findOne',
   REMOVE: 'project.remove',
   FIND_ALL: 'project.findAll',
+  CREATE_AI_CHANGE: 'project.createAiChange',
+  FIND_AI_CHANGES: 'project.findAiChanges',
+  REVIEW_AI_CHANGE: 'project.reviewAiChange',
+};
+
+/**
+ * Inviting somebody to work on a project.
+ *
+ * Separate from ProjectCommands because an invitation is its own thing with
+ * its own life, and folding it in would have every project route carrying a
+ * verb that only makes sense to an owner.
+ */
+export const ProjectInviteCommands = {
+  CREATE: 'projectInvite.create',
+  /** Everything outstanding on a project. Owner only: it lists addresses. */
+  FIND_FOR_PROJECT: 'projectInvite.findForProject',
+  /** Withdrawn by the owner, whether or not it has been answered. */
+  REVOKE: 'projectInvite.revoke',
+  /** Everything waiting on the caller's own address. */
+  FIND_FOR_ME: 'projectInvite.findForMe',
+  /** One invitation, found by the token a link carries. */
+  FIND_BY_TOKEN: 'projectInvite.findByToken',
+  /** The invitee's answer. Accepting is what grants access. */
+  RESPOND: 'projectInvite.respond',
+};
+
+/**
+ * Ending a collaboration, from either side.
+ *
+ * Separate from inviting because the two are asked by different people for
+ * different reasons, and because removing somebody has to work whether or not
+ * an invitation is what put them there.
+ */
+export const ProjectMemberCommands = {
+  /** The owner removing somebody. */
+  REMOVE: 'projectMember.remove',
+  /** A member's own decision to stop. */
+  LEAVE: 'projectMember.leave',
 };
 
 export const ProjectJournalCommands = {
@@ -41,15 +79,6 @@ export const ChangeCommands = {
   FIND_ONE: 'change.findOne',
   REMOVE: 'change.remove',
   FIND_ALL: 'change.findAll',
-};
-
-export const TimerCommands = {
-  CREATE: 'timer.create',
-  UPDATE: 'timer.update',
-  DELETE: 'timer.delete',
-  FIND_ONE: 'timer.findOne',
-  REMOVE: 'timer.remove',
-  FIND_ALL: 'timer.findAll',
 };
 
 export const TaskTimeEntryCommands = {

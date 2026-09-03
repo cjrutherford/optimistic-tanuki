@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { NgZone } from '@angular/core';
 import {
   HttpClientTestingModule,
   HttpTestingController,
@@ -66,7 +67,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
         endDate: new Date(),
       };
 
@@ -118,7 +118,6 @@ describe('ProjectService', () => {
           risks: [],
           changes: [],
           journalEntries: [],
-          timers: [],
         },
       ];
 
@@ -159,7 +158,6 @@ describe('ProjectService', () => {
           risks: [],
           changes: [],
           journalEntries: [],
-          timers: [],
         },
       ];
 
@@ -192,7 +190,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
       };
 
       service.getProjectById('1').subscribe((response) => {
@@ -223,7 +220,6 @@ describe('ProjectService', () => {
         risks: [],
         changes: [],
         journalEntries: [],
-        timers: [],
       };
       const expectedResponse: Project = {
         ...mockProject,
@@ -253,34 +249,237 @@ describe('ProjectService', () => {
     });
   });
 
-  describe('inviteMember', () => {
-    it('should invite a member successfully', () => {
-      const projectId = '1';
-      const email = 'test@example.com';
-      const createdBy = 'user1';
-      const expectedResponse = { success: true };
+  /**
+   * The assistant streamed correctly and painted nothing.
+   *
+   * zone.js does not patch fetch or a ReadableStream reader, so a caller that
+   * writes a signal from one of these events writes it outside Angular and no
+   * change detection follows. Asserting the signal is worthless here: the
+   * signals were always right. What has to be asserted is that the callback
+   * runs somewhere a repaint can happen.
+   */
+  describe('instructAssistantStreaming', () => {
+    /** Serves an ndjson body one chunk at a time, the way the network does. */
+    function respondWith(lines: string[]) {
+      const encoder = new TextEncoder();
+      const chunks = lines.map((line) => encoder.encode(`${line}\n`));
+      let next = 0;
 
-      service
-        .inviteMember(projectId, email, createdBy)
-        .subscribe((response) => {
-          expect(response).toEqual(expectedResponse);
-        });
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        body: {
+          getReader: () => ({
+            read: () =>
+              Promise.resolve(
+                next < chunks.length
+                  ? { done: false, value: chunks[next++] }
+                  : { done: true, value: undefined }
+              ),
+          }),
+        },
+      }) as unknown as typeof fetch;
+    }
 
-      const req = httpMock.expectOne(
-        `/api/project-planning/projects/${projectId}/invite`
-      );
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ projectId, email, createdBy });
-      req.flush(expectedResponse);
+    const done = JSON.stringify({
+      type: 'done',
+      result: { said: 'ok', used: [], awaitingApproval: false, model: null },
     });
 
-    it('should throw an error if no profile is selected', () => {
-      profileServiceMock.getCurrentUserProfile.mockReturnValue(null);
-      expect(() =>
-        service.inviteMember('1', 'test@example.com', 'user1')
-      ).toThrow(
-        'No profile selected. Please select a profile before inviting members.'
+    afterEach(() => {
+      delete (global as { fetch?: unknown }).fetch;
+    });
+
+    it('hands every event to the caller inside the Angular zone', async () => {
+      respondWith([
+        JSON.stringify({ type: 'tool', tool: 'query_tasks' }),
+        done,
+      ]);
+
+      const zones: boolean[] = [];
+      const zone = TestBed.inject(NgZone);
+
+      // Started from outside, which is where a click handler's fetch
+      // continuation actually resumes.
+      await zone.runOutsideAngular(() =>
+        service.instructAssistantStreaming('p1', 'how many tasks', [], () => {
+          zones.push(NgZone.isInAngularZone());
+        })
+      );
+
+      expect(zones).toEqual([true, true]);
+    });
+
+    it('asks the route that needs no project when none is chosen', async () => {
+      respondWith([done]);
+
+      await service.instructAssistantStreaming(
+        null,
+        'what is there',
+        [],
+        () => {
+          /* the URL is what is under test */
+        }
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/project-planning/ai-act/stream',
+        expect.objectContaining({ method: 'POST' })
       );
     });
+
+    it('asks the project route when one is chosen', async () => {
+      respondWith([done]);
+
+      await service.instructAssistantStreaming(
+        'p1',
+        'how many tasks',
+        [],
+        () => {
+          /* the URL is what is under test */
+        }
+      );
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/project-planning/projects/p1/ai-act/stream',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+  });
+});
+
+/**
+ * Working on a project with somebody.
+ *
+ * These are thin, and the one thing worth asserting is where each request
+ * goes. Invitations are not under a project on purpose: you read yours before
+ * you are allowed to see the project they are for.
+ */
+describe('ProjectService collaboration', () => {
+  let service: ProjectService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        ProjectService,
+        {
+          provide: ProfileService,
+          useValue: { getCurrentUserProfile: () => ({ id: 'me' }) },
+        },
+      ],
+    });
+    service = TestBed.inject(ProjectService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  it('invites somebody to a project', () => {
+    service.inviteToProject('p1', 'someone@example.com').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/invites');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email: 'someone@example.com' });
+    req.flush({});
+  });
+
+  it('reads the invitations on a project', () => {
+    service.getProjectInvites('p1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/invites');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('withdraws one by its own id, not through the project', () => {
+    service.revokeProjectInvite('i1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/invites/i1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('reads your own invitations from outside any project', () => {
+    // You read yours before you are allowed to see the project it is for, so
+    // this cannot hang off a project route.
+    service.getMyInvitations().subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/invitations');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('answers an invitation', () => {
+    service.respondToInvitation('i1', true).subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/invitations/i1');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ accept: true });
+    req.flush({});
+  });
+
+  it('removes somebody from a project', () => {
+    service.removeProjectMember('p1', 'them').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/members/them'
+    );
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('leaves a project without naming anybody', () => {
+    // "me" is resolved from the session on the server. A client that named
+    // itself could name somebody else.
+    service.leaveProject('p1').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/members/me'
+    );
+    expect(req.request.method).toBe('DELETE');
+    req.flush({});
+  });
+
+  it('reads the messages in a conversation', () => {
+    service.getConversationMessages('c1').subscribe();
+
+    const req = httpMock.expectOne('/api/chat/messages/c1');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('sends one without naming a recipient', () => {
+    // A project conversation has participants rather than recipients, and the
+    // sender comes from the session on the server.
+    service.sendConversationMessage('c1', 'A note for the others.').subscribe();
+
+    const req = httpMock.expectOne('/api/chat/messages');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      conversationId: 'c1',
+      content: 'A note for the others.',
+      recipientIds: [],
+    });
+    req.flush({});
+  });
+
+  it('reads who is on a project, by name', () => {
+    service.getProjectPeople('p1').subscribe();
+
+    const req = httpMock.expectOne('/api/project-planning/projects/p1/people');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('reads the conversation belonging to a project', () => {
+    service.getProjectConversation('p1').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/project-planning/projects/p1/conversation'
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({});
   });
 });

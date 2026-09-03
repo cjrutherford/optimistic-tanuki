@@ -1,5 +1,6 @@
 import {
   Component,
+  Input,
   Output,
   EventEmitter,
   OnInit,
@@ -7,23 +8,33 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { PersonaService } from '../services/persona.service';
 import { PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 
 /**
- * Default persona name to recommend to users
+ * How the recommended persona is recognised.
+ *
+ * This used to test the persona's name for "project management". The persona
+ * is called "Patricia P. Project", so it matched nothing and no persona was
+ * ever marked as recommended. What is stable is the job rather than the name,
+ * which is also how the orchestrator picks its default, so the menu and the
+ * assistant agree on who the usual one is.
  */
-const DEFAULT_PERSONA_NAME = 'project management';
+const DOES_PROJECT_WORK = /project manage/i;
 
 @Component({
   selector: 'lib-persona-selection-menu',
-  imports: [CommonModule],
+  imports: [CommonModule, ProfilePhotoComponent],
   templateUrl: './persona-selection-menu.component.html',
   styleUrl: './persona-selection-menu.component.scss',
 })
 export class PersonaSelectionMenuComponent implements OnInit {
   @Output() personaSelected = new EventEmitter<PersonaTelosDto>();
   @Output() menuClose = new EventEmitter<void>();
+
+  /** Who the reader is talking to now, so the menu can say which one that is. */
+  @Input() chosenId: string | null = null;
 
   personas = signal<PersonaTelosDto[]>([]);
   loading = signal<boolean>(true);
@@ -61,9 +72,32 @@ export class PersonaSelectionMenuComponent implements OnInit {
   }
 
   getDefaultPersona(): PersonaTelosDto | undefined {
-    return this.personas().find((p) =>
-      p.name.toLowerCase().includes(DEFAULT_PERSONA_NAME)
+    return this.personas().find(
+      (p) =>
+        DOES_PROJECT_WORK.test(p.coreObjective ?? '') ||
+        DOES_PROJECT_WORK.test(p.description ?? '')
     );
+  }
+
+  /**
+   * What this persona can do, in words, so the choice is made knowing it.
+   *
+   * A persona is chosen for a kind of work, and what it can reach is most of
+   * what that means. Saying nothing is right for a record that predates the
+   * scope: it has every tool, which is not a claim worth making on a card.
+   */
+  canDo(persona: PersonaTelosDto): string | null {
+    const capabilities = persona.capabilities;
+    if (!capabilities) return null;
+
+    const changes = capabilities.filter((able) => able !== 'read');
+    if (!changes.length) return 'Reads only';
+    return `Can change ${changes.join(', ')}`;
+  }
+
+  /** True for the persona whose conversation is currently open. */
+  isChosen(persona: PersonaTelosDto): boolean {
+    return this.chosenId === persona.id;
   }
 
   isDefaultPersona(persona: PersonaTelosDto): boolean {

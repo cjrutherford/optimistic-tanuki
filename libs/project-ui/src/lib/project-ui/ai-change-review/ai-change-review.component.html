@@ -1,0 +1,99 @@
+<section class="ai-changes">
+  <div class="head">
+    <h4>Waiting for your approval</h4>
+    @if (pending.length) {
+    <span class="count">{{ pending.length }}</span>
+    }
+    <button
+      type="button"
+      class="ask"
+      [disabled]="asking"
+      (click)="suggestionsRequested.emit()"
+    >
+      {{ asking ? 'Reading the project…' : 'Ask for suggestions' }}
+    </button>
+  </div>
+
+  @if (!pending.length && !settled.length) {
+  <p class="empty">
+    Nothing has been proposed for this project. When something is, it will wait
+    here until you decide.
+  </p>
+  } @else if (!pending.length) {
+  <p class="empty">Nothing is waiting. Decided items are below.</p>
+  } @for (change of pending; track change.id) {
+  <article class="change">
+    <header>
+      <strong>{{ describe(change.operation) }}</strong>
+      <span class="pending-tag">Not done yet</span>
+    </header>
+
+    <!--
+      Why, not only what. A reviewer looking at a payload can see what would
+      happen but not why anybody thought it should.
+    -->
+    @if (change.reason) {
+    <p class="reason">{{ change.reason }}</p>
+    }
+
+    <!--
+      The payload field by field. A row reading only "task.create" asks a
+      reviewer to approve a shape rather than a change.
+    -->
+    <dl>
+      @for (field of fields(change); track field.key) {
+      <div>
+        <dt>{{ field.key }}</dt>
+        <dd>{{ field.value }}</dd>
+      </div>
+      }
+    </dl>
+
+    <label class="note">
+      <span>Note, if you want one on the record</span>
+      <input
+        type="text"
+        [value]="notes[change.id] || ''"
+        (input)="noteChanged(change.id, $event)"
+        placeholder="Why you decided this way"
+      />
+    </label>
+
+    <div class="actions">
+      <button
+        type="button"
+        class="approve"
+        [disabled]="busyId === change.id"
+        (click)="approve(change)"
+      >
+        {{ busyId === change.id ? 'Working…' : 'Approve and do it' }}
+      </button>
+      <button
+        type="button"
+        class="reject"
+        [disabled]="busyId === change.id"
+        (click)="reject(change)"
+      >
+        Reject
+      </button>
+    </div>
+  </article>
+  } @if (settled.length) {
+  <details class="settled">
+    <summary>{{ settled.length }} already decided</summary>
+    @for (change of settled; track change.id) {
+    <div class="settled-row">
+      <strong>{{ describe(change.operation) }}</strong>
+      <span class="outcome" [class.failed]="change.applyError">
+        {{ outcome(change) }}
+      </span>
+      @if (change.applyError) {
+      <span class="why-failed">{{ change.applyError }}</span>
+      } @if (change.reviewNote) {
+      <span class="note-shown">{{ change.reviewNote }}</span>
+      }
+    </div>
+    }
+  </details>
+  }
+</section>

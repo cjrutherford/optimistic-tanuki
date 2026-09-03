@@ -1,0 +1,42 @@
+<section class="invitations">
+  <h1 class="invitations__title">Invitations waiting on you</h1>
+
+  @if (error()) {
+  <p class="invitations__error">{{ error() }}</p>
+  } @if (loading()) {
+  <p class="invitations__status">Loading your invitations…</p>
+  } @else if (invitations().length === 0) {
+  <p class="invitations__status">Nothing is waiting for you.</p>
+  } @else {
+  <ul class="invitations__list">
+    @for (invite of invitations(); track invite.id) {
+    <li class="invitations__item">
+      <span class="invitations__project">{{ projectLabel(invite) }}</span>
+
+      @if (invite.status === 'PENDING') {
+      <span class="invitations__actions">
+        <button
+          type="button"
+          class="invitations__accept"
+          [disabled]="respondingId() === invite.id"
+          (click)="respond(invite, true)"
+        >
+          Accept
+        </button>
+        <button
+          type="button"
+          class="invitations__decline"
+          [disabled]="respondingId() === invite.id"
+          (click)="respond(invite, false)"
+        >
+          Decline
+        </button>
+      </span>
+      } @else {
+      <span class="invitations__outcome">{{ outcomeWords(invite) }}</span>
+      }
+    </li>
+    }
+  </ul>
+  }
+</section>

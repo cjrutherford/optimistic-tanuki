@@ -195,11 +195,14 @@ export class AgProjectJournalTableComponent implements OnInit, OnChanges {
   }
 
   entryCreated(newEntry: Partial<ProjectJournal>) {
+    // Only what the reader typed. profileId went out as an empty string and
+    // createdAt is not a field the endpoint accepts, so every attempt to write
+    // a journal entry from this table was refused and the feature the landing
+    // page advertises could not be used at all. Who wrote it and when are the
+    // server's to decide.
     const newJournal: CreateProjectJournal = {
       projectId: newEntry.projectId || '',
-      profileId: newEntry.profileId || '',
       content: newEntry.content || '',
-      createdAt: newEntry.createdAt || new Date(),
     };
     this.createJournalEntry.emit(newJournal);
     this.closeModal();

@@ -25,6 +25,8 @@ export class TaskNoteService {
     if (!currentProfile) {
       throw new Error('User profile is not available');
     }
+    // Kept for the profile guard, which is what actually protects the call.
+    // The gateway sets profileId from the session and ignores this.
     data.profileId = currentProfile.id;
     return this.http.post<TaskNote>(`${this.baseUrl}`, data);
   }
@@ -35,6 +37,11 @@ export class TaskNoteService {
 
   queryTaskNotes(query: QueryTaskNote) {
     return this.http.post<TaskNote[]>(`${this.baseUrl}/query`, query);
+  }
+
+  /** Every note on a project, for the panel that shows notes per task. */
+  getTaskNotesForProject(projectId: string) {
+    return this.queryTaskNotes({ projectId });
   }
 
   getTaskNoteById(id: string) {

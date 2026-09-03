@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
@@ -7,6 +8,7 @@ import {
   MinLength,
   IsArray,
   IsOptional,
+  IsDate,
 } from 'class-validator';
 
 export enum TaskStatus {
@@ -51,10 +53,35 @@ export class CreateTaskDto {
   @IsEnum(TaskPriority)
   priority!: TaskPriority;
 
-  @ApiProperty({ description: 'User who created the task' })
-  @IsString()
+  @ApiPropertyOptional({ description: 'User assigned to the task' })
+  @IsOptional()
   @IsUUID()
-  createdBy!: string;
+  assignee?: string;
+
+  // IsDate with a Type transform, not IsDateString. The gateway's
+  // ValidationPipe runs with enableImplicitConversion, so a string arriving
+  // for a property declared as Date is converted to a Date before validation.
+  // IsDateString then rejects it for not being a string, and no due date could
+  // be set through the gateway at all. startDate on CreateProjectDto already
+  // does it this way.
+  @ApiPropertyOptional({ description: 'Due date of the task' })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  dueDate?: Date;
+
+  /**
+   * Who created the task.
+   *
+   * Optional because the gateway sets it from the session and overwrites
+   * whatever arrives. Requiring it meant every client had to send a value that
+   * was then discarded, and the clients that forgot simply could not create
+   * anything. Identity belongs to the session, never the body.
+   */
+  @ApiPropertyOptional({ description: 'Set from the session by the gateway' })
+  @IsOptional()
+  @IsUUID()
+  createdBy?: string;
 
   @ApiProperty({ description: 'ID of the related project' })
   @IsString()

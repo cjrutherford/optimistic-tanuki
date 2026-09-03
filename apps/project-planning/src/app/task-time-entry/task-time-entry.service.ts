@@ -16,6 +16,20 @@ import {
   getAccessibleProjectIds,
 } from '../common/project-access.util';
 
+/**
+ * Seconds between the two ends of an entry.
+ *
+ * Never negative. A clock that went backwards, or an end time typed before the
+ * start, should record nothing rather than a negative duration that quietly
+ * subtracts from somebody's total.
+ */
+export function elapsedBetween(startTime: Date, endTime: Date): number {
+  const seconds = Math.floor(
+    (new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000
+  );
+  return Math.max(0, seconds);
+}
+
 @Injectable()
 export class TaskTimeEntryService {
   constructor(
@@ -50,12 +64,9 @@ export class TaskTimeEntryService {
     // Stop all active timers for this task
     for (const activeEntry of activeEntries) {
       const endTime = new Date();
-      const elapsedSeconds = Math.floor(
-        (endTime.getTime() - activeEntry.startTime.getTime()) / 1000
-      );
       await this.taskTimeEntryRepository.update(activeEntry.id, {
         endTime,
-        elapsedSeconds,
+        elapsedSeconds: elapsedBetween(activeEntry.startTime, endTime),
         updatedBy: createDto.createdBy,
         updatedAt: new Date(),
       });
@@ -64,7 +75,10 @@ export class TaskTimeEntryService {
     const timeEntry = this.taskTimeEntryRepository.create({
       task,
       description: createDto.description,
-      startTime: new Date(),
+      // Now unless the caller is recording work that already happened. It
+      // used to be required and then overwritten, so a caller had to send a
+      // value that did nothing.
+      startTime: createDto.startTime ?? new Date(),
       createdBy: createDto.createdBy,
       updatedBy: createDto.createdBy,
       createdAt: new Date(),
@@ -95,10 +109,19 @@ export class TaskTimeEntryService {
       }
       where.task = {
         ...(query.taskId ? { id: query.taskId } : {}),
-        project: { id: In(accessibleProjectIds) },
+        project: {
+          id: query.projectId
+            ? // Still intersected with what the caller may see: a project id
+              // in the query narrows the scope and never widens it.
+              In(accessibleProjectIds.filter((id) => id === query.projectId))
+            : In(accessibleProjectIds),
+        },
       };
-    } else if (query.taskId) {
-      where.task = { id: query.taskId };
+    } else if (query.taskId || query.projectId) {
+      where.task = {
+        ...(query.taskId ? { id: query.taskId } : {}),
+        ...(query.projectId ? { project: { id: query.projectId } } : {}),
+      };
     }
 
     return await this.taskTimeEntryRepository.find({
@@ -109,7 +132,9 @@ export class TaskTimeEntryService {
 
   async findOne(id: string, requestingUserId?: string) {
     const timeEntry = await this.taskTimeEntryRepository.findOne({
-      where: { id },
+      // findAll excludes deleted entries and this did not, so a removed entry
+      // was still readable, editable and stoppable by id.
+      where: { id, deletedAt: IsNull() },
       relations: ['task', 'task.project'],
     });
     assertFound(timeEntry, `Time entry with id ${id} not found`);
@@ -145,11 +170,15 @@ export class TaskTimeEntryService {
     }
 
     if (updateDto.endTime !== undefined) {
+      // Stopping through update is how the app stops a timer, and it sent
+      // only an end time, so every finished entry recorded zero seconds. The
+      // duration is derived here from the two ends of the entry, which is the
+      // only place both are known and the only figure worth trusting.
       updateData.endTime = updateDto.endTime;
-    }
-
-    if (updateDto.elapsedSeconds !== undefined) {
-      updateData.elapsedSeconds = updateDto.elapsedSeconds;
+      updateData.elapsedSeconds = elapsedBetween(
+        timeEntry.startTime,
+        updateDto.endTime
+      );
     }
 
     if (updateDto.updatedBy !== undefined) {
@@ -174,14 +203,18 @@ export class TaskTimeEntryService {
       assertProjectAccess(timeEntry.task?.project, requestingUserId);
     }
 
+    if (timeEntry.endTime) {
+      // Already stopped. Recomputing from start to now would stretch the entry
+      // every time somebody pressed the button again, which is a silent way to
+      // inflate a timesheet.
+      return timeEntry;
+    }
+
     const endTime = new Date();
-    const elapsedSeconds = Math.floor(
-      (endTime.getTime() - timeEntry.startTime.getTime()) / 1000
-    );
 
     await this.taskTimeEntryRepository.update(id, {
       endTime,
-      elapsedSeconds,
+      elapsedSeconds: elapsedBetween(timeEntry.startTime, endTime),
       updatedBy,
       updatedAt: new Date(),
     });

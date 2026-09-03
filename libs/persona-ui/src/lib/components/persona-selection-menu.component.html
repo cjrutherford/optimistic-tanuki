@@ -43,27 +43,41 @@
     </div>
     } @else {
     <div class="persona-menu-content">
+      @if (getDefaultPersona(); as recommended) {
       <p class="recommendation-text">
-        💡 Not sure which to choose? We recommend
-        <strong>Project Management</strong> for general assistance.
+        Not sure? <strong>{{ recommended.name }}</strong> is the one who works
+        on your projects with you.
       </p>
+      }
 
       <div class="persona-list">
         @for (persona of personas(); track persona.id) {
         <button
           class="persona-item"
           [class.default-persona]="isDefaultPersona(persona)"
+          [class.chosen-persona]="isChosen(persona)"
+          [attr.aria-current]="isChosen(persona) ? 'true' : null"
           (click)="onPersonaSelect(persona)"
         >
+          <lib-profile-photo
+            class="persona-face"
+            [name]="persona.name"
+            [alt]="persona.name"
+            [size]="40"
+          ></lib-profile-photo>
           <div class="persona-info">
             <div class="persona-header">
               <h3>{{ persona.name }}</h3>
-              @if (isDefaultPersona(persona)) {
+              @if (isChosen(persona)) {
+              <span class="chosen-badge">Talking to now</span>
+              } @else if (isDefaultPersona(persona)) {
               <span class="default-badge">Recommended</span>
               }
             </div>
             <p class="persona-description">{{ persona.description }}</p>
-            @if (persona.skills && persona.skills.length > 0) {
+            @if (canDo(persona); as able) {
+            <p class="persona-can">{{ able }}</p>
+            } @if (persona.skills && persona.skills.length > 0) {
             <div class="persona-skills">
               @for (skill of persona.skills.slice(0, 3); track skill) {
               <span class="skill-badge">{{ skill }}</span>

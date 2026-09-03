@@ -7,6 +7,12 @@ export const protectedRoutePaths = [
   '/settings',
   '/messages',
   '/messages/new',
+  '/invitations',
+  // Listed although the prefix above already matches it. The policy test
+  // insists on naming every guarded Angular route, so that a route added on
+  // one side and forgotten on the other is a failure rather than a page that
+  // renders for somebody signed out.
+  '/invitations/:token',
 ] as const;
 
 export type SessionValidator = (

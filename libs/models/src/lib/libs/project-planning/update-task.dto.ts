@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateTaskDto } from './create-task.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsBoolean,
   IsString,
-  IsDateString,
   IsArray,
 } from 'class-validator';
 
@@ -14,17 +13,6 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @ApiProperty({ description: 'The unique identifier of the task' })
   @IsUUID()
   id!: string;
-
-  @ApiPropertyOptional({ description: 'User assigned to the task' })
-  @IsOptional()
-  @IsString()
-  @IsUUID()
-  assignee?: string;
-
-  @ApiPropertyOptional({ description: 'Due date of the task' })
-  @IsOptional()
-  @IsDateString()
-  dueDate?: Date;
 
   @ApiPropertyOptional({ description: 'User who last updated the task' })
   @IsOptional()
@@ -42,11 +30,27 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   override tagIds?: string[];
 }
 
-export class QueryTaskDto extends PartialType(CreateTaskDto) {
+export class QueryTaskDto extends OmitType(PartialType(CreateTaskDto), [
+  'dueDate',
+] as const) {
   @ApiPropertyOptional({ description: 'User who last updated the task' })
   @IsOptional()
   @IsUUID()
   updatedBy?: string;
+
+  // `assignee` moved onto CreateTaskDto, so this redeclaration now overrides a
+  // base member and needs saying so, the same way tagIds does above.
+  @ApiPropertyOptional({ description: 'User assigned to the task' })
+  @IsOptional()
+  @IsUUID()
+  override assignee?: string;
+
+  @ApiPropertyOptional({
+    type: [Date],
+    description: 'Due date range [from, to]',
+  })
+  @IsOptional()
+  dueDate?: [Date, Date];
 
   @ApiPropertyOptional({
     type: [Date],

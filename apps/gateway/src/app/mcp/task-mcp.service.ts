@@ -1,19 +1,47 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
-import { TaskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ProjectCommands,
+  TaskCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   CreateTaskDto,
+  ENTITY_VIEWS,
+  EntityView,
   TaskPriority,
   TaskStatus,
   UpdateTaskDto,
+  applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
 export const listTasksSchema = z.object({
   projectId: z.string().describe('The ID of the project whose tasks to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 // Define Zod schemas for parameters
@@ -42,6 +70,17 @@ const createTaskSchema = z.object({
     .describe(
       'ID of the related project. use the project id from list_projects or the context.'
     ),
+  // Neither of these was here, so the agent could report that work was
+  // unassigned or overdue and had no way to do anything about it. Those are
+  // the two concerns it raises most.
+  assignee: z
+    .string()
+    .optional()
+    .describe('Profile id of the person responsible, if known'),
+  dueDate: z
+    .string()
+    .optional()
+    .describe('When the task is due, as YYYY-MM-DD'),
 });
 
 const updateTaskSchema = z.object({
@@ -65,6 +104,14 @@ const updateTaskSchema = z.object({
     .describe(
       'ID of the related project. this relates to the id field of the project data type. please use the list_projects tool to get project ids.'
     ),
+  assignee: z
+    .string()
+    .optional()
+    .describe('Profile id of the person responsible'),
+  dueDate: z
+    .string()
+    .optional()
+    .describe('When the task is due, as YYYY-MM-DD'),
 });
 
 const queryTasksSchema = z.object({
@@ -81,7 +128,73 @@ const queryTasksSchema = z.object({
     .nativeEnum(TaskPriority)
     .optional()
     .describe('Filter tasks by priority'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
+
+/**
+ * A due date, when what the model wrote is one.
+ *
+ * Models put "next week" and "TBD" in date fields. The DTO takes a real Date,
+ * so a phrase would fail validation at the far end and surface to the agent as
+ * an unexplained error rather than as a date it should not have written.
+ */
+function asDueDate(value?: string): { dueDate?: Date } {
+  if (!value) return {};
+  const parsed = new Date(value.trim());
+  return Number.isNaN(parsed.getTime()) ? {} : { dueDate: parsed };
+}
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewTask(
+  rows: Record<string, unknown>[],
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  tasks: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'task', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    tasks: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
+}
 
 @Injectable()
 export class TaskMcpService {
@@ -89,7 +202,8 @@ export class TaskMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -114,7 +228,12 @@ export class TaskMcpService {
     parameters: listTasksSchema,
   })
   async listTasks(
-    { projectId }: z.infer<typeof listTasksSchema>,
+    {
+      projectId,
+      view = 'brief',
+      limit,
+      offset,
+    }: z.infer<typeof listTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -129,8 +248,11 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        tasks,
-        count: tasks.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewTask(tasks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing tasks:', error);
@@ -180,6 +302,8 @@ export class TaskMcpService {
       status,
       priority,
       projectId,
+      assignee,
+      dueDate,
     }: z.infer<typeof createTaskSchema>,
     _context: unknown,
     request: any
@@ -196,8 +320,19 @@ export class TaskMcpService {
         priority: priority ?? TaskPriority.MEDIUM,
         createdBy: requestingUserId,
         projectId,
+        ...(assignee ? { assignee } : {}),
+        ...asDueDate(dueDate),
         requestingUserId,
       };
+
+      const proposed = await this.gate.proposeIfGated(
+        projectId,
+        'task.create',
+        taskData,
+        requestingUserId,
+        `Task "${title}"`
+      );
+      if (proposed) return proposed;
 
       const task = await firstValueFrom(
         this.projectPlanningService.send({ cmd: TaskCommands.CREATE }, taskData)
@@ -207,6 +342,7 @@ export class TaskMcpService {
         success: true,
         message: `Task "${title}" created successfully`,
         task,
+        awaitingApproval: false,
       };
     } catch (error) {
       this.logger.error('Error creating task:', error);
@@ -228,6 +364,8 @@ export class TaskMcpService {
       status,
       priority,
       projectId,
+      assignee,
+      dueDate,
     }: z.infer<typeof updateTaskSchema>,
     _context: unknown,
     request: any
@@ -246,6 +384,25 @@ export class TaskMcpService {
       if (status) updates.status = status;
       if (priority) updates.priority = priority;
       if (projectId) updates.projectId = projectId;
+      if (assignee) updates.assignee = assignee;
+      Object.assign(updates, asDueDate(dueDate));
+
+      // The task's own project decides, not the one the caller happened to
+      // pass. projectId is optional on this tool, and an update to a gated
+      // project must not slip through because the argument was left out.
+      const owningProjectId =
+        projectId ?? (await this.gate.projectOfTask(id, requestingUserId));
+
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'task.update',
+          updates,
+          requestingUserId,
+          'The change to this task'
+        );
+        if (proposed) return proposed;
+      }
 
       const task = await firstValueFrom(
         this.projectPlanningService.send({ cmd: TaskCommands.UPDATE }, updates)
@@ -255,6 +412,7 @@ export class TaskMcpService {
         success: true,
         message: 'Task updated successfully',
         task,
+        awaitingApproval: false,
       };
     } catch (error) {
       this.logger.error('Error updating task:', error);
@@ -277,6 +435,24 @@ export class TaskMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting task ${taskId}`);
+
+      // Deleting is not something a proposal can become, so on a project that
+      // requires approval there is no safe version of this and it is refused.
+      // Leaving it open would mean the one operation nobody can review is also
+      // the only irreversible one.
+      const owningProjectId = await this.gate.projectOfTask(
+        taskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const refused = await this.gate.refuseIfGated(
+          owningProjectId,
+          requestingUserId,
+          'deleting a task'
+        );
+        if (refused) return refused;
+      }
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: TaskCommands.DELETE },
@@ -294,12 +470,68 @@ export class TaskMcpService {
   }
 
   @McpTool({
+    name: 'count_tasks',
+    description:
+      'How many tasks a project has, broken down by status and priority. Use ' +
+      'this for any question about how many, rather than listing tasks and ' +
+      'counting them.',
+    parameters: z.object({
+      projectId: z.string().describe('The ID of the project to count'),
+    }),
+  })
+  async countTasks(
+    { projectId }: { projectId: string },
+    _context: unknown,
+    request: any
+  ) {
+    try {
+      const requestingUserId = this.requireRequestingUserId(request);
+      this.logger.log(`MCP Tool: Counting tasks for project ${projectId}`);
+      const tasks = await firstValueFrom(
+        this.projectPlanningService.send(
+          { cmd: TaskCommands.FIND_ALL },
+          { projectId, requestingUserId }
+        )
+      );
+
+      // The arithmetic happens here, once, instead of being handed to a model
+      // as twenty thousand characters of JSON to do by eye. Asked how many
+      // tasks a project had, it answered four, then seven. There were twelve.
+      const rows: { status?: string; priority?: string }[] = tasks ?? [];
+      const tally = (key: 'status' | 'priority') =>
+        rows.reduce<Record<string, number>>((counts, row) => {
+          const value = row[key] ?? 'UNKNOWN';
+          counts[value] = (counts[value] ?? 0) + 1;
+          return counts;
+        }, {});
+
+      return {
+        success: true,
+        total: rows.length,
+        byStatus: tally('status'),
+        byPriority: tally('priority'),
+        unassigned: rows.filter(
+          (row) => !(row as { assignee?: string }).assignee
+        ).length,
+      };
+    } catch (error) {
+      this.logger.error('Error counting tasks:', error);
+      throw new Error(`Failed to count tasks: ${error.message}`);
+    }
+  }
+
+  @McpTool({
     name: 'query_tasks',
     description: 'Query tasks within a project by title, status, or priority',
     parameters: queryTasksSchema,
   })
   async queryTasks(
-    query: z.infer<typeof queryTasksSchema>,
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: z.infer<typeof queryTasksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -316,8 +548,11 @@ export class TaskMcpService {
       );
       return {
         success: true,
-        tasks,
-        count: tasks.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewTask(tasks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying tasks:', error);

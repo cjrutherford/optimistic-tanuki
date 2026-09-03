@@ -4,17 +4,41 @@ import { ClientProxy } from '@nestjs/microservices';
 import { RiskCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   CreateRiskDto,
+  ENTITY_VIEWS,
+  EntityView,
   RiskImpact,
   RiskLikelihood,
   RiskStatus,
   UpdateRiskDto,
+  applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
 export const listRisksSchema = z.object({
   projectId: z.string().describe('The ID of the project whose risks to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 // Define Zod schemas for parameters
@@ -78,7 +102,60 @@ const queryRisksSchema = z.object({
     .nativeEnum(RiskStatus)
     .optional()
     .describe('Filter risks by status'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewRisk(
+  rows: Record<string, unknown>[],
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  risks: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'risk', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    risks: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
+}
 
 @Injectable()
 export class RiskMcpService {
@@ -86,7 +163,8 @@ export class RiskMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -110,7 +188,12 @@ export class RiskMcpService {
     parameters: listRisksSchema,
   })
   async listRisks(
-    { projectId }: z.infer<typeof listRisksSchema>,
+    {
+      projectId,
+      view = 'brief',
+      limit,
+      offset,
+    }: z.infer<typeof listRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -125,8 +208,11 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        risks,
-        count: risks.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewRisk(risks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing risks:', error);
@@ -169,6 +255,15 @@ export class RiskMcpService {
       this.logger.log(
         `RiskMcpService sending riskData: ${JSON.stringify(riskData)}`
       );
+
+      const proposed = await this.gate.proposeIfGated(
+        projectId,
+        'risk.create',
+        riskData,
+        requestingUserId,
+        `Risk "${name}"`
+      );
+      if (proposed) return proposed;
 
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.CREATE }, riskData)
@@ -217,6 +312,21 @@ export class RiskMcpService {
       if (likelihood) updates.likelihood = likelihood;
       if (status) updates.status = status;
 
+      const owningProjectId = await this.gate.projectOfRisk(
+        riskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'risk.update',
+          updates,
+          requestingUserId,
+          'The change to this risk'
+        );
+        if (proposed) return proposed;
+      }
+
       const risk = await firstValueFrom(
         this.projectPlanningService.send({ cmd: RiskCommands.UPDATE }, updates)
       );
@@ -247,6 +357,20 @@ export class RiskMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting risk ${riskId}`);
+
+      const owningProjectId = await this.gate.projectOfRisk(
+        riskId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const refused = await this.gate.refuseIfGated(
+          owningProjectId,
+          requestingUserId,
+          'deleting a risk'
+        );
+        if (refused) return refused;
+      }
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: RiskCommands.REMOVE },
@@ -271,7 +395,12 @@ export class RiskMcpService {
     parameters: queryRisksSchema,
   })
   async queryRisks(
-    query: z.infer<typeof queryRisksSchema>,
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: z.infer<typeof queryRisksSchema>,
     _context: unknown,
     request: any
   ) {
@@ -288,8 +417,11 @@ export class RiskMcpService {
       );
       return {
         success: true,
-        risks,
-        count: risks.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewRisk(risks, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying risks:', error);

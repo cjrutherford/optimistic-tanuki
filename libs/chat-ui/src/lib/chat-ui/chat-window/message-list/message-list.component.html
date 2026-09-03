@@ -1,5 +1,5 @@
 <div class="message-list">
-  @for (message of messages; track message; let i = $index) {
+  @for (message of messages; track message.id; let i = $index) {
   <div
     class="message"
     [ngClass]="{
@@ -38,6 +38,51 @@
           {{ getMessageContent(message.content) }}
           }
         </span>
+
+        <!--
+          What an assistant did, alongside what it said. Rendered from what it
+          was given: this list knows nothing about projects or approvals, only
+          that a message can carry a note.
+        -->
+        @if (message.assistant; as note) { @if (note.did?.length) {
+        <ul class="assistant-did">
+          @for (step of note.did; track $index) {
+          <li>
+            {{ step.what }}
+            @if (step.pending) {
+            <span class="assistant-pending">waiting for you</span>
+            }
+          </li>
+          }
+        </ul>
+        } @if (note.awaiting) {
+        <p class="assistant-awaiting">{{ note.awaiting }}</p>
+        } @if (note.caution) {
+        <p class="assistant-caution">{{ note.caution }}</p>
+        }
+        <!--
+          Decided here, where it was proposed. Sending the reader to another
+          page to answer a question this message asked is how a proposal gets
+          forgotten.
+        -->
+        @for (decision of note.decisions; track decision.id) {
+        <div class="assistant-decision">
+          <button
+            type="button"
+            class="decision-yes"
+            (click)="decide(decision.id, true)"
+          >
+            Approve {{ decision.what }}
+          </button>
+          <button
+            type="button"
+            class="decision-no"
+            (click)="decide(decision.id, false)"
+          >
+            Reject
+          </button>
+        </div>
+        } }
 
         <!-- Reactions Display -->
         @if (hasReactions(message)) {

@@ -123,10 +123,19 @@ export class TaskKanbanComponent
         event.currentIndex
       );
     } else {
-      // Move to a different column
       const task = event.previousContainer.data[event.previousIndex];
 
-      // Transfer the item
+      // Move the card first, then ask the server.
+      //
+      // Emitting alone left the arrays behind the columns untouched, so the
+      // card sprang back to where it came from and only reached the column it
+      // was dropped in once the round trip finished and the parent replaced
+      // the whole task list. Dropping something and watching it bounce back
+      // reads as the drop having failed.
+      //
+      // The parent rebuilds these columns from its own tasks when the update
+      // lands, so this is a prediction the server is free to overrule rather
+      // than a second source of truth.
       transferArrayItem(
         event.previousContainer.data,
         event.container.data,
@@ -134,13 +143,8 @@ export class TaskKanbanComponent
         event.currentIndex
       );
 
-      // Update the task status
       const updatedTask = { id: task.id, status: targetColumn.status };
       this.editTask.emit(updatedTask);
-      this.statusChanged.emit({
-        taskId: task.id,
-        newStatus: targetColumn.status,
-      });
     }
   }
 
@@ -160,13 +164,17 @@ export class TaskKanbanComponent
   }
 
   onCreateFormSubmit(task: any): void {
+    // The form offers a due date and an assignee, and this used to copy
+    // neither, so somebody could fill both in and watch them vanish. The task
+    // table's version of the same form kept them all along.
     const newTask: CreateTask = {
       title: task.title,
       description: task.description,
       status: this.selectedColumnStatus() || 'TODO',
       priority: task.priority,
       projectId: task.projectId,
-      createdBy: task.createdBy,
+      ...(task.assignee ? { assignee: task.assignee } : {}),
+      ...(task.dueDate ? { dueDate: task.dueDate } : {}),
     };
     this.createTask.emit(newTask);
     this.closeModal();

@@ -27,6 +27,7 @@ import {
 import { Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
+import { ProjectInviteMailer } from '../controllers/project-planning/project-invite.mailer';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { FollowController } from '../controllers/social/follow/follow.controller';
@@ -402,6 +403,9 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     PerformanceTelemetryController,
   ],
   providers: [
+    // Sends the invitation email. Here rather than in project-planning, which
+    // owns the invitation and knows nothing about which application it is for.
+    ProjectInviteMailer,
     {
       provide: SECURITY_TELEMETRY_SERVICE,
       useFactory: () =>

@@ -10,7 +10,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { DynamicStructuredTool } from '@langchain/core/tools';
-import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages';
+import { BaseMessage, AIMessage } from '@langchain/core/messages';
 import { ConfigService } from '@nestjs/config';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
@@ -42,6 +42,7 @@ export class LangChainAgentService {
   private initialized = false;
   private tools: DynamicStructuredTool[] = [];
   private agent: any = null; // CompiledStateGraph from createReactAgent
+  private contextKey: string | null = null;
 
   constructor(
     private readonly toolsService: ToolsService,
@@ -88,11 +89,12 @@ export class LangChainAgentService {
    * This prepares LangChain tools and compiles the agent graph.
    */
   async initializeAgent(userId: string, conversationId: string): Promise<void> {
-    if (this.initialized) return;
+    const contextKey = `${userId}:${conversationId || ''}`;
+    if (this.initialized && this.contextKey === contextKey) return;
+
     try {
-      this.logger.log(`Initializing agent (first time setup)`);
-      // Build tools (context-agnostic at creation time)
-      this.tools = await this.createTools();
+      this.logger.log(`Initializing agent for context ${contextKey}`);
+      this.tools = await this.createTools(userId, conversationId);
 
       this.logger.log(
         `Tools passed to agent: ${this.tools.map((t) => t.name).join(', ')}`
@@ -105,6 +107,7 @@ export class LangChainAgentService {
       });
 
       this.initialized = true;
+      this.contextKey = contextKey;
       this.logger.log(`Initialized agent with ${this.tools.length} tools`);
     } catch (error) {
       this.logger.error(
@@ -117,12 +120,15 @@ export class LangChainAgentService {
   /**
    * Create LangChain tools from MCP tools
    */
-  private async createTools(): Promise<DynamicStructuredTool[]> {
+  private async createTools(
+    userId: string,
+    conversationId: string
+  ): Promise<DynamicStructuredTool[]> {
     this.logger.log('Creating tools via ToolFactory...');
     try {
       const tools = await this.toolFactory.createTools({
-        userId: '',
-        conversationId: undefined,
+        userId,
+        conversationId,
       });
       this.logger.log(`ToolFactory returned ${tools.length} tools`);
       return tools;
@@ -181,17 +187,6 @@ export class LangChainAgentService {
     try {
       this.logger.log(`Executing agent for user ${profile.id}`);
       this.logger.log(`LLM available: ${!!this.llm}`);
-
-      // Quick health check - test LLM connection
-      try {
-        this.logger.log('Testing LLM connection...');
-        const testResult = await this.llm.invoke([new HumanMessage('hi')]);
-        this.logger.log(`LLM test successful`);
-      } catch (llmError) {
-        this.logger.error(
-          `LLM test failed: ${llmError.message}. Continuing anyway...`
-        );
-      }
 
       await emitEvent(
         StreamingEventType.MESSAGE,
@@ -532,6 +527,7 @@ export class LangChainAgentService {
   reset(): void {
     this.agent = null;
     this.initialized = false;
+    this.contextKey = null;
     this.logger.log('Agent reset');
   }
 }

@@ -34,11 +34,12 @@ export { ServiceTokens } from './lib/libs/service.tokens';
 export { AssetCommands } from './lib/libs/asset';
 export {
   ProjectCommands,
+  ProjectInviteCommands,
+  ProjectMemberCommands,
   ProjectJournalCommands,
   RiskCommands,
   TaskCommands,
   ChangeCommands,
-  TimerCommands,
   TaskTimeEntryCommands,
   TaskTagCommands,
   TaskNoteCommands,

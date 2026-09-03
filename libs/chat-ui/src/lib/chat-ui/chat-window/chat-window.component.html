@@ -86,6 +86,7 @@
       [contacts]="contact"
       [currentUserId]="currentUserId"
       [typingUsers]="typingUsers"
+      (decided)="decided.emit($event)"
       (reactionAdded)="onReactionAdded($event)"
       (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>
@@ -97,6 +98,7 @@
       [contacts]="[]"
       [currentUserId]="currentUserId"
       [typingUsers]="typingUsers"
+      (decided)="decided.emit($event)"
       (reactionAdded)="onReactionAdded($event)"
       (reactionRemoved)="onReactionRemoved($event)"
     ></lib-message-list>

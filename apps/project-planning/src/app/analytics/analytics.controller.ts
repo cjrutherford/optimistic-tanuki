@@ -9,17 +9,26 @@ export class AnalyticsController {
   constructor(private readonly service: AnalyticsService) {}
 
   @MessagePattern({ cmd: AnalyticsCommands.GET_TASK_ANALYTICS })
-  async getTaskAnalytics(@Payload() query: QueryAnalyticsDto) {
-    return await this.service.getTaskAnalytics(query);
+  async getTaskAnalytics(
+    @Payload() query: QueryAnalyticsDto & { requestingUserId?: string }
+  ) {
+    return await this.service.getTaskAnalytics(query, query.requestingUserId);
   }
 
   @MessagePattern({ cmd: AnalyticsCommands.GET_PROJECT_ANALYTICS })
-  async getProjectAnalytics(@Payload() query: QueryAnalyticsDto) {
-    return await this.service.getProjectAnalytics(query);
+  async getProjectAnalytics(
+    @Payload() query: QueryAnalyticsDto & { requestingUserId?: string }
+  ) {
+    return await this.service.getProjectAnalytics(
+      query,
+      query.requestingUserId
+    );
   }
 
   @MessagePattern({ cmd: AnalyticsCommands.GET_TAG_ANALYTICS })
-  async getTagAnalytics(@Payload() query: QueryAnalyticsDto) {
-    return await this.service.getTagAnalytics(query);
+  async getTagAnalytics(
+    @Payload() query: QueryAnalyticsDto & { requestingUserId?: string }
+  ) {
+    return await this.service.getTagAnalytics(query, query.requestingUserId);
   }
 }

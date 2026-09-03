@@ -36,7 +36,6 @@ describe('ProjectOverviewComponent', () => {
       risks: [],
       changes: [],
       journalEntries: [],
-      timers: [],
     };
     component.project = testProject;
     component.ngOnInit();
@@ -111,7 +110,6 @@ describe('ProjectOverviewComponent', () => {
       risks: [],
       changes: [],
       journalEntries: [],
-      timers: [],
     };
     component.project = testProject;
     component.ngOnInit();
@@ -168,7 +166,6 @@ describe('ProjectOverviewComponent', () => {
       ],
       changes: [],
       journalEntries: [],
-      timers: [],
     };
     component.project = testProject;
     component.ngOnInit();
@@ -222,7 +219,6 @@ describe('ProjectOverviewComponent', () => {
         },
       ],
       journalEntries: [],
-      timers: [],
     };
     component.project = testProject;
     component.ngOnInit();

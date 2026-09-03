@@ -1,0 +1,32 @@
+<section class="project-members">
+  @if (!visiblePeople.length) {
+  <p class="empty">Nobody is on this project yet.</p>
+  } @else {
+  <ul>
+    @for (person of visiblePeople; track person.profileId) {
+    <li class="person">
+      <lib-profile-photo
+        [name]="person.name || person.profileId"
+        [size]="28"
+      ></lib-profile-photo>
+      <span class="name">{{ displayName(person) }}</span>
+      @if (person.isOwner) {
+      <span class="owner-tag">Owner</span>
+      } @else if (viewerIsOwner) {
+      <button
+        type="button"
+        class="remove"
+        (click)="removed.emit(person.profileId)"
+      >
+        Remove
+      </button>
+      }
+    </li>
+    }
+  </ul>
+  } @if (canLeave) {
+  <button type="button" class="leave" (click)="left.emit()">
+    Leave this project
+  </button>
+  }
+</section>

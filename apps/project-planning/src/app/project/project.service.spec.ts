@@ -132,7 +132,9 @@ describe('ProjectService', () => {
       const project = { id: 'p1', owner: OWNER, members: [] };
       repo.findOne.mockResolvedValue(project);
 
-      await expect(service.findOne('p1', OWNER)).resolves.toBe(project);
+      // A copy, not the loaded entity: deleted children are stripped from the
+      // result rather than removed from what TypeORM handed back.
+      await expect(service.findOne('p1', OWNER)).resolves.toEqual(project);
       expect(repo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ id: 'p1', deletedAt: IsNull() }),
@@ -144,7 +146,7 @@ describe('ProjectService', () => {
       const project = { id: 'p1', owner: OWNER, members: [MEMBER] };
       repo.findOne.mockResolvedValue(project);
 
-      await expect(service.findOne('p1', MEMBER)).resolves.toBe(project);
+      await expect(service.findOne('p1', MEMBER)).resolves.toEqual(project);
     });
 
     it('denies a non-owner / non-member', async () => {
@@ -314,5 +316,55 @@ describe('ProjectService', () => {
         expect.objectContaining({ deletedAt: expect.any(Date) })
       );
     });
+  });
+});
+
+/**
+ * A project and its task list used to disagree about what existed.
+ *
+ * deletedAt is a plain column, so TypeORM does not filter it and a relation
+ * load returned deleted rows. A deleted task vanished from the task table and
+ * stayed on the board, which meant the counts, the summary figures and the
+ * project handed to the model all described work nobody could see.
+ */
+describe('ProjectService findOne and deleted children', () => {
+  function serviceWith(project: unknown) {
+    const repo = { findOne: jest.fn().mockResolvedValue(project) };
+    const { ProjectService } = jest.requireActual('./project.service');
+    return new ProjectService(repo as never);
+  }
+
+  const withDeleted = {
+    id: 'p1',
+    owner: 'owner-profile-id',
+    members: [],
+    tasks: [
+      { id: 't1', title: 'alive' },
+      { id: 't2', title: 'gone', deletedAt: new Date() },
+    ],
+    risks: [{ id: 'r1', deletedAt: new Date() }],
+    changes: [{ id: 'c1' }],
+    journalEntries: [{ id: 'j1', deletedAt: new Date() }],
+  };
+
+  it('leaves deleted rows out of every list it returns', async () => {
+    const found = await serviceWith(withDeleted).findOne('p1');
+
+    expect(found.tasks.map((t: { id: string }) => t.id)).toEqual(['t1']);
+    expect(found.risks).toEqual([]);
+    expect(found.journalEntries).toEqual([]);
+    expect(found.changes.map((c: { id: string }) => c.id)).toEqual(['c1']);
+  });
+
+  it('still returns a project whose work has all been deleted', async () => {
+    // Filtering in the query would have joined these away and taken the
+    // project with them, turning an empty board into a missing project.
+    const found = await serviceWith({
+      ...withDeleted,
+      tasks: [{ id: 't2', deletedAt: new Date() }],
+    }).findOne('p1');
+
+    expect(found).toBeTruthy();
+    expect(found.tasks).toEqual([]);
   });
 });

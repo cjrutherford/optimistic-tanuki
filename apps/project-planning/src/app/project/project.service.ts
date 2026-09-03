@@ -8,6 +8,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Project } from '../entities/project.entity';
+import { withoutDeletedChildren } from '../common/without-deleted-children.util';
 import {
   ArrayContains,
   Between,
@@ -31,6 +32,8 @@ export class ProjectService {
   async create(createProjectDto: CreateProjectDto) {
     const project = this.projectRepository.create({
       ...createProjectDto,
+      isPublic: createProjectDto.isPublic ?? false,
+      requireHumanApproval: createProjectDto.requireHumanApproval ?? true,
       updatedBy: createProjectDto.owner,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -100,7 +103,7 @@ export class ProjectService {
       assertProjectAccess(project, requestingUserId);
     }
 
-    return project;
+    return project ? withoutDeletedChildren(project) : project;
   }
 
   async update(

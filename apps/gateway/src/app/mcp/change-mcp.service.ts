@@ -3,16 +3,40 @@ import { Tool as McpTool } from '@rekog/mcp-nest';
 import { ClientProxy } from '@nestjs/microservices';
 import { ChangeCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
-  CreateChangeDto,
-  Changetype,
   ChangeStatus,
+  Changetype,
+  CreateChangeDto,
+  ENTITY_VIEWS,
+  EntityView,
+  applyView,
+  pageOf,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
 
 // Define Zod schemas outside the class
 export const listChangesSchema = z.object({
   projectId: z.string().describe('The ID of the project whose changes to list'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
 
 export const createChangeSchema = z.object({
@@ -110,7 +134,60 @@ const queryChangesSchema = z.object({
     .enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
     .optional()
     .describe('Filter changes by priority'),
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
 });
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewChange(
+  rows: Record<string, unknown>[],
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  changes: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'change', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    changes: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
+}
 
 @Injectable()
 export class ChangeMcpService {
@@ -118,7 +195,8 @@ export class ChangeMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -142,7 +220,17 @@ export class ChangeMcpService {
     parameters: listChangesSchema,
   })
   async listChanges(
-    { projectId }: { projectId: string },
+    {
+      projectId,
+      view = 'brief',
+      limit,
+      offset,
+    }: {
+      projectId: string;
+      view?: EntityView;
+      limit?: number;
+      offset?: number;
+    },
     _context: unknown,
     request: any
   ) {
@@ -157,8 +245,11 @@ export class ChangeMcpService {
       );
       return {
         success: true,
-        changes,
-        count: changes.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewChange(changes, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing changes:', error);
@@ -191,6 +282,16 @@ export class ChangeMcpService {
         approver: requestingUserId,
         requestingUserId,
       };
+
+      const proposed = await this.gate.proposeIfGated(
+        params.projectId,
+        'change.create',
+        changeData,
+        requestingUserId,
+        `Change "${params.changeName}"`
+      );
+      if (proposed) return proposed;
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.CREATE },
@@ -221,15 +322,32 @@ export class ChangeMcpService {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Updating change ${params.changeId}`);
       const { changeId, ...rest } = params;
+      const updates = {
+        id: changeId,
+        ...rest,
+        updatedBy: requestingUserId,
+        requestingUserId,
+      };
+
+      const owningProjectId = await this.gate.projectOfChange(
+        changeId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const proposed = await this.gate.proposeIfGated(
+          owningProjectId,
+          'change.update',
+          updates,
+          requestingUserId,
+          'The change to this change record'
+        );
+        if (proposed) return proposed;
+      }
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.UPDATE },
-          {
-            id: changeId,
-            ...rest,
-            updatedBy: requestingUserId,
-            requestingUserId,
-          }
+          updates
         )
       );
       return {
@@ -255,6 +373,20 @@ export class ChangeMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting change ${changeId}`);
+
+      const owningProjectId = await this.gate.projectOfChange(
+        changeId,
+        requestingUserId
+      );
+      if (owningProjectId) {
+        const refused = await this.gate.refuseIfGated(
+          owningProjectId,
+          requestingUserId,
+          'deleting a change record'
+        );
+        if (refused) return refused;
+      }
+
       const result = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.REMOVE },
@@ -277,7 +409,12 @@ export class ChangeMcpService {
     parameters: queryChangesSchema,
   })
   async queryChanges(
-    query: z.infer<typeof queryChangesSchema>,
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: z.infer<typeof queryChangesSchema>,
     _context: unknown,
     request: any
   ) {
@@ -294,8 +431,11 @@ export class ChangeMcpService {
       );
       return {
         success: true,
-        changes,
-        count: changes.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewChange(changes, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying changes:', error);

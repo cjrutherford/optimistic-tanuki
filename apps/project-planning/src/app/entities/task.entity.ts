@@ -14,7 +14,6 @@ import { Project } from './project.entity';
 import { TaskNote } from './task-note.entity';
 import { TaskTag } from './task-tag.entity';
 import { TaskTimeEntry } from './task-time-entry.entity';
-import { Timer } from './timer.entity'; // Assuming Timer is another entity in your project
 
 @Entity()
 export class Task {
@@ -33,6 +32,12 @@ export class Task {
   @Column({ type: 'enum', enum: TaskPriority, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
 
+  @Column({ nullable: true })
+  assignee?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  dueDate?: Date;
+
   @Column({ type: 'varchar', default: 'project-planning' })
   appScope: string;
 
@@ -41,9 +46,6 @@ export class Task {
 
   @Column()
   createdAt: Date;
-
-  @OneToOne(() => Timer, (timer) => timer.task)
-  timer: Timer;
 
   @ManyToOne(() => Project, (project) => project.tasks)
   project: Project; // manual reference to the Project Entity from the [Project Planning Service]

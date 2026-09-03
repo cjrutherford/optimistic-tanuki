@@ -19,6 +19,8 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
+import { AiAssistantBubbleComponent } from '@optimistic-tanuki/project-ui';
+import { AssistantService } from './assistant/assistant.service';
 import { ChatComponent } from './chat.component';
 import { ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
@@ -29,7 +31,6 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { filter } from 'rxjs';
-import { AiAssistantBubbleComponent } from './ai-assistant-bubble/ai-assistant-bubble.component';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
@@ -71,8 +72,8 @@ const FORGE_AUTH_NAV_LINKS = [
     AppBarComponent,
     NavSidebarComponent,
     ChatComponent,
-    MessageComponent,
     AiAssistantBubbleComponent,
+    MessageComponent,
     DevInfoComponent,
     HaiAboutTagComponent,
     PulseRingsComponent,
@@ -126,6 +127,8 @@ export class AppComponent implements OnInit {
         'Pick a project, review its current load, then choose the work mode that matches the next decision or action.',
     };
   });
+
+  readonly assistant = inject(AssistantService);
 
   @ViewChild(ChatComponent) chatComponent?: ChatComponent;
 

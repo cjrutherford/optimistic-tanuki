@@ -47,7 +47,27 @@
       }
       <router-outlet></router-outlet>
       @if (isAuthenticated() && selectedProfile()) {
-      <app-ai-assistant-bubble></app-ai-assistant-bubble>
+      <!--
+        One assistant, reachable from every page. It picks up whichever
+        project the page is on, and without one it starts by finding out what
+        projects there are.
+      -->
+      <lib-ai-assistant-bubble
+        [turns]="assistant.turns()"
+        [working]="assistant.working()"
+        [doing]="assistant.doing()"
+        [partial]="assistant.partial()"
+        [thinking]="assistant.thinking()"
+        [projectName]="assistant.projectName()"
+        [personaName]="assistant.persona()?.name ?? null"
+        [personaId]="assistant.persona()?.id ?? null"
+        (asked)="assistant.ask($event)"
+        (cleared)="assistant.clear()"
+        (personaChosen)="
+          assistant.speakTo({ id: $event.id, name: $event.name })
+        "
+        (decided)="assistant.decide($event.id, $event.approved)"
+      ></lib-ai-assistant-bubble>
       }
     </main>
 

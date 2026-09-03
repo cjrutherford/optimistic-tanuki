@@ -13,3 +13,17 @@ export const WellnessAiCommands = {
   ANALYZE_GRATITUDE: 'wellness-ai:analyze-gratitude',
   REFLECT_JUDGMENT: 'wellness-ai:reflect-judgment',
 };
+
+/**
+ * Reading a project and saying something about it.
+ *
+ * Separate from the project-planning service's own commands because this runs
+ * a model and that one owns data. The summary is derived, never stored, so a
+ * stale one is impossible by construction.
+ */
+export const ProjectAiCommands = {
+  SUMMARISE: 'project-ai:summarise',
+  PROPOSE: 'project-ai:propose',
+  ACT: 'project-ai:act',
+  ACT_STREAM: 'project-ai:act-stream',
+};

@@ -39,12 +39,15 @@ describe('ChangeService', () => {
         changeType: 'ADDITION',
         changeStatus: 'PENDING',
         changeDescription: 'Test',
-        requestor: 'User',
-        resolution: 'PENDING',
       };
+      // Who asked and how it resolved are the server's to decide: requestor
+      // comes from the session and resolution is not a field this endpoint
+      // takes, which is why sending them had the whole request refused.
       const expectedResponse: Change = {
         id: '1',
         ...mockChange,
+        requestor: 'User',
+        resolution: 'PENDING',
         updatedAt: new Date(),
       };
 

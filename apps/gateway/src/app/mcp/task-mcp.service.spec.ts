@@ -1,6 +1,7 @@
 import { of } from 'rxjs';
-import { TaskCommands } from '@optimistic-tanuki/constants';
+import { ProjectCommands, TaskCommands } from '@optimistic-tanuki/constants';
 import { TaskPriority, TaskStatus } from '@optimistic-tanuki/models';
+import { ApprovalGate } from './approval-gate.service';
 import { TaskMcpService } from './task-mcp.service';
 
 describe('TaskMcpService', () => {
@@ -15,7 +16,7 @@ describe('TaskMcpService', () => {
     clientProxy = {
       send: jest.fn().mockReturnValue(of([])),
     };
-    service = new TaskMcpService(clientProxy);
+    service = new TaskMcpService(clientProxy, new ApprovalGate(clientProxy));
   });
 
   describe('list_tasks', () => {
@@ -185,6 +186,200 @@ describe('TaskMcpService', () => {
         )
       ).rejects.toThrow(/Failed to query tasks/);
       expect(clientProxy.send).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * The gate that makes requireHumanApproval mean something.
+   *
+   * The flag was written when a project was created and read by nothing. This
+   * is the path an agent uses to create work, so enforcing it anywhere else
+   * would leave the agent free to act directly, which is what it did.
+   */
+  describe('create_task when the project requires approval', () => {
+    function respondPerCommand(project: Record<string, unknown>) {
+      clientProxy.send.mockImplementation((pattern: { cmd: string }) => {
+        if (pattern.cmd === ProjectCommands.FIND_ONE) return of(project);
+        if (pattern.cmd === ProjectCommands.CREATE_AI_CHANGE)
+          return of({ id: 'proposal-1', status: 'PENDING' });
+        return of({ id: 'new-task' });
+      });
+    }
+
+    const args = {
+      title: 'Do the thing',
+      description: 'details',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM,
+      projectId: 'proj-1',
+    };
+
+    it('proposes instead of creating', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.objectContaining({
+          projectId: 'proj-1',
+          operation: 'task.create',
+          proposedBy: profileId,
+        })
+      );
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.CREATE },
+        expect.anything()
+      );
+      expect(result.awaitingApproval).toBe(true);
+    });
+
+    it('says the task was not created, in words an agent will repeat', async () => {
+      // An agent told "created successfully" tells the person the same, and
+      // nothing was created.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.message).toMatch(/waiting for approval/i);
+      expect(result.message).toMatch(/not happened yet/i);
+    });
+
+    it('creates directly when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.createTask(
+        args,
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.CREATE },
+        expect.objectContaining({ projectId: 'proj-1' })
+      );
+      expect(result.awaitingApproval).toBe(false);
+    });
+  });
+
+  /**
+   * The same gate on the other two ways an agent can change a board.
+   *
+   * Gating only creation would leave an agent able to rewrite or delete
+   * whatever it liked on a project whose whole point is that a person decides.
+   */
+  describe('update_task and delete_task when the project requires approval', () => {
+    function respondPerCommand(
+      project: Record<string, unknown>,
+      task: Record<string, unknown> = { id: 'task-1', projectId: 'proj-1' }
+    ) {
+      clientProxy.send.mockImplementation((pattern: { cmd: string }) => {
+        if (pattern.cmd === ProjectCommands.FIND_ONE) return of(project);
+        if (pattern.cmd === TaskCommands.FIND_ONE) return of(task);
+        if (pattern.cmd === ProjectCommands.CREATE_AI_CHANGE)
+          return of({ id: 'proposal-1', status: 'PENDING' });
+        return of({ id: 'task-1' });
+      });
+    }
+
+    it('proposes an update instead of making it', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.updateTask(
+        { id: 'task-1', title: 'Renamed' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.objectContaining({ operation: 'task.update' })
+      );
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.UPDATE },
+        expect.anything()
+      );
+      expect(result.awaitingApproval).toBe(true);
+      expect(result.message).toMatch(/not happened yet/i);
+    });
+
+    it('finds the project from the task when the caller did not name one', async () => {
+      // projectId is optional on this tool. An update to a gated project must
+      // not slip through because the argument was left out.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      await service.updateTask(
+        { id: 'task-1', status: TaskStatus.DONE },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.FIND_ONE },
+        expect.objectContaining({ id: 'proj-1' })
+      );
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        expect.anything()
+      );
+    });
+
+    it('updates directly when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.updateTask(
+        { id: 'task-1', title: 'Renamed' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.UPDATE },
+        expect.objectContaining({ title: 'Renamed' })
+      );
+      expect(result.awaitingApproval).toBeFalsy();
+    });
+
+    it('refuses to delete rather than deleting unreviewed', async () => {
+      // Deletion cannot be proposed, so leaving it open would make the one
+      // operation nobody can review also the only irreversible one.
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: true });
+
+      const result = await service.deleteTask(
+        { taskId: 'task-1' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.success).toBe(false);
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: TaskCommands.DELETE },
+        expect.anything()
+      );
+    });
+
+    it('deletes when the project does not require approval', async () => {
+      respondPerCommand({ id: 'proj-1', requireHumanApproval: false });
+
+      const result = await service.deleteTask(
+        { taskId: 'task-1' },
+        undefined,
+        authenticatedRequest
+      );
+
+      expect(result.success).toBe(true);
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: TaskCommands.DELETE },
+        { id: 'task-1', requestingUserId: profileId }
+      );
     });
   });
 });

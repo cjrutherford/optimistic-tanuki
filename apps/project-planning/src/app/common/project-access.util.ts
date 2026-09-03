@@ -41,6 +41,31 @@ export function assertProjectAccess(
   }
 }
 
+/**
+ * Throws when the profile does not own the project.
+ *
+ * Deciding who is in a project is the owner's alone, so this is stricter than
+ * assertProjectAccess and deliberately not the same function with a flag. A
+ * member reading a project and a member changing who else can read it are
+ * different questions, and a boolean argument is how they end up being asked
+ * with the wrong value.
+ *
+ * The refusal says the same thing as being unable to reach the project at all,
+ * so a member cannot learn from the wording whether a project exists that they
+ * merely do not own.
+ */
+export function assertProjectOwner(
+  project: ProjectOwnership | null | undefined,
+  profileId: string
+): void {
+  if (!project || project.owner !== profileId) {
+    throw new RpcException({
+      statusCode: 403,
+      message: 'Forbidden: you do not have access to this project',
+    });
+  }
+}
+
 /** Throws a 404 RpcException when the resource could not be found. */
 export function assertFound<T>(
   resource: T | null | undefined,

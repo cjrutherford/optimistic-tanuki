@@ -28,7 +28,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && pnpm run db:setup"
+    # corepack enable, because node:24-alpine ships corepack without pnpm
+    # activated, so this step failed with "pnpm: not found" and took the
+    # whole stack with it. video-client is the only compose file here that
+    # had this right; nineteen others still do not.
+    # verify-deps-before-run off, because this container mounts the host
+    # workspace. pnpm checks dependencies before running a script, decides
+    # the host node_modules does not match, and tries to purge it. That is
+    # the developer's node_modules on the other side of the mount. It also
+    # cannot prompt without a TTY, so it aborted and took the stack with it.
+    # The setup script installs for itself if node_modules is genuinely absent.
+    command: /bin/sh -c "apk add --no-cache postgresql-client && corepack enable && pnpm --config.verify-deps-before-run=false run db:setup"
     restart: 'no'
 
   authentication:
@@ -43,8 +53,13 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_authentication
       JWT_SECRET: e2e-test-jwt-secret
+      # Without this no account in this stack can ever sign in. Registration
+      # succeeds, login refuses an unverified address, and there is no mail
+      # service here to verify one. docker-compose.e2e-stack.yaml already sets
+      # it for the same reason.
+      AUTH_AUTO_VERIFY_EMAILS: 'true'
     healthcheck:
       test:
         [
@@ -72,7 +87,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_profile
     healthcheck:
       test:
         [
@@ -101,7 +116,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_permissions
     healthcheck:
       test:
         [
@@ -126,7 +141,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_permissions
     depends_on:
       permissions:
         condition: service_healthy
@@ -144,7 +159,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_social
     depends_on:
       db:
         condition: service_healthy
@@ -163,7 +178,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_project_planning
     healthcheck:
       test:
         [
@@ -191,7 +206,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_chat_collector
     depends_on:
       db:
         condition: service_healthy
@@ -219,6 +234,100 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  # The orchestrator keeps conversation state in redis. This stack had none,
+  # because nothing in it used a model before now.
+  redis:
+    image: redis:7-alpine
+    container_name: e2e_redis_fow
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Where the personas live. Without it the assistant answers as nobody, which
+  # is a working state and not the one worth testing: the whole point of a
+  # persona is that a reader can tell who they are talking to. The hostname is
+  # fixed rather than configurable because the orchestrator's config names it.
+  telos-docs-service:
+    container_name: e2e_telos_docs_fow
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    ports:
+      - '3008:3008'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_telos_docs_service
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3008, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  # The personas themselves. Upserted by name, so running it again is safe and
+  # picks up an edit to the seeded records.
+  telos-persona-seed:
+    container_name: e2e_telos_persona_seed_fow
+    build:
+      context: ..
+      dockerfile: ./apps/telos-docs-service/Dockerfile
+    command: ['node', './seed-persona.js']
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_telos_docs_service
+    depends_on:
+      telos-docs-service:
+        condition: service_healthy
+    restart: 'no'
+
+  # The AI orchestrator, so the project summary has something to talk to. The
+  # stack ran without it, which is why nothing in this app could reach a model.
+  # OLLAMA_HOST is the tailnet address rather than the MagicDNS name because
+  # containers here do not resolve tailscale names.
+  ai-orchestration:
+    container_name: e2e_ai_orchestration_fow
+    build:
+      context: ..
+      dockerfile: ./apps/ai-orchestrator/Dockerfile
+    ports:
+      - '3010:3010'
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3010, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      redis:
+        condition: service_healthy
+      # The personas have to exist before the assistant asks who it is.
+      telos-persona-seed:
+        condition: service_completed_successfully
+
   gateway:
     container_name: e2e_gateway_fow
     build:
@@ -226,11 +335,16 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     ports:
       - '3000:3000'
+    # Probes a route that exists, is unauthenticated, and needs no downstream
+    # service, so a pass means Nest booted and is routing. This used to probe
+    # /api/mcp/sse: the MCP transport is mapped at /api/sse, that path has never
+    # existed, and the real one answers 401 anyway. The gateway could therefore
+    # never become healthy, and anything waiting on it never started.
     healthcheck:
       test:
         [
           'CMD-SHELL',
-          'node -e "require(''http'').get(''http://127.0.0.1:3000/api/mcp/sse'', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1));"',
+          'node -e "require(''http'').get(''http://127.0.0.1:3000/api/personalities'', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1));"',
         ]
       interval: 5s
       timeout: 5s
@@ -268,6 +382,8 @@ services:
       FORUM_PORT: 3015
       PERMISSIONS_HOST: permissions
       PERMISSIONS_PORT: 3012
+      AI_ORCHESTRATION_HOST: ai-orchestration
+      AI_ORCHESTRATION_PORT: 3010
     depends_on:
       db:
         condition: service_healthy
@@ -287,6 +403,8 @@ services:
         condition: service_healthy
       permissions-seed:
         condition: service_completed_successfully
+      ai-orchestration:
+        condition: service_healthy
 
   oauth-provider:
     image: cjrutherford/optimistic_tanuki_oauth-provider:${E2E_IMAGE_TAG:-latest}

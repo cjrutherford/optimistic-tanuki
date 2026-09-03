@@ -8,6 +8,36 @@ export interface MessageReaction {
 }
 
 /**
+ * What an assistant did while producing a message, alongside what it said.
+ *
+ * A person-to-person message is only its text. A message from an assistant has
+ * a second half: the tools it called, and whether anything it did is still
+ * waiting on somebody. Its own words are the one source that cannot be trusted
+ * to reveal that nothing actually happened, so this is carried separately
+ * rather than folded into the text.
+ *
+ * Presentation-ready on purpose. Whoever builds these knows what a tool name
+ * means and what counts as a caution; this library only renders what it is
+ * given, and gains no opinion about projects or approvals.
+ */
+export interface AssistantNote {
+  /** What it did, in words a reader recognises. */
+  did?: { what: string; pending?: boolean }[];
+  /** Set when something it did is waiting on a person, with what to say. */
+  awaiting?: string;
+  /** A caveat about the answer itself, such as having seen part of a list. */
+  caution?: string;
+  /**
+   * Things this message is waiting on a yes or no for.
+   *
+   * Deliberately not "changes" or "proposals": this library does not know what
+   * is being decided, only that a message can carry decisions and that the
+   * reader can make them here rather than somewhere else.
+   */
+  decisions?: { id: string; what: string }[];
+}
+
+/**
  * Represents a single chat message.
  */
 export interface ChatMessage {
@@ -55,6 +85,11 @@ export interface ChatMessage {
    * Array of user IDs who have read the message.
    */
   readBy?: string[];
+  /**
+   * Present on messages an assistant produced. Additive: every existing
+   * message is unaffected and every existing caller keeps compiling.
+   */
+  assistant?: AssistantNote;
 }
 
 /**

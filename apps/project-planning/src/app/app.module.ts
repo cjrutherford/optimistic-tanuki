@@ -18,9 +18,6 @@ import { RiskService } from './risk/risk.service';
 import { Task } from './entities/task.entity';
 import { TaskController } from './task/task.controller';
 import { TaskService } from './task/task.service';
-import { Timer } from './entities/timer.entity';
-import { TimerController } from './timer/timer.controller';
-import { TimerService } from './timer/timer.service';
 import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskTimeEntryController } from './task-time-entry/task-time-entry.controller';
 import { TaskTimeEntryService } from './task-time-entry/task-time-entry.service';
@@ -35,6 +32,12 @@ import { AnalyticsService } from './analytics/analytics.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { loadConfig } from './config';
 import loadDatabase from './loadDatabase';
+import { AiChange } from './entities/ai-change.entity';
+import { AiChangeService } from './ai-change/ai-change.service';
+import { ProjectInvite } from './entities/project-invite.entity';
+import { ProjectInviteController } from './project-invite/project-invite.controller';
+import { ProjectInviteService } from './project-invite/project-invite.service';
+import { AiChangeExecutor } from './ai-change/ai-change.executor';
 
 @Module({
   imports: [
@@ -54,11 +57,11 @@ import loadDatabase from './loadDatabase';
     ProjectJournalController,
     RiskController,
     TaskController,
-    TimerController,
     TaskTimeEntryController,
     TaskTagController,
     TaskNoteController,
     AnalyticsController,
+    ProjectInviteController,
   ],
   providers: [
     ChangeService,
@@ -66,11 +69,13 @@ import loadDatabase from './loadDatabase';
     ProjectJournalService,
     RiskService,
     TaskService,
-    TimerService,
     TaskTimeEntryService,
     TaskTagService,
     TaskNoteService,
     AnalyticsService,
+    AiChangeService,
+    AiChangeExecutor,
+    ProjectInviteService,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),
@@ -98,11 +103,6 @@ import loadDatabase from './loadDatabase';
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
     {
-      provide: getRepositoryToken(Timer),
-      useFactory: (connection: DataSource) => connection.getRepository(Timer),
-      inject: ['PROJECT_PLANNING_CONNECTION'],
-    },
-    {
       provide: getRepositoryToken(TaskTimeEntry),
       useFactory: (connection: DataSource) =>
         connection.getRepository(TaskTimeEntry),
@@ -117,6 +117,18 @@ import loadDatabase from './loadDatabase';
       provide: getRepositoryToken(TaskNote),
       useFactory: (connection: DataSource) =>
         connection.getRepository(TaskNote),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AiChange),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(AiChange),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ProjectInvite),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(ProjectInvite),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
   ],

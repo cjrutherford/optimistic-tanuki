@@ -117,7 +117,17 @@ jest.mock('@langchain/core/messages', () => {
       super(content, 'assistant');
     }
   }
-  return { BaseMessage, HumanMessage, AIMessage };
+  // SystemMessage was missing here while ten files in this app construct one.
+  // Anything under test that built one got "SystemMessage is not a
+  // constructor", which surfaces as the caller's own error handling firing
+  // rather than as a missing mock, so it reads like the code under test
+  // failing.
+  class SystemMessage extends BaseMessage {
+    constructor(content: any) {
+      super(content, 'system');
+    }
+  }
+  return { BaseMessage, HumanMessage, AIMessage, SystemMessage };
 });
 
 // Mock Redis to prevent connection attempts and reduce memory

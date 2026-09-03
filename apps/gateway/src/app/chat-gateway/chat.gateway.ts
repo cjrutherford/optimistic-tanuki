@@ -417,12 +417,17 @@ export class ChatGateway {
     @MessageBody() payload: { conversationId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.socketSessionAuth.getUser(client);
+    // The result was resolved and thrown away, so the socket path read any
+    // conversation regardless of who was asking.
+    const user = this.socketSessionAuth.getUser(client);
     this.l.log(`get_messages for conversation: ${payload.conversationId}`);
     const messages = await firstValueFrom(
       this.chatCollectorClient.send(
         { cmd: ChatCommands.GET_MESSAGES },
-        { conversationId: payload.conversationId }
+        {
+          conversationId: payload.conversationId,
+          requestingProfileId: user?.profileId,
+        }
       )
     );
     client.emit('messages', messages || []);

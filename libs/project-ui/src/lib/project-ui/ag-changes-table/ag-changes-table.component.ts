@@ -215,14 +215,15 @@ export class AgChangesTableComponent implements OnInit, OnChanges {
       resolution = 'PENDING',
       projectId = '',
     } = change;
+    // resolution is not a field this endpoint accepts, and requestor and
+    // approver went out as empty strings. Between them the request was always
+    // refused, so no change could be recorded from here. Who asked and who
+    // approved come from the session.
     const newChange: CreateChange = {
       changeType,
       changeDescription,
       changeStatus,
       changeDate,
-      requestor,
-      approver,
-      resolution,
       projectId,
     };
     this.createChange.emit(newChange);

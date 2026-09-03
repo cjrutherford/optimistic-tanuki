@@ -5,12 +5,13 @@ import * as yaml from 'js-yaml';
 import { Project } from './entities/project.entity';
 import { Task } from './entities/task.entity';
 import { Risk } from './entities/risk.entity';
-import { Timer } from './entities/timer.entity';
 import { ProjectJournal } from './entities/project-journal.entity';
 import { Change } from './entities/change.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskNote } from './entities/task-note.entity';
+import { AiChange } from './entities/ai-change.entity';
+import { ProjectInvite } from './entities/project-invite.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -36,11 +37,12 @@ const entities = [
   Task,
   Risk,
   Change,
-  Timer,
   ProjectJournal,
   TaskTag,
   TaskTimeEntry,
   TaskNote,
+  AiChange,
+  ProjectInvite,
 ];
 
 console.log(

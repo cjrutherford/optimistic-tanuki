@@ -127,6 +127,13 @@ export class AuthGuard implements CanActivate {
           roles: [],
         };
         request.user = userContext;
+        // The credential itself, whichever way it arrived.
+        //
+        // The browser signs in with a cookie rather than a bearer header, so a
+        // route needing to act as the caller downstream, against the MCP
+        // server for instance, cannot read one off the headers. Anything
+        // taking a token from the request has to take it from here.
+        request.credential = credential;
       } catch (e) {
         // If public, ignore auth errors. If private, the check below will fail.
         if (!isPublic) {

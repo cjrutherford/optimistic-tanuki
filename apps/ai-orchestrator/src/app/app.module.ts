@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { WellnessController } from './wellness.controller';
+import { ProjectAiController } from './project-ai.controller';
+import { ProjectAiService } from './project-ai.service';
+import { ProjectAgentService } from './project-agent.service';
+import { PersonaVoiceService } from './persona-voice.service';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
@@ -42,7 +46,7 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     }),
     HttpModule,
   ],
-  controllers: [AppController, WellnessController],
+  controllers: [AppController, WellnessController, ProjectAiController],
   providers: [
     AppService,
     ToolsService,
@@ -55,6 +59,9 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     ToolValidationService,
     ToolFactory,
     WellnessPromptService,
+    ProjectAiService,
+    ProjectAgentService,
+    PersonaVoiceService,
     LangChainService,
     ContextStorageService,
     LangGraphService,

@@ -15,7 +15,11 @@ import {
   Project,
   ProjectJournal,
   Risk,
+  ProjectAnalytics,
+  TagAnalytics,
   Task,
+  TaskNote,
+  TaskTimeEntry,
   UpdateTask,
 } from '@optimistic-tanuki/ui-models';
 import {
@@ -29,18 +33,38 @@ import {
   TaskCalendarComponent,
   TaskKanbanComponent,
   MindMapComponent,
+  ProjectSummaryComponent,
+  ProjectNarrative,
+  AiChangeReviewComponent,
+  AiChange,
+  AiChangeDecision,
+  TaskTimePanelComponent,
+  TaskNotesPanelComponent,
+  AnalyticsDashboardComponent,
+  AssistantContextService,
+  ProjectInviteFormComponent,
+  ProjectInviteListComponent,
+  ProjectMembersComponent,
+  ProjectConversationComponent,
 } from '@optimistic-tanuki/project-ui';
-import { Component, computed, signal, OnInit } from '@angular/core';
+import { Component, computed, effect, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { ChangeService } from '../../change/change.service';
 
 import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { ProjectService } from '../../project/project.service';
+import {
+  ProjectInvite,
+  ProjectMessage,
+  ProjectPerson,
+  ProjectService,
+} from '../../project/project.service';
 import { RiskService } from '../../risk/risk.service';
 import { TaskService } from '../../task/task.service';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
+import { TaskNoteService } from '../../task-note/task-note.service';
+import { AssistantService } from '../../assistant/assistant.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
@@ -60,8 +84,17 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ButtonComponent,
     TileComponent,
     ProjectSelectorComponent,
+    ProjectInviteFormComponent,
+    ProjectInviteListComponent,
+    ProjectMembersComponent,
+    ProjectConversationComponent,
     ProjectFormComponent,
     GlassContainerComponent,
+    ProjectSummaryComponent,
+    AiChangeReviewComponent,
+    TaskTimePanelComponent,
+    TaskNotesPanelComponent,
+    AnalyticsDashboardComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -77,6 +110,9 @@ export class ProjectsComponent implements OnInit {
     private readonly changeService: ChangeService,
     private readonly journalService: JournalService,
     private readonly taskTimeEntryService: TaskTimeEntryService,
+    private readonly taskNoteService: TaskNoteService,
+    private readonly assistantContext: AssistantContextService,
+    private readonly assistant: AssistantService,
     private readonly messageService: MessageService,
     private readonly themeService: ThemeService
   ) {}
@@ -85,11 +121,55 @@ export class ProjectsComponent implements OnInit {
 
   projects = signal<Project[]>([]);
 
+  /**
+   * The model's read of the selected project.
+   *
+   * Null until the reader asks. It takes roughly 25 seconds and occupies a
+   * model, so running it on every project selection would spend that on
+   * people who never looked at the panel.
+   */
+  projectAnalytics = signal<ProjectAnalytics | null>(null);
+  tagAnalytics = signal<TagAnalytics[]>([]);
+  taskNotes = signal<TaskNote[]>([]);
+  noteSavingTaskId = signal<string | null>(null);
+  timeEntries = signal<TaskTimeEntry[]>([]);
+  timerBusyTaskId = signal<string | null>(null);
+  aiChanges = signal<AiChange[]>([]);
+  aiChangeBusyId = signal<string | null>(null);
+  askingForSuggestions = signal<boolean>(false);
+  narrative = signal<ProjectNarrative | null>(null);
+  narrativeLoading = signal<boolean>(false);
+
   showCreateModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);
   showDeleteModal = signal<boolean>(false);
   selectedProjectIndex = signal<number | null>(null);
   selectedProject = signal<Project | null>(null);
+
+  /**
+   * Who is on the project, and what invitations are outstanding.
+   *
+   * Loaded together whenever the project changes. Invitations are the owner's
+   * to see and the request is refused for anybody else, so a member simply
+   * ends up with an empty list rather than an error worth showing.
+   */
+  conversationId = signal<string | null>(null);
+  conversationMessages = signal<ProjectMessage[]>([]);
+  conversationUnavailable = signal<string | null>(null);
+  people = signal<ProjectPerson[]>([]);
+  invites = signal<ProjectInvite[]>([]);
+  inviting = signal(false);
+  inviteError = signal<string | null>(null);
+
+  /** Whether the reader owns the project they are looking at. */
+  viewerIsOwner = computed(
+    () =>
+      !!this.people().find(
+        (p) => p.isOwner && p.profileId === this.viewerProfileId()
+      )
+  );
+
+  viewerProfileId = signal('');
   detailsShown = signal<boolean>(false); // Whether to show the details section
   shownDetails = signal<'tasks' | 'risks' | 'changes' | 'journal' | 'mindmap'>(
     'tasks'
@@ -116,6 +196,286 @@ export class ProjectsComponent implements OnInit {
   setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
     console.log('Setting task view mode:', mode);
     this.taskViewMode.set(mode);
+  }
+
+  /**
+   * Changing project clears any model read along with it.
+   *
+   * Both places that set the selection go through here. A narrative left in
+   * place would sit under a different project's name and read as though it
+   * were about that one, which is worse than showing nothing.
+   */
+  private chooseProject(project: Project | null): void {
+    const changed = this.selectedProject()?.id !== project?.id;
+    this.selectedProject.set(project);
+    // Choosing nothing is a real state here, and asking who is on no project
+    // would answer with somebody else's people.
+    if (project) {
+      this.loadCollaboration(project.id);
+    } else {
+      this.people.set([]);
+      this.invites.set([]);
+    }
+    if (changed) {
+      this.narrative.set(null);
+      this.narrativeLoading.set(false);
+      this.aiChanges.set([]);
+      this.aiChangeBusyId.set(null);
+      this.timeEntries.set([]);
+      this.timerBusyTaskId.set(null);
+      this.taskNotes.set([]);
+      this.noteSavingTaskId.set(null);
+      this.projectAnalytics.set(null);
+      this.tagAnalytics.set([]);
+    }
+    // The assistant follows whatever is selected, so it can act on this
+    // project without being told which one twice.
+    this.assistantContext.working(
+      project ? { id: project.id, name: project.name } : null
+    );
+
+    if (project) {
+      this.loadAiChanges(project.id);
+      this.loadTimeEntries(project.id);
+      this.loadTaskNotes(project.id);
+      this.loadAnalytics(project.id);
+    }
+  }
+
+  /**
+   * Everything recorded against this project, so the panel can show time per
+   * task and a total.
+   */
+  /** Every note on the project, so the panel can show them under their tasks. */
+  private loadTaskNotes(projectId: string): void {
+    this.taskNoteService.getTaskNotesForProject(projectId).subscribe({
+      next: (notes) => this.taskNotes.set(notes ?? []),
+      error: () => this.taskNotes.set([]),
+    });
+  }
+
+  /**
+   * Where the time went. Quiet on failure: a project with no analytics is a
+   * missing panel, not a reason to interrupt somebody working.
+   */
+  private loadAnalytics(projectId: string): void {
+    this.projectService.getProjectAnalytics(projectId).subscribe({
+      next: (result) => {
+        this.projectAnalytics.set(result?.project ?? null);
+        this.tagAnalytics.set(result?.tags ?? []);
+      },
+      error: () => {
+        this.projectAnalytics.set(null);
+        this.tagAnalytics.set([]);
+      },
+    });
+  }
+
+  onNoteAdded({ taskId, content }: { taskId: string; content: string }): void {
+    if (this.noteSavingTaskId()) return;
+    this.noteSavingTaskId.set(taskId);
+
+    this.taskNoteService.createTaskNote({ taskId, content }).subscribe({
+      next: () => {
+        this.noteSavingTaskId.set(null);
+        const project = this.selectedProject();
+        if (project) this.loadTaskNotes(project.id);
+      },
+      error: () => {
+        this.noteSavingTaskId.set(null);
+        this.messageService.addMessage({
+          content: 'That note could not be saved.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  private refreshTimeEntries(): void {
+    const project = this.selectedProject();
+    if (project) this.loadTimeEntries(project.id);
+  }
+
+  private loadTimeEntries(projectId: string): void {
+    this.taskTimeEntryService
+      .getTaskTimeEntriesForProject(projectId)
+      .subscribe({
+        next: (entries) => this.timeEntries.set(entries ?? []),
+        error: () => this.timeEntries.set([]),
+      });
+  }
+
+  private loadAiChanges(projectId: string): void {
+    this.projectService.getAiChanges(projectId).subscribe({
+      next: (changes) => this.aiChanges.set(changes ?? []),
+      // A project with nothing proposed and a project whose proposals could
+      // not be fetched look the same on screen, so say which happened.
+      error: () => {
+        this.aiChanges.set([]);
+        this.messageService.addMessage({
+          content: 'Proposed changes could not be loaded for this project.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Asks a model what the project is missing.
+   *
+   * Slow, roughly the same as a summary, because a model is reading the whole
+   * project. Nothing it says is applied: every suggestion lands in the list
+   * above waiting for a decision.
+   */
+  onSuggestionsRequested(): void {
+    const project = this.selectedProject();
+    if (!project || this.askingForSuggestions()) return;
+
+    this.askingForSuggestions.set(true);
+    this.projectService.requestAiProposals(project.id).subscribe({
+      next: (result) => {
+        this.askingForSuggestions.set(false);
+        if (result.changes?.length) {
+          this.aiChanges.update((changes) => [
+            ...(result.changes ?? []),
+            ...changes,
+          ]);
+          return;
+        }
+        this.messageService.addMessage({
+          content:
+            result.unavailable ??
+            'Nothing was suggested for this project just now.',
+          type: 'info',
+        });
+      },
+      error: () => {
+        this.askingForSuggestions.set(false);
+        this.messageService.addMessage({
+          content: 'Suggestions could not be fetched.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  /**
+   * Hands an instruction to the assistant.
+   *
+   * Whatever it does goes through the same tools and the same gate, so on a
+   * project that requires approval the result is a proposal in the list rather
+   * than a change on the board. The pending list is re-read either way,
+   * because that is where its work lands.
+   */
+  /**
+   * A turn of the conversation.
+   *
+   * The thread is held here and sent back with each question, so the assistant
+   * can follow "now assign it to me" instead of asking what "it" is. Whatever
+   * it does goes through the same tools and the same gate, so on a project
+   * that requires approval its work lands in the list below rather than on the
+   * board.
+   */
+  /**
+   * The human half of the approval gate.
+   *
+   * Approving does the work rather than only recording a decision, so the
+   * project has to be re-read afterwards: the board now has a row on it that
+   * the page has never seen.
+   */
+  onAiChangeDecided(decision: AiChangeDecision): void {
+    if (this.aiChangeBusyId()) return;
+    this.aiChangeBusyId.set(decision.id);
+
+    this.projectService.reviewAiChange(decision).subscribe({
+      next: (reviewed) => {
+        this.aiChanges.update((changes) =>
+          changes.map((change) =>
+            change.id === reviewed.id ? reviewed : change
+          )
+        );
+        this.aiChangeBusyId.set(null);
+
+        if (reviewed.status === 'REJECTED') {
+          this.messageService.addMessage({
+            content: 'Rejected. Nothing was changed.',
+            type: 'info',
+          });
+          return;
+        }
+
+        if (reviewed.applied) {
+          this.messageService.addMessage({
+            content: 'Approved and done.',
+            type: 'success',
+          });
+          this.refreshSelectedProject();
+        } else {
+          // Approved but not carried out. Saying "approved" here would tell
+          // the reviewer the board changed when it did not.
+          this.messageService.addMessage({
+            content: `Approved, but it did not go through: ${
+              reviewed.applyError ?? 'no reason was given'
+            }`,
+            type: 'error',
+          });
+        }
+      },
+      error: () => {
+        this.aiChangeBusyId.set(null);
+        this.messageService.addMessage({
+          content: 'That decision could not be recorded.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  private refreshSelectedProject(): void {
+    const current = this.selectedProject();
+    if (!current) return;
+    this.projectService.getProjectById(current.id).subscribe({
+      next: (project) => {
+        this.selectedProject.set(project);
+        this.loadCollaboration(project.id);
+      },
+    });
+  }
+
+  onNarrativeRequested(): void {
+    const project = this.selectedProject();
+    if (!project || this.narrativeLoading()) return;
+
+    this.narrativeLoading.set(true);
+    this.projectService.getProjectSummary(project.id).subscribe({
+      next: (narrative) => {
+        this.narrative.set(narrative);
+        this.narrativeLoading.set(false);
+      },
+      error: () => {
+        // The panel says so and the computed figures stay. A failed read is
+        // not a reason to take the rest of the page down with it.
+        this.narrative.set({
+          summary: null,
+          model: null,
+          discarded: 0,
+          unavailable: 'The summary could not be reached just now.',
+        });
+        this.narrativeLoading.set(false);
+      },
+    });
+  }
+
+  onSummaryEntitySelected(entity: 'tasks' | 'risks' | 'changes' | 'journal') {
+    this.showDetails(entity);
+  }
+
+  onMindMapNodeSelected(node: {
+    type: 'task' | 'risk' | 'change' | 'project';
+  }) {
+    if (node.type !== 'project') {
+      this.showDetails(`${node.type}s` as 'tasks' | 'risks' | 'changes');
+    }
   }
 
   taskCount = computed(() => {
@@ -149,7 +509,140 @@ export class ProjectsComponent implements OnInit {
     );
   });
 
+  /**
+   * The assistant lives outside this page now, so what it does has to find its
+   * way back. Its work lands as proposals, which is why the list is re-read
+   * whether the run succeeded or not.
+   */
+  private readonly refreshAfterAssistant = effect(() => {
+    const result = this.assistant.lastResult();
+    const project = this.selectedProject();
+    if (!result || !project) return;
+
+    this.loadAiChanges(project.id);
+    if (!result.awaitingApproval && result.used.length) {
+      this.refreshSelectedProject();
+    }
+  });
+
+  /**
+   * Everything about who is on this project.
+   *
+   * The invitation list is asked for even by a member, and refused. Treating
+   * that refusal as an empty list rather than an error keeps the page honest
+   * for both readers without asking it who it is first.
+   */
+  private loadCollaboration(projectId: string): void {
+    this.projectService.getProjectPeople(projectId).subscribe({
+      next: (people) => this.people.set(people),
+      error: () => this.people.set([]),
+    });
+    this.projectService.getProjectInvites(projectId).subscribe({
+      next: (invites) => this.invites.set(invites),
+      error: () => this.invites.set([]),
+    });
+    this.loadConversation(projectId);
+  }
+
+  /**
+   * The project's conversation and what has been said in it.
+   *
+   * Asking for the conversation is what creates it the first time, and it
+   * writes the current membership into it, so somebody removed from the
+   * project stops being a participant on the next visit by anybody.
+   */
+  private loadConversation(projectId: string): void {
+    this.conversationUnavailable.set(null);
+    this.projectService.getProjectConversation(projectId).subscribe({
+      next: (conversation) => {
+        this.conversationId.set(conversation.id);
+        this.projectService.getConversationMessages(conversation.id).subscribe({
+          next: (messages) => this.conversationMessages.set(messages),
+          error: () => this.conversationMessages.set([]),
+        });
+      },
+      error: () => {
+        this.conversationId.set(null);
+        this.conversationMessages.set([]);
+        this.conversationUnavailable.set(
+          'The conversation for this project could not be opened.'
+        );
+      },
+    });
+  }
+
+  onSendMessage(content: string): void {
+    const conversationId = this.conversationId();
+    if (!conversationId || !content.trim()) return;
+
+    this.projectService
+      .sendConversationMessage(conversationId, content)
+      .subscribe({
+        // Reloaded rather than appended locally, so what is on screen is what
+        // the server actually kept.
+        next: () =>
+          this.projectService
+            .getConversationMessages(conversationId)
+            .subscribe({
+              next: (messages) => this.conversationMessages.set(messages),
+            }),
+      });
+  }
+
+  onInvite(email: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+
+    this.inviting.set(true);
+    this.inviteError.set(null);
+    this.projectService.inviteToProject(project.id, email).subscribe({
+      next: () => {
+        this.inviting.set(false);
+        this.loadCollaboration(project.id);
+      },
+      error: (failure) => {
+        this.inviting.set(false);
+        // Said rather than swallowed. The two that happen are inviting
+        // somebody twice and inviting somebody already here, and a reader who
+        // sees nothing assumes it worked.
+        this.inviteError.set(
+          failure?.error?.message ?? 'That invitation could not be sent.'
+        );
+      },
+    });
+  }
+
+  onRevokeInvite(inviteId: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    this.projectService
+      .revokeProjectInvite(inviteId)
+      .subscribe({ next: () => this.loadCollaboration(project.id) });
+  }
+
+  onRemovePerson(profileId: string): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    this.projectService
+      .removeProjectMember(project.id, profileId)
+      .subscribe({ next: () => this.loadCollaboration(project.id) });
+  }
+
+  onLeaveProject(): void {
+    const project = this.selectedProject();
+    if (!project) return;
+    // The project goes away for them entirely, so the page reloads its list
+    // rather than showing one they can no longer read.
+    this.projectService
+      .leaveProject(project.id)
+      .subscribe({ next: () => window.location.reload() });
+  }
+
   ngOnInit() {
+    // Who the reader is, so the panel can tell an owner from a member without
+    // asking the server a second time.
+    this.viewerProfileId.set(this.projectService.currentProfileId());
+
     console.log('ProjectsComponent initialized');
     this.loadProjects();
     const theme = this.themeService.getTheme();
@@ -162,7 +655,7 @@ export class ProjectsComponent implements OnInit {
       next: (projects) => {
         console.log('Projects loaded:', projects);
         this.projects.set(projects);
-        this.selectedProject.set(projects.length > 0 ? projects[0] : null);
+        this.chooseProject(projects.length > 0 ? projects[0] : null);
       },
       error: (error) => {
         console.error('Error loading projects:', error);
@@ -181,7 +674,7 @@ export class ProjectsComponent implements OnInit {
       next: (project) => {
         console.log('Project reloaded:', project);
         // Update the selected project
-        this.selectedProject.set(project);
+        this.chooseProject(project);
         // Also update in the projects list
         this.projects.update((projects) =>
           projects.map((p) => (p.id === projectId ? project : p))
@@ -202,7 +695,7 @@ export class ProjectsComponent implements OnInit {
     console.log('Selected project ID:', projectId);
     const project = this.projects().find((p) => p.id === projectId);
     if (project) {
-      this.selectedProject.set(project);
+      this.chooseProject(project);
       console.log('Selected project:', project);
     }
   }
@@ -215,6 +708,7 @@ export class ProjectsComponent implements OnInit {
   onEditProject(project: Project) {
     console.log('Edit project clicked');
     this.selectedProject.set(project);
+    this.loadCollaboration(project.id);
     this.showEditModal.set(true);
   }
 
@@ -354,6 +848,37 @@ export class ProjectsComponent implements OnInit {
         });
       },
     });
+  }
+
+  onTaskDateChanged(event: { taskId: string; dueDate: Date }): void {
+    this.taskService
+      .updateTask({ id: event.taskId, dueDate: event.dueDate })
+      .subscribe({
+        next: (updatedTask) => {
+          this.selectedProject.update((project) => {
+            if (!project) return project;
+            return {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === updatedTask.id ? updatedTask : task
+              ),
+            };
+          });
+          this.messageService.addMessage({
+            content: 'Task due date updated successfully',
+            type: 'success',
+          });
+        },
+        error: () => {
+          const project = this.selectedProject();
+          if (project) this.loadProject(project.id);
+          this.messageService.addMessage({
+            content:
+              'Unable to update the task due date. The calendar was reset.',
+            type: 'error',
+          });
+        },
+      });
   }
 
   onCreateRisk(risk: CreateRisk) {
@@ -711,10 +1236,12 @@ export class ProjectsComponent implements OnInit {
   }
 
   onStartTimer(taskId: string) {
-    console.log('Start timer for task:', taskId);
+    if (this.timerBusyTaskId()) return;
+    this.timerBusyTaskId.set(taskId);
     this.taskTimeEntryService.startTimer(taskId).subscribe({
       next: (timeEntry) => {
-        console.log('Timer started successfully:', timeEntry);
+        this.timerBusyTaskId.set(null);
+        this.refreshTimeEntries();
         this.messageService.addMessage({
           content: 'Timer started successfully',
           type: 'success',
@@ -741,7 +1268,7 @@ export class ProjectsComponent implements OnInit {
         });
       },
       error: (error) => {
-        console.error('Error starting timer:', error);
+        this.timerBusyTaskId.set(null);
         this.messageService.addMessage({
           content:
             'Error starting timer: ' + (error.message || 'Unknown error'),
@@ -752,10 +1279,13 @@ export class ProjectsComponent implements OnInit {
   }
 
   onStopTimer(timeEntryId: string) {
-    console.log('Stop timer for time entry:', timeEntryId);
+    if (this.timerBusyTaskId()) return;
+    const owning = this.timeEntries().find((one) => one.id === timeEntryId);
+    this.timerBusyTaskId.set(owning?.task?.id ?? owning?.taskId ?? null);
     this.taskTimeEntryService.stopTimer(timeEntryId).subscribe({
       next: (timeEntry) => {
-        console.log('Timer stopped successfully:', timeEntry);
+        this.timerBusyTaskId.set(null);
+        this.refreshTimeEntries();
         this.messageService.addMessage({
           content: 'Timer stopped successfully',
           type: 'success',
@@ -785,6 +1315,7 @@ export class ProjectsComponent implements OnInit {
         }
       },
       error: (error) => {
+        this.timerBusyTaskId.set(null);
         console.error('Error stopping timer:', error);
         this.messageService.addMessage({
           content:

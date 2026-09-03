@@ -1,0 +1,59 @@
+<section class="task-notes">
+  <header>
+    <h4>Notes</h4>
+    <span class="total">
+      {{ total }} {{ total === 1 ? 'note' : 'notes' }} on this project
+    </span>
+  </header>
+
+  @if (!tasks.length) {
+  <p class="empty">There is no work here to write against yet.</p>
+  } @for (task of ordered; track task.id) {
+  <article class="row" [class.open]="isOpen(task.id)">
+    <button
+      type="button"
+      class="what"
+      [attr.aria-expanded]="isOpen(task.id)"
+      (click)="toggle(task.id)"
+    >
+      <strong>{{ task.title }}</strong>
+      <span class="count">
+        {{ countFor(task.id) || 'no' }}
+        {{ countFor(task.id) === 1 ? 'note' : 'notes' }}
+      </span>
+    </button>
+
+    @if (isOpen(task.id)) {
+    <div class="body">
+      @for (note of notesFor(task.id); track note.id) {
+      <div class="note">
+        <p>{{ note.content }}</p>
+        <time>{{ note.createdAt | date : 'medium' }}</time>
+      </div>
+      } @if (!countFor(task.id)) {
+      <p class="empty">Nothing written against this one yet.</p>
+      }
+
+      <label class="write">
+        <span class="visually-hidden">A note on {{ task.title }}</span>
+        <textarea
+          rows="2"
+          [value]="drafts[task.id] || ''"
+          (input)="draftChanged(task.id, $event)"
+          [disabled]="savingTaskId === task.id"
+          placeholder="What is worth remembering about this?"
+        ></textarea>
+      </label>
+      <button
+        type="button"
+        class="save"
+        [disabled]="savingTaskId === task.id || !(drafts[task.id] || '').trim()"
+        (click)="add(task.id)"
+      >
+        {{ savingTaskId === task.id ? 'Saving…' : 'Add note' }}
+      </button>
+    </div>
+    }
+  </article>
+  }
+</section>

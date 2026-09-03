@@ -87,6 +87,7 @@
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
+            (dateChanged)="onTaskDateChanged($event)"
           ></lib-task-calendar>
           } @else if (taskViewMode() === 'kanban') {
           <lib-task-kanban
@@ -119,6 +120,7 @@
             [risks]="selectedProject()!.risks"
             [changes]="selectedProject()!.changes"
             [projectId]="selectedProject()!.id"
+            (nodeClick)="onMindMapNodeSelected($event)"
           ></lib-mind-map>
           }
           <otui-button (click)="hideDetails()" class="close-button">
@@ -140,12 +142,134 @@
 
       <!-- Project Context -->
       <div class="row-container">
-        <otui-tile class="project-context-tile">
-          <h3>Project context</h3>
-          <p>
-            Review project details, tasks, risks, changes, and journal entries
-            in the workspace below.
-          </p>
+        <otui-tile class="project-summary-tile">
+          <lib-project-summary
+            [project]="selectedProject()!"
+            [narrative]="narrative()"
+            [narrativeLoading]="narrativeLoading()"
+            (entitySelected)="onSummaryEntitySelected($event)"
+            (narrativeRequested)="onNarrativeRequested()"
+          ></lib-project-summary>
+        </otui-tile>
+      </div>
+
+      <!--
+        Where the time went. The dashboard existed in the library and was
+        rendered nowhere, and its figures would all have been zero anyway
+        until time entries started recording real durations.
+      -->
+      @if (projectAnalytics()) {
+      <div class="row-container">
+        <otui-tile class="analytics-tile">
+          <lib-analytics-dashboard
+            [projectAnalytics]="projectAnalytics()"
+            [tagAnalytics]="tagAnalytics()"
+          ></lib-analytics-dashboard>
+        </otui-tile>
+      </div>
+      }
+
+      <!--
+        Notes on tasks. The landing page has always promised these and no
+        screen ever showed one, so the only way a note reached a task was for
+        the assistant to propose one and a person to approve it.
+      -->
+      <div class="row-container">
+        <otui-tile class="task-notes-tile">
+          <lib-task-notes-panel
+            [tasks]="selectedProject()?.tasks || []"
+            [notes]="taskNotes()"
+            [savingTaskId]="noteSavingTaskId()"
+            (noteAdded)="onNoteAdded($event)"
+          ></lib-task-notes-panel>
+        </otui-tile>
+      </div>
+
+      <!--
+        Time on tasks. The tracker component existed and was on no screen, so
+        nobody could start a timer and nothing displayed a total.
+      -->
+      <div class="row-container">
+        <otui-tile class="task-time-tile">
+          <lib-task-time-panel
+            [tasks]="selectedProject()?.tasks || []"
+            [entries]="timeEntries()"
+            [busyTaskId]="timerBusyTaskId()"
+            (startTimer)="onStartTimer($event)"
+            (stopTimer)="onStopTimer($event)"
+          ></lib-task-time-panel>
+        </otui-tile>
+      </div>
+
+      <!--
+        The approval gate. A project can require that changes are approved
+        before anything is written, and this is where that decision is made.
+      -->
+      <div class="row-container">
+        <otui-tile class="ai-changes-tile">
+          <lib-ai-change-review
+            [changes]="aiChanges()"
+            [project]="selectedProject()"
+            [busyId]="aiChangeBusyId()"
+            [asking]="askingForSuggestions()"
+            (decided)="onAiChangeDecided($event)"
+            (suggestionsRequested)="onSuggestionsRequested()"
+          ></lib-ai-change-review>
+        </otui-tile>
+      </div>
+
+      <!--
+        Who is on this project, and who has been asked.
+
+        An owner sees the invitation controls; a member sees the people and a
+        way out. What a member is not allowed to do is absent rather than
+        disabled, because a control that cannot be used is worse than one that
+        was never offered.
+      -->
+      <div class="row-container">
+        <otui-tile class="collaboration-tile">
+          <h3>People</h3>
+          <p>Who is working on this project with you.</p>
+
+          <lib-project-members
+            [people]="people()"
+            [viewerProfileId]="viewerProfileId()"
+            [viewerIsOwner]="viewerIsOwner()"
+            (removed)="onRemovePerson($event)"
+            (left)="onLeaveProject()"
+          ></lib-project-members>
+
+          @if (viewerIsOwner()) {
+          <h4>Invite somebody</h4>
+          <lib-project-invite-form
+            [busy]="inviting()"
+            [error]="inviteError()"
+            (invited)="onInvite($event)"
+          ></lib-project-invite-form>
+
+          <lib-project-invite-list
+            [invites]="invites()"
+            (revoked)="onRevokeInvite($event)"
+          ></lib-project-invite-list>
+          }
+        </otui-tile>
+      </div>
+
+      <!--
+        Talking about the project, with the people on it. Refused for anybody
+        who is not, by the chat service rather than by this page.
+      -->
+      <div class="row-container">
+        <otui-tile class="conversation-tile">
+          <h3>Conversation</h3>
+          <lib-project-conversation
+            [messages]="conversationMessages()"
+            [people]="people()"
+            [viewerProfileId]="viewerProfileId()"
+            [title]="selectedProject()!.name"
+            [unavailable]="conversationUnavailable()"
+            (sent)="onSendMessage($event)"
+          ></lib-project-conversation>
         </otui-tile>
       </div>
 

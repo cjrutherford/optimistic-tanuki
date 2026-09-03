@@ -15,6 +15,13 @@ export enum ModelType {
   TOOL_CALLING = 'tool_calling',
   WORKFLOW_CONTROL = 'workflow_control',
   INTENT_ANALYSIS = 'intent_analysis',
+  /**
+   * Reading a body of work and saying something about it. Not conversation,
+   * not tool calling, not classification. The project summary is the first
+   * caller and it wants depth over speed, which is the opposite of what the
+   * classifier types want.
+   */
+  PROJECT_ANALYSIS = 'project_analysis',
 }
 
 export interface ModelConfig {
@@ -22,6 +29,31 @@ export interface ModelConfig {
   temperature: number;
   baseUrl: string;
   maxTokens?: number;
+  /**
+   * Ollama's repeat penalty.
+   *
+   * Carried here because it is not a nicety. At temperature 0 a model was
+   * observed looping inside a single field until it ran out of room, producing
+   * unterminated JSON. The pilot that chose these models ran with this set,
+   * and this service did not, so the pilot's results did not transfer until it
+   * did.
+   */
+  repeatPenalty?: number;
+
+  /**
+   * How much the model is allowed to read, in tokens.
+   *
+   * Left unset, Ollama applies its own small default and silently drops the
+   * oldest part of anything longer. Measured on this server: at num_ctx 2048 a
+   * ten thousand token prompt reached the model as 1,026 tokens and the fact
+   * planted at the front was simply gone, with nothing to say it had been. The
+   * model answered confidently from what was left.
+   *
+   * Usable prompt came out at roughly half of whatever num_ctx is set to,
+   * consistently across 2048, 4096, 8192 and 16384, so budget for double what
+   * you mean to send.
+   */
+  numCtx?: number;
 }
 
 @Injectable()
@@ -46,58 +78,49 @@ export class ModelManager {
         ? `http://${ollama.host}:${ollama.port}`
         : 'http://prompt-proxy:11434';
 
-    // Conversational model - for general chat
-    this.configs.set(ModelType.CONVERSATIONAL, {
-      name:
-        this.configService.get<string>('models.conversational.name') ||
-        'bjoernb/deepseek-r1-8b',
-      temperature:
-        this.configService.get<number>('models.conversational.temperature') ||
-        0.7,
-      baseUrl,
-      maxTokens:
-        this.configService.get<number>('models.conversational.maxTokens') ||
-        2048,
-    });
+    for (const type of Object.values(ModelType)) {
+      // The key is the enum value, so the config file and the code cannot
+      // drift. They had: the code asked for models.toolCalling while the file
+      // defined models.tool_calling, and three of four types silently fell
+      // back to a hardcoded name for a model that was not installed on the
+      // host. Deriving the key removes the class of bug rather than fixing
+      // this instance of it.
+      const name = this.configService.get<string>(`models.${type}.name`);
+      if (!name) {
+        // No default. A missing model name used to resolve to a hardcoded one,
+        // which is how a typo became a running service quietly talking to a
+        // model that did not exist. Better to be absent and say so.
+        this.logger.warn(
+          `No model configured for ${type}. Set models.${type}.name in the ` +
+            `ai-orchestrator config. Requests for this type will be refused.`
+        );
+        continue;
+      }
 
-    // Tool calling model - optimized for function calling
-    this.configs.set(ModelType.TOOL_CALLING, {
-      name:
-        this.configService.get<string>('models.toolCalling.name') ||
-        'bjoernb/deepseek-r1-8b',
-      temperature:
-        this.configService.get<number>('models.toolCalling.temperature') || 0.3,
-      baseUrl,
-      maxTokens:
-        this.configService.get<number>('models.toolCalling.maxTokens') || 2048,
-    });
+      this.configs.set(type, {
+        name,
+        // Temperature and token budget are tuning rather than identity, so
+        // they keep defaults. Getting these wrong degrades an answer; getting
+        // the model name wrong means there is no answer at all.
+        temperature:
+          this.configService.get<number>(`models.${type}.temperature`) ?? 0.3,
+        baseUrl,
+        maxTokens: this.configService.get<number>(`models.${type}.maxTokens`),
+        repeatPenalty: this.configService.get<number>(
+          `models.${type}.repeatPenalty`
+        ),
+        numCtx: this.configService.get<number>(`models.${type}.numCtx`),
+      });
+    }
 
-    // Workflow control model - lightweight classifier
-    this.configs.set(ModelType.WORKFLOW_CONTROL, {
-      name:
-        this.configService.get<string>('models.workflowControl.name') ||
-        'bjoernb/deepseek-r1-8b',
-      temperature:
-        this.configService.get<number>('models.workflowControl.temperature') ||
-        0.1,
-      baseUrl,
-      maxTokens: 512,
-    });
-
-    // Intent analysis model - for understanding user requests
-    this.configs.set(ModelType.INTENT_ANALYSIS, {
-      name:
-        this.configService.get<string>('models.intentAnalysis.name') ||
-        'bjoernb/deepseek-r1-8b',
-      temperature:
-        this.configService.get<number>('models.intentAnalysis.temperature') ||
-        0.2,
-      baseUrl,
-      maxTokens: 1024,
-    });
-
+    const configured = Array.from(this.configs.keys());
     this.logger.log(
-      `Initialized model configurations with base URL: ${baseUrl}`
+      `Model configuration at ${baseUrl}: ` +
+        (configured.length
+          ? configured
+              .map((type) => `${type}=${this.configs.get(type)?.name}`)
+              .join(', ')
+          : 'nothing configured')
     );
   }
 
@@ -115,19 +138,24 @@ export class ModelManager {
    * Get model configuration without creating instance
    */
   getModelConfig(type: ModelType): ModelConfig {
-    return (
-      this.configs.get(type) || this.configs.get(ModelType.CONVERSATIONAL)!
-    );
+    const config = this.configs.get(type);
+    if (!config) {
+      // Previously fell back to the conversational model, so asking for a
+      // tool-calling model and getting a chat one looked like the model being
+      // bad at tool calling rather than a missing setting.
+      throw new Error(
+        `No model configured for ${type}. Set models.${type}.name in the ` +
+          `ai-orchestrator config.`
+      );
+    }
+    return config;
   }
 
   /**
    * Create a new model instance
    */
   private createModel(type: ModelType): BaseChatModel {
-    const config = this.configs.get(type);
-    if (!config) {
-      throw new Error(`No configuration found for model type: ${type}`);
-    }
+    const config = this.getModelConfig(type);
 
     this.logger.log(`Creating ${type} model: ${config.name}`);
 
@@ -135,6 +163,8 @@ export class ModelManager {
       model: config.name,
       baseUrl: config.baseUrl,
       temperature: config.temperature,
+      repeatPenalty: config.repeatPenalty,
+      numCtx: config.numCtx,
       maxRetries: 3,
     });
   }

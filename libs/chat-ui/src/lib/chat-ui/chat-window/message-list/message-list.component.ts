@@ -39,6 +39,18 @@ export class MessageListComponent {
   /**
    * Emitted when a reaction is added to a message.
    */
+  /**
+   * The reader answered something a message was waiting on.
+   *
+   * What is being decided is the caller's business. This only carries the
+   * answer back out.
+   */
+  @Output() decided = new EventEmitter<{ id: string; approved: boolean }>();
+
+  decide(id: string, approved: boolean): void {
+    this.decided.emit({ id, approved });
+  }
+
   @Output() reactionAdded = new EventEmitter<{
     messageId: string;
     emoji: string;

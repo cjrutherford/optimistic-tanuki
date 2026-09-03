@@ -115,10 +115,15 @@ export class ChatController {
   }
 
   @Get('messages/:conversationId')
-  async getMessages(@Param('conversationId') conversationId: string) {
+  async getMessages(
+    @Param('conversationId') conversationId: string,
+    @User() user: UserDetails
+  ) {
+    // The reader's own profile, from the session. Without it this route
+    // answered any conversation id with everything in it.
     return this.forward(
       { cmd: ChatCommands.GET_MESSAGES },
-      { conversationId },
+      { conversationId, requestingProfileId: user.profileId },
       'Failed to get messages'
     );
   }

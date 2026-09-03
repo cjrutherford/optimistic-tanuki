@@ -1,0 +1,31 @@
+<section class="task-time">
+  <header>
+    <h4>Time on tasks</h4>
+    <span class="total" [class.running]="anyRunning">
+      {{ total }} recorded
+    </span>
+  </header>
+
+  @if (!tasks.length) {
+  <p class="empty">There is no work here to put time against yet.</p>
+  } @for (task of ordered; track task.id) {
+  <article
+    class="row"
+    [class.finished]="task.status === 'DONE' || task.status === 'ARCHIVED'"
+  >
+    <div class="what">
+      <strong>{{ task.title }}</strong>
+      @if (task.status) {
+      <span class="status">{{ task.status }}</span>
+      }
+    </div>
+    <lib-time-tracker
+      [taskId]="task.id"
+      [timeEntries]="entriesFor(task.id)"
+      [busy]="busyTaskId === task.id"
+      (startTimer)="startTimer.emit($event)"
+      (stopTimer)="stopTimer.emit($event)"
+    ></lib-time-tracker>
+  </article>
+  }
+</section>

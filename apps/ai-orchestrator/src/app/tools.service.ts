@@ -14,6 +14,20 @@ import { firstValueFrom } from 'rxjs';
 // Polyfill EventSource for Node.js
 global.EventSource = EventSource as any;
 
+/**
+ * What to say when something asks for tools without saying who is asking.
+ *
+ * The MCP surface is authenticated-only. There was a connection attempt at
+ * startup that carried no token, so it was refused ten times on every boot and
+ * left the client undefined; every one of these methods then failed with "MCP
+ * Client not connected", which pointed at the network rather than at the
+ * missing credential. Removing that attempt did not break these paths, it
+ * stopped them pretending. They still cannot work, and now they say why.
+ */
+const NEEDS_A_SESSION =
+  'MCP tools are reached per caller. Open one with session(token) using the ' +
+  'token of whoever is asking; there is no shared unauthenticated client.';
+
 @Injectable()
 export class ToolsService implements OnModuleInit, OnModuleDestroy {
   private readonly l = new Logger(ToolsService.name);
@@ -31,7 +45,13 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    this.connectWithRetry();
+    // Deliberately does not connect.
+    //
+    // The MCP surface is authenticated-only, and there is no user at boot, so
+    // this connected as nobody, got 401 ten times and logged an error on every
+    // startup. Tools are reached through session(), which carries the caller's
+    // token.
+    this.l.log(`MCP tools will be reached per caller at ${this.gatewayMcpUrl}`);
   }
 
   async onModuleDestroy() {
@@ -87,7 +107,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
 
   async listResources() {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       const result = await this.client.listResources();
@@ -103,7 +123,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
 
   async getResource(resourceName: string) {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       this.l.log(`Getting resource ${resourceName} from gateway MCP`);
@@ -120,7 +140,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
    */
   async listTools(): Promise<Tool[]> {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       const result = await this.client.listTools();
@@ -140,7 +160,7 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
     args: Record<string, any> = {}
   ): Promise<any> {
     if (!this.client) {
-      throw new Error('MCP Client not connected');
+      throw new Error(NEEDS_A_SESSION);
     }
     try {
       this.l.log(`Calling tool ${toolName} with args: ${JSON.stringify(args)}`);
@@ -158,4 +178,55 @@ export class ToolsService implements OnModuleInit, OnModuleDestroy {
       throw err;
     }
   }
+
+  /**
+   * An MCP client that acts as one person.
+   *
+   * The gateway derives who is asking from the token on the request, and every
+   * tool decides what may be read or written from that. A shared connection
+   * made once at boot has no one to be, which is why the agent could never
+   * call a tool: it was refused before it started.
+   *
+   * A session is made per token and closed by the caller. Sessions are not
+   * pooled: a token outlives a single call, but holding open connections keyed
+   * by credential is a cache of other people's authority, and the connection
+   * is cheap next to the model call it accompanies.
+   */
+  async session(token: string): Promise<McpSession> {
+    if (!token) {
+      throw new Error("An MCP session needs the caller's token");
+    }
+
+    const transport = new StreamableHTTPClientTransport(
+      new URL(this.gatewayMcpUrl),
+      { requestInit: { headers: { Authorization: `Bearer ${token}` } } }
+    );
+    const client = new Client(
+      { name: 'ai-orchestrator-agent', version: '1.0.0' },
+      { capabilities: {} }
+    );
+
+    await client.connect(transport);
+    this.l.log('MCP session opened for one caller');
+
+    return {
+      listTools: async () => (await client.listTools()).tools,
+      callTool: async (name: string, args: Record<string, unknown>) =>
+        await client.callTool({ name, arguments: args }),
+      close: async () => {
+        try {
+          await transport.close();
+        } catch {
+          // A session that will not close cleanly is not worth failing the
+          // caller's work over; the work is already done by this point.
+        }
+      },
+    };
+  }
+}
+
+export interface McpSession {
+  listTools(): Promise<Tool[]>;
+  callTool(name: string, args: Record<string, unknown>): Promise<unknown>;
+  close(): Promise<void>;
 }

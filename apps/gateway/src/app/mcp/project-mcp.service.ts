@@ -10,8 +10,16 @@ import {
   ProjectJournalCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
+import { ApprovalGate } from './approval-gate.service';
 import { z } from 'zod';
-import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
+import {
+  CreateProjectDto,
+  ENTITY_VIEWS,
+  EntityView,
+  UpdateProjectDto,
+  applyView,
+  pageOf,
+} from '@optimistic-tanuki/models';
 
 // Define Zod schemas for parameters
 const getProjectSchema = z.object({
@@ -62,7 +70,61 @@ const deleteProjectSchema = z.object({
 });
 
 // Define Zod schemas outside the class
-export const listProjectsSchema = z.object({});
+export const listProjectsSchema = z.object({
+  view: z
+    .enum(ENTITY_VIEWS)
+    .optional()
+    .describe(
+      'How much of each row to return. "brief" is the default and carries what ' +
+        'you would say out loud about it; "full" adds every field including ' +
+        'timestamps and who touched it. Ask for full only when you need it.'
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe(
+      'How many to return. Defaults to 25 and is capped at 100. The count ' +
+        'field is always the total, not how many came back.'
+    ),
+  offset: z
+    .number()
+    .optional()
+    .describe('Where to start, for reading past the first page'),
+});
+
+/**
+ * The rows a list tool hands back, narrowed to the requested view.
+ *
+ * Named so the omission travels with the data: a reader that cannot tell a
+ * missing field from an empty one has no way to know what to ask for next.
+ */
+function viewProject(
+  rows: Record<string, unknown>[],
+  view: EntityView,
+  paging: { limit?: number; offset?: number }
+): {
+  count: number;
+  showing: number;
+  offset: number;
+  more: boolean;
+  projects: unknown[];
+  omittedFields?: string[];
+} {
+  // The page is taken before the narrowing, and the count comes from pageOf
+  // rather than from the rows that come back, so the total stays the total. A
+  // count taken after slicing would report the page size and mean it.
+  const page = pageOf(rows ?? [], paging);
+  const narrowed = applyView(page.rows, 'project', view);
+
+  return {
+    count: page.count,
+    showing: page.showing,
+    offset: page.offset,
+    more: page.more,
+    projects: narrowed.rows,
+    ...(narrowed.omitted ? { omittedFields: narrowed.omitted } : {}),
+  };
+}
 
 @Injectable()
 export class ProjectMcpService {
@@ -70,7 +132,8 @@ export class ProjectMcpService {
 
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
-    private readonly projectPlanningService: ClientProxy
+    private readonly projectPlanningService: ClientProxy,
+    private readonly gate: ApprovalGate
   ) {}
 
   /**
@@ -94,7 +157,7 @@ export class ProjectMcpService {
     parameters: listProjectsSchema,
   })
   async listProjects(
-    _args: z.infer<typeof listProjectsSchema>,
+    { view = 'brief', limit, offset }: z.infer<typeof listProjectsSchema>,
     _context: unknown,
     request: any
   ) {
@@ -111,8 +174,11 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        projects,
-        count: projects.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewProject(projects, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error listing projects:', error);
@@ -271,6 +337,12 @@ export class ProjectMcpService {
         startDate: startDate ? new Date(startDate) : new Date(),
         status,
         members,
+        // A new project has no project to gate against, so this one cannot be
+        // proposed for approval. It is allowed, but never ungated: an agent
+        // able to create a project with the flag off would be one call away
+        // from a workspace it can write to freely, which is the gate removed
+        // rather than honoured.
+        requireHumanApproval: true,
         requestingUserId,
       };
 
@@ -326,6 +398,15 @@ export class ProjectMcpService {
       if (status) updates.status = status;
       if (endDate) updates.endDate = new Date(endDate);
 
+      const proposed = await this.gate.proposeIfGated(
+        projectId,
+        'project.update',
+        updates,
+        requestingUserId,
+        'The change to this project'
+      );
+      if (proposed) return proposed;
+
       const project = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.UPDATE },
@@ -357,6 +438,14 @@ export class ProjectMcpService {
     try {
       const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting project ${projectId}`);
+
+      const refused = await this.gate.refuseIfGated(
+        projectId,
+        requestingUserId,
+        'deleting a project'
+      );
+      if (refused) return refused;
+
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.REMOVE },
@@ -379,10 +468,22 @@ export class ProjectMcpService {
     description: 'Query projects by name',
     parameters: z.object({
       name: z.string().describe('The name of the project to query'),
+      view: z
+        .enum(ENTITY_VIEWS)
+        .optional()
+        .describe(
+          'How much of each row to return. "brief" is the default; "full" adds ' +
+            'every field including timestamps and who touched it.'
+        ),
     }),
   })
   async queryProjects(
-    query: { name: string },
+    {
+      view = 'brief',
+      limit,
+      offset,
+      ...query
+    }: { name: string; view?: EntityView; limit?: number; offset?: number },
     _context: unknown,
     request: any
   ) {
@@ -397,8 +498,11 @@ export class ProjectMcpService {
       );
       return {
         success: true,
-        projects,
-        count: projects.length,
+        // count, showing, offset and more all come from here, before the
+        // rows. Written after them they are the first thing lost when a
+        // result is shortened, and the count answers every question about
+        // how many there are.
+        ...viewProject(projects, view, { limit, offset }),
       };
     } catch (error) {
       this.logger.error('Error querying projects:', error);

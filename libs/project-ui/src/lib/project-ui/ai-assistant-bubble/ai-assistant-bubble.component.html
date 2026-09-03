@@ -1,0 +1,86 @@
+<div class="bubble" [class.open]="open">
+  @if (open) {
+  <div class="panel" role="dialog" aria-label="Assistant">
+    @if (unavailable) {
+    <p class="unavailable">{{ unavailable }}</p>
+    } @else {
+
+    <!--
+      The assistant's own chrome, above a chat window that is shared with
+      every other conversation in the product. Who is speaking and what they
+      are working on are specific to this assistant, so they live here rather
+      than being pushed into the library.
+    -->
+    <header class="who">
+      <button type="button" class="switch" (click)="showPersonas()">
+        {{ personaName ? 'Talk to somebody else' : 'Choose who' }}
+      </button>
+      @if (projectName) {
+      <span class="scope">working on {{ projectName }}</span>
+      } @if (turns.length) {
+      <button type="button" class="clear" (click)="cleared.emit()">
+        Start over
+      </button>
+      }
+    </header>
+
+    @if (!turns.length) {
+    <!--
+      What it is good at and what it costs, said before somebody waits two
+      minutes to find out.
+    -->
+    <div class="opening">
+      <p>
+        Ask about one thing, or tell it to do something. It is good at a
+        specific question and at carrying out an instruction, less so at
+        questions about a whole project at once.
+      </p>
+      <p>
+        Answers take a minute or two, and anything it does still comes to you
+        for approval first.
+      </p>
+    </div>
+    }
+
+    <lib-chat-window
+      [contact]="speakingWith"
+      [messages]="conversation"
+      [currentUserId]="reader"
+      [aiIsResponding]="working"
+      [aiThinkingMessage]="thinkingMessage"
+      windowState="embedded"
+      (messageSubmitted)="asked.emit($event)"
+      (decided)="decided.emit($event)"
+    ></lib-chat-window>
+    }
+  </div>
+  }
+
+  <!--
+    The menu is its own overlay, so it is a sibling of the panel rather than
+    something inside it. Marking whoever is already open means picking them
+    again reads as going back to that thread rather than starting one.
+  -->
+  @if (choosing) {
+  <lib-persona-selection-menu
+    [chosenId]="personaId"
+    (personaSelected)="choosePersona($event)"
+    (menuClose)="hidePersonas()"
+  ></lib-persona-selection-menu>
+  }
+
+  <button
+    type="button"
+    class="handle"
+    [attr.aria-expanded]="open"
+    (click)="toggle()"
+  >
+    @if (working) {
+    <span class="pulse" aria-hidden="true"></span>
+    }
+    <span class="label">{{ open ? 'Close' : 'Assistant' }}</span>
+    @if (!open && unread) {
+    <span class="unread">{{ unread }}</span>
+    }
+  </button>
+</div>

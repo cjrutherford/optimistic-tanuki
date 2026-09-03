@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectPlanningController } from './project-planning.controller';
+import { ProjectInviteMailer } from './project-invite.mailer';
 import {
   ChangeCommands,
+  ProjectAiCommands,
   ProjectCommands,
   ProjectJournalCommands,
   RiskCommands,
@@ -9,7 +11,6 @@ import {
   TaskCommands,
   TaskNoteCommands,
   TaskTimeEntryCommands,
-  TimerCommands,
 } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -22,7 +23,6 @@ import {
   CreateTaskDto,
   CreateTaskNoteDto,
   CreateTaskTimeEntryDto,
-  CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
@@ -37,7 +37,6 @@ import {
   UpdateTaskDto,
   UpdateTaskNoteDto,
   UpdateTaskTimeEntryDto,
-  UpdateTimerDto,
   RiskImpact,
   RiskLikelihood,
   RiskStatus,
@@ -51,6 +50,7 @@ import { UserDetails } from '../../decorators/user.decorator';
 describe('ProjectPlanningController', () => {
   let controller: ProjectPlanningController;
   let projectPlanningService: any;
+  let aiOrchestrationService: { send: jest.Mock };
 
   const mockUser: UserDetails = {
     userId: 'user-id',
@@ -69,6 +69,9 @@ describe('ProjectPlanningController', () => {
     projectPlanningService = {
       send: jest.fn().mockImplementation(() => of({})),
     };
+    aiOrchestrationService = {
+      send: jest.fn().mockImplementation(() => of({})),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectPlanningController],
@@ -76,6 +79,29 @@ describe('ProjectPlanningController', () => {
         {
           provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
           useValue: projectPlanningService,
+        },
+        {
+          provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
+          useValue: aiOrchestrationService,
+        },
+        {
+          // Names for the member list. Resolved here because the gateway
+          // already talks to profiles and project-planning does not.
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: { send: jest.fn(() => of({ profileName: 'Somebody' })) },
+        },
+        {
+          // The project conversation. Access is decided before this is
+          // reached, so a stand-in is enough for tests about routes.
+          provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+          useValue: { send: jest.fn(() => of({ id: 'conversation-1' })) },
+        },
+        {
+          // Sending is a courtesy that happens after the record is safe, so a
+          // stand-in that does nothing is the honest thing here: these tests
+          // are about the routes, not about the post.
+          provide: ProjectInviteMailer,
+          useValue: { send: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     })
@@ -132,7 +158,13 @@ describe('ProjectPlanningController', () => {
     await controller.createProject(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      // Both come from the session now. owner used to pass through from the
+      // body, which let a caller create a project owned by somebody else.
+      {
+        ...createDto,
+        owner: mockUser.profileId,
+        createdBy: mockUser.profileId,
+      }
     );
   });
 
@@ -191,7 +223,14 @@ describe('ProjectPlanningController', () => {
     await controller.createChange(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
+      // ChangeService derives requestor, approver and createdBy from
+      // requestor, so setting only createdBy left it with no identity at all.
+      {
+        ...createDto,
+        requestor: mockUser.profileId,
+        createdBy: mockUser.profileId,
+        requestingUserId,
+      }
     );
   });
 
@@ -305,7 +344,13 @@ describe('ProjectPlanningController', () => {
     await controller.createRisk(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
+      // RiskService uses riskOwner as the owner and as createdBy.
+      {
+        ...createDto,
+        riskOwner: mockUser.profileId,
+        createdBy: mockUser.profileId,
+        requestingUserId,
+      }
     );
   });
 
@@ -380,48 +425,6 @@ describe('ProjectPlanningController', () => {
     await controller.deleteTask(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.DELETE },
-      { id: '1', requestingUserId }
-    );
-  });
-
-  it('should find a timer by id', async () => {
-    await controller.findTimerById(mockUser, '1');
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.FIND_ONE },
-      { id: '1', requestingUserId }
-    );
-  });
-
-  it('should find all timers scoped to the caller', async () => {
-    await controller.findAllTimers(mockUser);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.FIND_ALL },
-      { requestingUserId }
-    );
-  });
-
-  it('should create a timer', async () => {
-    const createDto: CreateTimerDto = { taskId: '1' };
-    await controller.createTimer(mockUser, createDto);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
-    );
-  });
-
-  it('should update a timer', async () => {
-    const updateDto: UpdateTimerDto = { id: '1' };
-    await controller.updateTimer(mockUser, updateDto);
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
-    );
-  });
-
-  it('should delete a timer', async () => {
-    await controller.deleteTimer(mockUser, '1');
-    expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: TimerCommands.DELETE },
       { id: '1', requestingUserId }
     );
   });
@@ -534,5 +537,40 @@ describe('ProjectPlanningController', () => {
       { cmd: TaskTimeEntryCommands.REMOVE },
       { id: '1', requestingUserId }
     );
+  });
+
+  /**
+   * The summary route reads the project through the same permission-checked
+   * path every other route here uses, then hands it to the orchestrator.
+   * The orchestrator has no database and no business deciding who may read a
+   * project, so the authorisation question stays answered in one place.
+   */
+  describe('summarising a project', () => {
+    it('reads the project as the caller before asking a model about it', async () => {
+      projectPlanningService.send.mockReturnValue(
+        of({ id: '1', name: 'Kiln' })
+      );
+
+      await controller.summariseProject(mockUser, '1');
+
+      expect(projectPlanningService.send).toHaveBeenCalledWith(
+        { cmd: ProjectCommands.FIND_ONE },
+        { id: '1', requestingUserId }
+      );
+      expect(aiOrchestrationService.send).toHaveBeenCalledWith(
+        { cmd: ProjectAiCommands.SUMMARISE },
+        { project: { id: '1', name: 'Kiln' } }
+      );
+    });
+
+    it('asks no model about a project the caller cannot read', async () => {
+      projectPlanningService.send.mockReturnValue(of(null));
+
+      const result = await controller.summariseProject(mockUser, 'nope');
+
+      expect(aiOrchestrationService.send).not.toHaveBeenCalled();
+      expect(result.summary).toBeNull();
+      expect(result.unavailable).toBeTruthy();
+    });
   });
 });

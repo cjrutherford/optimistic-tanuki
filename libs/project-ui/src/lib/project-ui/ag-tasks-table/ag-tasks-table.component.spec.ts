@@ -51,6 +51,10 @@ describe('AgTasksTableComponent', () => {
     compiled = fixture.nativeElement;
   });
 
+  // Longer than the default because this waits a fixed interval for AG Grid
+  // to render before asserting. Under a parallel run the wait plus the render
+  // exceeded five seconds and the test failed for having been starved rather
+  // than for anything being wrong.
   it('should create', () => {
     expect(component).toBeTruthy();
   });
@@ -77,7 +81,7 @@ describe('AgTasksTableComponent', () => {
 
       done();
     }, 500);
-  });
+  }, 15000);
 
   it('should have column definitions configured', () => {
     expect(component.columnDefs).toBeDefined();
@@ -126,7 +130,7 @@ describe('AgTasksTableComponent', () => {
       expect(component.tasks.length).toBe(2);
       done();
     }, 300);
-  });
+  }, 15000);
 
   it('should emit createTask event with correct data', (done) => {
     component.createTask.subscribe((task) => {
@@ -204,5 +208,5 @@ describe('AgTasksTableComponent', () => {
       expect(agGrid).toBeTruthy();
       done();
     }, 300);
-  });
+  }, 15000);
 });

@@ -18,7 +18,6 @@ export interface Project {
   risks: Risk[]; // Array of Risk objects
   changes: Change[]; // Array of Change objects
   journalEntries: ProjectJournal[]; // Array of ProjectJournal objects
-  timers: Timer[]; // Array of Timer objects
 }
 
 export interface CreateProject {
@@ -72,12 +71,19 @@ export interface CreateTask {
   description: string;
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
-  createdBy: string;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  createdBy?: string;
+  assignee?: string;
+  dueDate?: Date;
   tagIds?: string[]; // Optional array of tag IDs to associate
 }
 
 export interface UpdateTask {
   id: string; // uuid
+  title?: string;
+  description?: string;
+  status?: Task['status'];
+  priority?: Task['priority'];
   assignee?: string;
   dueDate?: Date;
   updatedBy?: string;
@@ -153,27 +159,31 @@ export interface TaskTimeEntry {
 
 export interface CreateTaskTimeEntry {
   taskId: string;
-  startTime: Date;
+  /** Only for work being recorded after the fact. The server's clock decides. */
+  startTime?: Date;
   description?: string;
-  createdBy: string;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  createdBy?: string;
 }
 
 export interface UpdateTaskTimeEntry {
   id: string;
   endTime?: Date;
-  elapsedSeconds?: number;
   description?: string;
   updatedBy?: string;
 }
 
 export interface QueryTaskTimeEntry {
   taskId?: string;
+  projectId?: string;
   createdBy?: string;
 }
 
 // src/app/models/task-note.model.ts
 export interface TaskNote {
   id: string; // uuid
+  /** Present when the note was loaded with its task, which the query does. */
+  task?: { id: string };
   taskId: string;
   profileId: string;
   content: string;
@@ -187,8 +197,9 @@ export interface TaskNote {
 
 export interface CreateTaskNote {
   taskId: string;
-  profileId: string;
   content: string;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  profileId?: string;
   analysis?: string;
 }
 
@@ -201,6 +212,7 @@ export interface UpdateTaskNote {
 
 export interface QueryTaskNote {
   taskId?: string;
+  projectId?: string;
   profileId?: string;
   updatedBy?: string;
   createdAt?: [Date, Date];
@@ -242,27 +254,6 @@ export interface QueryAnalytics {
 }
 
 // src/app/models/timer.model.ts
-export interface Timer {
-  id?: string; // uuid
-  taskId: string;
-  status: 'Running' | 'Paused' | 'Stopped';
-  startTime: Date;
-  endTime?: Date;
-  elapsedTime: number; // in seconds
-  updatedBy?: string;
-  updatedAt?: Date;
-  deletedBy?: string;
-  deletedAt?: Date;
-}
-
-export interface CreateTimer {
-  taskId: string; // Foreign key to Task
-  status: 'Running' | 'Paused' | 'Stopped';
-  startTime: Date;
-  endTime?: Date;
-  elapsedTime: number; // in seconds
-}
-
 // src/app/models/risk.model.ts
 export interface Risk {
   id: string; // uuid
@@ -306,8 +297,9 @@ export interface CreateRisk {
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
-  riskOwner?: string; // Assuming this is a user profile ID
-  createdBy: string;
+  /** Both set by the gateway from the session; sending them changes nothing. */
+  riskOwner?: string;
+  createdBy?: string;
 }
 
 export interface QueryRisk {
@@ -370,9 +362,9 @@ export interface CreateChange {
     | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
-  requestor: string;
+  /** Both set by the gateway from the session; sending them changes nothing. */
+  requestor?: string;
   approver?: string;
-  resolution: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface QueryChange {
@@ -415,9 +407,9 @@ export interface ProjectJournal {
 
 export interface CreateProjectJournal {
   projectId: string; // Foreign key to Project
-  profileId: string; // Assuming this links to a user profile
   content: string; // text
-  createdAt: Date;
+  /** Set by the gateway from the session; sending it changes nothing. */
+  profileId?: string;
 }
 
 export interface QueryProjectJournal {

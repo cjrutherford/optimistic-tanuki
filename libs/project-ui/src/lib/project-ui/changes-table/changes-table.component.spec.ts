@@ -71,20 +71,33 @@ describe('ChangesTableComponent', () => {
     expect(component.showModal()).toBe(false);
   });
 
-  it('should emit createChange and close modal on onCreateFormSubmit', () => {
+  /**
+   * Who asked and who approved come from the session.
+   *
+   * They used to go out as empty strings, alongside a resolution field the
+   * endpoint refuses, so no change could be recorded from this table at all.
+   */
+  it('emits the change without trying to say who asked for it', () => {
     jest.spyOn(component.createChange, 'emit');
     jest.spyOn(component, 'closeModal');
-    const newChange: Partial<Change> = {
+
+    component.onCreateFormSubmit({
       changeDescription: 'New Change',
       changeType: 'ADDITION',
       requestor: 'Test',
       approver: 'Test',
       projectId: 'test-project',
-    };
-    component.onCreateFormSubmit(newChange);
-    expect(component.createChange.emit).toHaveBeenCalledWith(
-      expect.objectContaining(newChange)
-    );
+    } as Partial<Change>);
+
+    const emitted = (component.createChange.emit as jest.Mock).mock.calls[0][0];
+    expect(emitted).toMatchObject({
+      changeDescription: 'New Change',
+      changeType: 'ADDITION',
+      projectId: 'test-project',
+    });
+    expect(emitted.requestor).toBeUndefined();
+    expect(emitted.approver).toBeUndefined();
+    expect(emitted.resolution).toBeUndefined();
     expect(component.closeModal).toHaveBeenCalled();
   });
 

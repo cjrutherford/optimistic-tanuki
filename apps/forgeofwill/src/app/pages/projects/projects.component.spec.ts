@@ -5,7 +5,7 @@ import {
   tick,
 } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { of, Subject, throwError } from 'rxjs';
+import { NEVER, of, Subject, throwError } from 'rxjs';
 
 import { ProjectsComponent } from './projects.component';
 import { ProjectService } from '../../project/project.service';
@@ -16,6 +16,7 @@ import { JournalService } from '../../journal/journal.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProjectSelectorComponent } from '@optimistic-tanuki/project-ui';
 import { TaskTimeEntryService } from '../../task-time-entry/task-time-entry.service';
+import { TaskNoteService } from '../../task-note/task-note.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   Project,
@@ -54,7 +55,6 @@ describe('ProjectsComponent', () => {
     startDate: new Date(),
     endDate: new Date(),
     status: 'IN_PROGRESS',
-    timers: [],
     tasks: [],
     risks: [],
     changes: [],
@@ -109,10 +109,50 @@ describe('ProjectsComponent', () => {
   beforeEach(async () => {
     const projectServiceMock = {
       getProjects: jest.fn().mockReturnValue(of([mockProject])),
+      // Who is on the project and what invitations are outstanding. The panel
+      // asks for both whenever a project is chosen, and asks for invitations
+      // even as a member, where the server refuses and an empty list is the
+      // right answer rather than an error.
+      getProjectPeople: jest.fn().mockReturnValue(of([])),
+      getProjectInvites: jest.fn().mockReturnValue(of([])),
+      inviteToProject: jest.fn().mockReturnValue(of({})),
+      revokeProjectInvite: jest.fn().mockReturnValue(of({})),
+      removeProjectMember: jest.fn().mockReturnValue(of({})),
+      leaveProject: jest.fn().mockReturnValue(of({})),
+      currentProfileId: jest.fn().mockReturnValue('me'),
+      getProjectConversation: jest
+        .fn()
+        .mockReturnValue(of({ id: 'c1', participants: [] })),
+      getConversationMessages: jest.fn().mockReturnValue(of([])),
+      sendConversationMessage: jest.fn().mockReturnValue(of({})),
       createProject: jest.fn().mockReturnValue(of(mockProject)),
       updateProject: jest.fn().mockReturnValue(of(mockProject)),
       getProjectById: jest.fn().mockReturnValue(of(mockProject)),
       deleteProject: jest.fn().mockReturnValue(of(undefined)),
+      getProjectSummary: jest.fn().mockReturnValue(
+        of({
+          summary: {
+            headline: 'Behind on the crane',
+            concerns: [
+              { about: 'unassigned', why: 'nobody on it', evidenceId: '1' },
+            ],
+          },
+          model: 'test-model',
+          discarded: 0,
+        })
+      ),
+      // Selecting a project reads its pending proposals and its recorded time
+      // as well as the project itself. A mock that does not know about a call
+      // the component makes fails every test that selects anything.
+      getAiChanges: jest.fn().mockReturnValue(of([])),
+      reviewAiChange: jest.fn().mockReturnValue(of({})),
+      requestAiProposals: jest.fn().mockReturnValue(of({ changes: [] })),
+      instructAssistant: jest
+        .fn()
+        .mockReturnValue(of({ said: '', used: [], awaitingApproval: false })),
+      getProjectAnalytics: jest
+        .fn()
+        .mockReturnValue(of({ project: null, tags: [] })),
     };
     const taskServiceMock = {
       createTask: jest.fn().mockReturnValue(of(mockTask)),
@@ -136,6 +176,10 @@ describe('ProjectsComponent', () => {
       deleteJournalEntry: jest.fn().mockReturnValue(of(undefined)),
     };
     const messageServiceMock = { addMessage: jest.fn() };
+    const taskNoteServiceMock = {
+      getTaskNotesForProject: jest.fn().mockReturnValue(of([])),
+      createTaskNote: jest.fn().mockReturnValue(of({ id: 'note1' })),
+    };
     const taskTimeEntryServiceMock = {
       startTimer: jest
         .fn()
@@ -143,6 +187,7 @@ describe('ProjectsComponent', () => {
       stopTimer: jest
         .fn()
         .mockReturnValue(of({ id: 'time1', taskId: 'task1' })),
+      getTaskTimeEntriesForProject: jest.fn().mockReturnValue(of([])),
     };
     const themeServiceMock = {
       getTheme: jest.fn().mockReturnValue('light'),
@@ -165,6 +210,7 @@ describe('ProjectsComponent', () => {
         { provide: JournalService, useValue: journalServiceMock },
         { provide: MessageService, useValue: messageServiceMock },
         { provide: TaskTimeEntryService, useValue: taskTimeEntryServiceMock },
+        { provide: TaskNoteService, useValue: taskNoteServiceMock },
         { provide: ThemeService, useValue: themeServiceMock },
       ],
     }).compileComponents();
@@ -196,14 +242,29 @@ describe('ProjectsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('labels the static project context truthfully without attributing it to AI', () => {
+  /**
+   * This tile once claimed to be an "AI Project Summary" written by "your AI
+   * Project Manager" and was static markup saying neither. It was replaced
+   * with honest static text, and this test was added so the claim could not
+   * come back.
+   *
+   * The static text has since been replaced again, this time by a component
+   * that really does read the project: open tasks, overdue ones, unresolved
+   * risks, pending changes. So the sentence it used to assert is gone on
+   * purpose, and asserting it again would only pin wording. What the test is
+   * actually for survives untouched below. Nothing may claim to be AI here,
+   * because nothing here is.
+   */
+  it('summarises the project without attributing any of it to AI', () => {
     component.selectedProject.set(mockProject);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Project context');
     expect(compiled.textContent).not.toContain('AI Project Summary');
     expect(compiled.textContent).not.toContain('AI Project Manager');
+    // Real content, so an empty tile cannot pass this by saying nothing.
+    expect(compiled.textContent).toContain('Project health');
+    expect(compiled.querySelector('lib-project-summary')).toBeTruthy();
   });
 
   it('should load projects on init', fakeAsync(() => {
@@ -655,4 +716,63 @@ describe('ProjectsComponent', () => {
       expect.objectContaining({ type: 'error' })
     );
   }));
+
+  /**
+   * The model read is opt-in and must never outlive the project it describes.
+   */
+  describe('the model read of a project', () => {
+    it('asks for nothing until the reader asks', () => {
+      expect(projectService.getProjectSummary).not.toHaveBeenCalled();
+      expect(component.narrative()).toBeNull();
+    });
+
+    it('fetches for the selected project and keeps what came back', () => {
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+
+      expect(projectService.getProjectSummary).toHaveBeenCalledWith(
+        mockProject.id
+      );
+      expect(component.narrative()?.model).toBe('test-model');
+      expect(component.narrativeLoading()).toBe(false);
+    });
+
+    it('says so when the read fails, and keeps the page up', () => {
+      projectService.getProjectSummary.mockReturnValue(
+        throwError(() => new Error('gateway down'))
+      );
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+
+      expect(component.narrative()?.summary).toBeNull();
+      expect(component.narrative()?.unavailable).toBeTruthy();
+      expect(component.narrativeLoading()).toBe(false);
+    });
+
+    it('does not ask twice while one read is in flight', () => {
+      projectService.getProjectSummary.mockReturnValue(NEVER);
+      component.selectedProject.set(mockProject);
+
+      component.onNarrativeRequested();
+      component.onNarrativeRequested();
+
+      expect(projectService.getProjectSummary).toHaveBeenCalledTimes(1);
+    });
+
+    it('drops the read when a different project is selected', () => {
+      // Otherwise it sits under the new project's name reading as though it
+      // were about that one, which is worse than showing nothing.
+      component.selectedProject.set(mockProject);
+      component.onNarrativeRequested();
+      expect(component.narrative()).not.toBeNull();
+
+      (
+        component as never as { chooseProject: (p: unknown) => void }
+      ).chooseProject({ ...mockProject, id: 'a-different-project' });
+
+      expect(component.narrative()).toBeNull();
+    });
+  });
 });

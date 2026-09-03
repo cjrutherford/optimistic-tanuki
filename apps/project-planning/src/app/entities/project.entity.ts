@@ -25,6 +25,12 @@ export class Project {
   @Column({ type: 'varchar', default: 'project-planning' })
   appScope: string;
 
+  @Column({ default: false })
+  isPublic: boolean;
+
+  @Column({ default: true })
+  requireHumanApproval: boolean;
+
   @Column()
   startDate: Date;
 

@@ -46,3 +46,43 @@ describe('MessageService', () => {
     expect(service.messages()).toEqual([message1]);
   });
 });
+
+/**
+ * Messages used to stay until somebody clicked them away, so every toast a
+ * session produced was still on screen at the end of it. Three decisions in a
+ * row covered the panel they were made in.
+ */
+describe('MessageService dismissing itself', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('takes an ordinary message away on its own', () => {
+    const service = new MessageService();
+    service.addMessage({ type: 'success', content: 'Approved and done.' });
+
+    expect(service.messages()).toHaveLength(1);
+    jest.advanceTimersByTime(6000);
+
+    expect(service.messages()).toHaveLength(0);
+  });
+
+  it('leaves an error up, since that is the one worth reading twice', () => {
+    const service = new MessageService();
+    service.addMessage({ type: 'error', content: 'It did not go through' });
+
+    jest.advanceTimersByTime(60000);
+
+    expect(service.messages()).toHaveLength(1);
+  });
+
+  it('removes the right one when several are up', () => {
+    const service = new MessageService();
+    service.addMessage({ type: 'info', content: 'first' });
+    jest.advanceTimersByTime(3000);
+    service.addMessage({ type: 'info', content: 'second' });
+
+    jest.advanceTimersByTime(3000);
+
+    expect(service.messages().map((m) => m.content)).toEqual(['second']);
+  });
+});

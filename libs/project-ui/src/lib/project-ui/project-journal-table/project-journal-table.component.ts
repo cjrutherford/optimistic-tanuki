@@ -175,11 +175,10 @@ export class ProjectJournalTableComponent implements OnInit, OnChanges {
   }
 
   entryCreated(newEntry: Partial<ProjectJournal>) {
+    // Same shape the endpoint refuses as in ag-project-journal-table.
     const newJournal: CreateProjectJournal = {
       projectId: newEntry.projectId || '',
-      profileId: newEntry.profileId || '',
       content: newEntry.content || '',
-      createdAt: newEntry.createdAt || new Date(),
     };
     this.createJournalEntry.emit(newJournal);
     this.closeModal();
