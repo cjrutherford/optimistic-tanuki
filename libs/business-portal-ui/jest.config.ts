@@ -1,5 +1,5 @@
 export default {
-  displayName: 'trainer-portal-ui',
+  displayName: 'business-portal-ui',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../coverage/libs/business-portal-ui',

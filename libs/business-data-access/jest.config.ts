@@ -1,5 +1,5 @@
 export default {
-  displayName: 'trainer-data-access',
+  displayName: 'business-data-access',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../coverage/libs/business-data-access',

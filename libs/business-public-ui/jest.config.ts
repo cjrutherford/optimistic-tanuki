@@ -1,5 +1,5 @@
 export default {
-  displayName: 'trainer-public-ui',
+  displayName: 'business-public-ui',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../coverage/libs/business-public-ui',
