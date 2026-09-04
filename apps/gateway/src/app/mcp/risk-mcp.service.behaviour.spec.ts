@@ -7,6 +7,7 @@ import {
   RiskStatus,
 } from '@optimistic-tanuki/models';
 import { RiskMcpService } from './risk-mcp.service';
+import { ApprovalGate } from './approval-gate.service';
 
 /**
  * Exercises every MCP risk tool: the identity it derives from the raw Express
@@ -26,7 +27,13 @@ describe('RiskMcpService tools', () => {
 
   beforeEach(() => {
     projectPlanning = { send: jest.fn().mockReturnValue(of([])) };
-    service = new RiskMcpService(projectPlanning as unknown as ClientProxy);
+    // The gate reads the project to decide whether a change needs approval.
+    // With the default reply it never gates, so these stay about the risk
+    // tools themselves; approval-gate.coverage.spec.ts covers the gated path.
+    service = new RiskMcpService(
+      projectPlanning as unknown as ClientProxy,
+      new ApprovalGate(projectPlanning as unknown as ClientProxy)
+    );
 
     // Silence the per-instance logger rather than the console.
     (
@@ -50,7 +57,14 @@ describe('RiskMcpService tools', () => {
         projectId: 'proj-1',
         requestingUserId: profileId,
       });
-      expect(result).toEqual({ success: true, risks, count: 2 });
+      expect(result).toEqual({
+        success: true,
+        risks,
+        count: 2,
+        showing: 2,
+        offset: 0,
+        more: false,
+      });
     });
 
     it('refuses an unauthenticated call before touching the microservice', async () => {
@@ -140,8 +154,12 @@ describe('RiskMcpService tools', () => {
     });
 
     it('wraps a downstream failure in a tool-level error', async () => {
-      projectPlanning.send.mockReturnValue(
-        throwError(() => new Error('downstream'))
+      // Only the create fails: the approval gate reads the project first, so
+      // failing every call would surface the gate's error instead of this one.
+      projectPlanning.send.mockImplementation((pattern: { cmd: string }) =>
+        pattern.cmd === RiskCommands.CREATE
+          ? throwError(() => new Error('downstream'))
+          : of({ id: 'proj-1' })
       );
 
       await expect(
@@ -287,7 +305,14 @@ describe('RiskMcpService tools', () => {
         status: RiskStatus.OPEN,
         requestingUserId: profileId,
       });
-      expect(result).toEqual({ success: true, risks, count: 1 });
+      expect(result).toEqual({
+        success: true,
+        risks,
+        count: 1,
+        showing: 1,
+        offset: 0,
+        more: false,
+      });
     });
 
     it('refuses an unauthenticated call before touching the microservice', async () => {
