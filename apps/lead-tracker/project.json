@@ -50,6 +50,11 @@
         "env": {
           "NODE_OPTIONS": "--experimental-vm-modules"
         }
+      },
+      "configurations": {
+        "ci": {
+          "command": "jest --config apps/lead-tracker/jest.config.ts --passWithNoTests --ci --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text"
+        }
       }
     },
     "typeorm:migration:generate": {

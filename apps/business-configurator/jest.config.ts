@@ -2,7 +2,7 @@ export default {
   displayName: 'system-configurator',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/apps/system-configurator',
+  coverageDirectory: '../../coverage/apps/business-configurator',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

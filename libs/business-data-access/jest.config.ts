@@ -2,7 +2,7 @@ export default {
   displayName: 'trainer-data-access',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/libs/trainer-data-access',
+  coverageDirectory: '../../coverage/libs/business-data-access',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',
