@@ -178,7 +178,12 @@ describe('AppController', () => {
       expect(logger.log).toHaveBeenCalledWith(
         `TCP: Retrieving messages for conversation: ${data.conversationId}`
       );
-      expect(appService.getMessages).toHaveBeenCalledWith(data.conversationId);
+      // The controller forwards the requesting profile so the service can
+      // scope the read; this payload carries none.
+      expect(appService.getMessages).toHaveBeenCalledWith(
+        data.conversationId,
+        undefined
+      );
       expect(result).toEqual(expectedResult);
     });
   });

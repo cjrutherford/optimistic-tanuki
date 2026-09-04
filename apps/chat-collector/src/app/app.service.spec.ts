@@ -13,6 +13,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { ChatMessage } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
 
@@ -693,9 +694,13 @@ describe('AppService', () => {
       );
     });
 
-    it('throws NotFoundException when the conversation is missing', async () => {
+    it('refuses a missing conversation the same way as a forbidden one', async () => {
       jest.spyOn(conversationRepository, 'findOne').mockResolvedValue(null);
 
+      // Deliberate: a conversation that does not exist and one the caller is
+      // not in answer identically, so ids cannot be probed. It is an
+      // RpcException rather than an HttpException because the status does not
+      // survive the TCP hop, which turned a refusal into a 500 at the gateway.
       await expect(
         service.postMessageHttp({
           conversationId: 'missing',
@@ -703,7 +708,7 @@ describe('AppService', () => {
           senderId: 'user-1',
           recipientIds: ['user-2'],
         })
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(RpcException);
     });
   });
 });
