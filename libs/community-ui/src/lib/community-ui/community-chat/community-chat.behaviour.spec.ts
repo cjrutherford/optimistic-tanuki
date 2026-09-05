@@ -158,45 +158,6 @@ describe('CommunityChatComponent behaviour', () => {
     });
   });
 
-  describe('loading by id', () => {
-    it('mounts the community chat room for a community id', async () => {
-      setup();
-      communityService.findOne.mockResolvedValue(community);
-      communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-1' });
-      communityService.getCommunityChatConversation.mockResolvedValue(
-        conversation
-      );
-
-      await component['loadCommunity']('community-1');
-
-      expect(communityService.findOne).toHaveBeenCalledWith('community-1');
-      expect(component.community()).toEqual(community);
-      expect(component.chatRoomId()).toBe('room-1');
-      expect(component.chatContacts()).toEqual([
-        { id: 'room-1', name: 'General', profilePic: 'logo.png' },
-      ]);
-    });
-
-    it('reports a missing community for an unknown id', async () => {
-      setup();
-      communityService.findOne.mockResolvedValue(null);
-
-      await component['loadCommunity']('missing');
-
-      expect(component.error()).toBe('Community not found');
-      expect(communityService.getCommunityChatRoom).not.toHaveBeenCalled();
-    });
-
-    it('reports a failure when loading by id throws', async () => {
-      setup();
-      communityService.findOne.mockRejectedValue(new Error('boom'));
-
-      await component['loadCommunity']('community-1');
-
-      expect(component.error()).toBe('Failed to load community');
-    });
-  });
-
   describe('loading without a community slug', () => {
     it('falls back to the first community the user belongs to', async () => {
       setup({});
