@@ -978,20 +978,39 @@ describe('BusinessSiteEditorPageComponent behaviour', () => {
     });
 
     /**
-     * DEFECT (not fixed here): reordering is a silent no-op in the default
-     * single-column layout, so only split and grid are asserted below.
-     *
-     * `dropListId()` builds ids as `landing-${layout}-${zoneId}`, but
-     * `zoneIdFromDropListId()` recovers the zone with
-     * `split('-').slice(2).join('-')`. The layout name `single-column` itself
-     * contains a hyphen, so `landing-single-column-main` parses to the zone id
-     * `column-main` rather than `main`. `buildZoneSectionMap()` only holds the
-     * key `main`, the lookup misses, the reorder is applied to an empty array,
-     * and the original order is written straight back.
-     *
-     * `split` and `grid` are unaffected: their layout names have no hyphen, and
-     * grid's hyphenated *zone* ids survive the `join('-')`.
+     * `dropListId()` builds ids as `landing-${layout}-${zoneId}`, and
+     * `zoneIdFromDropListId()` has to undo that. It used to take a fixed
+     * segment index, which broke on the only layout whose name contains a
+     * hyphen: `landing-single-column-main` parsed to the zone `column-main`,
+     * the lookup in `buildZoneSectionMap()` missed, and the reorder was applied
+     * to an empty array — so dragging in the default layout silently did
+     * nothing. The first case below is the regression guard.
      */
+    it('reorders sections in the default single-column layout on drop', () => {
+      const { component } = createComponent();
+
+      const before = component.sectionIdsForZone('single-column', 'main');
+      expect(before.length).toBeGreaterThan(2);
+
+      component.dropSection(
+        dropEvent(
+          'landing-single-column-main',
+          'landing-single-column-main',
+          0,
+          2
+        ),
+        'single-column',
+        'main'
+      );
+
+      const after = component.sectionIdsForZone('single-column', 'main');
+      expect(after).not.toEqual(before);
+      expect(after[2]).toBe(before[0]);
+      expect(
+        component.draft().landingPage.sections.map((section) => section.order)
+      ).toEqual([0, 1, 2, 3, 4, 5]);
+    });
+
     it('reorders sections inside a split zone on drop', () => {
       const { component } = createComponent();
 

@@ -4852,7 +4852,19 @@ export class BusinessSiteEditorPageComponent {
   }
 
   private zoneIdFromDropListId(dropListId: string): string | null {
-    return dropListId.split('-').slice(2).join('-') || null;
+    // The layout segment can itself contain a hyphen, so the zone cannot be
+    // recovered by a fixed segment index: `landing-single-column-main` read as
+    // zone 'column-main', and because that zone does not exist every drag in
+    // the default single-column layout resolved to nothing and silently did
+    // not reorder. Matching the known layout prefixes instead keeps zone ids
+    // with hyphens intact too.
+    for (const layout of ['single-column', 'split', 'grid'] as const) {
+      const prefix = `landing-${layout}-`;
+      if (dropListId.startsWith(prefix)) {
+        return dropListId.slice(prefix.length) || null;
+      }
+    }
+    return null;
   }
 
   private defaultSplitSlot(sectionId: string): SplitLayoutSlot {
