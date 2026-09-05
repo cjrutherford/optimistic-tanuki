@@ -977,6 +977,21 @@ describe('BusinessSiteEditorPageComponent behaviour', () => {
       );
     });
 
+    /**
+     * DEFECT (not fixed here): reordering is a silent no-op in the default
+     * single-column layout, so only split and grid are asserted below.
+     *
+     * `dropListId()` builds ids as `landing-${layout}-${zoneId}`, but
+     * `zoneIdFromDropListId()` recovers the zone with
+     * `split('-').slice(2).join('-')`. The layout name `single-column` itself
+     * contains a hyphen, so `landing-single-column-main` parses to the zone id
+     * `column-main` rather than `main`. `buildZoneSectionMap()` only holds the
+     * key `main`, the lookup misses, the reorder is applied to an empty array,
+     * and the original order is written straight back.
+     *
+     * `split` and `grid` are unaffected: their layout names have no hyphen, and
+     * grid's hyphenated *zone* ids survive the `join('-')`.
+     */
     it('reorders sections inside a split zone on drop', () => {
       const { component } = createComponent();
 
