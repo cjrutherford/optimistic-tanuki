@@ -134,15 +134,21 @@ export class ProfileService {
   async createProfile(profile: CreateProfileDto): Promise<void> {
     const originalProfilePic = profile.profilePic;
     const originalCoverPic = profile.coverPic;
-    profile.profilePic = '';
-    profile.coverPic = '';
     const tokenValue = this.authState.getDecodedTokenValue();
-    if (tokenValue) {
-      profile.userId = tokenValue.userId;
-    }
+
+    // The images are uploaded separately once the profile has an id, so they
+    // are stripped from the payload here. Building a copy rather than blanking
+    // the caller's object, which used to leave the caller holding a DTO with
+    // its pictures wiped.
+    const payload: CreateProfileDto = {
+      ...profile,
+      profilePic: '',
+      coverPic: '',
+      ...(tokenValue ? { userId: tokenValue.userId } : {}),
+    };
 
     const response = (await firstValueFrom(
-      this.http.post(`${this.apiBaseUrl}/profile`, profile)
+      this.http.post(`${this.apiBaseUrl}/profile`, payload)
     )) as ProfileDto | { profile: ProfileDto; newToken?: string };
 
     let newProfile =
@@ -207,44 +213,51 @@ export class ProfileService {
   }
 
   async updateProfile(id: string, profile: UpdateProfileDto): Promise<void> {
-    if (profile.profilePic && this.isExternalAssetUrl(profile.profilePic)) {
-      const existing = await firstValueFrom(
+    // A copy, so a caller's DTO is not rewritten under them with asset URLs.
+    const payload: UpdateProfileDto = { ...profile };
+
+    // Both uploads need the existing profile for its name and id. It used to be
+    // fetched once per picture, so changing both issued the same GET twice.
+    let existing: ProfileDto | undefined;
+    const loadExisting = async (): Promise<ProfileDto> =>
+      (existing ??= await firstValueFrom(
         this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
-      );
+      ));
+
+    if (payload.profilePic && this.isExternalAssetUrl(payload.profilePic)) {
+      const owner = await loadExisting();
       const fileExtension =
-        this.getFileExtensionFromDataUrl(profile.profilePic) || 'png';
+        this.getFileExtensionFromDataUrl(payload.profilePic) || 'png';
       const asset = await firstValueFrom(
         this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, {
-          name: `profile-${existing.profileName}-photo.${fileExtension}`,
-          profileId: existing.id,
+          name: `profile-${owner.profileName}-photo.${fileExtension}`,
+          profileId: owner.id,
           type: 'image',
-          content: profile.profilePic,
+          content: payload.profilePic,
           fileExtension,
         } satisfies CreateAssetDto)
       );
-      profile.profilePic = `${this.apiBaseUrl}/asset/${asset.id}`;
+      payload.profilePic = `${this.apiBaseUrl}/asset/${asset.id}`;
     }
 
-    if (profile.coverPic && this.isExternalAssetUrl(profile.coverPic)) {
-      const existing = await firstValueFrom(
-        this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
-      );
+    if (payload.coverPic && this.isExternalAssetUrl(payload.coverPic)) {
+      const owner = await loadExisting();
       const fileExtension =
-        this.getFileExtensionFromDataUrl(profile.coverPic) || 'png';
+        this.getFileExtensionFromDataUrl(payload.coverPic) || 'png';
       const asset = await firstValueFrom(
         this.http.post<AssetDto>(`${this.apiBaseUrl}/asset`, {
-          name: `profile-${existing.profileName}-cover.${fileExtension}`,
-          profileId: existing.id,
+          name: `profile-${owner.profileName}-cover.${fileExtension}`,
+          profileId: owner.id,
           type: 'image',
-          content: profile.coverPic,
+          content: payload.coverPic,
           fileExtension,
         } satisfies CreateAssetDto)
       );
-      profile.coverPic = `${this.apiBaseUrl}/asset/${asset.id}`;
+      payload.coverPic = `${this.apiBaseUrl}/asset/${asset.id}`;
     }
 
     const updated = await firstValueFrom(
-      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
+      this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, payload)
     );
 
     this.currentUserProfiles.update((profiles) =>

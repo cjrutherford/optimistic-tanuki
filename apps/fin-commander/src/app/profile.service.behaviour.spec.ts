@@ -253,6 +253,24 @@ describe('ProfileService media and mutation behaviour', () => {
       expect(post.request.body.userId).toBe('user-1');
     });
 
+    it('does not blank the images on the caller of createProfile DTO', async () => {
+      const request = newProfileRequest();
+      request.profilePic = 'data:image/png;base64,AAAA';
+      request.coverPic = 'data:image/png;base64,CCCC';
+
+      const pending = service.createProfile(request);
+      await flushNext('POST', '/api/profile', financeProfile);
+      await flushNext('POST', '/api/asset', { id: 'asset-1' });
+      await flushNext('POST', '/api/asset', { id: 'asset-2' });
+      await flushNext('PUT', '/api/profile/finance-profile', financeProfile);
+      await pending;
+
+      // Stripping used to be done in place, handing the caller back a DTO with
+      // both pictures wiped.
+      expect(request.profilePic).toBe('data:image/png;base64,AAAA');
+      expect(request.coverPic).toBe('data:image/png;base64,CCCC');
+    });
+
     it('keeps the caller supplied user id when no session token is decoded', async () => {
       authState.getDecodedTokenValue.mockReturnValue(null);
       const request = newProfileRequest();
@@ -425,6 +443,48 @@ describe('ProfileService media and mutation behaviour', () => {
 
       expect(asset.request.body.name).toBe('profile-Finance Captain-cover.png');
       expect(put.request.body.coverPic).toBe('/api/asset/asset-cover');
+    });
+
+    it('looks the existing profile up once when both images are replaced', async () => {
+      const pending = service.updateProfile('finance-profile', {
+        id: 'finance-profile',
+        profilePic: 'data:image/png;base64,AAAA',
+        coverPic: 'data:image/png;base64,CCCC',
+      });
+
+      await flushNext('GET', '/api/profile/finance-profile', financeProfile);
+      await flushNext('POST', '/api/asset', { id: 'asset-photo' });
+      await flushNext('POST', '/api/asset', { id: 'asset-cover' });
+
+      // The lookup used to be repeated per picture, so a second GET was issued
+      // here for data the service already had.
+      http.expectNone((request) => request.method === 'GET');
+
+      const put = await flushNext(
+        'PUT',
+        '/api/profile/finance-profile',
+        financeProfile
+      );
+      await pending;
+
+      expect(put.request.body.profilePic).toBe('/api/asset/asset-photo');
+      expect(put.request.body.coverPic).toBe('/api/asset/asset-cover');
+    });
+
+    it('does not rewrite the caller of updateProfile DTO', async () => {
+      const request = {
+        id: 'finance-profile',
+        profilePic: 'data:image/png;base64,AAAA',
+      };
+
+      const pending = service.updateProfile('finance-profile', request);
+      await flushNext('GET', '/api/profile/finance-profile', financeProfile);
+      await flushNext('POST', '/api/asset', { id: 'asset-photo' });
+      await flushNext('PUT', '/api/profile/finance-profile', financeProfile);
+      await pending;
+
+      // The caller still holds the data URL it passed in, not an asset path.
+      expect(request.profilePic).toBe('data:image/png;base64,AAAA');
     });
 
     it('leaves images that already point at the asset service untouched', async () => {
