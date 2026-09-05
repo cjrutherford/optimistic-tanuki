@@ -421,12 +421,14 @@ describe('SetupService deployment pipeline', () => {
       ).toBe('done');
     });
 
-    it('still succeeds when the validation and migrate commands fail', async () => {
+    it('carries on when only the advisory validation fails', async () => {
+      // Validation is a pre-check; the migration below is the step that has to
+      // succeed, so a validation failure is logged rather than fatal.
       writeDeployment(deploymentWith({}, []));
       writeAdminEnv('exit 1');
       writeExecutable(
         path.join(workspaceRoot, 'scripts', 'setup-and-migrate.sh'),
-        'exit 1'
+        `printf 'migrate\\n' >> "${argvLog}"`
       );
       const service = new SetupService();
 
@@ -434,7 +436,32 @@ describe('SetupService deployment pipeline', () => {
         success: true,
         message: 'Databases initialized',
       });
+      expect(readArgvLog()).toEqual(['migrate']);
       expect(service.getDeployProgress().error).toBeNull();
+    });
+
+    it('fails the deployment when the migration script fails', async () => {
+      // A silent success here would let deployAll start every service against
+      // an unmigrated database.
+      writeDeployment(deploymentWith({}, []));
+      writeExecutable(
+        path.join(workspaceRoot, 'scripts', 'setup-and-migrate.sh'),
+        'exit 1'
+      );
+      const service = new SetupService();
+
+      const result = await service.initDatabases();
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Database migration failed');
+
+      const progress = service.getDeployProgress();
+      expect(progress.error).toContain('Database migration failed');
+      expect(
+        progress.phases
+          .find((phase) => phase.id === 'db')
+          ?.substeps.find((substep) => substep.id === 'run-migrations')?.status
+      ).toBe('error');
     });
 
     it('skips both commands when neither the binary nor the script exists', async () => {

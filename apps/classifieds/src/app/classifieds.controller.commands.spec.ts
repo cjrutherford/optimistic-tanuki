@@ -150,11 +150,15 @@ describe('ClassifiedsController message handlers', () => {
   });
 
   it('forwards the unfeature command', async () => {
-    await expect(controller.unfeature({ id: 'ad-1' })).resolves.toEqual({
+    await expect(
+      controller.unfeature({ id: 'ad-1', profileId: 'profile-1' })
+    ).resolves.toEqual({
       id: 'ad-1',
       isFeatured: false,
     });
-    expect(service.unfeature).toHaveBeenCalledWith('ad-1');
+    // The owning profile travels with the command so the service can refuse a
+    // caller who does not own the ad.
+    expect(service.unfeature).toHaveBeenCalledWith('ad-1', 'profile-1');
   });
 
   it('surfaces service failures to the message broker', async () => {

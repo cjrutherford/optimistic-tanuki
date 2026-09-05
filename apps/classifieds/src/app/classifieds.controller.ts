@@ -97,7 +97,7 @@ export class ClassifiedsController {
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.UNFEATURE })
-  async unfeature(@Payload() data: { id: string }) {
-    return this.classifiedsService.unfeature(data.id);
+  async unfeature(@Payload() data: { id: string; profileId: string }) {
+    return this.classifiedsService.unfeature(data.id, data.profileId);
   }
 }

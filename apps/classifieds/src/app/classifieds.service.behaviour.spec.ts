@@ -384,6 +384,19 @@ describe('ClassifiedsService', () => {
       );
       expect(repo.save).not.toHaveBeenCalled();
     });
+
+    it('refuses to feature an ad owned by another profile', async () => {
+      // isFeatured drives the listing order, so featuring someone else's ad
+      // would let any caller promote or bury a listing they do not own.
+      const ad = createAd({ profileId: 'profile-1' });
+      repo.findOne.mockResolvedValue(ad);
+
+      await expect(service.feature('ad-1', 'profile-other', 7)).rejects.toThrow(
+        'Forbidden: not the owner of this classified ad'
+      );
+      expect(ad.isFeatured).toBe(false);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('unfeature', () => {
@@ -394,11 +407,26 @@ describe('ClassifiedsService', () => {
       });
       repo.findOne.mockResolvedValue(ad);
 
-      const result = await service.unfeature('ad-1');
+      const result = await service.unfeature('ad-1', 'profile-1');
 
       expect(result.isFeatured).toBe(false);
       expect(result.featuredUntil).toBeNull();
       expect(repo.save).toHaveBeenCalledWith(ad);
+    });
+
+    it('refuses to unfeature an ad owned by another profile', async () => {
+      const ad = createAd({
+        profileId: 'profile-1',
+        isFeatured: true,
+        featuredUntil: new Date('2026-04-01T00:00:00.000Z'),
+      });
+      repo.findOne.mockResolvedValue(ad);
+
+      await expect(service.unfeature('ad-1', 'profile-other')).rejects.toThrow(
+        'Forbidden: not the owner of this classified ad'
+      );
+      expect(ad.isFeatured).toBe(true);
+      expect(repo.save).not.toHaveBeenCalled();
     });
   });
 });
