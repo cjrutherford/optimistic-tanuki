@@ -10,6 +10,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { ChannelDto, VideoDto } from '@optimistic-tanuki/ui-models';
 import { UploadComponent } from './upload.component';
 import { VideoService } from '../../services/video.service';
+import { ProfileService } from '../../services/profile.service';
 
 /**
  * TS4111 is enabled workspace-wide, so the collaborator doubles are declared as
@@ -22,6 +23,10 @@ interface VideoServiceStub {
 
 interface RouterStub {
   navigate: jest.Mock;
+}
+
+interface ProfileServiceStub {
+  getCurrentUserProfile: jest.Mock;
 }
 
 /**
@@ -56,6 +61,7 @@ const videoFixture: VideoDto = {
 describe('UploadComponent behaviour', () => {
   let videoService: VideoServiceStub;
   let router: RouterStub;
+  let profileService: ProfileServiceStub;
   let http: HttpTestingController;
   let consoleError: jest.SpyInstance;
 
@@ -75,6 +81,9 @@ describe('UploadComponent behaviour', () => {
       createVideo: jest.fn(() => of(videoFixture)),
     };
     router = { navigate: jest.fn() };
+    profileService = {
+      getCurrentUserProfile: jest.fn(() => ({ id: 'profile-1' })),
+    };
   });
 
   afterEach(() => {
@@ -91,6 +100,7 @@ describe('UploadComponent behaviour', () => {
         provideHttpClientTesting(),
         { provide: VideoService, useValue: videoService },
         { provide: Router, useValue: router },
+        { provide: ProfileService, useValue: profileService },
       ],
     });
 
@@ -186,7 +196,7 @@ describe('UploadComponent behaviour', () => {
         name: 'tour.mp4',
         type: 'video',
         fileExtension: 'mp4',
-        profileId: 'user-profile-id',
+        profileId: 'profile-1',
       });
       // The data: prefix is stripped before upload, leaving raw base64.
       expect(atob(assetRequest.request.body.content)).toBe('video-bytes');
@@ -209,6 +219,34 @@ describe('UploadComponent behaviour', () => {
       expect(router.navigate).not.toHaveBeenCalled();
       jest.advanceTimersByTime(2000);
       expect(router.navigate).toHaveBeenCalledWith(['/watch', 'video-1']);
+    });
+
+    it('attributes the asset to the signed-in profile', async () => {
+      // Previously hardcoded to 'user-profile-id', so every upload in the
+      // running app was filed against a profile that does not exist.
+      profileService.getCurrentUserProfile.mockReturnValue({ id: 'profile-9' });
+      const component = createComponent();
+      component.videoFile = fileWith('tour.mp4', 'video-bytes');
+
+      const submission = component.onSubmit();
+      const assetRequest = await awaitRequest('/api/asset');
+
+      expect(assetRequest.request.body.profileId).toBe('profile-9');
+      assetRequest.flush({ id: 'asset-video' });
+      await submission;
+    });
+
+    it('refuses to upload when no profile is selected', async () => {
+      profileService.getCurrentUserProfile.mockReturnValue(null);
+      const component = createComponent();
+      component.videoFile = fileWith('tour.mp4', 'video-bytes');
+
+      await component.onSubmit();
+
+      // Nothing is sent: an unattributed asset would be orphaned.
+      expect(component.error).toBe('Failed to upload file');
+      expect(component.uploading).toBe(false);
+      expect(videoService.createVideo).not.toHaveBeenCalled();
     });
 
     it('uploads a thumbnail asset as well when one was chosen', async () => {
