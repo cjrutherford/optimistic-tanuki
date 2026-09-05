@@ -71,6 +71,8 @@ export class ManageGroupsComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
+    super.ngOnInit();
+
     this.route.data.subscribe((data) => {
       this.currentUserId = data['currentUserId'] || '';
       if (this.currentUserId) {

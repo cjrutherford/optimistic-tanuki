@@ -171,6 +171,9 @@ export class ClassifiedsService {
     durationDays: number
   ): Promise<ClassifiedAdEntity> {
     const ad = await this.findById(id);
+    if (ad.profileId !== profileId) {
+      throw new RpcException('Forbidden: not the owner of this classified ad');
+    }
     ad.isFeatured = true;
     const until = new Date();
     until.setDate(until.getDate() + durationDays);
@@ -178,8 +181,11 @@ export class ClassifiedsService {
     return this.repo.save(ad);
   }
 
-  async unfeature(id: string): Promise<ClassifiedAdEntity> {
+  async unfeature(id: string, profileId: string): Promise<ClassifiedAdEntity> {
     const ad = await this.findById(id);
+    if (ad.profileId !== profileId) {
+      throw new RpcException('Forbidden: not the owner of this classified ad');
+    }
     ad.isFeatured = false;
     ad.featuredUntil = null;
     return this.repo.save(ad);

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { VideoService } from '../../services/video.service';
+import { ProfileService } from '../../services/profile.service';
 import { CreateVideoDto } from '@optimistic-tanuki/ui-models';
 import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -450,6 +451,7 @@ export class UploadComponent {
   constructor(
     private http: HttpClient,
     private videoService: VideoService,
+    private profileService: ProfileService,
     private router: Router
   ) {
     this.loadChannels();
@@ -549,6 +551,14 @@ export class UploadComponent {
   }
 
   private async uploadFile(file: File, type: string): Promise<string> {
+    // Every asset was previously attributed to the literal 'user-profile-id',
+    // so uploads landed against a profile that does not exist rather than the
+    // one doing the uploading.
+    const profile = this.profileService.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('No profile selected; cannot attribute the upload.');
+    }
+
     // Convert file to base64
     const base64 = await this.fileToBase64(file);
 
@@ -558,7 +568,7 @@ export class UploadComponent {
       type: type,
       content: base64.split(',')[1], // Remove data:... prefix
       fileExtension: file.name.split('.').pop(),
-      profileId: 'user-profile-id', // Should come from auth service
+      profileId: profile.id,
     };
 
     return new Promise((resolve, reject) => {

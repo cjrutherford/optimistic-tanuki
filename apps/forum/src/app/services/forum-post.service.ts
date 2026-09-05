@@ -7,6 +7,7 @@ import {
   UpdateForumPostDto,
 } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
+import { withIdConstraint } from './find-options';
 
 @Injectable()
 export class ForumPostService {
@@ -58,10 +59,7 @@ export class ForumPostService {
     options?: FindOneOptions<ForumPost>
   ): Promise<ForumPost | null> {
     return await this.postRepo.findOne(
-      this.withDefaultModerationFilter({
-        where: { id },
-        ...options,
-      })
+      this.withDefaultModerationFilter(withIdConstraint(id, options))
     );
   }
 

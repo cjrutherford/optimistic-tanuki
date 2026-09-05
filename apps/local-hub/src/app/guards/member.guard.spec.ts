@@ -122,4 +122,66 @@ describe('MemberGuard', () => {
     expect(communityServiceMock.getCommunityBySlug).not.toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith(['/communities']);
   });
+
+  it('redirects to login with a returnUrl built from the route tree when unauthenticated', async () => {
+    isAuthenticated$.next(false);
+
+    const child = route({ slug: 'austin' });
+    const parent = {
+      paramMap: convertToParamMap({}),
+      url: [{ path: 'c', parameters: {} }],
+      parent: null,
+    } as unknown as ActivatedRouteSnapshot;
+    Object.defineProperty(child, 'parent', { value: parent });
+
+    await expect(TestBed.inject(MemberGuard).canActivate(child)).resolves.toBe(
+      false
+    );
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: '/c/classifieds/new' },
+    });
+    expect(communityServiceMock.getCommunityBySlug).not.toHaveBeenCalled();
+  });
+
+  it('treats a failed session restore as unauthenticated rather than throwing', async () => {
+    isAuthenticated$.next(false);
+    authStateMock.waitForSessionRestore.mockRejectedValueOnce(
+      new Error('network down')
+    );
+
+    await expect(
+      TestBed.inject(MemberGuard).canActivate(route({ slug: 'austin' }))
+    ).resolves.toBe(false);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], expect.anything());
+  });
+
+  it('navigates to /communities when the community cannot be found', async () => {
+    communityServiceMock.getCommunityBySlug.mockResolvedValueOnce(null);
+
+    await expect(
+      TestBed.inject(MemberGuard).canActivate(route({ slug: 'nowhere' }))
+    ).resolves.toBe(false);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/communities']);
+    expect(communityServiceMock.isMember).not.toHaveBeenCalled();
+  });
+
+  it('redirects back and logs an error when the membership check throws', async () => {
+    const consoleError = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    communityServiceMock.getCommunityBySlug.mockRejectedValueOnce(
+      new Error('boom')
+    );
+
+    await expect(
+      TestBed.inject(MemberGuard).canActivate(route({ slug: 'austin' }))
+    ).resolves.toBe(false);
+
+    expect(router.navigate).toHaveBeenCalledWith(['/city', 'austin']);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });

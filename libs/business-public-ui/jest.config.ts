@@ -1,8 +1,8 @@
 export default {
-  displayName: 'trainer-public-ui',
+  displayName: 'business-public-ui',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/libs/trainer-public-ui',
+  coverageDirectory: '../../coverage/libs/business-public-ui',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

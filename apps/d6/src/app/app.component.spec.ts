@@ -71,4 +71,64 @@ describe('AppComponent', () => {
     expect(themeServiceStub.setPrimaryColor).toHaveBeenCalledWith('#6b8f8a');
     expect(themeServiceStub.setTheme).toHaveBeenCalledWith('light');
   });
+
+  it('dismiss delegates to the message service', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.dismiss(3);
+
+    expect(messageServiceStub.removeMessage).toHaveBeenCalledWith(3);
+  });
+
+  describe('reducedMotion', () => {
+    it('reflects prefers-reduced-motion when matchMedia is available', () => {
+      const matchMediaMock = jest.fn().mockReturnValue({ matches: true });
+      Object.defineProperty(window, 'matchMedia', {
+        value: matchMediaMock,
+        configurable: true,
+      });
+
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.reducedMotion).toBe(true);
+      expect(matchMediaMock).toHaveBeenCalledWith(
+        '(prefers-reduced-motion: reduce)'
+      );
+    });
+
+    it('returns false when matchMedia is unavailable in the browser', () => {
+      Object.defineProperty(window, 'matchMedia', {
+        value: undefined,
+        configurable: true,
+      });
+
+      const fixture = TestBed.createComponent(AppComponent);
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.reducedMotion).toBe(false);
+    });
+  });
+
+  it('treats a non-browser platform as reduced motion without probing matchMedia', async () => {
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [AppComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: PLATFORM_ID, useValue: 'server' },
+          { provide: ThemeService, useValue: themeServiceStub },
+          { provide: MessageService, useValue: messageServiceStub },
+        ],
+      })
+      .compileComponents();
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.reducedMotion).toBe(true);
+    expect(themeServiceStub.setTheme).not.toHaveBeenCalled();
+  });
 });

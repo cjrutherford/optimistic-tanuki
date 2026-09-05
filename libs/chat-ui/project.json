@@ -10,8 +10,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "libs/chat-ui/jest.config.ts",
-        "coverageReporters": ["lcov", "text"]
+        "jestConfig": "libs/chat-ui/jest.config.ts"
       }
     },
     "lint": {

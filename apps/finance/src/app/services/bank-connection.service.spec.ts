@@ -210,4 +210,82 @@ describe('BankConnectionService', () => {
     });
     expect(result?.status).toBe('disconnected');
   });
+
+  describe('provider hand-off and scoped reads', () => {
+    const scope = {
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tenantId: 'tenant-1',
+      appScope: 'finance',
+    };
+
+    it('delegates link token creation straight to the provider', async () => {
+      const token = { linkToken: 'link-sandbox-1', expiration: '2027-01-01' };
+      plaidProvider.createLinkToken.mockResolvedValue(token);
+
+      await expect(
+        service.createLinkToken({ provider: 'plaid', ...scope } as never)
+      ).resolves.toBe(token);
+      expect(plaidProvider.createLinkToken).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'plaid', userId: 'user-1' })
+      );
+    });
+
+    it('turns an exchanged public token into a stored connection', async () => {
+      plaidProvider.exchangePublicToken.mockResolvedValue({
+        itemId: 'item-1',
+        accessToken: 'access-1',
+        institutionId: 'ins-1',
+        institutionName: 'Test Bank',
+        accounts: [],
+      });
+      const saved = { id: 'connection-1' } as BankConnection;
+      connectionRepo.create.mockReturnValue(saved);
+      connectionRepo.save.mockResolvedValue(saved);
+
+      await expect(
+        service.exchangePublicToken({
+          provider: 'plaid',
+          publicToken: 'public-1',
+          workspace: 'personal',
+          ...scope,
+        } as never)
+      ).resolves.toBe(saved);
+
+      // The provider's item and access token are what get persisted, not the
+      // short-lived public token the client handed over.
+      expect(connectionRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          itemId: 'item-1',
+          accessToken: 'access-1',
+          institutionName: 'Test Bank',
+          status: 'healthy',
+        })
+      );
+    });
+
+    it('lists connections within the scope, with their linked accounts', async () => {
+      connectionRepo.find.mockResolvedValue([]);
+
+      await service.listConnections(scope);
+
+      expect(connectionRepo.find).toHaveBeenCalledWith({
+        relations: { linkedAccounts: true },
+        where: scope,
+      });
+    });
+
+    it('constrains a single connection lookup by id and scope', async () => {
+      connectionRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findConnection('connection-1', scope)
+      ).resolves.toBeNull();
+
+      expect(connectionRepo.findOne).toHaveBeenCalledWith({
+        relations: { linkedAccounts: true },
+        where: { id: 'connection-1', ...scope },
+      });
+    });
+  });
 });

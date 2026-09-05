@@ -151,4 +151,113 @@ describe('AppRegistryService', () => {
       })
     ).toBe('http://localhost:8091/build/new?source=hai');
   });
+
+  it('returns "/" from getAppUrl when the app id is unknown', () => {
+    const service = new AppRegistryService(
+      { get: jest.fn() } as any,
+      '/api/registry/apps',
+      300000,
+      serverPlatformId
+    );
+    expect(service.getAppUrl('nonexistent-app')).toBe('/');
+  });
+
+  it('finds an app by domain or a matching uiBaseUrl substring', (done) => {
+    const service = new AppRegistryService(
+      {
+        get: jest
+          .fn()
+          .mockReturnValue(of({ success: true, data: DEFAULT_APP_REGISTRY })),
+      } as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
+
+    service.getAppByDomain('localhost').subscribe((app) => {
+      expect(app).not.toBeNull();
+      service.getAppByDomain('no-such-domain.invalid').subscribe((missing) => {
+        expect(missing).toBeNull();
+        done();
+      });
+    });
+  });
+
+  it('filters apps by visibility for getPublicApps and getInternalApps', (done) => {
+    const service = new AppRegistryService(
+      {
+        get: jest.fn().mockReturnValue(
+          of({
+            success: true,
+            data: {
+              ...DEFAULT_APP_REGISTRY,
+              apps: [
+                {
+                  ...DEFAULT_APP_REGISTRY.apps[0],
+                  appId: 'pub',
+                  visibility: 'public',
+                },
+                {
+                  ...DEFAULT_APP_REGISTRY.apps[0],
+                  appId: 'internal',
+                  visibility: 'internal',
+                },
+              ],
+            },
+          })
+        ),
+      } as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
+
+    service.getPublicApps().subscribe((pub) => {
+      expect(pub.map((a) => a.appId)).toEqual(['pub']);
+      service.getInternalApps().subscribe((internal) => {
+        expect(internal.map((a) => a.appId)).toEqual(['internal']);
+        done();
+      });
+    });
+  });
+
+  it('refresh() re-triggers the registry fetch and returns the latest data', (done) => {
+    const http = {
+      get: jest
+        .fn()
+        .mockReturnValue(of({ success: true, data: DEFAULT_APP_REGISTRY })),
+    };
+    const service = new AppRegistryService(
+      http as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
+
+    service.refresh().subscribe(() => {
+      expect(http.get).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  it('isAppAccessible and getAppSync report against the last-fetched registry', (done) => {
+    const service = new AppRegistryService(
+      {
+        get: jest
+          .fn()
+          .mockReturnValue(of({ success: true, data: DEFAULT_APP_REGISTRY })),
+      } as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
+
+    service.getAllApps().subscribe(() => {
+      expect(service.isAppAccessible('hai')).toBe(true);
+      expect(service.isAppAccessible('does-not-exist')).toBe(false);
+      expect(service.getAppSync('hai')?.appId).toBe('hai');
+      expect(service.getAppSync('does-not-exist')).toBeNull();
+      done();
+    });
+  });
 });

@@ -4,6 +4,7 @@ import { Topic } from '../../entities/topic.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateTopicDto, UpdateTopicDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
+import { withIdConstraint } from './find-options';
 
 @Injectable()
 export class TopicService {
@@ -53,10 +54,7 @@ export class TopicService {
     id: string,
     options?: FindOneOptions<Topic>
   ): Promise<Topic | null> {
-    return await this.topicRepo.findOne({
-      where: { id },
-      ...options,
-    });
+    return await this.topicRepo.findOne(withIdConstraint(id, options));
   }
 
   async update(id: string, updateTopicDto: UpdateTopicDto): Promise<Topic> {

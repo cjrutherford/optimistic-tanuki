@@ -33,6 +33,31 @@ describe('RiskController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('passes requestingUserId to create separately from the DTO', async () => {
+    await controller.create({
+      projectId: 'p1',
+      riskOwner: 'profile-1',
+      requestingUserId: 'profile-1',
+    } as never);
+    expect(service.create).toHaveBeenCalledWith(
+      { projectId: 'p1', riskOwner: 'profile-1' },
+      'profile-1'
+    );
+  });
+
+  it('passes requestingUserId to update separately from the DTO', async () => {
+    await controller.update({
+      id: 'r1',
+      description: 'y',
+      requestingUserId: 'profile-1',
+    } as never);
+    expect(service.update).toHaveBeenCalledWith(
+      'r1',
+      { id: 'r1', description: 'y' },
+      'profile-1'
+    );
+  });
+
   it('passes requestingUserId to findAll separately from the query', async () => {
     await controller.findAll({
       description: 'x',

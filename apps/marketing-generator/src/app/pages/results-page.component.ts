@@ -2815,6 +2815,12 @@ export class ResultsPageComponent {
             ? ('selected' as const)
             : concept.workflowStatus === 'archived'
             ? 'archived'
+            : // Shortlisting is the user's own annotation and survives someone
+            // else being picked. Resetting it here also made the matching
+            // branch in chooseComparedWinner unreachable, because that runs
+            // after this and so never saw a shortlisted concept.
+            concept.workflowStatus === 'shortlisted'
+            ? 'shortlisted'
             : 'candidate',
       }))
     );
