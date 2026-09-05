@@ -1006,12 +1006,10 @@ describe('SetupService configuration surface', () => {
 
   describe('saved operator summary', () => {
     it('returns null when nothing is saved and the gateway lists no users', async () => {
-      global.fetch = jest
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          json: async () => [],
-        }) as unknown as typeof fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      }) as unknown as typeof fetch;
 
       const service = new SetupService();
 
@@ -1023,12 +1021,10 @@ describe('SetupService configuration surface', () => {
         path.join(workspaceRoot, '.setup-operator.json'),
         '{ not json'
       );
-      global.fetch = jest
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          json: async () => [],
-        }) as unknown as typeof fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      }) as unknown as typeof fetch;
 
       const service = new SetupService();
 
@@ -1036,12 +1032,10 @@ describe('SetupService configuration surface', () => {
     });
 
     it('treats a non-ok users response as no existing users', async () => {
-      global.fetch = jest
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          status: 500,
-        }) as unknown as typeof fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+      }) as unknown as typeof fetch;
 
       const service = new SetupService();
       await service.saveOperator('Ops', 'ops@example.com', 'pw');
