@@ -6,7 +6,8 @@ import {
   tick,
 } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
+import { BehaviorSubject } from 'rxjs';
 import {
   CommunityDto,
   CommunityJoinPolicy,
@@ -135,6 +136,36 @@ describe('FindCommunitiesComponent behaviour', () => {
       component.applyVariant(colors, options);
 
       expect(component.variant).toBe(expected);
+    });
+
+    it('applies the theme when the service emits colours', () => {
+      // The override used to skip super.ngOnInit(), so Themeable never
+      // subscribed and applyVariant was only ever reached by a direct call —
+      // the component rendered unthemed in the app while its tests passed.
+      TestBed.resetTestingModule();
+      const emitted = new BehaviorSubject<ThemeColors | undefined>(undefined);
+
+      TestBed.configureTestingModule({
+        imports: [FindCommunitiesComponent, RouterTestingModule],
+        providers: [
+          { provide: CommunityService, useValue: communityService },
+          {
+            provide: ThemeService,
+            useValue: {
+              themeColors$: emitted.asObservable(),
+              getTheme: () => 'light' as const,
+            },
+          },
+        ],
+      });
+
+      const themed = TestBed.createComponent(FindCommunitiesComponent);
+      const applyTheme = jest.spyOn(themed.componentInstance, 'applyTheme');
+
+      themed.detectChanges();
+      emitted.next(colors);
+
+      expect(applyTheme).toHaveBeenCalledWith(colors);
     });
   });
 

@@ -16,10 +16,11 @@ export function withIdConstraint<T extends ObjectLiteral>(
 ): FindOneOptions<T> {
   const where = options?.where;
 
+  // The casts below go through `unknown` because TypeScript cannot see that a
+  // generic entity carries a string `id`. Every forum entity does.
+
   // An array of where clauses is an OR: every branch has to be constrained,
   // otherwise the unconstrained ones still match other rows.
-  // TypeScript cannot see that the entities all carry a string `id`, so the
-  // merged clauses are cast through `unknown`; every forum entity does.
   if (Array.isArray(where)) {
     return {
       ...options,
