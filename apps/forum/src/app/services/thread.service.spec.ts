@@ -64,7 +64,7 @@ describe('ThreadService', () => {
       topicId: 'topic-1',
     };
 
-    it('persists the thread with a sanitized title and content', async () => {
+    it('persists the thread with every rendered field sanitized', async () => {
       const saved = { id: 'thread-1' };
       repo.create.mockReturnValue({ id: 'draft' });
       repo.save.mockResolvedValue(saved);
@@ -74,9 +74,24 @@ describe('ThreadService', () => {
       expect(repo.create).toHaveBeenCalledWith({
         ...createDto,
         title: 'sanitized(<b>Release plan</b>)',
+        description: 'sanitized(Weekly digest)',
         content: 'sanitized(<p>Ship it</p><script>alert(1)</script>)',
       });
       expect(repo.save).toHaveBeenCalledWith({ id: 'draft' });
+    });
+
+    it('sanitizes a description carrying markup', async () => {
+      // description is rendered alongside title and content, so a raw one is
+      // a stored-XSS vector even though the DTO spread looks harmless.
+      await service.create({
+        ...createDto,
+        description: '<img src=x onerror=alert(1)>',
+      });
+
+      expect(sanitize).toHaveBeenCalledWith(
+        '<img src=x onerror=alert(1)>',
+        expect.objectContaining({ ALLOWED_ATTR: ['href', 'target', 'class'] })
+      );
     });
 
     it('allows rich text markup but only href, target and class attributes', async () => {
