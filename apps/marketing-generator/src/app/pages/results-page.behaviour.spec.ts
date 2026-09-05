@@ -1460,6 +1460,42 @@ describe('ResultsPageComponent behaviour', () => {
       );
     });
 
+    it('leaves another concept shortlist mark alone when one is picked', async () => {
+      // Shortlisting is the user's own annotation; picking a different concept
+      // used to reset it to 'candidate', silently losing the mark.
+      const concepts = buildConcepts();
+      concepts[1] = { ...concepts[1], workflowStatus: 'shortlisted' };
+      const { fixture, component, state } = await setup({ concepts });
+      fixture.detectChanges();
+
+      component.markConceptSelected('concept-1');
+
+      expect(state.concepts().map((concept) => concept.workflowStatus)).toEqual(
+        ['selected', 'shortlisted']
+      );
+    });
+
+    it('keeps a shortlisted bystander out of the compare fallout', async () => {
+      // The preserve-shortlist branch in chooseComparedWinner was unreachable
+      // while markConceptSelected, which runs first, flattened the mark.
+      const concepts = buildConcepts();
+      concepts.push({
+        ...concepts[1],
+        id: 'concept-3',
+        workflowStatus: 'shortlisted',
+      });
+      const { fixture, component, state } = await setup({ concepts });
+      fixture.detectChanges();
+
+      component.toggleCompareConcept('concept-1');
+      component.toggleCompareConcept('concept-2');
+      component.chooseComparedWinner('concept-2');
+
+      expect(state.concepts().map((concept) => concept.workflowStatus)).toEqual(
+        ['archived', 'selected', 'shortlisted']
+      );
+    });
+
     it('toggles a concept in and out of the shortlist', async () => {
       const { fixture, component, state, insights } = await setup();
       fixture.detectChanges();
