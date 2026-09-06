@@ -7,8 +7,9 @@
  * counts as a gap or what it is worth.
  */
 
-/** A specific, nameable shortfall in a business's online presence. */
-export type PresenceGap = { code: string; label: string; weight: number };
+import { PresenceGap } from '@optimistic-tanuki/models/leads-contracts';
+
+export type { PresenceGap };
 
 /**
  * Source-agnostic view of a business. Each provider maps its own payload into

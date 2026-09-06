@@ -12,6 +12,7 @@ import { LeadStatus } from './lead-status.enum';
 import { LeadFlag } from './lead-flag.model';
 import { LeadTopicLink } from './lead-topic-link.model';
 import { LeadContactPoint } from './lead-contact-point.interface';
+import { PresenceGap } from './lead-presence-gap.interface';
 
 @Entity('leads')
 export class Lead {
@@ -56,6 +57,19 @@ export class Lead {
 
   @Column({ type: 'simple-array', nullable: true })
   searchKeywords?: string[];
+
+  /**
+   * Why this business is worth contacting, for the local-business sources.
+   * Null on every other source — a job posting has no online presence to be
+   * missing. Stored rather than recomputed because the source that observed
+   * the gap is not queried again when the lead is read.
+   */
+  @Column({ type: 'jsonb', nullable: true })
+  presenceGaps?: PresenceGap[] | null;
+
+  /** The summed weight of `presenceGaps`, capped at 100. */
+  @Column({ type: 'int', nullable: true })
+  presenceGapScore?: number | null;
 
   @Column({ nullable: true })
   assignedTo?: string;

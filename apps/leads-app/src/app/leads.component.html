@@ -33,6 +33,35 @@
           (input)="filterLeads()"
         />
       </div>
+      <div class="kind-filter" role="group" aria-label="Filter leads by kind">
+        <button
+          type="button"
+          class="kind-chip"
+          [class.is-active]="kindFilter === 'all'"
+          [attr.aria-pressed]="kindFilter === 'all'"
+          (click)="setKindFilter('all')"
+        >
+          All <span class="kind-count">{{ countByKind('all') }}</span>
+        </button>
+        <button
+          type="button"
+          class="kind-chip"
+          [class.is-active]="kindFilter === 'buyers'"
+          [attr.aria-pressed]="kindFilter === 'buyers'"
+          (click)="setKindFilter('buyers')"
+        >
+          Buyers <span class="kind-count">{{ countByKind('buyers') }}</span>
+        </button>
+        <button
+          type="button"
+          class="kind-chip"
+          [class.is-active]="kindFilter === 'jobs'"
+          [attr.aria-pressed]="kindFilter === 'jobs'"
+          (click)="setKindFilter('jobs')"
+        >
+          Jobs <span class="kind-count">{{ countByKind('jobs') }}</span>
+        </button>
+      </div>
       <button class="btn btn-primary" (click)="showQuickAdd = true">
         <svg
           viewBox="0 0 24 24"
@@ -142,6 +171,16 @@
                   </span>
                 </div>
                 <span class="lead-email">{{ lead.email || '-' }}</span>
+                <!-- Why this business is on the list at all. Local sources
+                     only, so this stays absent for job postings. -->
+                <div class="gap-list" *ngIf="presenceGapLabels(lead).length">
+                  <span
+                    class="gap-chip"
+                    *ngFor="let gapLabel of presenceGapLabels(lead)"
+                  >
+                    {{ gapLabel }}
+                  </span>
+                </div>
               </div>
             </td>
             <td>{{ lead.company || '-' }}</td>

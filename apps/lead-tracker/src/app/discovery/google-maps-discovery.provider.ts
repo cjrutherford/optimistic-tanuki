@@ -278,6 +278,8 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
                 place.business_status || 'unknown'
               }. Presence gaps (${gapScore}/100): ${gapSummary}. Discovery intent: ${discoveryIntent}.`,
               searchKeywords: effectiveKeywords,
+              presenceGaps: gaps,
+              presenceGapScore: gapScore,
               // Bigger gaps are worth more work, so the estimate tracks the score.
               value: estimateGapValue(gapScore),
             }),

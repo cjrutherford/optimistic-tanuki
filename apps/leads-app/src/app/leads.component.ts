@@ -10,7 +10,19 @@ import {
   LeadStatus,
   LeadSource,
   LeadFlagReason,
+  LeadDiscoverySource,
+  LeadTopicDiscoveryIntent,
+  getLeadSourceDescriptor,
 } from './leads.types';
+
+/**
+ * Which door a lead came through. Buyers and job openings share one list, so
+ * this is the only thing separating them — and it is read from the source
+ * registry rather than guessed, because the registry is already the single
+ * place that records which intents a source can serve.
+ */
+export type LeadKind = 'buyers' | 'jobs' | 'other';
+export type LeadKindFilter = 'all' | 'buyers' | 'jobs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { FlagLeadModalComponent } from './flag-lead-modal.component';
 import { LeadDetailModalComponent } from './lead-detail-modal.component';
@@ -62,6 +74,7 @@ export class LeadsComponent implements OnInit {
   outreachPending = false;
   outreachError = '';
   outreachRecorded = false;
+  kindFilter: LeadKindFilter = 'all';
   applicationError = '';
 
   selectedLeadForView: Lead | null = null;
@@ -111,14 +124,18 @@ export class LeadsComponent implements OnInit {
   }
 
   filterLeads() {
+    const byKind = this.leads.filter((lead) => this.matchesKindFilter(lead));
+
     if (!this.searchQuery.trim()) {
-      this.filteredLeads = this.leads;
+      this.filteredLeads = this.sortForKind(byKind);
       return;
     }
     const normalizedQuery = this.normalizeSearchToken(this.searchQuery);
     const tokens = normalizedQuery.split(' ').filter(Boolean);
 
-    this.filteredLeads = this.leads
+    // A search ranks by relevance; without one, the buyer view ranks by how
+    // badly each business needs the work.
+    this.filteredLeads = byKind
       .map((lead) => ({
         lead,
         score: this.getLeadSearchScore(lead, normalizedQuery, tokens),
@@ -126,6 +143,60 @@ export class LeadsComponent implements OnInit {
       .filter((entry) => entry.score > 0)
       .sort((left, right) => right.score - left.score)
       .map((entry) => entry.lead);
+  }
+
+  setKindFilter(kind: LeadKindFilter) {
+    this.kindFilter = kind;
+    this.filterLeads();
+  }
+
+  /**
+   * Counts are shown beside each filter so the split is visible. They will not
+   * always sum to the total: a lead from a source that serves neither intent —
+   * a referral, or one added by hand — is counted in neither.
+   */
+  countByKind(kind: LeadKindFilter): number {
+    if (kind === 'all') {
+      return this.leads.length;
+    }
+    return this.leads.filter((lead) => this.classifyLead(lead) === kind).length;
+  }
+
+  classifyLead(lead: Lead): LeadKind {
+    const descriptor = lead.source
+      ? getLeadSourceDescriptor(lead.source as unknown as LeadDiscoverySource)
+      : undefined;
+    const intents = descriptor?.intents || [];
+    if (intents.includes(LeadTopicDiscoveryIntent.SERVICE_BUYERS)) {
+      return 'buyers';
+    }
+    if (intents.includes(LeadTopicDiscoveryIntent.JOB_OPENINGS)) {
+      return 'jobs';
+    }
+    return 'other';
+  }
+
+  /** The gaps that explain why a local business is on the list at all. */
+  presenceGapLabels(lead: Lead): string[] {
+    return (lead.presenceGaps || []).map((gap) => gap.label);
+  }
+
+  private matchesKindFilter(lead: Lead): boolean {
+    return (
+      this.kindFilter === 'all' || this.classifyLead(lead) === this.kindFilter
+    );
+  }
+
+  private sortForKind(leads: Lead[]): Lead[] {
+    if (this.kindFilter !== 'buyers') {
+      return leads;
+    }
+    // Worst presence first. A lead with no gap recorded has nothing to rank on
+    // and sits below every lead that does.
+    return [...leads].sort(
+      (left, right) =>
+        (right.presenceGapScore ?? -1) - (left.presenceGapScore ?? -1)
+    );
   }
 
   getLeadsByStatus(status: string): Lead[] {

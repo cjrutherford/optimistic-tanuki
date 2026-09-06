@@ -7,6 +7,7 @@ import {
   Lead,
   LeadContactPoint,
   LeadDiscoverySource,
+  PresenceGap,
 } from './leads.types';
 
 @Component({
@@ -182,6 +183,22 @@ import {
             <ng-template #noContacts>
               <p class="empty-state">No contact details were extracted.</p>
             </ng-template>
+          </section>
+
+          <!-- Placed immediately above the composer: this is the thing worth
+               opening the message with. -->
+          <section class="detail-section" *ngIf="presenceGaps.length">
+            <div class="gap-head">
+              <h3>Why this is a lead</h3>
+              <span class="gap-score" *ngIf="lead.presenceGapScore != null">
+                {{ lead.presenceGapScore }}/100
+              </span>
+            </div>
+            <div class="gap-list">
+              <span class="gap-chip" *ngFor="let gap of presenceGaps">
+                {{ gap.label }}
+              </span>
+            </div>
           </section>
 
           <section class="detail-section outreach-section">
@@ -515,6 +532,35 @@ import {
         font-weight: 600;
       }
 
+      .gap-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .gap-score {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--app-foreground-muted);
+      }
+
+      .gap-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.5rem;
+      }
+
+      .gap-chip {
+        padding: 0.2rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid var(--app-border);
+        border-radius: var(--radius-sm);
+        background: var(--app-surface-muted);
+      }
+
       .close-btn {
         width: 36px;
         height: 36px;
@@ -625,6 +671,11 @@ export class LeadDetailModalComponent {
   }
 
   private leadValue: Lead | null = null;
+
+  /** What the local-business sources found missing. Empty for every other source. */
+  get presenceGaps(): PresenceGap[] {
+    return this.leadValue?.presenceGaps || [];
+  }
 
   get canSendOutreach(): boolean {
     return Boolean(

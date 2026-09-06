@@ -8,6 +8,7 @@ import {
 import {
   LeadContactPoint,
   LeadContactPointSource,
+  PresenceGap,
 } from '@optimistic-tanuki/models/leads-contracts';
 import {
   normalizeTopicTerms,
@@ -117,6 +118,8 @@ export const createLeadEntity = (input: {
   phone?: string;
   originalPostingUrl?: string;
   contacts?: LeadContactPoint[];
+  presenceGaps?: PresenceGap[];
+  presenceGapScore?: number;
 }): Lead => {
   return {
     id: createDeterministicId(input.seed),
@@ -133,6 +136,12 @@ export const createLeadEntity = (input: {
     nextFollowUp: undefined,
     isAutoDiscovered: true,
     searchKeywords: input.searchKeywords,
+    // Only the local-business sources observe a presence, so these stay null
+    // everywhere else rather than being defaulted to an empty finding.
+    presenceGaps: input.presenceGaps?.length ? input.presenceGaps : null,
+    presenceGapScore: input.presenceGaps?.length
+      ? input.presenceGapScore ?? null
+      : null,
     assignedTo: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),

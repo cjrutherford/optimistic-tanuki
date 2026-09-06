@@ -355,4 +355,97 @@ describe('LeadsComponent', () => {
       ]);
     });
   });
+
+  describe('buyers and jobs in one list', () => {
+    const buyerLead = {
+      ...mockLead,
+      id: 'buyer-1',
+      name: "Joe's Diner",
+      source: LeadSource.OVERPASS,
+      presenceGaps: [
+        { code: 'no-website', label: 'No website listed', weight: 40 },
+        { code: 'no-reviews', label: 'No reviews at all', weight: 25 },
+      ],
+      presenceGapScore: 65,
+    } as Lead;
+
+    const weakerBuyerLead = {
+      ...mockLead,
+      id: 'buyer-2',
+      name: 'Corner Cafe',
+      source: LeadSource.GOOGLE_MAPS,
+      presenceGaps: [
+        { code: 'no-phone', label: 'No phone number listed', weight: 10 },
+      ],
+      presenceGapScore: 10,
+    } as Lead;
+
+    const jobLead = {
+      ...mockLead,
+      id: 'job-1',
+      name: 'Senior Engineer',
+      source: LeadSource.REMOTE_OK,
+    } as Lead;
+
+    const setLeads = (leads: Lead[]) => {
+      const fixture = TestBed.createComponent(LeadsComponent);
+      const component = fixture.componentInstance;
+      component.leads = leads;
+      component.filterLeads();
+      return component;
+    };
+
+    it('reads the door a lead came through from the source registry', () => {
+      const component = setLeads([buyerLead, jobLead, mockLead]);
+
+      expect(component.classifyLead(buyerLead)).toBe('buyers');
+      expect(component.classifyLead(jobLead)).toBe('jobs');
+      // A referral serves neither discovery intent, so it claims neither.
+      expect(component.classifyLead(mockLead)).toBe('other');
+    });
+
+    it('narrows the list to one door at a time', () => {
+      const component = setLeads([buyerLead, jobLead, mockLead]);
+
+      component.setKindFilter('buyers');
+      expect(component.filteredLeads.map((lead) => lead.id)).toEqual([
+        'buyer-1',
+      ]);
+
+      component.setKindFilter('jobs');
+      expect(component.filteredLeads.map((lead) => lead.id)).toEqual(['job-1']);
+
+      component.setKindFilter('all');
+      expect(component.filteredLeads).toHaveLength(3);
+    });
+
+    it('puts the business that needs the most work first', () => {
+      const component = setLeads([weakerBuyerLead, buyerLead]);
+
+      component.setKindFilter('buyers');
+
+      expect(component.filteredLeads.map((lead) => lead.id)).toEqual([
+        'buyer-1',
+        'buyer-2',
+      ]);
+    });
+
+    it('counts each door separately, and does not pretend they sum to the total', () => {
+      const component = setLeads([buyerLead, jobLead, mockLead]);
+
+      expect(component.countByKind('all')).toBe(3);
+      expect(component.countByKind('buyers')).toBe(1);
+      expect(component.countByKind('jobs')).toBe(1);
+    });
+
+    it('has no gap labels to show for a job posting', () => {
+      const component = setLeads([buyerLead, jobLead]);
+
+      expect(component.presenceGapLabels(buyerLead)).toEqual([
+        'No website listed',
+        'No reviews at all',
+      ]);
+      expect(component.presenceGapLabels(jobLead)).toEqual([]);
+    });
+  });
 });

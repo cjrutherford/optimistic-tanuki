@@ -150,6 +150,8 @@ export class OverpassDiscoveryProvider implements TopicDiscoveryProvider {
                 element.id
               }.`,
               searchKeywords: matchedKeywords,
+              presenceGaps: gaps,
+              presenceGapScore: gapScore,
               value: estimateGapValue(gapScore),
             }),
             matchedKeywords,

@@ -59,6 +59,16 @@ describe('OverpassDiscoveryProvider', () => {
     expect(lead.company).toBe('Corner Diner');
     expect(lead.notes).toContain('No website listed');
     expect(lead.notes).toContain('openstreetmap.org/node/1');
+
+    // Structured as well as narrated: the notes are for reading, these are what
+    // the list filters and sorts on.
+    expect(lead.presenceGaps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'no-website' }),
+        expect.objectContaining({ code: 'no-phone' }),
+      ])
+    );
+    expect(lead.presenceGapScore).toBeGreaterThan(0);
   });
 
   it('skips a business whose listing is already complete', async () => {

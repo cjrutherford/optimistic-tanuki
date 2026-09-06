@@ -256,6 +256,20 @@ describe('GoogleMapsDiscoveryProvider', () => {
     expect(lead.notes).toContain('Rating of 3.1');
     // The lead name leads with the most valuable gap so it reads as a pitch.
     expect(lead.name).toContain('No website listed');
+
+    // And the same findings survive as data, which is what the leads list
+    // filters and ranks on — prose in the notes cannot be sorted.
+    expect((lead.presenceGaps || []).map((gap) => gap.code)).toEqual(
+      expect.arrayContaining([
+        'no-website',
+        'no-phone',
+        'few-reviews',
+        'low-rating',
+      ])
+    );
+    expect(lead.presenceGapScore).toBe(
+      (lead.presenceGaps || []).reduce((total, gap) => total + gap.weight, 0)
+    );
   });
 
   it('skips a business whose online presence has no gaps', async () => {

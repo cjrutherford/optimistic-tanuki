@@ -102,6 +102,20 @@ export interface LeadContactPoint {
   isPrimary: boolean;
 }
 
+/**
+ * A specific, nameable shortfall in a business's online presence — the reason
+ * a local-business lead is worth contacting.
+ *
+ * Duplicated from `libs/models` on purpose: this package is publishable and
+ * cannot depend on the entity-carrying internal lib. See the contract parity
+ * spec in lead-tracker for why the duplication is structural.
+ */
+export interface PresenceGap {
+  code: string;
+  label: string;
+  weight: number;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -117,6 +131,10 @@ export interface Lead {
   nextFollowUp?: string;
   isAutoDiscovered: boolean;
   searchKeywords?: string[];
+  /** Local-business sources only; absent on a job posting, which has no presence to lack. */
+  presenceGaps?: PresenceGap[] | null;
+  /** Summed weight of `presenceGaps`, capped at 100. */
+  presenceGapScore?: number | null;
   assignedTo?: string;
   isFlagged?: boolean;
   flags?: LeadFlag[];
