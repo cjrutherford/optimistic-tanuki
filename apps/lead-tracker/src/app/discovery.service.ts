@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Lead,
+  LeadOnboardingProfileRecord,
   LeadTopic,
   LeadTopicLink,
 } from '@optimistic-tanuki/models/leads-entities';
@@ -15,6 +16,7 @@ import {
   LeadTopicDiscoverySeverity,
   LeadTopicProviderResultDto,
   LeadTopicProviderStatus,
+  LeadTopicDiscoveryIntent,
 } from '@optimistic-tanuki/models/leads-contracts';
 import { In, Repository } from 'typeorm';
 import { getLeadSourceDescriptor } from '@optimistic-tanuki/leads-contracts';
@@ -46,6 +48,7 @@ import {
 } from './discovery/source-provider.util';
 import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-discovery.provider';
 import { LeadQualificationService } from './lead-qualification.service';
+import { estimateBuyerLeadValue } from './discovery/lead-value.util';
 import {
   buildTopicMatcher,
   describeEmptyTopic,
@@ -75,6 +78,8 @@ export class DiscoveryService {
     private readonly leadTopicRepository: Repository<LeadTopic>,
     @InjectRepository(LeadTopicLink)
     private readonly leadTopicLinkRepository: Repository<LeadTopicLink>,
+    @InjectRepository(LeadOnboardingProfileRecord)
+    private readonly onboardingProfileRepository: Repository<LeadOnboardingProfileRecord>,
     private readonly internalDiscoveryProvider: InternalDiscoveryProvider,
     private readonly remoteOkDiscoveryProvider: RemoteOkDiscoveryProvider,
     private readonly himalayasDiscoveryProvider: HimalayasDiscoveryProvider,
@@ -719,6 +724,25 @@ export class DiscoveryService {
       .trim();
   }
 
+  /**
+   * The user's stated budget band, as a single figure. Read once per run: the
+   * profile does not change while a topic is being discovered.
+   */
+  private async resolveBuyerLeadValue(
+    profileId: string
+  ): Promise<number | null> {
+    const [onboarding] = await this.onboardingProfileRepository.find({
+      where: { profileId },
+      order: { createdAt: 'DESC' },
+      take: 1,
+    });
+
+    const value = estimateBuyerLeadValue(onboarding?.profile?.budgetRange);
+    // Nothing usable on the profile: leave whatever the source set rather than
+    // overwriting one guess with another.
+    return value > 0 ? value : null;
+  }
+
   private async persistDiscoveredLeads(
     matches: DiscoveredLeadCandidate[],
     topic: LeadTopic
@@ -731,15 +755,20 @@ export class DiscoveryService {
       return;
     }
 
-    if (!candidateLeads.length) {
-      return;
-    }
+    // A buyer lead's worth is the user's usual engagement size, not a number
+    // derived from the source. Job leads keep theirs: that figure is the
+    // compensation the posting itself stated.
+    const buyerLeadValue =
+      topic.discoveryIntent === LeadTopicDiscoveryIntent.SERVICE_BUYERS
+        ? await this.resolveBuyerLeadValue(topic.profileId)
+        : null;
 
     const scopedCandidates = candidateLeads.map((lead) => ({
       ...lead,
       appScope: topic.appScope,
       profileId: topic.profileId,
       userId: topic.userId,
+      ...(buyerLeadValue === null ? {} : { value: buyerLeadValue }),
     }));
 
     const existingLeads = await this.leadRepository.findBy({

@@ -4,6 +4,7 @@ import {
   Lead,
   LeadTopic,
   LeadTopicLink,
+  LeadOnboardingProfileRecord,
 } from '@optimistic-tanuki/models/leads-entities';
 import {
   LeadDiscoverySource,
@@ -35,6 +36,7 @@ describe('DiscoveryService', () => {
   let leadRepository: jest.Mocked<Repository<Lead>>;
   let topicRepository: jest.Mocked<Repository<LeadTopic>>;
   let linkRepository: jest.Mocked<Repository<LeadTopicLink>>;
+  let onboardingRepository: { find: jest.Mock };
   let internalProvider: { providerName: string; search: jest.Mock };
   let remoteOkProvider: { providerName: string; search: jest.Mock };
   let himalayasProvider: { providerName: string; search: jest.Mock };
@@ -132,6 +134,8 @@ describe('DiscoveryService', () => {
       save: jest.fn(),
       remove: jest.fn(),
     };
+    // Read to seed a buyer lead's value from the user's stated budget band.
+    const mockOnboardingRepository = { find: jest.fn().mockResolvedValue([]) };
     internalProvider = { providerName: 'internal', search: jest.fn() };
     remoteOkProvider = { providerName: 'remoteok', search: jest.fn() };
     himalayasProvider = { providerName: 'himalayas', search: jest.fn() };
@@ -168,6 +172,10 @@ describe('DiscoveryService', () => {
         {
           provide: getRepositoryToken(LeadTopicLink),
           useValue: mockLinkRepository,
+        },
+        {
+          provide: getRepositoryToken(LeadOnboardingProfileRecord),
+          useValue: mockOnboardingRepository,
         },
         {
           provide: InternalDiscoveryProvider,
@@ -215,6 +223,9 @@ describe('DiscoveryService', () => {
     leadRepository = module.get(getRepositoryToken(Lead));
     topicRepository = module.get(getRepositoryToken(LeadTopic));
     linkRepository = module.get(getRepositoryToken(LeadTopicLink));
+    onboardingRepository = module.get(
+      getRepositoryToken(LeadOnboardingProfileRecord)
+    );
 
     linkRepository.create.mockImplementation((input) => input as LeadTopicLink);
     linkRepository.find.mockResolvedValue([]);
@@ -239,6 +250,91 @@ describe('DiscoveryService', () => {
     greenhouseProvider.search.mockResolvedValue(emptyProviderResult);
     leverProvider.search.mockResolvedValue(emptyProviderResult);
     googleMapsProvider.search.mockResolvedValue(emptyProviderResult);
+  });
+
+  it("prices a buyer lead at the user's own engagement size", async () => {
+    // Not the source's number. Funding news took the largest figure in the
+    // article, so a $50M round showed as a $50,000,000 deal, and the local
+    // sources derived a price from a relevance score.
+    const buyerTopic = {
+      ...topic,
+      discoveryIntent: 'service-buyers' as any,
+    };
+    topicRepository.findOneBy.mockResolvedValue(buyerTopic);
+    onboardingRepository.find.mockResolvedValue([
+      { profile: { budgetRange: ['$25k-$100k'] } },
+    ]);
+    internalProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: { ...matchingLead, value: 50000000 },
+          matchedKeywords: ['react'],
+          providerName: 'internal',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+    linkRepository.find.mockResolvedValue([]);
+
+    await service.runNow(buyerTopic.id);
+
+    expect(leadRepository.save).toHaveBeenCalledWith([
+      expect.objectContaining({ value: 62500 }),
+    ]);
+  });
+
+  it('leaves a lead priced by the posting alone when the intent is jobs', async () => {
+    topicRepository.findOneBy.mockResolvedValue(topic);
+    onboardingRepository.find.mockResolvedValue([
+      { profile: { budgetRange: ['$25k-$100k'] } },
+    ]);
+    internalProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: { ...matchingLead, value: 90000 },
+          matchedKeywords: ['react'],
+          providerName: 'internal',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+    linkRepository.find.mockResolvedValue([]);
+
+    await service.runNow(topic.id);
+
+    // A job posting states its own compensation; that is a real number.
+    expect(leadRepository.save).toHaveBeenCalledWith([
+      expect.objectContaining({ value: 90000 }),
+    ]);
+  });
+
+  it('does not overwrite one guess with another when no budget was given', async () => {
+    const buyerTopic = {
+      ...topic,
+      discoveryIntent: 'service-buyers' as any,
+    };
+    topicRepository.findOneBy.mockResolvedValue(buyerTopic);
+    onboardingRepository.find.mockResolvedValue([{ profile: {} }]);
+    internalProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: { ...matchingLead, value: 4600 },
+          matchedKeywords: ['react'],
+          providerName: 'internal',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+    linkRepository.find.mockResolvedValue([]);
+
+    await service.runNow(buyerTopic.id);
+
+    expect(leadRepository.save).toHaveBeenCalledWith([
+      expect.objectContaining({ value: 4600 }),
+    ]);
   });
 
   it('creates links for newly matched leads', async () => {

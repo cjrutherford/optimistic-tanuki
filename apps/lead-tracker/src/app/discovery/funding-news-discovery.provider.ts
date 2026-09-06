@@ -16,10 +16,14 @@ import {
 import { SearchAcquisitionService } from './search-acquisition.service';
 import {
   createLeadEntity,
-  estimateCompensationValue,
   hasExcludedTerms,
   normalizeExcludedTerms,
 } from './source-provider.util';
+import {
+  extractCompanyFromHeadline,
+  extractFundingAmount,
+  stripPublisherSuffix,
+} from './funding-headline.util';
 import { buildTopicMatcher, TopicMatcher } from './topic-matcher.util';
 import {
   buildProviderQueries,
@@ -111,27 +115,36 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
       return null;
     }
 
-    const title = (pageAnalysis?.title || result.title)
-      .replace(/\s*[|–-]\s*(Crunchbase|TechCrunch|Reuters|Bloomberg)\s*$/i, '')
-      .trim();
+    const headline = stripPublisherSuffix(pageAnalysis?.title || result.title);
+    const company = extractCompanyFromHeadline(headline);
+    // Stated, not converted. The raise is the company's money, and anything
+    // numeric in this position ends up rendered as the value of a deal to the
+    // user — which is how a $50M round became a $50,000,000 lead.
+    const fundingAmount = extractFundingAmount(
+      `${headline} ${result.snippet || ''} ${pageAnalysis?.description || ''}`
+    );
+
     return {
       lead: createLeadEntity({
         seed: `funding-news:${result.url}`,
-        name: `${title} - Tech Development`,
-        company: title || 'Unnamed company',
+        // The headline is a fair name for the lead — it is what was found.
+        // It is not a company, so `company` stays unset unless one was read.
+        name: company || headline || 'Funding announcement',
+        company: company || undefined,
         source: LeadSource.FUNDING_NEWS,
         originalPostingUrl: result.url,
-        notes: `Discovered via funding-news search. Source: ${
-          result.url
-        }. ${truncateText(
-          pageAnalysis?.description || result.snippet || '',
-          260
-        )}`,
+        notes: [
+          `Discovered via funding-news search. Source: ${result.url}.`,
+          fundingAmount ? `Reported raise: ${fundingAmount}.` : '',
+          company ? '' : 'No company name could be read from the headline.',
+          truncateText(pageAnalysis?.description || result.snippet || '', 260),
+        ]
+          .filter(Boolean)
+          .join(' '),
         searchKeywords: matchedKeywords,
-        value: estimateCompensationValue(
-          pageAnalysis?.description,
-          result.snippet
-        ),
+        // Left unset: a buyer lead's value is the user's own engagement size,
+        // applied when the lead is persisted.
+        value: 0,
       }),
       matchedKeywords,
       providerName: this.providerName,
