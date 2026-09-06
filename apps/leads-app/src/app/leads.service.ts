@@ -169,6 +169,23 @@ export class LeadsService {
     return this.onboarding.suggestAtsCompanies();
   }
 
+  /**
+   * Records a message the user sent from their own mail client. The app does
+   * not send cold outreach itself, so nothing else moves a lead to Contacted.
+   */
+  logOutreach(
+    leadId: string,
+    dto: { subject: string; message: string }
+  ): Observable<Lead> {
+    return this.http.post<Lead>(`/api/leads/${leadId}/outreach`, dto).pipe(
+      tap((updated) => {
+        this.localLeads = this.localLeads.map((lead) =>
+          lead.id === leadId ? updated : lead
+        );
+      })
+    );
+  }
+
   generateApplication(leadId: string): Observable<GeneratedApplication> {
     return this.http.post<GeneratedApplication>(
       `/api/leads/${leadId}/application/generate`,

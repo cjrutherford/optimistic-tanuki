@@ -59,6 +59,9 @@ export class LeadsComponent implements OnInit {
   selectedLeadForFlag: Lead | null = null;
   viewedApplication: GeneratedApplication | null = null;
   applicationPending = false;
+  outreachPending = false;
+  outreachError = '';
+  outreachRecorded = false;
   applicationError = '';
 
   selectedLeadForView: Lead | null = null;
@@ -159,6 +162,8 @@ export class LeadsComponent implements OnInit {
     // different lead while the request is in flight.
     this.viewedApplication = null;
     this.applicationError = '';
+    this.outreachError = '';
+    this.outreachRecorded = false;
 
     this.leadsService.findApplication(lead.id).subscribe({
       next: (application) => {
@@ -177,6 +182,44 @@ export class LeadsComponent implements OnInit {
     this.selectedLeadForView = null;
     this.viewedApplication = null;
     this.applicationError = '';
+    this.outreachError = '';
+    this.outreachRecorded = false;
+  }
+
+  /**
+   * The user has sent a message from their own mail client and told us so.
+   * Recording it is what moves the lead to Contacted and stamps the follow-up
+   * clock, so a failure here has to be visible rather than swallowed.
+   */
+  onOutreachSent(event: { leadId: string; subject: string; message: string }) {
+    if (this.outreachPending) {
+      return;
+    }
+    this.outreachPending = true;
+    this.outreachError = '';
+    this.outreachRecorded = false;
+
+    this.leadsService
+      .logOutreach(event.leadId, {
+        subject: event.subject,
+        message: event.message,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.outreachPending = false;
+          this.outreachRecorded = true;
+          if (this.selectedLeadForView?.id === updated.id) {
+            this.selectedLeadForView = updated;
+          }
+          this.loadLeads();
+          this.loadStats();
+        },
+        error: () => {
+          this.outreachPending = false;
+          this.outreachError =
+            'Could not record that you sent this. The message was not lost — try again.';
+        },
+      });
   }
 
   onGenerateApplication(leadId: string) {

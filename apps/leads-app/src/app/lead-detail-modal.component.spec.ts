@@ -62,4 +62,82 @@ describe('LeadDetailModalComponent', () => {
       ])
     );
   });
+
+  describe('outreach composer', () => {
+    const buildFixture = () => {
+      const fixture = TestBed.createComponent(LeadDetailModalComponent);
+      fixture.componentInstance.lead = lead;
+      fixture.detectChanges();
+      return fixture;
+    };
+
+    it('will not record an empty message as sent', () => {
+      const fixture = buildFixture();
+      const sent = jest.fn();
+      fixture.componentInstance.outreachSent.subscribe(sent);
+
+      fixture.componentInstance.onMarkAsSent();
+
+      expect(fixture.componentInstance.canSendOutreach).toBe(false);
+      expect(sent).not.toHaveBeenCalled();
+    });
+
+    it('reports what the user actually wrote', () => {
+      const fixture = buildFixture();
+      const sent = jest.fn();
+      fixture.componentInstance.outreachSent.subscribe(sent);
+
+      fixture.componentInstance.outreachSubject = '  Your site  ';
+      fixture.componentInstance.outreachMessage = '  I can help.  ';
+      fixture.componentInstance.onMarkAsSent();
+
+      expect(sent).toHaveBeenCalledWith({
+        leadId: 'lead-1',
+        subject: 'Your site',
+        message: 'I can help.',
+      });
+    });
+
+    it('clears the draft when a different lead is shown', () => {
+      const fixture = buildFixture();
+      fixture.componentInstance.outreachMessage = 'Written for Acme.';
+
+      fixture.componentInstance.lead = {
+        ...lead,
+        id: 'lead-2',
+        company: 'Globex',
+      };
+      fixture.detectChanges();
+
+      // Carrying a draft across leads is how one company's message reaches
+      // another company.
+      expect(fixture.componentInstance.outreachMessage).toBe('');
+      expect(fixture.componentInstance.outreachSubject).toBe(
+        'Question about Globex'
+      );
+    });
+
+    it('builds a mail handoff only once there is something to send', () => {
+      const fixture = buildFixture();
+      expect(fixture.componentInstance.mailtoHref).toBeNull();
+
+      fixture.componentInstance.outreachSubject = 'Your site';
+      fixture.componentInstance.outreachMessage = 'I can help.';
+
+      expect(fixture.componentInstance.mailtoHref).toBe(
+        'mailto:john%40acme.com?subject=Your%20site&body=I%20can%20help.'
+      );
+    });
+
+    it('warns before handing a long message to a mail client that would clip it', () => {
+      const fixture = buildFixture();
+      fixture.componentInstance.outreachSubject = 'Your site';
+
+      fixture.componentInstance.outreachMessage = 'a'.repeat(1500);
+      expect(fixture.componentInstance.isLongMessage).toBe(false);
+
+      fixture.componentInstance.outreachMessage = 'a'.repeat(1501);
+      expect(fixture.componentInstance.isLongMessage).toBe(true);
+    });
+  });
 });

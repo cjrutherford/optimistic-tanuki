@@ -32,4 +32,8 @@ describe('LeadCommands', () => {
   it('should have correct SEND_RESPONSE command', () => {
     expect(LeadCommands.SEND_RESPONSE).toBe('lead.sendResponse');
   });
+
+  it('should have correct LOG_OUTREACH command', () => {
+    expect(LeadCommands.LOG_OUTREACH).toBe('lead.logOutreach');
+  });
 });

@@ -26,6 +26,7 @@ import {
   UpdateLeadTopicDto,
   LeadStats,
   LeadStatus,
+  LogLeadOutreachDto,
   SendLeadResponseDto,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models/leads-contracts';
@@ -178,39 +179,103 @@ export class LeadsService {
       replyTo: process.env.SMTP_FROM,
     });
 
-    const responseTimestamp = new Date().toISOString();
-    const responseHeader = delivery.success
-      ? `Operator response sent: ${responseTimestamp}`
-      : `Operator response failed: ${responseTimestamp}`;
-    const responseBody = delivery.success
-      ? [dto.message]
-      : [delivery.error || 'Email delivery failed'];
-    const responseNote = [
+    return {
+      lead: await this.recordOutreach(lead, context, {
+        subject: dto.subject,
+        message: dto.message,
+        channel: 'in-app',
+        delivered: delivery.success,
+        failureReason: delivery.error,
+        status: dto.status,
+        nextFollowUp: dto.nextFollowUp,
+      }),
+      delivery,
+    };
+  }
+
+  /**
+   * Records a message the user sent from their own mail client.
+   *
+   * Nothing is delivered here — the app never had the message in transit — so
+   * the only thing that happens is the trail: the note, the move to Contacted,
+   * the follow-up stamp. Without this, choosing to send by hand would mean the
+   * pipeline believed you had contacted nobody.
+   */
+  async logOutreach(
+    id: string,
+    dto: LogLeadOutreachDto,
+    context: LeadAuthContext
+  ): Promise<{ lead: (Lead & { isFlagged: boolean }) | null }> {
+    const lead = await this.findOne(id, context.profileId);
+    if (!lead) {
+      return { lead: null };
+    }
+
+    return {
+      lead: await this.recordOutreach(lead, context, {
+        subject: dto.subject,
+        message: dto.message,
+        channel: 'manual',
+        delivered: true,
+        status: dto.status,
+        nextFollowUp: dto.nextFollowUp,
+      }),
+    };
+  }
+
+  /**
+   * The half of outreach that is bookkeeping rather than delivery.
+   *
+   * Shared so a message sent through the app and one sent by hand leave an
+   * identical trail, and so the note says which of the two actually happened —
+   * claiming the app delivered something it only helped compose would put a
+   * false record in the one place the user goes to check.
+   */
+  private async recordOutreach(
+    lead: Lead & { isFlagged: boolean },
+    context: LeadAuthContext,
+    outreach: {
+      subject: string;
+      message: string;
+      channel: 'in-app' | 'manual';
+      delivered: boolean;
+      failureReason?: string;
+      status?: LeadStatus;
+      nextFollowUp?: string;
+    }
+  ): Promise<(Lead & { isFlagged: boolean }) | null> {
+    const timestamp = new Date().toISOString();
+    const header = !outreach.delivered
+      ? `Operator response failed: ${timestamp}`
+      : outreach.channel === 'manual'
+      ? `Response sent manually: ${timestamp}`
+      : `Operator response sent: ${timestamp}`;
+    const body = outreach.delivered
+      ? [outreach.message]
+      : [outreach.failureReason || 'Email delivery failed'];
+    const note = [
       '',
       '---',
-      responseHeader,
-      `Subject: ${dto.subject}`,
-      ...responseBody,
+      header,
+      `Subject: ${outreach.subject}`,
+      ...body,
     ].join('\n');
 
     await this.leadRepository.update(
-      { id, profileId: context.profileId },
+      { id: lead.id, profileId: context.profileId },
       {
-        notes: `${lead.notes || ''}${responseNote}`.trim(),
-        status: delivery.success
-          ? dto.status || LeadStatus.CONTACTED
+        notes: `${lead.notes || ''}${note}`.trim(),
+        status: outreach.delivered
+          ? outreach.status || LeadStatus.CONTACTED
           : lead.status,
-        nextFollowUp: delivery.success
-          ? dto.nextFollowUp || lead.nextFollowUp
+        nextFollowUp: outreach.delivered
+          ? outreach.nextFollowUp || lead.nextFollowUp
           : lead.nextFollowUp,
-        lastRespondedAt: delivery.success ? new Date() : lead.lastRespondedAt,
+        lastRespondedAt: outreach.delivered ? new Date() : lead.lastRespondedAt,
       }
     );
 
-    return {
-      lead: await this.findOne(id, context.profileId),
-      delivery,
-    };
+    return this.findOne(lead.id, context.profileId);
   }
 
   async findAllTopics(profileId: string): Promise<LeadTopic[]> {

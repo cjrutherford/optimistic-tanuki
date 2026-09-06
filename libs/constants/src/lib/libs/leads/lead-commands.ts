@@ -7,6 +7,8 @@ export const LeadCommands = {
   GET_STATS: 'lead.getStats',
   SEARCH: 'lead.search',
   SEND_RESPONSE: 'lead.sendResponse',
+  /** Records a message the user sent from their own mail client. */
+  LOG_OUTREACH: 'lead.logOutreach',
 } as const;
 
 export const LeadTopicCommands = {

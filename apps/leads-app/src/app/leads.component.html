@@ -528,7 +528,11 @@
     [application]="viewedApplication"
     [applicationPending]="applicationPending"
     [applicationError]="applicationError"
+    [outreachPending]="outreachPending"
+    [outreachError]="outreachError"
+    [outreachRecorded]="outreachRecorded"
     (generateApplication)="onGenerateApplication($event)"
+    (outreachSent)="onOutreachSent($event)"
     (closed)="closeLeadDetail()"
     (editRequested)="openEditFromView(selectedLeadForView!)"
   ></app-lead-detail-modal>

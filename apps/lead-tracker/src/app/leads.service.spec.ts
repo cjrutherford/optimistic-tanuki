@@ -325,6 +325,61 @@ describe('LeadsService', () => {
     });
   });
 
+  describe('logOutreach', () => {
+    const dto = {
+      subject: 'Noticed you have no website',
+      message: 'I build sites for clinics and yours is missing one.',
+    };
+
+    it('records the message and moves the lead on without sending anything', async () => {
+      repository.findOne
+        .mockResolvedValueOnce({ ...mockLead, flags: [] } as any)
+        .mockResolvedValueOnce({
+          ...mockLead,
+          status: LeadStatus.CONTACTED,
+          flags: [],
+        } as any);
+
+      const result = await service.logOutreach(mockLead.id, dto, authContext);
+
+      // The whole point of this path: the app composed it, the user sent it.
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: mockLead.id, profileId: authContext.profileId },
+        expect.objectContaining({
+          status: LeadStatus.CONTACTED,
+          lastRespondedAt: expect.any(Date),
+          notes: expect.stringContaining('Response sent manually:'),
+        })
+      );
+      expect(result.lead?.status).toBe(LeadStatus.CONTACTED);
+    });
+
+    it('says the message was sent by hand rather than claiming the app sent it', async () => {
+      repository.findOne
+        .mockResolvedValueOnce({ ...mockLead, flags: [] } as any)
+        .mockResolvedValueOnce({ ...mockLead, flags: [] } as any);
+
+      await service.logOutreach(mockLead.id, dto, authContext);
+
+      const notes = (repository.update as jest.Mock).mock.calls[0][1].notes;
+      expect(notes).toContain('Response sent manually:');
+      expect(notes).toContain(`Subject: ${dto.subject}`);
+      expect(notes).toContain(dto.message);
+      // The trail is the record the user checks; it must not overstate.
+      expect(notes).not.toContain('Operator response sent:');
+    });
+
+    it('keeps a lead that does not belong to the profile out of reach', async () => {
+      repository.findOne.mockResolvedValueOnce(null as any);
+
+      const result = await service.logOutreach(mockLead.id, dto, authContext);
+
+      expect(result).toEqual({ lead: null });
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('sendResponse', () => {
     const dto = {
       subject: 'Thanks for reaching out',

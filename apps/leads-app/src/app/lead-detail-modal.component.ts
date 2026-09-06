@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import type { GeneratedApplication } from '@optimistic-tanuki/models';
 import {
   getLeadSourceDescriptor,
@@ -11,7 +12,7 @@ import {
 @Component({
   selector: 'app-lead-detail-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div
       class="modal-overlay"
@@ -181,6 +182,83 @@ import {
             <ng-template #noContacts>
               <p class="empty-state">No contact details were extracted.</p>
             </ng-template>
+          </section>
+
+          <section class="detail-section outreach-section">
+            <div class="outreach-head">
+              <h3>Write to this lead</h3>
+              <span class="outreach-hint">
+                You send it — the app only writes it down.
+              </span>
+            </div>
+
+            <label class="field">
+              <span class="field-label">Subject</span>
+              <input
+                type="text"
+                name="outreachSubject"
+                maxlength="160"
+                [(ngModel)]="outreachSubject"
+                [disabled]="outreachPending"
+              />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Message</span>
+              <textarea
+                rows="7"
+                name="outreachMessage"
+                maxlength="12000"
+                placeholder="Write your first message. Keep it specific to what you saw in this posting."
+                [(ngModel)]="outreachMessage"
+                [disabled]="outreachPending"
+              ></textarea>
+            </label>
+
+            <div class="outreach-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="onCopyMessage()"
+                [disabled]="!canSendOutreach || outreachPending"
+              >
+                {{ copyState === 'copied' ? 'Copied' : 'Copy message' }}
+              </button>
+              <a
+                *ngIf="mailtoHref"
+                class="btn btn-secondary"
+                [href]="mailtoHref"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open in mail app
+              </a>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="onMarkAsSent()"
+                [disabled]="!canSendOutreach || outreachPending"
+              >
+                {{ outreachPending ? 'Recording…' : 'Mark as sent' }}
+              </button>
+            </div>
+
+            <!-- The mailto handoff is the convenient path, not the reliable
+                 one: several mail clients silently truncate a long body, so
+                 copy stays the primary action. -->
+            <p class="outreach-note" *ngIf="mailtoHref && isLongMessage">
+              This message is long enough that some mail apps will cut it short.
+              Copy it instead and paste into a new email.
+            </p>
+            <p class="outreach-note" *ngIf="!lead.email">
+              No email address was found for this lead, so there is nothing to
+              hand your mail app. Copy the message and address it yourself.
+            </p>
+            <p class="outreach-recorded" *ngIf="outreachRecorded" role="status">
+              Recorded. This lead is now marked Contacted, and the message is in
+              its notes.
+            </p>
+            <p class="empty-state" *ngIf="outreachError">{{ outreachError }}</p>
           </section>
 
           <section class="detail-grid">
@@ -363,6 +441,80 @@ import {
         cursor: pointer;
       }
 
+      .outreach-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .outreach-hint {
+        font-size: 0.8rem;
+        color: var(--app-foreground-muted);
+      }
+
+      .outreach-section {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .field {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .field-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--app-foreground-muted);
+      }
+
+      .field input,
+      .field textarea {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--app-border);
+        border-radius: var(--radius-md);
+        background: var(--app-surface);
+        color: var(--app-foreground);
+        font: inherit;
+        resize: vertical;
+      }
+
+      .field input:disabled,
+      .field textarea:disabled {
+        opacity: 0.6;
+      }
+
+      .outreach-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .outreach-actions .btn {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .outreach-actions .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .outreach-note {
+        font-size: 0.85rem;
+        color: var(--app-foreground-muted);
+      }
+
+      .outreach-recorded {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
       .close-btn {
         width: 36px;
         height: 36px;
@@ -395,7 +547,6 @@ import {
   ],
 })
 export class LeadDetailModalComponent {
-  @Input() lead: Lead | null = null;
   @Output() closed = new EventEmitter<void>();
   @Output() editRequested = new EventEmitter<void>();
 
@@ -432,6 +583,110 @@ export class LeadDetailModalComponent {
     if (event.target === event.currentTarget) {
       this.closed.emit();
     }
+  }
+
+  // ---- Outreach ------------------------------------------------------------
+  //
+  // The app deliberately does not send cold mail. It composes, hands the text
+  // over, and records that the user sent it. That last part is not a nicety:
+  // nothing else moves a lead to Contacted, so an unrecorded send leaves the
+  // pipeline claiming this lead was never approached.
+
+  @Input() outreachPending = false;
+  @Input() outreachError = '';
+  @Input() outreachRecorded = false;
+  @Output() outreachSent = new EventEmitter<{
+    leadId: string;
+    subject: string;
+    message: string;
+  }>();
+
+  outreachSubject = '';
+  outreachMessage = '';
+  copyState: 'idle' | 'copied' | 'failed' = 'idle';
+
+  /** Past this, mail clients start truncating a `mailto:` body. */
+  private static readonly MAILTO_SAFE_LENGTH = 1500;
+
+  @Input() set lead(value: Lead | null) {
+    const changedLead = value?.id !== this.leadValue?.id;
+    this.leadValue = value;
+    if (changedLead) {
+      // A draft belongs to the lead it was written for. Carrying it across
+      // would risk sending one company's message to another.
+      this.outreachSubject = value ? this.defaultSubject(value) : '';
+      this.outreachMessage = '';
+      this.copyState = 'idle';
+    }
+  }
+
+  get lead(): Lead | null {
+    return this.leadValue;
+  }
+
+  private leadValue: Lead | null = null;
+
+  get canSendOutreach(): boolean {
+    return Boolean(
+      this.leadValue?.id &&
+        this.outreachSubject.trim().length >= 2 &&
+        this.outreachMessage.trim().length >= 2
+    );
+  }
+
+  get isLongMessage(): boolean {
+    return (
+      this.outreachMessage.length > LeadDetailModalComponent.MAILTO_SAFE_LENGTH
+    );
+  }
+
+  get mailtoHref(): string | null {
+    const email = this.leadValue?.email?.trim();
+    if (!email || !this.canSendOutreach) {
+      return null;
+    }
+    return (
+      `mailto:${encodeURIComponent(email)}` +
+      `?subject=${encodeURIComponent(this.outreachSubject)}` +
+      `&body=${encodeURIComponent(this.outreachMessage)}`
+    );
+  }
+
+  async onCopyMessage(): Promise<void> {
+    if (!this.canSendOutreach) {
+      return;
+    }
+    const text = `${this.outreachSubject}\n\n${this.outreachMessage}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copyState = 'copied';
+    } catch {
+      // Clipboard access is refused outside a secure context, and there is no
+      // silent fallback worth trusting — say so rather than appear to succeed.
+      this.copyState = 'failed';
+      this.outreachError =
+        'Your browser would not let the page copy. Select the message and copy it yourself.';
+    }
+  }
+
+  onMarkAsSent(): void {
+    if (!this.leadValue?.id || !this.canSendOutreach || this.outreachPending) {
+      return;
+    }
+    this.outreachSent.emit({
+      leadId: this.leadValue.id,
+      subject: this.outreachSubject.trim(),
+      message: this.outreachMessage.trim(),
+    });
+  }
+
+  /**
+   * A neutral opener the user is expected to rewrite. Nothing here claims
+   * anything on their behalf — generating the actual message is a later slice,
+   * and guessing at it now would put words in their mouth.
+   */
+  private defaultSubject(lead: Lead): string {
+    return lead.company ? `Question about ${lead.company}` : '';
   }
 
   // Presentational only. The parent owns fetching and generation; this

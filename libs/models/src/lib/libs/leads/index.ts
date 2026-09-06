@@ -18,6 +18,7 @@ export * from './lead-topic-discovery.dto';
 export * from './update-lead.dto';
 export * from './update-lead-topic.dto';
 export * from './public-contact-lead-intake.dto';
+export * from './log-lead-outreach.dto';
 export * from './send-lead-response.dto';
 export * from './onboarding-plan.interface';
 export * from './aspirational-company.interface';

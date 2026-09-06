@@ -17,6 +17,7 @@ import {
   LocationAutocompleteSuggestion,
   LeadTopicDiscoveryResultDto,
   RunLeadTopicDiscoveryDto,
+  LogLeadOutreachDto,
   SendLeadResponseDto,
   UpdateLeadDto,
   UpdateLeadTopicDto,
@@ -111,6 +112,18 @@ export class LeadsController {
     }
   ) {
     return this.leadsService.sendResponse(data.id, data.dto, data.context);
+  }
+
+  @MessagePattern({ cmd: LeadCommands.LOG_OUTREACH })
+  async logOutreach(
+    @Payload()
+    data: {
+      id: string;
+      dto: LogLeadOutreachDto;
+      context: LeadAuthContext;
+    }
+  ) {
+    return this.leadsService.logOutreach(data.id, data.dto, data.context);
   }
 
   @MessagePattern({ cmd: LeadTopicCommands.FIND_ALL })

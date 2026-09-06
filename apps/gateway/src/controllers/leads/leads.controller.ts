@@ -39,6 +39,7 @@ import {
   DiscInterviewRequest,
   LeadTopicDiscoveryResultDto,
   LocationAutocompleteSuggestion,
+  LogLeadOutreachDto,
   MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseResult,
@@ -355,6 +356,38 @@ export class LeadsController {
         }
       )
     );
+  }
+
+  /**
+   * Records a message the user sent from their own mail client. The app does
+   * not deliver cold outreach, so this is the only thing that tells the
+   * pipeline a lead has been contacted.
+   */
+  @Post(':id/outreach')
+  @RequirePermissions('lead.update')
+  @ApiOperation({ summary: 'Record outreach the user sent themselves' })
+  async logOutreach(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string,
+    @Body() dto: LogLeadOutreachDto
+  ) {
+    const result = await firstValueFrom(
+      this.leadClient.send<{ lead: unknown | null }>(
+        { cmd: LeadCommands.LOG_OUTREACH },
+        {
+          id,
+          dto,
+          context: this.getContext(user, appScope),
+        }
+      )
+    );
+
+    if (!result?.lead) {
+      throw new NotFoundException(`Lead ${id} not found`);
+    }
+
+    return result.lead;
   }
 
   @Get(':id/flags')
