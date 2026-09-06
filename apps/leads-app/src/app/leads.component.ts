@@ -26,6 +26,17 @@ import {
  */
 export type LeadKind = 'buyers' | 'jobs' | 'other';
 export type LeadKindFilter = 'all' | 'buyers' | 'jobs';
+
+/**
+ * Why a lead is waiting on the user.
+ *
+ * The app does not read anyone's inbox, so it cannot know whether a lead
+ * replied. What it does know is what the user recorded: that a message went
+ * out, and that the lead has not been moved on since. That is enough to answer
+ * "who have I written to and heard nothing about", which is the question a
+ * pipeline is for — but only for messages the user marked as sent.
+ */
+export type LeadAttention = 'awaiting-reply' | 'follow-up-due' | null;
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { FlagLeadModalComponent } from './flag-lead-modal.component';
 import { LeadDetailModalComponent } from './lead-detail-modal.component';
@@ -81,6 +92,7 @@ export class LeadsComponent implements OnInit {
   draftPending = false;
   draftError = '';
   kindFilter: LeadKindFilter = 'all';
+  attentionOnly = false;
   applicationError = '';
 
   selectedLeadForView: Lead | null = null;
@@ -130,7 +142,11 @@ export class LeadsComponent implements OnInit {
   }
 
   filterLeads() {
-    const byKind = this.leads.filter((lead) => this.matchesKindFilter(lead));
+    const byKind = this.leads.filter(
+      (lead) =>
+        this.matchesKindFilter(lead) &&
+        (!this.attentionOnly || this.attentionFor(lead) !== null)
+    );
 
     if (!this.searchQuery.trim()) {
       this.filteredLeads = this.sortForKind(byKind);
@@ -185,6 +201,48 @@ export class LeadsComponent implements OnInit {
   /** The gaps that explain why a local business is on the list at all. */
   presenceGapLabels(lead: Lead): string[] {
     return (lead.presenceGaps || []).map((gap) => gap.label);
+  }
+
+  /**
+   * Contacted and not advanced, or a follow-up date that has come round. Won
+   * and lost leads are finished and are never waiting on anybody.
+   */
+  attentionFor(lead: Lead): LeadAttention {
+    if (lead.status === LeadStatus.WON || lead.status === LeadStatus.LOST) {
+      return null;
+    }
+    if (lead.nextFollowUp && new Date(lead.nextFollowUp) <= new Date()) {
+      return 'follow-up-due';
+    }
+    if (lead.lastRespondedAt && lead.status === LeadStatus.CONTACTED) {
+      return 'awaiting-reply';
+    }
+    return null;
+  }
+
+  attentionLabel(lead: Lead): string {
+    switch (this.attentionFor(lead)) {
+      case 'follow-up-due':
+        return 'Follow-up due';
+      case 'awaiting-reply':
+        return 'No reply yet';
+      default:
+        return '';
+    }
+  }
+
+  countAwaitingAttention(): number {
+    return this.leads.filter((lead) => this.attentionFor(lead) !== null).length;
+  }
+
+  /** True once anything has been recorded, so the empty state can be honest. */
+  hasRecordedOutreach(): boolean {
+    return this.leads.some((lead) => Boolean(lead.lastRespondedAt));
+  }
+
+  toggleAttentionFilter() {
+    this.attentionOnly = !this.attentionOnly;
+    this.filterLeads();
   }
 
   private matchesKindFilter(lead: Lead): boolean {

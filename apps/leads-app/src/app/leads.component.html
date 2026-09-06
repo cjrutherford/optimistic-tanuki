@@ -62,6 +62,16 @@
           Jobs <span class="kind-count">{{ countByKind('jobs') }}</span>
         </button>
       </div>
+      <button
+        type="button"
+        class="attention-chip"
+        [class.is-active]="attentionOnly"
+        [attr.aria-pressed]="attentionOnly"
+        (click)="toggleAttentionFilter()"
+      >
+        Waiting on you
+        <span class="kind-count">{{ countAwaitingAttention() }}</span>
+      </button>
       <button class="btn btn-primary" (click)="showQuickAdd = true">
         <svg
           viewBox="0 0 24 24"
@@ -173,6 +183,13 @@
                 <span class="lead-email">{{ lead.email || '-' }}</span>
                 <!-- Why this business is on the list at all. Local sources
                      only, so this stays absent for job postings. -->
+                <span
+                  class="attention-badge"
+                  *ngIf="attentionFor(lead) as attention"
+                  [attr.data-attention]="attention"
+                >
+                  {{ attentionLabel(lead) }}
+                </span>
                 <div class="gap-list" *ngIf="presenceGapLabels(lead).length">
                   <span
                     class="gap-chip"
@@ -270,6 +287,16 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- The board only knows about messages the user told it about, so an
+           empty list has to say which of the two things it means. -->
+      <p class="attention-empty" *ngIf="attentionOnly && !filteredLeads.length">
+        {{
+          hasRecordedOutreach()
+            ? 'Nothing is waiting on you right now.'
+            : 'Nothing recorded yet. This board only knows about messages you marked as sent.'
+        }}
+      </p>
     </div>
 
     <!-- Kanban View -->

@@ -454,4 +454,82 @@ describe('LeadsComponent', () => {
       expect(component.presenceGapLabels(jobLead)).toEqual([]);
     });
   });
+
+  describe('what is waiting on the user', () => {
+    const yesterday = new Date(Date.now() - 86400000).toISOString();
+    const tomorrow = new Date(Date.now() + 86400000).toISOString();
+
+    const setLeads = (leads: Lead[]) => {
+      const fixture = TestBed.createComponent(LeadsComponent);
+      const component = fixture.componentInstance;
+      component.leads = leads;
+      component.filterLeads();
+      return component;
+    };
+
+    const contacted = {
+      ...mockLead,
+      id: 'contacted-1',
+      status: LeadStatus.CONTACTED,
+      lastRespondedAt: yesterday,
+    } as Lead;
+
+    it('counts a lead written to and not moved on since', () => {
+      const component = setLeads([contacted]);
+
+      expect(component.attentionFor(contacted)).toBe('awaiting-reply');
+      expect(component.attentionLabel(contacted)).toBe('No reply yet');
+      expect(component.countAwaitingAttention()).toBe(1);
+    });
+
+    it('treats a follow-up date that has come round as the stronger reason', () => {
+      const due = { ...contacted, nextFollowUp: yesterday } as Lead;
+      const notYet = { ...contacted, nextFollowUp: tomorrow } as Lead;
+      const component = setLeads([due, notYet]);
+
+      expect(component.attentionFor(due)).toBe('follow-up-due');
+      // A future date is not yet a prompt, but silence still is.
+      expect(component.attentionFor(notYet)).toBe('awaiting-reply');
+    });
+
+    it('leaves finished leads alone', () => {
+      const won = { ...contacted, status: LeadStatus.WON } as Lead;
+      const lost = {
+        ...contacted,
+        status: LeadStatus.LOST,
+        nextFollowUp: yesterday,
+      } as Lead;
+      const component = setLeads([won, lost]);
+
+      expect(component.attentionFor(won)).toBeNull();
+      expect(component.attentionFor(lost)).toBeNull();
+      expect(component.countAwaitingAttention()).toBe(0);
+    });
+
+    it('says nothing is waiting when nothing was ever written', () => {
+      // The board only knows what the user marked as sent, so "nothing here"
+      // and "you have not recorded anything" are different statements.
+      const component = setLeads([mockLead]);
+
+      expect(component.attentionFor(mockLead)).toBeNull();
+      expect(component.hasRecordedOutreach()).toBe(false);
+    });
+
+    it('narrows the list to what is waiting, alongside the door filter', () => {
+      const buyerAwaiting = {
+        ...contacted,
+        id: 'buyer-awaiting',
+        source: LeadSource.OVERPASS,
+      } as Lead;
+      const component = setLeads([buyerAwaiting, mockLead]);
+
+      component.toggleAttentionFilter();
+      expect(component.filteredLeads.map((lead) => lead.id)).toEqual([
+        'buyer-awaiting',
+      ]);
+
+      component.setKindFilter('jobs');
+      expect(component.filteredLeads).toEqual([]);
+    });
+  });
 });

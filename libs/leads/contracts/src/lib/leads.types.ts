@@ -136,6 +136,11 @@ export interface Lead {
   /** Summed weight of `presenceGaps`, capped at 100. */
   presenceGapScore?: number | null;
   assignedTo?: string;
+  /**
+   * When the user last wrote to this lead — set whether the app delivered the
+   * message or the user sent it themselves and marked it as sent.
+   */
+  lastRespondedAt?: string | Date | null;
   isFlagged?: boolean;
   flags?: LeadFlag[];
   createdAt: Date;
