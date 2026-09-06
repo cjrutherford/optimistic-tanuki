@@ -53,6 +53,13 @@ export interface LeadDiscoverySourceDescriptor {
   aspirational?: boolean;
   /** The source cannot run at all until the user names at least one company. */
   requiresCompanyList?: boolean;
+  /**
+   * The URL a lead is found at belongs to somebody other than the lead — a
+   * news article about the company rather than anything the company published.
+   * Scraping it for contact details yields the publication's newsroom, so
+   * anything that reads a lead's posting page must know not to.
+   */
+  postingUrlIsThirdParty?: boolean;
 }
 
 export const LEAD_DISCOVERY_SOURCE_REGISTRY: Record<
@@ -138,6 +145,8 @@ export const LEAD_DISCOVERY_SOURCE_REGISTRY: Record<
       'https://news.google.com/rss/search?q=series+a+funding&hl=en-US&gl=US&ceid=US:en',
     rateLimitNote:
       'Google News RSS; unauthenticated and best-effort, so treat gaps as normal.',
+    // The lead's URL is the article. The company is what the article is about.
+    postingUrlIsThirdParty: true,
   },
   [LeadDiscoverySource.ARBEITNOW]: {
     id: LeadDiscoverySource.ARBEITNOW,

@@ -337,6 +337,75 @@ describe('DiscoveryService', () => {
     ]);
   });
 
+  describe('where contact details are read from', () => {
+    const originalFetch = global.fetch;
+
+    const runWithLead = async (lead: Lead) => {
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: true,
+        text: async () => '<a href="mailto:hello@example.com">Contact</a>',
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      topicRepository.findOneBy.mockResolvedValue(topic);
+      internalProvider.search.mockResolvedValue({
+        candidates: [
+          { lead, matchedKeywords: ['react'], providerName: 'internal' },
+        ],
+        warnings: [],
+        queries: [],
+      });
+      linkRepository.find.mockResolvedValue([]);
+
+      await service.runNow(topic.id);
+      return fetchMock.mock.calls.map((call) => call[0] as string);
+    };
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('reads the company site and its contact pages when one is known', async () => {
+      const fetched = await runWithLead({
+        ...matchingLead,
+        source: LeadSource.FUNDING_NEWS,
+        originalPostingUrl: 'https://techcrunch.com/acme-raises-50m',
+        companyWebsite: 'https://acme.com/',
+      } as Lead);
+
+      expect(fetched).toEqual([
+        'https://acme.com/',
+        'https://acme.com/contact',
+        'https://acme.com/about',
+      ]);
+      // Never the article: the addresses on it belong to the newsroom.
+      expect(fetched).not.toContain('https://techcrunch.com/acme-raises-50m');
+    });
+
+    it('reads nothing at all when a funding lead has no company site', async () => {
+      const fetched = await runWithLead({
+        ...matchingLead,
+        source: LeadSource.FUNDING_NEWS,
+        originalPostingUrl: 'https://techcrunch.com/acme-raises-50m',
+        companyWebsite: null,
+      } as Lead);
+
+      // Returning nothing invites a look; returning a journalist's email does
+      // not.
+      expect(fetched).toEqual([]);
+    });
+
+    it('still reads the posting page for a source that published it itself', async () => {
+      const fetched = await runWithLead({
+        ...matchingLead,
+        source: LeadSource.REMOTE_OK,
+        originalPostingUrl: 'https://remoteok.com/jobs/123',
+      } as Lead);
+
+      expect(fetched).toEqual(['https://remoteok.com/jobs/123']);
+    });
+  });
+
   it('creates links for newly matched leads', async () => {
     topicRepository.findOneBy.mockResolvedValue(topic);
     internalProvider.search.mockResolvedValue({

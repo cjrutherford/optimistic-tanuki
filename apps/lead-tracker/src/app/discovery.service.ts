@@ -824,12 +824,45 @@ export class DiscoveryService {
     return enriched;
   }
 
+  /**
+   * Pages worth reading for a way to contact this lead.
+   *
+   * The company's own site first, and its conventional contact pages after it.
+   * The page the lead was found on is only included when it belongs to the
+   * lead: for a funding lead it is a news article, and the addresses on it are
+   * the newsroom's. Handing back a journalist's email as the company's contact
+   * is worse than returning nothing, because nothing invites a look.
+   */
+  private contactPagesFor(lead: Lead): string[] {
+    const pages: string[] = [];
+
+    if (lead.companyWebsite) {
+      pages.push(lead.companyWebsite);
+      for (const path of ['contact', 'about']) {
+        try {
+          pages.push(new URL(path, lead.companyWebsite).toString());
+        } catch {
+          // A stored site that will not parse is not worth a log line.
+        }
+      }
+    }
+
+    const descriptor = lead.source
+      ? getLeadSourceDescriptor(lead.source as unknown as LeadDiscoverySource)
+      : undefined;
+    if (lead.originalPostingUrl && !descriptor?.postingUrlIsThirdParty) {
+      pages.push(lead.originalPostingUrl);
+    }
+
+    return Array.from(new Set(pages));
+  }
+
   private async enrichLeadContacts(lead: Lead): Promise<Lead> {
     let contacts = lead.contacts;
 
-    if (lead.originalPostingUrl) {
+    for (const page of this.contactPagesFor(lead)) {
       try {
-        const response = await fetch(lead.originalPostingUrl, {
+        const response = await fetch(page, {
           headers: {
             accept:
               'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -840,12 +873,12 @@ export class DiscoveryService {
           const html = await response.text();
           contacts = mergeContactPoints(
             contacts,
-            extractContactPoints(html, lead.originalPostingUrl, 'posting-page')
+            extractContactPoints(html, page, 'posting-page')
           );
         }
       } catch (error) {
         this.logger.debug(
-          `Contact extraction fetch failed for ${lead.originalPostingUrl}: ${
+          `Contact extraction fetch failed for ${page}: ${
             error instanceof Error ? error.message : String(error)
           }`
         );
