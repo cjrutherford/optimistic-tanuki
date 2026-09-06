@@ -65,6 +65,8 @@ export class DiscoveryService {
     TopicDiscoveryProvider
   >;
   private processing = false;
+  /** Posting pages fetched at once when enriching a run's leads. */
+  private static readonly ENRICHMENT_CONCURRENCY = 6;
 
   constructor(
     @InjectRepository(Lead)
@@ -512,12 +514,8 @@ export class DiscoveryService {
 
     for (const providerResponse of providerResponses) {
       for (const match of providerResponse.result.candidates) {
-        const enrichedLead = await this.enrichLeadContacts(match.lead);
         const alignedCandidate = this.alignCandidateToExistingLead(
-          {
-            ...match,
-            lead: enrichedLead,
-          },
+          match,
           existingLeadsByFingerprint
         );
         const dedupeKey = this.buildCandidateDedupeKey(alignedCandidate.lead);
@@ -537,7 +535,7 @@ export class DiscoveryService {
       }
     }
 
-    const matches = Array.from(deduped.values());
+    const matches = await this.enrichCandidates(Array.from(deduped.values()));
     if (!matches.length) {
       this.logger.log(
         `Discovery found no matching leads for topic ${topic.id}`
@@ -759,6 +757,42 @@ export class DiscoveryService {
           );
       }
     }
+  }
+
+  /**
+   * Contact enrichment fetches each lead's posting page, so it is by far the
+   * most expensive part of a run. It used to sit inside the dedupe loop, which
+   * meant one fetch per provider hit — twice over for a posting found on two
+   * boards — strictly one after another. That cost nothing while matching was
+   * broken and every provider returned zero candidates. Now that they return
+   * real volume it is the whole runtime, so it happens once per unique lead
+   * and a few at a time.
+   */
+  private async enrichCandidates(
+    candidates: DiscoveredLeadCandidate[]
+  ): Promise<DiscoveredLeadCandidate[]> {
+    const enriched: DiscoveredLeadCandidate[] = [];
+
+    for (
+      let index = 0;
+      index < candidates.length;
+      index += DiscoveryService.ENRICHMENT_CONCURRENCY
+    ) {
+      const batch = candidates.slice(
+        index,
+        index + DiscoveryService.ENRICHMENT_CONCURRENCY
+      );
+      enriched.push(
+        ...(await Promise.all(
+          batch.map(async (candidate) => ({
+            ...candidate,
+            lead: await this.enrichLeadContacts(candidate.lead),
+          }))
+        ))
+      );
+    }
+
+    return enriched;
   }
 
   private async enrichLeadContacts(lead: Lead): Promise<Lead> {
