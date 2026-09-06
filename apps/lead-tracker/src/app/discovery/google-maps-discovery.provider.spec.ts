@@ -252,7 +252,7 @@ describe('GoogleMapsDiscoveryProvider', () => {
     const lead = result.candidates[0].lead;
     expect(lead.notes).toContain('No website listed');
     expect(lead.notes).toContain('No phone number listed');
-    expect(lead.notes).toContain('Only 2 review(s)');
+    expect(lead.notes).toContain('Only 2 reviews');
     expect(lead.notes).toContain('Rating of 3.1');
     // The lead name leads with the most valuable gap so it reads as a pitch.
     expect(lead.name).toContain('No website listed');
@@ -320,7 +320,7 @@ describe('GoogleMapsDiscoveryProvider', () => {
     expect(result.candidates).toHaveLength(1);
     const notes = result.candidates[0].lead.notes || '';
     // Scored on what is actually known...
-    expect(notes).toContain('Only 4 review(s)');
+    expect(notes).toContain('Only 4 reviews');
     expect(notes).toContain('Rating of 3.2');
     // ...and silent about what is not.
     expect(notes).not.toContain('No website listed');

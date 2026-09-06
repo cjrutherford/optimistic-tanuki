@@ -131,9 +131,40 @@ const STOPWORDS = new Set(
     'been being i my me we our they them this that these those it its will can ' +
     'have has had do does did not no so than then there here how what which who ' +
     'you your their his her about into over under more most very much many team ' +
+    // Reflexive pronouns assert nothing in any register, and are long enough
+    // to clear the length cut, so without these "introduce myself" reads as a
+    // claim the user must have evidenced.
+    'myself yourself yourselves himself herself itself ourselves themselves ' +
     'teams work working worked role roles company companies experience years year'
   ).split(' ')
 );
+
+/**
+ * What is left of a contraction once the apostrophe is normalised away.
+ *
+ * `norm` turns "doesn't" into "doesn t", and "doesn" is five characters, so it
+ * survives as a word the user is expected to have evidenced — which no corpus
+ * built from field values ever contains. Natural writing is full of these, so
+ * left unhandled they quietly push every contracted sentence towards removal.
+ * They carry no claim in any register, so they are dropped everywhere rather
+ * than per-register. (The shorter stems — "don", "isn", "won" — are already
+ * below the length cut.)
+ */
+const CONTRACTION_STEMS = new Set([
+  'aren',
+  'couldn',
+  'didn',
+  'doesn',
+  'hadn',
+  'hasn',
+  'haven',
+  'mustn',
+  'needn',
+  'shouldn',
+  'wasn',
+  'weren',
+  'wouldn',
+]);
 
 const distinctiveWords = (
   text: string,
@@ -149,7 +180,10 @@ const distinctiveWords = (
     .map((word) => word.replace(/\.+$/, ''))
     .filter(
       (word) =>
-        word.length > 3 && !STOPWORDS.has(word) && !extraStopwords?.has(word)
+        word.length > 3 &&
+        !STOPWORDS.has(word) &&
+        !CONTRACTION_STEMS.has(word) &&
+        !extraStopwords?.has(word)
     );
 
 export const isStatementSupported = (

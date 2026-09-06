@@ -46,8 +46,12 @@ export const findPresenceGaps = (presence: BusinessPresence): PresenceGap[] => {
       gaps.push({ code: 'no-reviews', label: 'No reviews at all', weight: 25 });
     } else if (presence.reviewCount < 10) {
       gaps.push({
+        // Pluralised properly: this label is no longer only a chip, it is
+        // dropped into the opening line of a message to a stranger.
+        label: `Only ${presence.reviewCount} review${
+          presence.reviewCount === 1 ? '' : 's'
+        }`,
         code: 'few-reviews',
-        label: `Only ${presence.reviewCount} review(s)`,
         weight: 15,
       });
     }

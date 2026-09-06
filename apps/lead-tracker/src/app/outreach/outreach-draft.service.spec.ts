@@ -63,6 +63,48 @@ describe('OutreachDraftService', () => {
       expect(result.evidence.clean).toBe(true);
     });
 
+    it('opens on the observed gap, as a sentence', async () => {
+      const result = await service.generate(profile, lead, 1);
+
+      expect(result.draft.opening).toBe(
+        "Bright Smile Dental doesn't have a website listed."
+      );
+      // And the opening survives the guard rather than being written and then
+      // deleted, which is the only way it reaches the user.
+      expect(result.evidence.clean).toBe(true);
+    });
+
+    it('opens on the heaviest gap when a business has several', async () => {
+      const result = await service.generate(
+        profile,
+        {
+          ...lead,
+          presenceGaps: [
+            { code: 'no-phone', label: 'No phone number listed', weight: 10 },
+            { code: 'no-website', label: 'No website listed', weight: 40 },
+          ],
+        } as Lead,
+        1
+      );
+
+      expect(result.draft.opening).toContain('website');
+    });
+
+    it('will not claim to have noticed a matched keyword', async () => {
+      // A keyword is a category, not a finding. "I noticed dentist" is not a
+      // sentence, and on a job lead it would read "I noticed typescript".
+      const result = await service.generate(
+        profile,
+        { ...lead, presenceGaps: null, presenceGapScore: null } as Lead,
+        1
+      );
+
+      expect(result.draft.opening).not.toContain('dentist');
+      expect(result.draft.opening).toBe(
+        'I came across Bright Smile Dental and wanted to introduce myself.'
+      );
+    });
+
     it('reports what it was allowed to say about the recipient', async () => {
       const result = await service.generate(profile, lead, 1);
 

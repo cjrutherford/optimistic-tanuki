@@ -84,7 +84,6 @@ const OUTREACH_CONNECTIVES: ReadonlySet<string> = new Set([
   'while',
   'wondering',
   'worth',
-  'yourself',
 ]);
 
 /**

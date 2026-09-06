@@ -60,6 +60,17 @@ describe('anti-fabrication fact guard', () => {
       ).toBe(true);
     });
 
+    it('does not count what is left of a contraction as a claim', () => {
+      // "doesn't" normalises to "doesn t"; "doesn" is long enough to survive
+      // and appears in no corpus, so contracted prose was quietly penalised.
+      expect(
+        isStatementSupported(
+          "The AngularJS dashboard doesn't use React.",
+          facts
+        )
+      ).toBe(true);
+    });
+
     it('rejects an invented metric', () => {
       // 40% is real; 85% appears nowhere in the user's material.
       expect(
