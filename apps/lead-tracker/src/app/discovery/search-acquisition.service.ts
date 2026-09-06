@@ -147,6 +147,7 @@ export class SearchAcquisitionService {
         title: this.extractHtmlTitle(html),
         description: this.extractMetaDescription(html),
         text: this.normalizePageText(html),
+        links: this.extractLinks(html, url),
       };
 
       this.pageAnalysisCache.set(url, analysis);
@@ -156,6 +157,31 @@ export class SearchAcquisitionService {
       this.pageAnalysisCache.set(url, null);
       return null;
     }
+  }
+
+  /**
+   * Absolute http(s) links on the page, de-duplicated and capped. The cap is
+   * generous enough to reach the body of an article past a site's navigation,
+   * and small enough that a link farm cannot balloon a cached analysis.
+   */
+  private extractLinks(html: string, baseUrl: string): string[] {
+    const links = new Set<string>();
+
+    for (const match of html.matchAll(/href=["']([^"']+)["']/gi)) {
+      if (links.size >= 200) {
+        break;
+      }
+      try {
+        const resolved = new URL(match[1].trim(), baseUrl);
+        if (resolved.protocol === 'http:' || resolved.protocol === 'https:') {
+          links.add(resolved.toString());
+        }
+      } catch {
+        // A malformed href is not worth a log line; there are many.
+      }
+    }
+
+    return Array.from(links);
   }
 
   private getConfig(): SearchConfig {

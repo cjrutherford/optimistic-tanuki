@@ -34,6 +34,15 @@ export class Lead {
   @Column({ nullable: true })
   originalPostingUrl?: string;
 
+  /**
+   * The business's own site, where that is a different thing from the URL the
+   * lead was found at. A funding lead's posting URL is the news article, so
+   * without this every use of it points at the publication rather than the
+   * company. Null when none could be established.
+   */
+  @Column({ nullable: true })
+  companyWebsite?: string | null;
+
   @Column({ type: 'jsonb', nullable: true })
   contacts?: LeadContactPoint[];
 

@@ -24,6 +24,7 @@ import {
   extractFundingAmount,
   stripPublisherSuffix,
 } from './funding-headline.util';
+import { resolveCompanyWebsite } from './company-domain.util';
 import { buildTopicMatcher, TopicMatcher } from './topic-matcher.util';
 import {
   buildProviderQueries,
@@ -124,6 +125,14 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
       `${headline} ${result.snippet || ''} ${pageAnalysis?.description || ''}`
     );
 
+    // The article's own links are the only place the company's site can come
+    // from, and a candidate has to corroborate the name read from the headline.
+    const companyWebsite = resolveCompanyWebsite({
+      company,
+      articleUrl: result.url,
+      links: pageAnalysis?.links,
+    });
+
     return {
       lead: createLeadEntity({
         seed: `funding-news:${result.url}`,
@@ -133,10 +142,14 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
         company: company || undefined,
         source: LeadSource.FUNDING_NEWS,
         originalPostingUrl: result.url,
+        companyWebsite: companyWebsite || undefined,
         notes: [
           `Discovered via funding-news search. Source: ${result.url}.`,
           fundingAmount ? `Reported raise: ${fundingAmount}.` : '',
           company ? '' : 'No company name could be read from the headline.',
+          company && !companyWebsite
+            ? 'The article did not link to a site matching this company.'
+            : '',
           truncateText(pageAnalysis?.description || result.snippet || '', 260),
         ]
           .filter(Boolean)

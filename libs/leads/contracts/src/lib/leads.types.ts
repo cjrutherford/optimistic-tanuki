@@ -123,6 +123,8 @@ export interface Lead {
   email?: string;
   phone?: string;
   originalPostingUrl?: string;
+  /** The business's own site, when that differs from where the lead was found. */
+  companyWebsite?: string | null;
   contacts?: LeadContactPoint[];
   source: LeadSource;
   status: LeadStatus;

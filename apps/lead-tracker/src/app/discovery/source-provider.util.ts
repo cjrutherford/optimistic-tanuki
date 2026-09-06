@@ -117,6 +117,7 @@ export const createLeadEntity = (input: {
   email?: string;
   phone?: string;
   originalPostingUrl?: string;
+  companyWebsite?: string;
   contacts?: LeadContactPoint[];
   presenceGaps?: PresenceGap[];
   presenceGapScore?: number;
@@ -128,6 +129,7 @@ export const createLeadEntity = (input: {
     email: input.email,
     phone: input.phone,
     originalPostingUrl: input.originalPostingUrl,
+    companyWebsite: input.companyWebsite || null,
     contacts: input.contacts,
     source: input.source,
     status: LeadStatus.NEW,
