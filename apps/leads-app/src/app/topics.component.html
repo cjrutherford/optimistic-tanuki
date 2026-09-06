@@ -116,7 +116,8 @@
               <label for="topic-discovery-intent">Discovery Intent</label>
               <select
                 id="topic-discovery-intent"
-                [(ngModel)]="topicForm.discoveryIntent"
+                [ngModel]="topicForm.discoveryIntent"
+                (ngModelChange)="onDiscoveryIntentChange($event)"
                 name="discoveryIntent"
               >
                 <option [ngValue]="LeadTopicDiscoveryIntent.JOB_OPENINGS">
@@ -238,9 +239,9 @@
             </ng-container>
           </div>
 
-          <div class="form-row local-search-row" *ngIf="isGoogleMapsSelected">
+          <div class="form-row local-search-row" *ngIf="isLocalSearchSelected">
             <div class="form-group">
-              <label for="topic-google-maps-cities">Google Maps Cities *</label>
+              <label for="topic-google-maps-cities">Cities to search *</label>
               <div class="autocomplete-field">
                 <div class="chips-input chips-input-location">
                   <div class="chips" *ngIf="selectedGoogleMapsCities.length">
@@ -305,9 +306,11 @@
               />
             </div>
           </div>
-          <div class="form-row local-search-row" *ngIf="isGoogleMapsSelected">
+          <div class="form-row local-search-row" *ngIf="isLocalSearchSelected">
             <div class="form-group">
-              <label for="topic-google-maps-location">Search Location *</label>
+              <label for="topic-google-maps-location">
+                Search Location{{ isGoogleMapsSelected ? ' *' : '' }}
+              </label>
               <div class="autocomplete-field">
                 <div class="chips-input chips-input-location">
                   <div class="chips" *ngIf="topicForm.googleMapsLocation">
@@ -327,7 +330,7 @@
                     (blur)="closeGoogleMapsSuggestions('location')"
                     name="googleMapsLocationInput"
                     placeholder="Choose the search center (city preferred; ZIP okay)"
-                    required
+                    [required]="isGoogleMapsSelected"
                     autocomplete="off"
                   />
                 </div>
@@ -363,11 +366,11 @@
                 name="googleMapsRadiusMiles"
                 min="1"
                 step="1"
-                required
+                [required]="isGoogleMapsSelected"
               />
             </div>
           </div>
-          <div class="form-hint-card" *ngIf="isGoogleMapsSelected">
+          <div class="form-hint-card" *ngIf="isLocalSearchSelected">
             <p class="form-hint">
               <ng-container
                 *ngIf="
@@ -380,12 +383,15 @@
                 each city, not job postings. Use business types like
                 <strong>dental office</strong> or <strong>law firm</strong>,
                 then exclude terms you do not want such as
-                <strong>wordpress</strong> or <strong>php</strong>.
+                <strong>wordpress</strong> or <strong>php</strong>. Keywords are
+                optional here — the city and business type are what find these
+                leads.
               </ng-container>
               <ng-template #googleMapsJobHint>
-                Google Maps discovery searches each city and business type
-                combination. For job-opening topics, keywords still act as the
-                main matching signal.
+                Local search covers each city and business type combination.
+                OpenStreetMap needs no API key; Google Maps adds ratings and
+                review counts once one is configured. For job-opening topics,
+                keywords still act as the main matching signal.
               </ng-template>
             </p>
           </div>
@@ -561,7 +567,7 @@
         class="topic-local-area"
         *ngIf="getTopicGoogleMapsSummary(topic) as searchArea"
       >
-        <span class="topic-local-area-label">Google Maps</span>
+        <span class="topic-local-area-label">Local search</span>
         <span class="topic-local-area-value">{{ searchArea }}</span>
       </div>
 

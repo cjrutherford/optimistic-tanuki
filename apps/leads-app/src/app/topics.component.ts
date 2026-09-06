@@ -123,6 +123,20 @@ export class TopicsComponent implements OnInit, OnDestroy {
     return this.topicForm.sources.includes(LeadDiscoverySource.GOOGLE_MAPS);
   }
 
+  /**
+   * Both local-business sources read the same city, business-type and location
+   * fields off the topic — OpenStreetMap included, despite their `googleMaps`
+   * names. Gating the inputs on Google Maps alone meant selecting the keyless
+   * source by itself hid the fields and sent them as `undefined`, so the only
+   * local source that needs no API key could never be given anywhere to look.
+   */
+  get isLocalSearchSelected(): boolean {
+    return (
+      this.isGoogleMapsSelected ||
+      this.topicForm.sources.includes(LeadDiscoverySource.OVERPASS)
+    );
+  }
+
   get selectedGoogleMapsCities(): string[] {
     return this.parseGoogleMapsCities(this.topicForm.googleMapsCities);
   }
@@ -207,23 +221,26 @@ export class TopicsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.isGoogleMapsSelected) {
-      const googleMapsLocation =
-        this.topicForm.googleMapsLocation?.trim() || '';
+    if (this.isLocalSearchSelected) {
       if (!this.parseGoogleMapsCities(this.topicForm.googleMapsCities).length) {
-        this.actionError = 'Enter at least one Google Maps city.';
+        this.actionError = 'Enter at least one city or town to search.';
         return;
       }
 
       if (
         !this.parseCommaSeparatedList(this.topicForm.googleMapsTypes).length
       ) {
-        this.actionError = 'Enter at least one Google Maps business type.';
+        this.actionError = 'Enter at least one business type to look for.';
         return;
       }
 
-      if (!googleMapsLocation) {
-        this.actionError = 'Enter a Google Maps search location.';
+      // Only Google Maps biases its search around a point; OpenStreetMap
+      // matches an administrative area by name and needs no centre.
+      if (
+        this.isGoogleMapsSelected &&
+        !this.topicForm.googleMapsLocation?.trim()
+      ) {
+        this.actionError = 'Enter a search location to centre Google Maps on.';
         return;
       }
     }
@@ -258,14 +275,14 @@ export class TopicsComponent implements OnInit, OnDestroy {
       aspirationalCompanies: this.isAspirationalSelected
         ? [...this.selectedCompanies]
         : undefined,
-      googleMapsCities: this.isGoogleMapsSelected
+      googleMapsCities: this.isLocalSearchSelected
         ? googleMapsCities
         : undefined,
-      googleMapsTypes: this.isGoogleMapsSelected ? googleMapsTypes : undefined,
-      googleMapsLocation: this.isGoogleMapsSelected
+      googleMapsTypes: this.isLocalSearchSelected ? googleMapsTypes : undefined,
+      googleMapsLocation: this.isLocalSearchSelected
         ? googleMapsLocation
         : undefined,
-      googleMapsRadiusMiles: this.isGoogleMapsSelected
+      googleMapsRadiusMiles: this.isLocalSearchSelected
         ? googleMapsRadiusMiles
         : undefined,
       enabled: this.topicForm.enabled,
@@ -438,13 +455,29 @@ export class TopicsComponent implements OnInit, OnDestroy {
       );
     }
 
-    if (!this.isGoogleMapsSelected) {
+    // Cleared only when no local source is left, or unticking Google Maps
+    // would wipe the cities OpenStreetMap is still searching.
+    if (!this.isLocalSearchSelected) {
       this.topicForm.googleMapsCities = '';
       this.topicForm.googleMapsLocation = '';
       this.googleMapsCityInput = '';
       this.googleMapsLocationInput = '';
       this.clearLocationSuggestions();
     }
+  }
+
+  /**
+   * Choosing what to look for should not require knowing which source finds
+   * it. Picking the service-buyer intent selects the local sources, and the
+   * job intent restores the board defaults — either can still be adjusted by
+   * hand afterwards.
+   */
+  onDiscoveryIntentChange(intent: LeadTopicDiscoveryIntent) {
+    this.topicForm.discoveryIntent = intent;
+    this.topicForm.sources =
+      intent === LeadTopicDiscoveryIntent.SERVICE_BUYERS
+        ? [LeadDiscoverySource.OVERPASS, LeadDiscoverySource.GOOGLE_MAPS]
+        : [...this.defaultSources];
   }
 
   deleteTopic(topic: Topic): void {

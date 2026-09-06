@@ -294,7 +294,7 @@ describe('TopicsComponent', () => {
 
     expect(leadsServiceStub.createTopic).not.toHaveBeenCalled();
     expect(fixture.componentInstance.actionError).toContain(
-      'Enter at least one Google Maps city'
+      'Enter at least one city or town to search'
     );
 
     fixture.componentInstance.topicForm.googleMapsCities = 'Savannah, GA';
@@ -302,7 +302,7 @@ describe('TopicsComponent', () => {
 
     expect(leadsServiceStub.createTopic).not.toHaveBeenCalled();
     expect(fixture.componentInstance.actionError).toContain(
-      'Enter at least one Google Maps business type'
+      'Enter at least one business type to look for'
     );
   });
 
@@ -358,6 +358,124 @@ describe('TopicsComponent', () => {
       googleMapsRadiusMiles: 25,
       enabled: true,
     });
+  });
+
+  it('sends the search area for a keyless OpenStreetMap topic', () => {
+    // The cities, types and location live under `googleMaps*` names but both
+    // local sources read them. Gating them on Google Maps meant the only
+    // source that needs no API key could never be told where to look.
+    leadsServiceStub.createTopic.mockReturnValue(
+      of({ id: 'topic-osm', name: 'Savannah dentists', enabled: false })
+    );
+
+    const fixture = TestBed.createComponent(TopicsComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openAddForm();
+    fixture.componentInstance.topicForm = {
+      name: 'Savannah dentists',
+      description: '',
+      keywords: '',
+      excludedTerms: '',
+      discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
+      sources: [LeadDiscoverySource.OVERPASS],
+      googleMapsCities: 'Savannah, GA',
+      googleMapsTypes: 'dental office',
+      googleMapsLocation: '',
+      googleMapsRadiusMiles: 25,
+      enabled: false,
+    };
+
+    fixture.componentInstance.submitTopic();
+
+    expect(leadsServiceStub.createTopic).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sources: [LeadDiscoverySource.OVERPASS],
+        googleMapsCities: ['Savannah, GA'],
+        googleMapsTypes: ['dental office'],
+        // No keywords typed, and none needed: the city and business type are
+        // what find these leads.
+        keywords: [],
+      })
+    );
+    expect(fixture.componentInstance.actionError).toBe('');
+  });
+
+  it('does not demand a map centre from a source that does not use one', () => {
+    const fixture = TestBed.createComponent(TopicsComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.openAddForm();
+    fixture.componentInstance.topicForm = {
+      ...fixture.componentInstance.topicForm,
+      name: 'Savannah dentists',
+      sources: [LeadDiscoverySource.OVERPASS],
+      googleMapsCities: 'Savannah, GA',
+      googleMapsTypes: 'dental office',
+      googleMapsLocation: '',
+    };
+
+    fixture.componentInstance.submitTopic();
+
+    expect(leadsServiceStub.createTopic).toHaveBeenCalled();
+
+    // Google Maps does bias its search around a point, so it still asks.
+    // (A successful submit resets the form, so this starts from scratch.)
+    jest.clearAllMocks();
+    fixture.componentInstance.openAddForm();
+    fixture.componentInstance.topicForm = {
+      ...fixture.componentInstance.topicForm,
+      name: 'Savannah dentists',
+      sources: [LeadDiscoverySource.GOOGLE_MAPS],
+      googleMapsCities: 'Savannah, GA',
+      googleMapsTypes: 'dental office',
+      googleMapsLocation: '',
+    };
+    fixture.componentInstance.submitTopic();
+
+    expect(leadsServiceStub.createTopic).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.actionError).toContain('search location');
+  });
+
+  it('keeps the cities when Google Maps is unticked but OpenStreetMap remains', () => {
+    const fixture = TestBed.createComponent(TopicsComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.openAddForm();
+    fixture.componentInstance.topicForm = {
+      ...fixture.componentInstance.topicForm,
+      sources: [LeadDiscoverySource.GOOGLE_MAPS, LeadDiscoverySource.OVERPASS],
+      googleMapsCities: 'Savannah, GA',
+    };
+
+    fixture.componentInstance.toggleSource(
+      LeadDiscoverySource.GOOGLE_MAPS,
+      false
+    );
+
+    expect(fixture.componentInstance.topicForm.googleMapsCities).toBe(
+      'Savannah, GA'
+    );
+
+    // Dropping the last local source does clear them.
+    fixture.componentInstance.toggleSource(LeadDiscoverySource.OVERPASS, false);
+    expect(fixture.componentInstance.topicForm.googleMapsCities).toBe('');
+  });
+
+  it('picks the sources that serve the chosen intent', () => {
+    const fixture = TestBed.createComponent(TopicsComponent);
+    fixture.detectChanges();
+    fixture.componentInstance.openAddForm();
+
+    fixture.componentInstance.onDiscoveryIntentChange(
+      LeadTopicDiscoveryIntent.SERVICE_BUYERS
+    );
+
+    // Choosing what to look for should not require knowing which source finds
+    // it — and the keyless one comes first.
+    expect(fixture.componentInstance.topicForm.sources).toEqual([
+      LeadDiscoverySource.OVERPASS,
+      LeadDiscoverySource.GOOGLE_MAPS,
+    ]);
+    expect(fixture.componentInstance.isLocalSearchSelected).toBe(true);
   });
 
   it('commits a selected Google Maps city as a chip-backed value', () => {
