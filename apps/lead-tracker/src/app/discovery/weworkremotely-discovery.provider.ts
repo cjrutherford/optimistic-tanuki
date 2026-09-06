@@ -10,14 +10,13 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
   isRecentPublication,
-  normalizeTopicKeywords,
   parseRssItems,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 @Injectable()
 export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
@@ -26,7 +25,7 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(WeWorkRemotelyDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
 
     try {
@@ -50,7 +49,7 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
             excludedCount += 1;
             return null;
           }
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

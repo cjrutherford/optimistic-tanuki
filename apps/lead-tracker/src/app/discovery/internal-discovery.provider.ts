@@ -11,6 +11,7 @@ import {
   ProviderSearchResult,
   TopicDiscoveryProvider,
 } from './discovery.types';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 const DISCOVERY_SOURCE_TO_LEAD_SOURCE: Record<LeadDiscoverySource, LeadSource> =
   {
@@ -44,7 +45,7 @@ export class InternalDiscoveryProvider implements TopicDiscoveryProvider {
   ) {}
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const normalizedKeywords = this.normalizeKeywords(topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const allowedSources = new Set(this.normalizeSources(topic.sources));
     const allLeads = await this.leadRepository.find({
       where: {
@@ -57,7 +58,7 @@ export class InternalDiscoveryProvider implements TopicDiscoveryProvider {
       .filter((lead) => allowedSources.has(lead.source))
       .map((lead) => ({
         lead,
-        matchedKeywords: this.getMatchedKeywords(lead, normalizedKeywords),
+        matchedKeywords: matcher.match(this.buildLeadHaystack(lead)),
         providerName: this.providerName,
       }))
       .filter((entry) => entry.matchedKeywords.length > 0);
@@ -71,16 +72,6 @@ export class InternalDiscoveryProvider implements TopicDiscoveryProvider {
     };
   }
 
-  private normalizeKeywords(keywords: string[]): string[] {
-    return Array.from(
-      new Set(
-        (keywords || [])
-          .map((keyword) => keyword.trim().toLowerCase())
-          .filter((keyword) => keyword.length > 0)
-      )
-    );
-  }
-
   private normalizeSources(sources?: LeadDiscoverySource[]): LeadSource[] {
     const normalized = Array.from(new Set((sources || []).filter(Boolean)));
     const discoverySources = normalized.length
@@ -91,21 +82,9 @@ export class InternalDiscoveryProvider implements TopicDiscoveryProvider {
     );
   }
 
-  private getMatchedKeywords(lead: Lead, keywords: string[]): string[] {
-    if (!keywords.length) {
-      return [];
-    }
-
-    const haystack = [
-      lead.name,
-      lead.company,
-      lead.notes,
-      ...(lead.searchKeywords || []),
-    ]
+  private buildLeadHaystack(lead: Lead): string {
+    return [lead.name, lead.company, lead.notes, ...(lead.searchKeywords || [])]
       .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-
-    return keywords.filter((keyword) => haystack.includes(keyword));
+      .join(' ');
   }
 }

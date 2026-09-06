@@ -11,12 +11,11 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 type JobicyJob = {
   jobTitle?: string;
@@ -32,7 +31,7 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(JobicyDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queryUrl = 'https://jobicy.com/api/v2/remote-jobs?count=100';
 
@@ -68,7 +67,7 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

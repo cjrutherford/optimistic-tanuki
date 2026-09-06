@@ -22,28 +22,10 @@ export type RssItem = {
   expiresAt?: string;
 };
 
-export const normalizeTopicKeywords = (
-  topicName: string,
-  keywords: string[]
-): string[] => {
-  return normalizeTopicTerms([...(keywords || []), topicName || '']).slice(
-    0,
-    8
-  );
-};
-
 export const normalizeExcludedTerms = (
   excludedTerms?: string[] | null
 ): string[] => {
   return normalizeTopicTerms(excludedTerms || []);
-};
-
-export const getMatchedKeywords = (
-  text: string,
-  keywords: string[]
-): string[] => {
-  const haystack = text.toLowerCase();
-  return keywords.filter((keyword) => haystack.includes(keyword));
 };
 
 export const hasExcludedTerms = (

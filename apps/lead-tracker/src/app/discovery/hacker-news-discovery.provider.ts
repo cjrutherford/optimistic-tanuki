@@ -11,12 +11,11 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 type HnStory = { objectID?: string; title?: string; created_at?: string };
 type HnComment = {
@@ -41,7 +40,7 @@ export class HackerNewsDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(HackerNewsDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queries: string[] = [];
 
@@ -108,7 +107,7 @@ export class HackerNewsDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

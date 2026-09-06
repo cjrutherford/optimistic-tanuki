@@ -11,12 +11,11 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 /** Arbeitnow's public job board feed. No key, no documented quota. */
 type ArbeitnowJob = {
@@ -37,7 +36,7 @@ export class ArbeitnowDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(ArbeitnowDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queryUrl = 'https://www.arbeitnow.com/api/job-board-api';
 
@@ -74,7 +73,7 @@ export class ArbeitnowDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

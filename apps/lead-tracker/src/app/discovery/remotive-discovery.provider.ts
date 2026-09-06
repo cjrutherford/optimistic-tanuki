@@ -11,12 +11,11 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 type RemotiveJob = {
   id?: number;
@@ -38,11 +37,13 @@ export class RemotiveDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(RemotiveDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     // Remotive supports a search parameter, so the topic narrows the request
-    // rather than pulling the whole board and filtering locally.
-    const primaryKeyword = keywords[0] || '';
+    // rather than pulling the whole board and filtering locally. It has to be a
+    // short term: sending the topic's first raw keyword sent a whole sentence
+    // from the onboarding profile, which the board answered with nothing.
+    const primaryKeyword = matcher.primaryTerm;
     const queryUrl = primaryKeyword
       ? `https://remotive.com/api/remote-jobs?limit=100&search=${encodeURIComponent(
           primaryKeyword
@@ -82,7 +83,7 @@ export class RemotiveDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

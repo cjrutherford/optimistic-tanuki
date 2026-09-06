@@ -11,12 +11,11 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 import {
   AtsPosting,
   boardUrl,
@@ -46,7 +45,7 @@ abstract class AspirationalAtsDiscoveryProvider
   protected readonly logger = new Logger(AspirationalAtsDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const companies = companiesFor(this.ats, topic.aspirationalCompanies);
     const queries: string[] = [];
@@ -108,7 +107,7 @@ abstract class AspirationalAtsDiscoveryProvider
             continue;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             continue;
           }

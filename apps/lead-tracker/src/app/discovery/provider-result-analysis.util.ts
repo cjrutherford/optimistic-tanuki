@@ -25,13 +25,6 @@ export const buildAnalysisHaystack = (
     .toLowerCase();
 };
 
-export const getMatchedTerms = (
-  haystack: string,
-  terms: string[]
-): string[] => {
-  return terms.filter((term) => haystack.includes(term));
-};
-
 export const scoreMatches = (
   haystack: string,
   matchedTerms: string[],

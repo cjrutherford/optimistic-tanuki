@@ -19,14 +19,28 @@ import {
 } from './discovery.types';
 import {
   createLeadEntity,
-  getMatchedKeywords,
   getTopicDiscoveryIntent,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   splitCsvInput,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
+
+/**
+ * Which of the topic's configured business types the Places query asked for.
+ * The query is built from those types, so this is a lookup rather than a
+ * relevance test — a place returned for "dentist in Denver" is a dentist.
+ */
+const matchQueryBusinessTypes = (
+  query: string,
+  businessTypes: string[]
+): string[] => {
+  const haystack = query.toLowerCase();
+  return businessTypes
+    .map((type) => type.toLowerCase())
+    .filter((type) => type && haystack.includes(type));
+};
 
 type GoogleMapsPlace = {
   name?: string;
@@ -126,7 +140,7 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
       };
     }
 
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const discoveryIntent = getTopicDiscoveryIntent(topic);
     const queries = cities.flatMap((city) =>
@@ -199,8 +213,8 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
-          const querySignals = getMatchedKeywords(
+          const matchedKeywords = matcher.match(text);
+          const querySignals = matchQueryBusinessTypes(
             query,
             splitCsvInput(topic.googleMapsTypes || [])
           );

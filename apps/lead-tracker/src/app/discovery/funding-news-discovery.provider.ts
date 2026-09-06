@@ -11,8 +11,6 @@ import {
 } from './discovery.types';
 import {
   buildAnalysisHaystack,
-  getMatchedTerms,
-  normalizeTopicTerms,
   truncateText,
 } from './provider-result-analysis.util';
 import { SearchAcquisitionService } from './search-acquisition.service';
@@ -22,6 +20,7 @@ import {
   hasExcludedTerms,
   normalizeExcludedTerms,
 } from './source-provider.util';
+import { buildTopicMatcher, TopicMatcher } from './topic-matcher.util';
 import {
   buildProviderQueries,
   getProviderQueryRecipe,
@@ -38,10 +37,11 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
   ) {}
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicTerms([
-      ...(topic.keywords || []),
-      topic.name || '',
-    ]).slice(0, 4);
+    // This provider serves the service-buyer topics, whose keywords are the
+    // longest prose of any topic the onboarding generates. Taking the first
+    // four of them literally meant testing news articles against four
+    // sentences, which no article ever contained.
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queries = buildProviderQueries(
       topic,
@@ -59,7 +59,7 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
       const results = rawResults.flat();
       const analyzed = await Promise.all(
         results.map(async (result) =>
-          this.mapResult(result, keywords, excludedTerms)
+          this.mapResult(result, matcher, excludedTerms)
         )
       );
       const candidates = analyzed.filter(
@@ -96,7 +96,7 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
 
   private async mapResult(
     result: SearchResult,
-    keywords: string[],
+    matcher: TopicMatcher,
     excludedTerms: string[]
   ) {
     const pageAnalysis = await this.searchAcquisitionService.analyzePage(
@@ -106,7 +106,7 @@ export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
     if (hasExcludedTerms(haystack, excludedTerms)) {
       return null;
     }
-    const matchedKeywords = getMatchedTerms(haystack, keywords);
+    const matchedKeywords = matcher.match(haystack);
     if (!matchedKeywords.length) {
       return null;
     }

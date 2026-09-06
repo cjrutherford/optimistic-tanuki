@@ -11,12 +11,11 @@ import {
 import {
   createLeadEntity,
   estimateCompensationValue,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 type RemoteOkJob = {
   position?: string;
@@ -35,7 +34,7 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(RemoteOkDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
 
     try {
@@ -58,7 +57,7 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
             excludedCount += 1;
             return null;
           }
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

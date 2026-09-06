@@ -12,12 +12,11 @@ import {
 import {
   createLeadEntity,
   estimateCompensationValue,
-  getMatchedKeywords,
   hasExcludedTerms,
   normalizeExcludedTerms,
-  normalizeTopicKeywords,
   stripHtml,
 } from './source-provider.util';
+import { buildTopicMatcher } from './topic-matcher.util';
 
 type HimalayasJob = {
   title?: string;
@@ -37,7 +36,7 @@ export class HimalayasDiscoveryProvider implements TopicDiscoveryProvider {
   private readonly logger = new Logger(HimalayasDiscoveryProvider.name);
 
   async search(topic: LeadTopic): Promise<ProviderSearchResult> {
-    const keywords = normalizeTopicKeywords(topic.name, topic.keywords);
+    const matcher = buildTopicMatcher(topic);
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queryUrl = 'https://himalayas.app/jobs/api?limit=100&offset=0';
 
@@ -73,7 +72,7 @@ export class HimalayasDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
-          const matchedKeywords = getMatchedKeywords(text, keywords);
+          const matchedKeywords = matcher.match(text);
           if (!matchedKeywords.length) {
             return null;
           }

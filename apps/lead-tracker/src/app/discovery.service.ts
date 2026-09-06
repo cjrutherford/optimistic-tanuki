@@ -46,6 +46,10 @@ import {
 } from './discovery/source-provider.util';
 import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-discovery.provider';
 import { LeadQualificationService } from './lead-qualification.service';
+import {
+  buildTopicMatcher,
+  describeEmptyTopic,
+} from './discovery/topic-matcher.util';
 
 @Injectable()
 export class DiscoveryService {
@@ -317,6 +321,42 @@ export class DiscoveryService {
 
       this.latestResults.set(topicId, skippedResult);
       return skippedResult;
+    }
+
+    // A topic whose terms reduce to nothing searchable cannot match a single
+    // result, on any source. That used to look exactly like a quiet day on the
+    // job boards; say plainly that it is a configuration problem instead.
+    const matcher = buildTopicMatcher(topic);
+    if (matcher.isEmpty) {
+      const emptyTopicMessage = describeEmptyTopic(topic);
+      this.logger.warn(
+        `Topic ${topic.id} has no searchable terms; skipping discovery.`
+      );
+      const emptyResult: LeadTopicDiscoveryResultDto = {
+        topicId,
+        linkedLeadCount: topic.leadCount,
+        addedCount: 0,
+        removedCount: 0,
+        queued: false,
+        status: 'completed',
+        lastRun: topic.lastRun?.toISOString(),
+        providerResults: [],
+        message: emptyTopicMessage,
+        severity: 'warning',
+        summaryTitle: 'Topic has no searchable keywords',
+        summaryBody: emptyTopicMessage,
+        actionItems: [
+          'Add short, concrete keywords to the topic, such as a skill, a role title, or an industry.',
+        ],
+        diagnosticCounts: {
+          errors: 0,
+          warnings: 1,
+          providersWithIssues: 0,
+        },
+      };
+
+      this.latestResults.set(topicId, emptyResult);
+      return emptyResult;
     }
 
     const {
