@@ -118,6 +118,8 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
+    super.ngOnInit();
+
     Promise.all([this.loadTopActive(), this.loadAllCommunities()])
       .then(() => this.loadUserMemberships())
       .catch((err) => console.error('Error loading communities:', err));

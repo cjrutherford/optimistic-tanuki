@@ -138,31 +138,6 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadCommunity(communityId: string) {
-    try {
-      const community = await this.communityService.findOne(communityId);
-      if (!community) {
-        this.error.set('Community not found');
-        return;
-      }
-
-      this.community.set(community);
-      this.currentCommunityId = communityId;
-      this.isOwner.set(community.ownerId === this.currentUserId);
-      const chatRoom = await this.communityService.getCommunityChatRoom(
-        communityId
-      );
-      if (chatRoom) {
-        this.chatRoomId.set(chatRoom.id);
-        await this.loadChatRoom(chatRoom.id, community);
-      }
-      this.socketChatService.getConversations(this.currentUserId);
-    } catch (err) {
-      console.error('Failed to load community:', err);
-      this.error.set('Failed to load community');
-    }
-  }
-
   private async loadUserCommunitiesChat() {
     try {
       const communities = await this.communityService.getUserCommunities();

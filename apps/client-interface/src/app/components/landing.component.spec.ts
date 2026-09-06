@@ -53,4 +53,47 @@ describe('LandingComponent', () => {
       'Your space. Your people.'
     );
   });
+
+  it('navigates to the login page', () => {
+    component.navigateToLogin();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('navigates to the register page', () => {
+    component.navigateToRegister();
+    expect(router.navigate).toHaveBeenCalledWith(['/register']);
+  });
+
+  it('scrolls to the how-it-works section when it is present', () => {
+    const scrollIntoView = jest.fn();
+    const getElementById = jest
+      .spyOn(document, 'getElementById')
+      .mockReturnValue({ scrollIntoView } as unknown as HTMLElement);
+
+    component.scrollToHowItWorks();
+
+    expect(getElementById).toHaveBeenCalledWith('how-it-works');
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+    getElementById.mockRestore();
+  });
+
+  it('does nothing when the how-it-works section is missing', () => {
+    const getElementById = jest
+      .spyOn(document, 'getElementById')
+      .mockReturnValue(null);
+
+    expect(() => component.scrollToHowItWorks()).not.toThrow();
+    getElementById.mockRestore();
+  });
+
+  it('stays on the landing page when the session check throws', async () => {
+    authStateService.restoreSession.mockRejectedValue(new Error('offline'));
+    router.navigate.mockClear();
+
+    component.ngOnInit();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
 });

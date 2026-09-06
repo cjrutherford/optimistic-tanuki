@@ -96,6 +96,8 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
+    super.ngOnInit();
+
     this.route.data.subscribe((data) => {
       this.currentUserId = data['currentUserId'] || '';
     });

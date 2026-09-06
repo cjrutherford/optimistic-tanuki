@@ -1,6 +1,7 @@
 export default {
   displayName: 'setup-console',
   preset: '../../jest.preset.js',
+  coverageDirectory: '../../coverage/apps/setup-console',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [

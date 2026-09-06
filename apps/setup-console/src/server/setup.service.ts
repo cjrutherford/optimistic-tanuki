@@ -1240,7 +1240,12 @@ export class SetupService {
             maxBuffer: 10 * 1024 * 1024,
           }
         );
-      } catch {}
+      } catch (error) {
+        // Advisory pre-check: a validation failure here is reported but does
+        // not stop the migration, which has its own error handling below.
+        const msg = error instanceof Error ? error.message : String(error);
+        this.appendDeployLog(`Deployment validation reported: ${msg}`);
+      }
     }
 
     const migrateScript = path.join(
@@ -1254,7 +1259,20 @@ export class SetupService {
           cwd: this.workspaceRoot,
           maxBuffer: 10 * 1024 * 1024,
         });
-      } catch {}
+      } catch (error) {
+        // A failed migration must stop the deployment: deployAll would
+        // otherwise start every service against an unmigrated database.
+        const msg = error instanceof Error ? error.message : String(error);
+        this.failDeployProgress(
+          'db',
+          'run-migrations',
+          `Database migration failed: ${msg}`
+        );
+        return {
+          success: false,
+          message: `Database migration failed: ${msg}`,
+        };
+      }
     }
 
     this.completeDeploySubstep('db', 'run-migrations');

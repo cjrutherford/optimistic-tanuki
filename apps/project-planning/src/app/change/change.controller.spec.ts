@@ -33,6 +33,31 @@ describe('ChangeController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('passes requestingUserId to create separately from the DTO', async () => {
+    await controller.create({
+      projectId: 'p1',
+      requestor: 'profile-1',
+      requestingUserId: 'profile-1',
+    } as never);
+    expect(service.create).toHaveBeenCalledWith(
+      { projectId: 'p1', requestor: 'profile-1' },
+      'profile-1'
+    );
+  });
+
+  it('passes requestingUserId to update separately from the DTO', async () => {
+    await controller.update({
+      id: 'c1',
+      changeDescription: 'y',
+      requestingUserId: 'profile-1',
+    } as never);
+    expect(service.update).toHaveBeenCalledWith(
+      'c1',
+      { id: 'c1', changeDescription: 'y' },
+      'profile-1'
+    );
+  });
+
   it('passes requestingUserId to findAll separately from the query', async () => {
     await controller.findAll({
       changeDescription: 'x',

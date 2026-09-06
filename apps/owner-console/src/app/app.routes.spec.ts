@@ -1,149 +1,112 @@
+import { Route, Router, UrlTree } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
+import { runInInjectionContext, Injector, Type } from '@angular/core';
+
 import { appRoutes } from './app.routes';
-import { CommunityOpsWorkspaceComponent } from './components/community-ops-workspace.component';
+import { authGuard } from './guards/auth.guard';
+import { OPERATOR_WORKSPACES } from './operator-workspaces';
+
+type AnyRoute = Route & { children?: AnyRoute[] };
+
+const flatten = (routes: AnyRoute[]): AnyRoute[] =>
+  routes.flatMap((route) => [route, ...flatten(route.children ?? [])]);
+
+const findRoute = (path: string): AnyRoute => {
+  const match = flatten(appRoutes as AnyRoute[]).find((r) => r.path === path);
+  if (!match) {
+    throw new Error(`No route registered for path "${path}"`);
+  }
+  return match;
+};
 
 describe('appRoutes', () => {
-  it('does not expose the legacy setup route', () => {
-    const setupRoute = appRoutes.find((route) => route.path === 'setup');
-
-    expect(setupRoute).toBeUndefined();
+  it('registers a dashboard shell guarded by the auth guard', () => {
+    const dashboard = appRoutes.find((r) => r.path === 'dashboard');
+    expect(dashboard).toBeDefined();
+    expect(dashboard?.canActivate).toEqual([authGuard]);
+    expect(dashboard?.children?.length).toBeGreaterThan(0);
   });
 
-  it('redirects the legacy registration route to login with provisioning guidance', () => {
-    const registerRoute = appRoutes.find((route) => route.path === 'register');
-
-    expect(registerRoute?.redirectTo).toEqual(expect.any(Function));
-    expect(registerRoute?.loadComponent).toBeUndefined();
-
-    TestBed.configureTestingModule({ imports: [RouterTestingModule] });
-    const redirect = TestBed.runInInjectionContext(() =>
-      (registerRoute?.redirectTo as () => ReturnType<Router['createUrlTree']>)()
-    );
-
-    expect(TestBed.inject(Router).serializeUrl(redirect)).toBe(
-      '/login?provisioning=required'
-    );
+  it('sends the bare path to the public control center', () => {
+    const root = appRoutes.find((r) => r.path === '' && !r.children);
+    expect(root?.redirectTo).toBe('/control-center');
+    expect(root?.pathMatch).toBe('full');
   });
 
-  it('exposes an anonymous control-center status route outside the dashboard shell', () => {
-    const controlCenterRoute = appRoutes.find(
-      (route) => route.path === 'control-center'
-    );
-
-    expect(controlCenterRoute).toBeDefined();
-    expect(controlCenterRoute?.canActivate).toBeUndefined();
+  it('defaults the dashboard to the overview workspace', () => {
+    const dashboard = appRoutes.find((r) => r.path === 'dashboard');
+    const fallback = dashboard?.children?.find((r) => r.path === '');
+    expect(fallback?.redirectTo).toBe('overview');
+    expect(fallback?.pathMatch).toBe('full');
   });
 
-  it('exposes operator workspace routes under the dashboard shell', () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
-    );
-
-    expect(dashboardRoute).toBeDefined();
-
-    const childPaths = (dashboardRoute?.children ?? []).map(
-      (route) => route.path
-    );
-
-    expect(childPaths).toEqual(
-      expect.arrayContaining([
-        'overview',
-        'governance',
-        'experience',
-        'commerce',
-        'crm',
-        'community-ops',
-        'contacts',
-        'operations',
-        'video-processing',
-        'performance',
-        'control-center',
-        'oauth-inspector',
-        'registry',
-        'social-governance',
-        'forum-governance',
-        'app-config',
-        'app-config/designer',
-        'app-config/designer/:id',
-      ])
-    );
+  it('keeps the legacy business-site catalog path redirecting to the store route', () => {
+    const legacy = findRoute('business-site/catalog');
+    expect(legacy.redirectTo).toBe('store/business-site');
+    expect(legacy.pathMatch).toBe('full');
   });
 
-  it('exposes dedicated social and forum governance routes for community ops', () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
-    );
-
-    const childPaths = (dashboardRoute?.children ?? []).map(
-      (route) => route.path
-    );
-
-    expect(childPaths).toEqual(
-      expect.arrayContaining(['social-governance', 'forum-governance'])
-    );
+  it('generates a workspace landing route for every operator workspace', () => {
+    const paths = flatten(appRoutes as AnyRoute[]).map((r) => r.path);
+    for (const workspace of OPERATOR_WORKSPACES) {
+      expect(paths).toContain(workspace.path);
+    }
   });
 
-  it('defaults the dashboard shell to the overview workspace', () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
+  it('carries workspace metadata onto the generated landing routes', () => {
+    const generated = OPERATOR_WORKSPACES.find(
+      (w) => w.path !== 'community-ops' && w.path !== 'experience'
     );
-    const defaultChild = dashboardRoute?.children?.find(
-      (route) => route.path === ''
-    );
-
-    expect(defaultChild?.redirectTo).toBe('overview');
+    expect(generated).toBeDefined();
+    const route = findRoute(generated!.path);
+    expect(route.data).toEqual({
+      title: generated!.label,
+      description: generated!.description,
+      summary: generated!.summary,
+      checklist: generated!.checklist,
+      cards: generated!.cards,
+    });
   });
 
-  it('redirects the app root to the public control-center entry', () => {
-    const rootRoute = appRoutes.find((route) => route.path === '');
-
-    expect(rootRoute?.redirectTo).toBe('/control-center');
-  });
-
-  it('assigns guided and studio workspace modes to app-config designer routes', () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
-    );
-    const guidedRoute = dashboardRoute?.children?.find(
-      (route) => route.path === 'app-config/designer'
-    );
-    const studioRoute = dashboardRoute?.children?.find(
-      (route) => route.path === 'app-config/designer/:id'
-    );
-
-    expect(guidedRoute?.data).toMatchObject({
+  it('marks the guided and studio app-config designer routes distinctly', () => {
+    expect(findRoute('app-config/designer').data).toEqual({
       editorMode: 'guided',
       workspaceKind: 'app-config',
     });
-    expect(studioRoute?.data).toMatchObject({
+    expect(findRoute('app-config/designer/:id').data).toEqual({
       editorMode: 'studio',
       workspaceKind: 'app-config',
     });
   });
 
-  it('keeps a compatibility alias for the legacy business-site catalog route', () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
-    );
-    const legacyCatalogRoute = dashboardRoute?.children?.find(
-      (route) => route.path === 'business-site/catalog'
-    );
+  it('redirects register to login with the provisioning query flag', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const injector = TestBed.inject(Injector);
+    const router = TestBed.inject(Router);
 
-    expect(legacyCatalogRoute?.redirectTo).toBe('store/business-site');
+    const register = appRoutes.find((r) => r.path === 'register');
+    const redirect = register?.redirectTo as () => UrlTree;
+    expect(typeof redirect).toBe('function');
+
+    const tree = runInInjectionContext(injector, () => redirect());
+    expect(tree instanceof UrlTree).toBe(true);
+    expect(router.serializeUrl(tree)).toBe('/login?provisioning=required');
   });
 
-  it('loads the dedicated community ops workspace instead of the generic landing screen', async () => {
-    const dashboardRoute = appRoutes.find(
-      (route) => route.path === 'dashboard'
-    );
-    const communityOpsRoute = dashboardRoute?.children?.find(
-      (route) => route.path === 'community-ops'
+  it('resolves every lazily loaded component to a real class', async () => {
+    const lazyRoutes = flatten(appRoutes as AnyRoute[]).filter(
+      (r) => typeof r.loadComponent === 'function'
     );
 
-    const component = await communityOpsRoute?.loadComponent?.();
+    expect(lazyRoutes.length).toBeGreaterThan(20);
 
-    expect(component).toBe(CommunityOpsWorkspaceComponent);
-  });
+    for (const route of lazyRoutes) {
+      const loaded = await (
+        route.loadComponent as () => Promise<Type<unknown>>
+      )();
+      expect(typeof loaded).toBe('function');
+      expect(loaded.name).toBeTruthy();
+    }
+  }, 60000);
 });

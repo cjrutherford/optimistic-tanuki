@@ -29,6 +29,9 @@ describe('NotificationsPageComponent', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    profileServiceMock.getCurrentUserProfile.mockReturnValue({
+      id: 'profile-1',
+    });
 
     await TestBed.configureTestingModule({
       imports: [NotificationsPageComponent],
@@ -48,5 +51,57 @@ describe('NotificationsPageComponent', () => {
     expect(notificationServiceMock.loadNotifications).toHaveBeenCalledWith(
       'profile-1'
     );
+  });
+
+  it('does not load notifications without a selected profile', () => {
+    profileServiceMock.getCurrentUserProfile.mockReturnValue(null);
+
+    fixture.detectChanges();
+
+    expect(notificationServiceMock.loadNotifications).not.toHaveBeenCalled();
+  });
+
+  it('marks an unread notification read and follows its action url', () => {
+    fixture.detectChanges();
+
+    fixture.componentInstance.onNotificationClick({
+      id: 'n1',
+      isRead: false,
+      actionUrl: '/feed/post/1',
+    } as never);
+
+    expect(notificationServiceMock.markAsRead).toHaveBeenCalledWith('n1');
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/feed/post/1']);
+  });
+
+  it('leaves an already read notification alone and stays put without an action url', () => {
+    fixture.detectChanges();
+
+    fixture.componentInstance.onNotificationClick({
+      id: 'n1',
+      isRead: true,
+    } as never);
+
+    expect(notificationServiceMock.markAsRead).not.toHaveBeenCalled();
+    expect(routerMock.navigate).not.toHaveBeenCalled();
+  });
+
+  it('marks everything read for the selected profile', () => {
+    fixture.detectChanges();
+
+    fixture.componentInstance.onMarkAllRead();
+
+    expect(notificationServiceMock.markAllAsRead).toHaveBeenCalledWith(
+      'profile-1'
+    );
+  });
+
+  it('does not mark everything read without a selected profile', () => {
+    profileServiceMock.getCurrentUserProfile.mockReturnValue(null);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onMarkAllRead();
+
+    expect(notificationServiceMock.markAllAsRead).not.toHaveBeenCalled();
   });
 });

@@ -104,6 +104,8 @@ export class CommunityShellComponent
   }
 
   override ngOnInit() {
+    super.ngOnInit();
+
     if (typeof window !== 'undefined') {
       window.addEventListener(
         'ot-community-membership-changed',

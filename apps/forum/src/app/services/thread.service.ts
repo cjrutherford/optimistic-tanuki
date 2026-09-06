@@ -4,6 +4,7 @@ import { Thread } from '../../entities/thread.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateThreadDto, UpdateThreadDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
+import { withIdConstraint } from './find-options';
 
 @Injectable()
 export class ThreadService {
@@ -42,6 +43,9 @@ export class ThreadService {
     const thread = this.threadRepo.create({
       ...createThreadDto,
       title: this.sanitizeContent(createThreadDto.title),
+      // `description` is a rendered column like title and content, so it needs
+      // the same sanitizing — spreading the DTO alone stored it raw.
+      description: this.sanitizeContent(createThreadDto.description),
       content: this.sanitizeContent(createThreadDto.content),
     });
     return await this.threadRepo.save(thread);
@@ -58,10 +62,7 @@ export class ThreadService {
     options?: FindOneOptions<Thread>
   ): Promise<Thread | null> {
     const thread = await this.threadRepo.findOne(
-      this.withDefaultModerationFilter({
-        where: { id },
-        ...options,
-      })
+      this.withDefaultModerationFilter(withIdConstraint(id, options))
     );
 
     if (thread?.moderationStatus === 'visible') {

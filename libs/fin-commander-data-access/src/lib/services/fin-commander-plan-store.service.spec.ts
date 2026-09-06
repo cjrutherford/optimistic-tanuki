@@ -112,4 +112,175 @@ describe('FinCommanderPlanStore', () => {
     expect(persisted.id).toBe('api-plan');
     expect(store.listPlans()).toEqual(apiPlans);
   });
+
+  it('getScope returns null until a scope is set', () => {
+    const store = TestBed.inject(FinCommanderPlanStore);
+    expect(store.getScope()).toBeNull();
+    store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+    expect(store.getScope()).toEqual({
+      tenantId: 'tenant-a',
+      profileId: 'profile-a',
+    });
+  });
+
+  it('refreshPlans resolves to [] without a scope', async () => {
+    const store = TestBed.inject(FinCommanderPlanStore);
+    await expect(store.refreshPlans()).resolves.toEqual([]);
+  });
+
+  it('drops a stale refreshPlans response once the scope has been cleared', async () => {
+    const store = TestBed.inject(FinCommanderPlanStore);
+    const api = TestBed.inject(FinCommanderPlanApiService);
+    let resolvePlans!: (plans: typeof apiPlans) => void;
+    (api.listPlans as jest.Mock).mockReturnValueOnce(
+      new Promise((resolve) => (resolvePlans = resolve))
+    );
+
+    store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+    const pending = store.refreshPlans();
+    store.setScope(null);
+    resolvePlans(apiPlans);
+    await pending;
+
+    expect(store.listPlans()).toEqual([]);
+  });
+
+  describe('goals', () => {
+    it('throws when saving a goal without a scope', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      await expect(
+        store.saveGoal({ id: 'g1', planId: 'p1' } as any)
+      ).rejects.toThrow(
+        'An active tenant scope is required for planning changes'
+      );
+    });
+
+    it('refreshGoals returns [] without a scope or planId', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      await expect(store.refreshGoals('')).resolves.toEqual([]);
+    });
+
+    it('refreshes, filters, saves and deletes goals scoped to a plan', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      const api = TestBed.inject(FinCommanderPlanApiService);
+      const goal = { id: 'g1', planId: 'p1', name: 'Goal 1' };
+      (api.listGoals as jest.Mock).mockResolvedValue([goal]);
+      (api.saveGoal as jest.Mock).mockResolvedValue(goal);
+
+      store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+      await store.refreshGoals('p1');
+
+      expect(store.listGoals('p1')).toEqual([goal]);
+      expect(store.listGoals('other-plan')).toEqual([]);
+
+      const saved = await store.saveGoal(goal as any);
+      expect(saved).toEqual(goal);
+      expect(store.listGoals('p1')).toEqual([goal]);
+
+      await store.deleteGoal('g1');
+      expect(store.listGoals('p1')).toEqual([]);
+    });
+
+    it('previews, approves and cancels funding directives through the API', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      const api = TestBed.inject(FinCommanderPlanApiService);
+      (api as any).previewFundingDirective = jest
+        .fn()
+        .mockResolvedValue({ amountCents: 100 });
+      (api as any).approveFundingDirective = jest
+        .fn()
+        .mockResolvedValue({ id: 'fd1' });
+      (api as any).cancelFundingDirective = jest
+        .fn()
+        .mockResolvedValue({ id: 'fd1' });
+
+      store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+
+      await expect(store.previewFundingDirective('g1')).resolves.toEqual({
+        amountCents: 100,
+      });
+      await expect(store.approveFundingDirective('g1')).resolves.toEqual({
+        id: 'fd1',
+      });
+      await expect(store.cancelFundingDirective('g1')).resolves.toEqual({
+        id: 'fd1',
+      });
+    });
+  });
+
+  describe('scenarios', () => {
+    it('throws when saving a scenario without a scope', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      await expect(
+        store.saveScenario({ id: 's1', planId: 'p1' } as any)
+      ).rejects.toThrow(
+        'An active tenant scope is required for planning changes'
+      );
+    });
+
+    it('refreshScenarios returns [] without a scope or planId', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      await expect(store.refreshScenarios('')).resolves.toEqual([]);
+    });
+
+    it('refreshes, filters, saves and deletes scenarios scoped to a plan', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      const api = TestBed.inject(FinCommanderPlanApiService);
+      const scenario = { id: 's1', planId: 'p1', name: 'Scenario 1' };
+      (api.listScenarios as jest.Mock).mockResolvedValue([scenario]);
+      (api.saveScenario as jest.Mock).mockResolvedValue(scenario);
+
+      store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+      await store.refreshScenarios('p1');
+
+      expect(store.listScenarios('p1')).toEqual([scenario]);
+      expect(store.listScenarios('other-plan')).toEqual([]);
+
+      const saved = await store.saveScenario(scenario as any);
+      expect(saved).toEqual(scenario);
+
+      await store.deleteScenario('s1');
+      expect(store.listScenarios('p1')).toEqual([]);
+    });
+  });
+
+  describe('buildOverview', () => {
+    it('throws when the plan is not found', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+      await expect(store.buildOverview('missing')).rejects.toThrow(
+        'Plan missing not found'
+      );
+    });
+
+    it('assembles goals, scenarios, and per-workspace summaries', async () => {
+      const store = TestBed.inject(FinCommanderPlanStore);
+      const api = TestBed.inject(FinCommanderPlanApiService);
+      const financeService = TestBed.inject(FinanceService);
+      (api.listGoals as jest.Mock).mockResolvedValue([]);
+      (api.listScenarios as jest.Mock).mockResolvedValue([]);
+      (financeService.getWorkspaceSummary as jest.Mock).mockImplementation(
+        (workspace: string) => {
+          if (workspace === 'personal') {
+            return Promise.resolve({ total: 100 });
+          }
+          return Promise.reject(new Error('unavailable'));
+        }
+      );
+
+      store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+      await store.refreshPlans();
+
+      const overview = await store.buildOverview('api-plan');
+
+      expect(overview.plan).toEqual(apiPlans[0]);
+      expect(overview.goals).toEqual([]);
+      expect(overview.scenarios).toEqual([]);
+      expect(overview.workspaces).toEqual([
+        { workspace: 'personal', summary: { total: 100 }, available: true },
+        { workspace: 'business', summary: null, available: false },
+        { workspace: 'net-worth', summary: null, available: false },
+      ]);
+    });
+  });
 });

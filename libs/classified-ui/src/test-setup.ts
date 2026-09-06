@@ -1,1 +1,6 @@
-// intentionally empty – required by tsconfig.spec.json
+import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone';
+
+setupZoneTestEnv({
+  errorOnUnknownElements: true,
+  errorOnUnknownProperties: true,
+});
