@@ -3,7 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LeadFlagsService } from '@optimistic-tanuki/leads-feature-flags';
-import type { GeneratedApplication } from '@optimistic-tanuki/models';
+import type {
+  GeneratedApplication,
+  GeneratedOutreachDraft,
+} from '@optimistic-tanuki/models';
 import type { AspirationalCompany } from '@optimistic-tanuki/leads-contracts';
 import { LeadOnboardingService } from '@optimistic-tanuki/leads-feature-onboarding';
 import { LeadTopicsService } from '@optimistic-tanuki/leads-feature-topics';
@@ -183,6 +186,20 @@ export class LeadsService {
           lead.id === leadId ? updated : lead
         );
       })
+    );
+  }
+
+  /** Writes a first-contact message for this lead, guarded against invention. */
+  draftOutreach(leadId: string): Observable<GeneratedOutreachDraft> {
+    return this.http.post<GeneratedOutreachDraft>(
+      `/api/leads/${leadId}/outreach/draft`,
+      {}
+    );
+  }
+
+  findOutreachDraft(leadId: string): Observable<GeneratedOutreachDraft | null> {
+    return this.http.get<GeneratedOutreachDraft | null>(
+      `/api/leads/${leadId}/outreach/draft`
     );
   }
 

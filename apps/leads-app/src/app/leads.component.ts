@@ -2,7 +2,10 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import type { GeneratedApplication } from '@optimistic-tanuki/models';
+import type {
+  GeneratedApplication,
+  GeneratedOutreachDraft,
+} from '@optimistic-tanuki/models';
 import { LeadsService } from './leads.service';
 import {
   Lead,
@@ -74,6 +77,9 @@ export class LeadsComponent implements OnInit {
   outreachPending = false;
   outreachError = '';
   outreachRecorded = false;
+  outreachDraft: GeneratedOutreachDraft | null = null;
+  draftPending = false;
+  draftError = '';
   kindFilter: LeadKindFilter = 'all';
   applicationError = '';
 
@@ -235,6 +241,21 @@ export class LeadsComponent implements OnInit {
     this.applicationError = '';
     this.outreachError = '';
     this.outreachRecorded = false;
+    this.outreachDraft = null;
+    this.draftError = '';
+
+    // A draft written earlier for this lead is worth having back rather than
+    // paying to regenerate.
+    this.leadsService.findOutreachDraft(lead.id).subscribe({
+      next: (draft) => {
+        if (this.selectedLeadForView?.id === lead.id) {
+          this.outreachDraft = draft;
+        }
+      },
+      error: () => {
+        this.outreachDraft = null;
+      },
+    });
 
     this.leadsService.findApplication(lead.id).subscribe({
       next: (application) => {
@@ -255,6 +276,8 @@ export class LeadsComponent implements OnInit {
     this.applicationError = '';
     this.outreachError = '';
     this.outreachRecorded = false;
+    this.outreachDraft = null;
+    this.draftError = '';
   }
 
   /**
@@ -262,6 +285,26 @@ export class LeadsComponent implements OnInit {
    * Recording it is what moves the lead to Contacted and stamps the follow-up
    * clock, so a failure here has to be visible rather than swallowed.
    */
+  onDraftOutreach(leadId: string) {
+    if (this.draftPending) {
+      return;
+    }
+    this.draftPending = true;
+    this.draftError = '';
+
+    this.leadsService.draftOutreach(leadId).subscribe({
+      next: (draft) => {
+        this.draftPending = false;
+        this.outreachDraft = draft;
+      },
+      error: () => {
+        this.draftPending = false;
+        this.draftError =
+          'Could not draft a message. Finish onboarding so the draft has facts to draw on, then try again.';
+      },
+    });
+  }
+
   onOutreachSent(event: { leadId: string; subject: string; message: string }) {
     if (this.outreachPending) {
       return;

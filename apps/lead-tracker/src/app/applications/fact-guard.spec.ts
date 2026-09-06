@@ -48,6 +48,18 @@ describe('anti-fabrication fact guard', () => {
       ).toBe(true);
     });
 
+    it('does not treat a full stop as part of the last word', () => {
+      // `norm` keeps dots so "node.js" survives, which also left "React." as a
+      // token that no corpus built from field values can ever contain. The
+      // final word of every sentence was therefore permanently unsupported.
+      expect(
+        isStatementSupported(
+          'Migrated a legacy AngularJS dashboard to React.',
+          facts
+        )
+      ).toBe(true);
+    });
+
     it('rejects an invented metric', () => {
       // 40% is real; 85% appears nowhere in the user's material.
       expect(

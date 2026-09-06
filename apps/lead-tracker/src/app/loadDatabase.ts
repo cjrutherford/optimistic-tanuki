@@ -4,6 +4,7 @@ import {
   LeadFlag,
   LeadApplicationRecord,
   LeadOnboardingProfileRecord,
+  LeadOutreachDraftRecord,
   LeadQualification,
   LeadTopic,
   LeadTopicLink,
@@ -20,6 +21,7 @@ const loadDatabase = (config: ConfigService) => {
     LeadQualification,
     LeadApplicationRecord,
     LeadOnboardingProfileRecord,
+    LeadOutreachDraftRecord,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',

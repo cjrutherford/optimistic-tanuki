@@ -40,6 +40,12 @@ export const LeadAnalysisCommands = {
   RUN: 'leads.analysis.run',
 } as const;
 
+export const LeadOutreachCommands = {
+  /** Writes a first-contact message for one lead. */
+  GENERATE_DRAFT: 'leads.outreach.generateDraft',
+  FIND_LATEST_DRAFT: 'leads.outreach.findLatestDraft',
+} as const;
+
 export const LeadApplicationCommands = {
   GENERATE: 'leads.application.generate',
   FIND_LATEST: 'leads.application.findLatest',

@@ -131,6 +131,7 @@ export {
   LeadOnboardingCommands,
   LeadAnalysisCommands,
   LeadApplicationCommands,
+  LeadOutreachCommands,
 } from './lib/libs/leads/lead-commands';
 export {
   AccountCommands,

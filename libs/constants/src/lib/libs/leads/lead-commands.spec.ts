@@ -1,4 +1,4 @@
-import { LeadCommands } from './lead-commands';
+import { LeadCommands, LeadOutreachCommands } from './lead-commands';
 
 describe('LeadCommands', () => {
   it('should have correct FIND_ALL command', () => {
@@ -35,5 +35,14 @@ describe('LeadCommands', () => {
 
   it('should have correct LOG_OUTREACH command', () => {
     expect(LeadCommands.LOG_OUTREACH).toBe('lead.logOutreach');
+  });
+
+  it('should have correct outreach draft commands', () => {
+    expect(LeadOutreachCommands.GENERATE_DRAFT).toBe(
+      'leads.outreach.generateDraft'
+    );
+    expect(LeadOutreachCommands.FIND_LATEST_DRAFT).toBe(
+      'leads.outreach.findLatestDraft'
+    );
   });
 });

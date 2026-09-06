@@ -34,6 +34,9 @@ describe('LeadsComponent', () => {
     flagLead: jest.fn(),
     findApplication: jest.fn(),
     generateApplication: jest.fn(),
+    findOutreachDraft: jest.fn(),
+    draftOutreach: jest.fn(),
+    logOutreach: jest.fn(),
   };
 
   const themeServiceStub = {
@@ -50,6 +53,9 @@ describe('LeadsComponent', () => {
     // Opening the detail view now looks for a previously generated application.
     leadsServiceStub.findApplication.mockReturnValue(of(null));
     leadsServiceStub.generateApplication.mockReturnValue(of(null));
+    // Opening the detail view also looks for a message drafted earlier.
+    leadsServiceStub.findOutreachDraft.mockReturnValue(of(null));
+    leadsServiceStub.draftOutreach.mockReturnValue(of(null));
     leadsServiceStub.getStats.mockReturnValue(
       of({
         total: 0,

@@ -4,6 +4,7 @@ import {
   LeadFlag,
   LeadApplicationRecord,
   LeadOnboardingProfileRecord,
+  LeadOutreachDraftRecord,
   LeadQualification,
   LeadTopic,
   LeadTopicLink,
@@ -24,6 +25,7 @@ export default new DataSource({
     LeadQualification,
     LeadApplicationRecord,
     LeadOnboardingProfileRecord,
+    LeadOutreachDraftRecord,
   ],
   migrations: ['src/migrations/*.ts', 'migrations/*.ts'],
 });

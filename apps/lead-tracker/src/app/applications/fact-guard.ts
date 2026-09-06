@@ -85,6 +85,32 @@ export const buildFactBase = (profile: UserOnboardingProfile): FactBase => {
   };
 };
 
+/**
+ * Admits a second body of fact into an existing base.
+ *
+ * The guard was built for documents that only ever make claims about the user,
+ * so `corpus` holds the user's own material and nothing else. A first-contact
+ * message is different: "I noticed you have no website" is a claim about the
+ * *recipient*, and every distinctive word in it — noticed, website, the
+ * business name — is absent from the user's profile. Checked against the user
+ * alone, the single most useful sentence in the message is the first one
+ * removed.
+ *
+ * Widening the corpus is therefore not a loosening of the rule but a correction
+ * to it: a statement about the lead is supported when it traces to what the
+ * discovery source actually observed about that lead. Anything traceable to
+ * neither body of fact is still invention, and still goes.
+ */
+export const extendFactCorpus = (
+  facts: FactBase,
+  ...additional: (string | undefined | null)[]
+): FactBase => ({
+  ...facts,
+  corpus: [facts.corpus, norm(additional.filter(Boolean).join(' '))]
+    .filter(Boolean)
+    .join(' '),
+});
+
 /** Numbers are the easiest thing to invent and the most damaging to get wrong. */
 const claimedNumbers = (text: string): string[] =>
   (text.match(/\b\d+(?:\.\d+)?%?\b/g) || []).filter(
@@ -109,14 +135,33 @@ const STOPWORDS = new Set(
   ).split(' ')
 );
 
-const distinctiveWords = (text: string): string[] =>
+const distinctiveWords = (
+  text: string,
+  extraStopwords?: ReadonlySet<string>
+): string[] =>
   norm(text)
+    // `norm` keeps dots so "node.js" and "3.5" survive, which also left the
+    // full stop attached to the last word of every sentence — and "listed."
+    // never appears in a corpus built from field values. That made the final
+    // word of each sentence permanently unsupported, and the guard measurably
+    // stricter than the 0.8 threshold intends.
     .split(' ')
-    .filter((word) => word.length > 3 && !STOPWORDS.has(word));
+    .map((word) => word.replace(/\.+$/, ''))
+    .filter(
+      (word) =>
+        word.length > 3 && !STOPWORDS.has(word) && !extraStopwords?.has(word)
+    );
 
 export const isStatementSupported = (
   statement: string,
-  facts: FactBase
+  facts: FactBase,
+  /**
+   * Words that carry no claim in this particular register. The base list is
+   * tuned for resume prose; a first-contact email has its own contentless
+   * vocabulary ("I came across", "I noticed") that would otherwise be counted
+   * as substance the user has to have evidenced.
+   */
+  extraStopwords?: ReadonlySet<string>
 ): boolean => {
   if (!statement.trim()) {
     return false;
@@ -125,7 +170,7 @@ export const isStatementSupported = (
     return false;
   }
 
-  const words = distinctiveWords(statement);
+  const words = distinctiveWords(statement, extraStopwords);
   if (!words.length) {
     // Nothing specific claimed; harmless connective prose.
     return true;

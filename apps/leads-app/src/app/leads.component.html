@@ -570,8 +570,12 @@
     [outreachPending]="outreachPending"
     [outreachError]="outreachError"
     [outreachRecorded]="outreachRecorded"
+    [outreachDraft]="outreachDraft"
+    [draftPending]="draftPending"
+    [draftError]="draftError"
     (generateApplication)="onGenerateApplication($event)"
     (outreachSent)="onOutreachSent($event)"
+    (draftRequested)="onDraftOutreach($event)"
     (closed)="closeLeadDetail()"
     (editRequested)="openEditFromView(selectedLeadForView!)"
   ></app-lead-detail-modal>

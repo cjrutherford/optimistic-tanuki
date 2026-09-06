@@ -18,6 +18,7 @@ export * from './log-lead-outreach.dto';
 export * from './send-lead-response.dto';
 export * from './aspirational-company.interface';
 export * from './lead-application.interface';
+export * from './lead-outreach.interface';
 export * from './mad-lib-template.interface';
 export * from './user-onboarding-profile.interface';
 export * from './lead-analysis.model';

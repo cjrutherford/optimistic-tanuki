@@ -12,6 +12,7 @@ import {
   Lead,
   LeadFlag,
   LeadApplicationRecord,
+  LeadOutreachDraftRecord,
   LeadOnboardingProfileRecord,
   LeadQualification,
   LeadTopic,
@@ -31,6 +32,8 @@ import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service'
 import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
 import { ApplicationGenerationService } from './applications/application-generation.service';
 import { ApplicationService } from './applications/application.service';
+import { OutreachDraftService } from './outreach/outreach-draft.service';
+import { OutreachService } from './outreach/outreach.service';
 import { DocumentExportService } from './applications/document-export.service';
 import { OverpassDiscoveryProvider } from './discovery/overpass-discovery.provider';
 import { GoogleMapsDiscoveryProvider } from './discovery/google-maps-discovery.provider';
@@ -83,6 +86,7 @@ import loadConfig from '../config';
             LeadQualification,
             LeadApplicationRecord,
             LeadOnboardingProfileRecord,
+            LeadOutreachDraftRecord,
           ],
         };
       },
@@ -142,6 +146,8 @@ import loadConfig from '../config';
     AtsCompanySuggestionService,
     ApplicationGenerationService,
     ApplicationService,
+    OutreachDraftService,
+    OutreachService,
     DocumentExportService,
     {
       provide: getRepositoryToken(Lead),
@@ -177,6 +183,11 @@ import loadConfig from '../config';
     {
       provide: getRepositoryToken(LeadApplicationRecord),
       useFactory: (ds: DataSource) => ds.getRepository(LeadApplicationRecord),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(LeadOutreachDraftRecord),
+      useFactory: (ds: DataSource) => ds.getRepository(LeadOutreachDraftRecord),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

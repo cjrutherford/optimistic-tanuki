@@ -25,6 +25,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   LeadAnalysisCommands,
   LeadApplicationCommands,
+  LeadOutreachCommands,
   LeadCommands,
   LeadFlagCommands,
   LeadOnboardingCommands,
@@ -587,6 +588,39 @@ export class LeadsController {
           ...data,
           context: this.getContext(user, appScope),
         }
+      )
+    );
+  }
+
+  @Post(':id/outreach/draft')
+  @ModelBound()
+  @RequirePermissions('lead.update')
+  @ApiOperation({ summary: 'Draft a first-contact message for a lead' })
+  async generateOutreachDraft(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadOutreachCommands.GENERATE_DRAFT },
+        { leadId: id, context: this.getContext(user, appScope) }
+      )
+    );
+  }
+
+  @Get(':id/outreach/draft')
+  @RequirePermissions('lead.read')
+  @ApiOperation({ summary: 'Get the latest drafted message for a lead' })
+  async findOutreachDraft(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadOutreachCommands.FIND_LATEST_DRAFT },
+        { leadId: id, ...this.getContext(user, appScope) }
       )
     );
   }

@@ -8,6 +8,7 @@ import { LeadQualificationService } from './lead-qualification.service';
 import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service';
 import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
 import { ApplicationService } from './applications/application.service';
+import { OutreachService } from './outreach/outreach.service';
 import { DocumentExportService } from './applications/document-export.service';
 import {
   LeadAnalysisCommands,
@@ -63,6 +64,10 @@ describe('LeadsController', () => {
       findLatest: jest.fn(),
       findHistory: jest.fn(),
     };
+    const mockOutreachService = {
+      generate: jest.fn(),
+      findLatest: jest.fn(),
+    };
     const mockDocumentExportService = { export: jest.fn() };
     const mockAtsCompanyLookupService = { lookup: jest.fn() };
     const mockAtsCompanySuggestionService = { suggest: jest.fn() };
@@ -100,6 +105,7 @@ describe('LeadsController', () => {
           useValue: mockAtsCompanySuggestionService,
         },
         { provide: ApplicationService, useValue: mockApplicationService },
+        { provide: OutreachService, useValue: mockOutreachService },
         {
           provide: DocumentExportService,
           useValue: mockDocumentExportService,

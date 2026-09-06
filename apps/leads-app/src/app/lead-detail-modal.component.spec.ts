@@ -129,6 +129,64 @@ describe('LeadDetailModalComponent', () => {
       );
     });
 
+    it('fills the composer from a drafted message', () => {
+      const fixture = buildFixture();
+
+      fixture.componentInstance.outreachDraft = {
+        leadId: 'lead-1',
+        draft: {
+          subject: 'Your booking page',
+          greeting: 'Hello Acme Corp,',
+          opening: 'I noticed Acme Corp has no website listed.',
+          body: ['I build booking systems for clinics.'],
+          closing: 'Worth a short conversation?',
+          signOff: 'Thanks,',
+        },
+        evidence: { removedClaims: [], observedSignals: [], clean: true },
+        version: 1,
+        modelGenerated: true,
+        generatedAt: new Date().toISOString(),
+      } as any;
+
+      expect(fixture.componentInstance.outreachSubject).toBe(
+        'Your booking page'
+      );
+      // Assembled in reading order, blank-line separated, ready to send.
+      expect(fixture.componentInstance.outreachMessage).toBe(
+        [
+          'Hello Acme Corp,',
+          'I noticed Acme Corp has no website listed.',
+          'I build booking systems for clinics.',
+          'Worth a short conversation?',
+          'Thanks,',
+        ].join('\n\n')
+      );
+    });
+
+    it('drops a draft belonging to a lead the user has moved on from', () => {
+      const fixture = buildFixture();
+      fixture.componentInstance.outreachDraft = {
+        leadId: 'lead-1',
+        draft: {
+          subject: 'Your booking page',
+          greeting: 'Hello,',
+          opening: '',
+          body: [],
+          closing: '',
+          signOff: '',
+        },
+        evidence: { removedClaims: [], observedSignals: [], clean: true },
+        version: 1,
+        modelGenerated: true,
+        generatedAt: new Date().toISOString(),
+      } as any;
+
+      fixture.componentInstance.lead = { ...lead, id: 'lead-2' };
+
+      expect(fixture.componentInstance.outreachDraft).toBeNull();
+      expect(fixture.componentInstance.outreachMessage).toBe('');
+    });
+
     it('warns before handing a long message to a mail client that would clip it', () => {
       const fixture = buildFixture();
       fixture.componentInstance.outreachSubject = 'Your site';

@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { GeneratedApplication } from '@optimistic-tanuki/models';
+import type {
+  GeneratedApplication,
+  GeneratedOutreachDraft,
+} from '@optimistic-tanuki/models';
 import {
   getLeadSourceDescriptor,
   Lead,
@@ -207,6 +210,60 @@ import {
               <span class="outreach-hint">
                 You send it — the app only writes it down.
               </span>
+            </div>
+
+            <div class="draft-row">
+              <button
+                type="button"
+                class="generate-btn"
+                (click)="onDraftRequested()"
+                [disabled]="draftPending"
+              >
+                {{
+                  draftPending
+                    ? 'Drafting…'
+                    : outreachDraft
+                    ? 'Redraft message'
+                    : 'Draft message'
+                }}
+              </button>
+              <span class="draft-meta" *ngIf="outreachDraft">
+                Version {{ outreachDraft.version }} ·
+                {{
+                  outreachDraft.modelGenerated
+                    ? 'model written'
+                    : 'assembled from your profile'
+                }}
+              </span>
+            </div>
+
+            <p class="empty-state" *ngIf="draftError">{{ draftError }}</p>
+
+            <!-- What the guard refused to say in the user's name matters more
+                 than what it wrote, so it sits above the draft, not below. -->
+            <div
+              class="evidence-warning"
+              *ngIf="outreachDraft && !outreachDraft.evidence.clean"
+              role="status"
+            >
+              <strong
+                >Unsupported claims were removed before you saw this.</strong
+              >
+              <p *ngFor="let claim of outreachDraft.evidence.removedClaims">
+                {{ claim }}
+              </p>
+            </div>
+
+            <div
+              class="evidence-gaps"
+              *ngIf="outreachDraft?.evidence?.observedSignals?.length"
+            >
+              <strong>What this draft is allowed to say about them</strong>
+              <p
+                *ngFor="let signal of outreachDraft?.evidence?.observedSignals"
+              >
+                {{ signal }}
+              </p>
             </div>
 
             <label class="field">
@@ -527,6 +584,18 @@ import {
         color: var(--app-foreground-muted);
       }
 
+      .draft-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .draft-meta {
+        font-size: 0.8rem;
+        color: var(--app-foreground-muted);
+      }
+
       .outreach-recorded {
         font-size: 0.85rem;
         font-weight: 600;
@@ -641,6 +710,45 @@ export class LeadDetailModalComponent {
   @Input() outreachPending = false;
   @Input() outreachError = '';
   @Input() outreachRecorded = false;
+  @Input() draftPending = false;
+  @Input() draftError = '';
+  @Output() draftRequested = new EventEmitter<string>();
+
+  private draftValue: GeneratedOutreachDraft | null = null;
+
+  /**
+   * A drafted message fills the composer, but never overwrites work in
+   * progress: the user asked for a draft, not for their own words to be
+   * discarded, and a redraft after edits would otherwise silently lose them.
+   */
+  @Input() set outreachDraft(value: GeneratedOutreachDraft | null) {
+    this.draftValue = value;
+    if (!value) {
+      return;
+    }
+    this.outreachSubject = value.draft.subject || this.outreachSubject;
+    this.outreachMessage = this.composeMessage(value);
+    this.copyState = 'idle';
+  }
+
+  get outreachDraft(): GeneratedOutreachDraft | null {
+    return this.draftValue;
+  }
+
+  onDraftRequested(): void {
+    if (this.leadValue?.id && !this.draftPending) {
+      this.draftRequested.emit(this.leadValue.id);
+    }
+  }
+
+  /** The stored draft as the plain text the user will actually send. */
+  private composeMessage(generated: GeneratedOutreachDraft): string {
+    const { greeting, opening, body, closing, signOff } = generated.draft;
+    return [greeting, opening, ...(body || []), closing, signOff]
+      .map((part) => (part || '').trim())
+      .filter(Boolean)
+      .join('\n\n');
+  }
   @Output() outreachSent = new EventEmitter<{
     leadId: string;
     subject: string;
@@ -663,6 +771,7 @@ export class LeadDetailModalComponent {
       this.outreachSubject = value ? this.defaultSubject(value) : '';
       this.outreachMessage = '';
       this.copyState = 'idle';
+      this.draftValue = null;
     }
   }
 

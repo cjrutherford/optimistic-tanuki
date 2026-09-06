@@ -28,6 +28,7 @@ import { LeadQualificationService } from './lead-qualification.service';
 import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service';
 import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
 import { ApplicationService } from './applications/application.service';
+import { OutreachService } from './outreach/outreach.service';
 import { DocumentExportService } from './applications/document-export.service';
 import { LeadsService } from './leads.service';
 import { GoogleMapsLocationAutocompleteService } from './google-maps-location-autocomplete.service';
@@ -35,6 +36,7 @@ import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import {
   LeadAnalysisCommands,
   LeadApplicationCommands,
+  LeadOutreachCommands,
   LeadCommands,
   LeadFlagCommands,
   LeadOnboardingCommands,
@@ -52,6 +54,7 @@ export class LeadsController {
     private readonly atsCompanyLookupService: AtsCompanyLookupService,
     private readonly atsCompanySuggestionService: AtsCompanySuggestionService,
     private readonly applicationService: ApplicationService,
+    private readonly outreachService: OutreachService,
     private readonly documentExportService: DocumentExportService
   ) {}
 
@@ -124,6 +127,20 @@ export class LeadsController {
     }
   ) {
     return this.leadsService.logOutreach(data.id, data.dto, data.context);
+  }
+
+  @MessagePattern({ cmd: LeadOutreachCommands.GENERATE_DRAFT })
+  async generateOutreachDraft(
+    @Payload() data: { leadId: string; context: LeadAuthContext }
+  ) {
+    return this.outreachService.generate(data.leadId, data.context);
+  }
+
+  @MessagePattern({ cmd: LeadOutreachCommands.FIND_LATEST_DRAFT })
+  async findLatestOutreachDraft(
+    @Payload() data: { leadId: string; profileId: string }
+  ) {
+    return this.outreachService.findLatest(data.leadId, data.profileId);
   }
 
   @MessagePattern({ cmd: LeadTopicCommands.FIND_ALL })

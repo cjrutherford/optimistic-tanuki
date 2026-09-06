@@ -5,3 +5,4 @@ export * from './lead-topic-link.model';
 export * from './lead-qualification.model';
 export * from './lead-onboarding-profile-record.model';
 export * from './lead-application.model';
+export * from './lead-outreach-draft.model';
