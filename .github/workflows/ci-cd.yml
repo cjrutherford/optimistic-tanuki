@@ -454,7 +454,13 @@ jobs:
     name: Microservices E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
-    if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
+    # `!cancelled()` is load-bearing. A job whose `if` contains no status check
+    # function keeps the implicit skip propagation from `needs`, so the
+    # `needs.publish_images.result == 'skipped'` clause below never got a
+    # chance to matter: publish_images only runs on pushes to main, and on
+    # every other ref its skip silently skipped this job too. That is why the
+    # e2e suites appeared to "only run after merging to main".
+    if: ${{ !cancelled() && needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -560,7 +566,9 @@ jobs:
     name: UI E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
-    if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
+    # See the note on microservices_e2e: without `!cancelled()` the skipped
+    # publish_images job skips this one on every ref except main.
+    if: ${{ !cancelled() && needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped') }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
