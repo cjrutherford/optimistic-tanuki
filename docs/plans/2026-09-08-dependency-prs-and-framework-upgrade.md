@@ -70,8 +70,56 @@ matching group, so the three framework groups never receive anything and every f
 is guaranteed to be split across the prod/dev PR boundary. This will recur every week
 until the ordering is fixed.
 
+### Bug F — workspace libraries float a second Angular copy (found during implementation)
+
+36 of the 40 workspace libraries declare their Angular peer range as `>=20.0.0`, and
+`libs/leads-ui` / `libs/motion-ui` pinned exactly `20.2.4`. With pnpm auto-installing
+peers, an open-ended range lets a _second_ `@angular/core` resolve alongside the root
+one. The build then fails with `NG3004: Unable to import directive NgForOf` and
+`InputSignal` brand mismatches (`__@ɵINPUT_SIGNAL_BRAND_WRITE_TYPE@17515` vs `@20719`) —
+the signature of two Angular copies in one program.
+
+This was latent on `main` (the lockfile happened to resolve everything to 20.2.4) and
+only surfaced when the root moved to 20.3.30. Normalized every workspace peer range to
+`^20.3.30`.
+
+### Bug G — the tiptap bump duplicates `@tiptap/core` (found during implementation)
+
+`ngx-tiptap@14.0.1` peers `@tiptap/core: ^3.0.1`. The lockfile had that peer resolved at
+3.23.6, and #242 moves the root to `^3.31.2`, so the tree carried both 3.23.6 and 3.31.3.
+`libs/social-ui` then failed to compile with `Type 'Node<AngularComponentOptions, any>'
+is not assignable to type 'AnyExtension'` and a dozen missing `SingleCommands` members.
+Fixed by `pnpm dedupe`.
+
+### Bug H — Angular 20.3 requires `BootstrapContext` (found during implementation)
+
+All 20 SSR apps used `bootstrapApplication(AppComponent, config)`. Angular 20.3 requires
+the server bootstrap to forward a `BootstrapContext`, and without it production builds
+fail during route extraction with `NG0401: Missing Platform`. Production builds report
+only the bare code `NG0401`; the readable message appears solely under
+`--configuration=development`.
+
+This is what actually took down the four Lighthouse audits on #242 — they are the SSR
+apps (business-site, digital-homestead, forgeofwill, owner-console), and their builds were
+failing rather than their performance regressing. Bisection confirmed the Angular
+20.2.4 → 20.3.30 bump alone reproduces it with every other dependency held at `main`.
+
 Also noted, non-blocking: `libs/theme-models/jest.config.ts` logs
 `Warning: Failed to load the ES module` on every CI run.
+
+### Bug I — `gateway-e2e` readiness probes a 404 (the post-merge CI failure)
+
+`Microservices E2E - gateway` fails on every push to `main`, and it only runs post-merge,
+so no PR ever catches it. `scripts/e2e-environment-manifest.mjs` gives every microservice
+entry `readinessUrl: null` except `gateway-e2e`, which falls through to the `baseUrl`
+default of `http://127.0.0.1:3000`. The gateway mounts all routes under the `api` global
+prefix (`apps/gateway/src/main.ts:29`), so `/` answers 404, `response.ok` is false, and
+the probe times out after three minutes. Fixed by probing `/api-docs`, the same URL the
+UI suites already use for the gateway.
+
+The `getaddrinfo EAI_AGAIN wellness` / `ai-orchestration` errors in the same log are
+unrelated noise: the gateway registers TCP clients for services the e2e stack does not
+start. They do not fail the job.
 
 ## Part 3 — Remediation plan for the PRs
 
