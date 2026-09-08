@@ -33,12 +33,18 @@ function lifecyclePhases({
           'redis',
           'db-setup',
           'permissions-seed',
+          'store-seed',
           'app-configurator',
           'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
   );
+  // store-seed runs against an already-started store, so it needs its own
+  // phase after 'dependencies' rather than starting alongside it.
+  add('store-seed', ['store-seed'], {
+    completion: 'completed-successfully',
+  });
   if (app !== 'app-configurator') add('app-configurator', ['app-configurator']);
   add('app-configurator-seed', ['app-configurator-seed'], {
     completion: 'completed-successfully',
@@ -438,8 +444,12 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'store',
+      'store-seed',
       'gateway',
     ],
+    // store-seed populates the catalog; the suite asserts against those
+    // products, so the app must not start browsing before it finishes.
+    completedServices: ['db-setup', 'store-seed'],
   },
   {
     project: 'configurable-client-e2e',

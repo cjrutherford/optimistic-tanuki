@@ -336,6 +336,27 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  # The store catalog is empty without this. seed-store.js is already built as
+  # an additional entry point in apps/store/webpack.config.js; it just was
+  # never wired into the e2e stack, so every store-client catalog assertion
+  # had nothing to render.
+  store-seed:
+    image: cjrutherford/optimistic_tanuki_store:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/store/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_store
+    depends_on:
+      store:
+        condition: service_started
+    command: ['node', './seed-store.js']
+    restart: 'no'
+
   app-configurator:
     image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
     build:
