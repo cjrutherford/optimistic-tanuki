@@ -5,11 +5,14 @@ test.describe('OAuth cookie session', () => {
     page,
     context,
   }) => {
-    const configResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/oauth/config')
-    );
+    // The login page requests /api/oauth/config in its constructor, but these
+    // apps enable provideClientHydration(), which turns on Angular's HTTP
+    // transfer cache. The request is therefore issued during SSR and replayed
+    // from TransferState on the client, so the browser never puts it on the
+    // wire and waiting for the response here always timed out. Assert on the
+    // observable result instead: the provider button only renders once the
+    // config has been applied.
     await page.goto('/login');
-    await expect((await configResponse).ok()).toBe(true);
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();
 
