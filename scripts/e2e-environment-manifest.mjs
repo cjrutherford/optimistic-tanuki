@@ -196,6 +196,11 @@ const MICROSERVICE_ENTRIES = [
     ],
     imageBudget: 19,
     completedServices: ['db-setup', 'app-configurator-seed'],
+    // The gateway mounts every HTTP route under the `api` global prefix, so a
+    // probe of `/` answers 404 and never satisfies the readiness check. Use the
+    // Swagger document, which is the same probe the UI suites already use for
+    // the gateway.
+    readinessUrl: 'http://127.0.0.1:3000/api-docs',
   }),
   sharedEntry({
     project: 'permissions-e2e',

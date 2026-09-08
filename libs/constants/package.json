@@ -31,7 +31,7 @@
     "url": "https://github.com/your-org/your-public-packages-repo/issues"
   },
   "peerDependencies": {
-    "@angular/core": "^20.0.0",
+    "@angular/core": "^20.3.30",
     "@nestjs/common": "^11.0.0"
   },
   "dependencies": {
