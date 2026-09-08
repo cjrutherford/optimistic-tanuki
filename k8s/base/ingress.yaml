@@ -28,6 +28,7 @@ spec:
         - lead-tracker.experiments.christopherrutherford.net
         - video.experiments.christopherrutherford.net
         - business.experiments.christopherrutherford.net
+        - letsgo.experiments.christopherrutherford.net
     - secretName: optimistic-tanuki-public-tls
       hosts:
         - optimistic-tanuki.com
@@ -268,3 +269,20 @@ spec:
                 name: business-site
                 port:
                   number: 8094
+    - host: letsgo.experiments.christopherrutherford.net
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: learning
+                port:
+                  number: 8099

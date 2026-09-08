@@ -68,6 +68,52 @@ type Dependency struct {
 	ServicePoint bool
 }
 
+// Sandbox describes confinement a workload cannot safely run without.
+//
+// It exists for workloads that execute untrusted input — today, the learning
+// runner, which compiles and runs code submitted by learners. Both generators
+// must be able to express every field here, because a workload carrying a
+// Sandbox that is generated without it is not a degraded deployment, it is an
+// unconfined one.
+type Sandbox struct {
+	// ReadOnlyRootFilesystem maps to compose `read_only` and to the container
+	// securityContext field of the same name.
+	ReadOnlyRootFilesystem bool
+	// NoNewPrivileges maps to compose `security_opt: no-new-privileges:true`
+	// and to `allowPrivilegeEscalation: false`.
+	NoNewPrivileges bool
+	// DropAllCapabilities maps to compose `cap_drop: [ALL]` and to
+	// `capabilities.drop: [ALL]`.
+	DropAllCapabilities bool
+	// RunAsUser is the uid the workload runs as. Kubernetes only; the image's
+	// own USER covers compose.
+	RunAsUser int
+	// PidsLimit maps to compose `pids_limit`. Kubernetes has no pod-level
+	// equivalent — it is a kubelet setting — so the generated manifest carries
+	// it as a comment rather than silently dropping it.
+	PidsLimit int
+	// MemoryLimit maps to compose `mem_limit` and to the container memory
+	// limit. Writeable tmpfs is charged against it in both runtimes.
+	MemoryLimit string
+	// Tmpfs are the only writeable paths.
+	Tmpfs []TmpfsMount
+	// InternalNetwork is a compose network with no route out. Every service
+	// listed in IngressFrom joins it too.
+	InternalNetwork string
+	// IngressFrom lists the service IDs allowed to reach this workload. It
+	// drives a Kubernetes NetworkPolicy that permits those pods in and permits
+	// nothing out.
+	IngressFrom []string
+}
+
+type TmpfsMount struct {
+	Path string
+	Size string
+	// Exec allows executing files from the mount. Compiled languages need one
+	// such path; everything else should leave this false.
+	Exec bool
+}
+
 type Preset struct {
 	ID            string
 	Name          string
@@ -76,6 +122,7 @@ type Preset struct {
 	Compose       ComposeMetadata
 	K8s           K8sMetadata
 	Image         ImageMetadata
+	Sandbox       *Sandbox
 	Dependencies  []Dependency
 	ServicePoints []domain.ServicePoint
 }

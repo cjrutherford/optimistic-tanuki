@@ -172,7 +172,15 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 			continue
 		}
 
-		serviceFiles := generateServiceK8s(preset, env)
+		// Confined workloads have their own writer; this one cannot express a
+		// securityContext, an emptyDir or a NetworkPolicy. See k8s_sandbox.go.
+		var serviceFiles map[string][]byte
+		if preset.Sandbox != nil {
+			serviceFiles = generateSandboxK8s(preset, env)
+		} else {
+			serviceFiles = generateServiceK8s(preset, env)
+		}
+
 		for name, data := range serviceFiles {
 			files[filepathJoin("base", name)] = data
 			baseResources = append(baseResources, name)
