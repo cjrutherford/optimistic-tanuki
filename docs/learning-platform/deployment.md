@@ -83,7 +83,9 @@ scratch storage wiped between runs — and each is expressed twice, once in
 Compose and once in the Kubernetes manifest, because none of the Compose
 controls translate. If you change one, change both.
 
-The `tools/admin-env-wizard` catalog deliberately omits `learning-runner`: its
-generators have no fields for any of those controls, so a generated workspace
-would emit an unsandboxed executor. Deploy the runner from the hand-written
-manifests until the generators can carry the sandbox.
+The `tools/admin-env-wizard` catalog carries the same set as a `Sandbox` on the
+`learning-runner` preset, and both generators emit it — compose through
+`applySandbox`, Kubernetes through `internal/generate/k8s_sandbox.go`, which
+exists precisely because the ordinary writer has no `securityContext`,
+`emptyDir` or `NetworkPolicy` and would otherwise produce an unconfined
+executor. A field added to `catalog.Sandbox` belongs in both writers.
