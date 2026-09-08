@@ -97,6 +97,13 @@ spec:
               value: 'wellness'
             - name: WELLNESS_PORT
               value: '3016'
+            # Without this the gateway falls back to the Compose container
+            # name from apps/gateway/src/assets/config.yaml, which does not
+            # resolve in the cluster.
+            - name: LEARNING_SERVICE_HOST
+              value: 'learning-service'
+            - name: LEARNING_SERVICE_PORT
+              value: '3024'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

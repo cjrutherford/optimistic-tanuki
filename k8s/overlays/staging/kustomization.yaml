@@ -62,6 +62,12 @@ images:
     newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_leads-app
     newTag: sha-c925c64
+  - name: cjrutherford/optimistic_tanuki_learning
+    newTag: sha-c925c64
+  - name: cjrutherford/optimistic_tanuki_learning-runner
+    newTag: sha-c925c64
+  - name: cjrutherford/optimistic_tanuki_learning-service
+    newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_local-hub
     newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_marketing-generator

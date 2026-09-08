@@ -721,6 +721,81 @@ func (c *Catalog) initServices() {
 			},
 		},
 		{
+			ID:       "learning-service",
+			Name:     "Learning Service",
+			Category: CategoryService,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/learning-service/Dockerfile",
+				ContainerPort: 3024,
+				ExternalPort:  3024,
+				DependsOn:     []string{"postgres"},
+				EnvDefaults: map[string]string{
+					"DATABASE_NAME":       "ot_learning_service",
+					"LEARNING_RUNNER_URL": "http://learning-runner:3025",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 3024,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_learning-service", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
+				{ServiceID: "learning-runner", Required: true},
+			},
+		},
+		{
+			// Compiles and runs code submitted by learners. Everything that
+			// makes that safe is in Sandbox below — see the header comment on
+			// apps/learning-runner/server.mjs, which spells out why the
+			// container is the sandbox, and keep this in step with the
+			// hand-written docker-compose.yaml and
+			// k8s/base/services/learning-runner.yaml.
+			ID:       "learning-runner",
+			Name:     "Learning Runner",
+			Category: CategoryService,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/learning-runner/Dockerfile",
+				ContainerPort: 3025,
+				// No external port, deliberately: only learning-service may
+				// reach it.
+				ExternalPort: 0,
+				EnvDefaults: map[string]string{
+					"PORT":                 "3025",
+					"LEARNING_SCRATCH_DIR": "/scratch",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 3025,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Sandbox: &Sandbox{
+				ReadOnlyRootFilesystem: true,
+				NoNewPrivileges:        true,
+				DropAllCapabilities:    true,
+				RunAsUser:              1000,
+				PidsLimit:              256,
+				MemoryLimit:            "1g",
+				Tmpfs: []TmpfsMount{
+					{Path: "/tmp", Size: "16m"},
+					// Compiled binaries are executed from here, so this one
+					// mount has to allow exec. Go's build cache alone needs a
+					// few hundred MB the first time it builds the standard
+					// library, and tmpfs is charged to the memory limit.
+					{Path: "/scratch", Size: "512m", Exec: true},
+				},
+				InternalNetwork: "learning-internal",
+				IngressFrom:     []string{"learning-service"},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_learning-runner", Tag: "latest"},
+		},
+		{
 			ID:          "admin-api",
 			Name:        "Admin API",
 			Category:    CategoryService,
@@ -1215,6 +1290,34 @@ func (c *Catalog) initClients() {
 			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_leads-app", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
+			ID:       "learning",
+			Name:     "Let's Go",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/learning/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  8099,
+				DependsOn:     []string{"gateway", "learning-service"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_learning", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+				{ServiceID: "learning-service", Required: true},
 			},
 		},
 	}

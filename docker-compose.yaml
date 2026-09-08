@@ -396,7 +396,7 @@ services:
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net,https://letsgo.experiments.christopherrutherford.net}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:
@@ -985,18 +985,21 @@ services:
     build:
       context: .
       dockerfile: ./apps/learning-service/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-service:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3024:3024'
+      - '${LEARNING_SERVICE_PORT:-3024}:3024'
     environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - DATABASE_NAME=ot_learning_service
+      # Shared credentials, so a production deployment picks up the real
+      # POSTGRES_* values instead of the hardcoded local defaults this
+      # service used to carry.
+      <<: *service_db_env
+      DATABASE_NAME: ot_learning_service
+      DB_NAME: ot_learning_service
+      POSTGRES_DB: ot_learning_service
       # Marking written answers against an author's rubric.
-      - LEARNING_OLLAMA_URL=${LEARNING_OLLAMA_URL:-http://shangrila:11434}
-      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
-      - LEARNING_RUNNER_URL=http://learning-runner:3025
+      LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
+      LEARNING_RUNNER_URL: ${LEARNING_RUNNER_URL:-http://learning-runner:3025}
     depends_on:
       postgres:
         condition: service_healthy
@@ -1008,6 +1011,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/learning-runner/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-runner:${PRODUCTION_IMAGE_TAG:-latest}
+    # Deliberately no `ports:` — the runner executes submitted code and is
+    # reachable only from learning-service over the internal network.
     environment:
       - LEARNING_SCRATCH_DIR=/scratch
       - PORT=3025

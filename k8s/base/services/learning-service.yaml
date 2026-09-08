@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-service
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: learning-service
+  template:
+    metadata:
+      labels:
+        app: learning-service
+    spec:
+      containers:
+        - name: learning-service
+          image: cjrutherford/optimistic_tanuki_learning-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3024
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: DATABASE_HOST
+              value: 'postgres'
+            - name: DATABASE_PORT
+              value: '5432'
+            - name: DATABASE_NAME
+              value: 'ot_learning_service'
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: POSTGRES_USER
+                  optional: true
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: POSTGRES_PASSWORD
+                  optional: true
+            # The runner is a separate Deployment with no egress; see
+            # services/learning-runner.yaml.
+            - name: LEARNING_RUNNER_URL
+              value: 'http://learning-runner:3025'
+            # Marking written answers against an author's rubric. This points
+            # at an inference host outside the cluster, so it has to be patched
+            # per environment. Grading fails soft: if the host is unreachable
+            # the attempt is stored unmarked rather than lost.
+            - name: LEARNING_OLLAMA_URL
+              value: 'http://shangrila:11434'
+            - name: LEARNING_GRADING_MODEL
+              value: 'nemotron-3-nano:4b-q8_0'
+          # No blanket `envFrom` of the platform secret: this service needs
+          # database credentials and nothing else, and they are mapped above.
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          livenessProbe:
+            tcpSocket:
+              port: 3024
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3024
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learning-service
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: learning-service
+  ports:
+    - port: 3024
+      targetPort: 3024
+  clusterIP: None

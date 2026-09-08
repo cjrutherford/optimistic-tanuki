@@ -28,6 +28,8 @@ resources:
   - services/video-transcoder-worker.yaml
   - services/videos.yaml
   - services/wellness.yaml
+  - services/learning-service.yaml
+  - services/learning-runner.yaml
   - clients/business-site.yaml
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml
@@ -45,6 +47,7 @@ resources:
   - clients/local-hub.yaml
   - clients/leads-app.yaml
   - clients/video-client.yaml
+  - clients/learning.yaml
   - observability
   - ingress.yaml
   - tailscale-ingress.yaml
