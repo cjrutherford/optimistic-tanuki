@@ -66,7 +66,11 @@ test.describe('OAuth cookie session', () => {
       await context.cookies(`${appOrigin}/api/authentication/session`)
     ).find((cookie) => cookie.name === 'ot_session');
     expect(sessionCookie).toEqual(
-      expect.objectContaining({ httpOnly: true, path: '/api' })
+      // The gateway sets this cookie at path '/', in both
+      // OAuthController's redeem handler and
+      // AuthenticationController.browserSessionCookieOptions(). '/api'
+      // was never a path it emits.
+      expect.objectContaining({ httpOnly: true, path: '/' })
     );
     expect(sessionCookie?.value).toBeTruthy();
     expect(

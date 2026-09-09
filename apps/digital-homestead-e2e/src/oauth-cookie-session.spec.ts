@@ -48,7 +48,11 @@ test.describe('OAuth cookie session', () => {
       (cookie) => cookie.name === 'ot_session'
     );
     expect(sessionCookie).toEqual(
-      expect.objectContaining({ httpOnly: true, path: '/api' })
+      // The gateway sets this cookie at path '/', in both
+      // OAuthController's redeem handler and
+      // AuthenticationController.browserSessionCookieOptions(). '/api'
+      // was never a path it emits.
+      expect.objectContaining({ httpOnly: true, path: '/' })
     );
     expect(
       await page.evaluate(() => localStorage.getItem('dh-client-authToken'))

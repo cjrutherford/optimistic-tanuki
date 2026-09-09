@@ -37,14 +37,22 @@ test.describe('OAuth cookie session', () => {
         );
       }
     );
-    const sessionRedemptionResponse = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return (
-        response.request().method() === 'POST' &&
-        url.origin === new URL(page.url()).origin &&
-        url.pathname === '/api/oauth/callback/redeem'
-      );
-    });
+    // Context-wide, not `page.waitForResponse`: the redeem is posted by the
+    // popup that handled the callback, and the opener's page object never
+    // sees another page's traffic. The flow was completing — the gateway
+    // logged a fully authenticated oauth-e2e@example.test — while this wait
+    // sat until the test timed out.
+    const sessionRedemptionResponse = context.waitForEvent(
+      'response',
+      (response) => {
+        const url = new URL(response.url());
+        return (
+          response.request().method() === 'POST' &&
+          url.origin === new URL(baseURL as string).origin &&
+          url.pathname === '/api/oauth/callback/redeem'
+        );
+      }
+    );
     const popupPromise = page.waitForEvent('popup');
     await google.click();
     const popup = await popupPromise;

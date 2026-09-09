@@ -37,8 +37,11 @@ test.describe('Learning journey', () => {
       page.getByRole('button', { name: /browse courses/i })
     ).toBeVisible();
     // Writing a course is the half of the product nothing used to mention.
+    // The invitation appears more than once on the page, so take the first
+    // rather than tripping strict mode; the old querySelectorAll/find did the
+    // same thing silently.
     await expect(
-      page.getByRole('button', { name: /write a course/i })
+      page.getByRole('button', { name: /write a course/i }).first()
     ).toBeVisible();
 
     // The curriculum preview reads the live catalog, so an empty one means the
@@ -60,10 +63,9 @@ test.describe('Learning journey', () => {
     await expect(firstCourse).toBeVisible();
     await expect(firstCourse).toHaveAttribute('href', /^\/course\//);
 
-    await expect(page.locator('.session a')).toHaveAttribute(
-      'href',
-      '/sign-in'
-    );
+    // `.session` holds About and Docs alongside Sign in, and the sign-in link
+    // carries a returnTo query. Address the link itself and match the path.
+    await expect(page.locator('.session a[href^="/sign-in"]')).toBeVisible();
   });
 
   test('a course page says what the course is before asking', async ({
