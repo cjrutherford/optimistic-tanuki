@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect, test } from '../../../e2e/playwright-hermetic';
 
 /**
@@ -130,10 +130,33 @@ function titleInput(page: Page) {
   return page.locator('lib-text-input#title input');
 }
 
+/**
+ * Session cookies from the first sign-in, reused by the rest of the suite.
+ *
+ * Running the full OAuth popup flow in `beforeEach` cost this suite its job:
+ * with ~18 tests, two CI retries each, and a login that could stall for the
+ * 30s test timeout, it ran past the 35-minute job budget and was cancelled
+ * before finishing. One sign-in per worker keeps the authentication real
+ * while spending it once. Module scope means one worker process, which is
+ * what CI uses; a second worker simply signs in again.
+ */
+let sessionCookies: Cookie[] | null = null;
+
+async function authenticate(page: Page, context: BrowserContext) {
+  if (sessionCookies) {
+    await context.addCookies(sessionCookies);
+    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
+    return;
+  }
+
+  await signIn(page);
+  sessionCookies = await context.cookies();
+}
+
 test.describe('Blog editor', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
     await grantBlogEditAccess(page);
-    await signIn(page);
+    await authenticate(page, context);
     await openEditorOnNewDraft(page);
     await editorBody(page).click();
   });

@@ -26,13 +26,19 @@ test.describe('OAuth cookie session', () => {
         );
       }
     );
+    // The provider redirect target is the gateway endpoint, which
+    // OAuthController.resolveProviderRedirectUri builds as
+    // `<callbackBase>/api/oauth/callback/<provider>` whenever an app scope is
+    // present. Without the `/api` prefix this matched nothing and the wait
+    // burned the whole test budget, even though the flow itself completed —
+    // the gateway logged a fully authenticated oauth-e2e@example.test.
     const callbackRequestPromise = context.waitForEvent(
       'request',
       (request) => {
         const url = new URL(request.url());
         return (
           url.origin === new URL(page.url()).origin &&
-          url.pathname === '/oauth/callback/google'
+          url.pathname === '/api/oauth/callback/google'
         );
       }
     );

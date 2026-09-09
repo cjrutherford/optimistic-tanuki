@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('OAuth cookie session', () => {
-  test('uses the Client Interface callback proxy and restores Digital Homestead', async ({
+  test('completes the gateway callback on its own origin and restores Digital Homestead', async ({
     page,
     context,
   }) => {
@@ -20,20 +20,25 @@ test.describe('OAuth cookie session', () => {
     const providerRequest = context.waitForEvent('request', (request) =>
       request.url().startsWith('http://127.0.0.1:3016/authorize')
     );
-    const proxyCallbackRequest = context.waitForEvent('request', (request) =>
-      request.url().startsWith('http://127.0.0.1:8080/oauth/callback/')
+    // The callback lands on Digital Homestead's own origin, not on the Client
+    // Interface proxy. OAuthController.resolveCallbackBase() returns the app's
+    // registered origin whenever the app scope is known, and falls back to the
+    // Client Interface base only for a scope it cannot place; digital-homestead
+    // is registered, so it never took that fallback.
+    const gatewayCallbackRequest = context.waitForEvent('request', (request) =>
+      request.url().startsWith('http://127.0.0.1:8082/api/oauth/callback/')
     );
     const redemptionResponse = context.waitForEvent('response', (response) =>
       response
         .url()
-        .startsWith('http://127.0.0.1:8080/api/oauth/callback/redeem')
+        .startsWith('http://127.0.0.1:8082/api/oauth/callback/redeem')
     );
     await google.click();
     const popup = await popupPromise;
 
     expect(popup.isClosed()).toBe(false);
     await providerRequest;
-    await proxyCallbackRequest;
+    await gatewayCallbackRequest;
     await expect((await redemptionResponse).ok()).toBe(true);
 
     await expect(page).toHaveURL(/\/blog(?:\?|$)/, { timeout: 10_000 });

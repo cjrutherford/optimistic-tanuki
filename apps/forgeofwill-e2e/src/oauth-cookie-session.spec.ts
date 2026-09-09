@@ -4,6 +4,7 @@ test.describe('OAuth cookie session', () => {
   test('restores Forge from its own HttpOnly cookie session after the fake provider callback', async ({
     page,
     context,
+    baseURL,
   }) => {
     // The login page requests /api/oauth/config in its constructor, but these
     // apps enable provideClientHydration(), which turns on Angular's HTTP
@@ -67,7 +68,11 @@ test.describe('OAuth cookie session', () => {
     expect(setCookie).not.toMatch(/\bDomain=/i);
 
     const forgeOrigin = new URL(page.url()).origin;
-    expect(forgeOrigin).toBe('http://forgeofwill.localhost:8081');
+    // Pinned to the vhost origin of the standalone forgeofwill composition,
+    // which CI does not use — it drives the loopback origin the manifest
+    // declares. Assert against the origin this run was actually configured
+    // with so the property holds in either stack.
+    expect(forgeOrigin).toBe(new URL(baseURL as string).origin);
     const sessionCookie = (
       await context.cookies(`${forgeOrigin}/api/authentication/session`)
     ).find((cookie) => cookie.name === 'ot_session');
@@ -78,10 +83,12 @@ test.describe('OAuth cookie session', () => {
         path: '/',
       })
     );
+    // The Forge session must not be readable on the Client Interface origin.
+    // Addressed by loopback here for the same reason as above.
     expect(
       (
         await context.cookies(
-          'http://localhost:8080/api/authentication/session'
+          'http://127.0.0.1:8080/api/authentication/session'
         )
       ).find((cookie) => cookie.name === 'ot_session')
     ).toBeUndefined();

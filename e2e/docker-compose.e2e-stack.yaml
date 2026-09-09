@@ -440,15 +440,20 @@ services:
       THROTTLE_LOGIN_LIMIT: 100
       JWT_SECRET: e2e-test-jwt-secret
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
-      # Must match the origin the suites actually drive. Every UI target in
-      # scripts/e2e-environment-manifest.mjs uses a 127.0.0.1 baseUrl, but this
-      # said `localhost`, so the gateway redirected the OAuth popup back to
-      # http://localhost:8080 — a different origin from the opener at
-      # http://127.0.0.1:8080. The opener therefore never saw its callback and
-      # could not be messaged across the origin boundary, and the suite timed
-      # out waiting for a callback request that arrived somewhere else.
-      # CORS_ALLOWED_ORIGINS below lists both spellings, which is why nothing
-      # but the OAuth redirect noticed.
+      # These must match the origin the suites actually drive. Every UI target
+      # in scripts/e2e-environment-manifest.mjs uses a 127.0.0.1 baseUrl, but
+      # tools/registry/apps.yaml declares every app on `localhost` (correct for
+      # local development), and OAuth matches origins exactly. The gateway
+      # therefore redirected each popup back to a different origin than its
+      # opener, and the suites timed out waiting for a callback that arrived
+      # somewhere else. CORS_ALLOWED_ORIGINS lists both spellings, which is why
+      # nothing but OAuth noticed.
+      #
+      # APP_SCOPE_ORIGINS is the gateway's designed per-environment override:
+      # resolveCallbackBase() consults it before the registry, so the registry
+      # stays correct for development while CI pins the loopback origins it
+      # actually serves. Keep in step with the manifest's UI baseUrls.
+      APP_SCOPE_ORIGINS: '{"client-interface":"http://127.0.0.1:8080","forgeofwill":"http://127.0.0.1:8081","digital-homestead":"http://127.0.0.1:8082","christopherrutherford-net":"http://127.0.0.1:8083","owner-console":"http://127.0.0.1:8084","store":"http://127.0.0.1:8085","fin-commander":"http://127.0.0.1:8089","configurable-client":"http://127.0.0.1:8090","learning":"http://127.0.0.1:8099"}'
       CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
       CLIENT_INTERFACE_DOMAIN: 127.0.0.1
       CI_GOOGLE_CLIENT_ID: e2e-google-client-id
@@ -480,6 +485,13 @@ services:
       FORUM_PORT: 3015
       BLOGGING_HOST: blogging
       BLOGGING_PORT: 3011
+      # apps/gateway/src/assets/config.yaml points learning_service at the
+      # production container name `ot_learning_service` rather than the plain
+      # service name every other entry uses, so without this override the
+      # gateway cannot resolve it here: `getaddrinfo EAI_AGAIN
+      # ot_learning_service`, surfacing as a 500 where the suite expects a 404.
+      LEARNING_SERVICE_HOST: learning-service
+      LEARNING_SERVICE_PORT: 3024
       PERMISSIONS_HOST: permissions
       PERMISSIONS_PORT: 3012
       STORE_HOST: store
