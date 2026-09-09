@@ -71,9 +71,12 @@ test.describe('OAuth cookie session', () => {
     await page.waitForURL((url) => !url.pathname.endsWith('/login'));
     await expect.poll(() => popup.isClosed()).toBe(true);
 
-    const setCookie = (await sessionRedemptionResponse).headerValue(
-      'set-cookie'
-    );
+    // `headerValue()` is itself async: the single await bound to the response,
+    // leaving a Promise to be matched against a regex. It never surfaced while
+    // the flow timed out earlier than this line.
+    const setCookie = await (
+      await sessionRedemptionResponse
+    ).headerValue('set-cookie');
     expect(setCookie).toMatch(/ot_session=.*HttpOnly.*Path=\//i);
     expect(setCookie).not.toMatch(/\bDomain=/i);
 

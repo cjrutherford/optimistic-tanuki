@@ -1,6 +1,9 @@
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect, test } from '../../../e2e/playwright-hermetic';
-import { waitForHydration } from '../../../e2e/wait-for-hydration';
+import {
+  clickForPopup,
+  waitForHydration,
+} from '../../../e2e/wait-for-hydration';
 
 /**
  * Blog editor coverage for digital-homestead.
@@ -92,9 +95,7 @@ async function signIn(page: Page): Promise<void> {
   const google = page.getByLabel('Sign in with Google');
   await expect(google).toBeVisible();
 
-  const popupPromise = page.waitForEvent('popup');
-  await google.click();
-  const popup = await popupPromise;
+  const popup = await clickForPopup(page, google);
 
   await expect(page).toHaveURL(/\/blog(?:\?|$)/, { timeout: 30_000 });
   await expect.poll(() => popup.isClosed()).toBe(true);

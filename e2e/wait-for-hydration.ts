@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 /**
  * Waits until a server-rendered Angular page is actually interactive.
@@ -26,4 +26,43 @@ import type { Page } from '@playwright/test';
 export async function waitForHydration(page: Page): Promise<void> {
   await page.waitForLoadState('domcontentloaded');
   await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Clicks a control that opens a popup, retrying if no popup appears.
+ *
+ * digital-homestead re-themes itself repeatedly on load — its console shows a
+ * run of "Setting personality" and "Personality theme saved" entries that the
+ * other apps do not produce — and each pass re-renders the OAuth buttons. A
+ * click dispatched between Playwright's actionability check and that re-render
+ * lands on a node that is no longer in the tree: the trace records the click
+ * completing, and then nothing at all happens. No popup, no navigation, no
+ * console error, no error banner.
+ *
+ * Retrying is a mitigation, not a diagnosis. It is also the cheapest way to
+ * confirm the diagnosis: if a second click succeeds where the first was
+ * swallowed, the first was landing on a detached element. A click that opens a
+ * popup is safe to repeat, because the wait stops at the first popup and the
+ * attempt only repeats when none arrived.
+ */
+export async function clickForPopup(
+  page: Page,
+  locator: Locator,
+  { attempts = 3, timeout = 5_000 } = {}
+): Promise<Page> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const popupPromise = page.waitForEvent('popup', { timeout });
+    await locator.click();
+    try {
+      return await popupPromise;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw new Error(
+    `No popup opened after ${attempts} clicks. Last error: ${String(lastError)}`
+  );
 }

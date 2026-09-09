@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { waitForHydration } from '../../../e2e/wait-for-hydration';
+import {
+  clickForPopup,
+  waitForHydration,
+} from '../../../e2e/wait-for-hydration';
 
 test.describe('OAuth cookie session', () => {
   test('completes the gateway callback on its own origin and restores Digital Homestead', async ({
@@ -18,7 +21,7 @@ test.describe('OAuth cookie session', () => {
 
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();
-    const popupPromise = page.waitForEvent('popup');
+
     const providerRequest = context.waitForEvent('request', (request) =>
       request.url().startsWith('http://127.0.0.1:3016/authorize')
     );
@@ -35,8 +38,7 @@ test.describe('OAuth cookie session', () => {
         .url()
         .startsWith('http://127.0.0.1:8082/api/oauth/callback/redeem')
     );
-    await google.click();
-    const popup = await popupPromise;
+    const popup = await clickForPopup(page, google);
 
     expect(popup.isClosed()).toBe(false);
     await providerRequest;
