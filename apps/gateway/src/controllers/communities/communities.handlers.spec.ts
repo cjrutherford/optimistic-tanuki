@@ -107,7 +107,11 @@ describe('Gateway CommunitiesController handlers', () => {
   });
 
   describe('createCommunity', () => {
-    it('stamps the scope and owner onto the dto', async () => {
+    // The social handler reads profileId and appScope off the top level of the
+    // payload, not out of the dto. This previously asserted them nested inside
+    // `dto`, which is where the controller used to put them — so the test
+    // passed while the service received no profileId at all.
+    it('sends the scope and owner as top-level payload fields', async () => {
       sendResolves({ id: 'c-1' });
 
       await controller.createCommunity(
@@ -118,13 +122,10 @@ describe('Gateway CommunitiesController handlers', () => {
 
       expect(lastPattern()).toEqual({ cmd: CommunityCommands.CREATE });
       expect(lastPayload()).toEqual({
-        dto: {
-          name: 'Savannah',
-          appScope: 'local-hub',
-          ownerId: 'user-1',
-          ownerProfileId: 'profile-1',
-        },
+        dto: { name: 'Savannah' },
         userId: 'user-1',
+        profileId: 'profile-1',
+        appScope: 'local-hub',
       });
     });
 

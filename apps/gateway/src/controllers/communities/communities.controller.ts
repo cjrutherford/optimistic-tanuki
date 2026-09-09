@@ -116,17 +116,22 @@ export class CommunitiesController {
     @AppScope() appScope: string
   ) {
     try {
+      // The social handler takes profileId and appScope as top-level payload
+      // fields — `createCommunity(data.dto, data.userId, data.profileId,
+      // data.appScope)` — and CreateCommunityDto declares none of ownerId,
+      // ownerProfileId or appScope. Folding them into the dto meant nothing
+      // read them: the service received `profileId === undefined` and wrote a
+      // null ownerProfileId, which the not-null constraint rejected, while
+      // appScope silently fell back to its 'social' default. JOIN below
+      // already uses the correct shape.
       return await firstValueFrom(
         this.socialClient.send(
           { cmd: CommunityCommands.CREATE },
           {
-            dto: {
-              ...createCommunityDto,
-              appScope,
-              ownerId: user.userId,
-              ownerProfileId: user.profileId,
-            },
+            dto: createCommunityDto,
             userId: user.userId,
+            profileId: user.profileId,
+            appScope,
           }
         )
       );
