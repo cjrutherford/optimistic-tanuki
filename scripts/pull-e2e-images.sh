@@ -32,10 +32,21 @@ compose() {
   fi
 }
 
+# Both temporary paths are declared before the trap so cleanup is armed from
+# the first allocation onward, and never runs against an unset variable.
+IMAGES_FILE=""
+WORK_DIR=""
+cleanup() {
+  [ -n "$IMAGES_FILE" ] && rm -f "$IMAGES_FILE"
+  [ -n "$WORK_DIR" ] && rm -rf "$WORK_DIR"
+  return 0
+}
+trap cleanup EXIT
+
 # service -> resolved image reference, straight from compose so the mapping
 # cannot drift from the file the stack actually starts from.
 IMAGES_FILE="$(mktemp)"
-trap 'rm -f "$IMAGES_FILE"' EXIT
+
 E2E_IMAGE_TAG="$E2E_IMAGE_TAG" compose config --format json |
   jq -r '.services | to_entries[] | select(.value.image) | "\(.key) \(.value.image)"' \
     >"$IMAGES_FILE"
@@ -54,30 +65,62 @@ fi
 printf 'Resolving e2e images (run tag %s, fallback %s)\n' \
   "$E2E_IMAGE_TAG" "$FALLBACK_TAG"
 
-FAILED=0
+# A full stack is a dozen or more images and each pull costs about a minute,
+# so serial resolution added a quarter of an hour to every e2e job. The daemon
+# handles concurrent pulls happily; bound the concurrency so a large target
+# does not saturate the runner's network or disk.
+MAX_PARALLEL="${E2E_PULL_PARALLEL:-4}"
+WORK_DIR="$(mktemp -d)"
+
+# Each pull writes its own log and status file, printed in order once every
+# job has finished, so parallel output does not interleave into nonsense.
+resolve_one() {
+  local sha_ref="$1" fallback_ref="$2" slot="$3"
+  local log="$WORK_DIR/$slot.log"
+
+  if docker pull --quiet "$sha_ref" >/dev/null 2>&1; then
+    printf '  built by this run  %s\n' "$sha_ref" >"$log"
+    return 0
+  fi
+
+  if [ "$sha_ref" = "$fallback_ref" ]; then
+    printf '  MISSING            %s\n' "$sha_ref" >"$log"
+    return 1
+  fi
+
+  if docker pull --quiet "$fallback_ref" >/dev/null 2>&1; then
+    docker tag "$fallback_ref" "$sha_ref"
+    printf '  from %-14s %s\n' "$FALLBACK_TAG" "$fallback_ref" >"$log"
+    return 0
+  fi
+
+  printf '  MISSING            %s and %s\n' "$sha_ref" "$fallback_ref" >"$log"
+  return 1
+}
+
+SLOT=0
+declare -a PIDS=()
 while IFS=$'\t' read -r SHA_REF FALLBACK_REF; do
   [ -n "$SHA_REF" ] || continue
 
-  if docker pull --quiet "$SHA_REF" >/dev/null 2>&1; then
-    printf '  built by this run  %s\n' "$SHA_REF"
-    continue
-  fi
+  while [ "$(jobs -rp | wc -l)" -ge "$MAX_PARALLEL" ]; do
+    wait -n
+  done
 
-  if [ "$SHA_REF" = "$FALLBACK_REF" ]; then
-    printf '  MISSING            %s\n' "$SHA_REF"
-    FAILED=1
-    continue
-  fi
-
-  if docker pull --quiet "$FALLBACK_REF" >/dev/null 2>&1; then
-    docker tag "$FALLBACK_REF" "$SHA_REF"
-    printf '  from %-14s %s\n' "$FALLBACK_TAG" "$FALLBACK_REF"
-    continue
-  fi
-
-  printf '  MISSING            %s and %s\n' "$SHA_REF" "$FALLBACK_REF"
-  FAILED=1
+  resolve_one "$SHA_REF" "$FALLBACK_REF" "$SLOT" &
+  PIDS+=("$!:$SLOT")
+  SLOT=$((SLOT + 1))
 done <<<"$PLAN"
+
+FAILED=0
+for ENTRY in "${PIDS[@]}"; do
+  PID="${ENTRY%%:*}"
+  ENTRY_SLOT="${ENTRY##*:}"
+  if ! wait "$PID"; then
+    FAILED=1
+  fi
+  cat "$WORK_DIR/$ENTRY_SLOT.log" 2>/dev/null || true
+done
 
 if [ "$FAILED" -ne 0 ]; then
   echo "One or more images could not be resolved." >&2
