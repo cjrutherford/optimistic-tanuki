@@ -222,9 +222,11 @@ describe('Gateway CommunitiesController handlers', () => {
       await controller.inviteMember('c-1', { inviteeUserId: 'user-2' }, user);
 
       expect(lastPattern()).toEqual({ cmd: CommunityCommands.INVITE });
+      // The handler reads `data.inviterId`, not `data.userId`; this pinned the
+      // shape that left community_invite.inviterId null.
       expect(lastPayload()).toEqual({
         dto: { communityId: 'c-1', inviteeUserId: 'user-2' },
-        userId: 'user-1',
+        inviterId: 'user-1',
       });
 
       sendRejects();

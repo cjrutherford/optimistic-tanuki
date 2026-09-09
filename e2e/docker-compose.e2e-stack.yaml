@@ -67,6 +67,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3001,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   profile:
     image: cjrutherford/optimistic_tanuki_profile:${E2E_IMAGE_TAG:-latest}
@@ -88,6 +96,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3002,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   social:
     image: cjrutherford/optimistic_tanuki_social:${E2E_IMAGE_TAG:-latest}
@@ -111,6 +127,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3003,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   assets:
     image: cjrutherford/optimistic_tanuki_assets:${E2E_IMAGE_TAG:-latest}
@@ -130,6 +154,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3005,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   project-planning:
     image: cjrutherford/optimistic_tanuki_project-planning:${E2E_IMAGE_TAG:-latest}
@@ -149,6 +181,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3006,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   chat-collector:
     image: cjrutherford/optimistic_tanuki_chat-collector:${E2E_IMAGE_TAG:-latest}
@@ -168,6 +208,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3007,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   # fin-commander-e2e drives /api/finance, which the gateway forwards to this
   # service. It was never part of this composition, so those calls had nothing
@@ -246,6 +294,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3008,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   prompt-proxy:
     image: cjrutherford/optimistic_tanuki_prompt-proxy:${E2E_IMAGE_TAG:-latest}
@@ -267,6 +323,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3009,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   ai-orchestrator:
     image: cjrutherford/optimistic_tanuki_ai-orchestrator:${E2E_IMAGE_TAG:-latest}
@@ -311,6 +375,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3011,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   permissions:
     image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
@@ -330,6 +402,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3012,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   permissions-seed:
     image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
@@ -365,6 +445,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3013,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   # The store catalog is empty without this. seed-store.js is already built as
   # an additional entry point in apps/store/webpack.config.js; it just was
@@ -410,6 +498,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3014,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   app-configurator-seed:
     image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
@@ -449,6 +545,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3020,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   gateway:
     image: cjrutherford/optimistic_tanuki_gateway:${E2E_IMAGE_TAG:-latest}
@@ -530,29 +634,35 @@ services:
       APP_CONFIGURATOR_PORT: 3014
       LEAD_TRACKER_HOST: lead-tracker
       LEAD_TRACKER_PORT: 3020
+    # service_healthy, not service_started: a started container is not a
+    # listening one. The gateway opens its microservice clients at boot and
+    # OAuthController does not recover from a refused connection, so starting
+    # it while authentication was still coming up left OAuth dead for the whole
+    # run — `connect ECONNREFUSED authentication:3001`, five seconds before that
+    # service finished booting.
     depends_on:
       db:
         condition: service_healthy
       authentication:
-        condition: service_started
+        condition: service_healthy
       profile:
-        condition: service_started
+        condition: service_healthy
       social:
-        condition: service_started
+        condition: service_healthy
       assets:
-        condition: service_started
+        condition: service_healthy
       blogging:
-        condition: service_started
+        condition: service_healthy
       permissions:
-        condition: service_started
+        condition: service_healthy
       store:
-        condition: service_started
+        condition: service_healthy
       forum:
-        condition: service_started
+        condition: service_healthy
       app-configurator:
-        condition: service_started
+        condition: service_healthy
       lead-tracker:
-        condition: service_started
+        condition: service_healthy
 
   oauth-provider:
     # An explicit tag keeps batched CI builds and project-scoped Compose runs
@@ -633,6 +743,14 @@ services:
       db-setup:
         condition: service_completed_successfully
     networks: [default, learning-internal]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3024,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   learning:
     profiles: [learning]

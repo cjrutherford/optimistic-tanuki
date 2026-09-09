@@ -306,10 +306,14 @@ export class CommunitiesController {
         communityId: id,
         inviteeUserId: body.inviteeUserId,
       };
+      // The handler reads `data.inviterId` — `inviteToCommunity(data.dto,
+      // data.inviterId)` — so sending it as `userId` left the invite with no
+      // inviter and the not-null constraint on community_invite.inviterId
+      // rejected the insert.
       return await firstValueFrom(
         this.socialClient.send(
           { cmd: CommunityCommands.INVITE },
-          { dto: inviteDto, userId: user.userId }
+          { dto: inviteDto, inviterId: user.userId }
         )
       );
     } catch (error) {

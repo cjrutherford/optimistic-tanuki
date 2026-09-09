@@ -8,7 +8,11 @@ const browserChannel = process.env['PLAYWRIGHT_CHANNEL'];
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
   testIgnore: ['**/support/*.spec.ts'],
-  reporter: [['html', { open: 'never' }], ['list']],
+  // Explicit folder so CI's `apps/<target>/playwright-report/` upload finds it.
+  reporter: [
+    ['html', { open: 'never', outputFolder: './playwright-report' }],
+    ['list'],
+  ],
   use: {
     baseURL,
     trace: 'on-first-retry',

@@ -12,11 +12,7 @@
       },
       "configurations": {
         "ci": {
-          "env": {
-            "CI": "true",
-            "BASE_URL": "http://localhost:8089",
-            "GATEWAY_URL": "http://localhost:3000"
-          }
+          "skipInstall": true
         },
         "docker": {
           "env": {
