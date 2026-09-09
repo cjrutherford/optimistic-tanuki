@@ -154,6 +154,14 @@ async function authenticate(page: Page, context: BrowserContext) {
 }
 
 test.describe('Blog editor', () => {
+  // Serial, because the cost of this suite is per test: each one signs in (or
+  // reuses the session), creates a real draft and opens the editor. If that
+  // setup breaks, 18 tests times three CI attempts runs past the 35-minute job
+  // budget and the job is cancelled — reporting nothing at all, which is how
+  // this suite failed twice. Serial stops at the first failure and reports it.
+  // The tests already share a session and are not independent.
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page, context }) => {
     await grantBlogEditAccess(page);
     await authenticate(page, context);
