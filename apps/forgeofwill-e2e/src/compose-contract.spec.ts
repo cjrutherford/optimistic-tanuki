@@ -57,7 +57,12 @@ test.describe('Forge E2E compose contract', () => {
         image: expect.stringMatching(/optimistic_tanuki_permissions/),
         environment: expect.objectContaining({
           DATABASE_HOST: 'db',
-          DATABASE_NAME: 'postgres',
+          // This composition gives each service its own database, created by
+          // `pnpm run db:setup` in the db-setup service — ot_authentication,
+          // ot_profile, ot_permissions and so on. The single shared `postgres`
+          // database is the other stack's convention
+          // (e2e/docker-compose.e2e-stack.yaml), not this one's.
+          DATABASE_NAME: 'ot_permissions',
         }),
         depends_on: expect.objectContaining({
           'db-setup': expect.objectContaining({
@@ -184,8 +189,13 @@ test.describe('Forge E2E compose contract', () => {
   });
 
   test('targets the hermetic Forge composition instead of starting a second dev server', () => {
+    // The config's default is the loopback origin the manifest declares for
+    // forgeofwill-e2e, which is what CI drives against the shared stack. The
+    // vhost origin is still used by this composition, but it arrives as an
+    // explicit BASE_URL on the playwright-runner service (asserted above)
+    // rather than as the config default.
     expect(playwrightConfig).toContain(
-      "process.env['BASE_URL'] || 'http://forgeofwill.localhost:8081'"
+      "process.env['BASE_URL'] || 'http://127.0.0.1:8081'"
     );
     expect(playwrightConfig).toContain('webServer: undefined');
   });
