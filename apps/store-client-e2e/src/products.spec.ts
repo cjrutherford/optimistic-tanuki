@@ -99,9 +99,9 @@ test.describe('Store Product Management E2E', () => {
 
     const firstProduct = page.locator('store-product-card').first();
 
-    // Product should have some content
-    const content = firstProduct;
-    await expect(content).toHaveText();
+    // `toHaveText()` with no argument threw "expected value must be a string
+    // or regular expression". The intent is that the card renders something.
+    await expect(firstProduct).not.toBeEmpty();
   });
 
   test('should handle product with low stock', async ({ page }) => {
@@ -126,11 +126,13 @@ test.describe('Store Product Management E2E', () => {
     const firstProduct = page.locator('store-product-card').first();
 
     // Get product description (if visible)
-    const description = firstProduct.locator('p, .description');
+    const description = firstProduct.locator('p, .description').first();
 
     if (await description.isVisible()) {
-      const text = await description.textContent();
-      await expect(text).not.toBeEmpty();
+      // `toBeEmpty` is a locator matcher; it was being handed the already
+      // resolved string, which fails with "toBeEmpty can be only used with
+      // Locator object".
+      await expect(description).not.toBeEmpty();
     }
   });
 });

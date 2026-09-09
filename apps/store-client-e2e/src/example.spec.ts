@@ -14,8 +14,10 @@ test.describe('Store Client E2E Tests', () => {
     // Wait for products to load
     await page.waitForSelector('store-product-list', { timeout: 10000 });
 
-    // Check if page title is present
-    const heading = page.locator('h1');
+    // Scoped to the page header: the app shell's nav carries its own
+    // `<h1>Store</h1>`, so a bare `h1` matches two elements and trips strict
+    // mode. The donations test alongside already scopes the same way.
+    const heading = page.locator('.page-header h1');
     await expect(heading).toContainText('Product Catalog');
 
     // Verify products are displayed
@@ -189,7 +191,7 @@ test.describe('Store Client E2E Tests', () => {
     await page.waitForSelector('store-product-list', { timeout: 10000 });
 
     // Check that content is visible
-    const heading = page.locator('h1');
+    const heading = page.locator('.page-header h1');
     await expect(heading).toBeVisible();
   });
 });

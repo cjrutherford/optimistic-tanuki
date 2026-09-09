@@ -349,6 +349,13 @@ const UI_ENVIRONMENTS = [
       'profile',
       'permissions',
       'permissions-seed',
+      // forum-access.spec.ts reads /api/forum/topics and project-crud.spec.ts
+      // drives the planning boards. Neither service was listed, so the gateway
+      // failed those calls with `getaddrinfo EAI_AGAIN forum` and the suite saw
+      // a 500. The forum seeds its own topics on module init, so listing it is
+      // enough for the seeded 'Project Execution' topic to exist.
+      'forum',
+      'project-planning',
       'client-interface',
       'oauth-provider',
       'gateway',

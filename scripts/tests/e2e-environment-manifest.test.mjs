@@ -55,6 +55,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'gateway',
     'client-interface',
   ]);
+  // forum and project-planning back the forum-access and project-crud specs.
   assert.deepEqual(resolveE2eServices('forgeofwill-e2e'), [
     'db',
     'db-setup',
@@ -62,6 +63,8 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'profile',
     'permissions',
     'permissions-seed',
+    'forum',
+    'project-planning',
     'client-interface',
     'oauth-provider',
     'gateway',

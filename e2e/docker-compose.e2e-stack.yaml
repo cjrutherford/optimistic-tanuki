@@ -440,8 +440,17 @@ services:
       THROTTLE_LOGIN_LIMIT: 100
       JWT_SECRET: e2e-test-jwt-secret
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
-      CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080
-      CLIENT_INTERFACE_DOMAIN: localhost
+      # Must match the origin the suites actually drive. Every UI target in
+      # scripts/e2e-environment-manifest.mjs uses a 127.0.0.1 baseUrl, but this
+      # said `localhost`, so the gateway redirected the OAuth popup back to
+      # http://localhost:8080 — a different origin from the opener at
+      # http://127.0.0.1:8080. The opener therefore never saw its callback and
+      # could not be messaged across the origin boundary, and the suite timed
+      # out waiting for a callback request that arrived somewhere else.
+      # CORS_ALLOWED_ORIGINS below lists both spellings, which is why nothing
+      # but the OAuth redirect noticed.
+      CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
+      CLIENT_INTERFACE_DOMAIN: 127.0.0.1
       CI_GOOGLE_CLIENT_ID: e2e-google-client-id
       CI_GOOGLE_CLIENT_SECRET: e2e-google-client-secret
       CI_GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize

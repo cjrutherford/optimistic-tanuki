@@ -134,7 +134,11 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       const data = await response.json();
       productData = data;
 
-      route.fulfill({
+      // `fulfill` returns a promise. Leaving it unawaited let the callback
+      // resolve while the fulfil was still in flight, so the route outlived
+      // the test and Playwright reported "route.fetch: Test ended." against
+      // whichever test happened to be running next.
+      await route.fulfill({
         response,
         body: JSON.stringify(data),
       });
@@ -142,6 +146,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
 
     await page.goto('/catalog');
     await page.waitForTimeout(2000);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
 
     if (productData && Array.isArray(productData)) {
       console.log(`Received ${productData.length} products from API`);
@@ -151,7 +156,9 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
         const firstProduct = productData[0];
         expect(firstProduct).toHaveProperty('id');
         expect(firstProduct).toHaveProperty('name');
-        expect(firstProduct).toHaveProperty('price');
+        // Money is stored and served as integer cents (Product.priceCents),
+        // never as a `price` float.
+        expect(firstProduct).toHaveProperty('priceCents');
         expect(firstProduct).toHaveProperty('type');
         console.log('Product data structure is valid');
       }
@@ -163,7 +170,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     await page.route('**/api/store/products', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const response = await route.fetch();
-      route.fulfill({ response });
+      await route.fulfill({ response });
     });
 
     await page.goto('/catalog');
@@ -175,6 +182,10 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     );
 
     expect(loadingOrProducts).toBeTruthy();
+
+    // This route deliberately sleeps, so a request can still be mid-flight at
+    // the end of the test. Drop the handlers before teardown.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 
   test('should refresh products when navigating back to catalog', async ({
