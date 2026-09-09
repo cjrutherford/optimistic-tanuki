@@ -169,6 +169,36 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  # fin-commander-e2e drives /api/finance, which the gateway forwards to this
+  # service. It was never part of this composition, so those calls had nothing
+  # behind them. No host port is published: only the gateway talks to it, over
+  # the compose network, and 3016 on the host already belongs to
+  # oauth-provider.
+  finance:
+    image: cjrutherford/optimistic_tanuki_finance:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/finance/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_finance
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3016,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   forum:
     image: cjrutherford/optimistic_tanuki_forum:${E2E_IMAGE_TAG:-latest}
     build:

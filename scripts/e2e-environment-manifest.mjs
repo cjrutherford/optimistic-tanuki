@@ -375,6 +375,9 @@ const UI_ENVIRONMENTS = [
       'profile',
       'permissions',
       'permissions-seed',
+      // The suite drives /api/finance; without this the gateway had nothing
+      // to forward those calls to.
+      'finance',
       'client-interface',
       'oauth-provider',
       'gateway',
