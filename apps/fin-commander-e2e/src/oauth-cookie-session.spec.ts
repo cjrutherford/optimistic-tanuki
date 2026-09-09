@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { waitForHydration } from '../../../e2e/wait-for-hydration';
 
 test.describe('OAuth cookie session', () => {
   test('uses the shared client-interface callback proxy and restores Fin Commander', async ({
@@ -13,6 +14,7 @@ test.describe('OAuth cookie session', () => {
     // observable result instead: the provider button only renders once the
     // config has been applied.
     await page.goto('/login');
+    await waitForHydration(page);
 
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();

@@ -17,7 +17,11 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    // No video: rendering one needs the ffmpeg binary, which the `ci`
+    // configuration's `skipInstall` deliberately does not download, so every
+    // test died in `browserContext.newPage` with "Executable doesn't exist at
+    // .../ffmpeg-linux". No other suite records video; the trace and the
+    // failure screenshot already carry what a failure needs.
     actionTimeout: 10000,
     navigationTimeout: 30000,
     headless: isCI,

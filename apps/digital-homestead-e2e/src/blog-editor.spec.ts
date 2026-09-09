@@ -1,5 +1,6 @@
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect, test } from '../../../e2e/playwright-hermetic';
+import { waitForHydration } from '../../../e2e/wait-for-hydration';
 
 /**
  * Blog editor coverage for digital-homestead.
@@ -86,6 +87,7 @@ async function denyBlogEditAccess(page: Page): Promise<void> {
  */
 async function signIn(page: Page): Promise<void> {
   await page.goto('/login');
+  await waitForHydration(page);
 
   const google = page.getByLabel('Sign in with Google');
   await expect(google).toBeVisible();
