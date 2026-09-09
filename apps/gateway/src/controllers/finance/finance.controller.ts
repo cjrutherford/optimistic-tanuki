@@ -18,6 +18,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ServiceTokens,
+  RoleCommands,
   AccountCommands,
   TransactionCommands,
   InventoryItemCommands,
@@ -99,7 +100,9 @@ export class FinanceController {
 
   constructor(
     @Inject(ServiceTokens.FINANCE_SERVICE)
-    private readonly financeClient: ClientProxy
+    private readonly financeClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy
   ) {}
 
   private mapFinanceRpcError(error: unknown): never {
@@ -1296,13 +1299,105 @@ export class FinanceController {
     @AppScope() appScope: string,
     @Body() tenantDto: CreateFinanceTenantDto
   ): Promise<FinanceTenantDto> {
-    return await this.sendFinanceCommand(
+    const tenant: FinanceTenantDto = await this.sendFinanceCommand(
       { cmd: FinanceTenantCommands.CREATE_TENANT },
       {
         ...tenantDto,
         ...this.getScope(user, appScope),
       }
     );
+
+    await this.assignFinanceAdminRole(
+      this.getScope(user, appScope).profileId,
+      tenant?.id,
+      appScope
+    );
+
+    return tenant;
+  }
+
+  /**
+   * Grants the tenant's creator the platform role that lets them manage its
+   * members.
+   *
+   * FinanceTenantService.create already records the creator as `finance_admin`
+   * in the finance service's own `finance_tenant_member` table, but that is a
+   * different thing from a permissions-service role assignment, and the
+   * PermissionsGuard only consults the latter. The app-scope defaults in
+   * `financeDefaults` assign `finance_member`, whose permissions include
+   * `finance.tenant.manage` — enough to create a tenant — but not
+   * `finance.member.manage`. So every caller could open a tenant and none could
+   * ever administer it: all four /finance/tenant/members endpoints were
+   * unreachable, along with the Operator/Member controls fin-commander renders
+   * for them.
+   *
+   * The role and its permission are already seeded and mapped in
+   * default-permissions.json; only the assignment was missing. It is scoped
+   * with `targetId` set to the tenant, the same way local-hub scopes its
+   * community poster role, so creating one household grants nothing over
+   * anyone else's.
+   */
+  private async assignFinanceAdminRole(
+    profileId: string | undefined,
+    tenantId: string | undefined,
+    appScope: string
+  ): Promise<void> {
+    if (!profileId || !tenantId) {
+      return;
+    }
+
+    try {
+      const role = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetByName },
+          { name: 'finance_admin', appScope: 'finance' }
+        )
+      );
+
+      if (!role) {
+        this.logger.warn(
+          'Role finance_admin was not found; tenant members cannot be managed'
+        );
+        return;
+      }
+
+      const existingAssignments = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScope: 'finance' }
+        )
+      );
+
+      const alreadyAssigned = Array.isArray(existingAssignments)
+        ? existingAssignments.some(
+            (assignment: { role?: { id?: string }; targetId?: string }) =>
+              assignment.role?.id === role.id &&
+              assignment.targetId === tenantId
+          )
+        : false;
+
+      if (alreadyAssigned) {
+        return;
+      }
+
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.Assign },
+          {
+            roleId: role.id,
+            profileId,
+            appScopeId: role.appScope?.id || appScope,
+            targetId: tenantId,
+          }
+        )
+      );
+    } catch (error) {
+      // Never fail tenant creation over this: the tenant exists and is usable
+      // for everything except member administration.
+      this.logger.error(
+        `Failed to assign finance_admin for tenant ${tenantId}: ${error}`
+      );
+    }
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
