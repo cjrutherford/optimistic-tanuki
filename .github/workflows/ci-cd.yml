@@ -253,6 +253,7 @@ jobs:
             christopherrutherford-net-e2e \
             owner-console-e2e \
             store-client-e2e \
+            learning-e2e \
             configurable-client-e2e; do
             printf 'Validating Playwright CI config: %s\n' "$target"
             CI=true env -u BASE_URL pnpm exec playwright test --config="apps/$target/playwright.config.ts" --list
