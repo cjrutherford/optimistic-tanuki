@@ -1,9 +1,6 @@
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect, test } from '../../../e2e/playwright-hermetic';
-import {
-  clickForPopup,
-  waitForHydration,
-} from '../../../e2e/wait-for-hydration';
+import { waitForHydration } from '../../../e2e/wait-for-hydration';
 
 /**
  * Blog editor coverage for digital-homestead.
@@ -84,21 +81,57 @@ async function denyBlogEditAccess(page: Page): Promise<void> {
 }
 
 /**
- * Sign in through the fake OAuth provider the digital-blogging stack runs on
- * port 3016, the same flow `oauth-cookie-session.spec.ts` asserts in detail.
- * Ends on `/blog`.
+ * Register an account and sign in with it, ending on `/blog`.
+ *
+ * This used to go through the fake OAuth provider, but digital-homestead no
+ * longer offers OAuth: clicking a provider button did nothing observable —
+ * no popup, no request, no error — so the buttons were withdrawn rather than
+ * left silently inert. Email and password is the remaining way in.
+ *
+ * Registration goes over the API because this app has no register route; only
+ * `login`, the email-action routes and `blog` are declared. It needs the app
+ * headers, because the gateway resolves a canonical app id from x-ot-app-id,
+ * x-ot-appscope or Origin and answers 400 when it cannot. The stack sets
+ * AUTH_AUTO_VERIFY_EMAILS, so the account can sign in immediately.
  */
 async function signIn(page: Page): Promise<void> {
+  const email = `blog-editor-${Date.now()}-${
+    test.info().parallelIndex
+  }@example.test`;
+  const password = 'Test@Password123';
+
+  const registered = await page.request.post('/api/authentication/register', {
+    headers: {
+      'x-ot-appscope': 'digital-homestead',
+      'x-ot-app-id': 'digital-homestead',
+    },
+    data: {
+      email,
+      fn: 'Blog',
+      ln: 'Editor',
+      password,
+      confirm: password,
+      bio: 'Blog editor e2e user',
+    },
+  });
+  expect(
+    registered.ok(),
+    `register returned ${registered.status()}: ${await registered.text()}`
+  ).toBe(true);
+
   await page.goto('/login');
   await waitForHydration(page);
 
-  const google = page.getByLabel('Sign in with Google');
-  await expect(google).toBeVisible();
+  await page
+    .locator('lib-text-input[formControlName="email"] input')
+    .fill(email);
+  await page
+    .locator('lib-text-input[formControlName="password"] input')
+    .fill(password);
+  await page.getByRole('button', { name: 'Login' }).click();
 
-  const popup = await clickForPopup(page, google);
-
+  // onLogin() navigates to /blog once AuthStateService.login resolves.
   await expect(page).toHaveURL(/\/blog(?:\?|$)/, { timeout: 30_000 });
-  await expect.poll(() => popup.isClosed()).toBe(true);
 }
 
 /**
