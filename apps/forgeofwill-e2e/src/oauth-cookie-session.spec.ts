@@ -68,17 +68,20 @@ test.describe('OAuth cookie session', () => {
     );
     await popup.waitForURL(/\/oauth\/callback(?:\?|$)/);
 
-    await page.waitForURL((url) => !url.pathname.endsWith('/login'));
-    await expect.poll(() => popup.isClosed()).toBe(true);
-
-    // `headerValue()` is itself async: the single await bound to the response,
-    // leaving a Promise to be matched against a regex. It never surfaced while
-    // the flow timed out earlier than this line.
+    // Read the Set-Cookie before waiting for the popup to close. The redeem is
+    // posted by the popup, and `headerValue()` reaches back into the page that
+    // made the request: once the popup is gone it fails with "Target page,
+    // context or browser has been closed". (`headerValue()` is also itself
+    // async — the single await used to bind to the response, leaving a Promise
+    // to be matched against a regex.)
     const setCookie = await (
       await sessionRedemptionResponse
     ).headerValue('set-cookie');
     expect(setCookie).toMatch(/ot_session=.*HttpOnly.*Path=\//i);
     expect(setCookie).not.toMatch(/\bDomain=/i);
+
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+    await expect.poll(() => popup.isClosed()).toBe(true);
 
     const forgeOrigin = new URL(page.url()).origin;
     // Pinned to the vhost origin of the standalone forgeofwill composition,

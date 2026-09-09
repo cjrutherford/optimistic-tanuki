@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { waitForHydration } from '../../../e2e/wait-for-hydration';
 
 test.describe('OAuth cookie session', () => {
-  test('completes the gateway callback on its own origin and restores Fin Commander', async ({
+  test('completes the gateway callback through the shared proxy and restores Fin Commander', async ({
     page,
     context,
   }) => {
@@ -27,12 +27,15 @@ test.describe('OAuth cookie session', () => {
     const providerRequest = context.waitForEvent('request', (request) =>
       request.url().startsWith('http://127.0.0.1:3016/authorize')
     );
-    // The callback lands on Fin Commander's own origin. resolveCallbackBase()
-    // returns the app's registered origin whenever the app scope is known and
-    // only falls back to the Client Interface base for a scope it cannot
-    // place; fin-commander is registered, so it never took that fallback.
+    // The callback lands on the Client Interface proxy, not on Fin Commander's
+    // own origin. This app asks for the `finance` app scope, not
+    // `fin-commander` — see login.component.ts — and resolveCallbackBase()
+    // finds no `finance` entry in APP_SCOPE_ORIGINS and no registry app with
+    // that id, so it takes the Client Interface fallback. Unlike
+    // digital-homestead, this suite was right about the origin all along; only
+    // the way it waited needed fixing.
     const gatewayCallbackRequest = context.waitForEvent('request', (request) =>
-      request.url().startsWith('http://127.0.0.1:8089/api/oauth/callback/')
+      request.url().startsWith('http://127.0.0.1:8080/api/oauth/callback/')
     );
     const popupPromise = page.waitForEvent('popup');
     await google.click();
