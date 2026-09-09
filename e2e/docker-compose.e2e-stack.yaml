@@ -545,6 +545,15 @@ services:
   # a stranger submitted.
   learning-runner:
     profiles: [learning]
+    # Every other service here names its published image. This one only had a
+    # `build:`, and CI pulls the manifest's services and then brings them up
+    # with `--no-build`, so learning-runner could neither be pulled nor
+    # created and the whole learning stack failed to start — only `db` was
+    # left standing. db-setup and oauth-provider are the deliberate
+    # build-locally exceptions and are excluded from the pull list; this is
+    # not one of them. The image is built and published by the same
+    # Image Check / Publish Images matrix as its siblings.
+    image: cjrutherford/optimistic_tanuki_learning-runner:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/learning-runner/Dockerfile
