@@ -190,6 +190,10 @@
       "apiBaseUrl": "http://localhost:3300",
       "appType": "client",
       "visibility": "internal",
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      },
       "description": "Config-driven application shell for generated client experiences.",
       "iconUrl": "http://localhost:8090/favicon.ico",
       "sortOrder": 18

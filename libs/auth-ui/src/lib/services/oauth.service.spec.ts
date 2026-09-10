@@ -31,6 +31,7 @@ describe('OAuthService', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,
+        source: popup,
         data: {
           type: 'oauth-callback',
           payload: { success: true, token: 'platform-token' },
@@ -41,6 +42,57 @@ describe('OAuthService', () => {
     await expect(login).resolves.toEqual({
       success: true,
       token: 'platform-token',
+    });
+  });
+
+  it('ignores callback messages from a different window', async () => {
+    const popup = { closed: false, close: jest.fn() } as unknown as Window;
+    jest.spyOn(window, 'open').mockReturnValue(popup);
+
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        OAuthService,
+        { provide: 'API_BASE_URL', useValue: '/api' },
+      ],
+    }).compileComponents();
+    const service = TestBed.inject(OAuthService);
+    service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+    const login = service.initiateOAuthLogin('google');
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: window,
+        data: {
+          type: 'oauth-callback',
+          payload: { success: true, token: 'forged-token' },
+        },
+      })
+    );
+    await Promise.resolve();
+
+    let settled = false;
+    void login.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: popup,
+        data: {
+          type: 'oauth-callback',
+          payload: { success: true, token: 'real-token' },
+        },
+      })
+    );
+
+    await expect(login).resolves.toEqual({
+      success: true,
+      token: 'real-token',
     });
   });
 
@@ -77,6 +129,7 @@ describe('OAuthService', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,
+        source: popup,
         data: {
           type: 'oauth-callback',
           payload: { success: true, callbackCode: 'one-time-code' },
@@ -128,6 +181,7 @@ describe('OAuthService', () => {
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,
+        source: popup,
         data: {
           type: 'oauth-callback',
           payload: { success: true, session: true },
@@ -200,5 +254,108 @@ describe('OAuthService', () => {
     await Promise.resolve();
 
     expect(http.get).toHaveBeenCalledTimes(11);
+  });
+
+  it('keeps the legacy registration call shape on the hardened OAuth flow', async () => {
+    const popup = { closed: false, close: jest.fn() } as unknown as Window;
+    jest.spyOn(window, 'open').mockReturnValue(popup);
+
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        OAuthService,
+        { provide: 'API_BASE_URL', useValue: '/api' },
+      ],
+    }).compileComponents();
+    const service = TestBed.inject(OAuthService);
+    const http = TestBed.inject(HttpClient);
+    jest
+      .spyOn(http, 'post')
+      .mockReturnValue(
+        of({
+          token: 'compatibility-token',
+          returnOrigin: window.location.origin,
+        }) as any
+      );
+    service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+    const completion = service.completeOAuthRegistration(
+      'google',
+      'legacy-provider-id',
+      'legacy@example.com',
+      'Legacy',
+      'Caller',
+      ''
+    );
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: popup,
+        data: {
+          type: 'oauth-callback',
+          payload: { success: true, callbackCode: 'one-time-code' },
+        },
+      })
+    );
+
+    await expect(completion).resolves.toEqual({
+      success: true,
+      token: 'compatibility-token',
+    });
+    expect(http.post).toHaveBeenCalledWith(
+      '/api/oauth/callback/redeem',
+      { callbackCode: 'one-time-code' },
+      expect.objectContaining({ withCredentials: true })
+    );
+  });
+
+  it('rejects a legacy registration redemption with an unsafe return origin', async () => {
+    const popup = { closed: false, close: jest.fn() } as unknown as Window;
+    jest.spyOn(window, 'open').mockReturnValue(popup);
+
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        OAuthService,
+        { provide: 'API_BASE_URL', useValue: '/api' },
+      ],
+    }).compileComponents();
+    const service = TestBed.inject(OAuthService);
+    const http = TestBed.inject(HttpClient);
+    jest
+      .spyOn(http, 'post')
+      .mockReturnValue(
+        of({
+          token: 'forged-token',
+          returnOrigin: 'https://evil.example',
+        }) as any
+      );
+    service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+    const completion = service.completeOAuthRegistration(
+      'google',
+      'legacy-provider-id',
+      'legacy@example.com',
+      'Legacy',
+      'Caller',
+      ''
+    );
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: popup,
+        data: {
+          type: 'oauth-callback',
+          payload: { success: true, callbackCode: 'one-time-code' },
+        },
+      })
+    );
+
+    await expect(completion).resolves.toEqual({
+      success: false,
+      error: 'OAuth callback origin mismatch',
+    });
   });
 });

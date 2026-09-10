@@ -1,48 +1,66 @@
-import { Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   ActivatedRouteSnapshot,
   Router,
   RouterStateSnapshot,
+  UrlTree,
 } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 
-import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
+import { authGuard } from './auth.guard';
 
 describe('authGuard', () => {
-  const isAuthenticated = jest.fn();
-  const navigate = jest.fn();
-
-  const runGuard = () => {
-    const injector = TestBed.inject(Injector);
-    return runInInjectionContext(injector, () =>
-      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
-    );
+  const authService = {
+    isAuthenticated: jest.fn(),
   };
 
   beforeEach(() => {
-    isAuthenticated.mockReset();
-    navigate.mockReset();
-
+    jest.clearAllMocks();
     TestBed.configureTestingModule({
-      providers: [
-        { provide: AuthService, useValue: { isAuthenticated } },
-        { provide: Router, useValue: { navigate } },
-      ],
+      imports: [RouterTestingModule],
+      providers: [{ provide: AuthService, useValue: authService }],
     });
   });
 
-  it('allows navigation for an authenticated operator', () => {
-    isAuthenticated.mockReturnValue(true);
+  function canActivate(url: string): unknown {
+    return TestBed.runInInjectionContext(() =>
+      authGuard({} as ActivatedRouteSnapshot, { url } as RouterStateSnapshot)
+    );
+  }
 
-    expect(runGuard()).toBe(true);
-    expect(navigate).not.toHaveBeenCalled();
+  function serialize(result: unknown): string {
+    expect(result).toBeInstanceOf(UrlTree);
+    return TestBed.inject(Router).serializeUrl(result as UrlTree);
+  }
+
+  it('allows an authenticated owner to continue without redirecting', () => {
+    authService.isAuthenticated.mockReturnValue(true);
+
+    expect(canActivate('/dashboard/operations')).toBe(true);
   });
 
-  it('blocks navigation and redirects anonymous visitors to login', () => {
-    isAuthenticated.mockReturnValue(false);
+  it('returns a login UrlTree with the normalized protected deep link', () => {
+    authService.isAuthenticated.mockReturnValue(false);
 
-    expect(runGuard()).toBe(false);
-    expect(navigate).toHaveBeenCalledWith(['/login']);
+    const result = canActivate('/dashboard/operations?tab=oauth#providers');
+
+    expect(serialize(result)).toBe(
+      '/login?returnUrl=%2Fdashboard%2Foperations%3Ftab%3Doauth%23providers'
+    );
+  });
+
+  it.each([
+    'https://evil.example/phishing',
+    '//evil.example/phishing',
+    '/dashboard/%0A/operations',
+    '/login',
+    '/auth/login',
+  ])('falls back to the dashboard for unsafe return target %s', (url) => {
+    authService.isAuthenticated.mockReturnValue(false);
+
+    const result = canActivate(url);
+
+    expect(serialize(result)).toBe('/login?returnUrl=%2Fdashboard');
   });
 });

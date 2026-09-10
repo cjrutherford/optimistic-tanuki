@@ -7,12 +7,7 @@ const execFileAsync = promisify(execFile);
 const WORKSPACE_ROOT = resolve(__dirname, '../..');
 const COMPOSE_FILE = 'e2e/docker-compose.e2e-stack.yaml';
 const TARGET = 'client-interface-e2e';
-const BUILD_EXCLUDED_SERVICES = new Set([
-  'db',
-  'redis',
-  'permissions-seed',
-  'app-configurator-seed',
-]);
+const BUILD_EXCLUDED_SERVICES = new Set(['db', 'redis', 'permissions-seed']);
 
 type LifecyclePhase = {
   name: string;

@@ -62,6 +62,25 @@ describe('AppController', () => {
   });
 
   describe('login', () => {
+    it('does not log credentials from a login request', async () => {
+      (appService.login as jest.Mock).mockResolvedValue({
+        userId: 'userId',
+        token: 'token',
+        valid: true,
+      });
+      const logger = (appController as any).l as Logger;
+      const logSpy = jest.spyOn(logger, 'log');
+
+      await appController.login({
+        email: 'private@example.com',
+        password: 'never-log-this-password',
+        mfa: '123456',
+        profileId: 'profile123',
+      });
+
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+
     it('should call appService.login with correct parameters', async () => {
       (appService.login as jest.Mock).mockResolvedValue({
         userId: 'userId',

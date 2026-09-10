@@ -6,6 +6,7 @@ import { type AppConfiguration } from '@optimistic-tanuki/app-config-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 import { AppConfigService } from '../../services/app-config.service';
+import { BlogCatalogService } from '../../services/blog-catalog.service';
 import { AppConfigDesignerComponent } from './app-config-designer.component';
 
 describe('AppConfigDesignerComponent', () => {
@@ -23,6 +24,7 @@ describe('AppConfigDesignerComponent', () => {
     foreground: '#111827',
     accent: '#112233',
   });
+  const getMyCatalogs = jest.fn();
 
   function mockMobileViewport(matches: boolean) {
     Object.defineProperty(window, 'matchMedia', {
@@ -42,6 +44,7 @@ describe('AppConfigDesignerComponent', () => {
 
   const loadedConfig: AppConfiguration = {
     id: 'cfg-1',
+    revision: 7,
     name: 'Workspace Config',
     description: 'Shared workspace test',
     domain: 'workspace.local',
@@ -141,6 +144,17 @@ describe('AppConfigDesignerComponent', () => {
       })
     );
     rollbackConfiguration.mockReturnValue(of({ ...loadedConfig }));
+    getMyCatalogs.mockReturnValue(
+      of([
+        {
+          id: 'blog-catalog-north',
+          name: 'North journal',
+          ownerId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      ])
+    );
 
     TestBed.configureTestingModule({
       imports: [AppConfigDesignerComponent],
@@ -163,6 +177,7 @@ describe('AppConfigDesignerComponent', () => {
             snapshot: {
               data: { editorMode, workspaceKind: 'app-config' },
               paramMap: convertToParamMap({ id: 'cfg-1' }),
+              queryParamMap: convertToParamMap({ slug: 'north-site' }),
             },
           },
         },
@@ -181,6 +196,10 @@ describe('AppConfigDesignerComponent', () => {
             themeColors$,
           },
         },
+        {
+          provide: BlogCatalogService,
+          useValue: { getMyCatalogs },
+        },
       ],
     });
 
@@ -193,6 +212,31 @@ describe('AppConfigDesignerComponent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockMobileViewport(false);
+  });
+
+  it('persists a workspace-owned Blog catalog as the blogging capability resource', () => {
+    const { component } = createComponent();
+
+    component.selectBlogCatalog('blog-catalog-north');
+    component.patchSelectedBlock({ title: 'Edited after catalog selection' });
+
+    expect(getMyCatalogs).toHaveBeenCalledWith('north-site');
+    expect(component.config.manifest).toEqual(
+      expect.objectContaining({
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: expect.objectContaining({
+          'blogging.posts': expect.objectContaining({
+            enabled: true,
+            resourceRef: {
+              type: 'blog-catalog',
+              id: 'blog-catalog-north',
+            },
+            settings: { catalogId: 'blog-catalog-north' },
+          }),
+        }),
+      })
+    );
   });
 
   it('uses the same shared canvas in guided and studio modes', () => {
@@ -372,6 +416,7 @@ describe('AppConfigDesignerComponent', () => {
     component.publishConfiguration();
 
     expect(publishConfiguration).toHaveBeenCalledWith('cfg-1', {
+      expectedRevision: 7,
       releaseNotes: 'Launch ready',
       changeSummary: 'Launch summary',
     });
@@ -403,6 +448,7 @@ describe('AppConfigDesignerComponent', () => {
     component.rollbackConfiguration(2);
 
     expect(rollbackConfiguration).toHaveBeenCalledWith('cfg-1', {
+      expectedRevision: 7,
       version: 2,
       releaseNotes: 'Rollback from owner console',
     });
@@ -579,6 +625,132 @@ describe('AppConfigDesignerComponent', () => {
     alertSpy.mockRestore();
   });
 
+  it('sends the loaded revision as the expected revision when updating', () => {
+    const { component } = createComponent('studio');
+
+    component.onSave();
+
+    expect(updateConfiguration).toHaveBeenCalledWith(
+      'cfg-1',
+      expect.objectContaining({ expectedRevision: 7 })
+    );
+  });
+
+  it('sends the loaded revision as the expected revision when publishing', () => {
+    const { component } = createComponent('studio');
+
+    component.releaseNotes = 'Launch ready';
+    component.publishConfiguration();
+
+    expect(publishConfiguration).toHaveBeenCalledWith('cfg-1', {
+      releaseNotes: 'Launch ready',
+      changeSummary: undefined,
+      expectedRevision: 7,
+    });
+  });
+
+  it('sends the loaded revision as the expected revision when rolling back', () => {
+    const { component } = createComponent('studio');
+
+    component.rollbackConfiguration(2);
+
+    expect(rollbackConfiguration).toHaveBeenCalledWith('cfg-1', {
+      version: 2,
+      releaseNotes: 'Rollback from owner console',
+      expectedRevision: 7,
+    });
+  });
+
+  it.each(['save', 'publish', 'rollback'] as const)(
+    'preserves revision 0 for %s mutations',
+    (action) => {
+      const { component } = createComponent('studio');
+      component.config = { ...component.config, revision: 0 };
+
+      if (action === 'save') {
+        component.onSave();
+        expect(updateConfiguration).toHaveBeenCalledWith(
+          'cfg-1',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      } else if (action === 'publish') {
+        component.releaseNotes = 'Launch ready';
+        component.publishConfiguration();
+        expect(publishConfiguration).toHaveBeenCalledWith(
+          'cfg-1',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      } else {
+        component.rollbackConfiguration(2);
+        expect(rollbackConfiguration).toHaveBeenCalledWith(
+          'cfg-1',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      }
+    }
+  );
+
+  it.each([
+    ['save', undefined],
+    ['publish', -1],
+    ['rollback', 1.5],
+  ] as const)(
+    'blocks %s when the loaded revision is invalid',
+    (action, revision) => {
+      const { component } = createComponent('studio');
+      component.config = { ...component.config, revision };
+
+      if (action === 'save') {
+        component.onSave();
+      } else if (action === 'publish') {
+        component.releaseNotes = 'Launch ready';
+        component.publishConfiguration();
+      } else {
+        component.rollbackConfiguration(2);
+      }
+
+      expect(updateConfiguration).not.toHaveBeenCalled();
+      expect(publishConfiguration).not.toHaveBeenCalled();
+      expect(rollbackConfiguration).not.toHaveBeenCalled();
+      expect(component.errorMessage).toContain(
+        'valid nonnegative integer revision'
+      );
+      expect(component.errorMessage).toContain(
+        'Reload the latest configuration'
+      );
+    }
+  );
+
+  it('preserves a dirty local draft and offers reload after a revision conflict', () => {
+    const { fixture, component } = createComponent('studio');
+    component.selectCanvasBlock('cta-1');
+    component.patchSelectedBlock({ title: 'Local draft' });
+    updateConfiguration.mockReturnValueOnce(
+      throwError(() => ({ status: 409, statusText: 'Conflict' }))
+    );
+
+    component.onSave();
+    fixture.detectChanges();
+
+    expect(component.config.landingPage.sections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'Local draft' }),
+      ])
+    );
+    expect(component.errorMessage).toContain('reload the latest configuration');
+    expect(
+      fixture.nativeElement.querySelector('[data-reload-latest]')
+    ).toBeTruthy();
+  });
+
+  it('reloads the latest configuration when the owner chooses to do so', () => {
+    const { component } = createComponent('studio');
+
+    component.reloadLatestConfiguration();
+
+    expect(getConfiguration).toHaveBeenCalledWith('cfg-1');
+  });
+
   it('shows an inline error when loading an existing configuration fails', () => {
     const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
     getConfiguration.mockReturnValue(
@@ -604,6 +776,7 @@ describe('AppConfigDesignerComponent', () => {
             snapshot: {
               data: { editorMode: 'guided', workspaceKind: 'app-config' },
               paramMap: convertToParamMap({ id: 'cfg-1' }),
+              queryParamMap: convertToParamMap({}),
             },
           },
         },
@@ -621,6 +794,10 @@ describe('AppConfigDesignerComponent', () => {
             setPersonality,
             themeColors$,
           },
+        },
+        {
+          provide: BlogCatalogService,
+          useValue: { getMyCatalogs },
         },
       ],
     });

@@ -36,6 +36,14 @@ describe('app email authentication metadata', () => {
     // Update when an app genuinely gains or loses authentication, not to
     // quiet a failure. The assertion below is the one that matters: every
     // sender has to be on an approved domain.
+    const configurableClient = DEFAULT_APP_REGISTRY.apps.find(
+      (app) => app.appId === 'configurable-client'
+    );
+
+    expect(configurableClient?.authEmail).toEqual({
+      enabled: true,
+      from: 'no-reply@christopherrutherford.net',
+    });
     expect(configured).toHaveLength(12);
     expect(
       configured.every((app) => isApprovedAuthEmailSender(app.authEmail!.from))

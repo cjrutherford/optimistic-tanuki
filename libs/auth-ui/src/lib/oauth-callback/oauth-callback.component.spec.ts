@@ -2,7 +2,8 @@ import { DOCUMENT } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { HttpClient, provideHttpClient } from '@angular/common/http';
+import { of, Subject } from 'rxjs';
 import {
   OAuthCallbackComponent,
   oauthCallbackReferrerPolicy,
@@ -234,6 +235,205 @@ describe('OAuthCallbackComponent', () => {
         payload: { success: true, callbackCode: 'one-time-code' },
       }),
       window.location.origin
+    );
+  });
+
+  it('relays a one-time callback code only once when route params are replayed', async () => {
+    const queryParams = new Subject<Record<string, string | undefined>>();
+    const postMessage = jest.fn();
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: { postMessage },
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams,
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const component = TestBed.runInInjectionContext(
+      () => new OAuthCallbackComponent(TestBed.inject(ActivatedRoute))
+    );
+    component.ngOnInit();
+    queryParams.next({ callbackCode: 'one-time-code' });
+    queryParams.next({ callbackCode: 'one-time-code' });
+    await Promise.resolve();
+
+    expect(postMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not post a callback code to an unregistered return origin', async () => {
+    const postMessage = jest.fn();
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: { postMessage },
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({
+              callbackCode: 'one-time-code',
+              returnTo: 'https://evil.example/phish',
+            }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    TestBed.runInInjectionContext(() =>
+      new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
+    );
+    await Promise.resolve();
+
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it('scrubs callback query parameters after an OAuth error is handled', async () => {
+    const replaceState = jest.spyOn(window.history, 'replaceState');
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: null,
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({
+              code: 'provider-code',
+              state: 'oauth-state',
+              error: 'access_denied',
+              error_description: 'Denied',
+              provider: 'google',
+            }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    TestBed.runInInjectionContext(() =>
+      new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
+    );
+    await Promise.resolve();
+
+    const rewrittenUrl = replaceState.mock.calls[0][2] as string;
+    expect(rewrittenUrl).toBe(window.location.pathname + window.location.hash);
+    expect(new URL(rewrittenUrl, window.location.origin).search).toBe('');
+    for (const sensitiveParameter of [
+      'code',
+      'state',
+      'error',
+      'error_description',
+      'callbackCode',
+    ]) {
+      expect(rewrittenUrl).not.toContain(sensitiveParameter);
+    }
+    replaceState.mockRestore();
+  });
+
+  it('uses a safe local fallback and does not redeem an external non-popup return', async () => {
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: null,
+    });
+    const navigateByUrl = jest.fn();
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({
+              callbackCode: 'one-time-code',
+              returnTo: 'https://evil.example/phish',
+            }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl } },
+      ],
+    }).compileComponents();
+
+    const http = TestBed.inject(HttpClient);
+    const post = jest.spyOn(http, 'post');
+    TestBed.runInInjectionContext(() =>
+      new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
+    );
+    await Promise.resolve();
+
+    expect(post).not.toHaveBeenCalled();
+    expect(navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('redeems and restores a same-origin non-popup return with credentials', async () => {
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: null,
+    });
+    const navigateByUrl = jest.fn();
+    const returnTo = `${window.location.origin}/dashboard?tab=profile#security`;
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({
+              callbackCode: 'one-time-code',
+              returnTo,
+            }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl } },
+      ],
+    }).compileComponents();
+
+    const http = TestBed.inject(HttpClient);
+    const post = jest
+      .spyOn(http, 'post')
+      .mockReturnValue(
+        of({ session: true, returnOrigin: window.location.origin }) as any
+      );
+    TestBed.runInInjectionContext(() =>
+      new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(post).toHaveBeenCalledWith(
+      `${window.location.origin}/api/oauth/callback/redeem`,
+      { callbackCode: 'one-time-code' },
+      expect.objectContaining({
+        withCredentials: true,
+        headers: { 'X-ot-session-mode': 'cookie' },
+      })
+    );
+    expect(navigateByUrl).toHaveBeenCalledWith(
+      '/dashboard?tab=profile#security'
     );
   });
 });

@@ -88,6 +88,38 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(true);
   });
 
+  it('reports an ordinary signed-out state when the initial session restore fails', () => {
+    const restore = service.restoreSession();
+    restore.subscribe((restored) => expect(restored).toBe(false));
+    const req = httpMock.expectOne('/api/authentication/session');
+    req.flush(null, { status: 401, statusText: 'Unauthenticated' });
+
+    expect(service).toHaveProperty('status', 'signed-out');
+    expect((service as unknown as { status: string }).status).toBe(
+      'signed-out'
+    );
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('reports an expired state when a previously restored session can no longer be restored', () => {
+    service.restoreSession().subscribe();
+    httpMock.expectOne('/api/authentication/session').flush({
+      data: { userId: 'owner-1' },
+    });
+
+    service
+      .restoreSession()
+      .subscribe((restored) => expect(restored).toBe(false));
+    httpMock
+      .expectOne('/api/authentication/session')
+      .flush(null, { status: 401, statusText: 'Expired' });
+
+    expect(service).toHaveProperty('status', 'expired');
+    expect((service as unknown as { status: string }).status).toBe('expired');
+    expect(service.isAuthenticated()).toBe(false);
+    expect(service.getSessionUser()).toBeNull();
+  });
+
   it('clears the cookie-backed session on logout', () => {
     service.logout();
 

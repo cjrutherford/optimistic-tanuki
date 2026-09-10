@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ThemeManagementComponent } from './theme-management.component';
 import { AppConfigService } from '../services/app-config.service';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -7,6 +7,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 describe('ThemeManagementComponent', () => {
   const appConfigService = {
     getConfigurations: jest.fn(),
+    getConfiguration: jest.fn(),
     updateConfiguration: jest.fn(),
     publishConfiguration: jest.fn(),
     rollbackConfiguration: jest.fn(),
@@ -46,6 +47,7 @@ describe('ThemeManagementComponent', () => {
           name: 'christopherrutherford-net',
           domain: 'christopherrutherford.net',
           active: true,
+          revision: 7,
           landingPage: { sections: [], layout: 'single-column' },
           routes: [],
           features: {},
@@ -220,6 +222,7 @@ describe('ThemeManagementComponent', () => {
     component.saveTheme();
 
     expect(appConfigService.updateConfiguration).toHaveBeenCalledWith('cfg-2', {
+      expectedRevision: 7,
       theme: expect.objectContaining({
         mode: 'dark',
         personalityId: 'control-center',
@@ -268,6 +271,7 @@ describe('ThemeManagementComponent', () => {
     expect(appConfigService.publishConfiguration).toHaveBeenCalledWith(
       'cfg-2',
       {
+        expectedRevision: 7,
         releaseNotes: 'Dark theme published.',
         changeSummary: 'Control center palette.',
       }
@@ -286,11 +290,122 @@ describe('ThemeManagementComponent', () => {
     expect(appConfigService.rollbackConfiguration).toHaveBeenCalledWith(
       'cfg-2',
       {
+        expectedRevision: 7,
         version: 2,
         releaseNotes: 'Rollback from theme management',
       }
     );
     expect(component.successMessage).toContain('rolled back');
     expect(component.themeDraft.primaryColor).toBe('#831843');
+  });
+
+  it.each(['save', 'publish', 'rollback'] as const)(
+    'preserves revision 0 for %s mutations',
+    (action) => {
+      const fixture = TestBed.createComponent(ThemeManagementComponent);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.selectedConfiguration = {
+        ...component.selectedConfiguration!,
+        revision: 0,
+      };
+
+      if (action === 'save') {
+        component.saveTheme();
+        expect(appConfigService.updateConfiguration).toHaveBeenCalledWith(
+          'cfg-2',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      } else if (action === 'publish') {
+        component.releaseNotes = 'Launch ready';
+        component.publishTheme();
+        expect(appConfigService.publishConfiguration).toHaveBeenCalledWith(
+          'cfg-2',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      } else {
+        component.rollbackTheme(2);
+        expect(appConfigService.rollbackConfiguration).toHaveBeenCalledWith(
+          'cfg-2',
+          expect.objectContaining({ expectedRevision: 0 })
+        );
+      }
+    }
+  );
+
+  it.each([
+    ['save', undefined],
+    ['publish', -1],
+    ['rollback', 1.5],
+  ] as const)(
+    'blocks %s when the loaded revision is invalid',
+    (action, revision) => {
+      const fixture = TestBed.createComponent(ThemeManagementComponent);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.selectedConfiguration = {
+        ...component.selectedConfiguration!,
+        revision,
+      };
+
+      if (action === 'save') {
+        component.saveTheme();
+      } else if (action === 'publish') {
+        component.releaseNotes = 'Launch ready';
+        component.publishTheme();
+      } else {
+        component.rollbackTheme(2);
+      }
+
+      expect(appConfigService.updateConfiguration).not.toHaveBeenCalled();
+      expect(appConfigService.publishConfiguration).not.toHaveBeenCalled();
+      expect(appConfigService.rollbackConfiguration).not.toHaveBeenCalled();
+      expect(component.error).toContain('valid nonnegative integer revision');
+      expect(component.error).toContain(
+        'Reload the latest theme configuration'
+      );
+    }
+  );
+
+  it('preserves the local theme draft and offers the latest reload after a revision conflict', () => {
+    const fixture = TestBed.createComponent(ThemeManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.updateThemeField('primaryColor', '#0f766e');
+    appConfigService.updateConfiguration.mockReturnValueOnce(
+      throwError(() => ({ status: 409, statusText: 'Conflict' }))
+    );
+
+    component.saveTheme();
+    fixture.detectChanges();
+
+    expect(component.themeDraft.primaryColor).toBe('#0f766e');
+    expect(component.error).toContain('reload the latest theme configuration');
+    expect(
+      fixture.nativeElement.querySelector('[data-reload-latest]')
+    ).toBeTruthy();
+  });
+
+  it('reloads the current selected configuration when requested after a conflict', () => {
+    const fixture = TestBed.createComponent(ThemeManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    const latestConfiguration = {
+      ...component.selectedConfiguration!,
+      revision: 8,
+      theme: {
+        ...component.selectedConfiguration!.theme,
+        primaryColor: '#2563eb',
+      },
+    };
+    appConfigService.getConfiguration.mockReturnValueOnce(
+      of(latestConfiguration)
+    );
+
+    component.reloadLatestConfiguration();
+
+    expect(appConfigService.getConfiguration).toHaveBeenCalledWith('cfg-2');
+    expect(component.selectedConfiguration?.revision).toBe(8);
+    expect(component.themeDraft.primaryColor).toBe('#2563eb');
   });
 });

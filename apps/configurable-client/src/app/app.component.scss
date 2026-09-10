@@ -12,6 +12,24 @@
   min-height: 100vh;
 }
 
+// Keep the shared About This App tag visually floating while giving it a
+// dedicated in-flow shelf. A fixed host would paint over whichever landing
+// section happens to meet the viewport edge at narrow and wide breakpoints.
+.app-content > hai-about-tag.about-app-utility {
+  position: static;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 1rem max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--border, #d8e1ea);
+  background: var(--background, #f5f7fb);
+}
+
 .loading-container,
 .error-container {
   display: flex;

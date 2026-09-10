@@ -79,6 +79,16 @@
   } @if (errorMessage) {
   <div class="designer-status error" role="alert">
     {{ errorMessage }}
+    @if (reloadLatestAvailable) {
+    <button
+      type="button"
+      data-reload-latest
+      class="designer-reload-latest"
+      (click)="reloadLatestConfiguration()"
+    >
+      Reload latest
+    </button>
+    }
   </div>
   } @if (isDirty()) {
   <div class="designer-status pending" role="status" data-unsaved-changes>
@@ -377,6 +387,25 @@
             ></lib-checkbox>
             @if (config.features.blogging?.enabled) {
             <div class="feature-options">
+              <label for="blogCatalogId">Blog catalog</label>
+              <select
+                id="blogCatalogId"
+                [ngModel]="selectedBlogCatalogId()"
+                (ngModelChange)="selectBlogCatalog($event || null)"
+              >
+                <option [ngValue]="null">
+                  Choose a workspace Blog catalog
+                </option>
+                @for (catalog of blogCatalogs; track catalog.id) {
+                <option [ngValue]="catalog.id">{{ catalog.name }}</option>
+                }
+              </select>
+              @if (!workspaceSlug) {
+              <p class="feature-help">
+                Open this editor from a business workspace to select its Blog
+                catalog.
+              </p>
+              }
               <lib-checkbox
                 [(ngModel)]="config.features.blogging!.allowComments"
                 label="Allow Comments"

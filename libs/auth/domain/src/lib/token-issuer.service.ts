@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 export type AuthTokenUser = {
   userId: string;
   firstName: string;
@@ -10,6 +12,7 @@ export type AuthTokenPayload = {
   name: string;
   email: string;
   profileId: string;
+  jti: string;
 };
 
 export type AuthTokenExpiry = '1h';
@@ -35,6 +38,7 @@ export class TokenIssuerService {
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
         profileId: profileId ?? '',
+        jti: randomUUID(),
       },
       {
         secret: this.secret,

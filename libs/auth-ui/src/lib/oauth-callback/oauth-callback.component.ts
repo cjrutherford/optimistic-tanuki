@@ -4,6 +4,7 @@ import { ActivatedRoute, Route, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { normalizeAuthReturnTo } from './oauth-return';
 
 @Component({
   selector: 'lib-oauth-callback',
@@ -81,6 +82,7 @@ import { firstValueFrom } from 'rxjs';
 })
 export class OAuthCallbackComponent implements OnInit {
   error: string | null = null;
+  private callbackHandled = false;
   private platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   private readonly apiBaseUrl =
@@ -103,6 +105,12 @@ export class OAuthCallbackComponent implements OnInit {
   private async handleParams(
     params: Record<string, string | undefined>
   ): Promise<void> {
+    // The callback grant and provider state are both one-time credentials.
+    // Route observables can emit again during navigation, so never relay or
+    // redeem the same callback twice from one callback document.
+    if (this.callbackHandled) return;
+    this.callbackHandled = true;
+
     const provider = this.route.snapshot.paramMap.get('provider');
     const callbackCode = params['callbackCode'];
     const returnTo = params['returnTo'];
@@ -110,13 +118,16 @@ export class OAuthCallbackComponent implements OnInit {
     const state = params['state'];
     const error = params['error'];
     const errorDescription = params['error_description'];
+    const callbackQuery = new URLSearchParams(this.document.location.search);
+
+    this.removeCallbackParametersFromHistory();
 
     if (provider && (code || error)) {
-      const query = new URLSearchParams(this.document.location.search);
+      const query = callbackQuery.toString();
       this.document.location.replace(
-        `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(
-          provider
-        )}?${query.toString()}`
+        `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(provider)}${
+          query ? `?${query}` : ''
+        }`
       );
       return;
     }
@@ -147,49 +158,69 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    this.removeCallbackParametersFromHistory();
-    this.sendMessageToParent(
-      {
-        type: 'oauth-callback',
-        payload: {
-          success: true,
-          callbackCode,
-        },
-      },
-      window.location.origin
-    );
+    const returnTarget = normalizeAuthReturnTo(returnTo, {
+      currentOrigin: window.location.origin,
+    });
 
-    if (!window.opener && returnTo) {
-      try {
-        const target = new URL(returnTo, window.location.origin);
-        if (!this.http || !this.isTrustedReturnOrigin(target.origin)) return;
-        const redemption = await firstValueFrom(
-          this.http.post<{
-            token?: string;
-            session?: true;
-            returnOrigin?: string;
-          }>(
-            new URL('/api/oauth/callback/redeem', target.origin).toString(),
-            { callbackCode },
-            {
-              withCredentials: true,
-              headers: { 'X-ot-session-mode': 'cookie' },
-            }
-          )
-        );
-        if (
-          (redemption.session !== true && !redemption.token) ||
-          redemption.returnOrigin !== target.origin
-        ) {
-          throw new Error('No authentication session received');
-        }
-        this.router.navigateByUrl(
-          `${target.pathname}${target.search}${target.hash}`
-        );
-      } catch {
-        // Non-popup callback fallback can remain on the status page.
+    if (window.opener) {
+      const expectedOpenerOrigin = returnTo
+        ? returnTarget?.origin
+        : window.location.origin;
+      if (!expectedOpenerOrigin) {
+        this.error = 'Invalid authentication return destination';
+        return;
       }
+      this.sendMessageToParent(
+        {
+          type: 'oauth-callback',
+          payload: {
+            success: true,
+            callbackCode,
+          },
+        },
+        expectedOpenerOrigin
+      );
+      return;
     }
+
+    if (!returnTarget || !this.http) {
+      this.navigateToSafeFallback();
+      return;
+    }
+
+    try {
+      const redemption = await firstValueFrom(
+        this.http.post<{
+          token?: string;
+          session?: true;
+          returnOrigin?: string;
+        }>(
+          new URL('/api/oauth/callback/redeem', returnTarget.origin).toString(),
+          { callbackCode },
+          {
+            withCredentials: true,
+            headers: { 'X-ot-session-mode': 'cookie' },
+          }
+        )
+      );
+      if (
+        (redemption.session !== true && !redemption.token) ||
+        redemption.returnOrigin !== returnTarget.origin
+      ) {
+        throw new Error('No authentication session received');
+      }
+      if (returnTarget.isCurrentOrigin) {
+        this.router.navigateByUrl(returnTarget.path);
+      } else {
+        this.document.location.assign(returnTarget.href);
+      }
+    } catch {
+      this.navigateToSafeFallback();
+    }
+  }
+
+  private navigateToSafeFallback(): void {
+    this.router.navigateByUrl('/');
   }
 
   private removeCallbackParametersFromHistory(): void {
@@ -201,15 +232,6 @@ export class OAuthCallbackComponent implements OnInit {
       '',
       `${currentUrl.pathname}${currentUrl.hash}`
     );
-  }
-
-  private isTrustedReturnOrigin(origin: string | undefined): origin is string {
-    if (!origin) return false;
-    try {
-      return new URL(origin).origin === origin;
-    } catch {
-      return false;
-    }
   }
 
   private sendMessageToParent(
