@@ -12,7 +12,7 @@ pnpm run docker:dev:seed
 
 Confirm the primary applications respond:
 
-- Configurable Client: `http://127.0.0.1:4200`
+- Configurable Client: `http://127.0.0.1:8090`
 - Business Site: `http://127.0.0.1:8094`
 - Gateway API: `http://127.0.0.1:3000`
 
@@ -89,7 +89,7 @@ pnpm nx run business-site-e2e:e2e \
 
 ```bash
 NX_DAEMON=false NX_ISOLATE_PLUGINS=false \
-pnpm nx run configurable-client-e2e:e2e-ci \
+pnpm nx run configurable-client-e2e:e2e:ci \
   --skipNxCache --outputStyle=stream-without-prefixes
 ```
 
