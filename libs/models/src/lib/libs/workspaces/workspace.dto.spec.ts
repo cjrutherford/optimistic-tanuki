@@ -8,7 +8,7 @@ import {
 
 describe('workspace contracts', () => {
   const workspace: ResolvedWorkspace = {
-    workspaceId: 'workspace-1',
+    workspaceId: '123e4567-e89b-42d3-a456-426614174020',
     kind: 'business-site',
     slug: 'north-star-coaching',
     displayName: 'North Star Coaching',
@@ -16,7 +16,10 @@ describe('workspace contracts', () => {
     ownerUserId: 'user-1',
     ownerProfileId: 'profile-1',
     status: 'active',
-    source: { service: 'store', sourceId: 'site-config-1' },
+    source: {
+      service: 'store',
+      sourceId: '123e4567-e89b-42d3-a456-426614174021',
+    },
   };
 
   it('recognizes the supported workspace kinds and lifecycle states', () => {
@@ -29,13 +32,44 @@ describe('workspace contracts', () => {
     expect(isWorkspaceStatus('published')).toBe(false);
   });
 
+  it('accepts a version 7 UUID for workspace identity and source IDs', () => {
+    expect(
+      isResolvedWorkspace({
+        ...workspace,
+        workspaceId: '123e4567-e89b-72d3-a456-426614174020',
+        source: {
+          service: 'store',
+          sourceId: '123e4567-e89b-72d3-a456-426614174021',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('rejects malformed workspace UUID versions', () => {
+    expect(
+      isResolvedWorkspace({
+        ...workspace,
+        workspaceId: '123e4567-e89b-92d3-a456-426614174020',
+      })
+    ).toBe(false);
+  });
+
   it('requires every identity field in a resolved workspace', () => {
     expect(isResolvedWorkspace(workspace)).toBe(true);
     expect(
       isResolvedWorkspace({ ...workspace, ownerProfileId: undefined })
     ).toBe(false);
     expect(
+      isResolvedWorkspace({ ...workspace, workspaceId: 'workspace-1' })
+    ).toBe(false);
+    expect(
       isResolvedWorkspace({ ...workspace, source: { service: 'store' } })
+    ).toBe(false);
+    expect(
+      isResolvedWorkspace({
+        ...workspace,
+        source: { service: 'store', sourceId: 'not-a-uuid' },
+      })
     ).toBe(false);
   });
 

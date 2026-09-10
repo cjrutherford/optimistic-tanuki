@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -9,6 +10,8 @@ import {
   ActivateWorkspaceRequest,
   ResolveWorkspaceRequest,
   ResolveWorkspaceBySourceRequest,
+  ListOwnedWorkspacesRequest,
+  ResolveOwnedWorkspaceRequest,
   ResolvedWorkspace,
 } from '@optimistic-tanuki/models';
 import { Repository } from 'typeorm';
@@ -24,10 +27,12 @@ export class WorkspaceService {
   async register(
     request: RegisterWorkspaceRequest
   ): Promise<ResolvedWorkspace> {
+    this.requireSourceUuid(request.source.sourceId);
     const existingSource = await this.workspaceRepo.findOne({
       where: {
         sourceService: request.source.service,
         sourceId: request.source.sourceId,
+        appScope: request.appScope,
       },
     });
     if (existingSource) {
@@ -35,7 +40,11 @@ export class WorkspaceService {
     }
 
     const existing = await this.workspaceRepo.findOne({
-      where: { kind: request.kind, slug: request.slug },
+      where: {
+        kind: request.kind,
+        slug: request.slug,
+        appScope: request.appScope,
+      },
     });
     if (existing) {
       throw new ConflictException(
@@ -49,6 +58,7 @@ export class WorkspaceService {
         status: 'draft',
         sourceService: request.source.service,
         sourceId: request.source.sourceId,
+        appScope: request.appScope,
       })
     );
     return this.toResolvedWorkspace(saved);
@@ -56,7 +66,11 @@ export class WorkspaceService {
 
   async resolve(request: ResolveWorkspaceRequest): Promise<ResolvedWorkspace> {
     const workspace = await this.workspaceRepo.findOne({
-      where: { kind: request.kind, slug: request.slug },
+      where: {
+        kind: request.kind,
+        slug: request.slug,
+        appScope: request.appScope,
+      },
     });
     if (
       !workspace ||
@@ -70,10 +84,12 @@ export class WorkspaceService {
   async resolveBySource(
     request: ResolveWorkspaceBySourceRequest
   ): Promise<ResolvedWorkspace> {
+    this.requireSourceUuid(request.source.sourceId);
     const workspace = await this.workspaceRepo.findOne({
       where: {
         sourceService: request.source.service,
         sourceId: request.source.sourceId,
+        appScope: request.appScope,
       },
     });
     if (
@@ -85,14 +101,52 @@ export class WorkspaceService {
     return this.toResolvedWorkspace(workspace);
   }
 
+  async listOwned(
+    request: ListOwnedWorkspacesRequest
+  ): Promise<ResolvedWorkspace[]> {
+    const workspaces = await this.workspaceRepo.find({
+      where: {
+        ownerUserId: request.ownerUserId,
+        ownerProfileId: request.ownerProfileId,
+      },
+      order: { displayName: 'ASC' },
+    });
+    return workspaces.map((workspace) => this.toResolvedWorkspace(workspace));
+  }
+
+  async resolveOwned(
+    request: ResolveOwnedWorkspaceRequest
+  ): Promise<ResolvedWorkspace> {
+    if (!this.isUuid(request.workspaceId)) {
+      throw new BadRequestException('Workspace ID must be a valid UUID');
+    }
+
+    const workspace = await this.workspaceRepo.findOne({
+      where: {
+        id: request.workspaceId,
+        ownerUserId: request.ownerUserId,
+        ownerProfileId: request.ownerProfileId,
+      },
+    });
+    if (!workspace) {
+      throw new NotFoundException('Workspace was not found');
+    }
+    return this.toResolvedWorkspace(workspace);
+  }
+
   async activate(
     request: ActivateWorkspaceRequest
   ): Promise<ResolvedWorkspace> {
+    if (!this.isUuid(request.workspaceId)) {
+      throw new BadRequestException('Workspace ID must be a valid UUID');
+    }
+    this.requireSourceUuid(request.source.sourceId);
     const workspace = await this.workspaceRepo.findOne({
       where: {
         id: request.workspaceId,
         sourceService: request.source.service,
         sourceId: request.source.sourceId,
+        appScope: request.appScope,
       },
     });
     if (!workspace) {
@@ -121,5 +175,17 @@ export class WorkspaceService {
         sourceId: workspace.sourceId,
       },
     };
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+  }
+
+  private requireSourceUuid(sourceId: string): void {
+    if (!this.isUuid(sourceId)) {
+      throw new BadRequestException('Workspace source ID must be a valid UUID');
+    }
   }
 }

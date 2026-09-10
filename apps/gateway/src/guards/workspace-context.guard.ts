@@ -14,6 +14,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Inject } from '@nestjs/common';
 import { CommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
+import { HttpException } from '@nestjs/common';
 
 @Injectable()
 export class WorkspaceContextGuard implements CanActivate {
@@ -38,7 +39,10 @@ export class WorkspaceContextGuard implements CanActivate {
       if (requirement.optional) return true;
       throw new BadRequestException('Workspace selector is required');
     }
-    const appScope = request.headers['x-ot-appscope'];
+    const appScopeHeader = request.headers['x-ot-appscope'];
+    const appScope = Array.isArray(appScopeHeader)
+      ? appScopeHeader[0]
+      : appScopeHeader;
     if (!appScope) throw new BadRequestException('App scope is required');
 
     const sourceId = requirement.resource
@@ -58,12 +62,40 @@ export class WorkspaceContextGuard implements CanActivate {
       : slug;
     if (!sourceId)
       throw new BadRequestException('Workspace resource was not found');
-    const resolved = requirement.sourceService
-      ? await this.resolver.resolveContextBySource(appScope, requirement.kind, {
-          service: requirement.sourceService,
-          sourceId,
-        })
-      : await this.resolver.resolveContext(appScope, requirement.kind, slug);
+    const kinds =
+      requirement.supportedKinds ??
+      (requirement.kind ? [requirement.kind] : []);
+    if (kinds.length === 0) {
+      throw new BadRequestException('Workspace kind policy is required');
+    }
+
+    let resolved: Awaited<
+      ReturnType<WorkspaceResolverService['resolveContext']>
+    >;
+    let lastError: unknown;
+    for (const kind of kinds) {
+      try {
+        resolved = requirement.sourceService
+          ? await this.resolver.resolveContextBySource(appScope, kind, {
+              service: requirement.sourceService,
+              sourceId,
+            })
+          : await this.resolver.resolveContext(appScope, kind, slug);
+        lastError = undefined;
+        break;
+      } catch (error) {
+        lastError = error;
+        const status =
+          error instanceof HttpException ? error.getStatus() : undefined;
+        // A 403 is an authoritative scope/status denial and must not be
+        // weakened by trying another kind. A 404 can mean this selector is
+        // valid but belongs to another supported kind.
+        if (status !== 404) {
+          throw error;
+        }
+      }
+    }
+    if (lastError) throw lastError;
     request.workspaceContext = {
       ...resolved,
       strict: requirement.strict === true,

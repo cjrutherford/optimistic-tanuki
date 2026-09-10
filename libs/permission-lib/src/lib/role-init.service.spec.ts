@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { RoleInitService } from './role-init.service';
+import { RoleInitBuilder } from './permission-builder';
 import {
   AppScopeCommands,
   PermissionCommands,
@@ -8,6 +9,21 @@ import {
 } from '@optimistic-tanuki/constants';
 
 describe('RoleInitService', () => {
+  it('does not initialize the configurable-client owner role in the app scope', () => {
+    const options = new RoleInitBuilder()
+      .setScopeName('configurable-client')
+      .setProfile('profile-1')
+      .addOwnerScopeDefaults()
+      .build();
+
+    expect(options.assignments).not.toContainEqual(
+      expect.objectContaining({
+        roleName: 'configurable_client_owner',
+        profileId: 'profile-1',
+      })
+    );
+  });
+
   it('creates a missing app scope before initializing permissions', async () => {
     const permissionsClient = {
       send: jest

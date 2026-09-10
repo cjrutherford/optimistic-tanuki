@@ -101,4 +101,75 @@ describe('permissions seed integrity', () => {
       'permission "missing.permission" is not declared in app scope "global"'
     );
   });
+
+  it('declares the configurable-client owner contract in its own app scope', () => {
+    expect(seedData.app_scopes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'configurable-client', active: true }),
+      ])
+    );
+    expect(seedData.roles).toContainEqual({
+      name: 'configurable_client_owner',
+      description: 'Configurable-client workspace owner for app configuration',
+      appScope: 'configurable-client',
+    });
+
+    expect(
+      seedData.role_permissions.filter(
+        (association) => association.role === 'configurable_client_owner'
+      )
+    ).toEqual([
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.create',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.read',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.update',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.delete',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.create',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.read',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.update',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.delete',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.publish',
+        permissionAppScope: 'configurable-client',
+      },
+    ]);
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'configurable_client_owner',
+        permissionAppScope: 'business-site',
+      })
+    );
+  });
 });

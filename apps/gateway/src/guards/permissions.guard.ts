@@ -23,6 +23,10 @@ import {
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ProfileDto } from '@optimistic-tanuki/models';
+import {
+  WORKSPACE_CONTEXT_KEY,
+  WorkspaceContextRequirement,
+} from '../decorators/workspace-context.decorator';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -58,6 +62,33 @@ export class PermissionsGuard implements CanActivate {
     if (!user) {
       this.logger.warn('User not authenticated');
       throw new ForbiddenException('User not authenticated');
+    }
+
+    // A controller-level PermissionsGuard runs before method-level guards. If
+    // this handler requires workspace resolution, defer this early pass so the
+    // method-level WorkspaceContextGuard can attach the authoritative child
+    // scope before PermissionsGuard evaluates the permission. Only recognize
+    // actual workspace metadata here: the guard must not defer when a test or
+    // caller reflects unrelated permission metadata for another key.
+    const workspaceRequirement =
+      this.reflector.getAllAndOverride<WorkspaceContextRequirement>(
+        WORKSPACE_CONTEXT_KEY,
+        [context.getHandler(), context.getClass()]
+      );
+    const hasWorkspaceMetadata =
+      !!workspaceRequirement &&
+      typeof workspaceRequirement.source === 'string' &&
+      typeof workspaceRequirement.path === 'string';
+    const workspaceSelector = hasWorkspaceMetadata
+      ? request[workspaceRequirement.source]?.[workspaceRequirement.path]
+      : undefined;
+    if (
+      hasWorkspaceMetadata &&
+      !request.workspaceContext &&
+      (!workspaceRequirement.optional ||
+        (typeof workspaceSelector === 'string' && workspaceSelector.trim()))
+    ) {
+      return true;
     }
 
     // Extract app scope from header

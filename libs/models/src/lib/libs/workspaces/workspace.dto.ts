@@ -9,10 +9,10 @@ export const WORKSPACE_STATUSES = [
 ] as const;
 export type WorkspaceStatus = (typeof WORKSPACE_STATUSES)[number];
 
-export type WorkspaceSourceService = 'store' | 'social';
+export type WorkspaceSourceService = 'store' | 'social' | 'app-configurator';
 
 const CANONICAL_WORKSPACE_ID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function workspaceScopeName(workspaceId: string): string {
   if (!CANONICAL_WORKSPACE_ID.test(workspaceId)) {
@@ -26,15 +26,39 @@ export interface WorkspaceSource {
   sourceId: string;
 }
 
+export function isWorkspaceSource(value: unknown): value is WorkspaceSource {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const source = value as Partial<WorkspaceSource>;
+  return (
+    ['store', 'social', 'app-configurator'].includes(source.service ?? '') &&
+    typeof source.sourceId === 'string' &&
+    CANONICAL_WORKSPACE_ID.test(source.sourceId)
+  );
+}
+
 export interface ResolveWorkspaceRequest {
+  appScope: string;
   kind: WorkspaceKind;
   slug: string;
   requireActive?: boolean;
 }
 
 export interface ResolveWorkspaceBySourceRequest {
+  appScope: string;
   source: WorkspaceSource;
   requireActive?: boolean;
+}
+
+export interface ListOwnedWorkspacesRequest {
+  ownerUserId: string;
+  ownerProfileId: string;
+}
+
+export interface ResolveOwnedWorkspaceRequest
+  extends ListOwnedWorkspacesRequest {
+  workspaceId: string;
 }
 
 export interface RegisterWorkspaceRequest {
@@ -49,6 +73,7 @@ export interface RegisterWorkspaceRequest {
 
 export interface ActivateWorkspaceRequest {
   workspaceId: string;
+  appScope: string;
   source: WorkspaceSource;
 }
 
@@ -88,6 +113,7 @@ export function isResolvedWorkspace(
   const workspace = value as Partial<ResolvedWorkspace>;
   return (
     typeof workspace.workspaceId === 'string' &&
+    CANONICAL_WORKSPACE_ID.test(workspace.workspaceId) &&
     typeof workspace.slug === 'string' &&
     typeof workspace.displayName === 'string' &&
     typeof workspace.appScope === 'string' &&
@@ -95,7 +121,6 @@ export function isResolvedWorkspace(
     typeof workspace.ownerProfileId === 'string' &&
     isWorkspaceKind(workspace.kind) &&
     isWorkspaceStatus(workspace.status) &&
-    typeof workspace.source?.service === 'string' &&
-    typeof workspace.source.sourceId === 'string'
+    isWorkspaceSource(workspace.source)
   );
 }

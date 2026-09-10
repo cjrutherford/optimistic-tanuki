@@ -7,6 +7,8 @@ import { RoleCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { ICacheProvider } from '../auth/cache/cache-provider.interface';
 import { ClientProxy } from '@nestjs/microservices';
+import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
+import { WORKSPACE_CONTEXT_KEY } from '../decorators/workspace-context.decorator';
 
 describe('PermissionsGuard', () => {
   let guard: PermissionsGuard;
@@ -233,21 +235,45 @@ describe('PermissionsGuard', () => {
       });
     });
 
+    it('defers required workspace permission checks until the workspace context guard resolves the request', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockImplementation((key: string) => {
+          if (key === PERMISSIONS_KEY) {
+            return { permissions: ['blog.post.read'] };
+          }
+
+          if (key === WORKSPACE_CONTEXT_KEY) {
+            return {
+              kind: 'business-site',
+              source: 'query',
+              path: 'workspaceSlug',
+              strict: true,
+            };
+          }
+
+          return undefined;
+        });
+
+      const context = createMockContext({ userId: 'user-1' });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(permissionsClient.send).not.toHaveBeenCalled();
+    });
+
     it('checks the resolved workspace child scope before product-scope fallback', async () => {
       const profileService = module.get<ClientProxy>(
         ServiceTokens.PROFILE_SERVICE
       );
-      jest
-        .spyOn(profileService, 'send')
-        .mockReturnValue(
-          of([
-            {
-              id: 'business-profile',
-              appScope: 'business-site',
-              userId: 'user1',
-            },
-          ])
-        );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          {
+            id: 'business-profile',
+            appScope: 'business-site',
+            userId: 'user1',
+          },
+        ])
+      );
       permissionsClient.send
         .mockReturnValueOnce(
           of({ id: 'business-scope', name: 'business-site' })
@@ -289,17 +315,15 @@ describe('PermissionsGuard', () => {
       const profileService = module.get<ClientProxy>(
         ServiceTokens.PROFILE_SERVICE
       );
-      jest
-        .spyOn(profileService, 'send')
-        .mockReturnValue(
-          of([
-            {
-              id: 'business-profile',
-              appScope: 'business-site',
-              userId: 'user1',
-            },
-          ])
-        );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          {
+            id: 'business-profile',
+            appScope: 'business-site',
+            userId: 'user1',
+          },
+        ])
+      );
       permissionsClient.send
         .mockReturnValueOnce(
           of({ id: 'business-scope', name: 'business-site' })

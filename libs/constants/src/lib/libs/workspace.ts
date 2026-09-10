@@ -3,4 +3,6 @@ export const WorkspaceCommands = {
   ACTIVATE: 'workspace.activate',
   RESOLVE: 'workspace.resolve',
   RESOLVE_BY_SOURCE: 'workspace.resolve-by-source',
+  LIST_OWNED: 'workspace.list-owned',
+  RESOLVE_OWNED: 'workspace.resolve-owned',
 } as const;

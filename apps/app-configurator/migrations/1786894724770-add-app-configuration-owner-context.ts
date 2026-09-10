@@ -6,6 +6,10 @@ export class AddAppConfigurationOwnerContext1786894724770
   name = 'AddAppConfigurationOwnerContext1786894724770';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Legacy configurations predate tenant identity and cannot be attributed
+    // safely to an owner/workspace. They are intentionally removed before the
+    // non-null isolation fields are introduced.
+    await queryRunner.query(`DELETE FROM "app_configuration_entity"`);
     await queryRunner.query(
       `ALTER TABLE "app_configuration_entity" ADD "ownerUserId" character varying NOT NULL`
     );

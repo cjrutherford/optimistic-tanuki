@@ -1,17 +1,41 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import {
   AppConfigReleaseState,
+  APP_ACCESS_POLICIES,
+  AppAccessPolicy,
   ConfigurablePluginManifest,
 } from '@optimistic-tanuki/app-config-models';
+import { AppInstanceEntity } from './app-instance.entity';
 
 @Entity()
-@Index(['ownerProfileId', 'appScope', 'name'], { unique: true })
+@Index(['appInstanceId', 'name'], { unique: true })
 export class AppConfigurationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
   name: string;
+
+  @Column({ type: 'uuid' })
+  workspaceId: string;
+
+  @Column({ type: 'uuid' })
+  appInstanceId: string;
+
+  @ManyToOne(() => AppInstanceEntity)
+  @JoinColumn([
+    { name: 'appInstanceId', referencedColumnName: 'id' },
+    { name: 'workspaceId', referencedColumnName: 'workspaceId' },
+    { name: 'appScope', referencedColumnName: 'appScope' },
+  ])
+  appInstance: AppInstanceEntity;
 
   @Column()
   ownerUserId: string;
@@ -25,7 +49,7 @@ export class AppConfigurationEntity {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, unique: true })
   domain: string;
 
   @Column({ type: 'jsonb' })
@@ -48,6 +72,16 @@ export class AppConfigurationEntity {
 
   @Column({ default: true })
   active: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: [...APP_ACCESS_POLICIES],
+    default: 'public',
+  })
+  accessPolicy: AppAccessPolicy;
+
+  @Column({ default: 1 })
+  revision: number;
 
   @Column({ type: 'jsonb', default: () => "'{}'" })
   release: AppConfigReleaseState;

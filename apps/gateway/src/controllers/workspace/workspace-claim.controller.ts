@@ -16,12 +16,21 @@ import {
   RoleCommands,
   TrainerConfigCommands,
   WorkspaceCommands,
+  getWorkspaceOwnerPermissionContract,
+  WORKSPACE_OWNER_PERMISSION_CONTRACTS,
+  WorkspaceOwnerPermissionContract,
 } from '@optimistic-tanuki/constants';
 import { workspaceScopeName } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
+
+type WorkspaceProvisionBody = {
+  appScope?: string;
+  slug?: string;
+  displayName?: string;
+};
 
 @Controller('workspaces')
 @UseGuards(AuthGuard)
@@ -66,7 +75,9 @@ export class WorkspaceClaimController {
         brand?: { businessName?: string };
       };
     } | null;
-    if (!result?.id || !result.config) {
+    const configId =
+      result?.id ?? (result as { configId?: string } | null)?.configId;
+    if (!configId || !result?.config) {
       throw new NotFoundException('Business-site configuration was not found');
     }
     if (result.config.leadContext?.profileId !== user.profileId) {
@@ -83,27 +94,158 @@ export class WorkspaceClaimController {
         appScope: 'business-site',
         ownerUserId: user.userId,
         ownerProfileId: user.profileId,
-        source: { service: 'store', sourceId: result.id },
+        source: { service: 'store', sourceId: configId },
       })
     );
 
     const activated = await firstValueFrom(
       this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
         workspaceId: workspace.workspaceId,
-        source: { service: 'store', sourceId: result.id },
+        appScope: 'business-site',
+        source: { service: 'store', sourceId: configId },
       })
     );
     await this.ensureWorkspaceOwnerAssignment(
       activated.workspaceId,
-      'Business site',
       user.profileId,
-      'business_site_owner',
-      'business-site'
+      WORKSPACE_OWNER_PERMISSION_CONTRACTS['business-site']
     );
     return {
       workspace: activated,
       returnPath: this.safeReturnPath(body.returnPath),
     };
+  }
+
+  @Post('business-sites/provision')
+  async provisionBusinessSite(
+    @Body() body: WorkspaceProvisionBody,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    this.requireVerifiedEmail(user);
+    const requestedScope = body.appScope?.trim() || appScope;
+    if (requestedScope !== appScope) {
+      throw new ConflictException(
+        'Provisioning app scope must match the authenticated app scope'
+      );
+    }
+
+    if (!['business-site', 'configurable-client'].includes(requestedScope)) {
+      throw new ConflictException(
+        'Workspace provisioning is not enabled for this app scope'
+      );
+    }
+    const ownerContract = getWorkspaceOwnerPermissionContract(requestedScope);
+    if (!ownerContract) {
+      throw new ConflictException(
+        'Workspace provisioning is not enabled for this app scope'
+      );
+    }
+
+    if (requestedScope === 'configurable-client') {
+      const slug =
+        body.slug?.trim() || `owner-${requestedScope}-${user.profileId}`;
+      const displayName =
+        body.displayName?.trim() || 'Configurable Client Workspace';
+      const source = {
+        service: 'app-configurator',
+        sourceId: user.profileId,
+      };
+      const workspace = await firstValueFrom(
+        this.workspaceClient.send(WorkspaceCommands.REGISTER, {
+          kind: 'business-site',
+          slug,
+          displayName,
+          appScope: requestedScope,
+          ownerUserId: user.userId,
+          ownerProfileId: user.profileId,
+          source,
+        })
+      );
+      const activated = await firstValueFrom(
+        this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
+          workspaceId: workspace.workspaceId,
+          appScope: requestedScope,
+          source,
+        })
+      );
+      await this.ensureWorkspaceOwnerAssignment(
+        activated.workspaceId,
+        user.profileId,
+        ownerContract
+      );
+      return { workspace: activated, created: true };
+    }
+
+    type BusinessSiteProvisioningConfig = {
+      site?: { slug?: string };
+      brand?: { businessName?: string };
+    };
+    const existing = (await firstValueFrom(
+      this.storeClient.send(TrainerConfigCommands.GET_CONFIG, {
+        profileId: user.profileId,
+      })
+    )) as {
+      id?: string;
+      configId?: string | null;
+      config?: BusinessSiteProvisioningConfig | null;
+    } | null;
+
+    const created = !existing?.config;
+    let configId = existing?.id ?? existing?.configId ?? undefined;
+    let config = existing?.config ?? undefined;
+    if (!config) {
+      const createdConfig = (await firstValueFrom(
+        this.storeClient.send(TrainerConfigCommands.CREATE_CONFIG, {
+          configKey: `business-site:${user.profileId}`,
+          businessType: 'general',
+          site: { slug: `owner-${user.profileId}`, status: 'draft' },
+          leadContext: {
+            profileId: user.profileId,
+            appScope: 'business-site',
+          },
+          brand: { businessName: 'Your Business' },
+        })
+      )) as {
+        id?: string;
+        configId?: string;
+        config?: BusinessSiteProvisioningConfig;
+      };
+      configId = createdConfig.id ?? createdConfig.configId;
+      config = createdConfig.config;
+    }
+    const slug = config?.site?.slug?.trim();
+    if (!configId || !config || !slug) {
+      throw new NotFoundException(
+        'Business-site provisioning did not return a stable configuration'
+      );
+    }
+
+    const workspace = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.REGISTER, {
+        kind: 'business-site',
+        slug,
+        displayName: config.brand?.businessName?.trim() || 'Your Business',
+        appScope: 'business-site',
+        ownerUserId: user.userId,
+        ownerProfileId: user.profileId,
+        source: { service: 'store', sourceId: configId },
+      })
+    );
+    const activated = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
+        workspaceId: workspace.workspaceId,
+        appScope: 'business-site',
+        source: { service: 'store', sourceId: configId },
+      })
+    );
+    await this.ensureWorkspaceOwnerAssignment(
+      activated.workspaceId,
+      user.profileId,
+      WORKSPACE_OWNER_PERMISSION_CONTRACTS['business-site']
+    );
+
+    return { workspace: activated, created };
   }
 
   @Post('communities/claim')
@@ -151,15 +293,14 @@ export class WorkspaceClaimController {
     const activated = await firstValueFrom(
       this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
         workspaceId: workspace.workspaceId,
+        appScope,
         source: { service: 'social', sourceId: community.id },
       })
     );
     await this.ensureWorkspaceOwnerAssignment(
       activated.workspaceId,
-      'Community',
       user.profileId,
-      'community_manager',
-      appScope
+      { label: 'Community', roleName: 'community_manager', appScope }
     );
     return {
       workspace: activated,
@@ -186,10 +327,14 @@ export class WorkspaceClaimController {
 
   private async ensureWorkspaceOwnerAssignment(
     workspaceId: string,
-    label: string,
     profileId: string,
-    roleName: string,
-    productAppScope: string
+    contract:
+      | WorkspaceOwnerPermissionContract
+      | {
+          label: string;
+          roleName: string;
+          appScope: string;
+        }
   ): Promise<void> {
     const name = workspaceScopeName(workspaceId);
     const existing = await firstValueFrom(
@@ -202,7 +347,7 @@ export class WorkspaceClaimController {
           { cmd: AppScopeCommands.Create },
           {
             name,
-            description: `${label} workspace permission scope`,
+            description: `${contract.label} workspace permission scope`,
             active: true,
           }
         )
@@ -210,7 +355,7 @@ export class WorkspaceClaimController {
     const ownerRole = await firstValueFrom(
       this.permissionsClient.send(
         { cmd: RoleCommands.GetByName },
-        { name: roleName, appScope: productAppScope }
+        { name: contract.roleName, appScope: contract.appScope }
       )
     );
     if (!ownerRole?.id || !workspaceScope?.id) {

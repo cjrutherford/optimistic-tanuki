@@ -7,7 +7,9 @@ import {
 export const WORKSPACE_CONTEXT_KEY = 'workspace-context';
 
 export interface WorkspaceContextRequirement {
-  kind: WorkspaceKind;
+  /** A single kind for legacy routes, or an explicit allow-list for polymorphic routes. */
+  kind?: WorkspaceKind;
+  supportedKinds?: readonly WorkspaceKind[];
   source: 'params' | 'body' | 'query';
   path: string;
   strict?: boolean;

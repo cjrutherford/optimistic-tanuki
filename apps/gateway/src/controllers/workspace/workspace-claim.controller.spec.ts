@@ -28,11 +28,382 @@ describe('WorkspaceClaimController', () => {
         .mockReturnValueOnce(of({ id: 'assignment-1' })),
     } as unknown as jest.Mocked<ClientProxy>);
 
+  it('provisions a configurable-client workspace from an explicit scope-specific payload', async () => {
+    const permissionsClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of(null))
+        .mockReturnValueOnce(of({ id: 'workspace-scope-1' }))
+        .mockReturnValueOnce(of({ id: 'owner-role-1' }))
+        .mockReturnValueOnce(of({ id: 'assignment-1' })),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const workspaceClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(
+          of({
+            workspaceId: '123e4567-e89b-12d3-a456-426614174010',
+            slug: 'owner-configurable-client-profile-1',
+            status: 'draft',
+          })
+        )
+        .mockReturnValueOnce(
+          of({
+            workspaceId: '123e4567-e89b-12d3-a456-426614174011',
+            slug: 'owner-configurable-client-profile-1',
+            status: 'active',
+          })
+        ),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      {} as ClientProxy,
+      workspaceClient,
+      {} as ClientProxy,
+      permissionsClient
+    );
+
+    await expect(
+      controller.provisionBusinessSite(
+        {
+          appScope: 'configurable-client',
+          slug: 'owner-configurable-client-profile-1',
+          displayName: 'Configurable Client Workspace',
+        },
+        user,
+        'configurable-client'
+      )
+    ).resolves.toEqual({
+      workspace: {
+        workspaceId: '123e4567-e89b-12d3-a456-426614174011',
+        slug: 'owner-configurable-client-profile-1',
+        status: 'active',
+      },
+      created: true,
+    });
+
+    expect(workspaceClient.send).toHaveBeenNthCalledWith(
+      1,
+      WorkspaceCommands.REGISTER,
+      expect.objectContaining({
+        kind: 'business-site',
+        slug: 'owner-configurable-client-profile-1',
+        displayName: 'Configurable Client Workspace',
+        appScope: 'configurable-client',
+        ownerUserId: 'user-1',
+        ownerProfileId: 'profile-1',
+        source: {
+          service: 'app-configurator',
+          sourceId: 'profile-1',
+        },
+      })
+    );
+    expect(workspaceClient.send).toHaveBeenNthCalledWith(
+      2,
+      WorkspaceCommands.ACTIVATE,
+      {
+        workspaceId: '123e4567-e89b-12d3-a456-426614174010',
+        appScope: 'configurable-client',
+        source: { service: 'app-configurator', sourceId: 'profile-1' },
+      }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: AppScopeCommands.GetByName },
+      { name: 'workspace:123e4567-e89b-12d3-a456-426614174011' }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: AppScopeCommands.Create },
+      {
+        name: 'workspace:123e4567-e89b-12d3-a456-426614174011',
+        description: 'Configurable client workspace permission scope',
+        active: true,
+      }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      3,
+      { cmd: RoleCommands.GetByName },
+      { name: 'configurable_client_owner', appScope: 'configurable-client' }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      4,
+      { cmd: RoleCommands.Assign },
+      {
+        roleId: 'owner-role-1',
+        profileId: 'profile-1',
+        appScopeId: 'workspace-scope-1',
+      }
+    );
+  });
+
+  it('reuses the same workspace-scoped configurable-client owner assignment on retries', async () => {
+    const workspaceId = '123e4567-e89b-12d3-a456-426614174014';
+    const workspaceScopeId = 'workspace-scope-4';
+    const assignment = { id: 'assignment-4' };
+    const permissionsClient = {
+      send: jest.fn((pattern: { cmd: string }, payload: any) => {
+        if (pattern.cmd === AppScopeCommands.GetByName) {
+          return of({ id: workspaceScopeId, name: payload.name });
+        }
+        if (pattern.cmd === RoleCommands.GetByName) {
+          return of({ id: 'owner-role-4', name: payload.name });
+        }
+        if (pattern.cmd === RoleCommands.Assign) {
+          return of(assignment);
+        }
+        return of(null);
+      }),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const workspaceClient = {
+      send: jest.fn().mockReturnValue(of({ workspaceId, status: 'active' })),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      {} as ClientProxy,
+      workspaceClient,
+      {} as ClientProxy,
+      permissionsClient
+    );
+
+    await controller.provisionBusinessSite(
+      { appScope: 'configurable-client', slug: 'retryable-owner-workspace' },
+      user,
+      'configurable-client'
+    );
+    await controller.provisionBusinessSite(
+      { appScope: 'configurable-client', slug: 'retryable-owner-workspace' },
+      user,
+      'configurable-client'
+    );
+
+    expect(permissionsClient.send).not.toHaveBeenCalledWith(
+      { cmd: AppScopeCommands.Create },
+      expect.anything()
+    );
+    expect(permissionsClient.send).toHaveBeenCalledTimes(6);
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: RoleCommands.GetByName },
+      { name: 'configurable_client_owner', appScope: 'configurable-client' }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      3,
+      { cmd: RoleCommands.Assign },
+      {
+        roleId: 'owner-role-4',
+        profileId: 'profile-1',
+        appScopeId: workspaceScopeId,
+      }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      6,
+      { cmd: RoleCommands.Assign },
+      {
+        roleId: 'owner-role-4',
+        profileId: 'profile-1',
+        appScopeId: workspaceScopeId,
+      }
+    );
+  });
+
+  it('does not assign permissions after a failed configurable-client activation and repairs on retry', async () => {
+    const workspaceId = '123e4567-e89b-12d3-a456-426614174012';
+    const workspaceClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of({ workspaceId, status: 'draft' }))
+        .mockReturnValueOnce({
+          subscribe: () => {
+            throw new Error('activation unavailable');
+          },
+        })
+        .mockReturnValueOnce(of({ workspaceId, status: 'draft' }))
+        .mockReturnValueOnce(of({ workspaceId, status: 'active' })),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const permissionsClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of(null))
+        .mockReturnValueOnce(of({ id: 'workspace-scope-2' }))
+        .mockReturnValueOnce(of({ id: 'owner-role-2' }))
+        .mockReturnValueOnce(of({ id: 'assignment-2' })),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      {} as ClientProxy,
+      workspaceClient,
+      {} as ClientProxy,
+      permissionsClient
+    );
+
+    await expect(
+      controller.provisionBusinessSite(
+        {
+          appScope: 'configurable-client',
+          slug: 'retryable-configurable-client',
+        },
+        user,
+        'configurable-client'
+      )
+    ).rejects.toThrow('activation unavailable');
+    expect(permissionsClient.send).not.toHaveBeenCalled();
+
+    await expect(
+      controller.provisionBusinessSite(
+        {
+          appScope: 'configurable-client',
+          slug: 'retryable-configurable-client',
+        },
+        user,
+        'configurable-client'
+      )
+    ).resolves.toEqual({
+      workspace: { workspaceId, status: 'active' },
+      created: true,
+    });
+    expect(permissionsClient.send).toHaveBeenCalledTimes(4);
+  });
+
+  it('does not delete the workspace when owner assignment fails so retry can repair it', async () => {
+    const workspaceId = '123e4567-e89b-12d3-a456-426614174013';
+    const workspaceClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of({ workspaceId, status: 'draft' }))
+        .mockReturnValueOnce(of({ workspaceId, status: 'active' })),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const permissionsClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of({ id: 'workspace-scope-3' }))
+        .mockReturnValueOnce(of({ id: 'configurable-owner-role-1' }))
+        .mockReturnValueOnce({
+          subscribe: () => {
+            throw new Error('assignment unavailable');
+          },
+        }),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      {} as ClientProxy,
+      workspaceClient,
+      {} as ClientProxy,
+      permissionsClient
+    );
+
+    await expect(
+      controller.provisionBusinessSite(
+        { appScope: 'configurable-client', slug: 'assignment-retry' },
+        user,
+        'configurable-client'
+      )
+    ).rejects.toThrow('assignment unavailable');
+
+    expect(workspaceClient.send).toHaveBeenCalledTimes(2);
+    expect(workspaceClient.send.mock.calls.map(([command]) => command)).toEqual(
+      [WorkspaceCommands.REGISTER, WorkspaceCommands.ACTIVATE]
+    );
+  });
+
+  it('rejects a provisioning body whose app scope differs from the authenticated scope', async () => {
+    const workspaceClient = {
+      send: jest.fn(),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      {} as ClientProxy,
+      workspaceClient,
+      {} as ClientProxy,
+      {} as ClientProxy
+    );
+
+    await expect(
+      controller.provisionBusinessSite(
+        { appScope: 'business-site' },
+        user,
+        'configurable-client'
+      )
+    ).rejects.toThrow(
+      'Provisioning app scope must match the authenticated app scope'
+    );
+    expect(workspaceClient.send).not.toHaveBeenCalled();
+  });
+
+  it('provisions an idempotent private business-site workspace from the verified owner profile', async () => {
+    const storeClient = {
+      send: jest.fn((command: string) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({ configId: null, config: null });
+        }
+        if (command === TrainerConfigCommands.CREATE_CONFIG) {
+          return of({
+            id: 'config-1',
+            config: {
+              site: { slug: 'owner-profile-1', status: 'draft' },
+              brand: { businessName: 'Your Business' },
+            },
+          });
+        }
+        return of(null);
+      }),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const workspaceClient = {
+      send: jest.fn().mockReturnValue(
+        of({
+          workspaceId: '123e4567-e89b-12d3-a456-426614174000',
+          status: 'active',
+        })
+      ),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new WorkspaceClaimController(
+      storeClient,
+      workspaceClient,
+      {} as ClientProxy,
+      createPermissionsClient()
+    );
+
+    await expect(
+      controller.provisionBusinessSite({}, user, 'business-site')
+    ).resolves.toEqual({
+      workspace: {
+        workspaceId: '123e4567-e89b-12d3-a456-426614174000',
+        status: 'active',
+      },
+      created: true,
+    });
+
+    expect(storeClient.send).toHaveBeenNthCalledWith(
+      1,
+      TrainerConfigCommands.GET_CONFIG,
+      { profileId: 'profile-1' }
+    );
+    expect(storeClient.send).toHaveBeenNthCalledWith(
+      2,
+      TrainerConfigCommands.CREATE_CONFIG,
+      {
+        configKey: 'business-site:profile-1',
+        businessType: 'general',
+        site: { slug: 'owner-profile-1', status: 'draft' },
+        leadContext: { profileId: 'profile-1', appScope: 'business-site' },
+        brand: { businessName: 'Your Business' },
+      }
+    );
+    expect(workspaceClient.send).toHaveBeenNthCalledWith(
+      1,
+      WorkspaceCommands.REGISTER,
+      {
+        kind: 'business-site',
+        slug: 'owner-profile-1',
+        displayName: 'Your Business',
+        appScope: 'business-site',
+        ownerUserId: 'user-1',
+        ownerProfileId: 'profile-1',
+        source: { service: 'store', sourceId: 'config-1' },
+      }
+    );
+  });
+
   it('derives business workspace identity from the verified owner config and activates it', async () => {
     const storeClient = {
       send: jest.fn().mockReturnValue(
         of({
-          id: 'config-1',
+          configId: 'config-1',
           config: {
             leadContext: { profileId: 'profile-1', appScope: 'business-site' },
             brand: { businessName: 'North Star Coaching' },
@@ -41,14 +412,12 @@ describe('WorkspaceClaimController', () => {
       ),
     } as unknown as jest.Mocked<ClientProxy>;
     const workspaceClient = {
-      send: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            workspaceId: '123e4567-e89b-12d3-a456-426614174000',
-            status: 'active',
-          })
-        ),
+      send: jest.fn().mockReturnValue(
+        of({
+          workspaceId: '123e4567-e89b-12d3-a456-426614174000',
+          status: 'active',
+        })
+      ),
     } as unknown as jest.Mocked<ClientProxy>;
     const controller = new WorkspaceClaimController(
       storeClient,
@@ -96,6 +465,7 @@ describe('WorkspaceClaimController', () => {
       WorkspaceCommands.ACTIVATE,
       {
         workspaceId: '123e4567-e89b-12d3-a456-426614174000',
+        appScope: 'business-site',
         source: { service: 'store', sourceId: 'config-1' },
       }
     );
@@ -231,14 +601,12 @@ describe('WorkspaceClaimController', () => {
       ),
     } as unknown as jest.Mocked<ClientProxy>;
     const workspaceClient = {
-      send: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            workspaceId: '123e4567-e89b-12d3-a456-426614174000',
-            status: 'active',
-          })
-        ),
+      send: jest.fn().mockReturnValue(
+        of({
+          workspaceId: '123e4567-e89b-12d3-a456-426614174000',
+          status: 'active',
+        })
+      ),
     } as unknown as jest.Mocked<ClientProxy>;
     const controller = new WorkspaceClaimController(
       storeClient,
@@ -341,14 +709,12 @@ describe('WorkspaceClaimController', () => {
       ),
     } as unknown as jest.Mocked<ClientProxy>;
     const workspaceClient = {
-      send: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            workspaceId: '123e4567-e89b-12d3-a456-426614174001',
-            status: 'active',
-          })
-        ),
+      send: jest.fn().mockReturnValue(
+        of({
+          workspaceId: '123e4567-e89b-12d3-a456-426614174001',
+          status: 'active',
+        })
+      ),
     } as unknown as jest.Mocked<ClientProxy>;
     const controller = new WorkspaceClaimController(
       {} as ClientProxy,

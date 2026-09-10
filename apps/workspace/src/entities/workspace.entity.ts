@@ -13,8 +13,8 @@ import {
 } from '@optimistic-tanuki/models';
 
 @Entity('workspaces')
-@Index(['kind', 'slug'], { unique: true })
-@Index(['sourceService', 'sourceId'], { unique: true })
+@Index(['kind', 'slug', 'appScope'], { unique: true })
+@Index(['sourceService', 'sourceId', 'appScope'], { unique: true })
 export class Workspace {
   @PrimaryGeneratedColumn('uuid')
   id: string;
