@@ -1,5 +1,6 @@
 import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
 import { appRoutes } from './app.routes';
+import { CatalogComponent } from './pages/catalog/catalog.component';
 
 describe('store-client appRoutes', () => {
   it('registers the shared OAuth popup callback before the root redirect', () => {
@@ -12,5 +13,14 @@ describe('store-client appRoutes', () => {
     expect(
       appRoutes.findIndex((route) => route.path === 'oauth/callback')
     ).toBeLessThan(appRoutes.findIndex((route) => route.path === ''));
+  });
+
+  it('keeps the direct catalog entry public', () => {
+    const route = appRoutes.find((candidate) => candidate.path === 'catalog');
+
+    expect(route).toEqual(
+      expect.objectContaining({ component: CatalogComponent })
+    );
+    expect(route?.canActivate).toBeUndefined();
   });
 });

@@ -37,6 +37,11 @@ export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
     invoices: { enabled: false },
     testimonials: { enabled: true },
   },
+  plugins: {
+    schemaVersion: 1,
+    surfaceType: 'business-site',
+    capabilities: {},
+  },
   serviceCatalog: {
     source: 'manual',
   },

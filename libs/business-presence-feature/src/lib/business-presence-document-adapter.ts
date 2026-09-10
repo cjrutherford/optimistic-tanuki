@@ -6,12 +6,26 @@ import {
 import type {
   BusinessSiteConfig,
   LandingSection,
-} from '@optimistic-tanuki/business-data-access';
-import {
-  cloneBusinessSiteConfig,
-  normalizeLandingSections,
-} from '../../../business-data-access/src/lib/business-site.config';
+} from '@optimistic-tanuki/configurable-plugin-contracts';
 import { supportsBusinessPresenceSection } from './business-presence-runtime';
+
+const DEFAULT_DOCUMENT_THEME: BusinessSiteConfig['theme'] = {
+  mode: 'light',
+  personalityId: 'professional',
+  primaryColor: '#1f7a63',
+};
+
+function cloneDocumentMetadata(
+  config: Partial<BusinessSiteConfig>
+): BusinessSiteConfig {
+  return structuredClone(config) as BusinessSiteConfig;
+}
+
+function normalizeDocumentSections(
+  sections: LandingSection[]
+): LandingSection[] {
+  return sections.map((section, index) => ({ ...section, order: index }));
+}
 
 function landingSectionToBlock(section: LandingSection): BlockInstance {
   const {
@@ -96,16 +110,21 @@ export function configDocumentToBusinessSiteConfig(
 ): BusinessSiteConfig {
   const metadata = (document.metadata?.['businessSite'] ??
     {}) as Partial<BusinessSiteConfig>;
-  const base = cloneBusinessSiteConfig(metadata);
+  const base = cloneDocumentMetadata(metadata);
 
   base.landingPage = {
     ...base.landingPage,
     layout: document.layout as BusinessSiteConfig['landingPage']['layout'],
-    sections: normalizeLandingSections(
+    sections: normalizeDocumentSections(
       normalizeBlockOrder(document.blocks)
         .filter((block) => supportsBusinessPresenceSection(block.type))
         .map(blockToLandingSection)
     ),
+  };
+
+  base.theme = {
+    ...DEFAULT_DOCUMENT_THEME,
+    ...base.theme,
   };
 
   if (document.theme?.primaryColor) {

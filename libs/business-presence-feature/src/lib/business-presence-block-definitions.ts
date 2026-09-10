@@ -3,7 +3,7 @@ import {
   type BlockFieldDefinition,
 } from '@optimistic-tanuki/app-config-models';
 
-import type { LandingSection } from '@optimistic-tanuki/business-data-access';
+import type { LandingSection } from '@optimistic-tanuki/configurable-plugin-contracts';
 
 const COMMON_SECTION_FIELDS: BlockFieldDefinition[] = [
   {
@@ -143,6 +143,15 @@ export const BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS: Record<
     name: 'Storefront',
     category: 'Commerce',
     description: 'Embedded storefront section powered by store products.',
+    renderContexts: ['landing-page'],
+    fields: [...COMMON_SECTION_FIELDS, ...MOTION_SECTION_FIELDS],
+  },
+  blog: {
+    type: 'blog',
+    name: 'Blog posts',
+    category: 'Publishing',
+    description:
+      'Catalog-scoped blog section powered by the referenced Blog catalog.',
     renderContexts: ['landing-page'],
     fields: [...COMMON_SECTION_FIELDS, ...MOTION_SECTION_FIELDS],
   },

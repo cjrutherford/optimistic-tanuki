@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { Subject, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import {
   BusinessApiService,
@@ -53,6 +53,58 @@ describe('BusinessSiteConfigStore', () => {
     expect(getSiteConfigForSlug).toHaveBeenLastCalledWith(
       'north-star-advisory'
     );
+  });
+
+  it('refetches owner-scoped config when an anonymous slug cache is followed by owner initialization', () => {
+    const ownerToken = signal<string | null>(null);
+    const getSiteConfigForSlug = jest.fn(() =>
+      ownerToken()
+        ? of({
+            configId: 'cfg-owner',
+            config: {
+              site: { slug: 'steady-hand-contracting' },
+              brand: { businessName: 'Steady Hand Contracting' },
+            } as SiteConfigResponse['config'],
+          })
+        : of({
+            configId: 'cfg-north-star',
+            config: {
+              site: { slug: 'steady-hand-contracting' },
+              brand: { businessName: 'North Star Advisory' },
+            } as SiteConfigResponse['config'],
+          })
+    );
+
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessSiteConfigStore,
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getSiteConfigForSlug,
+            getSiteConfig: jest.fn(),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            token: ownerToken,
+            clientToken: signal<string | null>(null),
+          },
+        },
+      ],
+    });
+
+    const store = TestBed.inject(BusinessSiteConfigStore);
+    store.fetch(false, 'steady-hand-contracting').subscribe();
+    expect(store.site().brand.businessName).toBe('North Star Advisory');
+
+    ownerToken.set('owner-token');
+    store.fetch(false, 'steady-hand-contracting').subscribe();
+
+    expect(getSiteConfigForSlug).toHaveBeenCalledTimes(3);
+    expect(store.configId()).toBe('cfg-owner');
+    expect(store.site().brand.businessName).toBe('Steady Hand Contracting');
   });
 
   it('falls back to the base site-config request when slug loading is unavailable', () => {

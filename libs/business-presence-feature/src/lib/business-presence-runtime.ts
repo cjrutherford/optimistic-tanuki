@@ -1,4 +1,4 @@
-import type { LandingSection } from '@optimistic-tanuki/business-data-access';
+import type { LandingSection } from '@optimistic-tanuki/configurable-plugin-contracts';
 
 /**
  * Section types deliberately supported by the business presence public and
@@ -10,6 +10,7 @@ export const BUSINESS_PRESENCE_RUNTIME_SECTION_TYPES = [
   'about',
   'services',
   'store',
+  'blog',
   'testimonials',
   'contact',
   'booking',

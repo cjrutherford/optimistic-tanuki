@@ -124,6 +124,56 @@ describe('business-site block adapters', () => {
     ]);
   });
 
+  it('round-trips blog sections without dropping their configuration or order', () => {
+    const sourceConfig: BusinessSiteConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'hero',
+            type: 'hero',
+            title: 'Welcome',
+            enabled: true,
+            order: 8,
+          },
+          {
+            id: 'blog-posts',
+            type: 'blog',
+            title: 'Field notes',
+            enabled: false,
+            order: 2,
+            body: 'The latest thinking from our studio.',
+            ctaLabel: 'Read all notes',
+            ctaHref: '/notes',
+          },
+        ],
+      },
+    };
+
+    const config = configDocumentToBusinessSiteConfig(
+      businessSiteConfigToConfigDocument(sourceConfig)
+    );
+
+    expect(config.landingPage.sections).toEqual([
+      expect.objectContaining({
+        id: 'blog-posts',
+        type: 'blog',
+        title: 'Field notes',
+        enabled: false,
+        order: 0,
+        body: 'The latest thinking from our studio.',
+        ctaLabel: 'Read all notes',
+        ctaHref: '/notes',
+      }),
+      expect.objectContaining({
+        id: 'hero',
+        type: 'hero',
+        order: 1,
+      }),
+    ]);
+  });
+
   it('retains business defaults when document metadata is incomplete', () => {
     const config = configDocumentToBusinessSiteConfig({
       layout: 'single',
@@ -190,6 +240,13 @@ describe('business-site block adapters', () => {
           label: 'Columns',
         }),
       ])
+    );
+    expect(BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS.blog).toEqual(
+      expect.objectContaining({
+        type: 'blog',
+        category: 'Publishing',
+        description: expect.stringContaining('catalog'),
+      })
     );
   });
 });

@@ -24,6 +24,7 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
+import { DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry-backend';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
@@ -140,6 +141,9 @@ describe('AuthenticationController', () => {
                   from: 'no-reply@christopherrutherford.net',
                 },
               },
+              ...DEFAULT_APP_REGISTRY.apps.filter(
+                (app) => app.appId === 'configurable-client'
+              ),
             ],
           },
         },
@@ -208,6 +212,101 @@ describe('AuthenticationController', () => {
       true
     );
     expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
+  });
+
+  it('rejects invalid credentials before invoking account bootstrap', async () => {
+    const loginRequest: LoginRequest = {
+      email: 'invalid@test.com',
+      password: 'wrong-password',
+    };
+    (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('Invalid password');
+    });
+
+    await expect(
+      controller.loginUser(loginRequest, 'test')
+    ).rejects.toMatchObject({
+      status: 500,
+    });
+    expect(loginBootstrap.login).not.toHaveBeenCalled();
+  });
+
+  it('authenticates before invoking account bootstrap', async () => {
+    const callOrder: string[] = [];
+    (clientProxy.send as jest.Mock).mockImplementation(
+      (pattern: { cmd: string }) => {
+        callOrder.push(pattern.cmd);
+        return of({ code: 0, data: { newToken: 'authenticated-token' } });
+      }
+    );
+    loginBootstrap.login.mockImplementation(async () => {
+      callOrder.push('bootstrap');
+      return { code: 0, data: { newToken: 'authenticated-token' } };
+    });
+
+    await expect(
+      controller.loginUser(
+        { email: 'valid@test.com', password: 'correct-password' },
+        'test'
+      )
+    ).resolves.toEqual({ code: 0, data: { newToken: 'authenticated-token' } });
+    expect(callOrder).toEqual([AuthCommands.Login, 'bootstrap']);
+  });
+
+  it('returns bounded service unavailability when bootstrap does not emit', async () => {
+    jest.useFakeTimers();
+    loginBootstrap.login.mockReturnValueOnce(new Promise(() => undefined));
+
+    const loginPromise = controller.loginUser(
+      { email: 'valid@test.com', password: 'correct-password' },
+      'test'
+    );
+    const rejection = expect(loginPromise).rejects.toMatchObject({
+      status: 503,
+    });
+
+    await jest.advanceTimersByTimeAsync(5000);
+    await rejection;
+    jest.useRealTimers();
+  });
+
+  it('preserves the existing internal-error convention for a rejected bootstrap', async () => {
+    loginBootstrap.login.mockRejectedValueOnce(
+      new Error('profile service failed')
+    );
+
+    await expect(
+      controller.loginUser(
+        { email: 'valid@test.com', password: 'correct-password' },
+        'test'
+      )
+    ).rejects.toMatchObject({
+      status: 500,
+      message: 'Login failed: profile service failed',
+    });
+  });
+
+  it('does not log passwords or issued tokens during login', async () => {
+    const debugSpy = jest.spyOn(Logger.prototype, 'debug');
+    const errorSpy = jest.spyOn(Logger.prototype, 'error');
+    const password = 'correct-password';
+    const token = 'authenticated-token';
+    loginBootstrap.login.mockResolvedValueOnce({
+      code: 0,
+      data: { newToken: token },
+    });
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ code: 0, data: { newToken: token } })
+    );
+
+    await controller.loginUser({ email: 'valid@test.com', password }, 'test');
+
+    expect(debugSpy.mock.calls.flat().join(' ')).not.toContain(password);
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(password);
+    expect(debugSpy.mock.calls.flat().join(' ')).not.toContain(token);
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(token);
+    debugSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   it('contains a cookie-mode login token in an HttpOnly gateway cookie', async () => {
@@ -403,6 +502,38 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('registers configurable-client through its explicit email authentication configuration', async () => {
+    const requestSpy = jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockResolvedValue({ accepted: true });
+    const registration: RegisterRequest = {
+      fn: 'Configurable',
+      ln: 'Owner',
+      email: 'configurable-owner@example.com',
+      password: 'long-password',
+      confirm: 'long-password',
+      bio: '',
+    };
+
+    await expect(
+      controller.registerUser(registration, 'configurable-client')
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ verificationPending: true }),
+      })
+    );
+
+    expect(registerBootstrap.register).toHaveBeenCalledWith(
+      registration,
+      'configurable-client'
+    );
+    expect(requestSpy).toHaveBeenCalledWith(
+      'configurable-client',
+      'verification',
+      { email: registration.email, returnPath: '/' }
+    );
+  });
+
   it('keeps an unverified registration usable for a resend when delivery fails', async () => {
     jest
       .spyOn(controller, 'requestEmailAction')
@@ -439,9 +570,7 @@ describe('AuthenticationController', () => {
           confirm: 'long-password',
           bio: '',
         },
-        null as any,
-        undefined,
-        'https://unregistered.example'
+        'unknown-app'
       )
     ).rejects.toThrow('Email authentication is not configured');
 
@@ -614,17 +743,39 @@ describe('AuthenticationController', () => {
         ]),
       })
     );
-    expect(storeService.send).toHaveBeenCalledWith(
-      ProductCommands.FIND_OWNER_PRODUCTS,
-      'user-1'
+    expect(storeService.send).not.toHaveBeenCalled();
+  });
+
+  it('does not grant configurable-client owner access at the app scope during login-time claiming', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([
+        {
+          id: 'configurable-profile-1',
+          userId: 'user-1',
+          appScope: 'configurable-client',
+        },
+      ])
     );
-    expect(storeService.send).toHaveBeenCalledWith(
-      ProductCommands.CREATE_PRODUCT,
-      expect.objectContaining({
-        ownerId: 'user-1',
-        type: 'service',
-        active: true,
-      })
+
+    await expect(
+      controller.claimOwnerAccess(
+        {
+          userId: 'user-1',
+          email: 'owner@example.com',
+          profileId: 'configurable-profile-1',
+        } as any,
+        'configurable-client'
+      )
+    ).resolves.toEqual({
+      profileId: 'configurable-profile-1',
+      appScope: 'configurable-client',
+      ownerAccess: true,
+    });
+
+    const options = roleInitService.processNow.mock.calls[0][0];
+    expect(options.scopeName).toBe('configurable-client');
+    expect(options.assignments).not.toContainEqual(
+      expect.objectContaining({ roleName: 'configurable_client_owner' })
     );
   });
 
@@ -643,7 +794,7 @@ describe('AuthenticationController', () => {
     expect(roleInitService.processNow).not.toHaveBeenCalled();
   });
 
-  it('does not seed starter products when the owner already has products', async () => {
+  it('does not create owner-global products before a business workspace exists', async () => {
     (profileService.send as jest.Mock).mockReturnValueOnce(
       of([
         {
@@ -653,20 +804,6 @@ describe('AuthenticationController', () => {
         },
       ])
     );
-    (storeService.send as jest.Mock).mockImplementation((command: any) => {
-      if (command === ProductCommands.FIND_OWNER_PRODUCTS) {
-        return of([
-          {
-            id: 'product-1',
-            ownerId: 'user-1',
-            type: 'service',
-          },
-        ]);
-      }
-
-      return of({});
-    });
-
     await controller.claimOwnerAccess(
       {
         userId: 'user-1',
@@ -676,14 +813,7 @@ describe('AuthenticationController', () => {
       'business-site'
     );
 
-    expect(storeService.send).toHaveBeenCalledWith(
-      ProductCommands.FIND_OWNER_PRODUCTS,
-      'user-1'
-    );
-    expect(storeService.send).not.toHaveBeenCalledWith(
-      ProductCommands.CREATE_PRODUCT,
-      expect.anything()
-    );
+    expect(storeService.send).not.toHaveBeenCalled();
   });
 
   it('provisions solo finance permissions during fin-commander registration', async () => {

@@ -182,6 +182,7 @@ export class BusinessOwnerRegisterPageComponent {
           throw err;
         }),
         switchMap(() => this.auth.claimOwnerAccess()),
+        switchMap(() => this.api.provisionBusinessSite()),
         switchMap(() => this.api.getSiteConfig()),
         catchError((err) => {
           this.loading.set(false);
@@ -206,6 +207,11 @@ export class BusinessOwnerRegisterPageComponent {
         ?.message ||
       (err as { message?: string })?.message ||
       '';
-    return message.toLowerCase().includes('already exists');
+    const normalizedMessage = Array.isArray(message)
+      ? message.join(' ')
+      : typeof message === 'string'
+      ? message
+      : '';
+    return normalizedMessage.toLowerCase().includes('already exists');
   }
 }

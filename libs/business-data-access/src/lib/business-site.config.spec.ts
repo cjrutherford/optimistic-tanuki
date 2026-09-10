@@ -40,6 +40,39 @@ describe('business-site.config', () => {
     );
   });
 
+  it('preserves the selected store catalog during merge', () => {
+    const merged = mergeBusinessSiteConfig({
+      serviceCatalog: { source: 'store', catalogId: 'catalog-north' },
+    } as Partial<BusinessSiteConfig>);
+
+    expect(merged.serviceCatalog).toEqual({
+      source: 'store',
+      catalogId: 'catalog-north',
+    });
+  });
+
+  it('preserves the published blogging.posts catalog reference during merge', () => {
+    const merged = mergeBusinessSiteConfig({
+      plugins: {
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: {
+          'blogging.posts': {
+            enabled: true,
+            placement: 'public-content',
+            resourceRef: { type: 'blog-catalog', id: 'catalog-north' },
+          },
+        },
+      },
+    } as Partial<BusinessSiteConfig>);
+
+    expect(merged.plugins.capabilities['blogging.posts']).toEqual({
+      enabled: true,
+      placement: 'public-content',
+      resourceRef: { type: 'blog-catalog', id: 'catalog-north' },
+    });
+  });
+
   it('preserves landing layout, custom sections, business type, and client capabilities during merge', () => {
     const merged = mergeBusinessSiteConfig({
       businessType: 'consulting',

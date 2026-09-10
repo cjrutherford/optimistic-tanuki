@@ -43,6 +43,8 @@ export class BusinessSiteConfigStore {
   private readonly _loadError = signal<string | null>(null);
   private requestVersion = 0;
   private inFlight$: Observable<BusinessSiteConfig> | null = null;
+  private inFlightAuthScope: string | null | undefined;
+  private loadedAuthScope: string | null | undefined;
 
   readonly site = this._site.asReadonly();
   readonly configId = this._configId.asReadonly();
@@ -67,26 +69,55 @@ export class BusinessSiteConfigStore {
     return typeof clientTokenSignal === 'function' ? clientTokenSignal() : null;
   }
 
+  private readAuthScope(): string | null {
+    const auth = this.auth as Partial<BusinessAuthService> & {
+      user?: () => {
+        profileId?: string;
+        userId?: string;
+        email?: string;
+      } | null;
+      clientUser?: () => {
+        profileId?: string;
+        userId?: string;
+        email?: string;
+      } | null;
+    };
+    const owner = typeof auth.user === 'function' ? auth.user() : null;
+    if (owner) {
+      return `owner:${
+        owner.profileId || owner.userId || owner.email || 'authenticated'
+      }`;
+    }
+    const client =
+      typeof auth.clientUser === 'function' ? auth.clientUser() : null;
+    if (client) {
+      return `client:${
+        client.profileId || client.userId || client.email || 'authenticated'
+      }`;
+    }
+    const ownerToken = this.readOwnerToken();
+    if (ownerToken) return `owner-token:${ownerToken}`;
+    const clientToken = this.readClientToken();
+    return clientToken ? `client-token:${clientToken}` : null;
+  }
+
   constructor() {
     this.fetch().subscribe();
 
-    let previousOwnerToken = this.readOwnerToken();
-    let previousClientToken = this.readClientToken();
+    let previousAuthScope = this.readAuthScope();
 
     // Refresh owner/client scoped config when auth state changes.
     effect(() => {
-      const ownerToken = this.readOwnerToken();
-      const clientToken = this.readClientToken();
-      const ownerChanged = ownerToken !== previousOwnerToken;
-      const clientChanged = clientToken !== previousClientToken;
+      const authScope = this.readAuthScope();
+      const authChanged = authScope !== previousAuthScope;
 
-      previousOwnerToken = ownerToken;
-      previousClientToken = clientToken;
+      previousAuthScope = authScope;
 
-      if (ownerChanged || clientChanged) {
+      if (authChanged) {
         this._loaded.set(false);
         this._loadError.set(null);
         this.inFlight$ = null;
+        this.inFlightAuthScope = undefined;
         this.fetch(true, this._siteSlug()).subscribe();
       }
     });
@@ -96,12 +127,20 @@ export class BusinessSiteConfigStore {
     force = false,
     siteSlug?: string | null
   ): Observable<BusinessSiteConfig> {
+    const authScope = this.readAuthScope();
     const slugChanged = (siteSlug ?? null) !== this._siteSlug();
+    const authScopeChanged =
+      (this.loadedAuthScope !== undefined &&
+        this.loadedAuthScope !== authScope) ||
+      (this.inFlight$ !== null && this.inFlightAuthScope !== authScope);
 
-    if (slugChanged) {
+    if (slugChanged || authScopeChanged) {
       this._loaded.set(false);
       this._loadError.set(null);
       this.inFlight$ = null;
+      this.inFlightAuthScope = undefined;
+    }
+    if (slugChanged) {
       this._siteSlug.set(siteSlug ?? null);
     }
 
@@ -120,6 +159,7 @@ export class BusinessSiteConfigStore {
     };
     const activeSlug = siteSlug ?? this._siteSlug();
     const requestVersion = ++this.requestVersion;
+    const requestAuthScope = authScope;
     const siteConfigRequest: Observable<SiteConfigResponse> =
       typeof api.getSiteConfigForSlug === 'function'
         ? api.getSiteConfigForSlug(activeSlug)
@@ -163,12 +203,15 @@ export class BusinessSiteConfigStore {
         this._site.set(result.site);
         this._loaded.set(true);
         this._loadError.set(result.error);
+        this.loadedAuthScope = requestAuthScope;
         this.inFlight$ = null;
+        this.inFlightAuthScope = undefined;
       }),
       map((result) => result.site),
       shareReplay(1)
     );
 
+    this.inFlightAuthScope = requestAuthScope;
     return this.inFlight$ as Observable<BusinessSiteConfig>;
   }
 
@@ -180,5 +223,6 @@ export class BusinessSiteConfigStore {
     this._configId.set(configId ?? null);
     this._loaded.set(true);
     this._loadError.set(null);
+    this.loadedAuthScope = this.readAuthScope();
   }
 }

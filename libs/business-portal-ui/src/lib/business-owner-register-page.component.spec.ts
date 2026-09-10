@@ -21,6 +21,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
     const registerOwner = jest.fn().mockReturnValue(of({}));
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const claimOwnerAccess = jest.fn().mockReturnValue(of({}));
+    const provisionBusinessSite = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
         configId: 'config-1',
@@ -42,7 +43,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
         },
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig },
+          useValue: { getSiteConfig, provisionBusinessSite },
         },
       ],
     });
@@ -72,6 +73,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
       'secret'
     );
     expect(claimOwnerAccess).toHaveBeenCalled();
+    expect(provisionBusinessSite).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/owner', 'onboarding']);
   });
 
@@ -83,6 +85,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
     );
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const claimOwnerAccess = jest.fn().mockReturnValue(of({}));
+    const provisionBusinessSite = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
         configId: 'config-2',
@@ -104,7 +107,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
         },
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig },
+          useValue: { getSiteConfig, provisionBusinessSite },
         },
       ],
     });
@@ -129,10 +132,28 @@ describe('BusinessOwnerRegisterPageComponent', () => {
     expect(navigate).toHaveBeenCalledWith(['/owner', 'dashboard']);
   });
 
+  it('recognizes an existing-account error when the Gateway returns validation messages as an array', () => {
+    const fixture = TestBed.configureTestingModule({
+      imports: [BusinessOwnerRegisterPageComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessAuthService, useValue: {} },
+        { provide: BusinessApiService, useValue: {} },
+      ],
+    }).createComponent(BusinessOwnerRegisterPageComponent);
+
+    expect(
+      (fixture.componentInstance as any).isExistingAccountError({
+        error: { message: ['Registration failed: User already exists'] },
+      })
+    ).toBe(true);
+  });
+
   it('keeps hosted owner registration links and redirects tenant-scoped', () => {
     const registerOwner = jest.fn().mockReturnValue(of({}));
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const claimOwnerAccess = jest.fn().mockReturnValue(of({}));
+    const provisionBusinessSite = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
         configId: 'config-hosted',
@@ -167,7 +188,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
         },
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig },
+          useValue: { getSiteConfig, provisionBusinessSite },
         },
       ],
     });

@@ -1,7 +1,7 @@
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProductListComponent, Product } from '@optimistic-tanuki/store-ui';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StoreService } from '../../services/store.service';
 
 @Component({
@@ -13,6 +13,7 @@ import { StoreService } from '../../services/store.service';
 })
 export class CatalogComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly route = inject(ActivatedRoute);
   products: Product[] = [];
   loading = false;
   error: string | null = null;
@@ -24,13 +25,15 @@ export class CatalogComponent implements OnInit {
       return;
     }
 
-    this.loadProducts();
+    this.loadProducts(
+      this.route.snapshot.queryParamMap.get('catalogId') ?? undefined
+    );
   }
 
-  loadProducts(): void {
+  loadProducts(catalogId?: string): void {
     this.loading = true;
     this.error = null;
-    this.storeService.getProducts().subscribe({
+    this.storeService.getProducts(catalogId).subscribe({
       next: (products) => {
         this.products = products;
         this.loading = false;

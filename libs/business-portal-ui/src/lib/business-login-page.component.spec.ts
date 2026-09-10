@@ -7,6 +7,7 @@ import {
 } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
+import { Subject } from 'rxjs';
 
 import {
   BusinessApiService,
@@ -23,6 +24,118 @@ const emailAuthProvider = {
 };
 
 describe('BusinessLoginPageComponent', () => {
+  it('does not navigate until the cookie owner session login succeeds, then restores a safe return URL', () => {
+    const loginResult = new Subject<unknown>();
+    const loginAndExchange = jest.fn().mockReturnValue(loginResult);
+    const getSiteConfig = jest.fn().mockReturnValue(
+      of({
+        configId: 'config-1',
+        config: {
+          site: {
+            onboardingCompletedAt: '2026-06-13T10:00:00.000Z',
+          },
+        },
+      })
+    );
+
+    TestBed.configureTestingModule({
+      imports: [BusinessLoginPageComponent],
+      providers: [
+        emailAuthProvider,
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({
+                returnUrl: '/owner/requests?status=pending',
+              }),
+              paramMap: convertToParamMap({}),
+            },
+            paramMap: of(convertToParamMap({})),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: { loginAndExchange },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: { getSiteConfig },
+        },
+      ],
+    });
+
+    const router = TestBed.inject(Router);
+    const navigateByUrl = jest
+      .spyOn(router, 'navigateByUrl')
+      .mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BusinessLoginPageComponent);
+    fixture.componentInstance.email = 'owner@example.com';
+    fixture.componentInstance.password = 'secret';
+
+    fixture.componentInstance.onSubmit();
+
+    expect(navigateByUrl).not.toHaveBeenCalled();
+
+    loginResult.next({});
+    loginResult.complete();
+
+    expect(navigateByUrl).toHaveBeenCalledWith(
+      '/owner/requests?status=pending'
+    );
+  });
+
+  it('falls back to the owner dashboard when the return URL is an auth loop', () => {
+    const loginAndExchange = jest.fn().mockReturnValue(of({}));
+    const getSiteConfig = jest.fn().mockReturnValue(
+      of({
+        configId: 'config-1',
+        config: {
+          site: {
+            onboardingCompletedAt: '2026-06-13T10:00:00.000Z',
+          },
+        },
+      })
+    );
+
+    TestBed.configureTestingModule({
+      imports: [BusinessLoginPageComponent],
+      providers: [
+        emailAuthProvider,
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({ returnUrl: '/auth' }),
+              paramMap: convertToParamMap({}),
+            },
+            paramMap: of(convertToParamMap({})),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: { loginAndExchange },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: { getSiteConfig },
+        },
+      ],
+    });
+
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BusinessLoginPageComponent);
+    fixture.componentInstance.email = 'owner@example.com';
+    fixture.componentInstance.password = 'secret';
+
+    fixture.componentInstance.onSubmit();
+
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'dashboard']);
+  });
+
   it('routes a completed owner to the owner dashboard after login', () => {
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
@@ -282,6 +395,7 @@ describe('BusinessLoginPageComponent', () => {
               paramMap: convertToParamMap({
                 siteSlug: 'steady-hand-contracting',
               }),
+              queryParamMap: convertToParamMap({}),
             },
             paramMap: of(
               convertToParamMap({ siteSlug: 'steady-hand-contracting' })

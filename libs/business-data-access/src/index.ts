@@ -12,6 +12,22 @@ export { BusinessAuthService };
 export { businessHttpInterceptor };
 export { injectSiteSlugSignal };
 export {
+  BUSINESS_SITE_APP_SCOPE,
+  createBusinessAuthState,
+  normalizeBusinessReturnTo,
+  transitionBusinessAuthState,
+} from './lib/business-auth.state';
+export type {
+  BusinessAuthRecoveryIntent,
+  BusinessAuthState,
+  BusinessAuthStateEvent,
+  BusinessAuthStateStatus,
+  BusinessIdentity,
+  BusinessSessionKind,
+  BusinessSessionMetadata,
+} from './lib/business-auth.state';
+export type { BusinessAuthUser } from './lib/business-auth.service';
+export {
   cloneBusinessSiteConfig,
   mergeBusinessSiteConfig,
   normalizeLandingSections,
@@ -58,7 +74,9 @@ export type {
   CreateProgressCheckIn,
   BusinessLeadIntake,
   BusinessLeadIntakeRecord,
+  BusinessFeatureCatalog,
   BusinessOffer,
+  BusinessBlogPost,
   BusinessStoreProduct,
   BusinessBusyWindow,
   BusinessClientBookingStatus,

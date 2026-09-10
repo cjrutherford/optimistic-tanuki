@@ -18,6 +18,10 @@ import {
   AvailabilityOverride,
 } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  BUSINESS_PUBLIC_DARK_ACCENT_TEXT,
+  BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT,
+} from './public-contrast.tokens';
 
 export const businessBookingPageStyles = `
       :host {
@@ -26,7 +30,7 @@ export const businessBookingPageStyles = `
         --booking-form-surface: #ffffff;
         --booking-copy-ink: #18241f;
         --booking-copy-muted: #4d5c68;
-        --booking-accent: var(--primary, #1f7a63);
+        --booking-accent: var(--primary-2, ${BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT});
         --booking-accent-soft: #e5efe9;
         --booking-border: rgba(24, 36, 31, 0.12);
         --booking-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
@@ -49,6 +53,7 @@ export const businessBookingPageStyles = `
           var(--foreground, #edf3ef) 72%,
           transparent
         );
+        --booking-accent: var(--primary-8, ${BUSINESS_PUBLIC_DARK_ACCENT_TEXT});
         --booking-accent-soft: color-mix(
           in srgb,
           var(--primary, #3ea68a) 18%,

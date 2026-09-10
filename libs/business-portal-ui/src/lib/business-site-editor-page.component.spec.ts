@@ -2,7 +2,12 @@ import { signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter, RouterLink } from '@angular/router';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+  RouterLink,
+} from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -23,6 +28,9 @@ describe('BusinessSiteEditorPageComponent', () => {
   const listAssets = jest.fn();
   const getStoreProducts = jest.fn();
   const getOwnerProducts = jest.fn();
+  const listStoreCatalogs = jest.fn();
+  const listBlogCatalogs = jest.fn();
+  const listOwnedBusinessWorkspaces = jest.fn();
   const getOffers = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
@@ -102,7 +110,12 @@ describe('BusinessSiteEditorPageComponent', () => {
     });
   }
 
-  function createComponent() {
+  function createComponent(
+    options: {
+      siteConfig?: unknown;
+      route?: unknown;
+    } = {}
+  ) {
     getSiteConfig.mockReturnValue(
       of({
         configId: 'config-1',
@@ -138,6 +151,24 @@ describe('BusinessSiteEditorPageComponent', () => {
       ])
     );
     getOffers.mockReturnValue(of([]));
+    listStoreCatalogs.mockReturnValue(
+      of([{ id: 'store-catalog-1', name: 'Store catalog' }])
+    );
+    listBlogCatalogs.mockReturnValue(
+      of([{ id: 'blog-catalog-1', name: 'Blog catalog' }])
+    );
+    listOwnedBusinessWorkspaces.mockReturnValue(
+      of([
+        {
+          workspaceId: 'workspace-1',
+          kind: 'business-site',
+          slug: 'owner-profile-1',
+          displayName: 'Owner workspace',
+          appScope: 'business-site',
+          status: 'active',
+        },
+      ])
+    );
     listAssets.mockReturnValue(
       of([
         {
@@ -155,6 +186,12 @@ describe('BusinessSiteEditorPageComponent', () => {
       imports: [BusinessSiteEditorPageComponent],
       providers: [
         provideRouter([]),
+        ...(options.route
+          ? [{ provide: ActivatedRoute, useValue: options.route }]
+          : []),
+        ...(options.siteConfig
+          ? [{ provide: BusinessSiteConfigStore, useValue: options.siteConfig }]
+          : []),
         {
           provide: BusinessApiService,
           useValue: {
@@ -162,6 +199,9 @@ describe('BusinessSiteEditorPageComponent', () => {
             updateSiteConfig,
             getStoreProducts,
             getOwnerProducts,
+            listStoreCatalogs,
+            listBlogCatalogs,
+            listOwnedBusinessWorkspaces,
             getOffers,
             listAssets,
           },
@@ -210,6 +250,91 @@ describe('BusinessSiteEditorPageComponent', () => {
     jest.clearAllMocks();
     getTheme.mockReturnValue('light');
     mockMobileViewport(false);
+    const testGlobals = globalThis as unknown as {
+      structuredClone?: (value: unknown) => unknown;
+    };
+    if (!testGlobals.structuredClone) {
+      testGlobals.structuredClone = (value: unknown) =>
+        JSON.parse(JSON.stringify(value));
+    }
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('forces an owner-scoped fetch before editing a stale anonymous config', () => {
+    const anonymousConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Anonymous cached config',
+      },
+    };
+    const ownerConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Authenticated owner config',
+      },
+    };
+    let configId = 'anonymous-config';
+    const fetch = jest.fn((force: boolean, siteSlug: string | null) => {
+      expect(siteSlug).toBe('steady-hand-contracting');
+      if (force) {
+        configId = 'owner-config';
+        return of(ownerConfig);
+      }
+      return of(anonymousConfig);
+    });
+    const siteConfig = {
+      site: signal(anonymousConfig),
+      configId: () => configId,
+      fetch,
+      setSite: jest.fn(),
+    };
+    const route = {
+      snapshot: {
+        data: {},
+        paramMap: convertToParamMap({
+          siteSlug: 'steady-hand-contracting',
+        }),
+      },
+      paramMap: of(convertToParamMap({ siteSlug: 'steady-hand-contracting' })),
+    };
+
+    const { component } = createComponent({ siteConfig, route });
+
+    expect(fetch).toHaveBeenCalledWith(true, 'steady-hand-contracting');
+    expect(component.draft().brand.businessName).toBe(
+      'Authenticated owner config'
+    );
+
+    const testGlobals = globalThis as unknown as {
+      structuredClone?: (value: unknown) => unknown;
+    };
+    const previousStructuredClone = testGlobals.structuredClone;
+    testGlobals.structuredClone = (value: unknown) =>
+      JSON.parse(JSON.stringify(value));
+    try {
+      component.save();
+
+      expect(updateSiteConfig).toHaveBeenCalledWith(
+        'owner-config',
+        expect.objectContaining({
+          brand: expect.objectContaining({
+            businessName: 'Authenticated owner config',
+          }),
+        }),
+        'steady-hand-contracting'
+      );
+    } finally {
+      if (previousStructuredClone) {
+        testGlobals.structuredClone = previousStructuredClone;
+      } else {
+        delete testGlobals.structuredClone;
+      }
+    }
   });
 
   it('saves store-backed service catalog mode without persisting manual offers', () => {
@@ -242,10 +367,96 @@ describe('BusinessSiteEditorPageComponent', () => {
     );
   });
 
+  it('offers an explicit draft-or-publish choice for never-published sites', () => {
+    const { fixture, component } = createComponent();
+    component.draft.update((draft) => {
+      draft.site.status = 'draft';
+      return draft;
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Save as draft');
+    expect(fixture.nativeElement.textContent).toContain('Publish');
+    expect(fixture.nativeElement.textContent).not.toContain('Save Changes');
+  });
+
+  it('keeps Save Changes for published sites and publishes the update immediately', () => {
+    const { fixture, component } = createComponent();
+    component.draft.update((draft) => {
+      draft.site.status = 'published';
+      return draft;
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Save Changes');
+    expect(fixture.nativeElement.textContent).not.toContain('Save as draft');
+
+    component.save();
+
+    expect(updateSiteConfig).toHaveBeenCalledWith(
+      'config-1',
+      expect.objectContaining({
+        site: expect.objectContaining({ status: 'published' }),
+      }),
+      null
+    );
+  });
+
+  it('persists draft or publish intent through the existing site status field', () => {
+    const { component } = createComponent();
+
+    component.save('draft');
+    expect(updateSiteConfig).toHaveBeenLastCalledWith(
+      'config-1',
+      expect.objectContaining({
+        site: expect.objectContaining({ status: 'draft' }),
+      }),
+      null
+    );
+
+    component.save('publish');
+    expect(updateSiteConfig).toHaveBeenLastCalledWith(
+      'config-1',
+      expect.objectContaining({
+        site: expect.objectContaining({ status: 'published' }),
+      }),
+      null
+    );
+  });
+
   it('loads owner-scoped store products for store-backed offers', () => {
     createComponent();
 
     expect(getOwnerProducts).toHaveBeenCalledWith('owner-user-1');
+  });
+
+  it('binds the selected Store and Blog catalogs into the canonical site config', () => {
+    const { component } = createComponent();
+
+    component.selectStoreCatalog('store-catalog-1');
+    component.selectBlogCatalog('blog-catalog-1');
+
+    expect(component.draft().serviceCatalog).toEqual({
+      source: 'store',
+      catalogId: 'store-catalog-1',
+    });
+    expect(component.draft().plugins.capabilities['blogging.posts']).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        placement: 'public-content',
+        resourceRef: { type: 'blog-catalog', id: 'blog-catalog-1' },
+      })
+    );
+  });
+
+  it('loads scoped catalogs from the owned workspace on the paramless owner route', async () => {
+    createComponent();
+
+    await Promise.resolve();
+
+    expect(listOwnedBusinessWorkspaces).toHaveBeenCalled();
+    expect(listStoreCatalogs).toHaveBeenCalledWith('owner-profile-1');
+    expect(listBlogCatalogs).toHaveBeenCalledWith('owner-profile-1');
   });
 
   it('links store-backed offer editing to the owner products workspace', () => {

@@ -17,7 +17,6 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
-  CreateProductDto,
   CreateProfileDto,
   EnableMultiFactorRequest,
   LoginRequest,
@@ -29,7 +28,6 @@ import {
 import { firstValueFrom } from 'rxjs';
 import {
   AuthCommands,
-  ProductCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -69,6 +67,7 @@ const throttleLimitFromEnv = (envKey: string, fallback: number): number => {
 };
 
 const AUTH_THROTTLE_TTL = throttleLimitFromEnv('THROTTLE_AUTH_TTL', 60000);
+const LOGIN_BOOTSTRAP_TIMEOUT_MS = 5000;
 
 // Credential-sensitive route throttles. Defaults are intentionally strict to
 // blunt brute-force / credential-stuffing; each is env-overridable for E2E.
@@ -117,28 +116,6 @@ const REGISTER_THROTTLE = {
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
-  private static readonly BUSINESS_OWNER_STARTER_PRODUCTS: CreateProductDto[] =
-    [
-      {
-        name: 'Discovery Session',
-        description:
-          'Starter consultation offer to help new owners publish a store-backed service catalog immediately.',
-        priceCents: 9500,
-        type: 'service',
-        stock: 0,
-        active: true,
-      },
-      {
-        name: 'Signature Service',
-        description:
-          'Publish-ready starter service product you can rename, reprice, and tailor to your workflow.',
-        priceCents: 25000,
-        type: 'service',
-        stock: 0,
-        active: true,
-      },
-    ];
-
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy,
@@ -257,18 +234,54 @@ export class AuthenticationController {
     @Res({ passthrough: true }) response?: Response
   ) {
     try {
-      this.logger.debug(`loginUser called for email=${data.email}`);
-      return this.withBrowserSession(
-        await this.loginBootstrap.login(data, appScope),
-        sessionMode,
-        response
+      this.logger.debug('loginUser called');
+      await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.Login }, data)
       );
+      const result = await this.withLoginBootstrapTimeout(
+        this.loginBootstrap.login(data, appScope)
+      );
+      return this.withBrowserSession(result, sessionMode, response);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
+    }
+  }
+
+  private async withLoginBootstrapTimeout<T>(
+    operation: Promise<T>
+  ): Promise<T> {
+    const timeoutMarker = Symbol('login-bootstrap-timeout');
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+      return await Promise.race([
+        operation,
+        new Promise<T>((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(timeoutMarker),
+            LOGIN_BOOTSTRAP_TIMEOUT_MS
+          );
+        }),
+      ]);
+    } catch (error) {
+      if (error === timeoutMarker) {
+        throw new HttpException(
+          'Login failed: account bootstrap timed out',
+          HttpStatus.SERVICE_UNAVAILABLE
+        );
+      }
+      throw error;
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 
@@ -479,11 +492,6 @@ export class AuthenticationController {
           .addOwnerScopeDefaults()
           .addAssetOwnerPermissions()
           .build()
-      );
-
-      await this.seedBusinessOwnerProductsIfNeeded(
-        user.userId,
-        effectiveAppScope
       );
 
       return {
@@ -895,36 +903,5 @@ export class AuthenticationController {
 
     await this.roleInit.processNow(roleInitOptions);
     return createdProfile;
-  }
-
-  private async seedBusinessOwnerProductsIfNeeded(
-    ownerId: string,
-    appScope: string
-  ): Promise<void> {
-    if (appScope !== 'business-site') {
-      return;
-    }
-
-    const existingProducts =
-      ((await firstValueFrom(
-        this.storeClient.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
-      )) as Array<{ ownerId?: string | null }>) ?? [];
-
-    const hasOwnedProducts = existingProducts.some(
-      (product) => product?.ownerId === ownerId
-    );
-
-    if (hasOwnedProducts) {
-      return;
-    }
-
-    for (const product of AuthenticationController.BUSINESS_OWNER_STARTER_PRODUCTS) {
-      await firstValueFrom(
-        this.storeClient.send(ProductCommands.CREATE_PRODUCT, {
-          ...product,
-          ownerId,
-        })
-      );
-    }
   }
 }

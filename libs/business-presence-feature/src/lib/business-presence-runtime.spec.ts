@@ -8,6 +8,10 @@ describe('business presence runtime', () => {
     }
   });
 
+  it('supports blog sections for document and public runtime consumers', () => {
+    expect(supportsBusinessPresenceSection('blog')).toBe(true);
+  });
+
   it('rejects an unsupported persisted section type', () => {
     expect(supportsBusinessPresenceSection('retired-promo')).toBe(false);
   });

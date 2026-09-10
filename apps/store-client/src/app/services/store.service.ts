@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Product {
@@ -11,6 +11,7 @@ export interface Product {
   imageUrl?: string;
   stock: number;
   active: boolean;
+  catalogId?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -100,8 +101,11 @@ export class StoreService {
   constructor(private http: HttpClient) {}
 
   // Product operations
-  getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.API_URL}/products`);
+  getProducts(catalogId?: string): Observable<Product[]> {
+    const options = catalogId
+      ? { params: new HttpParams().set('catalogId', catalogId) }
+      : {};
+    return this.http.get<Product[]>(`${this.API_URL}/products`, options);
   }
 
   getProduct(id: string): Observable<Product> {

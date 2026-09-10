@@ -18,6 +18,7 @@ import {
   BusinessAssetLibraryItem,
   BusinessApiService,
   BusinessAuthService,
+  BusinessFeatureCatalog,
   BusinessSiteConfig,
   BusinessSiteConfigStore,
   BusinessStoreProduct,
@@ -70,6 +71,7 @@ const MAX_IMAGE_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 type EditorMode = 'guided' | 'studio';
 type SupportedThemeFieldKey = keyof BusinessSiteConfig['theme'];
+type SavePublicationIntent = 'draft' | 'publish';
 
 interface GuidedStepDefinition {
   id: string;
@@ -1573,6 +1575,24 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                 <code>service</code>. Manage pricing and activation from the
                 store workspace.
               </p>
+              <label class="full">
+                Store catalog
+                <select
+                  data-store-catalog
+                  [ngModel]="draft().serviceCatalog.catalogId ?? ''"
+                  (ngModelChange)="selectStoreCatalog($event)"
+                >
+                  <option value="">Select a workspace catalog</option>
+                  @for (catalog of storeCatalogs(); track catalog.id) {
+                  <option [value]="catalog.id">{{ catalog.name }}</option>
+                  }
+                </select>
+              </label>
+              @if (featureCatalogsLoading()) {
+              <p class="status-msg">Loading workspace catalogs…</p>
+              } @if (featureCatalogsError()) {
+              <p class="status-msg error">{{ featureCatalogsError() }}</p>
+              }
               <a class="store-workspace-link" [routerLink]="ownerProductsLink()"
                 >Manage products in workspace</a
               >
@@ -1656,6 +1676,19 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                 + Add offer
               </otui-button>
               }
+              <label class="full">
+                Public blog catalog
+                <select
+                  data-blog-catalog
+                  [ngModel]="selectedBlogCatalogId()"
+                  (ngModelChange)="selectBlogCatalog($event)"
+                >
+                  <option value="">Do not publish a blog catalog</option>
+                  @for (catalog of blogCatalogs(); track catalog.id) {
+                  <option [value]="catalog.id">{{ catalog.name }}</option>
+                  }
+                </select>
+              </label>
             </div>
             }
           </otui-card>
@@ -1756,13 +1789,30 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           }
 
           <div class="actions entrance" style="animation-delay: 0.36s">
+            @if (isPublishedSite()) {
             <otui-button
               variant="primary"
               [disabled]="saving()"
-              (action)="save()"
+              (action)="save('publish')"
             >
               @if (saving()) { Saving… } @else { Save Changes }
             </otui-button>
+            } @else {
+            <otui-button
+              variant="outlined"
+              [disabled]="saving()"
+              (action)="save('draft')"
+            >
+              @if (saving()) { Saving… } @else { Save as draft }
+            </otui-button>
+            <otui-button
+              variant="primary"
+              [disabled]="saving()"
+              (action)="save('publish')"
+            >
+              Publish
+            </otui-button>
+            }
             <otui-button
               variant="outlined"
               [useGradient]="false"
@@ -3111,6 +3161,10 @@ export class BusinessSiteEditorPageComponent {
   storeProductsLoading = signal(false);
   storeProductsError = signal('');
   storeServiceProducts = signal<BusinessStoreProduct[]>([]);
+  featureCatalogsLoading = signal(false);
+  featureCatalogsError = signal('');
+  storeCatalogs = signal<BusinessFeatureCatalog[]>([]);
+  blogCatalogs = signal<BusinessFeatureCatalog[]>([]);
   activeAssetPicker = signal<string | null>(null);
   uploadingTargets = signal<Record<string, boolean>>({});
   private configId: string | null = null;
@@ -3392,7 +3446,7 @@ export class BusinessSiteEditorPageComponent {
     }
     this.onboardingMode.set(!!this.route?.snapshot.data['onboardingMode']);
 
-    this.siteConfig.fetch(false, this.siteSlug()).subscribe({
+    this.siteConfig.fetch(true, this.siteSlug()).subscribe({
       next: (site) => {
         this.loading.set(false);
         this.configId = this.siteConfig.configId();
@@ -3402,6 +3456,7 @@ export class BusinessSiteEditorPageComponent {
         );
         this.syncPanelsForEditorMode();
         this.draftPreviewReady.set(true);
+        void this.loadFeatureCatalogs();
       },
       error: () => {
         this.loading.set(false);
@@ -3621,8 +3676,83 @@ export class BusinessSiteEditorPageComponent {
 
     this.draft.update((draft) => {
       draft.serviceCatalog.source = value;
+      if (value === 'manual') {
+        draft.serviceCatalog.catalogId = null;
+      }
       return draft;
     });
+  }
+
+  selectStoreCatalog(catalogId: string): void {
+    this.draft.update((draft) => {
+      const selectedCatalogId = catalogId.trim();
+      draft.serviceCatalog.source = 'store';
+      draft.serviceCatalog.catalogId = selectedCatalogId || null;
+      draft.features.store.enabled = !!selectedCatalogId;
+      return draft;
+    });
+  }
+
+  selectedBlogCatalogId(): string {
+    return (
+      this.draft().plugins.capabilities['blogging.posts']?.resourceRef?.id ?? ''
+    );
+  }
+
+  selectBlogCatalog(catalogId: string): void {
+    this.draft.update((draft) => {
+      const selectedCatalogId = catalogId.trim();
+      const existing = draft.plugins.capabilities['blogging.posts'];
+      draft.plugins.capabilities['blogging.posts'] = selectedCatalogId
+        ? {
+            ...existing,
+            enabled: true,
+            placement: 'public-content',
+            permissions: existing?.permissions ?? [],
+            resourceRef: { type: 'blog-catalog', id: selectedCatalogId },
+          }
+        : {
+            ...existing,
+            enabled: false,
+            resourceRef: undefined,
+          };
+      return draft;
+    });
+  }
+
+  private async loadFeatureCatalogs(): Promise<void> {
+    let workspaceSlug = this.siteSlug()?.trim();
+    if (!workspaceSlug) {
+      const workspaces = await firstValueFrom(
+        this.api.listOwnedBusinessWorkspaces()
+      );
+      workspaceSlug = workspaces.find(
+        (workspace) =>
+          workspace.kind === 'business-site' &&
+          workspace.appScope === 'business-site' &&
+          workspace.status === 'active'
+      )?.slug;
+    }
+    if (!workspaceSlug) return;
+
+    this.featureCatalogsLoading.set(true);
+    this.featureCatalogsError.set('');
+    try {
+      const [storeCatalogs, blogCatalogs] = await Promise.all([
+        firstValueFrom(this.api.listStoreCatalogs(workspaceSlug)),
+        firstValueFrom(this.api.listBlogCatalogs(workspaceSlug)),
+      ]);
+      this.storeCatalogs.set(storeCatalogs);
+      this.blogCatalogs.set(blogCatalogs);
+    } catch (error: any) {
+      this.featureCatalogsError.set(
+        error?.error?.message ||
+          error?.message ||
+          'Failed to load workspace catalogs.'
+      );
+    } finally {
+      this.featureCatalogsLoading.set(false);
+    }
   }
 
   servicesCollectionItems(): Array<Record<string, unknown>> {
@@ -5286,11 +5416,19 @@ export class BusinessSiteEditorPageComponent {
     );
   }
 
-  save(): void {
+  isPublishedSite(): boolean {
+    return this.draft().site.status === 'published';
+  }
+
+  save(intent?: SavePublicationIntent): void {
     this.saving.set(true);
     this.successMsg.set('');
     this.errorMsg.set('');
     const payload = this.sanitizedDraft();
+    const publicationIntent =
+      intent ?? (this.isPublishedSite() ? 'publish' : 'draft');
+    payload.site.status =
+      publicationIntent === 'publish' ? 'published' : 'draft';
     if (this.onboardingMode()) {
       payload.site.onboardingCompletedAt = new Date().toISOString();
     }

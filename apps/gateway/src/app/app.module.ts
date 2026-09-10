@@ -108,6 +108,7 @@ import {
 } from './gateway-service-providers';
 import { WorkspaceResolverService } from './workspace-context/workspace-resolver.service';
 import { WorkspaceClaimController } from '../controllers/workspace/workspace-claim.controller';
+import { WorkspaceDiscoveryController } from '../controllers/workspace/workspace-discovery.controller';
 import { WorkspaceContextGuard } from '../guards/workspace-context.guard';
 
 const gatewayServices = [
@@ -323,7 +324,7 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
       },
       {
         id: 'trainer',
-        requiredServices: ['store', 'lead-tracker'],
+        requiredServices: ['store', 'lead-tracker', 'blogging'],
         value: TrainerController,
       },
       { id: 'registry', value: RegistryController },
@@ -406,6 +407,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     SecurityTelemetryController,
     PerformanceTelemetryController,
     WorkspaceClaimController,
+    WorkspaceDiscoveryController,
   ],
   providers: [
     // Sends the invitation email. Here rather than in project-planning, which

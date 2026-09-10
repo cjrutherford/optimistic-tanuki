@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { Observable } from 'rxjs';
 import {
   Appointment,
@@ -17,10 +18,13 @@ import {
   AcceptedBusinessClient,
   BusinessAssetLibraryItem,
   BusinessBusyWindow,
+  BusinessBlogPost,
   BusinessClientBookingStatus,
   BusinessContactLeadSubmission,
+  BusinessFeatureCatalog,
   BusinessLeadIntake,
   BusinessLeadIntakeRecord,
+  BusinessOwnedWorkspace,
   BusinessOffer,
   BusinessOwnerWorkflowRecord,
   BusinessStoreProduct,
@@ -41,7 +45,9 @@ export * from './business-api.models';
 export class BusinessApiService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(BusinessAuthService);
-  private readonly baseUrl = '/api/business';
+  private readonly apiBaseUrl =
+    inject(API_BASE_URL, { optional: true }) ?? '/api';
+  private readonly baseUrl = `${this.apiBaseUrl}/business`;
 
   getOffers(siteSlug?: string | null): Observable<BusinessOffer[]> {
     return this.http.get<BusinessOffer[]>(`${this.baseUrl}/offers`, {
@@ -49,13 +55,50 @@ export class BusinessApiService {
     });
   }
 
-  getStoreProducts(): Observable<BusinessStoreProduct[]> {
-    return this.http.get<BusinessStoreProduct[]>('/api/store/products');
+  getStoreProducts(
+    catalogId?: string | null
+  ): Observable<BusinessStoreProduct[]> {
+    return this.http.get<BusinessStoreProduct[]>(
+      `${this.apiBaseUrl}/store/products`,
+      {
+        params: catalogId ? { catalogId } : undefined,
+      }
+    );
+  }
+
+  listStoreCatalogs(
+    workspaceSlug: string
+  ): Observable<BusinessFeatureCatalog[]> {
+    return this.http.get<BusinessFeatureCatalog[]>(
+      `${this.apiBaseUrl}/store/catalogs/mine`,
+      {
+        params: { workspaceSlug },
+        headers: this.authHeaders(),
+      }
+    );
+  }
+
+  listBlogCatalogs(
+    workspaceSlug: string
+  ): Observable<BusinessFeatureCatalog[]> {
+    return this.http.get<BusinessFeatureCatalog[]>(
+      `${this.apiBaseUrl}/blog/catalogs/mine`,
+      {
+        params: { workspaceSlug },
+        headers: this.authHeaders(),
+      }
+    );
+  }
+
+  getBlogPosts(catalogId: string): Observable<BusinessBlogPost[]> {
+    return this.http.get<BusinessBlogPost[]>(
+      `${this.apiBaseUrl}/blog/catalogs/${encodeURIComponent(catalogId)}/posts`
+    );
   }
 
   getOwnerProducts(ownerId: string): Observable<BusinessStoreProduct[]> {
     return this.http.get<BusinessStoreProduct[]>(
-      `/api/store/products/owner/${ownerId}`
+      `${this.apiBaseUrl}/store/products/owner/${ownerId}`
     );
   }
 
@@ -63,16 +106,34 @@ export class BusinessApiService {
     return this.getSiteConfigForSlug();
   }
 
+  provisionBusinessSite(): Observable<unknown> {
+    return this.http.post(
+      `${this.apiBaseUrl}/workspaces/business-sites/provision`,
+      {},
+      { headers: this.authHeaders() }
+    );
+  }
+
   getSiteConfigForSlug(
     siteSlug?: string | null
   ): Observable<SiteConfigResponse> {
     return this.http.get<SiteConfigResponse>(`${this.baseUrl}/site-config`, {
       params: siteSlug ? { slug: siteSlug } : undefined,
+      headers: this.authHeaders(),
     });
   }
 
   listPublishedSites(): Observable<PublicBusinessSiteSummary[]> {
     return this.http.get<PublicBusinessSiteSummary[]>(`${this.baseUrl}/sites`);
+  }
+
+  listOwnedBusinessWorkspaces(): Observable<BusinessOwnedWorkspace[]> {
+    return this.http.get<BusinessOwnedWorkspace[]>(
+      `${this.apiBaseUrl}/workspaces`,
+      {
+        headers: this.authHeaders(),
+      }
+    );
   }
 
   updateSiteConfig(
@@ -91,7 +152,10 @@ export class BusinessApiService {
   }
 
   private authHeaders(): Record<string, string> {
-    return this.auth.getAuthHeaders();
+    return {
+      ...this.auth.getAuthHeaders(),
+      'X-ot-appscope': 'business-site',
+    };
   }
 
   private clientAuthHeaders(): Record<string, string> {
@@ -144,7 +208,7 @@ export class BusinessApiService {
     routingProfileId?: string
   ): Observable<{ message: string; leadId: string | null }> {
     return this.http.post<{ message: string; leadId: string | null }>(
-      '/api/contact',
+      `${this.apiBaseUrl}/contact`,
       {
         ...payload,
         appScope: 'business-site',
@@ -208,6 +272,13 @@ export class BusinessApiService {
   approveProspect(id: string): Observable<BusinessLeadIntakeRecord> {
     return this.http.put<BusinessLeadIntakeRecord>(
       `${this.baseUrl}/owner/leads/${id}/approve`,
+      {}
+    );
+  }
+
+  rejectProspect(id: string): Observable<BusinessLeadIntakeRecord> {
+    return this.http.put<BusinessLeadIntakeRecord>(
+      `${this.baseUrl}/owner/leads/${id}/reject`,
       {}
     );
   }

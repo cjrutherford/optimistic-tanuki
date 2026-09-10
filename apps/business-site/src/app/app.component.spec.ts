@@ -4,7 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { By } from '@angular/platform-browser';
 import { NavigationEnd, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { AppComponent } from './app.component';
+import { AppComponent, businessSiteSkipLinkStyles } from './app.component';
 import {
   BusinessAuthService,
   BusinessSiteConfigStore,
@@ -14,6 +14,94 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { RouterLink } from '@angular/router';
 
 describe('AppComponent', () => {
+  it('renders one platform skip link with a valid main-content target', () => {
+    localStorage.clear();
+    const store = createStore();
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    const skipLinks = fixture.nativeElement.querySelectorAll(
+      'a.skip-link'
+    ) as NodeListOf<HTMLAnchorElement>;
+    const target = fixture.nativeElement.querySelector('#main-content');
+
+    expect(skipLinks).toHaveLength(1);
+    expect(skipLinks[0].getAttribute('href')).toBe('#main-content');
+    expect(target).not.toBeNull();
+    expect(target.id).toBe('main-content');
+    expect((target as HTMLElement).tabIndex).toBe(-1);
+  });
+
+  it('renders one tenant skip link and exposes visible keyboard focus styling', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'north-star-advisory',
+      },
+    });
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+    component.currentUrl.set('/sites/north-star-advisory');
+    fixture.detectChanges();
+
+    const skipLink = fixture.nativeElement.querySelector(
+      'a.skip-link'
+    ) as HTMLAnchorElement;
+
+    expect(fixture.nativeElement.querySelectorAll('a.skip-link')).toHaveLength(
+      1
+    );
+    expect(
+      fixture.nativeElement.querySelectorAll('#main-content')
+    ).toHaveLength(1);
+    skipLink.focus();
+    expect(document.activeElement).toBe(skipLink);
+    expect(businessSiteSkipLinkStyles).toContain('.skip-link:focus-visible');
+    expect(businessSiteSkipLinkStyles).toContain('transform: translateY(0);');
+  });
+
   function createStore(
     config: typeof DEFAULT_BUSINESS_SITE_CONFIG = DEFAULT_BUSINESS_SITE_CONFIG,
     configId: string | null = null,
@@ -83,6 +171,10 @@ describe('AppComponent', () => {
     });
 
     const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+    component.currentUrl.set('/auth');
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
@@ -241,7 +333,7 @@ describe('AppComponent', () => {
       currentUrl: { set: (url: string) => void };
     };
 
-    component.currentUrl.set('/sites/steady-hand-contracting');
+    component.currentUrl.set('/sites/steady-hand-contracting/client/login');
     fixture.detectChanges();
 
     expect(themeService.setTheme).toHaveBeenCalledWith('dark');
@@ -348,7 +440,7 @@ describe('AppComponent', () => {
       currentUrl: { set: (url: string) => void };
     };
 
-    component.currentUrl.set('/sites/steady-hand-contracting');
+    component.currentUrl.set('/sites/steady-hand-contracting/client/login');
     fixture.detectChanges();
 
     const clientLoginLink = fixture.debugElement
@@ -460,7 +552,7 @@ describe('AppComponent', () => {
       currentUrl: { set: (url: string) => void };
     };
 
-    component.currentUrl.set('/sites/steady-hand-contracting');
+    component.currentUrl.set('/sites/steady-hand-contracting/owner/login');
     fixture.detectChanges();
 
     const links = fixture.debugElement
@@ -475,7 +567,7 @@ describe('AppComponent', () => {
     );
   });
 
-  it('uses effective platform routes for top-level navigation on the platform home', () => {
+  it('leaves platform-home navigation to the platform landing page', () => {
     localStorage.clear();
     const store = createStore();
     const trainerAuthService = {
@@ -506,13 +598,235 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    const links = fixture.debugElement
-      .queryAll(By.directive(RouterLink))
-      .map((element) => element.injector.get(RouterLink));
+    expect(fixture.nativeElement.querySelector('.topbar')).toBeNull();
+  });
 
-    expect(links.map((link) => link.href)).toEqual(
-      expect.arrayContaining(['/', '/auth', '/client/login'])
-    );
+  it('does not render a second outer header on the platform landing route', () => {
+    localStorage.clear();
+    const store = createStore();
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.topbar')).toBeNull();
+
+    component.currentUrl.set('/auth');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.topbar')).not.toBeNull();
+  });
+
+  it('does not render a second outer header on a hosted tenant landing route', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'north-star-advisory',
+      },
+    });
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/sites/north-star-advisory');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.topbar')).toBeNull();
+  });
+
+  it('derives hosted navigation from enabled tenant sections instead of a dead results anchor', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'north-star-advisory',
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'hero',
+            type: 'hero',
+            title: 'Welcome',
+            enabled: true,
+            order: 0,
+          },
+          {
+            id: 'about',
+            type: 'about',
+            title: 'About',
+            enabled: true,
+            order: 1,
+          },
+          {
+            id: 'services',
+            type: 'services',
+            title: 'Services',
+            enabled: true,
+            order: 2,
+          },
+          {
+            id: 'testimonials',
+            type: 'testimonials',
+            title: 'Testimonials',
+            enabled: true,
+            order: 3,
+          },
+          {
+            id: 'contact',
+            type: 'contact',
+            title: 'Contact',
+            enabled: true,
+            order: 4,
+          },
+        ],
+      },
+    });
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/sites/north-star-advisory');
+    fixture.detectChanges();
+
+    expect(component.topNavLinks()).toEqual([
+      {
+        label: 'Overview',
+        route: ['/sites', 'north-star-advisory'],
+        fragment: 'about',
+      },
+      {
+        label: 'Services',
+        route: ['/sites', 'north-star-advisory'],
+        fragment: 'services',
+      },
+      {
+        label: 'Testimonials',
+        route: ['/sites', 'north-star-advisory'],
+        fragment: 'testimonials',
+      },
+      {
+        label: 'Contact',
+        route: ['/sites', 'north-star-advisory'],
+        fragment: 'contact',
+      },
+      {
+        label: 'Book',
+        route: ['/sites', 'north-star-advisory', 'book'],
+      },
+    ]);
+    expect(
+      component.topNavLinks().some((link) => link.fragment === 'results')
+    ).toBe(false);
+  });
+
+  it('keeps the outer authenticated navigation on hosted non-landing routes', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'north-star-advisory',
+      },
+    });
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => true),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/sites/north-star-advisory/owner/dashboard');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.topbar')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Workspace');
   });
 
   it('updates the browser title from the loaded business config', () => {
@@ -548,6 +862,11 @@ describe('AppComponent', () => {
     });
 
     const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+    fixture.detectChanges();
+    component.currentUrl.set('/sites/north-star-advisory');
     fixture.detectChanges();
 
     store.__site.set({
@@ -563,6 +882,101 @@ describe('AppComponent', () => {
     expect(titleService.setTitle).toHaveBeenCalledWith(
       'North Star Advisory | Operational guidance for growing service businesses.'
     );
+  });
+
+  it('keeps the platform title when a late no-slug tenant config arrives after root hydration', () => {
+    localStorage.clear();
+    const store = createStore();
+    const titleService = { setTitle: jest.fn() };
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+        { provide: Title, useValue: titleService },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(titleService.setTitle).toHaveBeenLastCalledWith(
+      'Business Site Platform'
+    );
+
+    store.__site.set({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'North Star Advisory',
+        tagline: 'Operational guidance for growing service businesses.',
+      },
+    });
+    fixture.detectChanges();
+
+    expect(titleService.setTitle).toHaveBeenLastCalledWith(
+      'Business Site Platform'
+    );
+    expect(titleService.setTitle).not.toHaveBeenCalledWith(
+      expect.stringContaining('North Star Advisory')
+    );
+  });
+
+  it('keeps query and fragment variants of the platform root title-independent of tenant config', () => {
+    localStorage.clear();
+    const store = createStore();
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => false),
+            clientUser: jest.fn(() => null),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      pageTitleForUrl: (url: string) => string;
+    };
+    component.site.set({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'North Star Advisory',
+      },
+    });
+
+    for (const url of [
+      '/',
+      '/?preview=true',
+      '/#about',
+      '/?preview=true#about',
+    ]) {
+      expect(component.pageTitleForUrl(url)).toBe('Business Site Platform');
+    }
   });
 
   it('derives route-aware titles from the loaded business config', () => {
@@ -632,6 +1046,9 @@ describe('AppComponent', () => {
     expect(component.pageTitleForUrl('/owner/dashboard')).toBe(
       'Owner Workspace | North Star Advisory'
     );
+    expect(component.pageTitleForUrl('/sites/north-star-advisory')).toBe(
+      'North Star Advisory | Operational guidance for growing service businesses.'
+    );
   });
 
   it('hides client navigation when signed in as an owner', () => {
@@ -667,6 +1084,10 @@ describe('AppComponent', () => {
     });
 
     const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+    component.currentUrl.set('/owner/dashboard');
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).not.toContain('Client Login');
@@ -706,6 +1127,10 @@ describe('AppComponent', () => {
     });
 
     const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+    component.currentUrl.set('/client/dashboard');
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).not.toContain('Owner Login');

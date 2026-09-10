@@ -1,0 +1,462 @@
+:host {
+  --otui-public-landing-background: var(--background, #f8fafc);
+  --otui-public-landing-surface: var(--surface, #ffffff);
+  --otui-public-landing-foreground: var(--foreground, #172033);
+  // Normal public copy must follow the personality's primary foreground.
+  // `--muted-foreground` is intentionally subdued and is not guaranteed to
+  // meet AA on the hero's personality-tinted background.
+  --otui-public-landing-muted: var(--foreground, #435066);
+  // The primary action always consumes this paired semantic token contract.
+  // Themes generate --on-primary alongside --primary for tenant palettes; the
+  // root fallback is deliberately paired with white at 6.67:1.
+  --otui-public-landing-cta-background: var(--primary, #0b5cad);
+  --otui-public-landing-brand: var(--otui-public-landing-cta-background);
+  --otui-public-landing-on-brand: var(
+    --on-primary,
+    var(--primary-foreground, #ffffff)
+  );
+  --otui-public-landing-border: var(--border, #c8d0dc);
+  --otui-public-landing-focus: var(--focus-ring, #0b5cad);
+  display: block;
+  color: var(--otui-public-landing-foreground);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.public-landing-header,
+.public-landing-hero,
+.public-discovery-region,
+.public-discovery-list {
+  background: var(--otui-public-landing-background);
+}
+
+.public-landing-header__inner,
+.public-landing-hero__inner,
+.public-discovery-region__header,
+.public-discovery-region__content {
+  width: min(100% - 2rem, 76rem);
+  margin-inline: auto;
+}
+
+.public-landing-header {
+  border-bottom: 1px solid var(--otui-public-landing-border);
+}
+
+.public-landing-header__inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  min-height: 4.5rem;
+  gap: 1rem;
+}
+
+.public-landing-header__brand,
+.public-landing-header__actions,
+.public-landing-header__nav,
+.public-landing-hero__actions,
+.public-discovery-card__actions,
+.public-discovery-region__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.public-landing-header__brand-link {
+  color: var(--otui-public-landing-foreground);
+  font-size: 1.125rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.public-landing-header__menu {
+  min-width: 3.25rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--otui-public-landing-border);
+  border-radius: 0.5rem;
+  background: var(--otui-public-landing-surface);
+  color: var(--otui-public-landing-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.public-landing-header__nav {
+  display: none;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: stretch;
+  padding-block: 0.25rem 0.75rem;
+}
+
+.public-landing-header__nav[data-open='true'] {
+  display: flex;
+}
+
+.public-landing-header__nav-link,
+.public-landing-header__actions a,
+.public-landing-hero__actions a,
+.public-discovery-card__actions a {
+  color: var(--otui-public-landing-brand);
+  font-weight: 700;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.2em;
+}
+
+.public-landing-header__nav-link {
+  padding: 0.65rem 0;
+}
+
+.public-landing-header__nav-link[aria-current='page'] {
+  color: var(--otui-public-landing-foreground);
+  text-decoration: underline;
+}
+
+.public-landing-header__actions {
+  justify-content: flex-end;
+}
+
+.public-landing-header__actions:empty {
+  display: none;
+}
+
+.public-landing-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    105deg,
+    var(--otui-public-landing-background) 0%,
+    color-mix(
+        in srgb,
+        var(--otui-public-landing-brand) 8%,
+        var(--otui-public-landing-background)
+      )
+      100%
+  );
+}
+
+.public-landing-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-items: center;
+  gap: 2rem;
+  min-height: 28rem;
+  padding-block: 4.5rem;
+}
+
+.public-landing-hero__copy {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  min-width: 0;
+}
+
+.public-landing-hero__eyebrow,
+.public-discovery-region__eyebrow,
+.public-discovery-card__eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--otui-public-landing-brand);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-landing-hero h1,
+.public-discovery-region h2,
+.public-discovery-card h3 {
+  margin: 0;
+  color: var(--otui-public-landing-foreground);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  letter-spacing: -0.035em;
+}
+
+.public-landing-hero h1 {
+  max-width: 15ch;
+  font-size: clamp(2.25rem, 7vw, 5rem);
+  line-height: 0.98;
+  overflow-wrap: anywhere;
+}
+
+.public-landing-hero__description,
+.public-discovery-region__description,
+.public-discovery-card__description {
+  color: var(--otui-public-landing-muted);
+  line-height: 1.6;
+}
+
+.public-landing-hero__description {
+  max-width: 55ch;
+  margin: 1.5rem 0 0;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.public-landing-hero__body {
+  max-width: 55ch;
+  min-width: 0;
+  margin: 1.5rem 0 0;
+}
+
+.public-landing-hero__body:empty {
+  display: none;
+}
+
+.public-landing-hero__actions {
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.public-landing-action {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  text-decoration: none !important;
+}
+
+.public-landing-action--primary {
+  background: var(--otui-public-landing-cta-background);
+  color: var(--otui-public-landing-on-brand) !important;
+}
+
+.public-landing-action--secondary {
+  border-color: var(--otui-public-landing-border);
+  background: var(--otui-public-landing-surface);
+  color: var(--otui-public-landing-brand) !important;
+}
+
+.public-landing-hero__visual {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-width: 0;
+  min-height: 12rem;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--otui-public-landing-border);
+  border-radius: 1rem;
+  background: var(--otui-public-landing-surface);
+  color: var(--otui-public-landing-muted);
+}
+
+// Motion-only heroes project a full-bleed background rather than an empty
+// right-hand media card. The marker is intentionally explicit so real image
+// and media slots keep their normal visual presentation.
+:host(.hero-has-background) .public-landing-hero__visual {
+  display: contents;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+:host(.hero-has-background) .public-landing-hero__inner {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.public-landing-hero__visual > [data-public-landing-background] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.public-landing-hero__visual > [data-public-landing-background] * {
+  pointer-events: none;
+}
+
+.public-landing-hero__visual img,
+.public-discovery-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-landing-hero__visual img {
+  position: relative;
+  z-index: 1;
+  min-height: 12rem;
+}
+
+.public-discovery-region {
+  padding-block: 4rem;
+}
+
+.public-discovery-region__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.public-discovery-region h2 {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  line-height: 1.05;
+}
+
+.public-discovery-region__description {
+  max-width: 60ch;
+  margin: 0.75rem 0 0;
+}
+
+.public-discovery-list ul {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.public-discovery-list[data-layout='list'] ul {
+  grid-template-columns: 1fr;
+}
+
+.public-discovery-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--otui-public-landing-border);
+  border-radius: 0.75rem;
+  background: var(--otui-public-landing-surface);
+  box-shadow: 0 0.25rem 1rem
+    color-mix(in srgb, var(--otui-public-landing-foreground) 8%, transparent);
+}
+
+.public-discovery-card--featured {
+  border-color: var(--otui-public-landing-brand);
+}
+
+.public-discovery-card__media {
+  display: grid;
+  min-height: 8rem;
+  place-items: center;
+  overflow: hidden;
+  background: color-mix(
+    in srgb,
+    var(--otui-public-landing-brand) 9%,
+    var(--otui-public-landing-surface)
+  );
+  color: var(--otui-public-landing-muted);
+}
+
+.public-discovery-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+.public-discovery-card h3 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.public-discovery-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-discovery-card h3 a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.2em;
+}
+
+.public-discovery-card__description {
+  margin: 0.75rem 0 0;
+}
+
+.public-discovery-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  color: var(--otui-public-landing-muted);
+  font-size: 0.875rem;
+}
+
+.public-discovery-card__actions {
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.public-discovery-card__actions:empty,
+.public-discovery-card__meta:empty {
+  display: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--otui-public-landing-focus);
+  outline-offset: 3px;
+}
+
+@media (min-width: 48rem) {
+  .public-landing-header__inner {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .public-landing-header__menu {
+    display: none;
+  }
+
+  .public-landing-header__nav,
+  .public-landing-header__nav[data-open='true'] {
+    display: flex;
+    grid-column: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 0;
+  }
+
+  .public-landing-header__nav-link {
+    padding: 0.5rem 0;
+  }
+
+  .public-discovery-list ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 72rem) {
+  .public-landing-hero__inner {
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+    gap: 4rem;
+    min-height: 36rem;
+    padding-block: 6rem;
+  }
+
+  .public-landing-hero__visual,
+  .public-landing-hero__visual img {
+    min-height: 22rem;
+  }
+
+  .public-discovery-list ul {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,6 +1,8 @@
 import { FullConfig } from '@playwright/test';
+import { request } from '@playwright/test';
 import { spawn } from 'child_process';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { mkdir } from 'node:fs/promises';
 import net from 'node:net';
 
 type SetupCommand = {
@@ -16,9 +18,23 @@ const BUSINESS_SITE_E2E_BUILD_PROJECTS = [
   'permissions',
   'store',
   'lead-tracker',
+  'blogging',
   'gateway',
   'business-site',
 ].join(',');
+
+const OWNER_EMAIL = 'owner@localbusiness.test';
+const OWNER_PASSWORD = 'BusinessOwnerPass123!';
+const BUSINESS_SITE_BASE_URL =
+  process.env['BASE_URL'] || 'http://127.0.0.1:8094';
+const WORKSPACE_ROOT = resolve(__dirname, '../../');
+
+export function getOwnerStorageStatePath(): string {
+  return join(
+    WORKSPACE_ROOT,
+    'dist/apps/business-site-e2e/owner-storage-state.json'
+  );
+}
 
 export function getComposeArgs() {
   return [
@@ -134,6 +150,41 @@ function waitForHttpOk(url: string, timeoutMs = 300000) {
   });
 }
 
+async function saveOwnerStorageState(): Promise<void> {
+  const storageStatePath = getOwnerStorageStatePath();
+  await mkdir(dirname(storageStatePath), { recursive: true });
+
+  const requestContext = await request.newContext({
+    baseURL: BUSINESS_SITE_BASE_URL,
+  });
+  try {
+    const response = await requestContext.post('/api/authentication/login', {
+      headers: {
+        'content-type': 'application/json',
+        'x-ot-appscope': 'business-site',
+        'x-ot-session-mode': 'cookie',
+      },
+      data: {
+        email: OWNER_EMAIL,
+        password: OWNER_PASSWORD,
+      },
+    });
+
+    if (!response.ok()) {
+      throw new Error(
+        `Owner session bootstrap failed with ${response.status()}: ${await response.text()}`
+      );
+    }
+
+    await requestContext.storageState({ path: storageStatePath });
+    console.log(
+      `[Playwright Global Setup] Saved reusable owner session to ${storageStatePath}`
+    );
+  } finally {
+    await requestContext.dispose();
+  }
+}
+
 export function getSetupSeedCommands(workspaceRoot: string): SetupCommand[] {
   return [
     {
@@ -193,6 +244,7 @@ export function getStackStartupCommands(workspaceRoot: string): SetupCommand[] {
         'permissions',
         'store',
         'lead-tracker',
+        'blogging',
         'gateway',
       ],
       cwd: workspaceRoot,
@@ -210,10 +262,12 @@ async function globalSetup(_config: FullConfig) {
     console.log(
       '\n[Playwright Global Setup] SKIP_SETUP=true, skipping Docker startup'
     );
+    await waitForHttpOk(`${BUSINESS_SITE_BASE_URL}/api/business/site-config`);
+    await saveOwnerStorageState();
     return;
   }
 
-  const workspaceRoot = join(__dirname, '../../');
+  const workspaceRoot = WORKSPACE_ROOT;
   const buildCommand = getBuildCommand(workspaceRoot);
 
   console.log(
@@ -259,6 +313,8 @@ async function globalSetup(_config: FullConfig) {
       seedCommand.env
     );
   }
+
+  await saveOwnerStorageState();
 }
 
 export default globalSetup;

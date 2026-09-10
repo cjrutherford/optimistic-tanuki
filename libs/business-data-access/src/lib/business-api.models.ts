@@ -1,4 +1,8 @@
-import { LeadSource, LeadStatus } from '@optimistic-tanuki/models';
+import {
+  LeadSource,
+  LeadStatus,
+  ModerationDecision,
+} from '@optimistic-tanuki/models';
 import { BusinessSiteConfig } from './business-site.config';
 
 export interface BusinessOffer {
@@ -19,6 +23,20 @@ export interface BusinessStoreProduct {
   active: boolean;
   stock: number;
   imageUrl?: string;
+}
+
+export interface BusinessFeatureCatalog {
+  id: string;
+  name: string;
+  description?: string | null;
+}
+
+export interface BusinessBlogPost {
+  id: string;
+  name: string;
+  description: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface BusinessBusyWindow {
@@ -75,6 +93,16 @@ export interface PublicBusinessSiteSummary {
   businessType: string;
 }
 
+/** Workspace selector returned only for the authenticated business owner. */
+export interface BusinessOwnedWorkspace {
+  workspaceId: string;
+  kind: 'business-site' | 'community';
+  slug: string;
+  displayName: string;
+  appScope: string;
+  status: 'draft' | 'active' | 'suspended' | 'archived';
+}
+
 export interface CreateBusinessBookingRequest {
   siteSlug?: string;
   resourceId?: string;
@@ -118,6 +146,12 @@ export interface BusinessLeadIntakeRecord {
   source: LeadSource | string;
   notes?: string;
   accountStatus: 'No account' | 'Registered' | 'Linked client';
+  lifecycleState?: 'active' | 'revoked';
+  moderationDecision?: ModerationDecision;
+  sessionRefresh?: {
+    required: boolean;
+    appScope: 'business-site';
+  };
 }
 
 export type BusinessRelationshipStage =

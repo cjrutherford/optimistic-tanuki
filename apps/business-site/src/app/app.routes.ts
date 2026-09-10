@@ -1,4 +1,5 @@
-import { Route } from '@angular/router';
+import { inject } from '@angular/core';
+import { ResolveFn, Route } from '@angular/router';
 import {
   createFinanceRoutes,
   FINANCE_HOST_CONFIG,
@@ -15,6 +16,15 @@ import {
   emailAuthRoutes,
   oauthCallbackRoutes,
 } from '@optimistic-tanuki/auth-ui';
+import {
+  BusinessApiService,
+  type SiteConfigResponse,
+} from '@optimistic-tanuki/business-data-access';
+
+const businessSiteConfigResolver: ResolveFn<SiteConfigResponse> = (route) =>
+  inject(BusinessApiService).getSiteConfigForSlug(
+    route.paramMap.get('siteSlug')
+  );
 
 const ownerFinanceConfig = {
   routeBase: '/owner/finance',
@@ -144,7 +154,19 @@ export const appRoutes: Route[] = [
     title: 'View Product',
   },
   {
+    path: 'sites/:siteSlug/blog',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessBlogPageComponent
+      ),
+    title: 'Blog',
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
+  },
+  {
     path: 'sites/:siteSlug',
+    resolve: { siteConfig: businessSiteConfigResolver },
     loadComponent: () =>
       import('@optimistic-tanuki/business-public-ui').then(
         (m) => m.BusinessLandingPageComponent

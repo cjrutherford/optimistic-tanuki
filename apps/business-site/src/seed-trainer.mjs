@@ -9,34 +9,23 @@ import {
   PRIMARY_WORKFLOW_TENANT_SLUG,
   WORKFLOW_CLIENT_USERS,
 } from './sample-tenants.mjs';
+import { seedStoreCatalogForTenant } from './seed-trainer-store.mjs';
 
-const logger = {
+const defaultLogger = {
   log: (msg) => console.log(`[BusinessSeed] ${msg}`),
   warn: (msg) => console.warn(`[BusinessSeed] ${msg}`),
   error: (msg) => console.error(`[BusinessSeed] ${msg}`),
 };
 
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://gateway:3000/api';
-const APP_SCOPE = process.env.APP_SCOPE || 'business-site';
+const DEFAULT_GATEWAY_URL = 'http://gateway:3000/api';
+const DEFAULT_APP_SCOPE = 'business-site';
 const { Client: PgClient } = pg;
-const OWNER_EMAILS = new Set(
-  DEV_BUSINESS_TENANT_PRESETS.map((tenant) => tenant.owner.email)
-);
-const SEED_USERS = [
-  ...DEV_BUSINESS_TENANT_PRESETS.map((tenant) => tenant.owner),
-  ...WORKFLOW_CLIENT_USERS,
-];
-
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchJson(url, options = {}) {
+async function fetchJson(url, options = {}, appScope = DEFAULT_APP_SCOPE) {
   const res = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'x-ot-appscope': APP_SCOPE,
+      'x-ot-appscope': appScope,
       ...(options.headers || {}),
     },
   });
@@ -48,24 +37,70 @@ async function fetchJson(url, options = {}) {
   }
 }
 
-async function bootstrap() {
-  logger.log(`=== Starting Business User Seed ===`);
-  logger.log(`Gateway URL: ${GATEWAY_URL}`);
-  logger.log(`App Scope: ${APP_SCOPE}`);
+export class SeedOperationError extends Error {
+  constructor(stage, subject, cause) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    super(
+      `Required seed operation failed [${stage}] for ${subject}: ${reason}`
+    );
+    this.name = 'SeedOperationError';
+    this.stage = stage;
+    this.subject = subject;
+    this.cause = cause;
+  }
+}
 
+function asSeedOperationError(stage, subject, error) {
+  return error instanceof SeedOperationError
+    ? error
+    : new SeedOperationError(stage, subject, error);
+}
+
+export async function bootstrap(options = {}) {
+  const logger = options.logger || defaultLogger;
+  const dependencies = options.dependencies || {};
+  const gatewayUrl =
+    options.gatewayUrl ||
+    options.env?.GATEWAY_URL ||
+    process.env.GATEWAY_URL ||
+    DEFAULT_GATEWAY_URL;
+  const appScope =
+    options.appScope ||
+    options.env?.APP_SCOPE ||
+    process.env.APP_SCOPE ||
+    DEFAULT_APP_SCOPE;
+  const tenants = options.tenants || DEV_BUSINESS_TENANT_PRESETS;
+  const users = options.users || [
+    ...tenants.map((tenant) => tenant.owner),
+    ...WORKFLOW_CLIENT_USERS,
+  ];
+  const ownerEmails = new Set(tenants.map((tenant) => tenant.owner.email));
+  const sleep =
+    dependencies.sleep ||
+    ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const requestJson =
+    dependencies.fetchJson ||
+    ((url, requestOptions = {}) => fetchJson(url, requestOptions, appScope));
+  const PgClient = dependencies.PgClient || pg.Client;
+
+  logger.log(`=== Starting Business User Seed ===`);
+  logger.log(`Gateway URL: ${gatewayUrl}`);
+  logger.log(`App Scope: ${appScope}`);
+
+  const env = options.env || process.env;
   const permissionsDb = new PgClient({
-    host: process.env.POSTGRES_HOST || 'db',
-    port: Number(process.env.POSTGRES_PORT || 5432),
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.PERMISSIONS_DB || 'ot_permissions',
+    host: env.POSTGRES_HOST || 'db',
+    port: Number(env.POSTGRES_PORT || 5432),
+    user: env.POSTGRES_USER || 'postgres',
+    password: env.POSTGRES_PASSWORD || 'postgres',
+    database: env.PERMISSIONS_DB || 'ot_permissions',
   });
   const storeDb = new PgClient({
-    host: process.env.POSTGRES_HOST || 'db',
-    port: Number(process.env.POSTGRES_PORT || 5432),
-    user: process.env.POSTGRES_USER || 'postgres',
-    password: process.env.POSTGRES_PASSWORD || 'postgres',
-    database: process.env.STORE_DB || 'ot_store',
+    host: env.POSTGRES_HOST || 'db',
+    port: Number(env.POSTGRES_PORT || 5432),
+    user: env.POSTGRES_USER || 'postgres',
+    password: env.POSTGRES_PASSWORD || 'postgres',
+    database: env.STORE_DB || 'ot_store',
   });
 
   await permissionsDb.connect();
@@ -73,7 +108,7 @@ async function bootstrap() {
 
   // Test connectivity
   try {
-    await fetchJson(`${GATEWAY_URL.replace(/\/api$/, '')}/api-docs`);
+    await requestJson(`${gatewayUrl.replace(/\/api$/, '')}/api-docs`);
     logger.log('Gateway connectivity: OK');
   } catch (e) {
     logger.warn(
@@ -102,7 +137,12 @@ async function bootstrap() {
     }
   }
 
-  async function upsertBusinessSiteConfig(tenant, ownerProfileId, ownerUserId) {
+  async function upsertBusinessSiteConfig(
+    tenant,
+    ownerProfileId,
+    ownerUserId,
+    catalogId = null
+  ) {
     logger.log(`Upserting hosted site config for ${tenant.site.slug}...`);
 
     const site = {
@@ -112,8 +152,12 @@ async function bootstrap() {
     };
     const leadContext = {
       profileId: ownerProfileId,
-      appScope: APP_SCOPE,
+      appScope,
     };
+
+    const serviceCatalog = catalogId
+      ? { ...tenant.serviceCatalog, catalogId }
+      : tenant.serviceCatalog;
 
     await storeDb.query(
       `
@@ -172,7 +216,7 @@ async function bootstrap() {
         JSON.stringify(tenant.brand),
         JSON.stringify(tenant.contact),
         JSON.stringify(tenant.features),
-        JSON.stringify(tenant.serviceCatalog),
+        JSON.stringify(serviceCatalog),
         JSON.stringify(tenant.services),
         JSON.stringify(tenant.landingPage),
         JSON.stringify(tenant.clientPortal),
@@ -182,6 +226,53 @@ async function bootstrap() {
     );
   }
 
+  async function provisionBusinessSiteWorkspace(tenant, owner) {
+    logger.log(`Provisioning workspace for ${tenant.site.slug}...`);
+
+    const response = await requestJson(
+      `${gatewayUrl}/workspaces/business-sites/provision`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${owner.token}` },
+        body: JSON.stringify({
+          slug: tenant.site.slug,
+          displayName: tenant.brand.businessName,
+        }),
+      }
+    );
+
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(
+        `Workspace provisioning failed for ${tenant.site.slug} (${
+          response.status
+        }): ${JSON.stringify(response.data)}`
+      );
+    }
+
+    if (!response.data?.workspace?.workspaceId) {
+      throw new Error(
+        `Workspace provisioning returned no workspace for ${tenant.site.slug}`
+      );
+    }
+
+    return response.data.workspace;
+  }
+
+  async function optionalRequest(label, url, requestOptions) {
+    try {
+      const response = await requestJson(url, requestOptions);
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(
+          `HTTP ${response.status}: ${JSON.stringify(response.data)}`
+        );
+      }
+      return response;
+    } catch (error) {
+      logger.warn(`Optional ${label} fixture skipped: ${error.message}`);
+      return undefined;
+    }
+  }
+
   async function createLeadForUser(owner, client, approved = false) {
     logger.log(
       `${
@@ -189,30 +280,35 @@ async function bootstrap() {
       } for ${client.email}`
     );
 
-    const leadResponse = await fetchJson(`${GATEWAY_URL}/business/leads`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${client.token}` },
-      body: JSON.stringify({
-        name:
-          client.email === 'client@localbusiness.test'
-            ? 'Maya Rivers'
-            : 'Taylor Quinn',
-        email: client.email,
-        phone: '(555) 100-2000',
-        goal: approved
-          ? 'Schedule a strategy consultation'
-          : 'Join the approval queue before scheduling',
-        context: approved
-          ? 'Accepted client used for real-booking validation.'
-          : 'Pending client used for approval-queue validation.',
-        preferredStart: '2026-05-10T10:00',
-        preferredEnd: '2026-05-10T11:00',
-      }),
-    });
+    const leadResponse = await optionalRequest(
+      `lead for ${client.email}`,
+      `${gatewayUrl}/business/leads`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${client.token}` },
+        body: JSON.stringify({
+          name:
+            client.email === 'client@localbusiness.test'
+              ? 'Maya Rivers'
+              : 'Taylor Quinn',
+          email: client.email,
+          phone: '(555) 100-2000',
+          goal: approved
+            ? 'Schedule a strategy consultation'
+            : 'Join the approval queue before scheduling',
+          context: approved
+            ? 'Accepted client used for real-booking validation.'
+            : 'Pending client used for approval-queue validation.',
+          preferredStart: '2026-05-10T10:00',
+          preferredEnd: '2026-05-10T11:00',
+        }),
+      }
+    );
 
     if (approved && leadResponse?.data?.id) {
-      await fetchJson(
-        `${GATEWAY_URL}/business/owner/leads/${leadResponse.data.id}/approve`,
+      await optionalRequest(
+        `approval for ${client.email}`,
+        `${gatewayUrl}/business/owner/leads/${leadResponse.data.id}/approve`,
         {
           method: 'PUT',
           headers: { Authorization: `Bearer ${owner.token}` },
@@ -226,29 +322,37 @@ async function bootstrap() {
       'Seeding recurring availability and a date-specific override...'
     );
 
-    await fetchJson(`${GATEWAY_URL}/business/owner/availabilities`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${owner.token}` },
-      body: JSON.stringify({
-        dayOfWeek: 0,
-        startTime: '09:00:00',
-        endTime: '17:00:00',
-        hourlyRate: 150,
-        serviceType: 'Strategy consultation',
-      }),
-    });
+    await optionalRequest(
+      'recurring availability',
+      `${gatewayUrl}/business/owner/availabilities`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${owner.token}` },
+        body: JSON.stringify({
+          dayOfWeek: 0,
+          startTime: '09:00:00',
+          endTime: '17:00:00',
+          hourlyRate: 150,
+          serviceType: 'Strategy consultation',
+        }),
+      }
+    );
 
-    await fetchJson(`${GATEWAY_URL}/business/owner/availability-overrides`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${owner.token}` },
-      body: JSON.stringify({
-        mode: 'blocked',
-        startTime: '2026-05-10T12:00:00.000Z',
-        endTime: '2026-05-10T13:00:00.000Z',
-        hourlyRate: 150,
-        serviceType: 'Strategy consultation',
-      }),
-    });
+    await optionalRequest(
+      'availability override',
+      `${gatewayUrl}/business/owner/availability-overrides`,
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${owner.token}` },
+        body: JSON.stringify({
+          mode: 'blocked',
+          startTime: '2026-05-10T12:00:00.000Z',
+          endTime: '2026-05-10T13:00:00.000Z',
+          hourlyRate: 150,
+          serviceType: 'Strategy consultation',
+        }),
+      }
+    );
   }
 
   async function assignRole(profileId, roleName) {
@@ -262,7 +366,7 @@ async function bootstrap() {
         ON CONFLICT ("roleId", "profileId", "appScopeId") DO NOTHING
         RETURNING id
       `,
-      [profileId, roleName, APP_SCOPE]
+      [profileId, roleName, appScope]
     );
 
     if (!result.rowCount) {
@@ -274,11 +378,11 @@ async function bootstrap() {
           WHERE r.name = $1 AND s.name = $2
           LIMIT 1
         `,
-        [roleName, APP_SCOPE]
+        [roleName, appScope]
       );
 
       if (!roleCheck.rowCount) {
-        throw new Error(`Role ${roleName} not found for ${APP_SCOPE}`);
+        throw new Error(`Role ${roleName} not found for ${appScope}`);
       }
     }
   }
@@ -295,7 +399,7 @@ async function bootstrap() {
     );
   }
 
-  for (const userData of SEED_USERS) {
+  for (const userData of users) {
     let userId;
     let token;
     let profileId;
@@ -303,8 +407,8 @@ async function bootstrap() {
     // Try register
     try {
       logger.log(`Registering user: ${userData.email}`);
-      const { status, data } = await fetchJson(
-        `${GATEWAY_URL}/authentication/register`,
+      const { status, data } = await requestJson(
+        `${gatewayUrl}/authentication/register`,
         {
           method: 'POST',
           body: JSON.stringify({
@@ -326,9 +430,13 @@ async function bootstrap() {
         JSON.stringify(data).includes('already exists')
       ) {
         logger.log(`User ${userData.email} already exists, will login...`);
+      } else {
+        throw new Error(
+          `Registration returned ${status}: ${JSON.stringify(data)}`
+        );
       }
     } catch (err) {
-      logger.warn(`Registration error for ${userData.email}: ${err.message}`);
+      throw asSeedOperationError('registration', userData.email, err);
     }
 
     await sleep(200);
@@ -336,19 +444,25 @@ async function bootstrap() {
     // Try login
     try {
       logger.log(`Logging in user: ${userData.email}`);
-      const { data } = await fetchJson(`${GATEWAY_URL}/authentication/login`, {
-        method: 'POST',
-        body: JSON.stringify({
-          email: userData.email,
-          password: userData.password,
-        }),
-      });
+      const { status, data } = await requestJson(
+        `${gatewayUrl}/authentication/login`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            email: userData.email,
+            password: userData.password,
+          }),
+        }
+      );
+
+      if (status < 200 || status >= 300) {
+        throw new Error(`Login returned ${status}: ${JSON.stringify(data)}`);
+      }
 
       token = extractToken(data);
 
       if (!token) {
-        logger.warn(`No token received for ${userData.email}, skipping...`);
-        continue;
+        throw new Error('Login returned no authentication token');
       }
 
       const tokenPayload = decodeJwtPayload(token);
@@ -362,27 +476,34 @@ async function bootstrap() {
       }
 
       try {
-        const { data: exchangeData } = await fetchJson(
-          `${GATEWAY_URL}/authentication/exchange`,
-          {
+        const { status: exchangeStatus, data: exchangeData } =
+          await requestJson(`${gatewayUrl}/authentication/exchange`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
             body: JSON.stringify({
-              targetAppId: APP_SCOPE,
+              targetAppId: appScope,
             }),
-          }
-        );
+          });
+        if (exchangeStatus < 200 || exchangeStatus >= 300) {
+          throw new Error(
+            `Token exchange returned ${exchangeStatus}: ${JSON.stringify(
+              exchangeData
+            )}`
+          );
+        }
         profileId = extractProfileId(exchangeData) || profileId;
         token = extractToken(exchangeData) || token;
         logger.log(`Resolved profileId via exchange: ${profileId}`);
       } catch (e) {
-        logger.warn(
-          `Could not exchange token for ${userData.email}: ${e.message}`
-        );
+        throw asSeedOperationError('token exchange', userData.email, e);
+      }
+
+      if (!userId || !profileId || !token) {
+        throw new Error('Login did not resolve user, profile, and token');
       }
 
       if (userId && profileId && token) {
-        const roleName = OWNER_EMAILS.has(userData.email)
+        const roleName = ownerEmails.has(userData.email)
           ? 'business_site_owner'
           : 'business_site_client';
 
@@ -407,31 +528,66 @@ async function bootstrap() {
         );
       }
     } catch (err) {
-      logger.warn(`Login failed for ${userData.email}: ${err.message}`);
+      throw asSeedOperationError('login', userData.email, err);
     }
 
     await sleep(100);
   }
 
-  logger.log(`=== Business User Seed Complete ===`);
-  logger.log(`Successfully authenticated ${authenticatedUsers.length} users`);
-
-  for (const tenant of DEV_BUSINESS_TENANT_PRESETS) {
+  for (const tenant of tenants) {
     const owner = authenticatedUsers.find(
       (user) => user.email === tenant.owner.email
     );
-    if (!owner?.profileId) {
-      logger.warn(
-        `Skipping tenant ${tenant.site.slug}; owner profile missing.`
+    if (!owner?.profileId || !owner.token) {
+      throw asSeedOperationError(
+        'tenant authentication',
+        tenant.site.slug,
+        new Error('owner authentication missing')
       );
-      continue;
     }
-    await upsertBusinessSiteConfig(tenant, owner.profileId, owner.userId);
+    try {
+      await upsertBusinessSiteConfig(tenant, owner.profileId, owner.userId);
+    } catch (error) {
+      throw asSeedOperationError('configuration', tenant.site.slug, error);
+    }
+    try {
+      const workspace = await provisionBusinessSiteWorkspace(tenant, owner);
+      if (
+        tenant.features?.store?.enabled &&
+        tenant.serviceCatalog?.source === 'store'
+      ) {
+        const storeSeed = await seedStoreCatalogForTenant({
+          tenant,
+          owner,
+          workspace,
+          gatewayUrl,
+          fetchJson: requestJson,
+          logger,
+        });
+        await upsertBusinessSiteConfig(
+          tenant,
+          owner.profileId,
+          owner.userId,
+          storeSeed?.catalogId || null
+        );
+        logger.log(
+          `Store catalog ready for ${tenant.site.slug}: ${storeSeed.catalogId} (${storeSeed.productNames.length} products)`
+        );
+      }
+    } catch (error) {
+      throw asSeedOperationError(
+        tenant.features?.store?.enabled
+          ? 'provisioning/store seed'
+          : 'provisioning',
+        tenant.site.slug,
+        error
+      );
+    }
     logger.log(`Hosted tenant ready at /sites/${tenant.site.slug}`);
   }
 
   const owner = authenticatedUsers.find((user) => {
-    const preset = DEV_BUSINESS_TENANT_PRESETS.find(
+    const preset = tenants.find(
       (tenant) => tenant.site.slug === PRIMARY_WORKFLOW_TENANT_SLUG
     );
     return user.email === preset?.owner.email;
@@ -453,8 +609,11 @@ async function bootstrap() {
     );
   }
 
+  logger.log(`=== Business User Seed Complete ===`);
+  logger.log(`Successfully authenticated ${authenticatedUsers.length} users`);
+
   for (const user of authenticatedUsers) {
-    const seedUser = SEED_USERS.find((u) => u.email === user.email);
+    const seedUser = users.find((u) => u.email === user.email);
     logger.log(`Email: ${user.email}, Password: ${seedUser?.password}`);
   }
 
@@ -462,7 +621,9 @@ async function bootstrap() {
   await storeDb.end();
 }
 
-bootstrap().catch((err) => {
-  console.error('Business seed failed:', err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith('/seed-trainer.mjs')) {
+  bootstrap().catch((err) => {
+    console.error('Business seed failed:', err);
+    process.exitCode = 1;
+  });
+}

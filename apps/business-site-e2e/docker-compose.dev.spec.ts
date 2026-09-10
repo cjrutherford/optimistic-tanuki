@@ -33,6 +33,76 @@ describe('business-site dev compose wiring', () => {
     expect(businessSiteSection).not.toContain("\n        'nodemon',\n");
   });
 
+  it('runs the business-site dev runtime as the local host user', () => {
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
+    const businessSiteSection = compose.slice(
+      compose.indexOf('  business-site:'),
+      compose.indexOf('  crdn-client-interface:')
+    );
+
+    expect(businessSiteSection).toContain(
+      "user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'"
+    );
+  });
+
+  it('runs the Blogging dev runtime as the local host user', () => {
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
+    const bloggingSection = compose.slice(
+      compose.indexOf('  blogging:'),
+      compose.indexOf('  gateway:')
+    );
+
+    expect(bloggingSection).toContain(
+      "user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'"
+    );
+  });
+
+  it('runs the Store dev runtime as the local host user', () => {
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
+    const storeSection = compose.slice(
+      compose.indexOf('  store:'),
+      compose.indexOf('  chat-collector:')
+    );
+
+    expect(storeSection).toContain(
+      "user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'"
+    );
+  });
+
+  it('runs every dev service with a writable dist mount as the local host user', () => {
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
+    const serviceSections = Array.from(
+      compose.matchAll(
+        /^  ([a-z0-9-]+):\n([\s\S]*?)(?=^  [a-z0-9-]+:|^volumes:|\Z)/gim
+      )
+    );
+    const servicesWithDistMounts = serviceSections.filter(([, , section]) =>
+      section
+        .split('\n')
+        .some((line) => line.includes('./dist/apps') && !line.includes(':ro'))
+    );
+
+    expect(servicesWithDistMounts).not.toHaveLength(0);
+
+    for (const [service, , section] of servicesWithDistMounts) {
+      expect(section).toContain(
+        "user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'"
+      );
+    }
+  });
+
   it('installs nodemon in the business-site dev image', () => {
     const dockerfile = readFileSync(
       join(workspaceRoot, 'apps/business-site/Dockerfile.dev'),

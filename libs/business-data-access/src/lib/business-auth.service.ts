@@ -6,7 +6,7 @@ import {
   computed,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
   Observable,
   tap,
@@ -18,17 +18,27 @@ import {
 } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { RegisterRequest } from '@optimistic-tanuki/models';
+import {
+  BUSINESS_SITE_APP_SCOPE,
+  BusinessAuthState,
+  BusinessAuthStateEvent,
+  BusinessIdentity,
+  BusinessSessionKind,
+  createBusinessAuthState,
+  transitionBusinessAuthState,
+} from './business-auth.state';
 
-export interface BusinessAuthUser {
+export interface BusinessAuthUser extends BusinessIdentity {
   token?: string;
-  profileId: string;
-  userId: string;
-  email: string;
-  name?: string;
 }
 
 const SESSION_KIND_KEY = 'business-site:session-kind';
-const BUSINESS_SITE_SCOPE = 'business-site';
+const BUSINESS_AUTH_STORAGE_KEYS = [
+  'business-site:user',
+  'business-site:token',
+  'business-site:client-user',
+  'business-site:client-token',
+] as const;
 
 interface TokenClaims {
   userId?: string;
@@ -42,6 +52,13 @@ export class BusinessAuthService {
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
 
+  private readonly _authState = signal<BusinessAuthState>(
+    createBusinessAuthState()
+  );
+
+  readonly authState = this._authState.asReadonly();
+  readonly session = this.authState;
+
   private readonly _user = signal<BusinessAuthUser | null>(this.loadUser());
 
   readonly user = this._user.asReadonly();
@@ -51,6 +68,8 @@ export class BusinessAuthService {
   private readonly _clientUser = signal<BusinessAuthUser | null>(
     this.loadClientUser()
   );
+
+  private sessionRestoreVersion = 0;
 
   readonly clientUser = this._clientUser.asReadonly();
   readonly isClientAuthenticated = computed(() => !!this._clientUser());
@@ -135,7 +154,7 @@ export class BusinessAuthService {
   private authRequestOptions(baseToken?: string) {
     return {
       headers: {
-        'x-ot-appscope': BUSINESS_SITE_SCOPE,
+        'x-ot-appscope': BUSINESS_SITE_APP_SCOPE,
         'X-ot-session-mode': 'cookie',
         ...(baseToken ? { Authorization: `Bearer ${baseToken}` } : {}),
       },
@@ -173,14 +192,23 @@ export class BusinessAuthService {
       .pipe(
         switchMap(() => this.sessionUser(email)),
         tap((user) => {
-          sessionStorage.setItem(SESSION_KIND_KEY, 'client');
-          this.storeClientUser(user);
+          this.setSessionKind('client');
+          this.storeClientUser(user, 'client');
         })
       );
   }
 
+  refreshClientSession(): Observable<BusinessAuthUser> {
+    return this.sessionUser('').pipe(
+      tap((user) => {
+        this.setSessionKind('client');
+        this.storeClientUser(user, 'client');
+      })
+    );
+  }
+
   logoutClient(): void {
-    this.clearClientUser();
+    this.logoutWithCookieSession();
   }
 
   registerClient(payload: RegisterRequest): Observable<unknown> {
@@ -265,8 +293,8 @@ export class BusinessAuthService {
       .pipe(
         switchMap(() => this.sessionUser(email)),
         tap((user) => {
-          sessionStorage.setItem(SESSION_KIND_KEY, 'owner');
-          this.storeUser(user);
+          this.setSessionKind('owner');
+          this.storeUser(user, 'owner');
         })
       );
   }
@@ -274,28 +302,47 @@ export class BusinessAuthService {
   restoreSession(): Observable<boolean> {
     if (!isPlatformBrowser(this.platformId)) return of(false);
     const kind = sessionStorage.getItem(SESSION_KIND_KEY);
-    if (kind !== 'owner' && kind !== 'client') return of(false);
+    if (kind !== 'owner' && kind !== 'client') {
+      this.invalidatePendingRestore();
+      this.transition({ type: 'sign-out' });
+      return of(false);
+    }
+
+    const restoreVersion = ++this.sessionRestoreVersion;
+    this.transition({ type: 'restore-start' });
     return this.sessionUser('').pipe(
-      tap((user) =>
-        kind === 'owner' ? this.storeUser(user) : this.storeClientUser(user)
-      ),
-      map(() => true),
-      catchError(() => {
-        this.clearUser();
-        this.clearClientUser();
+      tap((user) => {
+        if (restoreVersion !== this.sessionRestoreVersion) return;
+        kind === 'owner'
+          ? this.storeUser(user, 'owner')
+          : this.storeClientUser(user, 'client');
+      }),
+      map(() => restoreVersion === this.sessionRestoreVersion),
+      catchError((error: unknown) => {
+        if (restoreVersion !== this.sessionRestoreVersion) return of(false);
+        this.clearSessionState({
+          type:
+            error instanceof HttpErrorResponse
+              ? error.status === 401
+                ? 'unauthorized'
+                : 'expiry'
+              : 'expiry',
+        });
         return of(false);
       })
     );
   }
 
   logout(): void {
-    const token = this._user()?.token;
-    if (token) {
-      this.http
-        .post('/api/authentication/logout', { token })
-        .subscribe({ error: () => {} });
-    }
-    this.clearUser();
+    this.logoutWithCookieSession();
+  }
+
+  markUnauthorized(returnTo?: string | null): void {
+    this.clearSessionState({ type: 'unauthorized', returnTo });
+  }
+
+  markExpired(returnTo?: string | null): void {
+    this.clearSessionState({ type: 'expiry', returnTo });
   }
 
   getAuthHeaders(): Record<string, string> {
@@ -303,23 +350,91 @@ export class BusinessAuthService {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  private storeUser(user: BusinessAuthUser): void {
+  private storeUser(user: BusinessAuthUser, kind: BusinessSessionKind): void {
     this._user.set(user);
+    this.setSignedInState(user, kind);
   }
 
-  private clearUser(): void {
+  private setSessionKind(kind: BusinessSessionKind): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    sessionStorage.setItem(SESSION_KIND_KEY, kind);
+  }
+
+  private setSignedInState(
+    user: BusinessAuthUser,
+    kind: BusinessSessionKind
+  ): void {
+    const identity: BusinessIdentity = {
+      userId: user.userId,
+      profileId: user.profileId,
+      email: user.email,
+    };
+
+    if (user.name !== undefined) {
+      identity.name = user.name;
+    }
+
+    this.transition({
+      type: 'restore-success',
+      identity,
+      session: {
+        kind,
+        appScope: BUSINESS_SITE_APP_SCOPE,
+        transport: 'cookie',
+      },
+    });
+  }
+
+  private transition(event: BusinessAuthStateEvent): void {
+    this._authState.update((state) =>
+      transitionBusinessAuthState(state, event)
+    );
+  }
+
+  private clearSessionState(
+    event: Extract<
+      BusinessAuthStateEvent,
+      { type: 'unauthorized' | 'expiry' | 'sign-out' }
+    >
+  ): void {
+    this.invalidatePendingRestore();
     this._user.set(null);
+    this._clientUser.set(null);
+
     if (isPlatformBrowser(this.platformId)) {
+      for (const key of BUSINESS_AUTH_STORAGE_KEYS) {
+        localStorage.removeItem(key);
+      }
       sessionStorage.removeItem(SESSION_KIND_KEY);
     }
+
+    this.transition(event);
+  }
+
+  private logoutWithCookieSession(): void {
+    this.clearSessionState({ type: 'sign-out' });
+    this.http
+      .post('/api/authentication/logout', {}, this.authRequestOptions())
+      .subscribe({ error: () => undefined });
+  }
+
+  private invalidatePendingRestore(): void {
+    this.sessionRestoreVersion += 1;
   }
 
   private loadUser(): BusinessAuthUser | null {
     return null;
   }
 
-  private storeClientUser(user: BusinessAuthUser): void {
+  private storeClientUser(
+    user: BusinessAuthUser,
+    kind: BusinessSessionKind
+  ): void {
     this._clientUser.set(user);
+    this.setSignedInState(user, kind);
   }
 
   private clearClientUser(): void {

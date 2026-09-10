@@ -4,6 +4,7 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 import { BusinessApiService } from './business-api.service';
 
@@ -40,7 +41,44 @@ describe('BusinessApiService site config requests', () => {
     const request = httpMock.expectOne('/api/business/site-config');
     expect(request.request.method).toBe('GET');
     expect(request.request.params.keys()).toEqual([]);
+    expect(request.request.headers.get('X-ot-appscope')).toBe('business-site');
     request.flush({ configId: 'cfg-1', config: null });
+  });
+
+  it('uses the configured API base for server-side tenant requests', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessApiService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: API_BASE_URL, useValue: 'http://gateway:3000/api' },
+      ],
+    });
+    const serverService = TestBed.inject(BusinessApiService);
+    const serverHttp = TestBed.inject(HttpTestingController);
+
+    serverService.getSiteConfigForSlug('emberline-studio').subscribe();
+
+    const request = serverHttp.expectOne(
+      (candidate) =>
+        candidate.url === 'http://gateway:3000/api/business/site-config' &&
+        candidate.params.get('slug') === 'emberline-studio'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush({ configId: 'emberline-config', config: null });
+    serverHttp.verify();
+  });
+
+  it('provisions the authenticated owner business site without caller-supplied identity', () => {
+    service.provisionBusinessSite().subscribe();
+
+    const request = httpMock.expectOne(
+      '/api/workspaces/business-sites/provision'
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({});
+    request.flush({ workspace: { workspaceId: 'workspace-1' }, created: true });
   });
 
   it('adds the tenant slug when loading a hosted business site config', () => {
@@ -68,7 +106,32 @@ describe('BusinessApiService site config requests', () => {
     );
 
     expect(request.request.method).toBe('PUT');
+    expect(request.request.headers.get('X-ot-appscope')).toBe('business-site');
     request.flush({ id: 'cfg-2' });
+  });
+
+  it('lists feature catalogs with the business-site app scope and workspace slug', () => {
+    service.listStoreCatalogs('north-star-advisory').subscribe();
+    const storeRequest = httpMock.expectOne(
+      (candidate) =>
+        candidate.url === '/api/store/catalogs/mine' &&
+        candidate.params.get('workspaceSlug') === 'north-star-advisory'
+    );
+    expect(storeRequest.request.headers.get('X-ot-appscope')).toBe(
+      'business-site'
+    );
+    storeRequest.flush([]);
+
+    service.listBlogCatalogs('north-star-advisory').subscribe();
+    const blogRequest = httpMock.expectOne(
+      (candidate) =>
+        candidate.url === '/api/blog/catalogs/mine' &&
+        candidate.params.get('workspaceSlug') === 'north-star-advisory'
+    );
+    expect(blogRequest.request.headers.get('X-ot-appscope')).toBe(
+      'business-site'
+    );
+    blogRequest.flush([]);
   });
 
   it('adds the tenant slug when loading hosted business offers', () => {
@@ -80,6 +143,29 @@ describe('BusinessApiService site config requests', () => {
         candidate.params.get('slug') === 'steady-hand-contracting'
     );
 
+    expect(request.request.method).toBe('GET');
+    request.flush([]);
+  });
+
+  it('filters public store products by the configured catalog when provided', () => {
+    service.getStoreProducts('catalog-north').subscribe();
+
+    const request = httpMock.expectOne(
+      (candidate) =>
+        candidate.url === '/api/store/products' &&
+        candidate.params.get('catalogId') === 'catalog-north'
+    );
+
+    expect(request.request.method).toBe('GET');
+    request.flush([]);
+  });
+
+  it('loads public blog posts only through the referenced catalog endpoint', () => {
+    service.getBlogPosts('catalog-north').subscribe();
+
+    const request = httpMock.expectOne(
+      '/api/blog/catalogs/catalog-north/posts'
+    );
     expect(request.request.method).toBe('GET');
     request.flush([]);
   });
@@ -221,6 +307,22 @@ describe('BusinessApiService site config requests', () => {
       notes: 'Approved in the workspace.',
     });
     request.flush({ id: 'booking-1' });
+  });
+
+  it('rejects an owner prospect through the scoped business endpoint', () => {
+    service.rejectProspect('lead-1').subscribe();
+
+    const request = httpMock.expectOne(
+      '/api/business/owner/leads/lead-1/reject'
+    );
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({});
+    request.flush({
+      id: 'lead-1',
+      status: 'lost',
+      lifecycleState: 'revoked',
+      moderationDecision: { outcome: 'reject' },
+    });
   });
 
   it('lists assets with the owner auth header and requested filters', () => {
