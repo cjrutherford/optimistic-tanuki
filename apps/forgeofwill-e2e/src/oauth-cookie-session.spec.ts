@@ -77,7 +77,14 @@ test.describe('OAuth cookie session', () => {
     const setCookie = await (
       await sessionRedemptionResponse
     ).headerValue('set-cookie');
-    expect(setCookie).toMatch(/ot_session=.*HttpOnly.*Path=\//i);
+    // Assert the attributes independently. The old pattern required HttpOnly
+    // to appear before Path, and Express emits them the other way round:
+    // `ot_session=...; Max-Age=3600; Path=/; Expires=...; HttpOnly; SameSite=Lax`.
+    // Set-Cookie attributes are unordered, so pinning a sequence tested the
+    // serialiser rather than the policy.
+    expect(setCookie).toMatch(/^ot_session=/);
+    expect(setCookie).toMatch(/;\s*Path=\/(;|$)/i);
+    expect(setCookie).toMatch(/;\s*HttpOnly(;|$)/i);
     expect(setCookie).not.toMatch(/\bDomain=/i);
 
     await page.waitForURL((url) => !url.pathname.endsWith('/login'));

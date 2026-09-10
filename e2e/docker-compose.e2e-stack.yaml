@@ -583,11 +583,18 @@ services:
       # somewhere else. CORS_ALLOWED_ORIGINS lists both spellings, which is why
       # nothing but OAuth noticed.
       #
+      # Keys are app *scopes*, not app ids: fin-commander asks the gateway for
+      # the `finance` scope (see its finance-appscope.interceptor and the
+      # appScope it passes to initiateOAuthLogin), so keying its origin under
+      # `fin-commander` made resolveAppScopeForReturnTo disagree with the scope
+      # the app requested, and beginOAuthFlow rejected the mismatch with
+      # "appScope must match the registered returnTo application".
+      #
       # APP_SCOPE_ORIGINS is the gateway's designed per-environment override:
       # resolveCallbackBase() consults it before the registry, so the registry
       # stays correct for development while CI pins the loopback origins it
       # actually serves. Keep in step with the manifest's UI baseUrls.
-      APP_SCOPE_ORIGINS: '{"client-interface":"http://127.0.0.1:8080","forgeofwill":"http://127.0.0.1:8081","digital-homestead":"http://127.0.0.1:8082","christopherrutherford-net":"http://127.0.0.1:8083","owner-console":"http://127.0.0.1:8084","store":"http://127.0.0.1:8085","fin-commander":"http://127.0.0.1:8089","configurable-client":"http://127.0.0.1:8090","learning":"http://127.0.0.1:8099"}'
+      APP_SCOPE_ORIGINS: '{"client-interface":"http://127.0.0.1:8080","forgeofwill":"http://127.0.0.1:8081","digital-homestead":"http://127.0.0.1:8082","christopherrutherford-net":"http://127.0.0.1:8083","owner-console":"http://127.0.0.1:8084","store":"http://127.0.0.1:8085","finance":"http://127.0.0.1:8089","configurable-client":"http://127.0.0.1:8090","learning":"http://127.0.0.1:8099"}'
       CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
       CLIENT_INTERFACE_DOMAIN: 127.0.0.1
       CI_GOOGLE_CLIENT_ID: e2e-google-client-id
