@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
   Logger,
 } from '@nestjs/common';
@@ -171,6 +173,7 @@ export class CommunityController {
     const activated = await firstValueFrom(
       this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
         workspaceId: workspace.workspaceId,
+        appScope,
         source: { service: 'social', sourceId: community.id },
       })
     );
@@ -193,7 +196,7 @@ export class CommunityController {
     const ownerRole = await firstValueFrom(
       this.permissionsClient.send(
         { cmd: RoleCommands.GetByName },
-        { name: 'community_owner', appScope }
+        { name: 'community_owner', appScope: 'community' }
       )
     );
     if (!scope?.id || !ownerRole?.id) {
@@ -639,6 +642,90 @@ export class CommunityController {
     }
   }
 
+  @Get('members/:memberId/audit')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  async getMembershipAudit(
+    @Param('memberId') memberId: string,
+    @User() user: UserDetails,
+    @Req() request: any
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'GET_COMMUNITY_MEMBERSHIP_AUDIT' },
+        {
+          memberId,
+          requesterId: user.userId,
+          workspaceContext: request.workspaceContext,
+        }
+      )
+    );
+  }
+
+  @Post('members/:memberId/suspend')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  async suspendMember(
+    @Param('memberId') memberId: string,
+    @User() user: UserDetails,
+    @Req() request: any
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'SUSPEND_COMMUNITY_MEMBER' },
+        {
+          memberId,
+          suspenderId: user.userId,
+          workspaceContext: request.workspaceContext,
+        }
+      )
+    );
+  }
+
+  @Post('members/:memberId/reactivate')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  async reactivateMember(
+    @Param('memberId') memberId: string,
+    @User() user: UserDetails,
+    @Req() request: any
+  ) {
+    return firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'REACTIVATE_COMMUNITY_MEMBER' },
+        {
+          memberId,
+          reactivatorId: user.userId,
+          workspaceContext: request.workspaceContext,
+        }
+      )
+    );
+  }
+
   @Delete('invites/:inviteId')
   @WorkspaceContext({
     kind: 'community',
@@ -688,6 +775,22 @@ export class CommunityController {
     @User() user: UserDetails,
     @AppScope() appScope: string
   ): Promise<void> {
+    const members = (await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_MEMBERS },
+        { communityId }
+      )
+    )) as Array<{ userId: string; profileId: string }>;
+    const appointedMember = members.find(
+      (member) => member.profileId === body.profileId
+    );
+
+    if (!appointedMember) {
+      throw new BadRequestException(
+        'The appointed manager must be an approved community member.'
+      );
+    }
+
     const communityManagerRole = await firstValueFrom(
       this.permissionsClient.send(
         { cmd: RoleCommands.GetByName },
@@ -698,15 +801,53 @@ export class CommunityController {
     if (!communityManagerRole) {
       throw new Error('community_manager role not found');
     }
+    const workspaceScopeId = await this.getCommunityWorkspaceScopeId(
+      communityId,
+      appScope
+    );
 
     await firstValueFrom(
       this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
         roleId: communityManagerRole.id,
         profileId: body.profileId,
-        appScopeId: communityManagerRole.appScope?.id || appScope,
+        appScopeId: workspaceScopeId,
         targetId: communityId,
       } as AssignRoleDto)
     );
+
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.APPOINT_MANAGER },
+          {
+            communityId,
+            userId: appointedMember.userId,
+            profileId: appointedMember.profileId,
+          }
+        )
+      );
+    } catch (error) {
+      try {
+        await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: 'Unassign:Role:ByTarget' },
+            {
+              profileId: body.profileId,
+              roleId: communityManagerRole.id,
+              appScopeId: workspaceScopeId,
+              targetId: communityId,
+            }
+          )
+        );
+      } catch (rollbackError) {
+        this.logger.error(
+          `Failed to roll back manager role after Social appointment failure: ${
+            rollbackError?.message || rollbackError
+          }`
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(
       `Appointed profile ${body.profileId} as manager for community ${communityId}`
@@ -744,6 +885,10 @@ export class CommunityController {
     if (!communityManagerRole) {
       throw new Error('community_manager role not found');
     }
+    const workspaceScopeId = await this.getCommunityWorkspaceScopeId(
+      communityId,
+      appScope
+    );
 
     await firstValueFrom(
       this.permissionsClient.send(
@@ -751,11 +896,38 @@ export class CommunityController {
         {
           profileId,
           roleId: communityManagerRole.id,
-          appScopeId: communityManagerRole.appScope?.id || appScope,
+          appScopeId: workspaceScopeId,
           targetId: communityId,
         }
       )
     );
+
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.REVOKE_MANAGER },
+          { communityId }
+        )
+      );
+    } catch (error) {
+      try {
+        await firstValueFrom(
+          this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
+            roleId: communityManagerRole.id,
+            profileId,
+            appScopeId: workspaceScopeId,
+            targetId: communityId,
+          } as AssignRoleDto)
+        );
+      } catch (rollbackError) {
+        this.logger.error(
+          `Failed to restore manager role after Social revocation failure: ${
+            rollbackError?.message || rollbackError
+          }`
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(
       `Revoked manager role for profile ${profileId} from community ${communityId}`
@@ -842,6 +1014,29 @@ export class CommunityController {
     );
 
     return { id: chatRoom.id };
+  }
+
+  private async getCommunityWorkspaceScopeId(
+    communityId: string,
+    appScope: string
+  ): Promise<string> {
+    const workspace = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.RESOLVE_BY_SOURCE, {
+        appScope,
+        source: { service: 'social', sourceId: communityId },
+        requireActive: true,
+      })
+    );
+    const scope = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: AppScopeCommands.GetByName },
+        { name: workspaceScopeName(workspace.workspaceId) }
+      )
+    );
+    if (!scope?.id) {
+      throw new Error('Community workspace permission scope was not found');
+    }
+    return scope.id;
   }
 
   private async assignCommunityPostingRole(

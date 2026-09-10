@@ -18,4 +18,21 @@ describe('ContactFormComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('associates the subject label with the select control', () => {
+    component.subjects = [{ value: 'question', label: 'Question' }];
+    component.subjectId = 'business-contact-subject';
+    fixture.detectChanges();
+
+    const label = fixture.nativeElement.querySelector(
+      '.contact-subject-label'
+    ) as HTMLLabelElement;
+    const select = fixture.nativeElement.querySelector(
+      'select'
+    ) as HTMLSelectElement;
+
+    expect(label.textContent.trim()).toBe('Subject');
+    expect(label.htmlFor).toBe('business-contact-subject');
+    expect(select.id).toBe('business-contact-subject');
+  });
 });

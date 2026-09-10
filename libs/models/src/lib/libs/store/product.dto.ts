@@ -22,6 +22,7 @@ export class CreateProductDto {
     example: 'A high-quality wireless mouse',
   })
   @IsString()
+  @IsOptional()
   @MinLength(0)
   @MaxLength(2000)
   description?: string;
@@ -54,6 +55,7 @@ export class CreateProductDto {
     default: true,
   })
   @IsBoolean()
+  @IsOptional()
   active?: boolean;
 
   @ApiPropertyOptional({
@@ -63,6 +65,11 @@ export class CreateProductDto {
   @IsUUID()
   @IsOptional()
   ownerId?: string;
+
+  @ApiPropertyOptional({ description: 'Optional owning Store catalog id' })
+  @IsUUID()
+  @IsOptional()
+  catalogId?: string;
 }
 
 export class UpdateProductDto {
@@ -117,4 +124,9 @@ export class UpdateProductDto {
   @IsBoolean()
   @IsOptional()
   active?: boolean;
+
+  @ApiPropertyOptional({ description: 'Optional owning Store catalog id' })
+  @IsUUID()
+  @IsOptional()
+  catalogId?: string | null;
 }

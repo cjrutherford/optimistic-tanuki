@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   CreateProductDto,
@@ -28,8 +28,18 @@ export interface Product {
   imageUrl?: string;
   stock: number;
   active: boolean;
+  catalogId?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface StoreCatalog {
+  id: string;
+  name: string;
+  description?: string | null;
+  ownerId: string;
+  workspaceId: string;
+  appScope: string;
 }
 
 export interface Order {
@@ -86,20 +96,45 @@ export class StoreService {
   constructor(private http: HttpClient) {}
 
   // Product management
-  getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.API_URL}/products`);
+  getProducts(catalogId?: string | null): Observable<Product[]> {
+    return this.http.get<Product[]>(`${this.API_URL}/products`, {
+      params: catalogId
+        ? new HttpParams().set('catalogId', catalogId)
+        : undefined,
+    });
+  }
+
+  getMyCatalogs(workspaceSlug: string): Observable<StoreCatalog[]> {
+    return this.http.get<StoreCatalog[]>(`${this.API_URL}/catalogs/mine`, {
+      params: new HttpParams().set('workspaceSlug', workspaceSlug),
+    });
   }
 
   getProduct(id: string): Observable<Product> {
     return this.http.get<Product>(`${this.API_URL}/products/${id}`);
   }
 
-  createProduct(product: CreateProductDto): Observable<Product> {
-    return this.http.post<Product>(`${this.API_URL}/products`, product);
+  createProduct(
+    product: CreateProductDto,
+    workspaceSlug?: string | null
+  ): Observable<Product> {
+    return this.http.post<Product>(`${this.API_URL}/products`, product, {
+      params: workspaceSlug
+        ? new HttpParams().set('workspaceSlug', workspaceSlug)
+        : undefined,
+    });
   }
 
-  updateProduct(id: string, product: UpdateProductDto): Observable<Product> {
-    return this.http.put<Product>(`${this.API_URL}/products/${id}`, product);
+  updateProduct(
+    id: string,
+    product: UpdateProductDto,
+    workspaceSlug?: string | null
+  ): Observable<Product> {
+    return this.http.put<Product>(`${this.API_URL}/products/${id}`, product, {
+      params: workspaceSlug
+        ? new HttpParams().set('workspaceSlug', workspaceSlug)
+        : undefined,
+    });
   }
 
   deleteProduct(id: string): Observable<void> {

@@ -130,6 +130,33 @@ describe('PostController', () => {
   });
 
   describe('updatePost', () => {
+    it('forwards resolved workspace scope when updating a post', async () => {
+      const updateDto: UpdateBlogPostDto = {
+        id: 'post-1',
+        title: 'Updated Title',
+      };
+      const workspaceScope = {
+        ownerId: 'author-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      };
+      postService.update.mockResolvedValue({ ...mockPost, ...updateDto });
+
+      await controller.updatePost({
+        id: 'post-1',
+        updatePostDto: updateDto,
+        requestingAuthorId: 'author-1',
+        workspaceScope,
+      } as any);
+
+      expect(postService.update).toHaveBeenCalledWith(
+        'post-1',
+        updateDto,
+        'author-1',
+        workspaceScope
+      );
+    });
+
     it('should update a post with required ownership check', async () => {
       const updateDto: UpdateBlogPostDto = {
         id: 'post-1',
@@ -154,6 +181,22 @@ describe('PostController', () => {
   });
 
   describe('deletePost', () => {
+    it('forwards resolved workspace scope when deleting a post', async () => {
+      const workspaceScope = {
+        ownerId: 'author-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      };
+      postService.remove.mockResolvedValue(undefined);
+
+      await controller.deletePost({
+        id: 'post-1',
+        workspaceScope,
+      } as any);
+
+      expect(postService.remove).toHaveBeenCalledWith('post-1', workspaceScope);
+    });
+
     it('should delete a post', async () => {
       postService.remove.mockResolvedValue(undefined);
 
@@ -164,18 +207,64 @@ describe('PostController', () => {
   });
 
   describe('findPublishedPosts', () => {
-    it('should return only published posts', async () => {
+    it('should return a safe catalog-only compatibility projection', async () => {
       postService.findPublished.mockResolvedValue([mockPublishedPost]);
 
-      const result = await controller.findPublishedPosts();
+      const result = await controller.findPublishedPosts({
+        catalogId: 'catalog-north',
+      });
 
-      expect(postService.findPublished).toHaveBeenCalled();
-      expect(result).toEqual([mockPublishedPost]);
-      expect(result.every((p) => p.isDraft === false)).toBe(true);
+      expect(postService.findPublished).toHaveBeenCalledWith({
+        catalogId: 'catalog-north',
+      });
+      expect(result).toEqual([
+        {
+          id: mockPublishedPost.id,
+          title: mockPublishedPost.title,
+          content: mockPublishedPost.content,
+          publishedAt: mockPublishedPost.publishedAt,
+        },
+      ]);
+      expect(result[0]).not.toHaveProperty('authorId');
+      expect(result[0]).not.toHaveProperty('isDraft');
+    });
+
+    it('preserves the legacy global published query when no catalog is supplied', async () => {
+      postService.findPublished.mockResolvedValue([mockPublishedPost]);
+
+      await controller.findPublishedPosts({});
+
+      expect(postService.findPublished).toHaveBeenCalledWith({});
+    });
+
+    it('requires all private scope fields for the canonical command', async () => {
+      await expect(
+        controller.findScopedPublishedPosts({ catalogId: 'catalog-north' })
+      ).rejects.toThrow('catalogId, workspaceId, and appScope are required');
+      expect(postService.findPublished).not.toHaveBeenCalled();
     });
   });
 
   describe('findDraftsByAuthor', () => {
+    it('forwards resolved workspace scope when listing drafts', async () => {
+      const workspaceScope = {
+        ownerId: 'author-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      };
+      postService.findDraftsByAuthor.mockResolvedValue([mockPost]);
+
+      await controller.findDraftsByAuthor({
+        authorId: 'author-1',
+        workspaceScope,
+      } as any);
+
+      expect(postService.findDraftsByAuthor).toHaveBeenCalledWith(
+        'author-1',
+        workspaceScope
+      );
+    });
+
     it('should return drafts for a specific author', async () => {
       postService.findDraftsByAuthor.mockResolvedValue([mockPost]);
 
@@ -187,6 +276,27 @@ describe('PostController', () => {
   });
 
   describe('publishPost', () => {
+    it('forwards resolved workspace scope when publishing a post', async () => {
+      const workspaceScope = {
+        ownerId: 'author-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      };
+      postService.publish.mockResolvedValue(mockPublishedPost);
+
+      await controller.publishPost({
+        id: 'post-1',
+        requestingAuthorId: 'author-1',
+        workspaceScope,
+      } as any);
+
+      expect(postService.publish).toHaveBeenCalledWith(
+        'post-1',
+        'author-1',
+        workspaceScope
+      );
+    });
+
     it('should publish a draft post', async () => {
       postService.publish.mockResolvedValue(mockPublishedPost);
 

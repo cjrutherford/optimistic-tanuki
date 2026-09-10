@@ -709,4 +709,28 @@ describe('AppController', () => {
     expect(followingCount).toBe(3);
     expect(followService.getFollowingCount).toHaveBeenCalledWith('a');
   });
+
+  it('preserves the Gateway-derived report scope at the privacy service boundary', async () => {
+    const privacyService = (controller as any).privacyService;
+    privacyService.reportContent.mockResolvedValue({ id: 'report-1' });
+
+    await controller.reportContent({
+      reporterId: 'reporter-profile-1',
+      contentType: 'post',
+      contentId: 'post-1',
+      reason: 'spam',
+      appScope: 'client-interface',
+      workspaceId: 'workspace-1',
+    });
+
+    expect(privacyService.reportContent).toHaveBeenCalledWith(
+      'reporter-profile-1',
+      'post',
+      'post-1',
+      'spam',
+      undefined,
+      'client-interface',
+      'workspace-1'
+    );
+  });
 });

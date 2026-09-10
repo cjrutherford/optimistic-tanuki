@@ -1,5 +1,10 @@
 export { BlogDto, CreateBlogDto, UpdateBlogDto, BlogQueryDto } from './blog';
 export {
+  BlogCatalogDto,
+  BlogCatalogScopeDto,
+  CreateBlogCatalogDto,
+} from './blog-catalog';
+export {
   ContactDto,
   CreateContactDto,
   UpdateContactDto,
@@ -17,6 +22,7 @@ export {
   UpdateBlogPostDto as UpdateBlogPostDto,
   PostQueryDto as BlogPostQueryDto,
 } from './post';
+export { type PublishedBlogPostDto, toPublishedBlogPost } from './post';
 export {
   BlogComponentDto,
   CreateBlogComponentDto,

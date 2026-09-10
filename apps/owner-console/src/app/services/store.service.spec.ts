@@ -40,6 +40,18 @@ describe('StoreService', () => {
     return { req, emitted };
   };
 
+  describe('catalogs', () => {
+    it('lists only catalogs resolved for the selected workspace', () => {
+      service.getMyCatalogs('studio-north').subscribe();
+
+      const request = httpMock.expectOne(
+        '/api/store/catalogs/mine?workspaceSlug=studio-north'
+      );
+      expect(request.request.method).toBe('GET');
+      request.flush([]);
+    });
+  });
+
   describe('products', () => {
     it('lists products', () => {
       let result: unknown;

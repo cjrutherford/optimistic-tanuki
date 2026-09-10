@@ -13,6 +13,7 @@ import { ResourceEntity } from '../appointments/entities/resource.entity';
 import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
 import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
 import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
+import { CatalogEntity } from '../catalog/entities/catalog.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -31,6 +32,7 @@ const loadDatabase = (config: ConfigService) => {
     TrainerRoutineAssignmentEntity,
     TrainerProgressCheckInEntity,
     TrainerSiteConfigEntity,
+    CatalogEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`

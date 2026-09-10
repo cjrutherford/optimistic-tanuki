@@ -390,6 +390,8 @@ describe('PrivacyService', () => {
         contentId: 'post-123',
         reason: 'spam',
         description: 'This is spam',
+        appScope: 'social',
+        workspaceId: null,
         status: 'pending',
       });
       expect(contentReportRepo.save).toHaveBeenCalledWith(mockContentReport);
@@ -421,6 +423,8 @@ describe('PrivacyService', () => {
         contentId: 'comment-123',
         reason: 'harassment',
         description: undefined,
+        appScope: 'social',
+        workspaceId: null,
         status: 'pending',
       });
       expect(result).toEqual(reportWithoutDesc);
@@ -471,6 +475,40 @@ describe('PrivacyService', () => {
       const result = await service.getMyReports('user-1');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('moderator report scope', () => {
+    it('lists only reports for the resolved workspace', async () => {
+      jest
+        .spyOn(contentReportRepo, 'find')
+        .mockResolvedValue([
+          { ...mockContentReport, workspaceId: 'workspace-1' },
+        ]);
+
+      await (service as any).getAllReports('workspace-1');
+
+      expect(contentReportRepo.find).toHaveBeenCalledWith({
+        where: { workspaceId: 'workspace-1' },
+        order: { createdAt: 'DESC' },
+      });
+    });
+
+    it('does not update a report outside the resolved workspace', async () => {
+      jest.spyOn(contentReportRepo, 'findOne').mockResolvedValue(null);
+
+      const result = await (service as any).updateReportStatus(
+        'report-other-workspace',
+        'reviewed',
+        undefined,
+        'workspace-1'
+      );
+
+      expect(contentReportRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'report-other-workspace', workspaceId: 'workspace-1' },
+      });
+      expect(contentReportRepo.update).not.toHaveBeenCalled();
+      expect(result).toBeNull();
     });
   });
 });

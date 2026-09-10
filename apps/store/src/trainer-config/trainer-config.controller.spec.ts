@@ -12,6 +12,17 @@ describe('TrainerConfigController', () => {
         brand: { businessName: 'North Star Advisory' },
         contact: { consultationLabel: 'Book strategy session' },
         features: { booking: { enabled: true } },
+        plugins: {
+          schemaVersion: 1,
+          surfaceType: 'business-site',
+          capabilities: {
+            'blogging.posts': {
+              enabled: true,
+              placement: 'public-content',
+              resourceRef: { type: 'blog-catalog', id: 'catalog-1' },
+            },
+          },
+        },
         serviceCatalog: { source: 'manual' },
         services: [{ id: 'service-1', name: 'Strategy Intensive' }],
         landingPage: { layout: 'single-column', sections: [] },
@@ -41,6 +52,17 @@ describe('TrainerConfigController', () => {
         brand: { businessName: 'North Star Advisory' },
         contact: { consultationLabel: 'Book strategy session' },
         features: { booking: { enabled: true } },
+        plugins: {
+          schemaVersion: 1,
+          surfaceType: 'business-site',
+          capabilities: {
+            'blogging.posts': {
+              enabled: true,
+              placement: 'public-content',
+              resourceRef: { type: 'blog-catalog', id: 'catalog-1' },
+            },
+          },
+        },
         serviceCatalog: { source: 'manual' },
         services: [{ id: 'service-1', name: 'Strategy Intensive' }],
         landingPage: { layout: 'single-column', sections: [] },

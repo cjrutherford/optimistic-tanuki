@@ -35,7 +35,7 @@
         <th>User ID</th>
         <th>Profile ID</th>
         <th>Role</th>
-        <th>Status</th>
+        <th>Lifecycle</th>
         <th>Joined</th>
         <th>Actions</th>
       </tr>
@@ -49,7 +49,14 @@
             {{ member.role }}
           </span>
         </td>
-        <td>{{ member.status }}</td>
+        <td>
+          <span
+            class="role-badge"
+            [ngClass]="'lifecycle-' + getLifecycleState(member)"
+          >
+            {{ getLifecycleState(member) }}
+          </span>
+        </td>
         <td>{{ member.joinedAt | date : 'short' }}</td>
         <td>
           <div class="member-actions">
@@ -81,6 +88,36 @@
             >
               Remove
             </otui-button>
+            <otui-button
+              *ngIf="getLifecycleAction(member) === 'suspend'"
+              variant="secondary"
+              (click)="suspendMember(member)"
+            >
+              Suspend
+            </otui-button>
+            <otui-button
+              *ngIf="getLifecycleAction(member) === 'reactivate'"
+              variant="secondary"
+              (click)="reactivateMember(member)"
+            >
+              Reactivate
+            </otui-button>
+            <otui-button
+              variant="secondary"
+              (click)="viewMembershipAudit(member)"
+            >
+              {{ isAuditVisible(member) ? 'Refresh audit' : 'View audit' }}
+            </otui-button>
+          </div>
+          <div *ngIf="isAuditVisible(member)" class="audit-reference">
+            <strong>Audit reference:</strong>
+            <span *ngIf="membershipAudit.length === 0"
+              >No lifecycle events.</span
+            >
+            <span *ngFor="let event of membershipAudit">
+              {{ event.action }} {{ event.from }} → {{ event.to }} by
+              {{ event.actorId }}
+            </span>
           </div>
         </td>
       </tr>

@@ -1036,6 +1036,53 @@ export class AppController {
     return { success: true };
   }
 
+  @MessagePattern({ cmd: 'SUSPEND_COMMUNITY_MEMBER' })
+  async suspendCommunityMember(
+    @Payload()
+    data: {
+      memberId: string;
+      suspenderId: string;
+      workspaceContext?: unknown;
+    }
+  ) {
+    return this.communityService.suspendMember(data.memberId, data.suspenderId);
+  }
+
+  @MessagePattern({ cmd: 'REACTIVATE_COMMUNITY_MEMBER' })
+  async reactivateCommunityMember(
+    @Payload()
+    data: {
+      memberId: string;
+      reactivatorId: string;
+      workspaceContext?: unknown;
+    }
+  ) {
+    return this.communityService.reactivateMember(
+      data.memberId,
+      data.reactivatorId
+    );
+  }
+
+  @MessagePattern({ cmd: 'GET_COMMUNITY_MEMBERSHIP_AUDIT' })
+  async getCommunityMembershipAudit(
+    @Payload()
+    data: {
+      memberId: string;
+      requesterId: string;
+      workspaceContext?: unknown;
+    }
+  ) {
+    const member = await this.communityService.findMember(data.memberId);
+    if (!member) {
+      throw new RpcException('Member not found');
+    }
+    return this.communityService.getMembershipAudit(
+      member.communityId,
+      data.requesterId,
+      member.profileId
+    );
+  }
+
   @MessagePattern({ cmd: 'UPDATE_COMMUNITY_MEMBER_ROLE' })
   async updateMemberRole(
     @Payload()
@@ -1404,6 +1451,8 @@ export class AppController {
       contentId: string;
       reason: string;
       description?: string;
+      appScope?: string;
+      workspaceId?: string | null;
     }
   ) {
     return await this.privacyService.reportContent(
@@ -1411,7 +1460,9 @@ export class AppController {
       data.contentType,
       data.contentId,
       data.reason as any,
-      data.description
+      data.description,
+      data.appScope,
+      data.workspaceId
     );
   }
 
@@ -1421,8 +1472,8 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PrivacyCommands.GET_ALL_REPORTS })
-  async getAllReports() {
-    return await this.privacyService.getAllReports();
+  async getAllReports(@Payload() data: { workspaceId?: string }) {
+    return await this.privacyService.getAllReports(data.workspaceId);
   }
 
   @MessagePattern({ cmd: PrivacyCommands.UPDATE_REPORT_STATUS })
@@ -1432,12 +1483,14 @@ export class AppController {
       id: string;
       status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
       adminNotes?: string;
+      workspaceId?: string;
     }
   ) {
     return await this.privacyService.updateReportStatus(
       data.id,
       data.status,
-      data.adminNotes
+      data.adminNotes,
+      data.workspaceId
     );
   }
 

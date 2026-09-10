@@ -11,4 +11,6 @@ export * from './lib/forum-ui/compose-forum-post/compose-forum-post.component';
 export * from './lib/forum-ui/shell/forum-shell.component';
 export * from './lib/forum-ui/create-topic/create-topic.component';
 export * from './lib/forum-ui/create-thread/create-thread.component';
+export * from './lib/forum-ui/authoring/forum-authoring-shell.component';
 export * from './lib/forum-ui/forum.routes';
+export * from './lib/forum-ui/published-forum-composition';

@@ -26,6 +26,7 @@ import { ChatMessage } from '../entities/chat-message.entity';
 import { Event } from '../entities/event.entity';
 import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
+import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -56,6 +57,7 @@ const entities = [
   SocialComponent,
   Community,
   CommunityMember,
+  CommunityMembershipAudit,
   CommunityInvite,
   Notification,
   Reaction,

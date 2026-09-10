@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Equal } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Community } from '../../entities/community.entity';
 import {
@@ -13,12 +13,19 @@ import { CommunityElection } from '../../entities/community-election.entity';
 import { ElectionCandidate } from '../../entities/election-candidate.entity';
 import { ElectionVote } from '../../entities/election-vote.entity';
 import {
+  resolveMembershipLifecycleTransition,
   CreateCommunityDto,
   UpdateCommunityDto,
   SearchCommunityDto,
   JoinCommunityDto,
   InviteToCommunityDto,
 } from '@optimistic-tanuki/models';
+import {
+  communityMembershipStatusToLifecycleState,
+  lifecycleStateToCommunityMembershipStatus,
+  CommunityMembershipAuditEvent,
+} from './community-membership-lifecycle';
+import { CommunityMembershipAudit } from '../../entities/community-membership-audit.entity';
 
 /** Convert a community name to a URL-safe slug, e.g. "My Cool Community" → "my-cool-community" */
 function toSlug(name: string): string {
@@ -33,7 +40,6 @@ function toSlug(name: string): string {
 @Injectable()
 export class CommunityService {
   private readonly logger = new Logger('Social Service | Community Service');
-
   constructor(
     @InjectRepository(Community)
     private readonly communityRepo: Repository<Community>,
@@ -46,7 +52,9 @@ export class CommunityService {
     @InjectRepository(ElectionCandidate)
     private readonly candidateRepo: Repository<ElectionCandidate>,
     @InjectRepository(ElectionVote)
-    private readonly voteRepo: Repository<ElectionVote>
+    private readonly voteRepo: Repository<ElectionVote>,
+    @InjectRepository(CommunityMembershipAudit)
+    private readonly membershipAuditRepo: Repository<CommunityMembershipAudit>
   ) {}
 
   /** Generate a slug from a name, appending a numeric suffix if the base slug is taken. */
@@ -179,7 +187,7 @@ export class CommunityService {
             where: {
               appScope: parentCommunity.appScope,
               city: parentCommunity.city,
-              parentId: null,
+              parentId: undefined,
             },
             order: { memberCount: 'DESC', name: 'ASC' },
           })
@@ -440,6 +448,15 @@ export class CommunityService {
 
     const existingMember = await this.getMember(dto.communityId, userId);
     if (existingMember) {
+      if (
+        existingMember.status === CommunityMembershipStatus.SUSPENDED ||
+        existingMember.status === CommunityMembershipStatus.REVOKED ||
+        existingMember.status === CommunityMembershipStatus.REJECTED
+      ) {
+        throw new RpcException(
+          'This membership relationship cannot join the community'
+        );
+      }
       if (existingMember.status === CommunityMembershipStatus.APPROVED) {
         return existingMember;
       }
@@ -621,7 +638,7 @@ export class CommunityService {
     }
 
     const community = await this.findOne(invite.communityId);
-    if (community.ownerId !== userId) {
+    if (community && community.ownerId !== userId) {
       const member = await this.getMember(invite.communityId, userId);
       if (
         !member ||
@@ -771,7 +788,6 @@ export class CommunityService {
     if (member.role === CommunityMemberRole.OWNER) {
       throw new RpcException('Cannot remove the owner');
     }
-
     if (
       remover.role === CommunityMemberRole.MODERATOR &&
       member.role !== CommunityMemberRole.MEMBER
@@ -790,13 +806,164 @@ export class CommunityService {
     if (remover.role === CommunityMemberRole.MEMBER) {
       throw new RpcException('Members cannot remove other members');
     }
-
-    await this.memberRepo.remove(member);
-
-    if (community.memberCount > 0) {
-      community.memberCount -= 1;
-      await this.communityRepo.save(community);
+    if (community.managerProfileId === member.profileId) {
+      throw new RpcException('Cannot remove the appointed community manager');
     }
+
+    if (member.status === undefined) {
+      await this.memberRepo.remove(member);
+      if (community.memberCount > 0) {
+        community.memberCount -= 1;
+        await this.communityRepo.save(community);
+      }
+      return;
+    }
+
+    const from = communityMembershipStatusToLifecycleState(member.status);
+    const transition = resolveMembershipLifecycleTransition(
+      from,
+      'revoke',
+      remover.role === CommunityMemberRole.OWNER ? 'owner' : 'moderator'
+    );
+    if (!transition) {
+      throw new RpcException(
+        `Cannot revoke a member with ${from} membership status`
+      );
+    }
+    if (!transition.changed) {
+      return;
+    }
+    member.status = lifecycleStateToCommunityMembershipStatus(transition.to);
+    await this.memberRepo.save(member);
+    if (transition.requiresAudit) {
+      await this.recordMembershipAudit({
+        workspaceId: member.communityId,
+        subjectId: member.profileId,
+        actorId: removerId,
+        actor:
+          remover.role === CommunityMemberRole.OWNER ? 'owner' : 'moderator',
+        action: 'revoke',
+        from: transition.from,
+        to: transition.to,
+      });
+    }
+  }
+
+  async suspendMember(
+    memberId: string,
+    suspenderId: string
+  ): Promise<CommunityMember> {
+    return this.transitionMember(memberId, suspenderId, 'suspend');
+  }
+
+  async reactivateMember(
+    memberId: string,
+    reactivatorId: string
+  ): Promise<CommunityMember> {
+    return this.transitionMember(memberId, reactivatorId, 'activate');
+  }
+
+  async getMembershipAudit(
+    communityId: string,
+    requesterId: string,
+    subjectId?: string
+  ): Promise<CommunityMembershipAuditEvent[]> {
+    const community = await this.communityRepo.findOne({
+      where: { id: communityId },
+    });
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+    if (community.ownerId !== requesterId) {
+      const requester = await this.getMember(communityId, requesterId);
+      if (
+        !requester ||
+        ![CommunityMemberRole.ADMIN, CommunityMemberRole.MODERATOR].includes(
+          requester.role
+        )
+      ) {
+        throw new RpcException(
+          'Only community moderators can view membership audit'
+        );
+      }
+    }
+    return this.membershipAuditRepo.find({
+      where: subjectId
+        ? { workspaceId: communityId, subjectId }
+        : { workspaceId: communityId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  private async transitionMember(
+    memberId: string,
+    actorId: string,
+    action: 'suspend' | 'activate'
+  ): Promise<CommunityMember> {
+    const member = await this.memberRepo.findOne({ where: { id: memberId } });
+    if (!member) {
+      throw new RpcException('Member not found');
+    }
+    const actor = await this.getMember(member.communityId, actorId);
+    if (
+      !actor ||
+      ![
+        CommunityMemberRole.OWNER,
+        CommunityMemberRole.ADMIN,
+        CommunityMemberRole.MODERATOR,
+      ].includes(actor.role)
+    ) {
+      throw new RpcException(
+        'Only community moderators can change membership status'
+      );
+    }
+    if (member.role === CommunityMemberRole.OWNER) {
+      throw new RpcException('Cannot change the owner membership status');
+    }
+
+    const community = await this.communityRepo.findOne({
+      where: { id: member.communityId },
+    });
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+    if (community.managerProfileId === member.profileId) {
+      throw new RpcException(
+        'Cannot change the appointed manager membership status'
+      );
+    }
+
+    const from = communityMembershipStatusToLifecycleState(member.status);
+    const transition = resolveMembershipLifecycleTransition(
+      from,
+      action,
+      actor.role === CommunityMemberRole.OWNER ? 'owner' : 'moderator'
+    );
+    if (!transition) {
+      throw new RpcException(
+        `Cannot ${action} a member with ${from} membership status`
+      );
+    }
+    member.status = lifecycleStateToCommunityMembershipStatus(transition.to);
+    const saved = await this.memberRepo.save(member);
+    if (transition.requiresAudit) {
+      await this.recordMembershipAudit({
+        workspaceId: member.communityId,
+        subjectId: member.profileId,
+        actorId,
+        actor: actor.role === CommunityMemberRole.OWNER ? 'owner' : 'moderator',
+        action,
+        from: transition.from,
+        to: transition.to,
+      });
+    }
+    return saved;
+  }
+
+  private async recordMembershipAudit(
+    event: CommunityMembershipAuditEvent
+  ): Promise<void> {
+    await this.membershipAuditRepo.save(this.membershipAuditRepo.create(event));
   }
 
   async getUserInvites(userId: string): Promise<CommunityInvite[]> {

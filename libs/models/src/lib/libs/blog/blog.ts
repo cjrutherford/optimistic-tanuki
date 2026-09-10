@@ -12,6 +12,11 @@ export class BlogDto {
   description!: string;
   @ApiProperty()
   ownerId!: string;
+
+  @IsOptional()
+  @IsUUID()
+  @ApiPropertyOptional()
+  catalogId?: string;
   @ApiProperty()
   createdAt!: Date;
   @ApiProperty()
@@ -31,6 +36,11 @@ export class CreateBlogDto {
   @IsUUID()
   @ApiProperty()
   ownerId!: string;
+
+  @IsOptional()
+  @IsUUID()
+  @ApiPropertyOptional()
+  catalogId?: string;
 }
 
 export class UpdateBlogDto {
@@ -49,6 +59,11 @@ export class UpdateBlogDto {
   @IsUUID()
   @ApiPropertyOptional()
   ownerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  @ApiPropertyOptional()
+  catalogId?: string | null;
 }
 
 export class BlogQueryDto {
@@ -73,6 +88,11 @@ export class BlogQueryDto {
   @IsUUID()
   @ApiPropertyOptional()
   ownerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  @ApiPropertyOptional()
+  catalogId?: string;
 
   @IsOptional()
   @ApiPropertyOptional()

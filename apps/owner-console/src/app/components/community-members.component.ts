@@ -23,8 +23,12 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import {
   CommunityManagerRecord,
+  CommunityMembershipAuditRecord,
   CommunityService,
 } from '../services/community.service';
+
+type CommunityLifecycleState = 'pending' | 'active' | 'suspended' | 'revoked';
+type CommunityLifecycleAction = 'suspend' | 'reactivate';
 
 @Component({
   selector: 'app-community-members',
@@ -120,6 +124,36 @@ import {
           var(--surface, #ffffff)
         );
       }
+      .lifecycle-pending {
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 18%,
+          var(--surface, #ffffff)
+        );
+      }
+      .lifecycle-active {
+        background: color-mix(
+          in srgb,
+          var(--success, #15803d) 18%,
+          var(--surface, #ffffff)
+        );
+      }
+      .lifecycle-suspended,
+      .lifecycle-revoked {
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 18%,
+          var(--surface, #ffffff)
+        );
+      }
+      .audit-reference {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+        color: var(--muted-foreground, #4b5563);
+        font-size: 12px;
+      }
       .manager-banner {
         display: flex;
         align-items: center;
@@ -146,6 +180,8 @@ export class CommunityMembersComponent implements OnInit {
   showAddMemberModal = false;
   inviteForm: FormGroup;
   inviting = false;
+  auditMemberId: string | null = null;
+  membershipAudit: CommunityMembershipAuditRecord[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -248,6 +284,116 @@ export class CommunityMembersComponent implements OnInit {
     }
   }
 
+  getLifecycleState(
+    member: Pick<CommunityMemberDto, 'status'>
+  ): CommunityLifecycleState {
+    switch (String(member.status).toLowerCase()) {
+      case 'pending':
+        return 'pending';
+      case 'suspended':
+        return 'suspended';
+      case 'revoked':
+      case 'rejected':
+        return 'revoked';
+      case 'approved':
+      default:
+        return 'active';
+    }
+  }
+
+  getLifecycleAction(
+    member: Pick<CommunityMemberDto, 'status'> &
+      Partial<Pick<CommunityMemberDto, 'role' | 'profileId'>>
+  ): CommunityLifecycleAction | null {
+    if (
+      String(member.role).toLowerCase() === 'owner' ||
+      String(member.role).toLowerCase() === 'manager' ||
+      this.isCurrentManager(member)
+    ) {
+      return null;
+    }
+
+    switch (this.getLifecycleState(member)) {
+      case 'active':
+        return 'suspend';
+      case 'suspended':
+        return 'reactivate';
+      default:
+        return null;
+    }
+  }
+
+  suspendMember(
+    member: Pick<CommunityMemberDto, 'id' | 'status' | 'profileId'>
+  ): void {
+    if (this.getLifecycleAction(member) !== 'suspend') {
+      return;
+    }
+
+    this.communityService.suspendMember(this.communityId, member.id).subscribe({
+      next: () => {
+        this.messageService.addMessage({
+          content: 'Member suspended successfully.',
+          type: 'success',
+        });
+        this.loadMembers();
+      },
+      error: (err) => {
+        this.messageService.addMessage({
+          content: err.error?.message || 'Failed to suspend member.',
+          type: 'error',
+        });
+      },
+    });
+  }
+
+  reactivateMember(
+    member: Pick<CommunityMemberDto, 'id' | 'status' | 'profileId'>
+  ): void {
+    if (this.getLifecycleAction(member) !== 'reactivate') {
+      return;
+    }
+
+    this.communityService
+      .reactivateMember(this.communityId, member.id)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Member reactivated successfully.',
+            type: 'success',
+          });
+          this.loadMembers();
+        },
+        error: (err) => {
+          this.messageService.addMessage({
+            content: err.error?.message || 'Failed to reactivate member.',
+            type: 'error',
+          });
+        },
+      });
+  }
+
+  viewMembershipAudit(member: Pick<CommunityMemberDto, 'id'>): void {
+    this.communityService
+      .getMembershipAudit(this.communityId, member.id)
+      .subscribe({
+        next: (audit) => {
+          this.auditMemberId = member.id;
+          this.membershipAudit = audit;
+        },
+        error: (err) => {
+          this.messageService.addMessage({
+            content: err.error?.message || 'Failed to load membership audit.',
+            type: 'error',
+          });
+        },
+      });
+  }
+
+  isAuditVisible(member: Pick<CommunityMemberDto, 'id'>): boolean {
+    return this.auditMemberId === member.id;
+  }
+
   appointManager(
     member: Pick<CommunityMemberDto, 'userId' | 'profileId'>
   ): void {
@@ -344,7 +490,11 @@ export class CommunityMembersComponent implements OnInit {
     return `role-${role.toLowerCase()}`;
   }
 
-  isCurrentManager(member: Pick<CommunityMemberDto, 'profileId'>): boolean {
-    return this.currentManager?.profileId === member.profileId;
+  isCurrentManager(
+    member: Partial<Pick<CommunityMemberDto, 'profileId'>>
+  ): boolean {
+    return Boolean(
+      member.profileId && this.currentManager?.profileId === member.profileId
+    );
   }
 }

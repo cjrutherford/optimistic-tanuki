@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   BusinessSiteConfig,
   BusinessStoreProduct,
@@ -11,7 +11,7 @@ import {
 import { UserRoleDto } from '@optimistic-tanuki/ui-models';
 import { AuthService } from '../services/auth.service';
 import { RolesService } from '../services/roles.service';
-import { StoreService } from '../services/store.service';
+import { StoreCatalog, StoreService } from '../services/store.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
 import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
 import {
@@ -104,6 +104,32 @@ const REQUIRED_SCOPE = 'business-site';
           </label>
         </div>
 
+        @if (catalogMode() === 'store') {
+        <label class="catalog-select">
+          <span>
+            <strong>Published Store catalog</strong>
+            <small
+              >Select the catalog owned by this business-site workspace.</small
+            >
+          </span>
+          <select
+            [ngModel]="businessSiteConfig().serviceCatalog.catalogId ?? ''"
+            (ngModelChange)="setStoreCatalog($event)"
+            [disabled]="!canManageCatalog() || !workspaceSlug"
+          >
+            <option value="">Choose a workspace catalog</option>
+            @for (catalog of storeCatalogs(); track catalog.id) {
+            <option [value]="catalog.id">{{ catalog.name }}</option>
+            }
+          </select>
+        </label>
+        @if (!workspaceSlug) {
+        <p class="status-msg">
+          Open this workspace with a <code>slug</code> query parameter to select
+          a Store catalog.
+        </p>
+        } }
+
         <label class="storefront-toggle">
           <span>
             <strong>Storefront feature</strong>
@@ -170,7 +196,9 @@ const REQUIRED_SCOPE = 'business-site';
             [disabled]="
               saving() ||
               !canManageCatalog() ||
-              (catalogMode() === 'store' && readinessIssues().length > 0)
+              (catalogMode() === 'store' &&
+                (readinessIssues().length > 0 ||
+                  !businessSiteConfig().serviceCatalog.catalogId))
             "
           >
             {{ saving() ? 'Saving…' : 'Save Catalog Mode' }}
@@ -377,6 +405,28 @@ const REQUIRED_SCOPE = 'business-site';
         );
       }
 
+      .catalog-select {
+        display: grid;
+        gap: 10px;
+        margin: 18px 0;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border-color, #d6d6d6);
+      }
+
+      .catalog-select span {
+        display: grid;
+        gap: 6px;
+      }
+      .catalog-select small {
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
+      }
+      .catalog-select select {
+        min-height: 42px;
+        border-radius: 10px;
+        padding: 0 12px;
+      }
+
       .storefront-toggle span {
         display: grid;
         gap: 6px;
@@ -520,6 +570,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   private readonly businessSiteAdminService = inject(BusinessSiteAdminService);
   private readonly rolesService = inject(RolesService);
   private readonly storeService = inject(StoreService);
+  private readonly route = inject(ActivatedRoute);
   private readonly operatorQueueService = inject(OperatorQueueService);
 
   readonly loading = signal(true);
@@ -530,11 +581,14 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   readonly errorMessage = signal('');
   readonly queueItems = signal<OperatorQueueItem[]>([]);
   readonly serviceProducts = signal<BusinessStoreProduct[]>([]);
+  readonly storeCatalogs = signal<StoreCatalog[]>([]);
   readonly businessSiteConfig = signal<BusinessSiteConfig>(
     mergeBusinessSiteConfig(DEFAULT_BUSINESS_SITE_CONFIG)
   );
 
   private configId: string | null = null;
+  readonly workspaceSlug =
+    this.route.snapshot.queryParamMap.get('slug')?.trim() || null;
 
   readonly catalogMode = computed<CatalogMode>(
     () => this.businessSiteConfig().serviceCatalog.source
@@ -591,7 +645,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     this.successMessage.set('');
     this.errorMessage.set('');
 
-    this.businessSiteAdminService.getSiteConfig().subscribe({
+    this.businessSiteAdminService.getSiteConfig(this.workspaceSlug).subscribe({
       next: (siteConfigResponse) => {
         this.configId = siteConfigResponse.configId;
         this.businessSiteConfig.set(
@@ -600,7 +654,8 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
           )
         );
 
-        this.storeService.getProducts().subscribe({
+        const catalogId = this.businessSiteConfig().serviceCatalog.catalogId;
+        this.storeService.getProducts(catalogId).subscribe({
           next: (products) => {
             this.serviceProducts.set(
               products.filter(
@@ -618,6 +673,15 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
             this.loading.set(false);
           },
         });
+
+        if (this.workspaceSlug) {
+          this.storeService.getMyCatalogs(this.workspaceSlug).subscribe({
+            next: (catalogs) => this.storeCatalogs.set(catalogs),
+            error: () => this.storeCatalogs.set([]),
+          });
+        } else {
+          this.storeCatalogs.set([]);
+        }
       },
       error: (error) => {
         this.errorMessage.set(
@@ -658,6 +722,20 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     }));
   }
 
+  setStoreCatalog(catalogId: string): void {
+    if (!this.canManageCatalog()) {
+      return;
+    }
+
+    this.businessSiteConfig.update((config) => ({
+      ...config,
+      serviceCatalog: {
+        ...config.serviceCatalog,
+        catalogId: catalogId || null,
+      },
+    }));
+  }
+
   isPublishReady(product: BusinessStoreProduct): boolean {
     return !!product.description?.trim() && Number(product.priceCents) > 0;
   }
@@ -673,10 +751,12 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     const config = this.businessSiteConfig();
     if (
       config.serviceCatalog.source === 'store' &&
-      this.readinessIssues().length > 0
+      (!config.serviceCatalog.catalogId || this.readinessIssues().length > 0)
     ) {
       this.errorMessage.set(
-        'Resolve store service-product readiness issues before enabling store mode.'
+        !config.serviceCatalog.catalogId
+          ? 'Choose a Store catalog before enabling store mode.'
+          : 'Resolve store service-product readiness issues before enabling store mode.'
       );
       return;
     }
@@ -686,10 +766,15 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     this.errorMessage.set('');
 
     this.businessSiteAdminService
-      .updateCommerceSettings(this.configId, {
-        source: config.serviceCatalog.source,
-        storeEnabled: config.features.store.enabled,
-      })
+      .updateCommerceSettings(
+        this.configId,
+        {
+          source: config.serviceCatalog.source,
+          storeEnabled: config.features.store.enabled,
+          catalogId: config.serviceCatalog.catalogId,
+        },
+        this.workspaceSlug
+      )
       .subscribe({
         next: () => {
           this.saving.set(false);

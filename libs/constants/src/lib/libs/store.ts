@@ -7,6 +7,11 @@ const ProductCommands = {
   REMOVE_PRODUCT: { cmd: 'removeProduct' },
 };
 
+const CatalogCommands = {
+  CREATE_STORE_CATALOG: { cmd: 'createStoreCatalog' },
+  FIND_STORE_CATALOGS: { cmd: 'findStoreCatalogs' },
+};
+
 const SubscriptionCommands = {
   CREATE_SUBSCRIPTION: { cmd: 'createSubscription' },
   FIND_ALL_SUBSCRIPTIONS: { cmd: 'findAllSubscriptions' },
@@ -77,6 +82,7 @@ const OrderCommands = {
 
 export {
   ProductCommands,
+  CatalogCommands,
   SubscriptionCommands,
   DonationCommands,
   PaymentCommands,

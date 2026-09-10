@@ -20,6 +20,8 @@ export enum CommunityMembershipStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  SUSPENDED = 'suspended',
+  REVOKED = 'revoked',
 }
 
 @Entity()
@@ -50,8 +52,9 @@ export class CommunityMember {
   role: CommunityMemberRole;
 
   @Column({
-    type: 'varchar',
-    default: 'approved',
+    type: 'enum',
+    enum: CommunityMembershipStatus,
+    default: CommunityMembershipStatus.APPROVED,
   })
   status: CommunityMembershipStatus;
 
