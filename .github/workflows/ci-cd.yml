@@ -421,6 +421,14 @@ jobs:
 
       # Also logs in when the image is only being pushed so that e2e can run
       # against it, not just for a verified release.
+      #
+      # RETENTION: pushing for e2e means every credentialed run leaves a
+      # `sha-<short>` tag per affected app in the registry, and nothing removes
+      # them. scripts/docker-image-cleanup.sh only prunes the runner's local
+      # images, not published tags. There is no policy for these yet; either
+      # set one on the registry side or add a step that deletes a run's SHA
+      # tags once its e2e jobs have finished. Left deliberately visible here
+      # rather than buried in a document.
       - name: Log in to Docker Hub
         if: needs.plan.outputs.publish_images == 'true' || needs.plan.outputs.push_e2e_images == 'true'
         uses: docker/login-action@v4
