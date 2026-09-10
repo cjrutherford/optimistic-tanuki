@@ -82,6 +82,12 @@ assert.match(
 );
 
 assert.match(
+  packageJson.scripts['build:docker:dev'],
+  /workspace/,
+  'build:docker:dev must build the workspace service used by gateway community governance'
+);
+
+assert.match(
   packageJson.scripts['watch:docker:dev'],
   /--projects=.*video-client.* --configuration=development --watch$/,
   'watch:docker:dev must define the docker development project watch list'
@@ -91,6 +97,12 @@ assert.match(
   packageJson.scripts['watch:docker:dev'],
   /marketing-generator.*business-site|business-site.*marketing-generator/,
   'watch:docker:dev must include apps in the docker dev compose stack'
+);
+
+assert.match(
+  packageJson.scripts['watch:docker:dev'],
+  /workspace/,
+  'watch:docker:dev must rebuild the workspace service used by gateway community governance'
 );
 
 const referencedScripts = new Set();
@@ -164,6 +176,7 @@ const phasedStartupServices = [
   'authentication',
   'profile',
   'social',
+  'workspace',
   'permissions',
   'app-configurator',
   'system-configurator-api',
@@ -184,7 +197,6 @@ const phasedStartupServices = [
   'video-transcoder-worker',
   'videos',
   'gateway',
-  'app-configurator-seed',
   'ot-client-interface',
   'forgeofwill-client-interface',
   'digital-homestead-client-interface',
@@ -211,10 +223,122 @@ for (const service of phasedStartupServices) {
 }
 
 const composeYaml = readFileSync(new URL('docker-compose.yaml', root), 'utf8');
+const composeDevYaml = readFileSync(
+  new URL('docker-compose.dev.yaml', root),
+  'utf8'
+);
+const devSeedScriptContract = readFileSync(
+  new URL('scripts/dev-seed.sh', root),
+  'utf8'
+);
+const appConfiguratorDevBlock = composeDevYaml.match(
+  /\n  app-configurator:\n[\s\S]*?\n  forum:\n/
+);
+assert.notEqual(
+  appConfiguratorDevBlock,
+  null,
+  'app-configurator dev service block must exist before forum'
+);
+assert.match(
+  appConfiguratorDevBlock[0],
+  /      - \.\/dist\/apps:\/usr\/src\/app\/dist\/apps/,
+  'app-configurator dev service must mount the shared dist/apps root'
+);
+assert.match(
+  appConfiguratorDevBlock[0],
+  /working_dir: \/usr\/src\/app/,
+  'app-configurator dev service must define a stable working directory'
+);
+assert.match(
+  appConfiguratorDevBlock[0],
+  /        '\/usr\/src\/app\/dist\/apps\/app-configurator',/,
+  'app-configurator dev service must watch the shared app-configurator runtime path'
+);
+assert.match(
+  appConfiguratorDevBlock[0],
+  /        'node',\n        '-L',\n        'dist\/apps\/app-configurator\/main\.js',/,
+  'app-configurator dev service must execute the shared app-configurator runtime path'
+);
+assert.match(
+  devSeedScriptContract,
+  /app-configurator sh -lc '[\s\S]*?\/usr\/src\/app\/dist\/apps\/app-configurator\/seed-script\.js/,
+  'dev seed must execute the app-configurator seed runtime from the shared path'
+);
+const workspaceDevBlock = composeDevYaml.match(
+  /\n  workspace:\n[\s\S]*?\n  wellness:\n/
+);
+assert.notEqual(
+  workspaceDevBlock,
+  null,
+  'workspace dev service block must exist before wellness'
+);
+assert.match(
+  workspaceDevBlock[0],
+  /      - \.\/dist\/apps:\/usr\/src\/app\/dist\/apps/,
+  'workspace dev service must mount the shared dist/apps root'
+);
+assert.match(
+  workspaceDevBlock[0],
+  /working_dir: \/usr\/src\/app/,
+  'workspace dev service must define a stable working directory'
+);
+assert.match(
+  workspaceDevBlock[0],
+  /        '\/usr\/src\/app\/dist\/apps\/workspace',/,
+  'workspace dev service must watch the shared workspace runtime path'
+);
+assert.match(
+  workspaceDevBlock[0],
+  /        'node',\n        '-L',\n        'dist\/apps\/workspace\/main\.js',/,
+  'workspace dev service must execute the shared workspace runtime path'
+);
+const permissionsDevBlock = composeDevYaml.match(
+  /\n  permissions:\n[\s\S]*?\n  store:\n/
+);
+assert.notEqual(
+  permissionsDevBlock,
+  null,
+  'permissions dev service block must exist before store'
+);
+assert.match(
+  permissionsDevBlock[0],
+  /      - \.\/dist\/apps:\/usr\/src\/app\/dist\/apps/,
+  'permissions dev service must mount the shared dist/apps root'
+);
+assert.match(
+  permissionsDevBlock[0],
+  /working_dir: \/usr\/src\/app/,
+  'permissions dev service must define a stable working directory'
+);
+assert.match(
+  permissionsDevBlock[0],
+  /        '\/usr\/src\/app\/dist\/apps\/permissions',/,
+  'permissions dev service must watch the shared permissions runtime path'
+);
+assert.match(
+  permissionsDevBlock[0],
+  /        'node',\n        '-L',\n        'dist\/apps\/permissions\/main\.js',/,
+  'permissions dev service must execute the shared permissions runtime path'
+);
+assert.match(
+  composeYaml,
+  /^  workspace:\n[\s\S]*?dockerfile: \.\/apps\/workspace\/Dockerfile/m,
+  'the production compose base must declare the workspace service'
+);
+assert.match(
+  composeYaml,
+  /^  gateway:[\s\S]*?workspace:\n\s+condition: service_started/m,
+  'gateway must start after the workspace service is available on the compose network'
+);
 assert.match(
   composeYaml,
   /command:\s+\/bin\/sh -c "command -v pg_isready && sh \.\/scripts\/setup-and-migrate\.sh"/,
   'db-setup must invoke scripts/setup-and-migrate.sh directly to avoid pnpm non-TTY module purge prompts'
+);
+assert.doesNotMatch(
+  composeYaml,
+  /app-configurator-seed/,
+  'app-configurator seeding must be operator-run, not a Compose service'
 );
 
 assert.equal(
@@ -259,7 +383,6 @@ writeFileSync(
       authentication: {},
       gateway: {},
       profile: {},
-      'app-configurator-seed': {},
       'store-seed': {},
     },
   })
@@ -304,7 +427,7 @@ assert.match(
   buildOutput,
   /(Found [0-9]+ services to build|No changed services to build for docker-compose\.dev\.yaml)/
 );
-assert.doesNotMatch(buildOutput, /app-configurator-seed|store-seed/);
+assert.doesNotMatch(buildOutput, /store-seed/);
 
 const startupOutput = execForOutput(
   'bash',
@@ -331,7 +454,7 @@ if (/No changed services require restart/.test(startupOutput)) {
 } else if (/=== Incremental restart ===/.test(startupOutput)) {
   assert.match(
     startupOutput,
-    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
+    /DRY RUN: docker compose .* up -d --no-deps .*--force-recreate .*gateway/
   );
   assert.match(startupOutput, /DRY RUN: docker compose .* ps/);
 } else {
@@ -342,11 +465,11 @@ if (/No changed services require restart/.test(startupOutput)) {
   assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
   assert.match(
     startupOutput,
-    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
+    /DRY RUN: docker compose .* up -d --no-deps .*--force-recreate .*gateway/
   );
   assert.match(
     startupOutput,
-    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/
+    /DRY RUN: docker compose .* up -d --no-deps .*--force-recreate .*video-transcoder-worker .*videos/
   );
 }
 

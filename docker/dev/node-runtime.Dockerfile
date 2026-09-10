@@ -14,4 +14,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 
+USER node
+
 CMD ["node", "--version"]

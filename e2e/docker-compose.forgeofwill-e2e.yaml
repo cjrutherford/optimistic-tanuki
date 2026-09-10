@@ -16,6 +16,7 @@ services:
       retries: 5
 
   db-setup:
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     image: node:24-alpine
     container_name: e2e_db_setup_fow
     working_dir: /workspace
@@ -449,6 +450,7 @@ services:
   playwright-runner:
     image: mcr.microsoft.com/playwright:v1.60.0-jammy
     container_name: e2e_runner_fow
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     network_mode: host
     working_dir: /workspace
     volumes:

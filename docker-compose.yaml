@@ -55,6 +55,7 @@ services:
       context: .
       dockerfile: ./docker/db-setup/Dockerfile
     container_name: db-setup
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /workspace
     volumes:
       - .:/workspace
@@ -431,6 +432,8 @@ services:
         condition: service_started
       social:
         condition: service_started
+      workspace:
+        condition: service_started
       chat-collector:
         condition: service_started
       assets:
@@ -537,6 +540,26 @@ services:
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+
+  workspace:
+    container_name: ot_workspace
+    build:
+      context: .
+      dockerfile: ./apps/workspace/Dockerfile
+    image: cjrutherford/optimistic_tanuki_workspace:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${WORKSPACE_PORT:-3024}:3024'
+    environment:
+      <<: *service_db_env
+      DATABASE_NAME: ot_workspace
+      DB_NAME: ot_workspace
+      POSTGRES_DB: ot_workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   forum:
     container_name: ot_forum
     build:
@@ -804,26 +827,6 @@ services:
       db-setup:
         condition: service_completed_successfully
 
-  app-configurator-seed:
-    container_name: ot_app_configurator_seed
-    build:
-      context: .
-      dockerfile: ./apps/app-configurator/Dockerfile
-    image: cjrutherford/optimistic_tanuki_app-configurator:${PRODUCTION_IMAGE_TAG:-latest}
-    environment:
-      <<: *service_db_env
-      DB_NAME: ot_app_configurator
-      PORT: 3014
-    depends_on:
-      db-setup:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
-
   configurable-client:
     container_name: ot_configurable_client
     build:
@@ -837,7 +840,6 @@ services:
     depends_on:
       - gateway
       - app-configurator
-      - app-configurator-seed
 
   wellness:
     container_name: ot_wellness

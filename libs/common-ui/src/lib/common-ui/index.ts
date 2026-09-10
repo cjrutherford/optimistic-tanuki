@@ -72,6 +72,19 @@ export {
   LoadingStateComponent,
   ErrorStateComponent,
 } from './states';
+export {
+  DiscoveryCardComponent,
+  DiscoveryListComponent,
+  DiscoveryRegionComponent,
+  LandingHeaderComponent,
+  LandingHeroComponent,
+  LandingStatusComponent,
+  type DiscoveryAction,
+  type DiscoveryCard,
+  type DiscoveryListState,
+  type DiscoveryNavItem,
+  type LandingStatusState,
+} from './public-landing';
 
 // Export interfaces
 export type { ListItem } from './interfaces/component.interface';

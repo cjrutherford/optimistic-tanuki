@@ -668,6 +668,9 @@ importers:
 
   libs/app-config-models:
     dependencies:
+      '@optimistic-tanuki/models':
+        specifier: workspace:*
+        version: link:../models
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -712,6 +715,27 @@ importers:
         version: 2.8.1
 
   libs/billing/contracts:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  libs/blogging-data-access:
+    dependencies:
+      '@angular/common':
+        specifier: ^20.0.0
+        version: 20.2.4(@angular/core@20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+      '@angular/core':
+        specifier: ^20.0.0
+        version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+      rxjs:
+        specifier: ~7.8.0
+        version: 7.8.2
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  libs/blogging-feature:
     dependencies:
       tslib:
         specifier: ^2.3.0
@@ -1121,6 +1145,8 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
+
+  libs/store-data-access: {}
 
   libs/store-ui:
     dependencies:

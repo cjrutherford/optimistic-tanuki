@@ -119,14 +119,14 @@ main() {
                 social) run_seed_k8s "social" "node /usr/src/app/seed-local-communities.js" ;;
                 telos-docs) run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_k8s "store" "node /usr/src/app/seed-store.js" ;;
-                app-configurator) run_seed_k8s "app-configurator" "node seed-data/seed-script.js" ;;
+                app-configurator) run_seed_k8s "app-configurator" "node seed-script.js" ;;
                 business-site) run_seed_k8s "business-site" "GATEWAY_URL=http://gateway:3000/api node /app/seed-business.mjs" ;;
                 all)
                     run_seed_k8s "permissions" "node /usr/src/app/seed-permissions.js"
                     run_seed_k8s "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_k8s "store" "node /usr/src/app/seed-store.js"
-                    run_seed_k8s "app-configurator" "node seed-data/seed-script.js"
+                    run_seed_k8s "app-configurator" "node seed-script.js"
                     run_seed_k8s "business-site" "GATEWAY_URL=http://gateway:3000/api node /app/seed-business.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;
@@ -139,14 +139,14 @@ main() {
                 social) run_seed_docker "social" "node /usr/src/app/seed-local-communities.js" ;;
                 telos-docs) run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_docker "store" "node /usr/src/app/seed-store.js" ;;
-                app-configurator) run_seed_docker "app-configurator" "node seed-data/seed-script.js" ;;
+                app-configurator) run_seed_docker "app-configurator" "if [ -f /usr/src/app/dist/apps/app-configurator/seed-script.js ]; then node /usr/src/app/dist/apps/app-configurator/seed-script.js; else node /usr/src/app/seed-script.js; fi" ;;
                 business-site) run_seed_docker "business-site" "GATEWAY_URL=http://gateway:3000/api node /app/seed-business.mjs" ;;
                 all)
                     run_seed_docker "permissions" "node /usr/src/app/seed-permissions.js"
                     run_seed_docker "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_docker "store" "node /usr/src/app/seed-store.js"
-                    run_seed_docker "app-configurator" "node seed-data/seed-script.js"
+                    run_seed_docker "app-configurator" "if [ -f /usr/src/app/dist/apps/app-configurator/seed-script.js ]; then node /usr/src/app/dist/apps/app-configurator/seed-script.js; else node /usr/src/app/seed-script.js; fi"
                     run_seed_docker "business-site" "GATEWAY_URL=http://gateway:3000/api node /app/seed-business.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;
@@ -159,14 +159,14 @@ main() {
                 social) run_seed_local "social" "node src/seed-social.js" ;;
                 telos-docs) run_seed_local "telos-docs-service" "node src/app/seed-persona.js" ;;
                 store) run_seed_local "store" "node src/seed-store.js" ;;
-                app-configurator) run_seed_local "app-configurator" "node src/seed-data/seed-script.js" ;;
+                app-configurator) run_seed_local "app-configurator" "pnpm exec nx run app-configurator:build && node ../../dist/apps/app-configurator/seed-script.js" ;;
                 business-site) run_seed_local "business-site" "GATEWAY_URL=http://gateway:3000/api node src/seed-business.mjs" ;;
                 all)
                     run_seed_local "permissions" "node src/app/seed-permissions.js"
                     run_seed_local "social" "node src/seed-social.js"
                     run_seed_local "telos-docs-service" "node src/app/seed-persona.js"
                     run_seed_local "store" "node src/seed-store.js"
-                    run_seed_local "app-configurator" "node src/seed-data/seed-script.js"
+                    run_seed_local "app-configurator" "pnpm exec nx run app-configurator:build && node ../../dist/apps/app-configurator/seed-script.js"
                     run_seed_local "business-site" "GATEWAY_URL=http://gateway:3000/api node src/seed-business.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;

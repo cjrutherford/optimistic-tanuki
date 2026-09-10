@@ -43,7 +43,7 @@ const inventoryFile = process.argv[4];
 const inventoryJson = fs.readFileSync(inventoryFile, 'utf8');
 const inventory = JSON.parse(inventoryJson);
 
-const skipServices = new Set(['postgres', 'redis', 'db-setup', 'app-configurator-seed']);
+const skipServices = new Set(['postgres', 'redis', 'db-setup']);
 
 // `deployment-inventory` emits camelCase keys, and the deployment workspace
 // tooling emits PascalCase ones. Reading only one form left every lookup

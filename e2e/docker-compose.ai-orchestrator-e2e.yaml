@@ -28,6 +28,7 @@ services:
       retries: 12
 
   db-setup:
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     image: node:24-alpine
     container_name: ot_db_setup_e2e
     working_dir: /workspace

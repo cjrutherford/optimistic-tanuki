@@ -49,6 +49,12 @@
       ],
       "@optimistic-tanuki/billing-domain": ["libs/billing/domain/src/index.ts"],
       "@optimistic-tanuki/billing-sdk": ["libs/billing-sdk/src/index.ts"],
+      "@optimistic-tanuki/blogging-data-access": [
+        "libs/blogging-data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/blogging-feature": [
+        "libs/blogging-feature/src/index.ts"
+      ],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/business-data-access": [
         "libs/business-data-access/src/index.ts"
@@ -151,6 +157,9 @@
       ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
+      "@optimistic-tanuki/store-data-access": [
+        "libs/store-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/store-ui": ["libs/store-ui/src/index.ts"],
       "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
       "@optimistic-tanuki/theme-models": ["libs/theme-models/src/index.ts"],

@@ -10,6 +10,8 @@ POSTGRES_PORT=${POSTGRES_PORT:-5432}
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
 POSTGRES_DB=${POSTGRES_DB:-ot_permissions}
+AUTHENTICATION_DB=${AUTHENTICATION_DB:-ot_authentication}
+PROFILE_DB=${PROFILE_DB:-ot_profile}
 SKIP_PERMISSION_USER_ASSIGNMENTS=${SKIP_PERMISSION_USER_ASSIGNMENTS:-false}
 RUN_MIGRATIONS=${RUN_MIGRATIONS:-false}
 
@@ -19,6 +21,72 @@ if ! command -v psql >/dev/null 2>&1; then
 fi
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
+
+resolve_profile_id() {
+  local email="$1"
+  local app_scope="$2"
+  local user_id
+
+  user_id=$(psql -tA -v ON_ERROR_STOP=1 \
+    -v "email=$email" \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$AUTHENTICATION_DB" <<'SQL'
+SELECT id FROM user_entity WHERE email = :'email' LIMIT 1;
+SQL
+  )
+  user_id=$(printf '%s' "$user_id" | tr -d '[:space:]')
+
+  if [ -z "$user_id" ]; then
+    return 0
+  fi
+
+  psql -tA -v ON_ERROR_STOP=1 \
+    -v "user_id=$user_id" \
+    -v "app_scope=$app_scope" \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$PROFILE_DB" <<'SQL' \
+    | tr -d '[:space:]'
+SELECT id FROM profile
+WHERE "userId" = :'user_id'
+  AND "appScope" = :'app_scope'
+ORDER BY created_at DESC
+LIMIT 1;
+SQL
+}
+
+seed_role_assignment() {
+  local email="$1"
+  local role_name="$2"
+  local app_scope="$3"
+  local profile_id
+
+  profile_id=$(resolve_profile_id "$email" "$app_scope")
+  if [ -z "$profile_id" ]; then
+    echo "Skipping role assignment for $email in $app_scope: scoped profile not found."
+    return 0
+  fi
+
+  psql -v ON_ERROR_STOP=1 \
+    -v "profile_id=$profile_id" \
+    -v "role_name=$role_name" \
+    -v "app_scope=$app_scope" \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
+SELECT
+  :'profile_id',
+  r.id,
+  s.id,
+  NOW()
+FROM "role" r
+JOIN "app_scope" s ON s.name = :'app_scope'
+WHERE r.name = :'role_name'
+  AND NOT EXISTS (
+    SELECT 1 FROM "role_assignment" ra
+    WHERE ra."profileId" = :'profile_id'
+      AND ra."roleId" = r.id
+      AND ra."appScopeId" = s.id
+  )
+ON CONFLICT DO NOTHING;
+SQL
+}
 
 ensure_permissions_schema() {
   if psql -tAc "SELECT to_regclass('public.app_scope')" \
@@ -70,7 +138,8 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('profile', 'Profile service', true),
 ('local-hub', 'Local Hub - classifieds, communities, and city pages', true),
 ('video-client', 'Video platform and channel communities', true),
-('business-site', 'Business site and client portal', true)
+('business-site', 'Business site and client portal', true),
+('configurable-client', 'Configurable client application', true)
 ON CONFLICT ("name") DO UPDATE SET
   "description" = EXCLUDED."description",
   "active" = EXCLUDED."active";
@@ -141,6 +210,11 @@ VALUES
   ('business_site_client', 'Business-site client account with scoped portal access', (SELECT id FROM app_scope WHERE name = 'business-site'))
 ON CONFLICT ("name") DO NOTHING;
 
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('configurable_client_owner', 'Configurable-client workspace owner for app configuration', (SELECT id FROM app_scope WHERE name = 'configurable-client'))
+ON CONFLICT ("name") DO NOTHING;
+
 
 -- Global scope roles
 INSERT INTO "role" (name, description, "appScopeId")
@@ -176,6 +250,17 @@ INSERT INTO "permission" (name, description, resource, action, "targetId", "appS
 VALUES
   ('profile.read', 'Read profile', 'profile', 'read', NULL, (SELECT id FROM app_scope WHERE name='client-interface')),
   ('profile.update', 'Update profile', 'profile', 'update', NULL, (SELECT id FROM app_scope WHERE name='client-interface'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Configurable-client permissions
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('app-config.create', 'Create configurable-client app configurations', 'app-config', 'create', NULL, (SELECT id FROM app_scope WHERE name='configurable-client')),
+  ('app-config.read', 'Read configurable-client app configurations', 'app-config', 'read', NULL, (SELECT id FROM app_scope WHERE name='configurable-client')),
+  ('app-config.update', 'Update configurable-client app configurations', 'app-config', 'update', NULL, (SELECT id FROM app_scope WHERE name='configurable-client')),
+  ('app-config.delete', 'Delete configurable-client app configurations', 'app-config', 'delete', NULL, (SELECT id FROM app_scope WHERE name='configurable-client')),
+  ('blog.post.read', 'Read configurable-client Blog posts and catalogs', 'blog.post', 'read', NULL, (SELECT id FROM app_scope WHERE name='configurable-client')),
+  ('blog.post.create', 'Create configurable-client Blog posts and catalogs', 'blog.post', 'create', NULL, (SELECT id FROM app_scope WHERE name='configurable-client'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Also add profile-scoped permission entries (same names) for the profile service app scope
@@ -345,7 +430,15 @@ INSERT INTO "permission" (name, description, resource, action, "targetId", "appS
 VALUES
   ('app-config.read', 'Read business site configuration', 'app-config', 'read', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
   ('app-config.update', 'Update business site configuration', 'app-config', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
-  ('business-site.catalog.update', 'Update business-site catalog source', 'business-site.catalog', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site'))
+  ('business-site.catalog.update', 'Update business-site catalog source', 'business-site.catalog', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('store.product.view', 'View workspace Store products and catalogs', 'store.product', 'read', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('store.product.create', 'Create workspace Store products and catalogs', 'store.product', 'create', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('store.product.update', 'Update workspace Store products', 'store.product', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('store.product.delete', 'Delete workspace Store products', 'store.product', 'delete', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('blog.post.read', 'Read workspace Blog posts and catalogs', 'blog.post', 'read', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('blog.post.create', 'Create workspace Blog posts and catalogs', 'blog.post', 'create', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('blog.post.update', 'Update workspace Blog posts', 'blog.post', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('blog.post.delete', 'Delete workspace Blog posts', 'blog.post', 'delete', NULL, (SELECT id FROM app_scope WHERE name='business-site'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permissions)
@@ -710,9 +803,31 @@ SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'app-config.read',
   'app-config.update',
-  'business-site.catalog.update'
+  'business-site.catalog.update',
+  'store.product.view',
+  'store.product.create',
+  'store.product.update',
+  'store.product.delete',
+  'blog.post.read',
+  'blog.post.create',
+  'blog.post.update',
+  'blog.post.delete'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='business-site')
 WHERE r.name = 'business_site_owner'
+ON CONFLICT DO NOTHING;
+
+-- configurable_client_owner - manage configurable-client app configuration
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'app-config.create',
+  'app-config.read',
+  'app-config.update',
+  'app-config.delete',
+  'blog.post.read',
+  'blog.post.create'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='configurable-client')
+WHERE r.name = 'configurable_client_owner'
 ON CONFLICT DO NOTHING;
 
 -- business_site_client - read business site configuration
@@ -807,70 +922,16 @@ echo "Video-client permissions seeded."
 if [ "$SKIP_PERMISSION_USER_ASSIGNMENTS" = "true" ]; then
   echo "Skipping user-based role assignments in seed-permissions.sh."
 else
-  # Seed role assignments for video-client seed users
-  # Note: profile IDs are assigned on user registration, so we do a fuzzy match approach
-  # This will assign video_channel_creator role to any seed users in video-client scope
-  # Run as separate script after users are registered
-  psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
-INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
-SELECT 
-  p."profileId",
-  r.id,
-  s.id,
-  NOW()
-FROM "user" p
-JOIN "role" r ON r.name = 'video_channel_creator'
-JOIN "app_scope" s ON s.name = 'video-client'
-WHERE p.email IN ('alice@example.com', 'bob@example.com', 'charlie@example.com')
-  AND NOT EXISTS (
-    SELECT 1 FROM "role_assignment" ra 
-    WHERE ra."profileId" = p."profileId" 
-      AND ra."roleId" = r.id 
-      AND ra."appScopeId" = s.id
-  )
-ON CONFLICT DO NOTHING;
-SQL
+  # Seed role assignments for video-client users whose scoped profiles exist.
+  for email in alice@example.com bob@example.com charlie@example.com; do
+    seed_role_assignment "$email" 'video_channel_creator' 'video-client'
+  done
 
   echo "Video-client role assignments seeded."
 
-  # Seed role assignments for business-site seed users
-  psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
-INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
-SELECT
-  p."profileId",
-  r.id,
-  s.id,
-  NOW()
-FROM "user" p
-JOIN "role" r ON r.name = 'business_site_owner'
-JOIN "app_scope" s ON s.name = 'business-site'
-WHERE p.email = 'owner@localbusiness.test'
-  AND NOT EXISTS (
-    SELECT 1 FROM "role_assignment" ra
-    WHERE ra."profileId" = p."profileId"
-      AND ra."roleId" = r.id
-      AND ra."appScopeId" = s.id
-  )
-ON CONFLICT DO NOTHING;
-
-INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
-SELECT
-  p."profileId",
-  r.id,
-  s.id,
-  NOW()
-FROM "user" p
-JOIN "role" r ON r.name = 'business_site_client'
-JOIN "app_scope" s ON s.name = 'business-site'
-WHERE p.email = 'client@localbusiness.test'
-  AND NOT EXISTS (
-    SELECT 1 FROM "role_assignment" ra
-    WHERE ra."profileId" = p."profileId"
-      AND ra."roleId" = r.id
-      AND ra."appScopeId" = s.id
-  )
-ON CONFLICT DO NOTHING;
-SQL
+  # Seed role assignments for business-site users from their scoped profiles.
+  seed_role_assignment 'owner@localbusiness.test' 'business_site_owner' 'business-site'
+  seed_role_assignment 'client@localbusiness.test' 'business_site_client' 'business-site'
 
   echo "Business-site role assignments seeded."
 fi

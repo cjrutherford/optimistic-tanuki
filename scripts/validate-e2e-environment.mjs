@@ -80,22 +80,6 @@ export function validateE2eEnvironment({
         `${project} lifecycle phases must cover each resolved service exactly once`
       );
     }
-    const seedIndex =
-      entry.lifecycle?.phases?.findIndex(
-        (phase) => phase.name === 'app-configurator-seed'
-      ) ?? -1;
-    const configuratorIndex =
-      entry.lifecycle?.phases?.findIndex(
-        (phase) => phase.name === 'app-configurator'
-      ) ?? -1;
-    if (
-      seedIndex >= 0 &&
-      (configuratorIndex < 0 || configuratorIndex > seedIndex)
-    ) {
-      errors.push(
-        `${project} must run app-configurator before app-configurator-seed`
-      );
-    }
     for (const service of entry.completedServices ?? []) {
       if (!resolveE2eServices(entry).includes(service)) {
         errors.push(

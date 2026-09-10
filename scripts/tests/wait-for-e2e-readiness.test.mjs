@@ -186,12 +186,11 @@ test('waits for services reporting a Compose health state to become healthy', as
   );
 });
 
-test('accepts successful exited seed services instead of requiring them to remain running', async () => {
+test('waits for a running app-configurator without an automatic seed job', async () => {
   const runtime = makeRuntime({
     psSnapshots: [
       [
         { Service: 'db-setup', State: 'exited', ExitCode: 0 },
-        { Service: 'app-configurator-seed', State: 'exited', ExitCode: 0 },
         { Service: 'app-configurator', State: 'running' },
       ],
     ],
@@ -201,12 +200,8 @@ test('accepts successful exited seed services instead of requiring them to remai
   await waitForE2eReadiness(
     {
       composeFiles: ['stack.yaml'],
-      requiredServices: [
-        'db-setup',
-        'app-configurator-seed',
-        'app-configurator',
-      ],
-      completedServices: ['db-setup', 'app-configurator-seed'],
+      requiredServices: ['db-setup', 'app-configurator'],
+      completedServices: ['db-setup'],
       requiredUrls: ['http://127.0.0.1:3014'],
       timeoutMs: 50,
       intervalMs: 10,

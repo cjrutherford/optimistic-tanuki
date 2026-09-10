@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -106,6 +107,7 @@ export class CommunitiesController {
     const active = await firstValueFrom(
       this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
         workspaceId: workspace.workspaceId,
+        appScope,
         source: { service: 'social', sourceId: community.id },
       })
     );
@@ -127,7 +129,7 @@ export class CommunitiesController {
     const role = await firstValueFrom(
       this.permissionsClient.send(
         { cmd: RoleCommands.GetByName },
-        { name: 'community_owner', appScope }
+        { name: 'community_owner', appScope: 'community' }
       )
     );
     if (!scope?.id || !role?.id)
@@ -632,17 +634,76 @@ export class CommunitiesController {
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Appoint a community manager' })
   @ApiResponse({ status: 201, description: 'Manager appointed.' })
-  appointManager(
+  async appointManager(
     @Param('id') id: string,
     @Body() body: { userId: string; profileId: string },
-    @User() user: UserDetails
-  ) {
-    return firstValueFrom(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ): Promise<void> {
+    const members = (await firstValueFrom(
       this.socialClient.send(
-        { cmd: CommunityCommands.APPOINT_MANAGER },
-        { communityId: id, userId: body.userId, profileId: body.profileId }
+        { cmd: CommunityCommands.GET_MEMBERS },
+        { communityId: id }
+      )
+    )) as Array<{ userId: string; profileId: string }>;
+    const appointedMember = members.find(
+      (member) => member.profileId === body.profileId
+    );
+
+    if (!appointedMember) {
+      throw new BadRequestException(
+        'The appointed manager must be an approved community member.'
+      );
+    }
+
+    const communityManagerRole = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: RoleCommands.GetByName },
+        { name: 'community_manager', appScope: 'community' }
       )
     );
+    if (!communityManagerRole) {
+      throw new Error('community_manager role not found');
+    }
+    const workspaceScopeId = await this.getCommunityWorkspaceScopeId(
+      id,
+      appScope
+    );
+
+    await firstValueFrom(
+      this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
+        roleId: communityManagerRole.id,
+        profileId: appointedMember.profileId,
+        appScopeId: workspaceScopeId,
+        targetId: id,
+      } as AssignRoleDto)
+    );
+
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.APPOINT_MANAGER },
+          {
+            communityId: id,
+            userId: appointedMember.userId,
+            profileId: appointedMember.profileId,
+          }
+        )
+      );
+    } catch (error) {
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: 'Unassign:Role:ByTarget' },
+          {
+            profileId: appointedMember.profileId,
+            roleId: communityManagerRole.id,
+            appScopeId: workspaceScopeId,
+            targetId: id,
+          }
+        )
+      );
+      throw error;
+    }
   }
 
   @Delete(':id/manager')
@@ -657,13 +718,86 @@ export class CommunitiesController {
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Revoke community manager' })
   @ApiResponse({ status: 200, description: 'Manager revoked.' })
-  revokeManager(@Param('id') id: string) {
-    return firstValueFrom(
+  async revokeManager(
+    @Param('id') id: string,
+    @AppScope() appScope: string
+  ): Promise<void> {
+    const currentManager = (await firstValueFrom(
       this.socialClient.send(
-        { cmd: CommunityCommands.REVOKE_MANAGER },
+        { cmd: CommunityCommands.GET_MANAGER },
         { communityId: id }
       )
+    )) as { userId: string; profileId: string } | null;
+    const communityManagerRole = currentManager
+      ? await firstValueFrom(
+          this.permissionsClient.send(
+            { cmd: RoleCommands.GetByName },
+            { name: 'community_manager', appScope: 'community' }
+          )
+        )
+      : null;
+    const workspaceScopeId =
+      currentManager && communityManagerRole
+        ? await this.getCommunityWorkspaceScopeId(id, appScope)
+        : null;
+
+    if (currentManager && communityManagerRole && workspaceScopeId) {
+      await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: 'Unassign:Role:ByTarget' },
+          {
+            profileId: currentManager.profileId,
+            roleId: communityManagerRole.id,
+            appScopeId: workspaceScopeId,
+            targetId: id,
+          }
+        )
+      );
+    }
+
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.REVOKE_MANAGER },
+          { communityId: id }
+        )
+      );
+    } catch (error) {
+      if (currentManager && communityManagerRole && workspaceScopeId) {
+        await firstValueFrom(
+          this.permissionsClient.send({ cmd: RoleCommands.Assign }, {
+            roleId: communityManagerRole.id,
+            profileId: currentManager.profileId,
+            appScopeId: workspaceScopeId,
+            targetId: id,
+          } as AssignRoleDto)
+        );
+      }
+      throw error;
+    }
+  }
+
+  private async getCommunityWorkspaceScopeId(
+    communityId: string,
+    appScope: string
+  ): Promise<string> {
+    const workspace = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.RESOLVE_BY_SOURCE, {
+        appScope,
+        source: { service: 'social', sourceId: communityId },
+        requireActive: true,
+      })
     );
+    const scope = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: AppScopeCommands.GetByName },
+        { name: workspaceScopeName(workspace.workspaceId) }
+      )
+    );
+    if (!scope?.id) {
+      throw new Error('Community workspace permission scope was not found');
+    }
+    return scope.id;
   }
 
   private async assignCommunityPostingRole(
