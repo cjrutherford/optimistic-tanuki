@@ -82,7 +82,7 @@ describe('RoleInitService behaviour', () => {
   });
 
   describe('permission creation', () => {
-    it('defaults the target to the resolved scope id', async () => {
+    it('preserves a missing target so concrete-target matching can apply', async () => {
       okScope();
       on(PermissionCommands.Create, () => ({ id: 'perm-1' }));
 
@@ -96,7 +96,7 @@ describe('RoleInitService behaviour', () => {
         description: '',
         resource: 'post',
         action: 'read',
-        targetId: 'scope-1',
+        targetId: undefined,
       });
     });
 

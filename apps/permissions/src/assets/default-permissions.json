@@ -3336,6 +3336,33 @@
       "action": "create",
       "targetId": null,
       "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.update",
+      "description": "Update configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.delete",
+      "description": "Delete configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.publish",
+      "description": "Publish configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "publish",
+      "targetId": null,
+      "appScope": "configurable-client"
     }
   ],
   "role_permissions": [
@@ -7776,12 +7803,27 @@
     },
     {
       "role": "configurable_client_owner",
+      "permission": "blog.post.create",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
       "permission": "blog.post.read",
       "permissionAppScope": "configurable-client"
     },
     {
       "role": "configurable_client_owner",
-      "permission": "blog.post.create",
+      "permission": "blog.post.update",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.publish",
       "permissionAppScope": "configurable-client"
     }
   ]

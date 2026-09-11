@@ -172,4 +172,49 @@ describe('permissions seed integrity', () => {
       })
     );
   });
+
+  it('keeps the shell seed aligned with the configurable-client blog contract', () => {
+    const shellSeed = fs.readFileSync(
+      path.resolve(__dirname, '../../../../scripts/seed-permissions.sh'),
+      'utf8'
+    );
+
+    for (const permission of [
+      "('blog.post.read', 'Read configurable-client Blog posts and catalogs'",
+      "('blog.post.create', 'Create configurable-client Blog posts and catalogs'",
+      "('blog.post.update', 'Update configurable-client Blog posts'",
+      "('blog.post.delete', 'Delete configurable-client Blog posts'",
+      "('blog.post.publish', 'Publish configurable-client Blog posts'",
+    ]) {
+      expect(shellSeed).toContain(permission);
+    }
+
+    expect(shellSeed).toContain(
+      "'blog.post.publish'\n) AND p.\"appScopeId\" = (SELECT id FROM app_scope WHERE name='configurable-client')"
+    );
+  });
+
+  it('canonicalizes duplicate targetless permissions without collapsing targeted rows', () => {
+    const shellSeed = fs.readFileSync(
+      path.resolve(__dirname, '../../../../scripts/seed-permissions.sh'),
+      'utf8'
+    );
+
+    expect(shellSeed).toContain(
+      'CREATE UNIQUE INDEX IF NOT EXISTS permission_name_appscope_targetless_idx'
+    );
+    expect(shellSeed).toContain('WHERE "targetId" IS NULL;');
+    expect(shellSeed).toContain(
+      'CREATE TEMP TABLE permission_targetless_aliases'
+    );
+    expect(shellSeed).toContain('DELETE FROM "role_permissions"');
+    expect(shellSeed).toContain('UPDATE "role_permissions"');
+    expect(shellSeed).toContain('DELETE FROM "permission"');
+    expect(shellSeed).not.toContain(
+      'CREATE UNIQUE INDEX IF NOT EXISTS permission_name_appscope_idx ON "permission" (name, "appScopeId");'
+    );
+    expect(shellSeed).toContain(
+      'ON CONFLICT (name, "appScopeId") WHERE "targetId" IS NULL DO NOTHING;'
+    );
+  });
 });
