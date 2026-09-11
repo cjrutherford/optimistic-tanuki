@@ -269,14 +269,12 @@ describe('OAuthService', () => {
     }).compileComponents();
     const service = TestBed.inject(OAuthService);
     const http = TestBed.inject(HttpClient);
-    jest
-      .spyOn(http, 'post')
-      .mockReturnValue(
-        of({
-          token: 'compatibility-token',
-          returnOrigin: window.location.origin,
-        }) as any
-      );
+    jest.spyOn(http, 'post').mockReturnValue(
+      of({
+        token: 'compatibility-token',
+        returnOrigin: window.location.origin,
+      }) as any
+    );
     service.configureProviders({ google: { clientId: 'google-client-id' } });
 
     const completion = service.completeOAuthRegistration(
@@ -323,14 +321,12 @@ describe('OAuthService', () => {
     }).compileComponents();
     const service = TestBed.inject(OAuthService);
     const http = TestBed.inject(HttpClient);
-    jest
-      .spyOn(http, 'post')
-      .mockReturnValue(
-        of({
-          token: 'forged-token',
-          returnOrigin: 'https://evil.example',
-        }) as any
-      );
+    jest.spyOn(http, 'post').mockReturnValue(
+      of({
+        token: 'forged-token',
+        returnOrigin: 'https://evil.example',
+      }) as any
+    );
     service.configureProviders({ google: { clientId: 'google-client-id' } });
 
     const completion = service.completeOAuthRegistration(

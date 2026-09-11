@@ -79,20 +79,18 @@ describe('OwnerWorkspaceDashboardComponent', () => {
       rollback: jest.fn().mockReturnValue(of(dashboard)),
     };
     discoveryStore = {
-      workspaces: jest
-        .fn()
-        .mockReturnValue([
-          {
-            workspaceId: 'workspace-1',
-            kind: 'business-site',
-            slug: 'north-star',
-            displayName: 'North Star',
-            appScope: 'configurable-client',
-            status: 'active',
-            membershipRole: 'owner',
-            membershipStatus: 'active',
-          },
-        ]),
+      workspaces: jest.fn().mockReturnValue([
+        {
+          workspaceId: 'workspace-1',
+          kind: 'business-site',
+          slug: 'north-star',
+          displayName: 'North Star',
+          appScope: 'configurable-client',
+          status: 'active',
+          membershipRole: 'owner',
+          membershipStatus: 'active',
+        },
+      ]),
       load: jest.fn(),
     };
     await TestBed.configureTestingModule({

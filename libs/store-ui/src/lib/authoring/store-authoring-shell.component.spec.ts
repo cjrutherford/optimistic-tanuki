@@ -19,33 +19,29 @@ describe('StoreAuthoringShellComponent', () => {
         .mockReturnValue(
           of([{ id: 'catalog-1', name: 'Guides', description: null }])
         ),
-      listProducts: jest
-        .fn()
-        .mockReturnValue(
-          of([
-            {
-              id: 'product-1',
-              name: 'Guide',
-              priceCents: 1200,
-              type: 'digital',
-            },
-          ])
-        ),
+      listProducts: jest.fn().mockReturnValue(
+        of([
+          {
+            id: 'product-1',
+            name: 'Guide',
+            priceCents: 1200,
+            type: 'digital',
+          },
+        ])
+      ),
       createCatalog: jest
         .fn()
         .mockReturnValue(
           of({ id: 'catalog-2', name: 'Courses', description: null })
         ),
-      createProduct: jest
-        .fn()
-        .mockReturnValue(
-          of({
-            id: 'product-2',
-            name: 'Course',
-            priceCents: 2400,
-            type: 'digital',
-          })
-        ),
+      createProduct: jest.fn().mockReturnValue(
+        of({
+          id: 'product-2',
+          name: 'Course',
+          priceCents: 2400,
+          type: 'digital',
+        })
+      ),
     };
 
     await TestBed.configureTestingModule({
