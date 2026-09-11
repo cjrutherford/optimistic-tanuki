@@ -6,12 +6,12 @@
 
 .shopping-cart {
   padding: 1.5rem;
-  background-color: var(--background, #ffffff);
+  background-color: var(--background);
   border-radius: var(--border-radius-lg, 8px);
 
   h2 {
     margin: 0 0 1.5rem;
-    color: var(--foreground, #333);
+    color: var(--foreground);
   }
 }
 
@@ -24,7 +24,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border-bottom: 1px solid var(--border, #e0e0e0);
+  border-bottom: 1px solid var(--border);
 
   .item-image {
     width: 80px;
@@ -39,12 +39,12 @@
     h3 {
       margin: 0 0 0.5rem;
       font-size: 1rem;
-      color: var(--foreground, #333);
+      color: var(--foreground);
     }
 
     .item-price {
       margin: 0;
-      color: var(--muted-foreground, #666);
+      color: var(--muted-foreground);
     }
   }
 
@@ -56,20 +56,20 @@
     button {
       width: 30px;
       height: 30px;
-      border: 1px solid var(--border, #ccc);
-      background-color: var(--background, #fff);
+      border: 1px solid var(--border);
+      background-color: var(--background);
       cursor: pointer;
       border-radius: var(--border-radius-md, 4px);
 
       &:hover {
-        background-color: var(--muted, #f5f5f5);
+        background-color: var(--muted);
       }
     }
   }
 
   .item-total {
     font-weight: 600;
-    color: var(--primary, #007bff);
+    color: var(--primary);
   }
 
   .remove-btn {
@@ -77,7 +77,7 @@
     height: 30px;
     border: none;
     background-color: transparent;
-    color: var(--danger, #dc3545);
+    color: var(--danger);
     font-size: 1.5rem;
     cursor: pointer;
     @include p.personality-transition(opacity, 'normal');
@@ -91,11 +91,11 @@
 .empty-cart {
   text-align: center;
   padding: 3rem;
-  color: var(--muted-foreground, #666);
+  color: var(--muted-foreground);
 }
 
 .cart-summary {
-  border-top: 2px solid var(--border, #e0e0e0);
+  border-top: 2px solid var(--border);
   padding-top: 1rem;
 
   .summary-row {
@@ -106,7 +106,7 @@
 
     .total-amount {
       font-weight: 700;
-      color: var(--primary, #007bff);
+      color: var(--primary);
     }
   }
 
@@ -115,15 +115,19 @@
     padding: 1rem;
     border: none;
     border-radius: var(--border-radius-md, 4px);
-    background-color: var(--primary, #007bff);
-    color: var(--primary-foreground, #ffffff);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
     font-size: 1.125rem;
     font-weight: 600;
     cursor: pointer;
     @include p.personality-transition(background-color, 'normal');
 
     &:hover {
-      background-color: color-mix(in srgb, var(--primary, #007bff) 85%, #000);
+      background-color: color-mix(
+        in srgb,
+        var(--primary) 85%,
+        var(--shadow-color)
+      );
     }
   }
 }

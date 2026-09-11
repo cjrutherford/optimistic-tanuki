@@ -85,7 +85,7 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
         justify-content: space-between;
         align-items: center;
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color, #e0e0e0);
+        border-bottom: 1px solid var(--border);
       }
 
       .selector-header h3 {
@@ -102,34 +102,34 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       }
 
       .close-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
       }
 
       .component-categories {
         display: flex;
         gap: 0.5rem;
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color, #e0e0e0);
+        border-bottom: 1px solid var(--border);
         flex-wrap: wrap;
       }
 
       .category-btn {
         padding: 0.5rem 1rem;
-        border: 1px solid var(--border-color, #e0e0e0);
-        background: var(--background, white);
+        border: 1px solid var(--border);
+        background: var(--background);
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s;
       }
 
       .category-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
       }
 
       .category-btn.active {
-        background-color: var(--accent, #007acc);
-        color: white;
-        border-color: var(--accent, #007acc);
+        background-color: var(--primary);
+        color: var(--primary-foreground);
+        border-color: var(--primary);
       }
 
       .component-grid {
@@ -144,7 +144,7 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
         align-items: center;
         gap: 1rem;
         padding: 0.75rem;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border);
         border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s;
@@ -152,8 +152,8 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       }
 
       .component-item:hover {
-        background-color: var(--accent, #f0f0f0);
-        border-color: var(--accent, #007acc);
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
+        border-color: var(--primary);
       }
 
       .component-icon {
@@ -162,7 +162,7 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
         justify-content: center;
         width: 40px;
         height: 40px;
-        background-color: var(--accent, #f0f0f0);
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
         border-radius: 4px;
       }
 
@@ -178,12 +178,12 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       .component-info p {
         margin: 0;
         font-size: 0.875rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
       }
 
       .selector-actions {
         padding: 1rem;
-        border-top: 1px solid var(--border-color, #e0e0e0);
+        border-top: 1px solid var(--border);
         display: flex;
         justify-content: flex-end;
       }

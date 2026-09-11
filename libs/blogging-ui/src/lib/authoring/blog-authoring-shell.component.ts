@@ -128,20 +128,20 @@ export type BlogAuthoringState = 'loading' | 'denied' | 'empty' | 'ready';
       }
       .authoring-shell {
         padding: 1.25rem;
-        border: 1px solid var(--border, #d7dce5);
+        border: 1px solid var(--border);
         border-radius: 1rem;
-        background: var(--surface, #fff);
+        background: var(--surface);
       }
       .eyebrow {
         margin: 0;
-        color: var(--primary, #315fdd);
+        color: var(--primary);
         font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
       .context {
-        color: var(--muted, #64748b);
+        color: var(--muted);
       }
       .catalog-controls,
       .post-form {
@@ -160,19 +160,19 @@ export type BlogAuthoringState = 'loading' | 'denied' | 'empty' | 'ready';
         align-items: center;
         gap: 0.75rem;
         padding: 0.75rem;
-        border: 1px solid var(--border, #d7dce5);
+        border: 1px solid var(--border);
         border-radius: 0.5rem;
       }
       .post-row span {
-        color: var(--muted, #64748b);
+        color: var(--muted);
       }
       button {
         width: fit-content;
         padding: 0.55rem 0.8rem;
         border: 0;
         border-radius: 0.5rem;
-        background: var(--primary, #315fdd);
-        color: #fff;
+        background: var(--primary);
+        color: var(--primary-foreground);
         font-weight: 700;
       }
       input,
@@ -180,7 +180,7 @@ export type BlogAuthoringState = 'loading' | 'denied' | 'empty' | 'ready';
       textarea {
         max-width: 34rem;
         padding: 0.55rem;
-        border: 1px solid var(--border, #d7dce5);
+        border: 1px solid var(--border);
         border-radius: 0.4rem;
         font: inherit;
       }

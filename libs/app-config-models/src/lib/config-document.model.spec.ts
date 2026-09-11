@@ -25,15 +25,13 @@ describe('config document adapters', () => {
       capabilities: {},
     };
 
-    if (false) {
-      const unsupportedManifest: ConfigurablePluginManifest = {
-        // @ts-expect-error ConfigurablePluginManifest is limited to schema version 1.
-        schemaVersion: 2,
-        surfaceType: 'generic',
-        capabilities: {},
-      };
-      expect(unsupportedManifest).toBeUndefined();
-    }
+    const unsupportedManifest = {
+      // @ts-expect-error ConfigurablePluginManifest is limited to schema version 1.
+      schemaVersion: 2,
+      surfaceType: 'generic',
+      capabilities: {},
+    } satisfies ConfigurablePluginManifest;
+    expect(isConfigurablePluginManifest(unsupportedManifest)).toBe(false);
 
     expect(manifest.schemaVersion).toBe(1);
   });

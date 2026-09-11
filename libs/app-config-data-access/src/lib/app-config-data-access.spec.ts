@@ -60,7 +60,11 @@ describe('AppConfigApiService', () => {
   });
 
   it('requires workspace scope for mutation call sites at compile time', () => {
-    const http = { get: jest.fn(), put: jest.fn(), post: jest.fn() };
+    const http = {
+      get: jest.fn(),
+      put: jest.fn().mockReturnValue(of({})),
+      post: jest.fn().mockReturnValue(of({})),
+    };
     const api = new AppConfigApiService(http);
 
     // @ts-expect-error workspaceSlug is required for authenticated update.

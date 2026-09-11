@@ -728,6 +728,9 @@ importers:
       '@angular/core':
         specifier: ^20.0.0
         version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+      '@optimistic-tanuki/models':
+        specifier: workspace:*
+        version: link:../models
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -737,6 +740,21 @@ importers:
 
   libs/blogging-feature:
     dependencies:
+      '@angular/common':
+        specifier: ^20.0.0
+        version: 20.2.4(@angular/core@20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+      '@angular/core':
+        specifier: ^20.0.0
+        version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+      '@optimistic-tanuki/blogging-data-access':
+        specifier: workspace:*
+        version: link:../blogging-data-access
+      '@optimistic-tanuki/configurable-plugin-contracts':
+        specifier: workspace:*
+        version: link:../configurable-plugin-contracts
+      rxjs:
+        specifier: ~7.8.0
+        version: 7.8.2
       tslib:
         specifier: ^2.3.0
         version: 2.8.1

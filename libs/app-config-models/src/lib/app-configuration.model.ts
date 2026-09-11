@@ -10,13 +10,12 @@ import { RouteConfig } from './route-config.model';
 import { ThemeConfig } from './theme-config.model';
 import { FeaturesConfig } from './feature-config.model';
 import { ConfigurablePluginManifest } from './configurable-plugin-manifest.model';
-import type {
-  WorkspaceAppInstanceId as AppConfigAppInstanceId,
-  WorkspaceAppMembershipId as AppConfigMembershipId,
-  WorkspaceAppMembershipRole as AppConfigMembershipRole,
-  WorkspaceAppMembershipStatus as AppConfigMembershipStatus,
-  WorkspaceId as AppConfigWorkspaceId,
-} from '@optimistic-tanuki/models';
+
+type AppConfigWorkspaceId = string;
+type AppConfigAppInstanceId = string;
+type AppConfigMembershipId = string;
+type AppConfigMembershipRole = 'owner' | 'admin' | 'moderator' | 'member';
+type AppConfigMembershipStatus = 'pending' | 'active' | 'suspended' | 'revoked';
 
 export type BlockRenderContext = 'landing-page' | 'rich-text';
 export type EditorWorkspaceMode = 'guided' | 'studio';

@@ -4,20 +4,20 @@
 .angular-component-container {
   position: relative;
   margin: var(--spacing-md, 16px) 0;
-  border: 2px solid var(--secondary, #c0af4b);
+  border: 2px solid var(--secondary);
   border-radius: var(--border-radius-lg, 8px);
-  background: var(--background, #ffffff);
+  background: var(--background);
   @include p.personality-transition(all);
   cursor: pointer;
 
   &:hover {
-    border-color: var(--primary, #667eea);
+    border-color: var(--primary);
     @include p.shadow('md');
     transform: translateY(-1px);
   }
 
   &.selected {
-    border-color: var(--primary, #667eea);
+    border-color: var(--primary);
     @include p.shadow('lg');
     background: color-mix(in srgb, var(--primary) 5%, transparent);
   }
@@ -28,8 +28,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  background: var(--secondary, #c0af4b);
-  color: var(--background, #ffffff);
+  background: var(--secondary);
+  color: var(--secondary-foreground);
   border-radius: var(--border-radius-md, 4px) var(--border-radius-md, 4px) 0 0;
   font-size: var(--font-size-sm, 0.875rem);
   font-weight: 500;
@@ -78,13 +78,13 @@
 
 .component-preview {
   text-align: center;
-  color: var(--foreground, #333333);
+  color: var(--foreground);
 
   h4 {
     margin: 0 0 var(--spacing-xs, 4px) 0;
     font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
-    color: var(--primary, #667eea);
+    color: var(--primary);
   }
 
   p {
@@ -118,7 +118,7 @@
 }
 
 .angular-component-container.drag-over {
-  border-color: var(--primary, #667eea);
+  border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 

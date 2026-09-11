@@ -2,8 +2,8 @@
 
 .context-menu {
   position: fixed;
-  background-color: var(--background, #fff);
-  border: 1px solid var(--border, #ccc);
+  background-color: var(--background);
+  border: 1px solid var(--border);
   @include p.shadow('md');
   border-radius: var(--border-radius-lg, 8px);
   padding: 8px;
@@ -14,7 +14,7 @@
   button {
     background: none;
     border: none;
-    color: var(--foreground, #000);
+    color: var(--foreground);
     padding: 8px 12px;
     text-align: left;
     cursor: pointer;

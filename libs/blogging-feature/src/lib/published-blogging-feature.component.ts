@@ -61,13 +61,13 @@ import { Subscription } from 'rxjs';
       }
       .blog-feature {
         padding: clamp(1rem, 3vw, 2rem);
-        border: 1px solid var(--border, #d8e1ea);
+        border: 1px solid var(--border);
         border-radius: 1rem;
-        background: var(--surface, #fff);
+        background: var(--surface);
       }
       .eyebrow {
         margin: 0;
-        color: var(--primary, #356c91);
+        color: var(--primary);
         font-size: 0.75rem;
         font-weight: 850;
         letter-spacing: 0.08em;
@@ -88,13 +88,9 @@ import { Subscription } from 'rxjs';
       }
       .post-card {
         padding: 1rem;
-        border: 1px solid var(--border, #d8e1ea);
+        border: 1px solid var(--border);
         border-radius: 0.75rem;
-        background: color-mix(
-          in srgb,
-          var(--primary, #356c91) 5%,
-          var(--surface, #fff)
-        );
+        background: color-mix(in srgb, var(--primary) 5%, var(--surface));
       }
       .post-card h2 {
         margin: 0;
@@ -108,11 +104,7 @@ import { Subscription } from 'rxjs';
         margin: 0;
         padding: 1rem;
         border-radius: 0.65rem;
-        background: color-mix(
-          in srgb,
-          var(--foreground, #172033) 6%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--foreground) 6%, transparent);
       }
       .error-state p {
         margin: 0.5rem 0;
@@ -120,10 +112,10 @@ import { Subscription } from 'rxjs';
       .error-state button {
         min-height: 2.5rem;
         padding: 0.5rem 0.8rem;
-        border: 1px solid var(--primary, #356c91);
+        border: 1px solid var(--primary);
         border-radius: 0.45rem;
-        background: var(--primary, #356c91);
-        color: var(--primary-foreground, #fff);
+        background: var(--primary);
+        color: var(--primary-foreground);
         font: inherit;
         font-weight: 750;
         cursor: pointer;
