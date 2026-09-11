@@ -44,7 +44,7 @@ describe('app email authentication metadata', () => {
       enabled: true,
       from: 'no-reply@christopherrutherford.net',
     });
-    expect(configured).toHaveLength(12);
+    expect(configured).toHaveLength(13);
     expect(
       configured.every((app) => isApprovedAuthEmailSender(app.authEmail!.from))
     ).toBe(true);
