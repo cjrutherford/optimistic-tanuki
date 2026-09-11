@@ -85,7 +85,7 @@ describe('business-site dev compose wiring', () => {
     );
     const serviceSections = Array.from(
       compose.matchAll(
-        /^  ([a-z0-9-]+):\n([\s\S]*?)(?=^  [a-z0-9-]+:|^volumes:|\Z)/gim
+        /^ {2}([a-z0-9-]+):\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|^volumes:|\Z)/gim
       )
     );
     const servicesWithDistMounts = serviceSections.filter(([, , section]) =>

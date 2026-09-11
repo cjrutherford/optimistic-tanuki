@@ -6,7 +6,7 @@ import {
 import {
   DEFAULT_BUSINESS_SITE_CONFIG,
   type BusinessSiteConfig,
-} from '../../../business-data-access/src/lib/business-site.config';
+} from '@optimistic-tanuki/business-data-access';
 
 describe('business-site block adapters', () => {
   it('converts a business-site config into a shared config document', () => {

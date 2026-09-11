@@ -3,8 +3,8 @@
 }
 .owner-dashboard {
   min-height: 100vh;
-  color: var(--foreground, #1b1d1a);
-  background: var(--background, #f3f0e9);
+  color: var(--foreground, var(--ot-client-workspace-foreground));
+  background: var(--background, var(--ot-client-workspace-background));
   font-family: var(--font-body, 'Trebuchet MS', sans-serif);
 }
 .dashboard-header,
@@ -19,22 +19,22 @@
   display: flex;
   justify-content: space-between;
   padding: 1.5rem 0;
-  border-bottom: 1px solid #c8c2b8;
+  border-bottom: 1px solid var(--ot-client-workspace-border);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .wordmark {
-  color: #1b1d1a;
+  color: var(--ot-client-workspace-foreground);
   font-weight: 800;
   text-decoration: none;
 }
 .wordmark span {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font-weight: 500;
 }
 .header-note {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
 }
 .signal-dot {
   display: inline-block;
@@ -42,8 +42,8 @@
   height: 0.45rem;
   margin-left: 0.5rem;
   border-radius: 50%;
-  background: #d4f34a;
-  box-shadow: 0 0 0 0.2rem #d4f34a55;
+  background: var(--ot-client-workspace-accent);
+  box-shadow: 0 0 0 0.2rem var(--ot-client-workspace-accent-soft);
 }
 .dashboard-intro {
   display: flex;
@@ -53,7 +53,7 @@
 }
 .kicker {
   margin: 0 0 0.65rem;
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font: 700 0.7rem/1.2 ui-monospace, monospace;
   letter-spacing: 0.14em;
 }
@@ -66,7 +66,7 @@
 .lede {
   margin: 1.5rem 0 0;
   font-size: 1.05rem;
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
 }
 .identity-stamp {
   align-self: end;
@@ -74,11 +74,11 @@
   gap: 0.3rem;
   min-width: 12rem;
   padding: 1rem;
-  border: 1px solid #c8c2b8;
+  border: 1px solid var(--ot-client-workspace-border);
   border-radius: 0.2rem;
 }
 .stamp-label {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font: 700 0.62rem ui-monospace, monospace;
   letter-spacing: 0.13em;
 }
@@ -86,7 +86,7 @@
   font-size: 1.4rem;
 }
 .identity-stamp span:last-child {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font-size: 0.8rem;
 }
 .release-banner {
@@ -95,9 +95,9 @@
   align-items: center;
   gap: 2rem;
   padding: 1.5rem;
-  border: 1px solid #1b1d1a;
-  background: #1b1d1a;
-  color: #f3f0e9;
+  border: 1px solid var(--ot-client-workspace-foreground);
+  background: var(--ot-client-workspace-foreground);
+  color: var(--ot-client-workspace-background);
 }
 .release-banner > div:first-child {
   display: flex;
@@ -105,7 +105,7 @@
   gap: 1rem;
 }
 .release-banner .kicker {
-  color: #9d9e96;
+  color: var(--ot-client-workspace-muted-light);
 }
 .release-banner h2 {
   margin: 0;
@@ -116,13 +116,13 @@
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 50%;
-  background: #d4f34a;
+  background: var(--ot-client-workspace-accent);
 }
 .status-orb--pending {
-  background: #f0a84a;
+  background: var(--ot-client-workspace-warning);
 }
 .status-orb--rolled-back {
-  background: #ef765f;
+  background: var(--ot-client-workspace-error);
 }
 .revision {
   display: grid;
@@ -132,11 +132,11 @@
 }
 .revision span,
 .revision small {
-  color: #9d9e96;
+  color: var(--ot-client-workspace-muted-light);
   font-size: 0.75rem;
 }
 .revision strong {
-  color: #d4f34a;
+  color: var(--ot-client-workspace-accent);
   font-size: 1.5rem;
 }
 .revision small {
@@ -150,8 +150,8 @@
 }
 .panel {
   padding: 1.5rem;
-  border: 1px solid #c8c2b8;
-  background: #f8f6f1;
+  border: 1px solid var(--ot-client-workspace-border);
+  background: var(--ot-client-workspace-surface);
 }
 .panel h2 {
   max-width: 12ch;
@@ -163,10 +163,10 @@
 }
 .panel--identity dl div {
   padding: 1rem 0;
-  border-top: 1px solid #d9d4cb;
+  border-top: 1px solid var(--ot-client-workspace-border-subtle);
 }
 .panel--identity dt {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font: 700 0.7rem ui-monospace, monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -178,7 +178,7 @@
 .panel--identity dd small {
   display: block;
   margin-top: 0.2rem;
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font: 0.72rem ui-monospace, monospace;
 }
 .action {
@@ -189,15 +189,15 @@
   box-sizing: border-box;
   padding: 1rem 0;
   border: 0;
-  border-top: 1px solid #d9d4cb;
+  border-top: 1px solid var(--ot-client-workspace-border-subtle);
   background: none;
-  color: #1b1d1a;
+  color: var(--ot-client-workspace-foreground);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
 }
 .action span {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   font: 0.75rem ui-monospace, monospace;
 }
 .action strong {
@@ -205,36 +205,36 @@
 }
 .action small {
   grid-column: 2;
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
 }
 .action:hover strong,
 .action:focus-visible strong {
-  color: #5b690e;
+  color: var(--ot-client-workspace-primary);
 }
 .action--publish {
   font: inherit;
 }
 .action--primary strong {
-  color: #5b690e;
+  color: var(--ot-client-workspace-primary);
 }
 .gated {
   padding: 1rem;
-  border: 1px dashed #c8c2b8;
-  color: #6e6b63;
+  border: 1px dashed var(--ot-client-workspace-border);
+  color: var(--ot-client-workspace-muted);
 }
 .state-card {
   width: min(620px, calc(100% - 3rem));
   margin: 15vh auto;
   padding: 2rem;
-  border: 1px solid #c8c2b8;
-  background: #f8f6f1;
+  border: 1px solid var(--ot-client-workspace-border);
+  background: var(--ot-client-workspace-surface);
 }
 .state-card h1 {
   margin: 0 0 0.75rem;
   font: 2.8rem Georgia, serif;
 }
 .state-card p:not(.kicker) {
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
   line-height: 1.6;
 }
 .state-card button,
@@ -244,7 +244,7 @@
   display: inline-flex;
   margin: 1rem 0.5rem 0 0;
   padding: 0.75rem 1rem;
-  border: 1px solid #1b1d1a;
+  border: 1px solid var(--ot-client-workspace-foreground);
   background: transparent;
   color: inherit;
   font-weight: 800;
@@ -253,7 +253,7 @@
 }
 .state-card button,
 .confirm-button {
-  background: #d4f34a !important;
+  background: var(--ot-client-workspace-accent) !important;
 }
 .loader {
   display: inline-block;
@@ -268,12 +268,12 @@
 .notice {
   margin-bottom: 2rem;
   padding: 1rem;
-  border-left: 0.35rem solid #d4f34a;
-  background: #e6ebd1;
+  border-left: 0.35rem solid var(--ot-client-workspace-accent);
+  background: var(--ot-client-workspace-success-soft);
 }
 .notice--error {
-  border-color: #ef765f;
-  background: #f6ded8;
+  border-color: var(--ot-client-workspace-error);
+  background: var(--ot-client-workspace-error-soft);
 }
 .notice button {
   margin: 0 0 0 1rem;
@@ -286,13 +286,13 @@
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background: #1b1d1acc;
+  background: var(--ot-client-workspace-overlay);
 }
 .publish-dialog {
   width: min(480px, 100%);
   padding: 2rem;
-  background: #f8f6f1;
-  box-shadow: 1rem 1rem 0 #d4f34a;
+  background: var(--ot-client-workspace-surface);
+  box-shadow: 1rem 1rem 0 var(--ot-client-workspace-accent);
 }
 .publish-dialog h2 {
   margin: 0 0 1rem;
@@ -300,12 +300,12 @@
 }
 .publish-dialog > p:not(.kicker) {
   line-height: 1.6;
-  color: #6e6b63;
+  color: var(--ot-client-workspace-muted);
 }
 .publish-progress {
   display: flex;
   align-items: center;
-  color: #5b690e;
+  color: var(--ot-client-workspace-primary);
   font-weight: 800;
 }
 .dialog-actions {
@@ -323,7 +323,8 @@
 }
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--focus-ring, var(--primary, #5b690e));
+  outline: 3px solid
+    var(--focus-ring, var(--primary, var(--ot-client-workspace-primary)));
   outline-offset: 3px;
 }
 @keyframes spin {

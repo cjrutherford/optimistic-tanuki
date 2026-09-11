@@ -313,9 +313,16 @@ describe('BusinessSiteEditorPageComponent', () => {
     const testGlobals = globalThis as unknown as {
       structuredClone?: (value: unknown) => unknown;
     };
-    const previousStructuredClone = testGlobals.structuredClone;
-    testGlobals.structuredClone = (value: unknown) =>
-      JSON.parse(JSON.stringify(value));
+    const structuredCloneDescriptor = Object.getOwnPropertyDescriptor(
+      testGlobals,
+      'structuredClone'
+    );
+    Object.defineProperty(testGlobals, 'structuredClone', {
+      configurable: structuredCloneDescriptor?.configurable ?? true,
+      enumerable: structuredCloneDescriptor?.enumerable ?? true,
+      value: (value: unknown) => JSON.parse(JSON.stringify(value)),
+      writable: true,
+    });
     try {
       component.save();
 
@@ -329,10 +336,14 @@ describe('BusinessSiteEditorPageComponent', () => {
         'steady-hand-contracting'
       );
     } finally {
-      if (previousStructuredClone) {
-        testGlobals.structuredClone = previousStructuredClone;
+      if (structuredCloneDescriptor) {
+        Object.defineProperty(
+          testGlobals,
+          'structuredClone',
+          structuredCloneDescriptor
+        );
       } else {
-        delete testGlobals.structuredClone;
+        Reflect.deleteProperty(testGlobals, 'structuredClone');
       }
     }
   });

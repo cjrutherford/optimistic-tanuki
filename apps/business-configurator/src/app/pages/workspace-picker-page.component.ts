@@ -130,7 +130,11 @@ import {
       .state-message {
         border: 1px solid
           color-mix(in srgb, var(--config-brand-gradient-from) 28%, transparent);
-        background: color-mix(in srgb, var(--config-shell-bg-2) 76%, #000);
+        background: color-mix(
+          in srgb,
+          var(--config-shell-bg-2) 76%,
+          var(--config-bg)
+        );
         box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.2);
       }
       .workspace-card {
@@ -174,7 +178,11 @@ import {
       }
       .open-link:hover,
       .open-link:focus-visible {
-        background: #91f5df;
+        background: color-mix(
+          in srgb,
+          var(--config-brand-gradient-from) 50%,
+          var(--config-shell-foreground)
+        );
         text-decoration: none;
       }
       .future-note {
@@ -188,7 +196,11 @@ import {
         margin-bottom: 0.5rem;
       }
       .error {
-        border-color: #f7a6a6;
+        border-color: color-mix(
+          in srgb,
+          var(--danger) 45%,
+          var(--config-shell-foreground)
+        );
       }
       button {
         border: 0;

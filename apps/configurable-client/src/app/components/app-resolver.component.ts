@@ -144,7 +144,10 @@ export function isRenderablePublishedAppConfiguration(
       :host {
         display: block;
         min-height: 100vh;
-        --configurable-client-state-muted: var(--foreground, #172033);
+        --configurable-client-state-muted: var(
+          --foreground,
+          var(--ot-client-public-foreground)
+        );
       }
       otui-landing-status.configurable-client-status {
         --muted-foreground: var(--configurable-client-state-muted);
@@ -155,22 +158,23 @@ export function isRenderablePublishedAppConfiguration(
         align-items: center;
         justify-content: center;
         padding: 0.55rem 0.9rem;
-        border: 1px solid var(--border, #d8e1ea);
+        border: 1px solid var(--border);
         border-radius: 0.5rem;
-        background: var(--surface, #fff);
-        color: var(--foreground, #172033);
+        background: var(--surface);
+        color: var(--foreground, var(--ot-client-public-foreground));
         font-weight: 750;
         text-decoration: none;
       }
       .status-action--primary {
-        border-color: var(--primary, #0b5cad);
-        background: var(--primary, #0b5cad);
-        color: var(--primary-foreground, #fff);
+        border-color: var(--primary, var(--ot-client-public-primary));
+        background: var(--primary, var(--ot-client-public-primary));
+        color: var(--primary-foreground, var(--ot-client-white));
         font: inherit;
         cursor: pointer;
       }
       .status-action:focus-visible {
-        outline: 3px solid var(--focus-ring, var(--primary, #0b5cad));
+        outline: 3px solid
+          var(--focus-ring, var(--primary, var(--ot-client-public-primary)));
         outline-offset: 3px;
       }
     `,

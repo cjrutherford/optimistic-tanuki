@@ -83,8 +83,8 @@ import { BlogAuthoringShellComponent } from '@optimistic-tanuki/blogging-ui';
       :host {
         display: block;
         min-height: 100vh;
-        background: var(--background, #f3f0e9);
-        color: var(--foreground, #1b1d1a);
+        background: var(--background, var(--ot-client-workspace-background));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
       }
       .authoring-page {
         width: min(1000px, calc(100% - 3rem));
@@ -94,14 +94,14 @@ import { BlogAuthoringShellComponent } from '@optimistic-tanuki/blogging-ui';
       .back-link,
       .feature-link,
       .authoring-state a {
-        color: var(--primary, #5b690e);
+        color: var(--primary, var(--ot-client-workspace-primary));
         font-weight: 800;
       }
       .authoring-header {
         padding: 5rem 0 2rem;
       }
       .eyebrow {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font: 700 0.7rem ui-monospace, monospace;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -114,7 +114,7 @@ import { BlogAuthoringShellComponent } from '@optimistic-tanuki/blogging-ui';
       }
       .authoring-header p:last-child {
         max-width: 38rem;
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         line-height: 1.6;
       }
       .feature-nav {
@@ -125,19 +125,19 @@ import { BlogAuthoringShellComponent } from '@optimistic-tanuki/blogging-ui';
       }
       .feature-link {
         padding: 0.75rem 1rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
         text-decoration: none;
       }
       .feature-link--active {
-        border-color: var(--foreground, #1b1d1a);
-        background: var(--accent, #d4f34a);
+        border-color: var(--foreground, var(--ot-client-workspace-foreground));
+        background: var(--accent, var(--ot-client-workspace-accent));
       }
       .authoring-state {
         margin-top: 2rem;
         padding: 2rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
       }
       .authoring-state h1,
       .authoring-state h2 {
@@ -145,7 +145,7 @@ import { BlogAuthoringShellComponent } from '@optimistic-tanuki/blogging-ui';
         font-family: Georgia, serif;
       }
       .authoring-state p {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         line-height: 1.6;
       }
       @media (prefers-reduced-motion: reduce) {

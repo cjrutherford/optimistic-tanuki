@@ -13,3 +13,12 @@ export { BusinessOwnerAvailabilityPageComponent } from './lib/business-owner-ava
 export { BusinessClientLoginPageComponent } from './lib/business-client-login-page.component';
 export { BusinessClientRegisterPageComponent } from './lib/business-client-register-page.component';
 export { BusinessOwnerProductsPageComponent } from './lib/business-owner-products-page.component';
+export {
+  BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
+  businessSiteConfigToConfigDocument,
+  configDocumentToBusinessSiteConfig,
+} from './lib/business-presence-blocks';
+export {
+  BUSINESS_PRESENCE_RUNTIME_SECTION_TYPES,
+  supportsBusinessPresenceSection,
+} from './lib/business-presence-runtime';

@@ -61,7 +61,7 @@ import { TextInputComponent } from '@optimistic-tanuki/form-ui';
       .panel-meta p,
       .empty-state {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.5;
       }
 

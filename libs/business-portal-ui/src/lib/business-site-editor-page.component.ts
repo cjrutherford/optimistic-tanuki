@@ -36,7 +36,7 @@ import {
   BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
   businessSiteConfigToConfigDocument,
   configDocumentToBusinessSiteConfig,
-} from '@optimistic-tanuki/business-presence-feature';
+} from './business-presence-blocks';
 import { BusinessLandingPageComponent } from '@optimistic-tanuki/business-public-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {

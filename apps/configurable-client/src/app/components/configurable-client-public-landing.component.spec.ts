@@ -448,9 +448,11 @@ describe('ConfigurableClientPublicLandingComponent', () => {
     );
     const darkBackground = mixRgb('#172033', '#f8fafc', 0.92);
 
-    expect(styles).toMatch(/--how-it-works-foreground:\s*#fff;/);
     expect(styles).toMatch(
-      /--how-it-works-muted:\s*color-mix\(\s*in srgb,\s*#fff\s+78%,\s*var\(--how-it-works-background\)\s*\)/
+      /--how-it-works-foreground:\s*var\(--ot-client-white\);/
+    );
+    expect(styles).toMatch(
+      /--how-it-works-muted:\s*color-mix\(\s*in srgb,\s*var\(--ot-client-white\)\s+78%,\s*var\(--how-it-works-background\)\s*\)/
     );
     expect(styles).toMatch(
       /\.how-it-works\s+:is\(a,\s*button\)[\s\S]*?color:\s*var\(--how-it-works-foreground\)/

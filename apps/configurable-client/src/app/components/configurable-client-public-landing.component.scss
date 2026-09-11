@@ -1,30 +1,34 @@
 :host {
   display: block;
   min-height: 100vh;
-  color: var(--foreground, #172033);
+  color: var(--foreground, var(--ot-client-public-foreground));
 }
 
 .public-discovery-shell {
   // The generated light-theme muted token is intentionally subtle, but its
   // helper-text color can fall below AA on this pale discovery background.
   // Reuse the already contrast-safe primary text token for this shell only.
-  --muted-foreground: var(--foreground, #172033);
+  --muted-foreground: var(--foreground, var(--ot-client-public-foreground));
   // Keep the product's blue identity while anchoring small text to the
   // contrast-safe foreground token. This custom property is inherited by the
   // shared landing primitives below, whose brand token drives their eyebrows
   // and text links.
   --public-discovery-accessible-accent: color-mix(
     in srgb,
-    var(--primary, #0b5cad) 30%,
-    var(--foreground, #172033) 70%
+    var(--primary, var(--ot-client-public-primary)) 30%,
+    var(--foreground, var(--ot-client-public-foreground)) 70%
   );
   overflow: hidden;
   background: radial-gradient(
       circle at 90% 4%,
-      color-mix(in srgb, var(--primary, #0b5cad) 11%, transparent),
+      color-mix(
+        in srgb,
+        var(--primary, var(--ot-client-public-primary)) 11%,
+        transparent
+      ),
       transparent 30rem
     ),
-    var(--background, #f8fafc);
+    var(--background, var(--ot-client-public-background));
 }
 
 .public-discovery-shell
@@ -54,7 +58,10 @@
   width: min(100% - 2rem, 76rem);
   gap: 0.55rem;
   margin: 1.5rem auto 0;
-  color: var(--public-discovery-accessible-accent, var(--primary, #0b5cad));
+  color: var(
+    --public-discovery-accessible-accent,
+    var(--primary, var(--ot-client-public-primary))
+  );
   font: 800 0.75rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -68,12 +75,15 @@
 
 .header-action {
   padding: 0.55rem 0.8rem;
-  background: var(--primary, #0b5cad);
-  color: var(--primary-foreground, #fff) !important;
+  background: var(--primary, var(--ot-client-public-primary));
+  color: var(--primary-foreground, var(--ot-client-white)) !important;
 }
 
 .hero-action {
-  color: var(--public-discovery-accessible-accent, var(--primary, #0b5cad));
+  color: var(
+    --public-discovery-accessible-accent,
+    var(--primary, var(--ot-client-public-primary))
+  );
   text-decoration: underline;
   text-underline-offset: 0.25em;
 }
@@ -81,16 +91,29 @@
 .hero-visual {
   width: min(100%, 22rem);
   padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--primary, #0b5cad) 22%, transparent);
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--primary, var(--ot-client-public-primary)) 22%,
+      transparent
+    );
   border-radius: 1rem;
   background: linear-gradient(
       145deg,
-      color-mix(in srgb, var(--primary, #0b5cad) 9%, transparent),
+      color-mix(
+        in srgb,
+        var(--primary, var(--ot-client-public-primary)) 9%,
+        transparent
+      ),
       transparent 65%
     ),
-    var(--surface, #fff);
+    var(--surface, var(--ot-client-white));
   box-shadow: 0 1.5rem 4rem
-    color-mix(in srgb, var(--foreground, #172033) 12%, transparent);
+    color-mix(
+      in srgb,
+      var(--foreground, var(--ot-client-public-foreground)) 12%,
+      transparent
+    );
   transform: rotate(2deg);
 }
 
@@ -103,7 +126,7 @@
 .hero-visual__topline {
   gap: 0.35rem;
   min-height: 1.5rem;
-  color: var(--muted-foreground, #435066);
+  color: var(--muted-foreground, var(--ot-client-public-muted));
   font: 700 0.65rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -113,7 +136,7 @@
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: var(--primary, #0b5cad);
+  background: var(--primary, var(--ot-client-public-primary));
   opacity: 0.7;
 }
 
@@ -132,8 +155,8 @@
   border-radius: 0.65rem;
   background: color-mix(
     in srgb,
-    var(--primary, #0b5cad) 9%,
-    var(--surface, #fff)
+    var(--primary, var(--ot-client-public-primary)) 9%,
+    var(--surface, var(--ot-client-white))
   );
 }
 
@@ -144,15 +167,19 @@
   height: 3.5rem;
   place-items: center;
   border-radius: 0.75rem;
-  background: var(--primary, #0b5cad);
-  color: var(--primary-foreground, #fff);
+  background: var(--primary, var(--ot-client-public-primary));
+  color: var(--primary-foreground, var(--ot-client-white));
   font: 800 1rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .hero-visual__line {
   height: 0.6rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--foreground, #172033) 28%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--foreground, var(--ot-client-public-foreground)) 28%,
+    transparent
+  );
 }
 
 .hero-visual__line--long {
@@ -169,22 +196,22 @@
   border-radius: 0.55rem;
   background: color-mix(
     in srgb,
-    var(--foreground, #172033) 10%,
-    var(--surface, #fff)
+    var(--foreground, var(--ot-client-public-foreground)) 10%,
+    var(--surface, var(--ot-client-white))
   );
 }
 
 .hero-visual__tile--accent {
   background: color-mix(
     in srgb,
-    var(--primary, #0b5cad) 32%,
-    var(--surface, #fff)
+    var(--primary, var(--ot-client-public-primary)) 32%,
+    var(--surface, var(--ot-client-white))
   );
 }
 
 .hero-visual p {
   margin: 0.9rem 0 0;
-  color: var(--muted-foreground, #435066);
+  color: var(--muted-foreground, var(--ot-client-public-muted));
   font-size: 0.8rem;
   line-height: 1.4;
 }
@@ -212,15 +239,15 @@
   width: min(100% - 2rem, 76rem);
   margin: 0 auto 1.5rem;
   padding: 1rem;
-  border: 1px solid var(--border, #c8d0dc);
+  border: 1px solid var(--border, var(--ot-client-public-border));
   border-radius: 0.75rem;
-  background: var(--surface, #fff);
+  background: var(--surface, var(--ot-client-white));
 }
 
 .published-app-search label {
   display: grid;
   gap: 0.35rem;
-  color: var(--foreground, #172033);
+  color: var(--foreground, var(--ot-client-public-foreground));
   font-size: 0.875rem;
   font-weight: 750;
 }
@@ -230,10 +257,10 @@
 .published-app-search button,
 .published-app-list button {
   min-height: 2.75rem;
-  border: 1px solid var(--border, #c8d0dc);
+  border: 1px solid var(--border, var(--ot-client-public-border));
   border-radius: 0.5rem;
-  background: var(--surface, #fff);
-  color: var(--foreground, #172033);
+  background: var(--surface, var(--ot-client-white));
+  color: var(--foreground, var(--ot-client-public-foreground));
   font: inherit;
 }
 
@@ -246,9 +273,9 @@
 .published-app-list button,
 .published-app-status button {
   padding-inline: 1rem;
-  border-color: var(--primary, #0b5cad);
-  background: var(--primary, #0b5cad);
-  color: var(--primary-foreground, #fff);
+  border-color: var(--primary, var(--ot-client-public-primary));
+  background: var(--primary, var(--ot-client-public-primary));
+  color: var(--primary-foreground, var(--ot-client-white));
   font-weight: 750;
   cursor: pointer;
 }
@@ -256,7 +283,8 @@
 .published-app-search :is(input, select, button):focus-visible,
 .published-app-list button:focus-visible,
 .published-app-status button:focus-visible {
-  outline: 3px solid var(--focus-ring, var(--primary, #0b5cad));
+  outline: 3px solid
+    var(--focus-ring, var(--primary, var(--ot-client-public-primary)));
   outline-offset: 3px;
 }
 
@@ -287,7 +315,7 @@
 
 .published-app-action-error {
   flex-basis: 100%;
-  color: var(--danger, #a32626);
+  color: var(--danger, var(--ot-client-public-danger));
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -303,7 +331,10 @@
 }
 
 .region-action a {
-  color: var(--public-discovery-accessible-accent, var(--primary, #0b5cad));
+  color: var(
+    --public-discovery-accessible-accent,
+    var(--primary, var(--ot-client-public-primary))
+  );
   font-weight: 750;
   text-underline-offset: 0.25em;
 }
@@ -318,19 +349,19 @@
 .how-it-works {
   --how-it-works-background: color-mix(
     in srgb,
-    var(--foreground, #172033) 92%,
-    var(--background, #f8fafc)
+    var(--foreground, var(--ot-client-public-foreground)) 92%,
+    var(--background, var(--ot-client-public-background))
   );
-  --how-it-works-foreground: #fff;
+  --how-it-works-foreground: var(--ot-client-white);
   --how-it-works-muted: color-mix(
     in srgb,
-    #fff 78%,
+    var(--ot-client-white) 78%,
     var(--how-it-works-background)
   );
   --how-it-works-accent: color-mix(
     in srgb,
-    var(--primary, #0b5cad) 35%,
-    #fff 65%
+    var(--primary, var(--ot-client-public-primary)) 35%,
+    var(--ot-client-white) 65%
   );
   padding: 4rem 1rem 5rem;
   background: var(--how-it-works-background);
@@ -398,7 +429,8 @@
     .region-action a,
     .path-card-anchor a
   ):focus-visible {
-  outline: 3px solid var(--focus-ring, var(--primary, #0b5cad));
+  outline: 3px solid
+    var(--focus-ring, var(--primary, var(--ot-client-public-primary)));
   outline-offset: 4px;
 }
 

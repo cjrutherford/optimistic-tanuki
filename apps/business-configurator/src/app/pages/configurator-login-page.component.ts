@@ -125,7 +125,7 @@ function currentOrigin(): string {
       }
       .error {
         margin: 0;
-        color: #ffb4ab;
+        color: var(--danger);
       }
     `,
   ],

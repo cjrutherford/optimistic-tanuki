@@ -544,8 +544,8 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       :host {
         display: block;
         min-height: 100vh;
-        background: var(--background, #f3f0e9);
-        color: var(--foreground, #1b1d1a);
+        background: var(--background, var(--ot-client-workspace-background));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
       }
       .config-editor {
         width: min(1440px, calc(100% - 3rem));
@@ -556,7 +556,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         padding: 1rem 0 3rem;
       }
       .back-link {
-        color: var(--primary, #5b690e);
+        color: var(--primary, var(--ot-client-workspace-primary));
         font-weight: 800;
         text-decoration: none;
       }
@@ -568,7 +568,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       }
       .eyebrow,
       .context-label {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font: 700 0.68rem ui-monospace, monospace;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -581,15 +581,15 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       }
       .editor-lede {
         max-width: 42rem;
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font-size: 1.08rem;
         line-height: 1.65;
       }
       .revision-chip {
         padding: 0.35rem 0.7rem;
-        border: 1px solid var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
         border-radius: 999px;
-        background: var(--surface, #f8f6f1);
+        background: var(--surface, var(--ot-client-workspace-surface));
         font: 700 0.72rem ui-monospace, monospace;
       }
       .context-strip {
@@ -597,21 +597,21 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         grid-template-columns: repeat(3, 1fr);
         gap: 1px;
         margin-bottom: 1.25rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--border, var(--ot-client-workspace-border));
       }
       .context-strip > div {
         display: grid;
         gap: 0.25rem;
         padding: 1.2rem;
-        background: var(--surface, #f8f6f1);
+        background: var(--surface, var(--ot-client-workspace-surface));
       }
       .context-strip strong {
         font: 1.25rem Georgia, serif;
         overflow-wrap: anywhere;
       }
       .context-strip small {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font: 0.7rem ui-monospace, monospace;
         overflow-wrap: anywhere;
       }
@@ -623,10 +623,14 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         display: grid;
         gap: 1.5rem;
         padding: clamp(1.2rem, 3vw, 2.25rem);
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
         box-shadow: 10px 10px 0
-          color-mix(in srgb, var(--primary, #5b690e) 12%, transparent);
+          color-mix(
+            in srgb,
+            var(--primary, var(--ot-client-workspace-primary)) 12%,
+            transparent
+          );
       }
       .section-heading {
         display: flex;
@@ -642,7 +646,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .section-heading p:last-child {
         max-width: 42rem;
         margin: 0;
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         line-height: 1.55;
       }
       .layout-control {
@@ -667,7 +671,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         gap: 0.55rem;
         margin: 0;
         padding: 1rem;
-        border: 1px solid var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
       }
       .feature-card legend {
         padding: 0 0.35rem;
@@ -676,7 +680,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .feature-description {
         min-height: 2.7rem;
         margin: 0 0 0.35rem;
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font-size: 0.82rem;
         line-height: 1.4;
       }
@@ -691,7 +695,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .check-row input {
         width: 1rem;
         height: 1rem;
-        accent-color: var(--primary, #5b690e);
+        accent-color: var(--primary, var(--ot-client-workspace-primary));
       }
       .route-list {
         display: grid;
@@ -703,7 +707,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         gap: 1rem;
         align-items: start;
         padding: 1rem;
-        border: 1px solid var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
       }
       .route-number {
         display: grid;
@@ -711,8 +715,8 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         width: 2.4rem;
         height: 2.4rem;
         border-radius: 50%;
-        background: var(--foreground, #1b1d1a);
-        color: var(--background, #f3f0e9);
+        background: var(--foreground, var(--ot-client-workspace-foreground));
+        color: var(--background, var(--ot-client-workspace-background));
         font: 700 0.75rem ui-monospace, monospace;
       }
       .route-fields {
@@ -731,7 +735,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         font: 700 1.15rem Georgia, serif;
       }
       .route-summary span {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font: 0.75rem ui-monospace, monospace;
       }
       .route-fields input:not([type='checkbox']) {
@@ -739,9 +743,9 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         box-sizing: border-box;
         min-height: 2.7rem;
         padding: 0.55rem 0.7rem;
-        border: 1px solid var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
         border-radius: 0.35rem;
-        background: var(--background, #fff);
+        background: var(--background, var(--ot-client-white));
         color: inherit;
         font: inherit;
       }
@@ -752,14 +756,18 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .empty-note {
         margin: 0;
         padding: 1rem;
-        border: 1px dashed var(--border, #c8c2b8);
-        color: var(--muted-foreground, #6e6b63);
+        border: 1px dashed var(--border, var(--ot-client-workspace-border));
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
       }
       .validation-panel,
       .save-notice {
         padding: 1rem 1.2rem;
-        border: 1px solid #b6422d;
-        background: color-mix(in srgb, #b6422d 8%, var(--surface, #f8f6f1));
+        border: 1px solid var(--ot-client-workspace-danger);
+        background: color-mix(
+          in srgb,
+          var(--ot-client-workspace-danger) 8%,
+          var(--surface, var(--ot-client-workspace-surface))
+        );
       }
       .validation-panel h2 {
         margin: 0 0 0.75rem;
@@ -777,10 +785,10 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         flex-wrap: wrap;
       }
       .validation-panel li strong {
-        color: #8d2e1d;
+        color: var(--ot-client-workspace-danger-strong);
       }
       .validation-panel li span {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
       }
       .save-notice {
         display: flex;
@@ -798,14 +806,19 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         justify-content: space-between;
         gap: 1rem;
         padding: 1rem 1.2rem;
-        border: 1px solid var(--foreground, #1b1d1a);
+        border: 1px solid
+          var(--foreground, var(--ot-client-workspace-foreground));
         background: color-mix(
           in srgb,
-          var(--surface, #f8f6f1) 94%,
+          var(--surface, var(--ot-client-workspace-surface)) 94%,
           transparent
         );
         box-shadow: 0 1rem 2rem
-          color-mix(in srgb, var(--foreground, #1b1d1a) 14%, transparent);
+          color-mix(
+            in srgb,
+            var(--foreground, var(--ot-client-workspace-foreground)) 14%,
+            transparent
+          );
         backdrop-filter: blur(14px);
       }
       .save-bar > div {
@@ -813,20 +826,21 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         gap: 0.25rem;
       }
       .save-bar small {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
       }
       .save-status {
         font-weight: 800;
       }
       .save-status--dirty {
-        color: var(--primary, #5b690e);
+        color: var(--primary, var(--ot-client-workspace-primary));
       }
       .save-button {
         min-height: 2.8rem;
         padding: 0.7rem 1.2rem;
-        border: 1px solid var(--foreground, #1b1d1a);
-        background: var(--accent, #d4f34a);
-        color: var(--foreground, #1b1d1a);
+        border: 1px solid
+          var(--foreground, var(--ot-client-workspace-foreground));
+        background: var(--accent, var(--ot-client-workspace-accent));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
         font: 800 0.9rem ui-monospace, monospace;
         cursor: pointer;
       }
@@ -838,7 +852,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .retry-button:focus-visible,
       .back-link:focus-visible,
       input:focus-visible {
-        outline: 3px solid var(--primary, #5b690e);
+        outline: 3px solid var(--primary, var(--ot-client-workspace-primary));
         outline-offset: 3px;
       }
       .conflict-copy,
@@ -852,7 +866,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         line-height: 1.55;
       }
       .conflict-status {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
       }
       .conflict-fetch-error {
         display: flex;
@@ -861,17 +875,21 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         gap: 1rem;
         flex-wrap: wrap;
         padding: 0.8rem;
-        border: 1px solid #b6422d;
-        background: color-mix(in srgb, #b6422d 8%, var(--surface, #f8f6f1));
+        border: 1px solid var(--ot-client-workspace-danger);
+        background: color-mix(
+          in srgb,
+          var(--ot-client-workspace-danger) 8%,
+          var(--surface, var(--ot-client-workspace-surface))
+        );
       }
       .conflict-comparison {
         margin-top: 1rem;
         padding: 1rem;
-        border: 1px solid var(--border, #c8c2b8);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
         background: color-mix(
           in srgb,
-          var(--primary, #5b690e) 5%,
-          var(--surface, #f8f6f1)
+          var(--primary, var(--ot-client-workspace-primary)) 5%,
+          var(--surface, var(--ot-client-workspace-surface))
         );
       }
       .conflict-comparison h3 {
@@ -886,17 +904,17 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         display: grid;
         gap: 0.25rem;
         padding: 0.65rem 0;
-        border-top: 1px solid var(--border, #c8c2b8);
+        border-top: 1px solid var(--border, var(--ot-client-workspace-border));
       }
       .conflict-diff-row strong {
         font-size: 0.9rem;
       }
       .conflict-diff-row span {
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         font-size: 0.82rem;
       }
       .conflict-diff-row b {
-        color: var(--foreground, #1b1d1a);
+        color: var(--foreground, var(--ot-client-workspace-foreground));
       }
       .conflict-actions {
         display: flex;
@@ -907,15 +925,15 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       .conflict-actions button {
         min-height: 2.6rem;
         padding: 0.55rem 0.9rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
-        color: var(--foreground, #1b1d1a);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
         font: 700 0.82rem ui-monospace, monospace;
         cursor: pointer;
       }
       .conflict-actions .conflict-primary {
-        border-color: var(--foreground, #1b1d1a);
-        background: var(--accent, #d4f34a);
+        border-color: var(--foreground, var(--ot-client-workspace-foreground));
+        background: var(--accent, var(--ot-client-workspace-accent));
       }
       .conflict-actions button:disabled {
         cursor: wait;
@@ -937,8 +955,8 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         gap: 0.6rem;
         max-width: 44rem;
         padding: 2.5rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
       }
       .state-card h2 {
         margin: 0;
@@ -946,7 +964,7 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
       }
       .state-card p {
         margin: 0;
-        color: var(--muted-foreground, #6e6b63);
+        color: var(--muted-foreground, var(--ot-client-workspace-muted));
         line-height: 1.6;
       }
       .state-actions {
@@ -956,20 +974,21 @@ const FEATURE_FIELDS: Record<FeatureKey, FeatureField[]> = {
         flex-wrap: wrap;
       }
       .state-card a {
-        color: var(--primary, #5b690e);
+        color: var(--primary, var(--ot-client-workspace-primary));
         font-weight: 800;
       }
       .retry-button {
         min-height: 2.8rem;
         padding: 0.7rem 1.2rem;
-        border: 1px solid var(--foreground, #1b1d1a);
-        background: var(--accent, #d4f34a);
-        color: var(--foreground, #1b1d1a);
+        border: 1px solid
+          var(--foreground, var(--ot-client-workspace-foreground));
+        background: var(--accent, var(--ot-client-workspace-accent));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
         font: 800 0.9rem ui-monospace, monospace;
         cursor: pointer;
       }
       .retry-button:focus-visible {
-        outline: 3px solid var(--primary, #5b690e);
+        outline: 3px solid var(--primary, var(--ot-client-workspace-primary));
         outline-offset: 3px;
       }
       .loader {

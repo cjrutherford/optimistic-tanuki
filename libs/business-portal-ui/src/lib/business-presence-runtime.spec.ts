@@ -1,9 +1,9 @@
-import { BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS } from './business-presence-block-definitions';
+import { BUSINESS_PRESENCE_RUNTIME_SECTION_TYPES } from './business-presence-runtime';
 import { supportsBusinessPresenceSection } from './business-presence-runtime';
 
 describe('business presence runtime', () => {
   it('supports every landing block exposed by the business feature catalog', () => {
-    for (const type of Object.keys(BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS)) {
+    for (const type of BUSINESS_PRESENCE_RUNTIME_SECTION_TYPES) {
       expect(supportsBusinessPresenceSection(type)).toBe(true);
     }
   });

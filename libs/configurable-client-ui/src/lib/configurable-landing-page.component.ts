@@ -81,13 +81,8 @@ import { HeroSectionComponent } from './sections/hero-section.component';
         border-radius: 1.5rem;
         background: linear-gradient(
           180deg,
-          color-mix(
-              in srgb,
-              var(--primary, #3f51b5) 4%,
-              var(--background, #ffffff)
-            )
-            0%,
-          var(--background, #ffffff) 100%
+          color-mix(in srgb, var(--primary) 4%, var(--background)) 0%,
+          var(--background) 100%
         );
       }
 
@@ -112,12 +107,12 @@ import { HeroSectionComponent } from './sections/hero-section.component';
         inset: -20%;
         background: radial-gradient(
             circle at top left,
-            color-mix(in srgb, var(--primary, #3f51b5) 28%, transparent),
+            color-mix(in srgb, var(--primary) 28%, transparent),
             transparent 45%
           ),
           radial-gradient(
             circle at bottom right,
-            color-mix(in srgb, var(--secondary, #ff4081) 20%, transparent),
+            color-mix(in srgb, var(--secondary) 20%, transparent),
             transparent 42%
           );
         animation: preview-motion-drift 14s linear infinite;
@@ -152,8 +147,8 @@ import { HeroSectionComponent } from './sections/hero-section.component';
       .landing-page.embedded-preview .preview-section-shell:hover::after,
       .landing-page.embedded-preview
         .preview-section-shell.preview-section-selected::after {
-        border-color: color-mix(in srgb, var(--primary, #3f51b5) 72%, white);
-        background: color-mix(in srgb, var(--primary, #3f51b5) 8%, transparent);
+        border-color: color-mix(in srgb, var(--primary) 72%, white);
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
       }
 
       .layout-single-column {

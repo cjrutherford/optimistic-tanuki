@@ -62,8 +62,8 @@ import {
       :host {
         display: block;
         min-height: 100vh;
-        background: #f3f0e9;
-        color: #1b1d1a;
+        background: var(--ot-client-workspace-background);
+        color: var(--ot-client-workspace-foreground);
       }
       .workspace-entry {
         width: min(760px, calc(100% - 3rem));
@@ -71,7 +71,7 @@ import {
         padding: 12vh 0;
       }
       .eyebrow {
-        color: #6e6b63;
+        color: var(--ot-client-workspace-muted);
         font: 700 0.7rem ui-monospace, monospace;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -84,7 +84,7 @@ import {
       .lede {
         max-width: 34rem;
         margin: 1.5rem 0 3rem;
-        color: #6e6b63;
+        color: var(--ot-client-workspace-muted);
         font-size: 1.05rem;
         line-height: 1.6;
       }
@@ -97,19 +97,19 @@ import {
         display: grid;
         gap: 0.3rem;
         padding: 1.4rem;
-        border: 1px solid #c8c2b8;
-        background: #f8f6f1;
+        border: 1px solid var(--ot-client-workspace-border);
+        background: var(--ot-client-workspace-surface);
         color: inherit;
         text-align: left;
         cursor: pointer;
       }
       .workspace-choice:hover,
       .workspace-choice:focus-visible {
-        border-color: #1b1d1a;
-        box-shadow: 0.35rem 0.35rem 0 #d4f34a;
+        border-color: var(--ot-client-workspace-foreground);
+        box-shadow: 0.35rem 0.35rem 0 var(--ot-client-workspace-accent);
       }
       .workspace-kind {
-        color: #6e6b63;
+        color: var(--ot-client-workspace-muted);
         font: 700 0.65rem ui-monospace, monospace;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -118,33 +118,33 @@ import {
         font: 2rem Georgia, serif;
       }
       .workspace-choice small {
-        color: #6e6b63;
+        color: var(--ot-client-workspace-muted);
       }
       .arrow {
         position: absolute;
         right: 1.5rem;
         top: 50%;
-        color: #5b690e;
+        color: var(--ot-client-workspace-primary);
         font-size: 1.5rem;
       }
       .entry-state {
         margin-top: 2rem;
         padding: 2rem;
-        border: 1px solid #c8c2b8;
-        background: #f8f6f1;
+        border: 1px solid var(--ot-client-workspace-border);
+        background: var(--ot-client-workspace-surface);
       }
       .entry-state h2 {
         margin: 0 0 0.5rem;
         font: 2rem Georgia, serif;
       }
       .entry-state p {
-        color: #6e6b63;
+        color: var(--ot-client-workspace-muted);
         line-height: 1.6;
       }
       .entry-state button {
         padding: 0.75rem 1rem;
-        border: 1px solid #1b1d1a;
-        background: #d4f34a;
+        border: 1px solid var(--ot-client-workspace-foreground);
+        background: var(--ot-client-workspace-accent);
         font-weight: 800;
         cursor: pointer;
       }
@@ -158,7 +158,7 @@ import {
         animation: spin 0.8s linear infinite;
       }
       button:focus-visible {
-        outline: 3px solid #5b690e;
+        outline: 3px solid var(--ot-client-workspace-primary);
         outline-offset: 3px;
       }
       @keyframes spin {

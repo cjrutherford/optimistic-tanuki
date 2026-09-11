@@ -57,15 +57,15 @@ import { NavigationConfirmationService } from '../services/navigation-confirmati
       .navigation-confirmation-actions button {
         min-height: 2.6rem;
         padding: 0.55rem 0.9rem;
-        border: 1px solid var(--border, #c8c2b8);
-        background: var(--surface, #f8f6f1);
-        color: var(--foreground, #1b1d1a);
+        border: 1px solid var(--border, var(--ot-client-workspace-border));
+        background: var(--surface, var(--ot-client-workspace-surface));
+        color: var(--foreground, var(--ot-client-workspace-foreground));
         font: 700 0.82rem ui-monospace, monospace;
         cursor: pointer;
       }
       .navigation-confirmation-actions button:last-child {
-        border-color: var(--foreground, #1b1d1a);
-        background: var(--accent, #d4f34a);
+        border-color: var(--foreground, var(--ot-client-workspace-foreground));
+        background: var(--accent, var(--ot-client-workspace-accent));
       }
       .sr-only {
         position: absolute;

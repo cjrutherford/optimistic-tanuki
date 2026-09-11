@@ -272,13 +272,13 @@ describe('seedDemoConfiguration', () => {
     );
 
     expect(script).toMatch(
-      /seed_app_configuration p11-joinable[\s\S]*Open Community joinable community\.configurable-client\.local/
+      /seed_app_configuration p11-joinable[\s\S]*"Open Community" joinable community\.configurable-client\.local/
     );
     expect(script).toMatch(
-      /seed_app_configuration p11-request-only[\s\S]*Access Request Hub request-only access\.configurable-client\.local/
+      /seed_app_configuration p11-request-only[\s\S]*"Access Request Hub" request-only access\.configurable-client\.local/
     );
     expect(script).toMatch(
-      /seed_app_configuration p11-private[\s\S]*Private Studio private private\.configurable-client\.local/
+      /seed_app_configuration p11-private[\s\S]*"Private Studio" private private\.configurable-client\.local/
     );
     expect(script).not.toMatch(
       /configurable-client "p11-(joinable|request-only|private)" (joinable|request-only|private)/
@@ -337,7 +337,7 @@ describe('seedDemoConfiguration', () => {
     );
 
     expect(ownerBlock).toMatch(
-      /configurable-client "\$\{CONFIGURABLE_CLIENT_BLOG_CATALOG_ID\}" true/
+      /configurable-client "\$\{CONFIGURABLE_CLIENT_BLOG_CATALOG_ID\}"[\s\\\n]*demo-app public demo-app\.configurable-client\.local true/
     );
   });
 });

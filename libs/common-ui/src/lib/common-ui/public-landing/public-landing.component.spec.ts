@@ -391,8 +391,8 @@ describe('public landing authored accessibility contract', () => {
     expect(styles).toContain(
       '--otui-public-landing-cta-background: var(--primary, #0b5cad);'
     );
-    expect(styles).toContain(
-      '--otui-public-landing-on-brand: var(--on-primary, var(--primary-foreground, #ffffff));'
+    expect(styles).toMatch(
+      /--otui-public-landing-on-brand:\s*var\(\s*--on-primary,\s*var\(\s*--primary-foreground,\s*#ffffff\)\s*\);/
     );
     expect(styles).toContain(
       'background: var(--otui-public-landing-cta-background);'

@@ -110,7 +110,13 @@ describe('SchemaBlockInspectorComponent', () => {
     component.block = { ...block, data: { items: [] } };
     component.collectionChanged.subscribe(collectionChanged);
 
-    component.addCollectionItem(collectionField.fields?.[0]!);
+    const collectionItemField = collectionField.fields?.[0];
+    if (!collectionItemField) {
+      throw new Error(
+        'Expected the collection definition to include item fields'
+      );
+    }
+    component.addCollectionItem(collectionItemField);
 
     expect(collectionChanged).toHaveBeenCalledWith({
       key: 'items',

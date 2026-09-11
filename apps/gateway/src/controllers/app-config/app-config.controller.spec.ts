@@ -476,6 +476,9 @@ describe('Gateway AppConfigController metadata', () => {
     ) {
       const appClient = {
         send: jest.fn((command: { cmd: string }) => {
+          if (command.cmd === 'app-config.resolveContext') {
+            return of(resolvedContext);
+          }
           if (command.cmd === AppConfigCommands.Get) return of(publishedDraft);
           if (command.cmd === AppConfigCommands.Publish && !options.rollback) {
             return of(publishedDraft);
@@ -597,7 +600,9 @@ describe('Gateway AppConfigController metadata', () => {
         { rollback: true }
       );
       appClient.send.mockImplementation((command: { cmd: string }) =>
-        command.cmd === AppConfigCommands.Get
+        command.cmd === 'app-config.resolveContext'
+          ? of(resolvedContext)
+          : command.cmd === AppConfigCommands.Get
           ? of({
               ...publishedDraft,
               release: {

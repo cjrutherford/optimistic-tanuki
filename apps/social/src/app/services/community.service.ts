@@ -187,7 +187,7 @@ export class CommunityService {
             where: {
               appScope: parentCommunity.appScope,
               city: parentCommunity.city,
-              parentId: undefined,
+              parentId: null,
             },
             order: { memberCount: 'DESC', name: 'ASC' },
           })

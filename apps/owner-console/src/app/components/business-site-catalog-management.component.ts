@@ -267,37 +267,25 @@ const REQUIRED_SCOPE = 'business-site';
 
       .hero,
       .panel {
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
-            color-mix(in srgb, var(--accent, #2563eb) 10%, transparent),
+            color-mix(in srgb, var(--accent) 10%, transparent),
             transparent 28%
           ),
           linear-gradient(
             180deg,
-            color-mix(
-              in srgb,
-              var(--surface, #ffffff) 96%,
-              var(--background, #f3f4f6)
-            ),
-            color-mix(
-              in srgb,
-              var(--surface, #ffffff) 90%,
-              var(--background, #f3f4f6)
-            )
+            color-mix(in srgb, var(--surface) 96%, var(--background)),
+            color-mix(in srgb, var(--surface) 90%, var(--background))
           );
         padding: 24px;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       .hero-kicker {
         margin: 0 0 8px;
-        color: color-mix(
-          in srgb,
-          var(--accent, #2563eb) 82%,
-          var(--foreground, #111827)
-        );
+        color: color-mix(in srgb, var(--accent) 82%, var(--foreground));
         font-size: 0.82rem;
         font-weight: 700;
         text-transform: uppercase;

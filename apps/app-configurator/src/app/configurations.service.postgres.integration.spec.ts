@@ -16,6 +16,13 @@ import { AppConfigurationEntity } from '../configurations/entities/app-configura
 import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
 import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
 
+// The quality CI job does not provision PostgreSQL. Keep this live integration
+// suite opt-in while retaining the existing POSTGRES_* connection overrides.
+const postgresIntegrationSuite =
+  process.env.RUN_APP_CONFIGURATOR_POSTGRES_INTEGRATION === 'true'
+    ? describe
+    : describe.skip;
+
 const fixtureRunId = randomUUID();
 const IDS = {
   workspace: randomUUID(),
@@ -101,7 +108,7 @@ function createService(dataSource: DataSource): ConfigurationsService {
   );
 }
 
-describe('ConfigurationsService with PostgreSQL', () => {
+postgresIntegrationSuite('ConfigurationsService with PostgreSQL', () => {
   let dataSource: DataSource;
   let reloadedDataSource: DataSource | undefined;
   let service: ConfigurationsService;

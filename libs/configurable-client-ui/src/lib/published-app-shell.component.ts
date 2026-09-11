@@ -184,8 +184,8 @@ function pathForRoute(path: string): string {
       :host {
         display: block;
         min-height: 100vh;
-        color: var(--foreground, #172033);
-        background: var(--background, #f5f7fb);
+        color: var(--foreground);
+        background: var(--background);
       }
       .skip-link {
         position: absolute;
@@ -195,8 +195,8 @@ function pathForRoute(path: string): string {
         transform: translateY(-180%);
         padding: 0.65rem 0.9rem;
         border-radius: 0.45rem;
-        background: var(--primary, #356c91);
-        color: var(--primary-foreground, #fff);
+        background: var(--primary);
+        color: var(--primary-foreground);
         font-weight: 750;
       }
       .skip-link:focus {
@@ -209,12 +209,8 @@ function pathForRoute(path: string): string {
         align-items: center;
         gap: clamp(0.65rem, 2vw, 1.5rem);
         padding: 1rem clamp(1rem, 4vw, 3rem);
-        border-bottom: 1px solid var(--border, #d8e1ea);
-        background: color-mix(
-          in srgb,
-          var(--background, #f5f7fb) 92%,
-          transparent
-        );
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 92%, transparent);
       }
       .identity {
         display: inline-flex;
@@ -240,8 +236,8 @@ function pathForRoute(path: string): string {
         height: 2.25rem;
         place-items: center;
         border-radius: 0.65rem;
-        background: var(--primary, #356c91);
-        color: var(--primary-foreground, #fff);
+        background: var(--primary);
+        color: var(--primary-foreground);
         font-weight: 850;
       }
       nav {
@@ -264,20 +260,16 @@ function pathForRoute(path: string): string {
       }
       nav a:hover,
       nav a[aria-current='page'] {
-        background: color-mix(
-          in srgb,
-          var(--primary, #356c91) 12%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
       }
       .header-actions {
         min-width: max-content;
       }
       .header-action,
       .panel-action {
-        border: 1px solid var(--primary, #356c91);
-        background: var(--primary, #356c91);
-        color: var(--primary-foreground, #fff);
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
       .access-note {
         font-size: 0.8rem;
@@ -286,9 +278,9 @@ function pathForRoute(path: string): string {
       }
       .nav-toggle {
         display: none;
-        border: 1px solid var(--border, #d8e1ea);
+        border: 1px solid var(--border);
         border-radius: 0.45rem;
-        background: var(--background, #f5f7fb);
+        background: var(--background);
         color: inherit;
         padding: 0.55rem 0.7rem;
       }
@@ -297,12 +289,8 @@ function pathForRoute(path: string): string {
         flex-wrap: wrap;
         gap: 0.35rem 0.7rem;
         padding: 0.7rem clamp(1rem, 4vw, 3rem);
-        border-bottom: 1px solid var(--border, #d8e1ea);
-        background: color-mix(
-          in srgb,
-          var(--primary, #356c91) 9%,
-          var(--background, #f5f7fb)
-        );
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--primary) 9%, var(--background));
         font-size: 0.88rem;
       }
       .membership-banner span {
@@ -317,22 +305,18 @@ function pathForRoute(path: string): string {
         max-width: 50rem;
         margin: 3rem auto;
         padding: clamp(1.25rem, 4vw, 2.5rem);
-        border: 1px solid var(--border, #d8e1ea);
+        border: 1px solid var(--border);
         border-radius: 1rem;
-        background: var(--surface, #fff);
+        background: var(--surface);
         box-shadow: 0 0.75rem 2rem
-          color-mix(in srgb, var(--foreground, #172033) 8%, transparent);
+          color-mix(in srgb, var(--foreground) 8%, transparent);
       }
       .feature-panel--error {
-        border-color: color-mix(
-          in srgb,
-          var(--error, #b42318) 50%,
-          var(--border, #d8e1ea)
-        );
+        border-color: color-mix(in srgb, var(--error) 50%, var(--border));
       }
       .panel-eyebrow {
         margin: 0;
-        color: var(--primary, #356c91);
+        color: var(--primary);
         font-size: 0.76rem;
         font-weight: 850;
         letter-spacing: 0.08em;
@@ -355,7 +339,7 @@ function pathForRoute(path: string): string {
         cursor: pointer;
       }
       :where(a, button):focus-visible {
-        outline: 3px solid var(--focus-ring, var(--primary, #356c91));
+        outline: 3px solid var(--focus-ring, var(--primary));
         outline-offset: 3px;
       }
       .sr-only {

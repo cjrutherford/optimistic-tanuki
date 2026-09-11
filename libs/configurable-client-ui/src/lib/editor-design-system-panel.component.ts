@@ -189,7 +189,7 @@ export interface EditorThemeFieldChange {
       label {
         display: block;
         font-weight: 500;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       .theme-personality-grid {
@@ -202,10 +202,10 @@ export interface EditorThemeFieldChange {
         display: grid;
         gap: 0.2rem;
         padding: 0.8rem 0.9rem;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border-color, var(--border));
         border-radius: 14px;
-        background: var(--surface, #ffffff);
-        color: var(--foreground, #111827);
+        background: var(--surface);
+        color: var(--foreground);
         text-align: left;
         cursor: pointer;
         transition: border-color 0.2s ease, transform 0.2s ease,
@@ -213,23 +213,23 @@ export interface EditorThemeFieldChange {
       }
 
       .theme-personality-chip small {
-        color: var(--foreground-secondary, #666);
+        color: var(--foreground-secondary, var(--muted));
         text-transform: capitalize;
       }
 
       .theme-personality-chip:hover {
         transform: translateY(-1px);
-        border-color: var(--accent, #007acc);
+        border-color: var(--accent, var(--primary));
       }
 
       .theme-personality-chip.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--accent, var(--primary));
         box-shadow: 0 0 0 2px
-          color-mix(in srgb, var(--accent, #007acc) 18%, transparent);
+          color-mix(in srgb, var(--accent, var(--primary)) 18%, transparent);
         background: color-mix(
           in srgb,
-          var(--accent, #007acc) 8%,
-          var(--surface, #ffffff)
+          var(--accent, var(--primary)) 8%,
+          var(--surface)
         );
       }
 
@@ -242,7 +242,7 @@ export interface EditorThemeFieldChange {
       .color-picker {
         width: 60px;
         height: 40px;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border-color, var(--border));
         border-radius: 4px;
         cursor: pointer;
         flex-shrink: 0;

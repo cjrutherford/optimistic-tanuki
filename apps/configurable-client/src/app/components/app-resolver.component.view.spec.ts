@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { readFileSync } from 'node:fs';
@@ -36,6 +38,8 @@ describe('AppResolverComponent P5 view states', () => {
     await TestBed.configureTestingModule({
       imports: [AppResolverComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: ConfigurationService, useValue: {} },
         {
           provide: TenantThemeService,
@@ -95,7 +99,7 @@ describe('AppResolverComponent P5 view states', () => {
       host.querySelector('otui-landing-status.configurable-client-status')
     ).not.toBeNull();
     expect(styles).toMatch(
-      /--configurable-client-state-muted:\s*var\(--foreground,\s*#172033\)/
+      /--configurable-client-state-muted:\s*var\(\s*--foreground,\s*var\(--ot-client-public-foreground\)\s*\)/
     );
     expect(contrastRatio('#172033', '#f5f7fb')).toBeGreaterThanOrEqual(4.5);
   });

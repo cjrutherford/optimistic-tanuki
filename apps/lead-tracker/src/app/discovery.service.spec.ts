@@ -31,6 +31,7 @@ import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-disc
 import { LeadQualificationService } from './lead-qualification.service';
 
 describe('DiscoveryService', () => {
+  const originalFetch = global.fetch;
   let service: DiscoveryService;
   let leadRepository: jest.Mocked<Repository<Lead>>;
   let topicRepository: jest.Mocked<Repository<LeadTopic>>;
@@ -117,6 +118,7 @@ describe('DiscoveryService', () => {
   };
 
   beforeEach(async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false }) as typeof fetch;
     const mockLeadRepository = {
       find: jest.fn(),
       findBy: jest.fn(),
@@ -239,6 +241,11 @@ describe('DiscoveryService', () => {
     greenhouseProvider.search.mockResolvedValue(emptyProviderResult);
     leverProvider.search.mockResolvedValue(emptyProviderResult);
     googleMapsProvider.search.mockResolvedValue(emptyProviderResult);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
   it('creates links for newly matched leads', async () => {

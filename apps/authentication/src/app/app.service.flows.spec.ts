@@ -341,6 +341,7 @@ describe('AppService flows', () => {
           name: 'Jane Doe',
           email: 'jane@example.com',
           profileId: 'profile-1',
+          jti: expect.any(String),
         },
         { secret: 'test-secret', expiresIn: '1h' }
       );
@@ -791,18 +792,23 @@ describe('AppService flows', () => {
     it('accepts a signed token backed by a live row', async () => {
       jwtService.verifyAsync.mockResolvedValue({ userId: 'user-1' });
       tokenRepo.findOne.mockResolvedValue({ tokenData: 'tk', revoked: false });
+      userRepo.findOne.mockResolvedValue(buildUser());
 
       await expect(service.validateToken('tk')).resolves.toEqual({
         message: 'Token is valid',
         code: 0,
         data: { userId: 'user-1' },
         isValid: true,
+        emailVerified: true,
       });
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('tk', {
         secret: 'test-secret',
       });
       expect(tokenRepo.findOne).toHaveBeenCalledWith({
         where: { tokenData: 'tk' },
+      });
+      expect(userRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
       });
     });
 

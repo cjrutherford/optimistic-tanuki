@@ -26,8 +26,8 @@
   align-items: center;
   padding: 1rem max(1rem, env(safe-area-inset-right))
     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  border-top: 1px solid var(--border, #d8e1ea);
-  background: var(--background, #f5f7fb);
+  border-top: 1px solid var(--border);
+  background: var(--background);
 }
 
 .loading-container,

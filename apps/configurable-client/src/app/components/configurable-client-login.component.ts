@@ -70,7 +70,7 @@ const FALLBACK_RETURN_TO = '/';
         margin: 0;
       }
       .error {
-        color: var(--danger, #b42318);
+        color: var(--danger, var(--ot-client-login-danger));
       }
     `,
   ],

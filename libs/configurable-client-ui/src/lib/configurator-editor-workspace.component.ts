@@ -145,9 +145,9 @@ import { SchemaBlockInspectorComponent } from './schema-block-inspector.componen
       .workspace-pane,
       .mobile-editor-sheet {
         padding: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: var(--personality-card-radius, 1rem);
-        background: var(--surface, #fff);
+        background: var(--surface);
       }
       .workspace-heading {
         display: flex;
@@ -162,7 +162,7 @@ import { SchemaBlockInspectorComponent } from './schema-block-inspector.componen
       }
       .workspace-heading p {
         margin: 0.25rem 0 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
       }
       .workspace-actions {
         display: flex;
@@ -170,15 +170,15 @@ import { SchemaBlockInspectorComponent } from './schema-block-inspector.componen
         gap: 0.5rem;
       }
       button {
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: 0.5rem;
         padding: 0.45rem 0.7rem;
-        background: var(--background, #fff);
-        color: var(--foreground, #111827);
+        background: var(--background);
+        color: var(--foreground);
         cursor: pointer;
       }
       button:focus-visible {
-        outline: 2px solid var(--primary, #3f51b5);
+        outline: 2px solid var(--primary);
         outline-offset: 2px;
       }
       .preview-pane app-landing-page {
@@ -193,7 +193,7 @@ import { SchemaBlockInspectorComponent } from './schema-block-inspector.componen
         max-height: min(75vh, 44rem);
         overflow: auto;
         box-shadow: 0 1.5rem 3rem
-          color-mix(in srgb, var(--foreground, #111827) 22%, transparent);
+          color-mix(in srgb, var(--foreground) 22%, transparent);
       }
       @media (max-width: 1100px) {
         .configurator-workspace {
