@@ -313,9 +313,11 @@ export class BusinessAuthService {
     return this.sessionUser('').pipe(
       tap((user) => {
         if (restoreVersion !== this.sessionRestoreVersion) return;
-        kind === 'owner'
-          ? this.storeUser(user, 'owner')
-          : this.storeClientUser(user, 'client');
+        if (kind === 'owner') {
+          this.storeUser(user, 'owner');
+        } else {
+          this.storeClientUser(user, 'client');
+        }
       }),
       map(() => restoreVersion === this.sessionRestoreVersion),
       catchError((error: unknown) => {
@@ -416,6 +418,10 @@ export class BusinessAuthService {
 
   private logoutWithCookieSession(): void {
     this.clearSessionState({ type: 'sign-out' });
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.http
       .post('/api/authentication/logout', {}, this.authRequestOptions())
       .subscribe({ error: () => undefined });
