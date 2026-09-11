@@ -70,11 +70,14 @@ describe('appRoutes', () => {
   });
 
   it('marks the guided and studio app-config designer routes distinctly', () => {
-    expect(findRoute('app-config/designer').data).toEqual({
+    const guidedRoute = findRoute('app-config/designer');
+    const studioRoute = findRoute('app-config/designer/:id');
+
+    expect(guidedRoute.data).toEqual({
       editorMode: 'guided',
       workspaceKind: 'app-config',
     });
-    expect(findRoute('app-config/designer/:id').data).toEqual({
+    expect(studioRoute.data).toEqual({
       editorMode: 'studio',
       workspaceKind: 'app-config',
     });
