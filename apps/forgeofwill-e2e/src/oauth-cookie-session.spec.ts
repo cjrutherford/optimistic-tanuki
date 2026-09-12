@@ -1,15 +1,21 @@
 import { expect, test } from '@playwright/test';
+import { waitForHydration } from '../../../e2e/wait-for-hydration';
 
 test.describe('OAuth cookie session', () => {
   test('restores Forge from its own HttpOnly cookie session after the fake provider callback', async ({
     page,
     context,
+    baseURL,
   }) => {
-    const configResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/oauth/config')
-    );
+    // The login page requests /api/oauth/config in its constructor, but these
+    // apps enable provideClientHydration(), which turns on Angular's HTTP
+    // transfer cache. The request is therefore issued during SSR and replayed
+    // from TransferState on the client, so the browser never puts it on the
+    // wire and waiting for the response here always timed out. Assert on the
+    // observable result instead: the provider button only renders once the
+    // config has been applied.
     await page.goto('/login');
-    await expect((await configResponse).ok()).toBe(true);
+    await waitForHydration(page);
 
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();
@@ -33,14 +39,22 @@ test.describe('OAuth cookie session', () => {
         );
       }
     );
-    const sessionRedemptionResponse = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return (
-        response.request().method() === 'POST' &&
-        url.origin === new URL(page.url()).origin &&
-        url.pathname === '/api/oauth/callback/redeem'
-      );
-    });
+    // Context-wide, not `page.waitForResponse`: the redeem is posted by the
+    // popup that handled the callback, and the opener's page object never
+    // sees another page's traffic. The flow was completing — the gateway
+    // logged a fully authenticated oauth-e2e@example.test — while this wait
+    // sat until the test timed out.
+    const sessionRedemptionResponse = context.waitForEvent(
+      'response',
+      (response) => {
+        const url = new URL(response.url());
+        return (
+          response.request().method() === 'POST' &&
+          url.origin === new URL(baseURL as string).origin &&
+          url.pathname === '/api/oauth/callback/redeem'
+        );
+      }
+    );
     const popupPromise = page.waitForEvent('popup');
     await google.click();
     const popup = await popupPromise;
@@ -54,17 +68,34 @@ test.describe('OAuth cookie session', () => {
     );
     await popup.waitForURL(/\/oauth\/callback(?:\?|$)/);
 
+    // Read the Set-Cookie before waiting for the popup to close. The redeem is
+    // posted by the popup, and `headerValue()` reaches back into the page that
+    // made the request: once the popup is gone it fails with "Target page,
+    // context or browser has been closed". (`headerValue()` is also itself
+    // async — the single await used to bind to the response, leaving a Promise
+    // to be matched against a regex.)
+    const setCookie = await (
+      await sessionRedemptionResponse
+    ).headerValue('set-cookie');
+    // Assert the attributes independently. The old pattern required HttpOnly
+    // to appear before Path, and Express emits them the other way round:
+    // `ot_session=...; Max-Age=3600; Path=/; Expires=...; HttpOnly; SameSite=Lax`.
+    // Set-Cookie attributes are unordered, so pinning a sequence tested the
+    // serialiser rather than the policy.
+    expect(setCookie).toMatch(/^ot_session=/);
+    expect(setCookie).toMatch(/;\s*Path=\/(;|$)/i);
+    expect(setCookie).toMatch(/;\s*HttpOnly(;|$)/i);
+    expect(setCookie).not.toMatch(/\bDomain=/i);
+
     await page.waitForURL((url) => !url.pathname.endsWith('/login'));
     await expect.poll(() => popup.isClosed()).toBe(true);
 
-    const setCookie = (await sessionRedemptionResponse).headerValue(
-      'set-cookie'
-    );
-    expect(setCookie).toMatch(/ot_session=.*HttpOnly.*Path=\//i);
-    expect(setCookie).not.toMatch(/\bDomain=/i);
-
     const forgeOrigin = new URL(page.url()).origin;
-    expect(forgeOrigin).toBe('http://forgeofwill.localhost:8081');
+    // Pinned to the vhost origin of the standalone forgeofwill composition,
+    // which CI does not use — it drives the loopback origin the manifest
+    // declares. Assert against the origin this run was actually configured
+    // with so the property holds in either stack.
+    expect(forgeOrigin).toBe(new URL(baseURL as string).origin);
     const sessionCookie = (
       await context.cookies(`${forgeOrigin}/api/authentication/session`)
     ).find((cookie) => cookie.name === 'ot_session');
@@ -75,13 +106,13 @@ test.describe('OAuth cookie session', () => {
         path: '/',
       })
     );
-    expect(
-      (
-        await context.cookies(
-          'http://localhost:8080/api/authentication/session'
-        )
-      ).find((cookie) => cookie.name === 'ot_session')
-    ).toBeUndefined();
+    // No cross-origin check here: cookies are not isolated by port, so a
+    // host-only cookie for 127.0.0.1 is sent to every port on that host, and
+    // in this stack Forge and the Client Interface differ only by port. The
+    // standalone forgeofwill composition gave them distinct hostnames
+    // (forgeofwill.localhost against localhost) and the separation held there.
+    // The property that does hold, and that actually limits the cookie to one
+    // host, is the absent Domain attribute asserted above.
     expect(
       await page.evaluate(() =>
         Object.keys(localStorage).filter((key) => /token/i.test(key))

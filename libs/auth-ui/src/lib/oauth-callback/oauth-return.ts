@@ -8,6 +8,14 @@ export interface AuthReturnTarget {
 export interface AuthReturnNormalizationOptions {
   currentOrigin: string;
   registeredOrigins?: readonly string[];
+  /**
+   * What an auth page (/login, /register, an OAuth callback) resolves to.
+   * 'reject' (the default) returns null, which guards and login pages rely on
+   * to apply their own fallback. 'origin-root' returns the root of the
+   * validated origin instead — for the OAuth callback, which must still redeem
+   * when sign-in was started from the login page itself.
+   */
+  authLoopFallback?: 'reject' | 'origin-root';
 }
 
 const AUTH_LOOP_PATHS = new Set([
@@ -71,11 +79,22 @@ export function normalizeAuthReturnTo(
     !decodedPath.startsWith('/') ||
     decodedPath.startsWith('//') ||
     decodedPath.includes('\\') ||
-    hasControlCharacter(decodedPath) ||
+    hasControlCharacter(decodedPath)
+  ) {
+    return null;
+  }
+
+  if (
     AUTH_LOOP_PATHS.has(normalizedPath.toLowerCase()) ||
     normalizedPath.toLowerCase().startsWith('/oauth/callback/')
   ) {
-    return null;
+    if (options.authLoopFallback !== 'origin-root') return null;
+    return {
+      origin: target.origin,
+      path: '/',
+      href: `${target.origin}/`,
+      isCurrentOrigin: target.origin === currentOrigin,
+    };
   }
 
   const path = `${target.pathname || '/'}${target.search}${target.hash}`;

@@ -6,6 +6,25 @@ import { ResourcesService } from './appointments/resources.service';
 import { AvailabilitiesService } from './appointments/availabilities.service';
 import { AppointmentsService } from './appointments/appointments.service';
 import { Logger } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CatalogEntity } from './catalog/entities/catalog.entity';
+
+/**
+ * Public product reads require a catalogId, so products seeded without one are
+ * invisible to every storefront. The catalog id is fixed so store-client-e2e
+ * can open /catalog?catalogId=<id> without a lookup; keep it in step with
+ * apps/store-client-e2e/src/support/seeded-catalog.ts. The owner and workspace
+ * ids only satisfy the catalog's scope columns — no identity backs them.
+ */
+const SEEDED_CATALOG = {
+  id: '5e5d0c47-4a1b-4c8e-9f2a-3b7d6c1e0a01',
+  name: 'Seeded Store Catalog',
+  description: 'Demo products seeded by seed-store.',
+  ownerId: '5e5d0c47-4a1b-4c8e-9f2a-3b7d6c1e0a02',
+  workspaceId: '5e5d0c47-4a1b-4c8e-9f2a-3b7d6c1e0a03',
+  appScope: 'store',
+};
 
 async function bootstrap() {
   const logger = new Logger('StoreSeedScript');
@@ -17,6 +36,12 @@ async function bootstrap() {
     const resourcesService = app.get(ResourcesService);
     const availabilitiesService = app.get(AvailabilitiesService);
     const appointmentsService = app.get(AppointmentsService);
+    const catalogRepository = app.get<Repository<CatalogEntity>>(
+      getRepositoryToken(CatalogEntity)
+    );
+
+    await catalogRepository.save(catalogRepository.create(SEEDED_CATALOG));
+    logger.log(`Seeded catalog: ${SEEDED_CATALOG.name} (${SEEDED_CATALOG.id})`);
 
     // Clear existing data (optional)
     logger.log(
@@ -157,7 +182,10 @@ async function bootstrap() {
 
     for (const productData of products) {
       try {
-        await productsService.create(productData);
+        await productsService.create({
+          ...productData,
+          catalogId: SEEDED_CATALOG.id,
+        });
         logger.log(`Created product: ${productData.name}`);
       } catch (error) {
         logger.warn(

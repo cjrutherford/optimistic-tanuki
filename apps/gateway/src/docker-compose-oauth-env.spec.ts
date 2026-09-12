@@ -164,10 +164,15 @@ describe('docker compose oauth environment wiring', () => {
     )?.[1];
 
     expect(gatewaySection).toBeTruthy();
+    // "aligning the callback origin" is the point of this case, and the
+    // pinned value did the opposite: every UI target in
+    // scripts/e2e-environment-manifest.mjs drives a 127.0.0.1 baseUrl, so
+    // redirecting the OAuth popup to http://localhost:8080 landed it on a
+    // different origin from its opener.
     expect(gatewaySection).toContain(
-      'CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080'
+      'CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080'
     );
-    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN: localhost');
+    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN: 127.0.0.1');
     expect(gatewaySection).toContain(
       'CI_GOOGLE_CLIENT_ID: e2e-google-client-id'
     );

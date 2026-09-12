@@ -19,8 +19,34 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
       include: 'scope'
-    # Group minor and patch updates together
+    # Group minor and patch updates together.
+    #
+    # Order matters: Dependabot assigns each package to the FIRST group whose
+    # rules match. The framework groups below must therefore stay above the
+    # type-based production/development groups. When they were listed last, the
+    # runtime half of Angular landed in production-dependencies and the
+    # compiler/CLI half in development-dependencies, so the two halves shipped
+    # in separate PRs and neither could merge on its own. See
+    # docs/plans/2026-09-08-dependency-prs-and-framework-upgrade.md.
     groups:
+      angular-dependencies:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - '@schematics/angular'
+          - 'angular-eslint'
+          - '@angular-eslint/*'
+          - 'ng-packagr'
+          - 'jest-preset-angular'
+          - 'zone.js'
+      nx-dependencies:
+        patterns:
+          - '@nx/*'
+          - '@nrwl/*'
+          - 'nx'
+      nestjs-dependencies:
+        patterns:
+          - '@nestjs/*'
       production-dependencies:
         dependency-type: 'production'
         update-types:
@@ -31,20 +57,19 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
-      nx-dependencies:
-        patterns:
-          - '@nx/*'
-          - '@nrwl/*'
-      angular-dependencies:
-        patterns:
-          - '@angular/*'
-      nestjs-dependencies:
-        patterns:
-          - '@nestjs/*'
     # Ignore major version updates for stability
     ignore:
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
+      # Packages below 1.0.0 encode breaking changes in the minor field, so the
+      # semver-major rule above cannot see them. @angular-devkit/architect is
+      # the worst case: its 0.MINOR.PATCH scheme puts the Angular major in the
+      # minor slot, so 0.2002.2 -> 0.2201.7 reads as a minor bump but is really
+      # Angular 20 -> 22. Move these deliberately alongside their framework.
+      - dependency-name: '@angular-devkit/architect'
+        update-types: ['version-update:semver-minor']
+      - dependency-name: 'esbuild'
+        update-types: ['version-update:semver-minor']
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: 'github-actions'

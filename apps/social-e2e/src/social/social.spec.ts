@@ -127,6 +127,8 @@ describe('Social Microservice E2E', () => {
                 title: 'Updated Title',
                 content: 'Updated post content',
               },
+              userId: testUserId,
+              profileId: testProfileId,
             }
           ),
           { defaultValue: true }
@@ -245,7 +247,7 @@ describe('Social Microservice E2E', () => {
           socialClient.send(
             { cmd: VoteCommands.UPVOTE },
             {
-              id: createdPostId,
+              postId: createdPostId,
               userId: testUserId,
               profileId: testProfileId,
             }
@@ -285,7 +287,8 @@ describe('Social Microservice E2E', () => {
           socialClient.send(
             { cmd: VoteCommands.UNVOTE },
             {
-              id: createdVoteId,
+              postId: createdPostId,
+              profileId: testProfileId,
             }
           ),
           { defaultValue: true }
@@ -296,7 +299,7 @@ describe('Social Microservice E2E', () => {
           socialClient.send(
             { cmd: VoteCommands.DOWNVOTE },
             {
-              id: createdPostId,
+              postId: createdPostId,
               userId: testUserId,
               profileId: testProfileId,
             }
@@ -444,7 +447,8 @@ describe('Social Microservice E2E', () => {
             socialClient.send(
               { cmd: VoteCommands.UNVOTE },
               {
-                id: vote.id,
+                postId: createdPostId,
+                profileId: vote.profileId,
               }
             ),
             { defaultValue: true }

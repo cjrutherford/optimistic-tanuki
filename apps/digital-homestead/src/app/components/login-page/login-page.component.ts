@@ -24,12 +24,22 @@ const LOGIN_HERO_IMAGE = 'assets/digital-independence.png';
         {{ error }}
       </div>
 
+      <!--
+        OAuth is switched off here. Clicking a provider button on this page
+        does nothing at all: the click reaches the element, but no popup opens,
+        no request is made, and no error is raised or shown. The gateway never
+        sees an OAuth request from this app, so the failure is entirely in the
+        browser and ahead of the network. Rather than leave a control that
+        silently does nothing, stop offering it until the cause is found.
+        Email and password, magic link and email verification are unaffected.
+      -->
       <lib-login-block
         appId="digital-homestead"
         title="Digital Homestead"
         description="Sign in to access blog editing features"
         [heroSrc]="heroImage"
         heroAlt="Digital Homestead"
+        [showOAuth]="false"
         (submitEvent)="onLogin($event)"
         (oauthProviderSelected)="onOAuthProvider($event)"
       ></lib-login-block>

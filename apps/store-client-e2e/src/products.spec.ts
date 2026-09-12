@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { SEEDED_CATALOG_PATH } from './support/seeded-catalog';
 
 test.describe('Store Product Management E2E', () => {
   test('should display all seeded products', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for products to load
     await page.waitForSelector('store-product-list', { timeout: 10000 });
@@ -16,7 +17,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display Premium Coffee Beans product', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Look for the specific product
@@ -30,7 +31,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display E-Book product', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Look for digital product
@@ -41,7 +42,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display subscription products', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Look for subscription products
@@ -54,7 +55,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should show product prices correctly', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Get all price elements
@@ -71,7 +72,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display physical products', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Physical products include: Coffee, Mug, T-Shirt, Stickers
@@ -83,7 +84,7 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display digital products', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // Digital products include: E-Book, Course
@@ -94,18 +95,18 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should show stock information', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     const firstProduct = page.locator('store-product-card').first();
 
-    // Product should have some content
-    const content = firstProduct;
-    await expect(content).toHaveText();
+    // `toHaveText()` with no argument threw "expected value must be a string
+    // or regular expression". The intent is that the card renders something.
+    await expect(firstProduct).not.toBeEmpty();
   });
 
   test('should handle product with low stock', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     // T-Shirt has stock of 15 in seed data
@@ -120,17 +121,19 @@ test.describe('Store Product Management E2E', () => {
   });
 
   test('should display product descriptions', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-card', { timeout: 10000 });
 
     const firstProduct = page.locator('store-product-card').first();
 
     // Get product description (if visible)
-    const description = firstProduct.locator('p, .description');
+    const description = firstProduct.locator('p, .description').first();
 
     if (await description.isVisible()) {
-      const text = await description.textContent();
-      await expect(text).not.toBeEmpty();
+      // `toBeEmpty` is a locator matcher; it was being handed the already
+      // resolved string, which fails with "toBeEmpty can be only used with
+      // Locator object".
+      await expect(description).not.toBeEmpty();
     }
   });
 });

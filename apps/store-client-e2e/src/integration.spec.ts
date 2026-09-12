@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test';
+import {
+  isProductsRequest,
+  SEEDED_CATALOG_PATH,
+} from './support/seeded-catalog';
 
 test.describe('Store Integration Tests - Backend to Frontend', () => {
   test('should load real products from backend API', async ({ page }) => {
     // Don't mock the API - let it hit the real backend
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for API call to complete
     const response = await page
@@ -104,7 +108,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       route.abort('failed');
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Should show error message
     await expect(page.locator('.error')).toBeVisible({ timeout: 10000 });
@@ -129,19 +133,24 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     let productData = null;
 
     // Intercept API response to check data structure
-    await page.route('**/api/store/products', async (route) => {
+    await page.route(isProductsRequest, async (route) => {
       const response = await route.fetch();
       const data = await response.json();
       productData = data;
 
-      route.fulfill({
+      // `fulfill` returns a promise. Leaving it unawaited let the callback
+      // resolve while the fulfil was still in flight, so the route outlived
+      // the test and Playwright reported "route.fetch: Test ended." against
+      // whichever test happened to be running next.
+      await route.fulfill({
         response,
         body: JSON.stringify(data),
       });
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForTimeout(2000);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
 
     if (productData && Array.isArray(productData)) {
       console.log(`Received ${productData.length} products from API`);
@@ -151,7 +160,9 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
         const firstProduct = productData[0];
         expect(firstProduct).toHaveProperty('id');
         expect(firstProduct).toHaveProperty('name');
-        expect(firstProduct).toHaveProperty('price');
+        // Money is stored and served as integer cents (Product.priceCents),
+        // never as a `price` float.
+        expect(firstProduct).toHaveProperty('priceCents');
         expect(firstProduct).toHaveProperty('type');
         console.log('Product data structure is valid');
       }
@@ -160,13 +171,13 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
 
   test('should handle slow API responses', async ({ page }) => {
     // Delay API response
-    await page.route('**/api/store/products', async (route) => {
+    await page.route(isProductsRequest, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const response = await route.fetch();
-      route.fulfill({ response });
+      await route.fulfill({ response });
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Should show loading state
     const loadingOrProducts = await page.waitForSelector(
@@ -175,12 +186,16 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     );
 
     expect(loadingOrProducts).toBeTruthy();
+
+    // This route deliberately sleeps, so a request can still be mid-flight at
+    // the end of the test. Drop the handlers before teardown.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 
   test('should refresh products when navigating back to catalog', async ({
     page,
   }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-list, .error', {
       timeout: 10000,
     });
@@ -190,7 +205,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     await page.waitForSelector('store-donation', { timeout: 5000 });
 
     // Navigate back
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Products should load again
     await page.waitForSelector('store-product-list, .error', {

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/microservices';
 import {
   BlogPostCommands,
-  EventCommands,
+  BlogEventCommands,
   ContactCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
@@ -175,7 +175,7 @@ describe('Blogging Microservice E2E', () => {
         };
 
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: EventCommands.CREATE }, testEvent)
+          bloggingClient.send({ cmd: BlogEventCommands.CREATE }, testEvent)
         );
 
         expect(result).toBeDefined();
@@ -190,7 +190,7 @@ describe('Blogging Microservice E2E', () => {
       it('should find an event by id', async () => {
         const result = await firstValueFrom(
           bloggingClient.send(
-            { cmd: EventCommands.FIND },
+            { cmd: BlogEventCommands.FIND },
             {
               id: createdEventId,
             }
@@ -203,7 +203,7 @@ describe('Blogging Microservice E2E', () => {
 
       it('should find all events', async () => {
         const result = await firstValueFrom(
-          bloggingClient.send({ cmd: EventCommands.FIND_ALL }, {})
+          bloggingClient.send({ cmd: BlogEventCommands.FIND_ALL }, {})
         );
 
         expect(result).toBeDefined();
@@ -215,7 +215,7 @@ describe('Blogging Microservice E2E', () => {
       it('should update an event', async () => {
         const result = await firstValueFrom(
           bloggingClient.send(
-            { cmd: EventCommands.UPDATE },
+            { cmd: BlogEventCommands.UPDATE },
             {
               id: createdEventId,
               updateEventDto: {
@@ -235,7 +235,7 @@ describe('Blogging Microservice E2E', () => {
       it('should delete an event', async () => {
         const result = await firstValueFrom(
           bloggingClient.send(
-            { cmd: EventCommands.DELETE },
+            { cmd: BlogEventCommands.DELETE },
             {
               id: createdEventId,
             }

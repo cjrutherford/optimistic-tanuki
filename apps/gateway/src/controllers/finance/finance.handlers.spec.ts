@@ -53,7 +53,13 @@ describe('Gateway FinanceController handlers', () => {
 
   beforeEach(() => {
     finance = { send: jest.fn().mockReturnValue(of(null)) };
-    controller = new FinanceController(finance as unknown as ClientProxy);
+    // Tenant creation now assigns finance_admin through the permissions
+    // service; a null role short-circuits that without affecting these cases.
+    const permissions = { send: jest.fn().mockReturnValue(of(null)) };
+    controller = new FinanceController(
+      finance as unknown as ClientProxy,
+      permissions as unknown as ClientProxy
+    );
     // Silence the per-instance logger rather than the console.
     (controller as unknown as { logger: { log: jest.Mock } }).logger = {
       log: jest.fn(),
