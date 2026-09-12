@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { SEEDED_CATALOG_PATH } from './support/seeded-catalog';
 
 test.describe('Store Integration Tests - Backend to Frontend', () => {
   test('should load real products from backend API', async ({ page }) => {
     // Don't mock the API - let it hit the real backend
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for API call to complete
     const response = await page
@@ -104,7 +105,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       route.abort('failed');
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Should show error message
     await expect(page.locator('.error')).toBeVisible({ timeout: 10000 });
@@ -144,7 +145,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       });
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForTimeout(2000);
     await page.unrouteAll({ behavior: 'ignoreErrors' });
 
@@ -173,7 +174,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
       await route.fulfill({ response });
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Should show loading state
     const loadingOrProducts = await page.waitForSelector(
@@ -191,7 +192,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
   test('should refresh products when navigating back to catalog', async ({
     page,
   }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
     await page.waitForSelector('store-product-list, .error', {
       timeout: 10000,
     });
@@ -201,7 +202,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     await page.waitForSelector('store-donation', { timeout: 5000 });
 
     // Navigate back
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Products should load again
     await page.waitForSelector('store-product-list, .error', {

@@ -537,6 +537,54 @@ services:
       timeout: 3s
       retries: 12
 
+  # configurable-client's landing page lists published apps, and nothing in
+  # this stack published any, so its discovery assertions had nothing to find.
+  # dev-seed.sh builds these same P11 fixtures through the gateway to get real
+  # owner and workspace ids; discovery reads only the app-configurator database,
+  # and the seed script creates its own app instance and owner membership, so
+  # fixed ids stand in here. Each fixture gets its own workspace because an app
+  # instance is unique per workspace and scope. Private Studio is seeded too so
+  # the suite's "private apps stay hidden" assertion is tested, not vacuous.
+  app-configurator-seed:
+    image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_CONFIG_SEED_APP_SCOPE: configurable-client
+      APP_CONFIG_SEED_BLOG_CATALOG_ID: 0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7e00
+      APP_CONFIG_SEED_PUBLISH: 'true'
+    entrypoint: ['sh', '-c']
+    command:
+      - >-
+        set -e;
+        seed() {
+        APP_CONFIG_SEED_OWNER_USER_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7e$$1"
+        APP_CONFIG_SEED_OWNER_PROFILE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7f$$1"
+        APP_CONFIG_SEED_WORKSPACE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d70$$1"
+        APP_CONFIG_SEED_APP_INSTANCE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d71$$1"
+        APP_CONFIG_SEED_MEMBERSHIP_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d72$$1"
+        APP_CONFIG_SEED_CONFIG_NAME="$$2"
+        APP_CONFIG_SEED_ACCESS_POLICY="$$3"
+        APP_CONFIG_SEED_DOMAIN="$$4"
+        node seed-script.js;
+        };
+        seed 01 '' public '';
+        seed 02 'Open Community' joinable community.configurable-client.local;
+        seed 03 'Access Request Hub' request-only access.configurable-client.local;
+        seed 04 'Private Studio' private private.configurable-client.local
+    depends_on:
+      app-configurator:
+        condition: service_healthy
+    restart: 'no'
+
   lead-tracker:
     image: cjrutherford/optimistic_tanuki_lead-tracker:${E2E_IMAGE_TAG:-latest}
     build:
@@ -874,6 +922,8 @@ services:
         condition: service_started
       app-configurator:
         condition: service_started
+      app-configurator-seed:
+        condition: service_completed_successfully
 
 networks:
   default:

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { SEEDED_CATALOG_PATH } from './support/seeded-catalog';
 
 test.describe('Store Client E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,7 +10,7 @@ test.describe('Store Client E2E Tests', () => {
   test.skip('should display the catalog page with products', async ({
     page,
   }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for products to load
     await page.waitForSelector('store-product-list', { timeout: 10000 });
@@ -28,7 +29,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should load products from API', async ({ page }) => {
     // Navigate to catalog
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for the product list to be visible
     await page.waitForSelector('store-product-list', { timeout: 10000 });
@@ -44,7 +45,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should handle loading state', async ({ page }) => {
     // Navigate to catalog
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // The loading indicator might appear briefly
     // We'll just verify the page eventually loads successfully
@@ -59,7 +60,7 @@ test.describe('Store Client E2E Tests', () => {
       route.abort();
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for error message
     const errorMessage = page.locator('.error');
@@ -70,7 +71,7 @@ test.describe('Store Client E2E Tests', () => {
   test('should navigate to cart page when add to cart is clicked', async ({
     page,
   }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for products to load
     await page.waitForSelector('store-product-card', { timeout: 10000 });
@@ -141,7 +142,7 @@ test.describe('Store Client E2E Tests', () => {
   });
 
   test('should filter products by type (if implemented)', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for products to load
     await page.waitForSelector('store-product-list', { timeout: 10000 });
@@ -153,7 +154,7 @@ test.describe('Store Client E2E Tests', () => {
   });
 
   test('should display product details', async ({ page }) => {
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Wait for products
     await page.waitForSelector('store-product-card', { timeout: 10000 });
@@ -176,7 +177,7 @@ test.describe('Store Client E2E Tests', () => {
       route.abort('failed');
     });
 
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Should show error state
     await page.waitForSelector('.error, .empty-state', { timeout: 10000 });
@@ -185,7 +186,7 @@ test.describe('Store Client E2E Tests', () => {
   test('should be responsive', async ({ page }) => {
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/catalog');
+    await page.goto(SEEDED_CATALOG_PATH);
 
     // Verify page loads in mobile view
     await page.waitForSelector('store-product-list', { timeout: 10000 });
