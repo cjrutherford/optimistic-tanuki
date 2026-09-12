@@ -43,28 +43,47 @@ describe('normalizeAuthReturnTo', () => {
     expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
   });
 
-  // Sign-in starts from these pages, so they must not be rejected outright —
-  // that left OAuth unable to finish from /login. They are also not worth
-  // returning to, so they resolve to the root of the already-validated origin.
-  it.each([
+  const authLoopPaths = [
     '/login',
     '/register',
     '/auth/login',
     '/login/',
     'https://app.example/login?next=x',
     '/oauth/callback/google',
-  ])('sends auth-loop destination %s to the origin root', (returnTo) => {
-    expect(normalizeAuthReturnTo(returnTo, options)).toEqual({
-      origin: 'https://app.example',
-      path: '/',
-      href: 'https://app.example/',
-      isCurrentOrigin: true,
-    });
-  });
+  ];
+
+  // Guards and login pages rely on null here to apply their own fallback.
+  it.each(authLoopPaths)(
+    'rejects auth-loop destination %s by default',
+    (returnTo) => {
+      expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+    }
+  );
+
+  // The OAuth callback opts in: sign-in started from /login must still redeem.
+  it.each(authLoopPaths)(
+    'sends auth-loop destination %s to the origin root when asked',
+    (returnTo) => {
+      expect(
+        normalizeAuthReturnTo(returnTo, {
+          ...options,
+          authLoopFallback: 'origin-root',
+        })
+      ).toEqual({
+        origin: 'https://app.example',
+        path: '/',
+        href: 'https://app.example/',
+        isCurrentOrigin: true,
+      });
+    }
+  );
 
   it('still refuses an auth-loop path on an unregistered origin', () => {
     expect(
-      normalizeAuthReturnTo('https://evil.example/login', options)
+      normalizeAuthReturnTo('https://evil.example/login', {
+        ...options,
+        authLoopFallback: 'origin-root',
+      })
     ).toBeNull();
   });
 

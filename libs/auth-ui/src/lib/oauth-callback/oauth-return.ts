@@ -8,6 +8,14 @@ export interface AuthReturnTarget {
 export interface AuthReturnNormalizationOptions {
   currentOrigin: string;
   registeredOrigins?: readonly string[];
+  /**
+   * What an auth page (/login, /register, an OAuth callback) resolves to.
+   * 'reject' (the default) returns null, which guards and login pages rely on
+   * to apply their own fallback. 'origin-root' returns the root of the
+   * validated origin instead — for the OAuth callback, which must still redeem
+   * when sign-in was started from the login page itself.
+   */
+  authLoopFallback?: 'reject' | 'origin-root';
 }
 
 const AUTH_LOOP_PATHS = new Set([
@@ -76,16 +84,11 @@ export function normalizeAuthReturnTo(
     return null;
   }
 
-  // An auth page is a legitimate place to *start* sign-in from — it is the only
-  // place the provider buttons live — but a pointless place to land after it.
-  // Returning null here made the callback report "Invalid authentication return
-  // destination" and never redeem, so starting OAuth from /login could not
-  // complete at all. The origin has already been validated above, so keep it
-  // and send the user to that origin's root instead of back to the login form.
   if (
     AUTH_LOOP_PATHS.has(normalizedPath.toLowerCase()) ||
     normalizedPath.toLowerCase().startsWith('/oauth/callback/')
   ) {
+    if (options.authLoopFallback !== 'origin-root') return null;
     return {
       origin: target.origin,
       path: '/',
