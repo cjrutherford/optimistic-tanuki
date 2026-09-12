@@ -71,11 +71,27 @@ export function normalizeAuthReturnTo(
     !decodedPath.startsWith('/') ||
     decodedPath.startsWith('//') ||
     decodedPath.includes('\\') ||
-    hasControlCharacter(decodedPath) ||
+    hasControlCharacter(decodedPath)
+  ) {
+    return null;
+  }
+
+  // An auth page is a legitimate place to *start* sign-in from — it is the only
+  // place the provider buttons live — but a pointless place to land after it.
+  // Returning null here made the callback report "Invalid authentication return
+  // destination" and never redeem, so starting OAuth from /login could not
+  // complete at all. The origin has already been validated above, so keep it
+  // and send the user to that origin's root instead of back to the login form.
+  if (
     AUTH_LOOP_PATHS.has(normalizedPath.toLowerCase()) ||
     normalizedPath.toLowerCase().startsWith('/oauth/callback/')
   ) {
-    return null;
+    return {
+      origin: target.origin,
+      path: '/',
+      href: `${target.origin}/`,
+      isCurrentOrigin: target.origin === currentOrigin,
+    };
   }
 
   const path = `${target.pathname || '/'}${target.search}${target.hash}`;

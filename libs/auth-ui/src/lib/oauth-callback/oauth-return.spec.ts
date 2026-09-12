@@ -39,11 +39,33 @@ describe('normalizeAuthReturnTo', () => {
     '/%5C%5Cevil.example/phish',
     '/dashboard\\evil',
     '/dashboard\n/evil',
+  ])('rejects unsafe destination %s', (returnTo) => {
+    expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+  });
+
+  // Sign-in starts from these pages, so they must not be rejected outright —
+  // that left OAuth unable to finish from /login. They are also not worth
+  // returning to, so they resolve to the root of the already-validated origin.
+  it.each([
     '/login',
     '/register',
+    '/auth/login',
+    '/login/',
+    'https://app.example/login?next=x',
     '/oauth/callback/google',
-  ])('rejects unsafe or auth-loop destination %s', (returnTo) => {
-    expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+  ])('sends auth-loop destination %s to the origin root', (returnTo) => {
+    expect(normalizeAuthReturnTo(returnTo, options)).toEqual({
+      origin: 'https://app.example',
+      path: '/',
+      href: 'https://app.example/',
+      isCurrentOrigin: true,
+    });
+  });
+
+  it('still refuses an auth-loop path on an unregistered origin', () => {
+    expect(
+      normalizeAuthReturnTo('https://evil.example/login', options)
+    ).toBeNull();
   });
 
   it('rejects whitespace padding, malformed escapes, and unsupported origins', () => {
