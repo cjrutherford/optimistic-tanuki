@@ -178,6 +178,14 @@ export function mergeBusinessSiteConfig(
         ...(config?.features?.testimonials ?? {}),
       },
     },
+    plugins: {
+      ...DEFAULT_BUSINESS_SITE_CONFIG.plugins,
+      ...(config?.plugins ?? {}),
+      capabilities: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.plugins.capabilities,
+        ...(config?.plugins?.capabilities ?? {}),
+      },
+    },
     serviceCatalog: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.serviceCatalog,
       ...(config?.serviceCatalog ?? {}),

@@ -1,11 +1,17 @@
 import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { BadRequestException, INestApplication } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  INestApplication,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
 
 import {
   AppointmentCommands,
   AvailabilityCommands,
+  BlogCatalogCommands,
+  CatalogCommands,
   LeadCommands,
   ProductCommands,
   ServiceTokens,
@@ -15,7 +21,9 @@ import { LeadStatus } from '@optimistic-tanuki/models';
 
 import { AuthGuard } from '../../auth/auth.guard';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
+import { WORKSPACE_CONTEXT_KEY } from '../../decorators/workspace-context.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 import { TrainerController } from './trainer.controller';
 
@@ -150,6 +158,61 @@ describe('TrainerController', () => {
         startingRate: 135,
       },
     ]);
+  });
+
+  it('reports an accepted business client with the shared active lifecycle and scoped session refresh metadata', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_USER_APPOINTMENTS) {
+          return of([]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() =>
+        of([
+          {
+            id: 'lead-1',
+            userId: 'client-user-1',
+            profileId: 'owner-profile-1',
+            status: LeadStatus.WON,
+          },
+        ])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getClientBookingStatus({
+        userId: 'client-user-1',
+        email: 'client@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Client Example',
+        profileId: 'client-profile-1',
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        lifecycleState: 'active',
+        sessionRefresh: {
+          required: true,
+          appScope: 'business-site',
+        },
+      })
+    );
   });
 
   it('loads public offers from the slug-scoped hosted tenant config when a site slug is provided', async () => {
@@ -319,7 +382,7 @@ describe('TrainerController', () => {
       send: jest.fn((command: any, payload: any) => {
         if (command === TrainerConfigCommands.GET_CONFIG) {
           expect(payload).toEqual({
-            configKey: 'default',
+            configKey: 'business-site:owner-profile-handyman',
             profileId: 'owner-profile-handyman',
             slug: undefined,
           });
@@ -486,15 +549,22 @@ describe('TrainerController', () => {
         },
         'steady-hand-contracting'
       )
-    ).resolves.toEqual({
-      accepted: true,
-      leadId: 'lead-1',
-      leadStatus: LeadStatus.WON,
-      hasAccount: true,
-      stage: 'accepted_client',
-      nextAction: 'Choose a published time to request your next session.',
-      primaryAction: 'book_session',
-    });
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accepted: true,
+        leadId: 'lead-1',
+        leadStatus: LeadStatus.WON,
+        hasAccount: true,
+        stage: 'accepted_client',
+        nextAction: 'Choose a published time to request your next session.',
+        primaryAction: 'book_session',
+        lifecycleState: 'active',
+        sessionRefresh: {
+          required: true,
+          appScope: 'business-site',
+        },
+      })
+    );
   });
 
   it('maps active store service products into public business offers when no site services are configured', async () => {
@@ -746,6 +816,123 @@ describe('TrainerController', () => {
     );
   });
 
+  it('accepts Store and Blog catalog references only from the resolved business workspace', async () => {
+    const storeClient = {
+      send: jest.fn((command: unknown) => {
+        if (command === CatalogCommands.FIND_STORE_CATALOGS) {
+          return of([{ id: 'store-catalog-1' }]);
+        }
+        return of({ id: 'cfg-1' });
+      }),
+    } as any;
+    const blogClient = {
+      send: jest.fn(() => of([{ id: 'blog-catalog-1' }])),
+    } as any;
+    const controller = new TrainerController(
+      storeClient,
+      { send: jest.fn() } as any,
+      blogClient
+    );
+
+    await controller.updateSiteConfig(
+      {
+        configId: 'cfg-1',
+        config: {
+          serviceCatalog: { source: 'store', catalogId: 'store-catalog-1' },
+          plugins: {
+            capabilities: {
+              'blogging.posts': {
+                enabled: true,
+                placement: 'public-content',
+                resourceRef: { type: 'blog-catalog', id: 'blog-catalog-1' },
+              },
+            },
+          },
+        },
+      },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      },
+      'north-star',
+      {
+        workspaceContext: {
+          workspace: {
+            ownerProfileId: 'owner-profile-1',
+            workspaceId: 'workspace-1',
+            appScope: 'business-site',
+          },
+        },
+      }
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      CatalogCommands.FIND_STORE_CATALOGS,
+      {
+        ownerId: 'owner-profile-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      }
+    );
+    expect(blogClient.send).toHaveBeenCalledWith(
+      { cmd: BlogCatalogCommands.FIND_ALL },
+      {
+        ownerId: 'owner-profile-1',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      }
+    );
+  });
+
+  it('rejects a catalog reference outside the resolved business workspace', async () => {
+    const storeClient = {
+      send: jest.fn((command: unknown) =>
+        command === CatalogCommands.FIND_STORE_CATALOGS
+          ? of([])
+          : of({ id: 'cfg-1' })
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, {
+      send: jest.fn(),
+    } as any);
+
+    await expect(
+      controller.updateSiteConfig(
+        {
+          configId: 'cfg-1',
+          config: {
+            serviceCatalog: {
+              source: 'store',
+              catalogId: 'other-workspace-catalog',
+            },
+          },
+        },
+        {
+          userId: 'owner-user-1',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'owner-profile-1',
+        },
+        'north-star',
+        {
+          workspaceContext: {
+            workspace: {
+              ownerProfileId: 'owner-profile-1',
+              workspaceId: 'workspace-1',
+              appScope: 'business-site',
+            },
+          },
+        }
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
   it('creates slug-scoped site config when a hosted tenant slug is provided', async () => {
     const storeClient = {
       send: jest.fn(() => of({ id: 'cfg-slug' })),
@@ -881,6 +1068,7 @@ describe('TrainerController', () => {
           },
           serviceCatalog: {
             source: 'store',
+            catalogId: null,
           },
         },
         requesterProfileId: 'owner-profile-1',
@@ -944,7 +1132,7 @@ describe('TrainerController', () => {
             enabled: false,
           },
         },
-        serviceCatalog: { source: 'store' },
+        serviceCatalog: { source: 'store', catalogId: null },
         leadContext: {
           profileId: 'owner-profile-1',
           appScope: 'business-site',
@@ -999,6 +1187,7 @@ describe('TrainerController', () => {
         },
         serviceCatalog: {
           source: 'manual',
+          catalogId: null,
         },
       }
     );
@@ -1044,6 +1233,8 @@ describe('TrainerController', () => {
             return true;
           },
         })
+        .overrideGuard(WorkspaceContextGuard)
+        .useValue({ canActivate: () => true })
         .overrideGuard(PermissionsGuard)
         .useValue({ canActivate: () => true });
 
@@ -1115,6 +1306,7 @@ describe('TrainerController', () => {
             },
             serviceCatalog: {
               source: 'store',
+              catalogId: null,
             },
           },
           requesterProfileId: 'owner-profile-1',
@@ -1473,16 +1665,23 @@ describe('TrainerController', () => {
         name: 'Client Example',
         profileId: 'client-profile-1',
       })
-    ).resolves.toEqual({
-      accepted: false,
-      leadId: 'lead-1',
-      leadStatus: LeadStatus.CONTACTED,
-      hasAccount: true,
-      stage: 'lead_under_review',
-      nextAction:
-        'Your request is under review. The business will follow up before booking opens.',
-      primaryAction: 'await_review',
-    });
+    ).resolves.toEqual(
+      expect.objectContaining({
+        accepted: false,
+        leadId: 'lead-1',
+        leadStatus: LeadStatus.CONTACTED,
+        hasAccount: true,
+        stage: 'lead_under_review',
+        nextAction:
+          'Your request is under review. The business will follow up before booking opens.',
+        primaryAction: 'await_review',
+        lifecycleState: 'pending',
+        sessionRefresh: {
+          required: false,
+          appScope: 'business-site',
+        },
+      })
+    );
   });
 
   it('only creates real bookings for accepted clients', async () => {
@@ -1661,7 +1860,21 @@ describe('TrainerController', () => {
   it('approves linked prospects into accepted clients', async () => {
     const storeClient = { send: jest.fn() } as any;
     const leadClient = {
-      send: jest.fn(() => of({ id: 'lead-1', status: LeadStatus.WON })),
+      send: jest.fn((pattern: any) =>
+        pattern?.cmd === LeadCommands.FIND_ALL
+          ? of([
+              {
+                id: 'lead-1',
+                profileId: 'owner-profile-1',
+                status: LeadStatus.CONTACTED,
+              },
+            ])
+          : of({
+              id: 'lead-1',
+              profileId: 'owner-profile-1',
+              status: LeadStatus.WON,
+            })
+      ),
     } as any;
     const controller = new TrainerController(storeClient, leadClient);
 
@@ -1678,7 +1891,90 @@ describe('TrainerController', () => {
       expect.objectContaining({
         id: 'lead-1',
         status: LeadStatus.WON,
+        lifecycleState: 'active',
+        sessionRefresh: {
+          required: false,
+          appScope: 'business-site',
+        },
+        moderationDecision: expect.objectContaining({ outcome: 'approve' }),
       })
+    );
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.FIND_ALL },
+      { profileId: 'owner-profile-1', appScope: 'business-site' }
+    );
+  });
+
+  it('rejects a business client approval before mutation when the lead is outside the owner profile', async () => {
+    const storeClient = { send: jest.fn() } as any;
+    const leadClient = {
+      send: jest.fn((pattern: any) =>
+        pattern?.cmd === LeadCommands.FIND_ALL
+          ? of([])
+          : of({ id: 'foreign-lead', status: LeadStatus.WON })
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.approveOwnerProspect('foreign-lead', {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      })
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(leadClient.send).toHaveBeenCalledTimes(1);
+    expect(leadClient.send).not.toHaveBeenCalledWith(
+      { cmd: LeadCommands.UPDATE },
+      expect.anything()
+    );
+  });
+
+  it('rejects a scoped prospect with shared rejection metadata', async () => {
+    const storeClient = { send: jest.fn() } as any;
+    const leadClient = {
+      send: jest.fn((pattern: any) =>
+        pattern?.cmd === LeadCommands.FIND_ALL
+          ? of([{ id: 'lead-1', profileId: 'owner-profile-1' }])
+          : of({
+              id: 'lead-1',
+              profileId: 'owner-profile-1',
+              status: LeadStatus.LOST,
+            })
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.rejectOwnerProspect('lead-1', {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'lead-1',
+        status: LeadStatus.LOST,
+        lifecycleState: 'revoked',
+        moderationDecision: expect.objectContaining({ outcome: 'reject' }),
+        sessionRefresh: { required: true, appScope: 'business-site' },
+      })
+    );
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.UPDATE },
+      {
+        id: 'lead-1',
+        profileId: 'owner-profile-1',
+        dto: { status: LeadStatus.LOST },
+      }
     );
   });
 
@@ -2013,6 +2309,7 @@ describe('TrainerController', () => {
       TrainerController.prototype.getOwnerProspects,
       TrainerController.prototype.markOwnerProspectContacted,
       TrainerController.prototype.approveOwnerProspect,
+      TrainerController.prototype.rejectOwnerProspect,
       TrainerController.prototype.getAcceptedClients,
       TrainerController.prototype.getOwnerAvailabilities,
       TrainerController.prototype.createOwnerAvailability,
@@ -2132,10 +2429,20 @@ describe('TrainerController', () => {
 
     expect(Reflect.getMetadata(GUARDS_METADATA, updateSiteConfig)).toEqual([
       AuthGuard,
+      WorkspaceContextGuard,
       PermissionsGuard,
     ]);
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateSiteConfig)).toEqual({
       permissions: ['app-config.update'],
+    });
+    expect(
+      Reflect.getMetadata(WORKSPACE_CONTEXT_KEY, updateSiteConfig)
+    ).toEqual({
+      kind: 'business-site',
+      source: 'query',
+      path: 'slug',
+      strict: true,
+      optional: true,
     });
   });
 
@@ -2144,10 +2451,20 @@ describe('TrainerController', () => {
 
     expect(Reflect.getMetadata(GUARDS_METADATA, updateCatalogSource)).toEqual([
       AuthGuard,
+      WorkspaceContextGuard,
       PermissionsGuard,
     ]);
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateCatalogSource)).toEqual({
       permissions: ['business-site.catalog.update'],
+    });
+    expect(
+      Reflect.getMetadata(WORKSPACE_CONTEXT_KEY, updateCatalogSource)
+    ).toEqual({
+      kind: 'business-site',
+      source: 'query',
+      path: 'slug',
+      strict: true,
+      optional: true,
     });
   });
 
@@ -2192,6 +2509,87 @@ describe('TrainerController', () => {
         slug: 'north-star-advisory',
       }
     );
+  });
+
+  it('does not expose draft-only slug config to public visitors', async () => {
+    const storeClient = {
+      send: jest.fn(() =>
+        of({
+          configId: 'cfg-draft',
+          config: {
+            site: {
+              slug: 'emberline-studio',
+              status: 'draft',
+              ownerProfileId: 'emberline-owner',
+            },
+            brand: { businessName: 'Draft Emberline' },
+          },
+        })
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, {
+      send: jest.fn(),
+    } as any);
+
+    await expect(controller.getSiteConfig('emberline-studio')).resolves.toEqual(
+      {
+        configId: null,
+        config: null,
+      }
+    );
+  });
+
+  it('allows the owning profile to load its draft slug config in the editor', async () => {
+    const draftResult = {
+      configId: 'cfg-draft',
+      config: {
+        site: {
+          slug: 'emberline-studio',
+          status: 'draft',
+          ownerProfileId: 'emberline-owner',
+        },
+        brand: { businessName: 'Draft Emberline' },
+      },
+    };
+    const storeClient = {
+      send: jest.fn(() => of(draftResult)),
+    } as any;
+    const controller = new TrainerController(storeClient, {
+      send: jest.fn(),
+    } as any);
+
+    await expect(
+      controller.getSiteConfig('emberline-studio', {
+        user: { profileId: 'emberline-owner' },
+      })
+    ).resolves.toEqual(draftResult);
+  });
+
+  it('does not expose draft-only manual offers through the public slug endpoint', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) =>
+        command === TrainerConfigCommands.GET_CONFIG
+          ? of({
+              config: {
+                site: { slug: 'emberline-studio', status: 'draft' },
+                services: [
+                  {
+                    id: 'draft-offer',
+                    name: 'Draft offer',
+                    description: 'Not public yet.',
+                    price: 900,
+                  },
+                ],
+              },
+            })
+          : of([])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, {
+      send: jest.fn(),
+    } as any);
+
+    await expect(controller.getOffers('emberline-studio')).resolves.toEqual([]);
   });
 
   it('scopes owner routine and check-in calls to the authenticated owner', async () => {

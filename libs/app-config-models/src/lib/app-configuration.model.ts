@@ -9,6 +9,13 @@ import {
 import { RouteConfig } from './route-config.model';
 import { ThemeConfig } from './theme-config.model';
 import { FeaturesConfig } from './feature-config.model';
+import { ConfigurablePluginManifest } from './configurable-plugin-manifest.model';
+
+type AppConfigWorkspaceId = string;
+type AppConfigAppInstanceId = string;
+type AppConfigMembershipId = string;
+type AppConfigMembershipRole = 'owner' | 'admin' | 'moderator' | 'member';
+type AppConfigMembershipStatus = 'pending' | 'active' | 'suspended' | 'revoked';
 
 export type BlockRenderContext = 'landing-page' | 'rich-text';
 export type EditorWorkspaceMode = 'guided' | 'studio';
@@ -25,6 +32,7 @@ export interface BlockFieldDefinition {
   rows?: number;
   isOutput?: boolean;
   outputSchema?: unknown;
+  itemFields?: BlockFieldDefinition[];
 }
 
 export interface BlockDefinition {
@@ -307,6 +315,28 @@ export const APP_CONFIG_LANDING_PAGE_BLOCK_DEFINITIONS: Record<
         editor: 'text',
         placeholder: 'Featured resources',
       },
+      {
+        key: 'items',
+        type: 'array',
+        label: 'Grid items',
+        itemFields: [
+          {
+            key: 'title',
+            type: 'string',
+            label: 'Title',
+            defaultValue: 'New item',
+          },
+          {
+            key: 'description',
+            type: 'string',
+            label: 'Description',
+            editor: 'textarea',
+            rows: 3,
+          },
+          { key: 'imageUrl', type: 'url', label: 'Image URL', editor: 'url' },
+          { key: 'link', type: 'url', label: 'Link', editor: 'url' },
+        ],
+      },
     ],
   },
   cta: {
@@ -411,6 +441,15 @@ export interface LandingPageConfig {
 
 export type AppConfigReleaseStatus = 'draft' | 'published' | 'changes-pending';
 
+/** Controls public discovery and app-scoped enrollment. */
+export const APP_ACCESS_POLICIES = [
+  'public',
+  'joinable',
+  'request-only',
+  'private',
+] as const;
+export type AppAccessPolicy = (typeof APP_ACCESS_POLICIES)[number];
+
 export interface AppConfigurationSnapshot {
   name: string;
   description?: string;
@@ -419,13 +458,20 @@ export interface AppConfigurationSnapshot {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active: boolean;
+  /** Access policy is copied into each immutable publication snapshot. */
+  accessPolicy?: AppAccessPolicy;
 }
 
 export interface AppConfigReleaseRevision {
   version: number;
   action: 'publish' | 'rollback';
   releasedAt?: Date;
+  /** Trusted identity captured by the server from the authenticated request. */
+  releasedByUserId?: string;
+  releasedByProfileId?: string;
+  appScope?: string;
   releaseNotes: string;
   changeSummary?: string;
   snapshot: AppConfigurationSnapshot;
@@ -446,6 +492,10 @@ export interface AppConfigReleaseState {
  */
 export interface AppConfiguration {
   id: string;
+  /** Present on owner-only responses; never required by public renderers. */
+  ownerUserId?: string;
+  ownerProfileId?: string;
+  appScope?: string;
   name: string;
   description?: string;
   domain?: string;
@@ -453,11 +503,37 @@ export interface AppConfiguration {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active: boolean;
+  accessPolicy?: AppAccessPolicy;
+  /** Monotonic aggregate revision used for owner mutation preconditions. */
+  revision?: number;
   release?: AppConfigReleaseState;
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+/** Trusted ownership context attached by the gateway after authentication. */
+export interface AppConfigRequestContext {
+  ownerUserId: string;
+  ownerProfileId: string;
+  appScope: string;
+  /**
+   * Transitional transport fields: the app-configurator persistence service
+   * requires and validates these at runtime; P3 supplies them authoritatively.
+   */
+  workspaceId?: AppConfigWorkspaceId;
+  appInstanceId?: AppConfigAppInstanceId;
+  membershipId?: AppConfigMembershipId;
+  membershipRole?: AppConfigMembershipRole;
+  membershipStatus?: AppConfigMembershipStatus;
+}
+
+/** The safe projection used by anonymous public configuration resolution. */
+export type PublishedAppConfiguration = Omit<
+  AppConfiguration,
+  'ownerUserId' | 'ownerProfileId' | 'revision' | 'release'
+> & { publishedVersion: number };
 
 /**
  * DTO for creating a new app configuration
@@ -470,13 +546,16 @@ export interface CreateAppConfigDto {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active?: boolean;
+  accessPolicy?: AppAccessPolicy;
 }
 
 /**
  * DTO for updating an existing app configuration
  */
 export interface UpdateAppConfigDto {
+  expectedRevision: number;
   name?: string;
   description?: string;
   domain?: string;
@@ -484,15 +563,19 @@ export interface UpdateAppConfigDto {
   routes?: RouteConfig[];
   features?: FeaturesConfig;
   theme?: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active?: boolean;
+  accessPolicy?: AppAccessPolicy;
 }
 
 export interface PublishAppConfigDto {
+  expectedRevision: number;
   releaseNotes: string;
   changeSummary?: string;
 }
 
 export interface RollbackAppConfigDto {
+  expectedRevision: number;
   version: number;
   releaseNotes: string;
 }
@@ -860,12 +943,16 @@ export function moveBlockInWorkspace(
   const [block] = blocks.splice(currentIndex, 1);
   const nextIndex = Math.min(Math.max(targetIndex, 0), blocks.length);
   blocks.splice(nextIndex, 0, block);
+  const reorderedBlocks = blocks.map((nextBlock, index) => ({
+    ...nextBlock,
+    order: index,
+  }));
 
   return {
     ...workspace,
     document: {
       ...workspace.document,
-      blocks: normalizeBlockOrder(blocks),
+      blocks: normalizeBlockOrder(reorderedBlocks),
     },
   };
 }
@@ -966,6 +1053,7 @@ export function appConfigToConfigDocument(
         name: config.name,
         description: config.description,
         domain: config.domain,
+        manifest: config.manifest,
         active: config.active,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
@@ -990,6 +1078,7 @@ export function configDocumentToAppConfig(
     active: base.active,
     description: base.description ?? metadata.description,
     domain: base.domain ?? metadata.domain,
+    manifest: base.manifest ?? metadata.manifest,
     createdAt: base.createdAt ?? metadata.createdAt,
     updatedAt: base.updatedAt ?? metadata.updatedAt,
     landingPage: {

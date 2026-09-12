@@ -2,6 +2,8 @@ export enum CommunityMembershipStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  SUSPENDED = 'suspended',
+  REVOKED = 'revoked',
 }
 
 export enum CommunityMemberRole {

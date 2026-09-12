@@ -1,4 +1,5 @@
 import { AppScopePolicyRegistry } from '@optimistic-tanuki/permissions-domain';
+import { WORKSPACE_OWNER_PERMISSION_CONTRACTS } from '@optimistic-tanuki/constants';
 
 export type PermissionSpec = {
   name: string;
@@ -79,7 +80,9 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
   finance: ['finance_member'],
-  'business-site': ['business_site_owner'],
+  'business-site': [
+    WORKSPACE_OWNER_PERMISSION_CONTRACTS['business-site'].roleName,
+  ],
 };
 
 const ALL_USER_ROLES: { [key: string]: string[] } = {

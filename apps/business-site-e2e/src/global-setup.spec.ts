@@ -1,4 +1,4 @@
-import type { FullConfig } from '@playwright/test';
+import { request, type FullConfig } from '@playwright/test';
 import { spawn } from 'child_process';
 import net from 'node:net';
 
@@ -20,8 +20,9 @@ jest.mock('node:net', () => ({ connect: jest.fn() }));
  * That matters because when this function is wrong the e2e suite fails with a
  * bare Playwright timeout that says nothing about which phase broke.
  *
- * `spawn`, `net.connect` and `fetch` are all replaced, so nothing here starts a
- * container, opens a socket or makes a request.
+ * `spawn`, `net.connect`, `fetch` and Playwright's request context are all
+ * replaced, so nothing here starts a container, opens a socket or makes a
+ * request.
  */
 
 type ExitHandler = (code: number | null) => void;
@@ -42,6 +43,11 @@ const connectMock = net.connect as unknown as jest.Mock;
 let spawnOutcomes: ({ exit: number } | { error: string })[];
 let socketOutcomes: ('connect' | 'error')[];
 let fetchOutcomes: ({ ok: boolean } | { throws: true })[];
+let requestContext: {
+  post: jest.Mock;
+  storageState: jest.Mock;
+  dispose: jest.Mock;
+};
 
 const shiftOr = <T>(queue: T[], fallback: T): T =>
   queue.length > 0 ? (queue.shift() as T) : fallback;
@@ -53,6 +59,16 @@ beforeEach(() => {
   spawnOutcomes = [];
   socketOutcomes = [];
   fetchOutcomes = [];
+  requestContext = {
+    post: jest.fn().mockResolvedValue({
+      ok: () => true,
+      status: () => 200,
+      text: async () => '',
+    }),
+    storageState: jest.fn().mockResolvedValue(undefined),
+    dispose: jest.fn().mockResolvedValue(undefined),
+  };
+  jest.spyOn(request, 'newContext').mockResolvedValue(requestContext as never);
 
   spawnMock.mockReset();
   spawnMock.mockImplementation((): FakeChild => {
@@ -166,6 +182,7 @@ describe('build command', () => {
       'permissions',
       'store',
       'lead-tracker',
+      'blogging',
       'gateway',
       'business-site',
     ]);
@@ -201,7 +218,7 @@ describe('stack startup commands', () => {
       'up -d postgres redis',
       'up -d db-setup',
       'wait db-setup',
-      'up -d --no-deps authentication profile permissions store lead-tracker gateway',
+      'up -d --no-deps authentication profile permissions store lead-tracker blogging gateway',
       'up -d --no-deps business-site',
     ]);
   });
@@ -258,14 +275,25 @@ describe('seed commands', () => {
 describe('globalSetup', () => {
   const config = {} as FullConfig;
 
-  it('does nothing at all when SKIP_SETUP is set', async () => {
+  it('skips Docker startup but reuses the running stack when SKIP_SETUP is set', async () => {
     process.env['SKIP_SETUP'] = 'true';
 
     await globalSetup(config);
 
     expect(spawnMock).not.toHaveBeenCalled();
     expect(connectMock).not.toHaveBeenCalled();
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'http://127.0.0.1:8094/api/business/site-config'
+    );
+    expect(requestContext.post).toHaveBeenCalledWith(
+      '/api/authentication/login',
+      expect.objectContaining({
+        data: {
+          email: 'owner@localbusiness.test',
+          password: 'BusinessOwnerPass123!',
+        },
+      })
+    );
   });
 
   it('builds, starts the stack, waits, then seeds', async () => {

@@ -12,6 +12,7 @@ import { CommunityInvite } from '../../entities/community-invite.entity';
 import { CommunityElection } from '../../entities/community-election.entity';
 import { ElectionCandidate } from '../../entities/election-candidate.entity';
 import { ElectionVote } from '../../entities/election-vote.entity';
+import { CommunityMembershipAudit } from '../../entities/community-membership-audit.entity';
 import { RpcException } from '@nestjs/microservices';
 
 describe('CommunityService', () => {
@@ -22,6 +23,7 @@ describe('CommunityService', () => {
   let electionRepo: jest.Mocked<Repository<CommunityElection>>;
   let candidateRepo: jest.Mocked<Repository<ElectionCandidate>>;
   let voteRepo: jest.Mocked<Repository<ElectionVote>>;
+  let membershipAuditRepo: jest.Mocked<Repository<CommunityMembershipAudit>>;
 
   beforeEach(async () => {
     const queryBuilderMock = {
@@ -79,6 +81,11 @@ describe('CommunityService', () => {
       save: jest.fn(),
       remove: jest.fn(),
     } as any;
+    membershipAuditRepo = {
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as any;
 
     memberRepo.find.mockResolvedValue([] as any);
     communityRepo.find.mockResolvedValue([] as any);
@@ -98,6 +105,10 @@ describe('CommunityService', () => {
           useValue: candidateRepo,
         },
         { provide: getRepositoryToken(ElectionVote), useValue: voteRepo },
+        {
+          provide: getRepositoryToken(CommunityMembershipAudit),
+          useValue: membershipAuditRepo,
+        },
       ],
     }).compile();
 
@@ -575,6 +586,36 @@ describe('CommunityService', () => {
       expect(communityRepo.update).toHaveBeenCalledWith('community-1', {
         chatRoomId: 'chat-room-123',
       });
+    });
+  });
+
+  describe('manager authority', () => {
+    it('persists the appointed manager user and profile identifiers', async () => {
+      const community = {
+        id: 'community-1',
+        managerId: null,
+        managerProfileId: null,
+      } as Community;
+      communityRepo.findOne.mockResolvedValue(community);
+      communityRepo.save.mockImplementation(async (value) => value as any);
+
+      await expect(
+        service.appointManager(
+          'community-1',
+          'manager-user-1',
+          'manager-profile-1'
+        )
+      ).resolves.toMatchObject({
+        managerId: 'manager-user-1',
+        managerProfileId: 'manager-profile-1',
+      });
+
+      expect(communityRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          managerId: 'manager-user-1',
+          managerProfileId: 'manager-profile-1',
+        })
+      );
     });
   });
 

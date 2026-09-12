@@ -1,0 +1,145 @@
+# The learning runner compiles and executes code submitted by learners.
+#
+# The container is the sandbox — see the header comment in
+# apps/learning-runner/server.mjs. It relies on exactly six properties, and
+# every one of them has to be re-stated here because the Compose equivalents
+# (`read_only`, `cap_drop`, `tmpfs`, `mem_limit`, `pids_limit`, an `internal`
+# network) do not carry over to Kubernetes:
+#
+#   1. no capabilities                -> capabilities.drop: [ALL]
+#   2. no new privileges              -> allowPrivilegeEscalation: false
+#   3. read-only root filesystem      -> readOnlyRootFilesystem: true
+#   4. no network reachable outward   -> the NetworkPolicy at the end of this
+#                                        file, which allows no egress at all
+#   5. a memory cap                   -> resources.limits.memory
+#   6. scratch wiped between runs     -> memory-backed emptyDir volumes
+#
+# The one Compose control with no pod-level equivalent is `pids_limit: 256`.
+# Kubernetes exposes process limits only per node, via the kubelet's
+# `--pod-max-pids`. Set that on any node this is scheduled to; the memory cap
+# is the backstop until then.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learning-runner
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: learning-runner
+  template:
+    metadata:
+      labels:
+        app: learning-runner
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: learning-runner
+          image: cjrutherford/optimistic_tanuki_learning-runner:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3025
+          env:
+            - name: PORT
+              value: '3025'
+            - name: LEARNING_SCRATCH_DIR
+              value: '/scratch'
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              # A memory-backed emptyDir is charged to the container's memory
+              # limit, exactly as a Compose tmpfs is charged to mem_limit, so
+              # this has to cover the scratch mount as well as the process.
+              # Go's build cache alone needs a few hundred MB the first time
+              # it compiles the standard library.
+              memory: '1Gi'
+              cpu: '1000m'
+          volumeMounts:
+            - name: scratch
+              mountPath: /scratch
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            tcpSocket:
+              port: 3025
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3025
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        # Compiled binaries are executed from here, so this mount cannot be
+        # noexec. It is memory-backed and per-pod, and each run gets a fresh
+        # directory under it that is removed afterwards.
+        - name: scratch
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learning-runner
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: learning-runner
+  ports:
+    - port: 3025
+      targetPort: 3025
+  type: ClusterIP
+---
+# Replaces the Compose `learning-internal` network: learning-service may call
+# in, the runner may call nowhere. Submitted code therefore has no route to
+# the rest of the namespace, the cluster, or the internet.
+#
+# This requires a CNI that enforces NetworkPolicy (Calico, Cilium; on MicroK8s
+# `microk8s enable community/calico` or the built-in Cilium). Under a CNI that
+# ignores policy, this file applies cleanly and enforces nothing, so confirm
+# enforcement before pointing real learners at it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: learning-runner-isolation
+  namespace: optimistic-tanuki
+spec:
+  podSelector:
+    matchLabels:
+      app: learning-runner
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: learning-service
+      ports:
+        - protocol: TCP
+          port: 3025
+  # No egress rules: an empty list denies all outbound traffic, DNS included.
+  # The runner resolves nothing and initiates nothing.
+  egress: []

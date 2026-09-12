@@ -30,6 +30,14 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { Public } from '../../decorators/public.decorator';
 import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
+import { WorkspaceContext } from '../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
+
+type BlogWorkspaceScope = {
+  ownerId: string;
+  workspaceId: string;
+  appScope: string;
+};
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller('post')
@@ -54,7 +62,7 @@ export class PostController {
    * Extract and validate profile ID from user token
    * @throws HttpException if profileId is not found
    */
-  private getProfileId(user: UserDetails): string {
+  private getProfileId(user?: UserDetails): string {
     const profileId = user?.profileId;
     if (!profileId) {
       throw new HttpException('Profile ID not found in token', 401);
@@ -62,12 +70,53 @@ export class PostController {
     return profileId;
   }
 
+  private workspaceScope(request: any): BlogWorkspaceScope {
+    const workspace = request.workspaceContext?.workspace;
+    if (!workspace) {
+      throw new HttpException('A resolved workspace is required', 400);
+    }
+    return {
+      ownerId: workspace.ownerProfileId,
+      workspaceId: workspace.workspaceId,
+      appScope: workspace.appScope,
+    };
+  }
+
   @Post()
   @RequirePermissions('blog.post.create')
-  async createPost(@Body() createPost: CreateBlogPostDto) {
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  async createPost(
+    @Body() createPost: CreateBlogPostDto,
+    @Req() request: any,
+    @User() user: UserDetails
+  ) {
     try {
+      const requestingAuthorId = this.getProfileId(user);
+      const { selectedCatalogId, ...postInput } =
+        createPost as CreateBlogPostDto & {
+          selectedCatalogId?: string;
+        };
+      const workspaceScope = this.workspaceScope(request);
       const post = await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.CREATE }, createPost)
+        this.postService.send(
+          { cmd: BlogPostCommands.CREATE },
+          {
+            ...postInput,
+            authorId: requestingAuthorId,
+            workspaceScope: {
+              ...workspaceScope,
+              ...(selectedCatalogId?.trim()
+                ? { catalogId: selectedCatalogId.trim() }
+                : {}),
+            },
+          }
+        )
       );
       this.l.log('Post created successfully');
       return post;
@@ -108,10 +157,13 @@ export class PostController {
    */
   @Get('/published')
   @Public()
-  async getPublishedPosts() {
+  async getPublishedPosts(@Query('catalogId') catalogId?: string) {
     try {
       const posts = await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.FIND_PUBLISHED }, {})
+        this.postService.send(
+          { cmd: BlogPostCommands.FIND_PUBLISHED },
+          catalogId ? { catalogId } : {}
+        )
       );
       this.l.log('Published posts retrieved successfully');
       return posts;
@@ -129,18 +181,33 @@ export class PostController {
    */
   @Get('/drafts/:authorId')
   @RequirePermissions('blog.post.read')
-  async getDraftsByAuthor(@Param('authorId') authorId: string) {
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  async getDraftsByAuthor(
+    @Param('authorId') _authorId: string,
+    @Req() request: any = {},
+    @User() user?: UserDetails
+  ) {
     try {
+      const authorId = this.getProfileId(user);
       const posts = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
-          { authorId }
+          { authorId, workspaceScope: this.workspaceScope(request) }
         )
       );
       this.l.log(`Drafts for author ${authorId} retrieved successfully`);
       return posts;
     } catch (error) {
-      this.l.error(`Error retrieving drafts for author ${authorId}`, error);
+      this.l.error(
+        `Error retrieving drafts for requested author ${_authorId}`,
+        error
+      );
       throw new HttpException(
         'Failed to retrieve drafts: [' + error.message + ']',
         500
@@ -153,14 +220,29 @@ export class PostController {
    */
   @Post('/:id/publish')
   @RequirePermissions('blog.post.publish')
-  async publishPost(@Param('id') id: string, @User() user: UserDetails) {
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  async publishPost(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Req() request: any = {}
+  ) {
     try {
       const requestingAuthorId = this.getProfileId(user);
 
       const publishedPost = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.PUBLISH },
-          { id, requestingAuthorId }
+          {
+            id,
+            requestingAuthorId,
+            workspaceScope: this.workspaceScope(request),
+          }
         )
       );
       if (!publishedPost) {
@@ -244,10 +326,18 @@ export class PostController {
 
   @Patch('/:id')
   @RequirePermissions('blog.post.update')
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   async updatePost(
     @Param('id') id: string,
     @Body() updateData: UpdateBlogPostDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Req() request: any = {}
   ) {
     try {
       const requestingAuthorId = this.getProfileId(user);
@@ -255,7 +345,12 @@ export class PostController {
       const updatedPost = await firstValueFrom(
         this.postService.send(
           { cmd: BlogPostCommands.UPDATE },
-          { id, updatePostDto: updateData, requestingAuthorId }
+          {
+            id,
+            updatePostDto: updateData,
+            requestingAuthorId,
+            workspaceScope: this.workspaceScope(request),
+          }
         )
       );
       if (!updatedPost) {
@@ -281,10 +376,20 @@ export class PostController {
 
   @Delete('/:id')
   @RequirePermissions('blog.post.delete')
-  async deletePost(@Param('id') id: string) {
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  async deletePost(@Param('id') id: string, @Req() request: any) {
     try {
       await firstValueFrom(
-        this.postService.send({ cmd: BlogPostCommands.DELETE }, { id })
+        this.postService.send(
+          { cmd: BlogPostCommands.DELETE },
+          { id, workspaceScope: this.workspaceScope(request) }
+        )
       );
       this.l.log(`Post ${id} deleted successfully`);
       return { message: 'Post deleted successfully' };

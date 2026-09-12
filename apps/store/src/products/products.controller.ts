@@ -9,32 +9,66 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @MessagePattern(ProductCommands.CREATE_PRODUCT)
-  create(@Payload() createProductDto: CreateProductDto) {
-    return this.productsService.create(createProductDto);
+  create(
+    @Payload()
+    data: {
+      createProductDto: CreateProductDto;
+      scope: ProductScope;
+    }
+  ) {
+    return this.productsService.create(data);
   }
 
   @MessagePattern(ProductCommands.FIND_ALL_PRODUCTS)
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Payload() payload: ProductListQuery = {}) {
+    return this.productsService.findAll(payload);
   }
 
   @MessagePattern(ProductCommands.FIND_OWNER_PRODUCTS)
-  findOwnerProducts(@Payload() ownerId: string) {
-    return this.productsService.findOwnerProducts(ownerId);
+  findOwnerProducts(@Payload() scope: ProductScope) {
+    return this.productsService.findOwnerProducts(scope);
   }
 
   @MessagePattern(ProductCommands.FIND_ONE_PRODUCT)
-  findOne(@Payload() id: string) {
-    return this.productsService.findOne(id);
+  findOne(@Payload() payload: ProductReadQuery) {
+    return this.productsService.findOne(payload);
   }
 
   @MessagePattern(ProductCommands.UPDATE_PRODUCT)
-  update(@Payload() data: { id: string; updateProductDto: UpdateProductDto }) {
-    return this.productsService.update(data.id, data.updateProductDto);
+  update(
+    @Payload()
+    data: {
+      id: string;
+      updateProductDto: UpdateProductDto;
+      scope: ProductScope;
+    }
+  ) {
+    return this.productsService.update(
+      data.id,
+      data.updateProductDto,
+      data.scope
+    );
   }
 
   @MessagePattern(ProductCommands.REMOVE_PRODUCT)
-  remove(@Payload() id: string) {
-    return this.productsService.remove(id);
+  remove(@Payload() data: { id: string; scope: ProductScope }) {
+    return this.productsService.remove(data.id, data.scope);
   }
+}
+
+export interface ProductScope {
+  ownerId: string;
+  workspaceId: string;
+  appScope: string;
+}
+
+export interface ProductListQuery extends Partial<ProductScope> {
+  catalogId?: string;
+  public?: boolean;
+}
+
+export interface ProductReadQuery extends Partial<ProductScope> {
+  id: string;
+  catalogId?: string;
+  public?: boolean;
 }

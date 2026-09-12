@@ -40,6 +40,7 @@ import {
             <button
               type="button"
               class="tag-remove"
+              [attr.aria-label]="'Remove item ' + (i + 1)"
               (click)="itemRemoved.emit(i)"
             >
               Remove
@@ -138,7 +139,7 @@ import {
       .panel-meta p,
       .empty-state {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.5;
       }
 
@@ -151,9 +152,9 @@ import {
         display: grid;
         gap: 0.85rem;
         padding: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
+        border: 1px solid var(--border);
         border-radius: var(--personality-card-radius, 1rem);
-        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+        background: color-mix(in srgb, var(--background) 96%, white);
       }
 
       .collection-card-head {
@@ -165,7 +166,7 @@ import {
 
       .item-label {
         font-weight: 600;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       .item-fields {
@@ -185,7 +186,7 @@ import {
 
       label {
         font-weight: 500;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       @media (max-width: 720px) {

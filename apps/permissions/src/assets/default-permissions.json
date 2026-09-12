@@ -114,6 +114,11 @@
       "name": "learning",
       "description": "Universal learning platform (Let's Go) covering offerings, structured content, enrolment, progress, and evaluation for any subject",
       "active": true
+    },
+    {
+      "name": "configurable-client",
+      "description": "Configurable client application",
+      "active": true
     }
   ],
   "roles": [
@@ -391,6 +396,11 @@
       "name": "learning_admin",
       "description": "Full administrative control of the learning scope, including grading and managing any offering",
       "appScope": "learning"
+    },
+    {
+      "name": "configurable_client_owner",
+      "description": "Configurable-client workspace owner for app configuration",
+      "appScope": "configurable-client"
     }
   ],
   "permissions": [
@@ -3200,6 +3210,159 @@
       "action": "read.own",
       "targetId": null,
       "appScope": "learning"
+    },
+    {
+      "name": "store.product.view",
+      "description": "View workspace Store products and catalogs",
+      "active": true,
+      "resource": "store.product",
+      "action": "read",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "store.product.create",
+      "description": "Create workspace Store products and catalogs",
+      "active": true,
+      "resource": "store.product",
+      "action": "create",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "store.product.update",
+      "description": "Update workspace Store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "update",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "store.product.delete",
+      "description": "Delete workspace Store products",
+      "active": true,
+      "resource": "store.product",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "blog.post.read",
+      "description": "Read workspace Blog posts and catalogs",
+      "active": true,
+      "resource": "blog.post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "blog.post.create",
+      "description": "Create workspace Blog posts and catalogs",
+      "active": true,
+      "resource": "blog.post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "blog.post.update",
+      "description": "Update workspace Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "blog.post.delete",
+      "description": "Delete workspace Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "app-config.create",
+      "description": "Create configurable-client app configurations",
+      "active": true,
+      "resource": "app-config",
+      "action": "create",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "app-config.read",
+      "description": "Read configurable-client app configurations",
+      "active": true,
+      "resource": "app-config",
+      "action": "read",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update configurable-client app configurations",
+      "active": true,
+      "resource": "app-config",
+      "action": "update",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "app-config.delete",
+      "description": "Delete configurable-client app configurations",
+      "active": true,
+      "resource": "app-config",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.read",
+      "description": "Read configurable-client Blog posts and catalogs",
+      "active": true,
+      "resource": "blog.post",
+      "action": "read",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.create",
+      "description": "Create configurable-client Blog posts and catalogs",
+      "active": true,
+      "resource": "blog.post",
+      "action": "create",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.update",
+      "description": "Update configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "update",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.delete",
+      "description": "Delete configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "configurable-client"
+    },
+    {
+      "name": "blog.post.publish",
+      "description": "Publish configurable-client Blog posts",
+      "active": true,
+      "resource": "blog.post",
+      "action": "publish",
+      "targetId": null,
+      "appScope": "configurable-client"
     }
   ],
   "role_permissions": [
@@ -7577,6 +7740,91 @@
       "role": "global_admin",
       "permission": "progress.update",
       "permissionAppScope": "learning"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "store.product.view",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "blog.post.read",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "blog.post.create",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "blog.post.update",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "app-config.read",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.create",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.read",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.update",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.delete",
+      "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "configurable_client_owner",
+      "permission": "blog.post.publish",
+      "permissionAppScope": "configurable-client"
     }
   ]
 }

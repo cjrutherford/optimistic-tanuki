@@ -43,9 +43,16 @@ const inventoryFile = process.argv[4];
 const inventoryJson = fs.readFileSync(inventoryFile, 'utf8');
 const inventory = JSON.parse(inventoryJson);
 
-const skipServices = new Set(['postgres', 'redis', 'db-setup', 'app-configurator-seed']);
+const skipServices = new Set(['postgres', 'redis', 'db-setup']);
+
+// `deployment-inventory` emits camelCase keys, and the deployment workspace
+// tooling emits PascalCase ones. Reading only one form left every lookup
+// undefined, so this check silently validated nothing at all.
+const camelCase = (name) => (name === 'ID' ? 'id' : name[0].toLowerCase() + name.slice(1));
+const field = (app, name) => app[name] ?? app[camelCase(name)];
+
 const deployableAppsByComposeService = new Map(
-  inventory.apps.map((app) => [app.ComposeServiceName, app])
+  inventory.apps.map((app) => [field(app, 'ComposeServiceName'), app])
 );
 
 const composeContent = fs.readFileSync(composeFile, 'utf8').split(/\r?\n/);
@@ -84,9 +91,14 @@ for (const line of composeContent) {
     continue;
   }
 
-  const portMatch = line.match(/^\s*-\s*['"]?(\d+):(\d+)['"]?\s*$/);
+  // Published ports are written either as `- '3024:3024'` or, far more often
+  // in this file, as `- '${WELLNESS_PORT:-3018}:3018'`. Matching only the
+  // first form meant almost every service went unchecked.
+  const portMatch = line.match(
+    /^\s*-\s*['"]?(?:\d+|\$\{[A-Za-z0-9_]+(?::-\d+)?\}):(\d+)['"]?\s*$/
+  );
   if (portMatch) {
-    parsed.get(currentService).containerPort = Number(portMatch[2]);
+    parsed.get(currentService).containerPort = Number(portMatch[1]);
   }
 }
 
@@ -104,11 +116,22 @@ for (const [composeService, info] of parsed.entries()) {
     continue;
   }
 
+  // The repo files manifests under `services/` and `clients/`, so flattening
+  // the inventory path to a basename looked for files that were never there.
+  // Generated workspaces write them flat, so that stays the fallback.
+  const manifestPath = field(app, 'K8sManifestPath');
+  const marker = manifestPath.lastIndexOf('base/');
+  const belowBase =
+    marker === -1 ? path.basename(manifestPath) : manifestPath.slice(marker + 'base/'.length);
+
+  const nested = path.join(k8sBaseDir, belowBase);
+  const flat = path.join(k8sBaseDir, path.basename(manifestPath));
+
   expected.push({
     composeService,
-    k8sName: app.ID,
+    k8sName: field(app, 'ID'),
     containerPort: info.containerPort,
-    manifestPath: path.join(k8sBaseDir, path.basename(app.K8sManifestPath))
+    manifestPath: fs.existsSync(nested) ? nested : flat
   });
 }
 

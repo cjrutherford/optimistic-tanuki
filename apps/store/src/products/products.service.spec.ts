@@ -4,6 +4,13 @@ import { Repository } from 'typeorm';
 import { ProductsService } from './products.service';
 import { ProductEntity } from './entities/product.entity';
 import { CreateProductDto, UpdateProductDto } from '@optimistic-tanuki/models';
+import { CatalogEntity } from '../catalog/entities/catalog.entity';
+
+const ownerScope = {
+  ownerId: 'owner-profile',
+  workspaceId: 'workspace-id',
+  appScope: 'business-site',
+};
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -22,6 +29,12 @@ describe('ProductsService', () => {
             findOne: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(CatalogEntity),
+          useValue: {
+            findOne: jest.fn(),
           },
         },
       ],
@@ -51,9 +64,18 @@ describe('ProductsService', () => {
       jest.spyOn(repository, 'create').mockReturnValue(mockProduct as any);
       jest.spyOn(repository, 'save').mockResolvedValue(mockProduct as any);
 
-      const result = await service.create(dto);
+      jest
+        .spyOn(repository as any, 'create')
+        .mockReturnValue(mockProduct as any);
+      const result = await service.create({
+        createProductDto: dto,
+        scope: ownerScope,
+      });
 
-      expect(repository.create).toHaveBeenCalledWith(dto);
+      expect(repository.create).toHaveBeenCalledWith({
+        ...dto,
+        ownerId: ownerScope.ownerId,
+      });
       expect(repository.save).toHaveBeenCalledWith(mockProduct);
       expect(result).toEqual(mockProduct);
     });
@@ -68,10 +90,20 @@ describe('ProductsService', () => {
 
       jest.spyOn(repository, 'find').mockResolvedValue(mockProducts as any);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ ...ownerScope, public: false });
 
-      expect(repository.find).toHaveBeenCalledWith({ where: { active: true } });
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { active: true, ownerId: ownerScope.ownerId },
+      });
       expect(result).toEqual(mockProducts);
+    });
+  });
+
+  it('filters active products by catalog when a catalog id is supplied', async () => {
+    await service.findAll({ catalogId: 'catalog-1', public: true });
+
+    expect(repository.find).toHaveBeenCalledWith({
+      where: { active: true, catalogId: 'catalog-1' },
     });
   });
 
@@ -81,9 +113,11 @@ describe('ProductsService', () => {
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockProduct as any);
 
-      const result = await service.findOne('1');
+      const result = await service.findOne({ id: '1', ...ownerScope });
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: '1', ownerId: ownerScope.ownerId },
+      });
       expect(result).toEqual(mockProduct);
     });
   });
@@ -99,9 +133,12 @@ describe('ProductsService', () => {
       jest.spyOn(repository, 'update').mockResolvedValue(undefined);
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockProduct as any);
 
-      const result = await service.update('1', dto);
+      const result = await service.update('1', dto, ownerScope);
 
-      expect(repository.update).toHaveBeenCalledWith('1', dto);
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: '1', ownerId: ownerScope.ownerId },
+        dto
+      );
       expect(result).toEqual(mockProduct);
     });
   });
@@ -110,9 +147,12 @@ describe('ProductsService', () => {
     it('should delete a product', async () => {
       jest.spyOn(repository, 'delete').mockResolvedValue(undefined);
 
-      await service.remove('1');
+      await service.remove('1', ownerScope);
 
-      expect(repository.delete).toHaveBeenCalledWith('1');
+      expect(repository.delete).toHaveBeenCalledWith({
+        id: '1',
+        ownerId: ownerScope.ownerId,
+      });
     });
   });
 });

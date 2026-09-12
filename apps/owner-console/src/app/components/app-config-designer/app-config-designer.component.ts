@@ -3,6 +3,7 @@ import {
   Input,
   Output,
   EventEmitter,
+  HostListener,
   OnInit,
   ChangeDetectionStrategy,
   signal,
@@ -27,6 +28,7 @@ import {
   APP_CONFIG_LANDING_PAGE_BLOCK_DEFINITIONS,
   AppConfigReleaseRevision,
   AppConfiguration,
+  ConfigurablePluginManifest,
   BlockDefinition,
   BlockInstance,
   ConfigDocument,
@@ -49,12 +51,14 @@ import {
   updateBlockInWorkspace,
 } from '@optimistic-tanuki/app-config-models';
 import {
-  ConfigurableLandingPageComponent,
-  EditorBlockTreeComponent,
+  ConfiguratorEditorWorkspaceComponent,
   EditorDesignSystemPanelComponent,
-  SchemaBlockInspectorComponent,
 } from '@optimistic-tanuki/configurable-client-ui';
 import { AppConfigService } from '../../services/app-config.service';
+import {
+  BlogCatalog,
+  BlogCatalogService,
+} from '../../services/blog-catalog.service';
 import { SectionSelectorComponent } from './section-editors/section-selector.component';
 import { SectionEditorComponent } from './section-editors/section-editor.component';
 
@@ -75,10 +79,8 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
     DragDropModule,
     ButtonComponent,
     CardComponent,
-    ConfigurableLandingPageComponent,
-    EditorBlockTreeComponent,
+    ConfiguratorEditorWorkspaceComponent,
     EditorDesignSystemPanelComponent,
-    SchemaBlockInspectorComponent,
     TextInputComponent,
     TextAreaComponent,
     CheckboxComponent,
@@ -156,18 +158,32 @@ export class AppConfigDesignerComponent implements OnInit {
   readonly mobileSheetView = signal<'auto' | 'structure' | 'inspector'>('auto');
   statusMessage = '';
   errorMessage = '';
+  reloadLatestAvailable = false;
   releaseNotes = '';
   changeSummary = '';
+  blogCatalogs: BlogCatalog[] = [];
+  workspaceSlug: string | null = null;
+  private cleanSnapshot = '';
 
   constructor(
     private appConfigService: AppConfigService,
     private route: ActivatedRoute,
     private router: Router,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private blogCatalogService: BlogCatalogService
   ) {}
 
   ngOnInit(): void {
+    this.captureCleanSnapshot();
     this.syncThemePreview();
+    this.workspaceSlug =
+      this.route.snapshot?.queryParamMap?.get('slug') ?? null;
+    if (this.workspaceSlug) {
+      this.blogCatalogService.getMyCatalogs(this.workspaceSlug).subscribe({
+        next: (catalogs) => (this.blogCatalogs = catalogs),
+        error: () => (this.blogCatalogs = []),
+      });
+    }
 
     this.route.data.subscribe((data) => {
       const editorMode = data['editorMode'];
@@ -191,6 +207,53 @@ export class AppConfigDesignerComponent implements OnInit {
 
   onTabChange(tabId: string): void {
     this.selectedTab = tabId;
+  }
+
+  selectedBlogCatalogId(): string | null {
+    return (
+      this.config.manifest?.capabilities['blogging.posts']?.resourceRef?.id ??
+      null
+    );
+  }
+
+  selectBlogCatalog(catalogId: string | null): void {
+    const existingManifest = this.config.manifest;
+    const existingCapability = existingManifest?.capabilities['blogging.posts'];
+    const capabilities = { ...(existingManifest?.capabilities ?? {}) };
+
+    capabilities['blogging.posts'] = {
+      enabled: Boolean(catalogId),
+      placement: existingCapability?.placement ?? 'public-content',
+      permissions: existingCapability?.permissions ?? ['blog.post.read'],
+      deepLink: existingCapability?.deepLink ?? {
+        path: '/blog',
+        label: 'Blog',
+      },
+      ...(catalogId
+        ? {
+            resourceRef: { type: 'blog-catalog', id: catalogId },
+            settings: { ...existingCapability?.settings, catalogId },
+          }
+        : {}),
+    };
+
+    this.config = {
+      ...this.config,
+      features: {
+        ...this.config.features,
+        blogging: {
+          allowComments: this.config.features.blogging?.allowComments ?? false,
+          moderateComments:
+            this.config.features.blogging?.moderateComments ?? false,
+          enabled: Boolean(catalogId),
+        },
+      },
+      manifest: {
+        schemaVersion: 1,
+        surfaceType: existingManifest?.surfaceType ?? 'business-site',
+        capabilities,
+      } satisfies ConfigurablePluginManifest,
+    };
   }
 
   setWorkspaceMode(mode: 'guided' | 'studio'): void {
@@ -269,6 +332,13 @@ export class AppConfigDesignerComponent implements OnInit {
     });
   }
 
+  patchSelectedCollection(
+    fieldKey: string,
+    items: Array<Record<string, unknown>>
+  ): void {
+    this.patchSelectedBlock({ [fieldKey]: items });
+  }
+
   blockFallbackTitle(block: BlockInstance, index: number): string {
     const section = this.config.landingPage.sections[index];
     if (!section) {
@@ -281,6 +351,7 @@ export class AppConfigDesignerComponent implements OnInit {
   loadConfiguration(id: string): void {
     this.errorMessage = '';
     this.statusMessage = '';
+    this.reloadLatestAvailable = false;
     this.appConfigService.getConfiguration(id).subscribe({
       next: (config) => {
         this.config = config;
@@ -288,6 +359,7 @@ export class AppConfigDesignerComponent implements OnInit {
         this.changeSummary = config.release?.changeSummary || '';
         this.syncWorkspaceFromConfig();
         this.syncThemePreview();
+        this.captureCleanSnapshot();
       },
       error: (err) => {
         this.errorMessage = `Failed to load configuration: ${this.describeError(
@@ -563,30 +635,39 @@ export class AppConfigDesignerComponent implements OnInit {
   onSave(): void {
     this.errorMessage = '';
     this.statusMessage = '';
+    this.reloadLatestAvailable = false;
     if (!this.config.name) {
       this.errorMessage = 'Provide a configuration name before saving.';
       return;
     }
 
     if (this.configId) {
+      const expectedRevision = this.requireMutationRevision('save');
+      if (expectedRevision === null) {
+        return;
+      }
+
       this.appConfigService
-        .updateConfiguration(this.configId, this.config)
+        .updateConfiguration(this.configId, {
+          ...this.config,
+          expectedRevision,
+        })
         .subscribe({
           next: (updated) => {
+            this.captureCleanSnapshot();
             this.statusMessage =
               'Configuration saved. Returning to the configuration list…';
             this.saved.emit(updated);
             this.router.navigate(['/dashboard/app-config']);
           },
           error: (err) => {
-            this.errorMessage = `Failed to save configuration: ${this.describeError(
-              err
-            )}`;
+            this.setMutationError('save', err);
           },
         });
     } else {
       this.appConfigService.createConfiguration(this.config as any).subscribe({
         next: (created) => {
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration created. Returning to the configuration list…';
           this.saved.emit(created);
@@ -604,6 +685,7 @@ export class AppConfigDesignerComponent implements OnInit {
   publishConfiguration(): void {
     this.errorMessage = '';
     this.statusMessage = '';
+    this.reloadLatestAvailable = false;
 
     if (!this.configId) {
       this.errorMessage = 'Save the configuration before publishing it.';
@@ -615,23 +697,28 @@ export class AppConfigDesignerComponent implements OnInit {
       return;
     }
 
+    const expectedRevision = this.requireMutationRevision('publish');
+    if (expectedRevision === null) {
+      return;
+    }
+
     this.appConfigService
       .publishConfiguration(this.configId, {
+        expectedRevision,
         releaseNotes: this.releaseNotes.trim(),
         changeSummary: this.changeSummary.trim() || undefined,
       })
       .subscribe({
         next: (published) => {
           this.config = published;
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration published. Returning to the configuration list…';
           this.saved.emit(published);
           this.router.navigate(['/dashboard/app-config']);
         },
         error: (err) => {
-          this.errorMessage = `Failed to publish configuration: ${this.describeError(
-            err
-          )}`;
+          this.setMutationError('publish', err);
         },
       });
   }
@@ -644,9 +731,16 @@ export class AppConfigDesignerComponent implements OnInit {
 
     this.errorMessage = '';
     this.statusMessage = '';
+    this.reloadLatestAvailable = false;
+
+    const expectedRevision = this.requireMutationRevision('rollback');
+    if (expectedRevision === null) {
+      return;
+    }
 
     this.appConfigService
       .rollbackConfiguration(this.configId, {
+        expectedRevision,
         version,
         releaseNotes: 'Rollback from owner console',
       })
@@ -655,22 +749,42 @@ export class AppConfigDesignerComponent implements OnInit {
           this.config = rolledBack;
           this.syncWorkspaceFromConfig();
           this.syncThemePreview();
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration rolled back to the selected published revision.';
         },
         error: (err) => {
-          this.errorMessage = `Failed to rollback configuration: ${this.describeError(
-            err
-          )}`;
+          this.setMutationError('rollback', err);
         },
       });
   }
 
   onCancel(): void {
-    if (confirm('Are you sure you want to discard changes?')) {
+    if (this.canDeactivate()) {
       this.cancelled.emit();
       this.router.navigate(['/dashboard/app-config']);
     }
+  }
+
+  isDirty(): boolean {
+    return this.cleanSnapshot !== JSON.stringify(this.config);
+  }
+
+  canDeactivate(): boolean {
+    return (
+      !this.isDirty() ||
+      confirm('You have unsaved changes. Are you sure you want to leave?')
+    );
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.isDirty()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
   }
 
   releaseStatusLabel(): string {
@@ -694,6 +808,12 @@ export class AppConfigDesignerComponent implements OnInit {
     return this.config.release?.previewUrl || null;
   }
 
+  reloadLatestConfiguration(): void {
+    if (this.configId) {
+      this.loadConfiguration(this.configId);
+    }
+  }
+
   private currentWorkspace() {
     let workspace = createEditorWorkspace(
       this.workspaceDocument(),
@@ -705,6 +825,10 @@ export class AppConfigDesignerComponent implements OnInit {
     }
 
     return workspace;
+  }
+
+  private captureCleanSnapshot(): void {
+    this.cleanSnapshot = JSON.stringify(this.config);
   }
 
   private commitWorkspace(
@@ -736,7 +860,9 @@ export class AppConfigDesignerComponent implements OnInit {
       routes: next.routes,
       features: next.features,
       theme: next.theme,
+      manifest: next.manifest,
       active: next.active,
+      revision: this.config.revision,
       release: next.release,
       createdAt: next.createdAt,
       updatedAt: next.updatedAt,
@@ -765,7 +891,7 @@ export class AppConfigDesignerComponent implements OnInit {
     );
   }
 
-  private isMobileViewport(): boolean {
+  isMobileViewport(): boolean {
     return (
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
@@ -797,5 +923,47 @@ export class AppConfigDesignerComponent implements OnInit {
     }
 
     return 'Unknown error';
+  }
+
+  private setMutationError(
+    action: 'save' | 'publish' | 'rollback',
+    err: unknown
+  ): void {
+    if (this.isConflictError(err)) {
+      this.reloadLatestAvailable = true;
+      this.errorMessage =
+        'This configuration changed elsewhere. Your local draft is preserved; reload the latest configuration before trying again.';
+      return;
+    }
+
+    this.errorMessage = `Failed to ${action} configuration: ${this.describeError(
+      err
+    )}`;
+  }
+
+  private requireMutationRevision(
+    action: 'save' | 'publish' | 'rollback'
+  ): number | null {
+    const revision = this.config.revision;
+    if (
+      typeof revision === 'number' &&
+      Number.isInteger(revision) &&
+      revision >= 0
+    ) {
+      return revision;
+    }
+
+    this.reloadLatestAvailable = true;
+    this.errorMessage = `Cannot ${action} configuration: a valid nonnegative integer revision is required. Reload the latest configuration before trying again.`;
+    return null;
+  }
+
+  private isConflictError(err: unknown): boolean {
+    return (
+      typeof err === 'object' &&
+      err !== null &&
+      'status' in err &&
+      err.status === 409
+    );
   }
 }

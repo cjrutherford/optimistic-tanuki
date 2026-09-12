@@ -30,11 +30,36 @@ type TopNavLink = {
   fragment?: string;
 };
 
+export const businessSiteSkipLinkStyles = `
+      .skip-link {
+        position: absolute;
+        top: 0.75rem;
+        left: 1rem;
+        z-index: 100;
+        padding: 0.65rem 0.9rem;
+        border-radius: var(--personality-button-radius, 999px);
+        color: var(--primary-foreground);
+        background: var(--primary);
+        transform: translateY(-200%);
+        transition: transform 0.2s ease;
+      }
+
+      .skip-link:focus,
+      .skip-link:focus-visible {
+        transform: translateY(0);
+        outline: 3px solid var(--primary);
+        outline-offset: 3px;
+      }
+`;
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, RouterOutlet, RouterLink],
   template: `
     <div class="app-shell">
+      @if (isHostedBusinessLandingRoute()) {
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+      } @if (!isHostedBusinessLandingRoute()) {
       <header class="topbar entrance">
         <a class="brand" [routerLink]="brandHomeLink()">
           <span class="brand-mark">{{ brandMark() }}</span>
@@ -117,20 +142,20 @@ type TopNavLink = {
           }
         </div>
       </header>
-
-      @if (configLoadError()) {
+      } @if (configLoadError()) {
       <div class="config-load-error" role="status">
         We couldn't refresh this business's configuration. Showing the most
         recently available details.
       </div>
       }
 
-      <main class="page-shell">
+      <main id="main-content" class="page-shell" tabindex="-1">
         <router-outlet></router-outlet>
       </main>
     </div>
   `,
   styles: [
+    businessSiteSkipLinkStyles,
     `
       @keyframes topbar-slide {
         from {
@@ -404,6 +429,11 @@ export class AppComponent {
     return url.startsWith('/sites/');
   }
 
+  isHostedBusinessLandingRoute(): boolean {
+    const path = this.currentUrl().split(/[?#]/, 1)[0];
+    return path === '/' || /^\/sites\/[^/]+$/.test(path);
+  }
+
   private currentHostedSiteSlug(): string | null {
     // Router urls carry the fragment and query string (e.g.
     // `/sites/acme#contact`), so the slug capture has to stop at `#` and `?`
@@ -558,6 +588,10 @@ export class AppComponent {
   }
 
   private pageTitleForUrl(url: string): string {
+    if (url.split(/[?#]/, 1)[0] === '/') {
+      return 'Business Site Platform';
+    }
+
     const businessName = this.site().brand.businessName?.trim();
     const tagline = this.site().brand.tagline?.trim();
     const brandTitle = businessName || 'Business';
@@ -621,11 +655,22 @@ export class AppComponent {
   topNavLinks(): TopNavLink[] {
     const hostedBaseRoute = this.hostedSiteBaseRoute();
     if (hostedBaseRoute) {
-      const hostedLinks: TopNavLink[] = [
-        { label: 'Overview', route: hostedBaseRoute, fragment: 'about' },
-        { label: 'Results', route: hostedBaseRoute, fragment: 'results' },
-        { label: 'Contact', route: hostedBaseRoute, fragment: 'contact' },
-      ];
+      const hostedLinks: TopNavLink[] = this.site()
+        .landingPage.sections.filter(
+          (section) =>
+            section.enabled && this.isLandingSectionFeatureEnabled(section.type)
+        )
+        .sort((a, b) => a.order - b.order)
+        .filter((section) =>
+          ['about', 'services', 'testimonials', 'contact'].includes(
+            section.type
+          )
+        )
+        .map((section) => ({
+          label: section.type === 'about' ? 'Overview' : section.title,
+          route: hostedBaseRoute,
+          fragment: section.id,
+        }));
 
       if (this.site().features.booking.enabled) {
         hostedLinks.push({
@@ -642,6 +687,22 @@ export class AppComponent {
       { label: 'Owners', route: ['/auth'] },
       { label: 'Clients', route: ['/client/login'] },
     ];
+  }
+
+  private isLandingSectionFeatureEnabled(type: string): boolean {
+    if (type === 'store') {
+      return this.site().features.store.enabled;
+    }
+
+    if (type === 'booking') {
+      return this.site().features.booking.enabled;
+    }
+
+    if (type === 'testimonials') {
+      return this.site().features.testimonials.enabled;
+    }
+
+    return true;
   }
 
   hostedClientAuthLink(mode: 'login' | 'register'): string[] {

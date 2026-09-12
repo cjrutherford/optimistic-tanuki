@@ -27,6 +27,7 @@ services:
       retries: 5
 
   db-setup:
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     image: node:24-alpine
     container_name: e2e_db_setup_cc
     working_dir: /workspace
@@ -106,26 +107,6 @@ services:
       db-setup:
         condition: service_completed_successfully
 
-  app-configurator-seed:
-    container_name: e2e_app_configurator_seed_cc
-    build:
-      context: ..
-      dockerfile: ./apps/app-configurator/Dockerfile
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: ot_app_configurator
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      PORT: 3014
-    depends_on:
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
-
   gateway:
     container_name: e2e_gateway_cc
     build:
@@ -172,6 +153,7 @@ services:
   playwright-runner:
     image: mcr.microsoft.com/playwright:v1.56.1-jammy
     container_name: e2e_runner_cc
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /workspace
     volumes:
       - ..:/workspace

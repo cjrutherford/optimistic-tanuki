@@ -18,12 +18,12 @@ spec:
           image: cjrutherford/optimistic_tanuki_store:sha-2850755da05286086a098d1dbdaf74f339af2a62
           imagePullPolicy: Always
           ports:
-            - containerPort: 3009
+            - containerPort: 3013
           env:
             - name: NODE_ENV
               value: 'production'
             - name: PORT
-              value: '3009'
+              value: '3013'
             - name: POSTGRES_HOST
               value: 'postgres'
             - name: POSTGRES_PORT
@@ -50,12 +50,12 @@ spec:
               cpu: '500m'
           livenessProbe:
             tcpSocket:
-              port: 3009
+              port: 3013
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 3009
+              port: 3013
             initialDelaySeconds: 10
             periodSeconds: 5
       restartPolicy: Always
@@ -69,6 +69,6 @@ spec:
   selector:
     app: store
   ports:
-    - port: 3009
-      targetPort: 3009
+    - port: 3013
+      targetPort: 3013
   clusterIP: None

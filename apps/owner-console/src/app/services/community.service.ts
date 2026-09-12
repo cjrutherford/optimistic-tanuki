@@ -16,11 +16,22 @@ export interface CommunityManagerRecord {
   profileId: string;
 }
 
+export interface CommunityMembershipAuditRecord {
+  workspaceId: string;
+  subjectId: string;
+  actorId: string;
+  actor: 'owner' | 'moderator' | 'system';
+  action: 'activate' | 'suspend' | 'revoke';
+  from: 'pending' | 'active' | 'suspended' | 'revoked';
+  to: 'pending' | 'active' | 'suspended' | 'revoked';
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class CommunityService {
   private readonly API_URL = '/api/communities';
+  private readonly SOCIAL_API_URL = '/api/social/community';
 
   constructor(private http: HttpClient) {}
 
@@ -71,6 +82,35 @@ export class CommunityService {
   removeMember(communityId: string, memberId: string): Observable<void> {
     return this.http.delete<void>(
       `${this.API_URL}/${communityId}/members/${memberId}`
+    );
+  }
+
+  getMembershipAudit(
+    communityId: string,
+    memberId: string
+  ): Observable<CommunityMembershipAuditRecord[]> {
+    return this.http.get<CommunityMembershipAuditRecord[]>(
+      `${this.SOCIAL_API_URL}/members/${memberId}/audit`
+    );
+  }
+
+  suspendMember(
+    communityId: string,
+    memberId: string
+  ): Observable<CommunityMemberDto> {
+    return this.http.post<CommunityMemberDto>(
+      `${this.SOCIAL_API_URL}/members/${memberId}/suspend`,
+      {}
+    );
+  }
+
+  reactivateMember(
+    communityId: string,
+    memberId: string
+  ): Observable<CommunityMemberDto> {
+    return this.http.post<CommunityMemberDto>(
+      `${this.SOCIAL_API_URL}/members/${memberId}/reactivate`,
+      {}
     );
   }
 

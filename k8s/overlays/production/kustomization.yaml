@@ -62,6 +62,12 @@ images:
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_leads-app
     newTag: latest
+  - name: cjrutherford/optimistic_tanuki_learning
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_learning-runner
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_learning-service
+    newTag: latest
   - name: cjrutherford/optimistic_tanuki_local-hub
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_marketing-generator

@@ -1,13 +1,53 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   BusinessAuthService,
   injectSiteSlugSignal,
+  normalizeBusinessReturnTo,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
+
+const CLIENT_AUTH_LOOP_PATHS = new Set([
+  '/auth',
+  '/login',
+  '/register',
+  '/owner/login',
+  '/owner/register',
+  '/client/login',
+  '/client/register',
+]);
+
+function pathFromReturnUrl(returnUrl: string): string | null {
+  try {
+    return (
+      decodeURIComponent(
+        new URL(returnUrl, 'https://business-site.invalid').pathname
+      ).replace(/\/+$/, '') || '/'
+    );
+  } catch {
+    return null;
+  }
+}
+
+function isSafeClientReturnUrl(
+  returnUrl: string | null,
+  siteSlug: string | null
+): returnUrl is string {
+  if (!returnUrl) return false;
+
+  const path = pathFromReturnUrl(returnUrl);
+  const clientPrefix = siteSlug ? `/sites/${siteSlug}/client` : '/client';
+
+  return (
+    !!path &&
+    !CLIENT_AUTH_LOOP_PATHS.has(path) &&
+    !/^\/sites\/[^/]+\/(?:owner|client)\/(?:login|register)$/.test(path) &&
+    (path === clientPrefix || path.startsWith(`${clientPrefix}/`))
+  );
+}
 
 @Component({
   selector: 'business-client-login-page',
@@ -103,6 +143,7 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 export class BusinessClientLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
@@ -141,13 +182,32 @@ export class BusinessClientLoginPageComponent {
       : ['/client/dashboard'];
   }
 
+  private clientReturnUrl(): string | null {
+    const returnUrl = normalizeBusinessReturnTo(
+      this.route?.snapshot.queryParamMap?.get('returnUrl')
+    );
+    const siteSlug = this.siteSlug();
+
+    return isSafeClientReturnUrl(returnUrl, siteSlug) ? returnUrl : null;
+  }
+
+  private navigateAfterLogin(): void {
+    const returnUrl = this.clientReturnUrl();
+    if (returnUrl) {
+      void this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
+    void this.router.navigate(this.dashboardRoute());
+  }
+
   login(): void {
     this.loading.set(true);
     this.error.set('');
     this.auth.loginClient(this.email, this.password).subscribe({
       next: () => {
         this.loading.set(false);
-        void this.router.navigate(this.dashboardRoute());
+        this.navigateAfterLogin();
       },
       error: (err) => {
         this.loading.set(false);

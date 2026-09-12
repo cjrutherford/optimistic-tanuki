@@ -26,6 +26,9 @@
       "@optimistic-tanuki/app-catalog-contracts": [
         "libs/app-catalog-contracts/src/index.ts"
       ],
+      "@optimistic-tanuki/app-config-data-access": [
+        "libs/app-config-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/app-config-models": [
         "libs/app-config-models/src/index.ts"
       ],
@@ -46,12 +49,21 @@
       ],
       "@optimistic-tanuki/billing-domain": ["libs/billing/domain/src/index.ts"],
       "@optimistic-tanuki/billing-sdk": ["libs/billing-sdk/src/index.ts"],
+      "@optimistic-tanuki/blogging-data-access": [
+        "libs/blogging-data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/blogging-feature": [
+        "libs/blogging-feature/src/index.ts"
+      ],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/business-data-access": [
         "libs/business-data-access/src/index.ts"
       ],
       "@optimistic-tanuki/business-portal-ui": [
         "libs/business-portal-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/business-presence-feature": [
+        "libs/business-presence-feature/src/index.ts"
       ],
       "@optimistic-tanuki/business-public-ui": [
         "libs/business-public-ui/src/index.ts"
@@ -65,6 +77,9 @@
       "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/configurable-client-ui": [
         "libs/configurable-client-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/configurable-plugin-contracts": [
+        "libs/configurable-plugin-contracts/src/index.ts"
       ],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
@@ -142,6 +157,9 @@
       ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
+      "@optimistic-tanuki/store-data-access": [
+        "libs/store-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/store-ui": ["libs/store-ui/src/index.ts"],
       "@optimistic-tanuki/theme-lib": ["libs/theme-lib/src/index.ts"],
       "@optimistic-tanuki/theme-models": ["libs/theme-models/src/index.ts"],

@@ -1,4 +1,5 @@
 export { BlogService } from './blog.service';
+export { BlogCatalogService } from './blog-catalog.service';
 export { BlogComponentService } from './blog-component.service';
 export { EventService } from './event.service';
 export { PostService } from './post.service';

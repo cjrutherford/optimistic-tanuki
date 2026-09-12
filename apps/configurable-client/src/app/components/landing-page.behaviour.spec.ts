@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import type { AppConfiguration } from '@optimistic-tanuki/app-config-models';
@@ -46,7 +48,11 @@ describe('LandingPageComponent (shell)', () => {
 
     await TestBed.configureTestingModule({
       imports: [LandingPageComponent],
-      providers: [{ provide: ConfigurationService, useValue: configService }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ConfigurationService, useValue: configService },
+      ],
     }).compileComponents();
   });
 
@@ -117,18 +123,19 @@ describe('LandingPageComponent (shell)', () => {
     fixture.componentRef.setInput('embeddedPreview', true);
     fixture.detectChanges();
 
-    // embeddedPreview must reach the child without triggering another
-    // config resolution.
+    // Published rendering always remains out of preview mode; changing the
+    // shell input must not trigger another config resolution.
     expect(configService.getCurrentConfiguration).not.toHaveBeenCalled();
     expect(fixture.componentInstance.resolvedConfig).toBe(stored);
-    expect(renderedChild(fixture).embeddedPreview).toBe(true);
+    expect(renderedChild(fixture).embeddedPreview).toBe(false);
   });
 
   it('defaults embeddedPreview to false on the rendered landing page', () => {
+    configService.getCurrentConfiguration.mockReturnValue(makeConfig());
     const fixture = TestBed.createComponent(LandingPageComponent);
     fixture.detectChanges();
 
     expect(renderedChild(fixture).embeddedPreview).toBe(false);
-    expect(fixture.componentInstance.resolvedConfig).toBeNull();
+    expect(fixture.componentInstance.resolvedConfig).not.toBeNull();
   });
 });

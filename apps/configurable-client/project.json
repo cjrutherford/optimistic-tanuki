@@ -26,8 +26,7 @@
         "prerender": false,
         "ssr": {
           "entry": "apps/configurable-client/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

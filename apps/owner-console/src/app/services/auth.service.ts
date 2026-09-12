@@ -16,6 +16,17 @@ export type SessionUser = {
   name?: string;
 };
 
+export type AuthSessionStatus =
+  | 'loading'
+  | 'signed-out'
+  | 'signed-in'
+  | 'expired';
+
+export interface AuthSessionState {
+  status: AuthSessionStatus;
+  user?: SessionUser;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -26,9 +37,13 @@ export class AuthService {
     'X-ot-session-mode': 'cookie',
   };
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private readonly sessionStateSubject = new BehaviorSubject<AuthSessionState>({
+    status: 'loading',
+  });
   private serviceToken: string | null = null;
   private sessionUser: SessionUser | null = null;
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  public sessionState$ = this.sessionStateSubject.asObservable();
 
   constructor(
     private http: HttpClient,
@@ -50,9 +65,18 @@ export class AuthService {
     return this.sessionUser;
   }
 
+  get status(): AuthSessionStatus {
+    return this.sessionStateSubject.value.status;
+  }
+
+  private setSessionState(state: AuthSessionState): void {
+    this.sessionStateSubject.next(state);
+    this.isAuthenticatedSubject.next(state.status === 'signed-in');
+  }
+
   setToken(token: string): void {
     if (!isPlatformBrowser(this.platformId)) this.serviceToken = token;
-    this.isAuthenticatedSubject.next(true);
+    this.setSessionState({ status: 'signed-in' });
   }
 
   login(
@@ -71,7 +95,7 @@ export class AuthService {
           if (response.data?.newToken && !isPlatformBrowser(this.platformId)) {
             this.serviceToken = response.data.newToken;
           }
-          this.isAuthenticatedSubject.next(true);
+          this.setSessionState({ status: 'signed-in' });
         })
       );
   }
@@ -115,12 +139,20 @@ export class AuthService {
       .subscribe({ error: () => undefined });
     this.serviceToken = null;
     this.sessionUser = null;
-    this.isAuthenticatedSubject.next(false);
+    this.setSessionState({ status: 'signed-out' });
     this.router.navigate(['/login']);
   }
 
   restoreSession(): Observable<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return of(false);
+    if (!isPlatformBrowser(this.platformId)) {
+      this.sessionUser = null;
+      this.setSessionState({ status: 'signed-out' });
+      return of(false);
+    }
+
+    const wasSignedIn = this.status === 'signed-in';
+    this.setSessionState({ status: 'loading' });
+
     return this.http
       .get<{ data: SessionUser | { user: SessionUser } }>(
         `${this.API_URL}/authentication/session`,
@@ -136,12 +168,17 @@ export class AuthService {
           if (!this.sessionUser?.userId) {
             throw new Error('Session identity is missing');
           }
-          this.isAuthenticatedSubject.next(true);
+          this.setSessionState({
+            status: 'signed-in',
+            user: this.sessionUser,
+          });
         }),
         map(() => true),
         catchError(() => {
           this.sessionUser = null;
-          this.isAuthenticatedSubject.next(false);
+          this.setSessionState({
+            status: wasSignedIn ? 'expired' : 'signed-out',
+          });
           return of(false);
         })
       );

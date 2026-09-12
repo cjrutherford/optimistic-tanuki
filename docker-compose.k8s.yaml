@@ -341,6 +341,9 @@ services:
       dockerfile: ./apps/prompt-proxy/Dockerfile
     ports:
       - '3009:3009'
+    environment:
+      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
@@ -456,24 +459,6 @@ services:
       db-setup:
         condition: service_completed_successfully
 
-  app-configurator-seed:
-    container_name: ot_app_configurator_seed
-    build:
-      context: .
-      dockerfile: ./apps/app-configurator/Dockerfile
-    environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=ot_app_configurator
-      - PORT=3014
-    depends_on:
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
-
   configurable-client:
     container_name: ot_configurable_client
     build:
@@ -484,7 +469,6 @@ services:
     depends_on:
       - gateway
       - app-configurator
-      - app-configurator-seed
 
   system-configurator:
     container_name: ot_system_configurator

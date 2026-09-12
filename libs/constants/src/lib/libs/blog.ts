@@ -7,6 +7,11 @@ export const BlogCommands = {
   GENERATE_SITEMAP: 'blog.generateSitemap',
 };
 
+export const BlogCatalogCommands = {
+  CREATE: 'blogCatalog.create',
+  FIND_ALL: 'blogCatalog.findAll',
+};
+
 export const ContactCommands = {
   CREATE: 'contact.create',
   UPDATE: 'contact.update',
@@ -29,7 +34,9 @@ export const PostCommands = {
   DELETE: 'post.delete',
   FIND: 'post.find',
   FIND_ALL: 'post.findAll',
+  /** @deprecated Catalog-only public compatibility contract. */
   FIND_PUBLISHED: 'post.findPublished',
+  FIND_PUBLISHED_SCOPED: 'post.findPublishedScoped',
   FIND_DRAFTS_BY_AUTHOR: 'post.findDraftsByAuthor',
   PUBLISH: 'post.publish',
   GENERATE_RSS: 'post.generateRss',

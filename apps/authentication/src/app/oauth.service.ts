@@ -7,6 +7,7 @@ import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class OAuthService {
@@ -273,6 +274,7 @@ export class OAuthService {
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,
       profileId: profileId || '',
+      jti: randomUUID(),
     };
 
     const tk = this.jsonWebToken.sign(pl, {

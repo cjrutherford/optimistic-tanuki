@@ -38,6 +38,9 @@ export class TrainerSiteConfigEntity {
   features: Record<string, unknown>;
 
   @Column({ type: 'jsonb', nullable: true })
+  plugins: Record<string, unknown>;
+
+  @Column({ type: 'jsonb', nullable: true })
   serviceCatalog: Record<string, unknown>;
 
   @Column({ type: 'jsonb', nullable: true })

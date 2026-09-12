@@ -292,6 +292,53 @@ describe('AppService', () => {
       expect(tokenRepo.save).toHaveBeenCalled();
     });
 
+    it('keeps same-second sessions distinct and revokes only the logged-out session', async () => {
+      const issuer = new TokenIssuerService(
+        {
+          sign: (payload, options) =>
+            jwt.sign(payload, options.secret, {
+              expiresIn: options.expiresIn,
+            }),
+        },
+        'test-secret'
+      );
+      (service as any).tokenIssuerService = issuer;
+
+      jest.spyOn(userRepo, 'findOne').mockImplementation(
+        async () =>
+          ({
+            ...mockUser,
+            keyData: { salt: 'someSalt' },
+          } as any)
+      );
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
+      const sessions: any[] = [];
+      jest.spyOn(tokenRepo, 'save').mockImplementation(async (session) => {
+        sessions.push(session);
+        return session as any;
+      });
+
+      const first = await service.login('test@example.com', 'password');
+      const second = await service.login('test@example.com', 'password');
+      const firstToken = first.data.newToken;
+      const secondToken = second.data.newToken;
+
+      expect(firstToken).not.toBe(secondToken);
+      expect(sessions).toHaveLength(2);
+
+      jest
+        .spyOn(tokenRepo, 'findOne')
+        .mockImplementation(async ({ where }: any) =>
+          sessions.find((session) => session.tokenData === where.tokenData)
+        );
+      await service.logout(firstToken);
+
+      expect(sessions[0].revoked).toBe(true);
+      expect(sessions[1].revoked).toBe(false);
+    });
+
     it('should successfully log in a user with MFA', async () => {
       const userWithTotp = {
         ...mockUser,

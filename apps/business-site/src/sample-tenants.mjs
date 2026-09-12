@@ -207,7 +207,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
       'North Star Advisory helps service owners tighten intake, approvals, scheduling, and follow-through.',
     aboutTitle: 'Operations support for service teams',
     aboutBody:
-      'This seeded business shows a higher-trust advisory business with booking, approvals, and client follow-up enabled.',
+      'Booking, approvals, and client follow-up stay connected from first request to next step.',
   }),
   createTenantPreset({
     configKey: 'tenant:steady-hand-contracting',
@@ -287,7 +287,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'Dependable contractor support for the jobs that pile up.',
     heroBody:
-      'Use this seeded example to showcase estimate requests, repair scheduling, and homeowner communication.',
+      'Keep estimate requests, repair scheduling, and homeowner communication moving in one place.',
     aboutTitle: 'Built for repeat repair and small-project work',
     aboutBody:
       'This setup fits a handyman or general contractor who needs a clean intake flow, not a complex enterprise CRM.',
@@ -374,8 +374,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
       },
     ],
     heroTitle: 'Make exterior cleaning easy to request and easy to repeat.',
-    heroBody:
-      'This preset highlights quick quote conversion for seasonal and repeat exterior cleaning work.',
+    heroBody: '',
     aboutTitle: 'A strong fit for route-based outdoor service businesses',
     aboutBody:
       'Pressure washing businesses need fast intake, prep reminders, and lightweight repeat booking support.',
@@ -462,7 +461,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'A sweeter custom-order workflow for home bakers.',
     heroBody:
-      'This preset shows how a made-to-order bakery can capture event details, custom notes, and pickup timing cleanly.',
+      'Capture event details, custom notes, and pickup timing without losing the thread.',
     aboutTitle: 'Designed for custom order businesses',
     aboutBody:
       'Bakers need more than a contact form. They need space for flavor notes, event timing, and client follow-up.',
@@ -555,7 +554,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     heroTitle:
       'Commission custom artwork without hiding the pieces already in stock.',
     heroBody:
-      'This preset pairs bookable commission work with a store-backed inventory of originals, prints, and merch for independent artists.',
+      'Pair bookable commission work with a store-backed inventory of originals, prints, and merch.',
     aboutTitle:
       'Built for artists with both commissions and ready-to-ship work',
     aboutBody:
@@ -639,7 +638,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'A better intake flow for estimates, hazards, and cleanup work.',
     heroBody:
-      'This preset fits tree services that need fast request capture and clear site-visit follow-up.',
+      'Handle fast request capture and clear site-visit follow-up for every tree-service job.',
     aboutTitle: 'Good for estimate-heavy outdoor crews',
     aboutBody:
       'Tree work mixes urgent requests with scheduled care, so the site needs to support both fast contact and organized follow-up.',
@@ -739,7 +738,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
       'Ledgerline Accounting brings the clarity of a dedicated small-business accounting practice into a hosted, review-ready portal.',
     aboutTitle: 'Built for small businesses that need reliable bookkeeping',
     aboutBody:
-      'This seeded business pairs clean intake forms with a checklist-driven portal so owners stay on top of books, deadlines, and payroll.',
+      'Clean intake forms and a checklist-driven portal keep books, deadlines, and payroll on track.',
   }),
 ];
 

@@ -55,6 +55,7 @@ services:
       context: .
       dockerfile: ./docker/db-setup/Dockerfile
     container_name: db-setup
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /workspace
     volumes:
       - .:/workspace
@@ -396,7 +397,7 @@ services:
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net,https://letsgo.experiments.christopherrutherford.net}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:
@@ -430,6 +431,8 @@ services:
       profile:
         condition: service_started
       social:
+        condition: service_started
+      workspace:
         condition: service_started
       chat-collector:
         condition: service_started
@@ -537,6 +540,26 @@ services:
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+
+  workspace:
+    container_name: ot_workspace
+    build:
+      context: .
+      dockerfile: ./apps/workspace/Dockerfile
+    image: cjrutherford/optimistic_tanuki_workspace:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${WORKSPACE_PORT:-3024}:3024'
+    environment:
+      <<: *service_db_env
+      DATABASE_NAME: ot_workspace
+      DB_NAME: ot_workspace
+      POSTGRES_DB: ot_workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   forum:
     container_name: ot_forum
     build:
@@ -630,6 +653,8 @@ services:
       - '${PROMPT_PROXY_PORT:-3009}:3009'
     environment:
       <<: *service_db_env
+      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
@@ -804,26 +829,6 @@ services:
       db-setup:
         condition: service_completed_successfully
 
-  app-configurator-seed:
-    container_name: ot_app_configurator_seed
-    build:
-      context: .
-      dockerfile: ./apps/app-configurator/Dockerfile
-    image: cjrutherford/optimistic_tanuki_app-configurator:${PRODUCTION_IMAGE_TAG:-latest}
-    environment:
-      <<: *service_db_env
-      DB_NAME: ot_app_configurator
-      PORT: 3014
-    depends_on:
-      db-setup:
-        condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
-
   configurable-client:
     container_name: ot_configurable_client
     build:
@@ -837,7 +842,6 @@ services:
     depends_on:
       - gateway
       - app-configurator
-      - app-configurator-seed
 
   wellness:
     container_name: ot_wellness
@@ -985,18 +989,21 @@ services:
     build:
       context: .
       dockerfile: ./apps/learning-service/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-service:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3024:3024'
+      - '${LEARNING_SERVICE_PORT:-3024}:3024'
     environment:
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - DATABASE_NAME=ot_learning_service
+      # Shared credentials, so a production deployment picks up the real
+      # POSTGRES_* values instead of the hardcoded local defaults this
+      # service used to carry.
+      <<: *service_db_env
+      DATABASE_NAME: ot_learning_service
+      DB_NAME: ot_learning_service
+      POSTGRES_DB: ot_learning_service
       # Marking written answers against an author's rubric.
-      - LEARNING_OLLAMA_URL=${LEARNING_OLLAMA_URL:-http://shangrila:11434}
-      - LEARNING_GRADING_MODEL=${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
-      - LEARNING_RUNNER_URL=http://learning-runner:3025
+      LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
+      LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
+      LEARNING_RUNNER_URL: ${LEARNING_RUNNER_URL:-http://learning-runner:3025}
     depends_on:
       postgres:
         condition: service_healthy
@@ -1008,6 +1015,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/learning-runner/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning-runner:${PRODUCTION_IMAGE_TAG:-latest}
+    # Deliberately no `ports:` — the runner executes submitted code and is
+    # reachable only from learning-service over the internal network.
     environment:
       - LEARNING_SCRATCH_DIR=/scratch
       - PORT=3025

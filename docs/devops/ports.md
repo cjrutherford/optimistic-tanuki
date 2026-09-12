@@ -23,6 +23,14 @@
 | system-configurator-api | system-configurator-api | 3021        | 3021     | TCP       |
 | forum                   | forum                   | 3015        | 3015     | TCP       |
 | wellness                | wellness                | 3016        | 3016     | TCP       |
+| store                   | store                   | 3013        | 3013     | TCP       |
+| learning-service        | learning-service        | 3024        | 3024     | TCP       |
+| learning-runner         | learning-runner         | none        | 3025     | HTTP      |
+
+The learning runner publishes no host port and is reachable only from
+learning-service, on the Compose `learning-internal` network and, in
+Kubernetes, through the `learning-runner-isolation` NetworkPolicy. It executes
+code submitted by learners; do not expose it.
 
 ## Client Applications
 
@@ -37,6 +45,7 @@
 | d6                        | d6                        | 8086        | 8086     | LoadBalancer |
 | configurable-client       | configurable-client       | 8090        | 8090     | LoadBalancer |
 | system-configurator       | system-configurator       | 8091        | 8091     | LoadBalancer |
+| learning                  | learning                  | 8099        | 8099     | ClusterIP    |
 
 ## Infrastructure
 

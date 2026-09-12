@@ -23,7 +23,7 @@ import { CTASection } from '@optimistic-tanuki/app-config-models';
     `
       .cta-section {
         padding: 4rem 2rem;
-        background-color: var(--primary, #007bff);
+        background-color: var(--primary, var(--ot-client-section-primary));
         color: var(--primary-foreground, white);
         text-align: center;
       }
@@ -36,7 +36,7 @@ import { CTASection } from '@optimistic-tanuki/app-config-models';
         margin-top: 2rem;
         padding: 1rem 2rem;
         background-color: var(--background, white);
-        color: var(--primary, #007bff);
+        color: var(--primary, var(--ot-client-section-primary));
         text-decoration: none;
         border-radius: 4px;
         font-weight: 600;

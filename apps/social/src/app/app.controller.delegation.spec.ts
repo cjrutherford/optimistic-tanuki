@@ -1392,15 +1392,18 @@ describe('AppController delegation', () => {
         'post',
         'p1',
         'spam',
-        'details'
+        'details',
+        undefined,
+        undefined
       );
 
       await expect(
         h.controller.getMyReports({ reporterId: 'a' })
       ).resolves.toEqual([{ id: 'rep1' }]);
-      await expect(h.controller.getAllReports()).resolves.toEqual([
+      await expect(h.controller.getAllReports({})).resolves.toEqual([
         { id: 'rep1' },
       ]);
+      expect(h.privacyService.getAllReports).toHaveBeenCalledWith(undefined);
 
       await h.controller.updateReportStatus({
         id: 'rep1',
@@ -1410,7 +1413,8 @@ describe('AppController delegation', () => {
       expect(h.privacyService.updateReportStatus).toHaveBeenCalledWith(
         'rep1',
         'reviewed',
-        'looked at it'
+        'looked at it',
+        undefined
       );
 
       await h.controller.moderateContent({

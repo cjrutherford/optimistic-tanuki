@@ -1,5 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+} from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { ProductManagementComponent } from './product-management.component';
@@ -8,6 +12,7 @@ import { Product, StoreService } from '../services/store.service';
 describe('ProductManagementComponent', () => {
   const storeService = {
     getProducts: jest.fn(),
+    getMyCatalogs: jest.fn(),
     createProduct: jest.fn(),
     updateProduct: jest.fn(),
     deleteProduct: jest.fn(),
@@ -52,12 +57,31 @@ describe('ProductManagementComponent', () => {
         },
       ])
     );
+    storeService.getMyCatalogs.mockReturnValue(
+      of([
+        {
+          id: 'catalog-north',
+          name: 'North storefront',
+          ownerId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      ])
+    );
 
     await TestBed.configureTestingModule({
       imports: [ProductManagementComponent],
       providers: [
         provideRouter([]),
         { provide: StoreService, useValue: storeService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({ slug: 'north-site' }),
+            },
+          },
+        },
       ],
     }).compileComponents();
   });
@@ -144,6 +168,7 @@ describe('ProductManagementComponent', () => {
       imageUrl: '',
       stock: 0,
       active: true,
+      catalogId: null,
     });
   });
 
@@ -179,7 +204,8 @@ describe('ProductManagementComponent', () => {
     component.saveProduct();
 
     expect(storeService.createProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Retainer', priceCents: 9999 })
+      expect.objectContaining({ name: 'Retainer', priceCents: 9999 }),
+      'north-site'
     );
     expect(component.isCreating).toBe(false);
   });
@@ -208,7 +234,8 @@ describe('ProductManagementComponent', () => {
 
     expect(storeService.updateProduct).toHaveBeenCalledWith(
       'product-1',
-      expect.objectContaining({ name: 'Service Sprint v2', priceCents: 12000 })
+      expect.objectContaining({ name: 'Service Sprint v2', priceCents: 12000 }),
+      'north-site'
     );
     expect(component.isEditing).toBe(false);
   });
@@ -243,6 +270,22 @@ describe('ProductManagementComponent', () => {
     component.updateProduct();
 
     expect(storeService.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it('assigns a new product to a catalog resolved for the current workspace', () => {
+    storeService.createProduct.mockReturnValue(of({ id: 'product-4' }));
+    const component = create();
+
+    component.startCreate();
+    component.productForm.name = 'North field guide';
+    component.productForm.catalogId = 'catalog-north';
+    component.createProduct();
+
+    expect(storeService.getMyCatalogs).toHaveBeenCalledWith('north-site');
+    expect(storeService.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ catalogId: 'catalog-north' }),
+      'north-site'
+    );
   });
 
   it('asks for confirmation before deleting and aborts when declined', () => {

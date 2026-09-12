@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Keep bind-mounted build output owned by the developer who started Compose.
+export LOCAL_UID="${LOCAL_UID:-$(id -u)}"
+export LOCAL_GID="${LOCAL_GID:-$(id -g)}"
+
 DRY_RUN=0
 FULL_RESTART=0
 COMPOSE_FILE="docker-compose.yaml"
@@ -45,6 +49,13 @@ if [ -n "${COMPOSE_ENV_FILE:-}" ]; then
     COMPOSE_FLAGS=("--env-file" "$COMPOSE_ENV_FILE" "${COMPOSE_FLAGS[@]}")
 fi
 
+# Docker creates nested volume and bind targets as root when their parent is a
+# host bind mount. Create those host paths first so they retain the developer's
+# ownership when Compose attaches the mounts.
+if [ "$DRY_RUN" -eq 0 ] && [[ "$COMPOSE_FILE" == *"dev"* ]]; then
+    node scripts/prepare-dev-bind-mounts.mjs "$COMPOSE_FILE"
+fi
+
 COMPOSE_UP_FLAGS=(-d --no-deps)
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     # Development services mount their app output over the image workdir. Renew
@@ -57,7 +68,7 @@ CORE_SERVICES=(
     authentication
 )
 ESSENTIAL_API_SERVICES=(
-    admin-api profile social permissions app-configurator system-configurator-api
+    admin-api profile social workspace permissions app-configurator system-configurator-api
 )
 FEATURE_SERVICES=(
     finance payments store assets project-planning chat-collector prompt-proxy
@@ -241,12 +252,7 @@ run_phase "Phase 6: Heavy services" "$PHASE_DELAY" \
     "${HEAVY_SERVICES[@]}"
 run_phase "Phase 7: Gateway" "$PHASE_DELAY" gateway
 
-echo "=== Phase 8: Seed jobs ==="
-run_compose up -d "${EXTRA_FLAGS[@]}" app-configurator-seed
-run_compose wait app-configurator-seed
-echo ""
-
-run_phase "Phase 9: Client interfaces" 0 "${CLIENT_SERVICES[@]}"
+run_phase "Phase 8: Client interfaces" 0 "${CLIENT_SERVICES[@]}"
 
 echo "=== Startup complete ==="
 run_compose ps

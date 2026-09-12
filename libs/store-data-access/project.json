@@ -1,0 +1,27 @@
+{
+  "name": "store-data-access",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/store-data-access/src",
+  "projectType": "library",
+  "tags": ["scope:store", "type:data-access"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/store-data-access/jest.config.ts",
+        "tsConfig": "libs/store-data-access/tsconfig.spec.json"
+      }
+    },
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/store-data-access",
+        "main": "libs/store-data-access/src/index.ts",
+        "tsConfig": "libs/store-data-access/tsconfig.lib.json",
+        "assets": []
+      }
+    }
+  }
+}

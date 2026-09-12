@@ -7,7 +7,7 @@ export POSTGRES_PASSWORD=postgres
 export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
 export POSTGRES_PORT=5432
 export NODE_ENV=development
-export ADDITIONAL_DBS=${ADDITIONAL_DBS:-ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_finance,ot_wellness,ot_classifieds,classifieds_db,ot_payments,ot_lead_tracker,ot_system_configurator,ot_videos,ot_learning_service}
+export ADDITIONAL_DBS=${ADDITIONAL_DBS:-ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_finance,ot_wellness,ot_classifieds,classifieds_db,ot_payments,ot_lead_tracker,ot_system_configurator,ot_videos,ot_learning_service,ot_workspace}
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -39,7 +39,7 @@ echo "Validating TypeORM migration definitions..."
 node "$ROOT_DIR/scripts/validate-typeorm-migrations.mjs"
 
 # Run database creation script
-(cd "$ROOT_DIR" && sh ./scripts/create-dbs.sh)
+(cd "$ROOT_DIR" && bash ./scripts/create-dbs.sh)
 
 # Run TypeORM migrations for each service
 # Loop through ADDITIONAL_DBS, map DB name to app directory, and run migrations.

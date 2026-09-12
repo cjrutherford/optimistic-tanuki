@@ -4,3 +4,8 @@ setupZoneTestEnv({
   errorOnUnknownElements: true,
   errorOnUnknownProperties: true,
 });
+
+Object.defineProperty(window, 'scrollTo', {
+  value: jest.fn(),
+  writable: true,
+});

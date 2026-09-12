@@ -18,6 +18,7 @@ export interface TrainerSiteConfigDto {
   brand?: Record<string, unknown>;
   contact?: Record<string, unknown>;
   features?: Record<string, unknown>;
+  plugins?: Record<string, unknown>;
   serviceCatalog?: Record<string, unknown>;
   services?: Record<string, unknown>[];
   landingPage?: Record<string, unknown>;
@@ -120,6 +121,7 @@ export class TrainerConfigService {
     entity.brand = dto.brand || {};
     entity.contact = dto.contact || {};
     entity.features = dto.features || {};
+    entity.plugins = dto.plugins || {};
     entity.serviceCatalog = dto.serviceCatalog || {};
     entity.services = dto.services || [];
     entity.landingPage = dto.landingPage || {};
@@ -164,6 +166,7 @@ export class TrainerConfigService {
     if (dto.brand !== undefined) config.brand = dto.brand;
     if (dto.contact !== undefined) config.contact = dto.contact;
     if (dto.features !== undefined) config.features = dto.features;
+    if (dto.plugins !== undefined) config.plugins = dto.plugins;
     if (dto.serviceCatalog !== undefined) {
       config.serviceCatalog = dto.serviceCatalog;
     }

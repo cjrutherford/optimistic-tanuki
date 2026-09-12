@@ -212,6 +212,103 @@ describe('ModalComponent', () => {
     document.body.removeChild(trigger);
   }));
 
+  it('restores focus and unlocks scroll when destroyed while open', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0);
+    tick(100);
+
+    fixture.destroy();
+
+    expect(document.activeElement).toBe(trigger);
+    expect(document.body.style.position).toBe('');
+
+    document.body.removeChild(trigger);
+  }));
+
+  it('cancels the delayed focus move when closed before it fires', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0);
+
+    const modalButton = fixture.nativeElement.querySelector(
+      'button'
+    ) as HTMLButtonElement;
+    const modalFocusSpy = jest.spyOn(modalButton, 'focus');
+    component.hide();
+    tick(100);
+
+    expect(modalFocusSpy).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(trigger);
+
+    document.body.removeChild(trigger);
+  }));
+
+  it('cancels the delayed focus move when destroyed before it fires', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0);
+
+    const modalButton = fixture.nativeElement.querySelector(
+      'button'
+    ) as HTMLButtonElement;
+    const modalFocusSpy = jest.spyOn(modalButton, 'focus');
+    fixture.destroy();
+    tick(100);
+
+    expect(modalFocusSpy).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(trigger);
+
+    document.body.removeChild(trigger);
+  }));
+
+  it('does not restore focus to a prior element that became inert', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0);
+    tick(100);
+
+    const focusSpy = jest.spyOn(trigger, 'focus');
+    trigger.setAttribute('inert', '');
+    component.visible = false;
+    component.ngOnChanges({
+      visible: new SimpleChange(true, false, false),
+    });
+
+    expect(focusSpy).not.toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(trigger);
+
+    document.body.removeChild(trigger);
+  }));
+
   it('should expose canonical tone/emphasis with neutral/flat defaults', () => {
     expect(component.tone).toBe('neutral');
     expect(component.emphasis).toBe('flat');

@@ -35,7 +35,6 @@ function lifecyclePhases({
           'permissions-seed',
           'store-seed',
           'app-configurator',
-          'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
@@ -46,9 +45,6 @@ function lifecyclePhases({
     completion: 'completed-successfully',
   });
   if (app !== 'app-configurator') add('app-configurator', ['app-configurator']);
-  add('app-configurator-seed', ['app-configurator-seed'], {
-    completion: 'completed-successfully',
-  });
   add('gateway', ['gateway']);
   if (app !== 'gateway') add('application', [app], profile ? { profile } : {});
   return { phases };
@@ -187,6 +183,7 @@ const MICROSERVICE_ENTRIES = [
       'authentication',
       'profile',
       'social',
+      'workspace',
       'assets',
       'project-planning',
       'chat-collector',
@@ -196,12 +193,11 @@ const MICROSERVICE_ENTRIES = [
       'permissions',
       'store',
       'app-configurator',
-      'app-configurator-seed',
       'lead-tracker',
       'permissions-seed',
     ],
     imageBudget: 19,
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
     // The gateway mounts every HTTP route under the `api` global prefix, so a
     // probe of `/` answers 404 and never satisfies the readiness check. Use the
     // Swagger document, which is the same probe the UI suites already use for
@@ -434,10 +430,9 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'app-configurator',
-      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
   },
   {
     project: 'store-client-e2e',
@@ -473,10 +468,9 @@ const UI_ENVIRONMENTS = [
       'redis',
       'db-setup',
       'app-configurator',
-      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
   },
 ];
 

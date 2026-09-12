@@ -1,13 +1,40 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
-import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessApiService,
+  BusinessSiteConfigStore,
+  type PublicBusinessSiteSummary,
+} from '@optimistic-tanuki/business-data-access';
+import {
+  DiscoveryListComponent,
+  DiscoveryRegionComponent,
+  LandingHeaderComponent,
+  LandingHeroComponent,
+  type DiscoveryCard,
+  type DiscoveryListState,
+  type DiscoveryNavItem,
+} from '@optimistic-tanuki/common-ui';
+import { catchError, map, of } from 'rxjs';
+import {
+  BUSINESS_PUBLIC_DARK_ACCENT_TEXT,
+  BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT,
+} from './public-contrast.tokens';
+
+type PublishedSitesState = {
+  state: DiscoveryListState;
+  sites: PublicBusinessSiteSummary[];
+};
 
 export const businessPlatformHomePageStyles = `
       :host {
         display: grid;
         gap: 2rem;
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
         color-scheme: light dark;
         --platform-bg: #f4efe6;
         --platform-bg-alt: #fffaf1;
@@ -19,12 +46,49 @@ export const businessPlatformHomePageStyles = `
         --platform-ink: #18241f;
         --platform-muted: #425466;
         --platform-accent: var(--primary, #b85c38);
+        --platform-accent-text: var(--primary-2, ${BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT});
         --platform-accent-soft: #f4e1d7;
-        --platform-panel-ink: var(--primary-foreground, #f7f1e7);
+        --platform-panel-ink: var(--on-primary, var(--primary-foreground, #ffffff));
         --platform-card: #ffffff;
         --platform-card-strong: #fff8ee;
         --platform-border: rgba(24, 36, 31, 0.12);
         --platform-shadow: 0 18px 40px rgba(24, 36, 31, 0.08);
+      }
+
+      otui-public-landing-header,
+      otui-public-landing-hero,
+      otui-public-discovery-region {
+        display: block;
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .platform-hero,
+      .platform-panel,
+      .capability-grid,
+      .capability-grid article,
+      .directory-section,
+      .directory-grid,
+      .directory-card {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      otui-public-landing-header,
+      otui-public-landing-hero,
+      otui-public-discovery-region {
+        --background: var(--platform-bg);
+        --surface: var(--platform-card);
+        --foreground: var(--platform-ink);
+        --muted-foreground: var(--platform-muted);
+        --primary: var(--platform-accent);
+        --otui-public-landing-brand: var(--platform-accent-text);
+        --otui-public-landing-focus: var(--platform-accent-text);
+        --on-primary: var(--platform-panel-ink);
+        --primary-foreground: var(--platform-panel-ink);
+        --border: var(--platform-border);
       }
 
       :host-context([data-mode='dark']) {
@@ -39,6 +103,7 @@ export const businessPlatformHomePageStyles = `
           var(--background, #121814)
         );
         --platform-ink: var(--foreground, #edf3ef);
+        --platform-accent-text: var(--primary-8, ${BUSINESS_PUBLIC_DARK_ACCENT_TEXT});
         --platform-muted: color-mix(
           in srgb,
           var(--foreground, #edf3ef) 74%,
@@ -120,6 +185,20 @@ export const businessPlatformHomePageStyles = `
       .capability-grid span {
         font: 500 1rem/1.65 'Manrope', sans-serif;
         color: var(--platform-muted);
+      }
+
+      .platform-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.85rem;
+      }
+
+      .platform-actions a:focus-visible,
+      .public-landing-action:focus-visible,
+      .directory-card:focus-visible {
+        outline: 3px solid var(--platform-accent-text);
+        outline-offset: 3px;
       }
 
       .actions {
@@ -249,10 +328,11 @@ export const businessPlatformHomePageStyles = `
         letter-spacing: 0.12em;
         font-size: 0.72rem;
         font-weight: 700;
+        color: var(--platform-accent-text);
       }
 
       .directory-card strong {
-        color: var(--platform-accent);
+        color: var(--platform-accent-text);
         font: 700 0.9rem/1 'Manrope', sans-serif;
       }
 
@@ -268,10 +348,20 @@ export const businessPlatformHomePageStyles = `
       }
 
       @media (max-width: 900px) {
-        .platform-hero,
         .capability-grid,
         .directory-grid {
           grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
         }
       }
     `;
@@ -279,26 +369,43 @@ export const businessPlatformHomePageStyles = `
 @Component({
   selector: 'business-platform-home-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    DiscoveryListComponent,
+    DiscoveryRegionComponent,
+    LandingHeaderComponent,
+    LandingHeroComponent,
+  ],
   template: `
-    <section class="platform-hero">
-      <div class="platform-copy">
-        <p class="eyebrow">Hosted business connection services</p>
-        <h1>
-          Launch a client-ready business site without stitching the stack
-          together yourself.
-        </h1>
-        <p class="lede">
-          Business Site gives owners a branded public presence, guided
-          onboarding, booking and client flows, and a live editor for the copy
-          clients actually read.
-        </p>
-        <div class="actions">
-          <a class="primary" routerLink="/auth">Start as an owner</a>
-          <a class="secondary" routerLink="/client/register">Client account</a>
-        </div>
+    <otui-public-landing-header
+      brandLabel="Business Site"
+      [navItems]="platformNavigation"
+    >
+      <div slot="actions" class="platform-actions">
+        <a routerLink="/auth">Owner sign in</a>
+        <a routerLink="/client/register">Client account</a>
       </div>
-      <div class="platform-panel">
+    </otui-public-landing-header>
+
+    <otui-public-landing-hero
+      eyebrow="Hosted business connection services"
+      heading="Launch a client-ready business site without stitching the stack together yourself."
+      description="Business Site gives owners a branded public presence, guided onboarding, booking and client flows, and a live editor for the copy clients actually read."
+    >
+      <div slot="actions" class="platform-actions">
+        <a
+          class="public-landing-action public-landing-action--primary"
+          routerLink="/auth"
+          >Start as an owner</a
+        >
+        <a
+          class="public-landing-action public-landing-action--secondary"
+          routerLink="/client/register"
+          >Client account</a
+        >
+      </div>
+      <div slot="visual" class="platform-panel">
         <div class="metric">
           <strong>Owners</strong>
           <span
@@ -314,9 +421,9 @@ export const businessPlatformHomePageStyles = `
           >
         </div>
       </div>
-    </section>
+    </otui-public-landing-hero>
 
-    <section class="capability-grid">
+    <section class="capability-grid" id="capabilities">
       <article>
         <p>Owner workflow</p>
         <h2>Profile-to-site onboarding</h2>
@@ -343,46 +450,70 @@ export const businessPlatformHomePageStyles = `
       </article>
     </section>
 
-    <section class="directory-section">
-      <div class="directory-copy">
-        <p class="eyebrow">Registered businesses</p>
-        <h2>Browse the businesses currently published in the platform.</h2>
-        <p class="directory-lede">
-          These links resolve to the same hosted tenant routes evaluators use
-          for
-          <code>/sites/&lt;business-slug&gt;</code> verification.
-        </p>
-      </div>
-
-      @if (publishedSites().length) {
-      <div class="directory-grid">
-        @for (site of publishedSites(); track site.slug) {
-        <a class="directory-card" [routerLink]="['/sites', site.slug]">
-          <div class="directory-card-copy">
-            <p>{{ site.businessType }}</p>
-            <h3>{{ site.businessName }}</h3>
-            <span>{{ site.tagline || site.location }}</span>
-          </div>
-          <strong>Visit site</strong>
-        </a>
-        }
-      </div>
-      } @else {
-      <div class="directory-empty">
-        <p>No published businesses are available yet.</p>
-      </div>
-      }
-    </section>
+    <otui-public-discovery-region
+      id="directory"
+      eyebrow="Registered businesses"
+      heading="Browse the businesses currently published in the platform."
+      description="These links resolve to the same hosted tenant routes evaluators use for /sites/<business-slug> verification."
+    >
+      <otui-public-discovery-list
+        [items]="directoryItems()"
+        [state]="directoryState()"
+        ariaLabel="Published businesses"
+        emptyHeadline="No published businesses are available yet."
+      />
+    </otui-public-discovery-region>
   `,
   styles: [businessPlatformHomePageStyles],
 })
 export class BusinessPlatformHomePageComponent {
   private readonly api = inject(BusinessApiService);
+  private readonly siteConfig = inject(BusinessSiteConfigStore);
+  private readonly title = inject(Title);
+
+  readonly platformNavigation: DiscoveryNavItem[] = [
+    { label: 'Capabilities', href: '#capabilities' },
+    { label: 'Directory', href: '#directory' },
+  ];
 
   private readonly publishedSitesResponse = toSignal(
-    this.api.listPublishedSites(),
-    { initialValue: [] }
+    this.api.listPublishedSites().pipe(
+      map(
+        (sites): PublishedSitesState => ({
+          state: sites.length ? 'ready' : 'empty',
+          sites,
+        })
+      ),
+      catchError(() => of<PublishedSitesState>({ state: 'error', sites: [] }))
+    ),
+    {
+      initialValue: {
+        state: 'loading',
+        sites: [],
+      } as PublishedSitesState,
+    }
   );
 
-  readonly publishedSites = computed(() => this.publishedSitesResponse());
+  readonly directoryState = computed<DiscoveryListState>(
+    () => this.publishedSitesResponse().state
+  );
+  readonly publishedSites = computed(() => this.publishedSitesResponse().sites);
+  readonly directoryItems = computed<DiscoveryCard[]>(() =>
+    this.publishedSites().map((site) => ({
+      id: site.slug,
+      eyebrow: site.businessType,
+      title: `${site.businessName} · Visit site`,
+      description: site.tagline || site.location,
+      href: `/sites/${site.slug}`,
+    }))
+  );
+
+  constructor() {
+    // AppComponent also reacts to the shared config signal. While this page is
+    // mounted, its platform title must win over any late tenant emission.
+    effect(() => {
+      this.siteConfig.site();
+      this.title.setTitle('Business Site Platform');
+    });
+  }
 }

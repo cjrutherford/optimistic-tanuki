@@ -1,9 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, destroyPlatform, signal } from '@angular/core';
+import { bootstrapApplication } from '@angular/platform-browser';
+import {
+  renderApplication,
+  provideServerRendering,
+} from '@angular/platform-server';
 import { convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink, provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
+import { getContrastRatio } from '@optimistic-tanuki/theme-models';
 
 import {
   BusinessApiService,
@@ -14,7 +21,18 @@ import {
   type LandingSectionMotionConfig,
 } from '@optimistic-tanuki/business-data-access';
 
-import { BusinessLandingPageComponent } from './business-landing-page.component';
+import {
+  businessLandingPageContrastStyles,
+  BusinessLandingPageComponent,
+} from './business-landing-page.component';
+import { businessBookingPageStyles } from './business-booking-page.component';
+import { businessPlatformHomePageStyles } from './business-platform-home-page.component';
+import {
+  BUSINESS_PUBLIC_DARK_ACCENT_TEXT,
+  BUSINESS_PUBLIC_DARK_LABEL_TEXT,
+  BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT,
+  BUSINESS_PUBLIC_LIGHT_LABEL_TEXT,
+} from './public-contrast.tokens';
 
 @Component({
   selector: 'otui-particle-veil',
@@ -22,6 +40,14 @@ import { BusinessLandingPageComponent } from './business-landing-page.component'
   standalone: true,
 })
 class MockParticleVeilComponent {}
+
+@Component({
+  standalone: true,
+  selector: 'app-root',
+  imports: [BusinessLandingPageComponent],
+  template: '<business-landing-page />',
+})
+class ServerBusinessLandingHostComponent {}
 
 describe('BusinessLandingPageComponent', () => {
   const offers: BusinessOffer[] = [
@@ -48,7 +74,17 @@ describe('BusinessLandingPageComponent', () => {
     },
   };
 
-  async function render(config: BusinessSiteConfig | null = null) {
+  async function render(
+    config: BusinessSiteConfig | null = null,
+    titleService = { setTitle: jest.fn() },
+    blogPosts$ = of([
+      {
+        id: 'post-north',
+        name: 'North catalog update',
+        description: 'A catalog-scoped post.',
+      },
+    ])
+  ) {
     const getStoreProducts = jest.fn().mockReturnValue(
       of([
         {
@@ -63,6 +99,7 @@ describe('BusinessLandingPageComponent', () => {
         },
       ])
     );
+    const getBlogPosts = jest.fn().mockReturnValue(blogPosts$);
 
     await TestBed.configureTestingModule({
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
@@ -82,11 +119,13 @@ describe('BusinessLandingPageComponent', () => {
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
             getStoreProducts,
+            getBlogPosts,
             getSiteConfig: jest
               .fn()
               .mockReturnValue(of({ configId: null, config })),
           },
         },
+        { provide: Title, useValue: titleService },
       ],
     }).compileComponents();
 
@@ -94,6 +133,193 @@ describe('BusinessLandingPageComponent', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('restores the loaded tenant title after returning from the platform route', async () => {
+    const titleService = { setTitle: jest.fn() };
+    titleService.setTitle('Business Site Platform');
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'North Star Advisory',
+        tagline: 'Operational guidance for growing service businesses.',
+      },
+    };
+
+    await render(tenantConfig, titleService);
+
+    expect(titleService.setTitle).toHaveBeenLastCalledWith(
+      'North Star Advisory | Operational guidance for growing service businesses.'
+    );
+  });
+
+  it('keeps hosted header, contact, hero, and store content on one tenant response', async () => {
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Emberline Studio',
+        tagline: 'Configured tenant hero',
+      },
+      contact: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.contact,
+        email: 'hello@emberline.example',
+      },
+      serviceCatalog: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.serviceCatalog,
+        catalogId: 'emberline-catalog',
+      },
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ siteSlug: 'emberline-studio' }),
+            },
+            paramMap: of(convertToParamMap({ siteSlug: 'emberline-studio' })),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of([])),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+            getSiteConfigForSlug: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: 'emberline-config', config: tenantConfig })
+              ),
+          },
+        },
+        { provide: Title, useValue: { setTitle: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(
+      host.querySelector('.public-landing-header__brand-link')?.textContent
+    ).toContain('Emberline Studio');
+    expect(
+      host.querySelector('otui-public-landing-hero h1')?.textContent
+    ).toContain('Configured tenant hero');
+    expect(host.querySelector('lib-contact-form')?.textContent).toContain(
+      'Emberline Studio'
+    );
+    expect(host.textContent).not.toContain('My Business');
+  });
+
+  it('does not render fallback branding while the hosted SSR config is pending', async () => {
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Emberline Studio',
+      },
+    };
+    const previousTenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'North Star Advisory',
+      },
+    };
+    const routeConfig$ = new Subject<BusinessSiteConfig>();
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ siteSlug: 'emberline-studio' }),
+            },
+            paramMap: of(convertToParamMap({ siteSlug: 'emberline-studio' })),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => previousTenantConfig),
+            fetch: jest.fn().mockReturnValue(routeConfig$),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of([])),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        { provide: Title, useValue: { setTitle: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('My Business');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'North Star Advisory'
+    );
+    expect(
+      fixture.nativeElement.querySelector('.public-landing-header__brand-link')
+    ).toBeNull();
+
+    routeConfig$.next(tenantConfig);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Emberline Studio');
+    expect(fixture.nativeElement.textContent).not.toContain('My Business');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'North Star Advisory'
+    );
+  });
+
+  it('renders a visible fallback for an enabled persisted unsupported section', async () => {
+    const unsupportedType = 'future-section';
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'unsupported-section',
+            type: unsupportedType,
+            title: 'Future section',
+            enabled: true,
+            order: 0,
+          },
+        ],
+      },
+    } as unknown as BusinessSiteConfig);
+
+    const fallback = fixture.nativeElement.querySelector(
+      `[data-block-type="${unsupportedType}"]`
+    ) as HTMLElement;
+
+    expect(fallback).toBeTruthy();
+    expect(fallback.textContent).toContain('Unsupported section');
+    expect(fallback.querySelector('a, button')).toBeNull();
+  });
 
   it('requests offers using the hosted tenant slug from the route', async () => {
     const getOffers = jest.fn().mockReturnValue(of(offers));
@@ -139,6 +365,70 @@ describe('BusinessLandingPageComponent', () => {
     fixture.detectChanges();
 
     expect(getOffers).toHaveBeenCalledWith('steady-hand-contracting');
+  });
+
+  it('waits for the route-scoped catalog before requesting storefront products', async () => {
+    TestBed.resetTestingModule();
+    const tenantConfig$ = new Subject<BusinessSiteConfig>();
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      serviceCatalog: { source: 'store' as const, catalogId: 'tenant-catalog' },
+    };
+    const getStoreProducts = jest.fn((catalogId?: string | null) =>
+      catalogId ? of([]) : of([])
+    );
+
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ siteSlug: 'tenant-site' }),
+            },
+            paramMap: of(convertToParamMap({ siteSlug: 'tenant-site' })),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest.fn().mockReturnValue(tenantConfig$),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of([])),
+            getStoreProducts,
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    expect(getStoreProducts).not.toHaveBeenCalledWith(undefined);
+    expect(getStoreProducts).not.toHaveBeenCalledWith(null);
+
+    tenantConfig$.next(tenantConfig);
+    fixture.detectChanges();
+
+    expect(getStoreProducts).toHaveBeenCalledWith('tenant-catalog');
+  });
+
+  it('does not announce fragment navigation as the current page', async () => {
+    const fixture = await render();
+    const heroLink = fixture.nativeElement.querySelector(
+      'otui-public-landing-header .public-landing-header__nav-link[href="#hero"]'
+    ) as HTMLAnchorElement;
+
+    expect(heroLink).not.toBeNull();
+    expect(heroLink.getAttribute('aria-current')).toBeNull();
   });
 
   it('keeps the hosted tenant slug in the booking call to action link', async () => {
@@ -193,7 +483,7 @@ describe('BusinessLandingPageComponent', () => {
     );
   });
 
-  it('renders section navigation CTAs as hash anchors without route prefixing', async () => {
+  it('renders root-mode section navigation CTAs as hash anchors', async () => {
     const fixture = await render({
       ...configWithServices,
       landingPage: {
@@ -219,6 +509,349 @@ describe('BusinessLandingPageComponent', () => {
 
     expect(anchor.href.endsWith('#storefront')).toBe(true);
     expect(anchor.textContent).toContain('View storefront');
+  });
+
+  it('scopes tenant fragment navigation and configured CTAs to the hosted site path', async () => {
+    const tenantConfig = {
+      ...configWithServices,
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'custom-contact-link',
+            type: 'custom',
+            title: 'Start here',
+            enabled: true,
+            order: 7,
+            ctaLabel: 'Contact the team',
+            ctaHref: '#contact',
+          },
+        ],
+      },
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+            paramMap: of(
+              convertToParamMap({ siteSlug: 'steady-hand-contracting' })
+            ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => tenantConfig),
+            fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        { provide: Title, useValue: { setTitle: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const navLink = fixture.nativeElement.querySelector(
+      '.public-landing-header__nav-link[href="/sites/steady-hand-contracting#about"]'
+    ) as HTMLAnchorElement;
+    const ctaLink = fixture.nativeElement.querySelector(
+      '.custom-section a.cta-primary'
+    ) as HTMLAnchorElement;
+
+    expect(navLink).not.toBeNull();
+    expect(ctaLink).not.toBeNull();
+    expect(ctaLink.getAttribute('href')).toBe(
+      '/sites/steady-hand-contracting#contact'
+    );
+  });
+
+  it('connects the hosted services navigation item to its configured section id', async () => {
+    const tenantConfig = {
+      ...configWithServices,
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: configWithServices.landingPage.sections.map((section) =>
+          section.id === 'services'
+            ? { ...section, id: 'field-guide-services' }
+            : section
+        ),
+      },
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+            paramMap: of(
+              convertToParamMap({ siteSlug: 'steady-hand-contracting' })
+            ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => tenantConfig),
+            fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        { provide: Title, useValue: { setTitle: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const servicesLink = fixture.nativeElement.querySelector(
+      '.public-landing-header__nav-link[href="/sites/steady-hand-contracting#field-guide-services"]'
+    ) as HTMLAnchorElement | null;
+    const servicesSection = fixture.nativeElement.querySelector(
+      'section#field-guide-services'
+    ) as HTMLElement | null;
+
+    expect(servicesLink).not.toBeNull();
+    expect(servicesSection).not.toBeNull();
+  });
+
+  it('renders every visible configured navigation fragment target exactly once', async () => {
+    const sections = [
+      'hero',
+      'about',
+      'services',
+      'testimonials',
+      'contact',
+      'booking',
+      'store',
+      'blog',
+      'custom',
+      'image',
+      'gallery',
+    ].map((type, order) => ({
+      id: `configured-${type}`,
+      type,
+      title: `${type} section`,
+      enabled: true,
+      order,
+    }));
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      features: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.features,
+        booking: { enabled: true },
+        store: { enabled: true },
+        testimonials: { enabled: true },
+      },
+      plugins: {
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: {
+          'blogging.posts': {
+            enabled: true,
+            placement: 'public-content',
+            resourceRef: { type: 'blog-catalog', id: 'catalog-fragments' },
+          },
+        },
+      },
+      landingPage: {
+        layout: 'single-column',
+        sections,
+      },
+    } as BusinessSiteConfig);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(
+      host.querySelector(
+        '.public-landing-header__brand-link[href="#configured-hero"]'
+      )
+    ).not.toBeNull();
+
+    for (const section of sections) {
+      const navigationLink = host.querySelector(
+        `.public-landing-header__nav-link[href="#${section.id}"]`
+      );
+      const targets = host.querySelectorAll(`[id="${section.id}"]`);
+
+      expect(navigationLink).not.toBeNull();
+      expect(targets).toHaveLength(1);
+    }
+  });
+
+  it('uses contrast-safe accent and label tokens for tenant landing text', () => {
+    expect(businessLandingPageContrastStyles).toContain(
+      '--business-public-accent-text: var(--primary-2, #0f5f4b)'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      '--business-public-accent-text: var(--primary-8, #9fe0ca)'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'color: var(--business-public-accent-text)'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'color: var(--business-public-label-text)'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      '--otui-public-landing-muted: var(--business-public-label-text);'
+    );
+    expect(
+      getContrastRatio(BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT, '#fff8f0')
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      getContrastRatio(BUSINESS_PUBLIC_DARK_ACCENT_TEXT, '#1a221d')
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      getContrastRatio(BUSINESS_PUBLIC_LIGHT_LABEL_TEXT, '#ffffff')
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      getContrastRatio(BUSINESS_PUBLIC_DARK_LABEL_TEXT, '#1a221d')
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('uses the semantic on-brand foreground for tenant CTAs in every mode', () => {
+    expect(businessLandingPageContrastStyles).toContain(
+      '--business-public-on-brand: var(--on-primary, var(--primary-foreground, #ffffff))'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      '--on-primary: var(--business-public-on-brand);'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'color: var(--business-public-on-brand)'
+    );
+    expect(getContrastRatio('#ffffff', '#1f7a63')).toBeGreaterThanOrEqual(4.5);
+    expect(getContrastRatio('#ffffff', '#1f5f8b')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('uses contrast-safe accent fallbacks for public booking and platform labels', () => {
+    expect(businessBookingPageStyles).toContain(
+      '--booking-accent: var(--primary-2, #0f5f4b)'
+    );
+    expect(businessBookingPageStyles).toContain(
+      '--booking-accent: var(--primary-8, #9fe0ca)'
+    );
+    expect(businessPlatformHomePageStyles).toContain(
+      '--platform-accent-text: var(--primary-2, #0f5f4b)'
+    );
+    expect(businessPlatformHomePageStyles).toContain(
+      '--platform-accent-text: var(--primary-8, #9fe0ca)'
+    );
+  });
+
+  it('keeps contact form labels readable on the dark contact panel', async () => {
+    const fixture = await render();
+    const labels = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'lib-contact-form lib-text-input .form-label, lib-contact-form lib-text-area .form-label'
+      ) as NodeListOf<HTMLElement>
+    ).map((label) => label.textContent?.trim());
+
+    expect(labels).toEqual(['Name', 'Email Address', 'Your Message']);
+    expect(businessLandingPageContrastStyles).toContain(
+      'lib-contact-form .form {\n        --background-overlay: #1a221d;'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'lib-text-input .form-label,'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'lib-text-area .form-label'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'color: var(--business-public-dark-label-text) !important'
+    );
+    expect(
+      getContrastRatio(BUSINESS_PUBLIC_DARK_LABEL_TEXT, '#1a221d')
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('associates a visible subject label with the contact subject select', async () => {
+    const fixture = await render();
+    const select = fixture.nativeElement.querySelector(
+      'lib-contact-form lib-select select'
+    ) as HTMLSelectElement | null;
+
+    expect(select).not.toBeNull();
+    expect(select?.id).toBe('business-contact-subject');
+
+    const label = fixture.nativeElement.querySelector(
+      'lib-contact-form label[for="business-contact-subject"]'
+    ) as HTMLLabelElement | null;
+    expect(label?.textContent?.trim()).toBe('Subject');
+  });
+
+  it('keeps tenant actions visibly focusable and disables entrance motion when reduced motion is requested', () => {
+    expect(businessLandingPageContrastStyles).toContain(':focus-visible');
+    expect(businessLandingPageContrastStyles).toContain(
+      '@media (prefers-reduced-motion: reduce)'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'animation-duration: 0.01ms'
+    );
+  });
+
+  it('hides a broken newsletter banner and exposes an accessible fallback', async () => {
+    const fixture = await render();
+    const image = fixture.nativeElement.querySelector(
+      'lib-contact-form img[alt="Newsletter Banner"]'
+    ) as HTMLImageElement | null;
+
+    expect(image).not.toBeNull();
+    image?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(image?.isConnected).toBe(false);
+    const fallback = fixture.nativeElement.querySelector(
+      '.contact-media-fallback'
+    ) as HTMLElement | null;
+    expect(fallback?.textContent?.trim()).toBe('Newsletter Banner');
+    expect(fallback?.getAttribute('aria-hidden')).toBeNull();
+    expect(fallback?.getAttribute('role')).toBe('img');
+  });
+
+  it('keeps public contact layout children shrinkable at narrow widths', () => {
+    expect(businessLandingPageContrastStyles).toContain('.landing-page-root,');
+    expect(businessLandingPageContrastStyles).toContain('.landing-shell,');
+    expect(businessLandingPageContrastStyles).toContain(
+      '.contact-form-panel ::ng-deep lib-contact-form .form'
+    );
+    expect(businessLandingPageContrastStyles).toContain(
+      'box-sizing: border-box;'
+    );
+    expect(businessLandingPageContrastStyles).toContain('min-width: 0;');
+    expect(businessLandingPageContrastStyles).toContain('max-width: 100%;');
   });
 
   it('keeps the hosted tenant slug in the client portal call to action link', async () => {
@@ -342,6 +975,17 @@ describe('BusinessLandingPageComponent', () => {
     expect(host.querySelector('[data-embedded-preview-root]')).toBeTruthy();
   });
 
+  it('composes a default tenant landing through shared header and hero primitives', async () => {
+    const fixture = await render(configWithServices);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('otui-public-landing-header')).not.toBeNull();
+    expect(host.querySelector('otui-public-landing-hero')).not.toBeNull();
+    expect(
+      host.querySelector('otui-public-landing-hero h1')?.textContent
+    ).toContain(configWithServices.brand.tagline);
+  });
+
   it('emits preview section selection and highlights the selected section in embedded mode', async () => {
     await TestBed.configureTestingModule({
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
@@ -431,6 +1075,7 @@ describe('BusinessLandingPageComponent', () => {
   it('renders storefront inventory only when the store feature is enabled', async () => {
     const fixture = await render({
       ...configWithServices,
+      serviceCatalog: { source: 'store', catalogId: 'catalog-store' },
       features: {
         ...configWithServices.features,
         store: { enabled: true },
@@ -481,6 +1126,119 @@ describe('BusinessLandingPageComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Collector Print');
   });
 
+  it('renders a blog section only for an enabled blogging.posts catalog reference', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      plugins: {
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: {
+          'blogging.posts': {
+            enabled: true,
+            placement: 'public-content',
+            resourceRef: { type: 'blog-catalog', id: 'catalog-north' },
+          },
+        },
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'blog-posts',
+            type: 'blog',
+            title: 'Field notes',
+            enabled: true,
+            order: 0,
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    expect(fixture.nativeElement.textContent).toContain('Field notes');
+    expect(fixture.nativeElement.textContent).toContain('North catalog update');
+  });
+
+  it('keeps the configured blog section and rest of the landing available when the blog API fails', async () => {
+    const blogConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      plugins: {
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: {
+          'blogging.posts': {
+            enabled: true,
+            placement: 'public-content',
+            resourceRef: { type: 'blog-catalog', id: 'catalog-north' },
+          },
+        },
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'hero',
+            type: 'hero',
+            title: 'Welcome',
+            enabled: true,
+            order: 0,
+          },
+          {
+            id: 'blog-posts',
+            type: 'blog',
+            title: 'Field notes',
+            enabled: true,
+            order: 1,
+          },
+        ],
+      },
+    } as unknown as BusinessSiteConfig;
+
+    const fixture = await render(
+      blogConfig,
+      { setTitle: jest.fn() },
+      throwError(() => new Error('blog unavailable'))
+    );
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain(blogConfig.brand.tagline);
+    expect(text).toContain('Field notes');
+    expect(text).toContain('No posts are live in this catalog yet.');
+  });
+
+  it('does not render a blog section for an unsupported resource reference', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      plugins: {
+        schemaVersion: 1,
+        surfaceType: 'business-site',
+        capabilities: {
+          'blogging.posts': {
+            enabled: true,
+            placement: 'public-content',
+            resourceRef: { type: 'store-catalog', id: 'catalog-north' },
+          },
+        },
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'blog-posts',
+            type: 'blog',
+            title: 'Field notes',
+            enabled: true,
+            order: 0,
+          },
+        ],
+      },
+    } as unknown as BusinessSiteConfig);
+
+    expect(fixture.nativeElement.textContent).not.toContain('Field notes');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'North catalog update'
+    );
+  });
+
   it('hides booking, testimonials, and client portal entry points when their features are disabled', async () => {
     const fixture = await render({
       ...DEFAULT_BUSINESS_SITE_CONFIG,
@@ -527,7 +1285,7 @@ describe('BusinessLandingPageComponent', () => {
     expect(text).toContain('Jordan Vale');
   });
 
-  it('renders rich content for the hero section when configured', async () => {
+  it('renders configured hero rich content below the shared hero heading', async () => {
     const fixture = await render({
       ...DEFAULT_BUSINESS_SITE_CONFIG,
       landingPage: {
@@ -552,11 +1310,212 @@ describe('BusinessLandingPageComponent', () => {
         ),
       },
     });
-    const text = fixture.nativeElement.textContent;
+    const host = fixture.nativeElement as HTMLElement;
+    const text = host.textContent;
 
+    expect(
+      host.querySelector('otui-public-landing-hero h1')?.textContent
+    ).toContain('Hero story');
+    expect(host.querySelector('otui-public-landing-hero h1')).not.toBeNull();
+    expect(
+      host.querySelector(
+        'otui-public-landing-hero business-rich-content-renderer'
+      )
+    ).not.toBeNull();
     expect(text).toContain(
       'Directly editable hero copy for the public landing page.'
     );
+    expect(
+      host.querySelector('.public-landing-hero__description')?.textContent
+    ).toContain(DEFAULT_BUSINESS_SITE_CONFIG.brand.intro);
+    expect(
+      host.querySelector('.public-landing-hero__description')?.textContent
+    ).not.toContain(DEFAULT_BUSINESS_SITE_CONFIG.brand.longBio);
+    expect(host.querySelectorAll('otui-public-landing-hero h1')).toHaveLength(
+      1
+    );
+    expect(
+      host.querySelector('otui-public-landing-hero [slot="body"]')
+    ).not.toBeNull();
+    expect(
+      host.querySelector(
+        'otui-public-landing-hero [data-public-landing-background].hero-motion'
+      )
+    ).not.toBeNull();
+    expect(
+      host.querySelector('otui-public-landing-hero.hero-has-background')
+    ).not.toBeNull();
+    expect(businessLandingPageContrastStyles).toContain(
+      '.hero-motion {\n        pointer-events: none;'
+    );
+    expect(text).not.toMatch(
+      /(?:\bpreset\b|\bseeded\b|\bslice\b|\bP\d+(?:\.\d+)?\b)/i
+    );
+  });
+
+  it('keeps seeded rich-content heroes inside the shared shell with tenant-scoped booking', async () => {
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'North Star Advisory',
+        tagline: 'Operational guidance for growing service businesses.',
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'hero'
+              ? {
+                  ...section,
+                  richContent: {
+                    title: 'North Star field guide',
+                    content: '<p>Directly editable North Star hero copy.</p>',
+                    injectedComponents: [],
+                    themeConfig: {
+                      theme: 'light',
+                      accentColor: '#1f7a63',
+                    },
+                  },
+                }
+              : section
+        ),
+      },
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'north-star-advisory',
+              }),
+            },
+            paramMap: of(
+              convertToParamMap({ siteSlug: 'north-star-advisory' })
+            ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => tenantConfig),
+            fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        { provide: Title, useValue: { setTitle: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('otui-public-landing-hero')).not.toBeNull();
+    expect(
+      host.querySelector('otui-public-landing-hero h1')?.textContent
+    ).toContain('North Star field guide');
+    expect(host.textContent).toContain(
+      'Directly editable North Star hero copy.'
+    );
+
+    const bookingLink = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink).href)
+      .find((href): href is string => !!href && href.endsWith('/book'));
+
+    expect(bookingLink).toBe('/sites/north-star-advisory/book');
+  });
+
+  it('updates projected hero rich content while preserving the single heading', async () => {
+    const firstConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'hero'
+              ? {
+                  ...section,
+                  richContent: {
+                    title: 'First hero title',
+                    content: '<p>First hero body.</p>',
+                  },
+                }
+              : section
+        ),
+      },
+    };
+    const secondConfig = {
+      ...firstConfig,
+      landingPage: {
+        ...firstConfig.landingPage,
+        sections: firstConfig.landingPage.sections.map((section) =>
+          section.id === 'hero'
+            ? {
+                ...section,
+                richContent: {
+                  title: 'Updated hero title',
+                  content: '<p>Updated hero body.</p>',
+                },
+              }
+            : section
+        ),
+      },
+    };
+    const site = signal(firstConfig);
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: site.asReadonly(),
+            fetch: jest.fn().mockReturnValue(of(firstConfig)),
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getBlogPosts: jest.fn().mockReturnValue(of([])),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('First hero body.');
+    expect(
+      fixture.nativeElement.querySelectorAll('otui-public-landing-hero h1')
+    ).toHaveLength(1);
+
+    site.set(secondConfig);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('First hero body.');
+    expect(fixture.nativeElement.textContent).toContain('Updated hero body.');
+    expect(
+      fixture.nativeElement.querySelectorAll('otui-public-landing-hero h1')
+    ).toHaveLength(1);
   });
 
   it('applies the configured split layout and renders custom sections', async () => {
@@ -954,5 +1913,72 @@ describe('BusinessLandingPageComponent', () => {
     expect(contactSection?.textContent).toContain(
       'Meet in person or remotely.'
     );
+  });
+});
+
+describe('BusinessLandingPageComponent SSR', () => {
+  it('serializes one Emberline tenant identity across the raw SSR landing output', async () => {
+    const tenantConfig = {
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Emberline Studio',
+        tagline: 'Configured Emberline hero',
+      },
+    };
+
+    destroyPlatform();
+    const html = await renderApplication(
+      () =>
+        bootstrapApplication(ServerBusinessLandingHostComponent, {
+          providers: [
+            provideServerRendering(),
+            provideRouter([]),
+            {
+              provide: ActivatedRoute,
+              useValue: {
+                snapshot: {
+                  paramMap: convertToParamMap({ siteSlug: 'emberline-studio' }),
+                },
+                paramMap: of(
+                  convertToParamMap({ siteSlug: 'emberline-studio' })
+                ),
+              },
+            },
+            {
+              provide: BusinessSiteConfigStore,
+              useValue: {
+                site: signal(DEFAULT_BUSINESS_SITE_CONFIG),
+                fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+              },
+            },
+            {
+              provide: BusinessApiService,
+              useValue: {
+                getOffers: jest.fn().mockReturnValue(of([])),
+                getStoreProducts: jest.fn().mockReturnValue(of([])),
+                getBlogPosts: jest.fn().mockReturnValue(of([])),
+                getSiteConfigForSlug: jest
+                  .fn()
+                  .mockReturnValue(
+                    of({ configId: 'emberline-config', config: tenantConfig })
+                  ),
+              },
+            },
+            { provide: Title, useValue: { setTitle: jest.fn() } },
+          ],
+        }),
+      {
+        document: '<app-root></app-root>',
+        url: '/sites/emberline-studio',
+      }
+    );
+
+    expect(html).toContain('class="public-landing-header__brand-link"');
+    expect(html).toContain('Emberline Studio');
+    expect(html).toContain('Contact Emberline Studio');
+    expect(html).toContain('Configured Emberline hero');
+    expect(html).not.toContain('My Business');
+    destroyPlatform();
   });
 });

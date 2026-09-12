@@ -1,8 +1,9 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
+import { normalizeAuthReturnTo } from '@optimistic-tanuki/auth-ui';
 import { AuthService } from '../services/auth.service';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -10,6 +11,14 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  router.navigate(['/login']);
-  return false;
+  const currentOrigin =
+    typeof window === 'undefined' ? '' : window.location.origin;
+  const normalizedReturnTo = normalizeAuthReturnTo(state.url, {
+    currentOrigin,
+  });
+  const returnUrl = normalizedReturnTo?.isCurrentOrigin
+    ? normalizedReturnTo.path
+    : '/dashboard';
+
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl } });
 };

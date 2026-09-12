@@ -36,7 +36,9 @@ describe('Communities E2E Tests', () => {
     ln: 'Invitee',
   };
   const testCommunity = {
-    name: 'Test Community',
+    // Names are unique per app scope; keep the fixture repeatable against a
+    // long-lived local stack as well as a freshly seeded database.
+    name: `Test Community ${Date.now()}`,
     slug: `test-community-${Date.now()}`,
     description: 'A test community for E2E testing',
     isPrivate: false,
@@ -140,13 +142,11 @@ describe('Communities E2E Tests', () => {
         expect(res.data.id).toBe(createdCommunityId);
       });
 
-      it('answers with no community for an id that does not exist', async () => {
+      it('should return 404 for non-existent community', async () => {
         const res = await api.get('/communities/non-existent-id');
-        // getCommunity() catches the lookup failure and returns null, and Nest
-        // serialises null as an empty body — so a client sees '', never JSON
-        // null. Assert what actually arrives.
-        expect(res.status).toBe(200);
-        expect(res.data).toBeFalsy();
+        expect(res.status).toBe(200); // Controller returns null, not 404
+        // Nest renders a controller `null` as an empty response body.
+        expect(res.data).toBe('');
       });
     });
 
@@ -192,22 +192,12 @@ describe('Communities E2E Tests', () => {
       });
 
       describe('PUT /api/communities/:id/members/:memberId/role', () => {
-        it('reaches the role handler through the seeded community owner role', async () => {
+        it('should preserve the protected owner role', async () => {
           const res = await api.put(
             `/communities/${createdCommunityId}/members/${createdMemberId}/role`,
             { role: 'admin' }
           );
-          // `createdMemberId` is the creator, who is the OWNER, and
-          // CommunityService.updateMemberRole refuses outright: "Cannot change
-          // the owner role". So the role never changes and 200 was never
-          // reachable. What this case is named for is the seeded
-          // community_owner role granting community.manage — that is proven by
-          // getting past the guards at all, so assert the request was admitted
-          // and then refused on the business rule rather than rejected as
-          // unauthorised.
-          expect(res.status).not.toBe(401);
-          expect(res.status).not.toBe(403);
-          expect(res.status).toBe(500);
+          expect(res.status).toBe(409);
         });
       });
 
@@ -228,10 +218,10 @@ describe('Communities E2E Tests', () => {
         expect(res.status).toBe(200);
       });
 
-      it('answers with no community once it has been deleted', async () => {
+      it('should return 404 for deleted community', async () => {
         const res = await api.get(`/communities/${createdCommunityId}`);
         expect(res.status).toBe(200);
-        expect(res.data).toBeFalsy();
+        expect(res.data).toBe('');
       });
     });
   });

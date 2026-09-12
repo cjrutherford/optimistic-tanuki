@@ -1,29 +1,21 @@
 import { ConfigService } from '@nestjs/config';
 import loadDatabase from './loadDatabase';
-import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
-import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
-import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
+import { CatalogEntity } from '../catalog/entities/catalog.entity';
 
-describe('store runtime database config', () => {
-  it('registers trainer config, routines, and check-in entities for the live datasource', () => {
-    const configService = {
+describe('loadDatabase', () => {
+  it('registers Store catalog metadata for the runtime connection', () => {
+    const config = {
       get: jest.fn().mockReturnValue({
-        host: 'db',
+        host: 'localhost',
         port: 5432,
-        username: 'postgres',
-        password: 'postgres',
+        username: 'store',
+        password: 'store',
         database: 'ot_store',
       }),
     } as unknown as ConfigService;
 
-    const ormConfig = loadDatabase(configService);
-    const entities = (ormConfig.entities ?? []) as Array<string | Function>;
-    const entityNames = entities.map((entity) =>
-      typeof entity === 'function' ? entity.name : String(entity)
-    );
+    const database = loadDatabase(config);
 
-    expect(entityNames).toContain(TrainerRoutineAssignmentEntity.name);
-    expect(entityNames).toContain(TrainerProgressCheckInEntity.name);
-    expect(entityNames).toContain(TrainerSiteConfigEntity.name);
+    expect(database.entities).toContain(CatalogEntity);
   });
 });

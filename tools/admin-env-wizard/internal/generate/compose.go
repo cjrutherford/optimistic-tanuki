@@ -19,6 +19,14 @@ type ComposeService struct {
 	Volumes       []string            `yaml:"volumes,omitempty"`
 	Restart       string              `yaml:"restart,omitempty"`
 	Healthcheck   *ComposeHealthcheck `yaml:"healthcheck,omitempty"`
+	Networks      []string            `yaml:"networks,omitempty"`
+	// Sandbox controls, emitted only for presets that declare a Sandbox.
+	ReadOnly    bool     `yaml:"read_only,omitempty"`
+	Tmpfs       []string `yaml:"tmpfs,omitempty"`
+	CapDrop     []string `yaml:"cap_drop,omitempty"`
+	SecurityOpt []string `yaml:"security_opt,omitempty"`
+	PidsLimit   int      `yaml:"pids_limit,omitempty"`
+	MemLimit    string   `yaml:"mem_limit,omitempty"`
 }
 
 type ComposeBuild struct {
@@ -37,6 +45,42 @@ type ComposeFile struct {
 	Version  string                    `yaml:"version,omitempty"`
 	Services map[string]ComposeService `yaml:"services"`
 	Volumes  map[string]interface{}    `yaml:"volumes,omitempty"`
+	Networks map[string]ComposeNetwork `yaml:"networks,omitempty"`
+}
+
+type ComposeNetwork struct {
+	Internal bool `yaml:"internal,omitempty"`
+}
+
+// applySandbox writes a preset's confinement onto its compose service.
+//
+// Everything here has a Kubernetes counterpart in generateSandboxK8s; a field
+// added to catalog.Sandbox belongs in both.
+func applySandbox(service *ComposeService, sandbox *catalog.Sandbox) {
+	service.ReadOnly = sandbox.ReadOnlyRootFilesystem
+	if sandbox.DropAllCapabilities {
+		service.CapDrop = []string{"ALL"}
+	}
+	if sandbox.NoNewPrivileges {
+		service.SecurityOpt = []string{"no-new-privileges:true"}
+	}
+	service.PidsLimit = sandbox.PidsLimit
+	service.MemLimit = sandbox.MemoryLimit
+
+	for _, mount := range sandbox.Tmpfs {
+		options := "noexec,nosuid"
+		if mount.Exec {
+			options = "exec,nosuid,nodev,mode=1777"
+		}
+		service.Tmpfs = append(
+			service.Tmpfs,
+			fmt.Sprintf("%s:size=%s,%s", mount.Path, mount.Size, options),
+		)
+	}
+
+	if sandbox.InternalNetwork != "" {
+		service.Networks = []string{sandbox.InternalNetwork}
+	}
 }
 
 func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([]byte, error) {
@@ -125,12 +169,51 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 			service.Volumes = append(service.Volumes, "../gateway:/etc/optimistic-tanuki/gateway:ro")
 		}
 
+		if preset.Sandbox != nil {
+			applySandbox(&service, preset.Sandbox)
+		}
+
 		serviceName := preset.Compose.ServiceName
 		if serviceName == "" {
 			serviceName = preset.ID
 		}
 
 		cf.Services[serviceName] = service
+	}
+
+	// Sandboxed workloads sit on an internal network, which the services
+	// allowed to call them have to join as well — while keeping `default`, or
+	// they would lose their route to the rest of the stack.
+	for _, sel := range env.Services {
+		if !sel.Enabled {
+			continue
+		}
+		preset, ok := cat.Get(sel.ServiceID)
+		if !ok || preset.Sandbox == nil || preset.Sandbox.InternalNetwork == "" {
+			continue
+		}
+
+		if cf.Networks == nil {
+			cf.Networks = map[string]ComposeNetwork{}
+		}
+		cf.Networks[preset.Sandbox.InternalNetwork] = ComposeNetwork{Internal: true}
+
+		for _, callerID := range preset.Sandbox.IngressFrom {
+			caller, ok := cat.Get(callerID)
+			if !ok {
+				continue
+			}
+			callerName := caller.Compose.ServiceName
+			if callerName == "" {
+				callerName = caller.ID
+			}
+			callerService, ok := cf.Services[callerName]
+			if !ok {
+				continue
+			}
+			callerService.Networks = []string{"default", preset.Sandbox.InternalNetwork}
+			cf.Services[callerName] = callerService
+		}
 	}
 
 	for kind := range enabledInfra {

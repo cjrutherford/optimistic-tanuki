@@ -14,16 +14,142 @@ import {
   RoleInitBuilder,
   RoleInitService,
 } from '@optimistic-tanuki/permission-lib';
-import { firstValueFrom } from 'rxjs';
+import {
+  catchError,
+  firstValueFrom,
+  TimeoutError,
+  timeout,
+  throwError,
+} from 'rxjs';
+
+type RpcClient = Pick<ClientProxy, 'send'> &
+  Partial<Pick<ClientProxy, 'connect' | 'close'>>;
+
+const AUTH_USER_ID_TIMEOUT_MS = 5000;
+const PROFILE_GET_ALL_TIMEOUT_MS = 5000;
+const RPC_CONNECTION_TIMEOUT_MS = 5000;
 
 @Injectable()
 export class LoginAccountBootstrapService {
   constructor(
-    private readonly authClient: Pick<ClientProxy, 'send'>,
-    private readonly profileClient: Pick<ClientProxy, 'send'>,
+    private readonly authClient: RpcClient,
+    private readonly profileClient: RpcClient,
     private readonly permissionsClient: Pick<ClientProxy, 'send'>,
     private readonly roleInit: Pick<RoleInitService, 'processNow'>
   ) {}
+
+  private readonly clientConnections = new Map<object, Promise<void>>();
+
+  private async connectOnce(
+    client: RpcClient,
+    operation: string
+  ): Promise<void> {
+    if (typeof client.connect !== 'function') {
+      return;
+    }
+
+    const timeoutMarker = Symbol('connection-timeout');
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    let connection: Promise<unknown>;
+
+    try {
+      connection = Promise.resolve(client.connect());
+      connection.catch(() => undefined);
+      await Promise.race([
+        connection,
+        new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(timeoutMarker),
+            RPC_CONNECTION_TIMEOUT_MS
+          );
+        }),
+      ]);
+    } catch (error) {
+      if (error === timeoutMarker) {
+        throw new Error(`${operation} connection timed out`);
+      }
+      throw new Error(`${operation} connection failed`);
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
+  }
+
+  private resetClient(client: RpcClient): void {
+    try {
+      client.close?.();
+    } catch {
+      // A failed reset must not replace the operation-specific safe error.
+    }
+  }
+
+  private async connectWithRetry(
+    client: RpcClient,
+    operation: string
+  ): Promise<void> {
+    try {
+      await this.connectOnce(client, operation);
+      return;
+    } catch {
+      this.resetClient(client);
+    }
+
+    try {
+      await this.connectOnce(client, operation);
+    } catch (error) {
+      this.resetClient(client);
+      throw error;
+    }
+  }
+
+  private async ensureConnection(
+    client: RpcClient,
+    operation: string
+  ): Promise<void> {
+    let connection = this.clientConnections.get(client);
+    if (!connection) {
+      connection = this.connectWithRetry(client, operation);
+      this.clientConnections.set(client, connection);
+      connection.catch(() => {
+        if (this.clientConnections.get(client) === connection) {
+          this.clientConnections.delete(client);
+        }
+      });
+    }
+    await connection;
+  }
+
+  private async sendWithConnectionAndTimeout<T>(
+    client: RpcClient,
+    pattern: object,
+    payload: unknown,
+    operation: string,
+    timeoutMs: number
+  ): Promise<T> {
+    await this.ensureConnection(client, operation);
+
+    return firstValueFrom(
+      client.send(pattern, payload).pipe(
+        timeout(timeoutMs),
+        catchError((error: unknown) =>
+          error instanceof TimeoutError
+            ? throwError(() => new Error(`${operation} request timed out`))
+            : throwError(() => error)
+        )
+      )
+    ) as Promise<T>;
+  }
+
+  private async getProfiles(userId: string): Promise<ProfileDto[]> {
+    return this.sendWithConnectionAndTimeout<ProfileDto[]>(
+      this.profileClient,
+      { cmd: ProfileCommands.GetAll },
+      { where: { userId } },
+      'Profile GetAll',
+      PROFILE_GET_ALL_TIMEOUT_MS
+    );
+  }
 
   async login(data: LoginRequest, appScope: string) {
     const normalizedRequest: LoginRequest = {
@@ -31,11 +157,12 @@ export class LoginAccountBootstrapService {
       email: data.email.trim().toLowerCase(),
     };
     const userIdResult: string | { userId?: string; id?: string } =
-      await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.UserIdFromEmail },
-          { email: normalizedRequest.email }
-        )
+      await this.sendWithConnectionAndTimeout(
+        this.authClient,
+        { cmd: AuthCommands.UserIdFromEmail },
+        { email: normalizedRequest.email },
+        'Auth UserIdFromEmail',
+        AUTH_USER_ID_TIMEOUT_MS
       );
     const userId =
       typeof userIdResult === 'string'
@@ -48,12 +175,7 @@ export class LoginAccountBootstrapService {
       );
     }
 
-    const profiles = (await firstValueFrom(
-      this.profileClient.send(
-        { cmd: ProfileCommands.GetAll },
-        { where: { userId } }
-      )
-    )) as ProfileDto[];
+    const profiles = await this.getProfiles(userId);
 
     const effectiveAppScope =
       appScope === 'owner-console' ? 'global' : appScope;

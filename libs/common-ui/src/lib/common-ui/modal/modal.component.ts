@@ -231,6 +231,8 @@ export class ModalComponent
   private focusableElements: HTMLElement[] = [];
   private previouslyFocusedElement: HTMLElement | null = null;
   private bodyScrollLock = false;
+  private openTimer: ReturnType<typeof setTimeout> | null = null;
+  private focusTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ==================== LIFECYCLE ====================
 
@@ -258,14 +260,17 @@ export class ModalComponent
     if (this.visible) {
       // Defer so the dialog is rendered (the template is gated on `visible`)
       // before we query focusable elements and move focus into the modal.
-      setTimeout(() => this.onModalOpen(), 0);
+      this.openTimer = setTimeout(() => {
+        this.openTimer = null;
+        this.onModalOpen();
+      }, 0);
     } else {
       this.onModalClose();
     }
   }
 
   override ngOnDestroy(): void {
-    this.unlockBodyScroll();
+    this.onModalClose();
   }
 
   // ==================== THEME ====================
@@ -289,7 +294,10 @@ export class ModalComponent
     if (!this.visible) {
       this.visible = true;
       this.open.emit();
-      setTimeout(() => this.onModalOpen(), 0);
+      this.openTimer = setTimeout(() => {
+        this.openTimer = null;
+        this.onModalOpen();
+      }, 0);
     }
   }
 
@@ -331,6 +339,8 @@ export class ModalComponent
   private onModalOpen(): void {
     if (!this.visible) return;
 
+    this.cancelFocusTimers();
+
     // Store previously focused element
     this.previouslyFocusedElement = document.activeElement as HTMLElement;
 
@@ -343,7 +353,9 @@ export class ModalComponent
     if (this.focusTrap) {
       this.collectFocusableElements();
       // Focus first element or close button
-      setTimeout(() => {
+      this.focusTimer = setTimeout(() => {
+        this.focusTimer = null;
+        if (!this.visible) return;
         if (this.closeButton?.nativeElement) {
           this.closeButton.nativeElement.focus();
         } else {
@@ -354,13 +366,31 @@ export class ModalComponent
   }
 
   private onModalClose(): void {
+    this.cancelFocusTimers();
+    const previouslyFocusedElement = this.previouslyFocusedElement;
+    this.previouslyFocusedElement = null;
+
     // Restore focus
-    if (this.previouslyFocusedElement) {
-      this.previouslyFocusedElement.focus();
+    if (
+      previouslyFocusedElement?.isConnected &&
+      !previouslyFocusedElement.hasAttribute('inert')
+    ) {
+      previouslyFocusedElement.focus();
     }
 
     // Unlock body scroll
     this.unlockBodyScroll();
+  }
+
+  private cancelFocusTimers(): void {
+    if (this.openTimer !== null) {
+      clearTimeout(this.openTimer);
+      this.openTimer = null;
+    }
+    if (this.focusTimer !== null) {
+      clearTimeout(this.focusTimer);
+      this.focusTimer = null;
+    }
   }
 
   private collectFocusableElements(): void {

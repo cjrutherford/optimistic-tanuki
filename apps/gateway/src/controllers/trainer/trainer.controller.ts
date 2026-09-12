@@ -9,6 +9,7 @@ import {
   Inject,
   InternalServerErrorException,
   NotFoundException,
+  Optional,
   Param,
   Post,
   Put,
@@ -21,6 +22,8 @@ import { catchError, firstValueFrom, throwError } from 'rxjs';
 import {
   AppointmentCommands,
   AvailabilityCommands,
+  BlogCatalogCommands,
+  CatalogCommands,
   LeadCommands,
   ProductCommands,
   ServiceTokens,
@@ -35,6 +38,8 @@ import {
   CreateLeadDto,
   LeadSource,
   LeadStatus,
+  createModerationCase,
+  decideModerationCase,
   UpdateAvailabilityDto,
   UpdateAvailabilityOverrideDto,
 } from '@optimistic-tanuki/models';
@@ -43,6 +48,8 @@ import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { WorkspaceContext } from '../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 type BusinessLeadIntakeDto = {
   siteSlug?: string;
@@ -63,8 +70,64 @@ export class TrainerController {
     @Inject(ServiceTokens.STORE_SERVICE)
     private readonly storeService: ClientProxy,
     @Inject(ServiceTokens.LEAD_SERVICE)
-    private readonly leadService: ClientProxy
+    private readonly leadService: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.BLOG_SERVICE)
+    private readonly blogService?: ClientProxy
   ) {}
+
+  private async assertCatalogReferencesBelongToWorkspace(
+    config: Record<string, any>,
+    request: any
+  ): Promise<void> {
+    const storeCatalogId = config?.serviceCatalog?.catalogId?.trim();
+    const blogCatalogId =
+      config?.plugins?.capabilities?.[
+        'blogging.posts'
+      ]?.resourceRef?.id?.trim();
+
+    if (!storeCatalogId && !blogCatalogId) {
+      return;
+    }
+
+    const workspace = request?.workspaceContext?.workspace;
+    if (!workspace) {
+      throw new BadRequestException(
+        'A business-site workspace is required when selecting feature catalogs.'
+      );
+    }
+
+    const scope = {
+      ownerId: workspace.ownerProfileId,
+      workspaceId: workspace.workspaceId,
+      appScope: workspace.appScope,
+    };
+
+    if (storeCatalogId) {
+      const catalogs = (await firstValueFrom(
+        this.storeService.send(CatalogCommands.FIND_STORE_CATALOGS, scope)
+      )) as Array<{ id?: string }>;
+      if (!catalogs.some((catalog) => catalog.id === storeCatalogId)) {
+        throw new ForbiddenException(
+          'The selected store catalog is outside the current workspace.'
+        );
+      }
+    }
+
+    if (blogCatalogId) {
+      if (!this.blogService) {
+        throw new BadRequestException('Blog catalog selection is unavailable.');
+      }
+      const catalogs = (await firstValueFrom(
+        this.blogService.send({ cmd: BlogCatalogCommands.FIND_ALL }, scope)
+      )) as Array<{ id?: string }>;
+      if (!catalogs.some((catalog) => catalog.id === blogCatalogId)) {
+        throw new ForbiddenException(
+          'The selected blog catalog is outside the current workspace.'
+        );
+      }
+    }
+  }
 
   private getBusinessLeadContext(
     config: Record<string, any> | null | undefined
@@ -419,9 +482,16 @@ export class TrainerController {
     );
   }
 
-  private async loadActiveStoreServiceProducts(ownerId?: string | null) {
+  private async loadActiveStoreServiceProducts(
+    ownerId?: string | null,
+    catalogId?: string | null
+  ) {
     const products = (await firstValueFrom(
-      ownerId
+      catalogId
+        ? this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {
+            catalogId,
+          })
+        : ownerId
         ? this.storeService.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
         : this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
     )) as Array<any>;
@@ -435,8 +505,14 @@ export class TrainerController {
     );
   }
 
-  private async assertStoreCatalogPublishReady(ownerId?: string | null) {
-    const serviceProducts = await this.loadActiveStoreServiceProducts(ownerId);
+  private async assertStoreCatalogPublishReady(
+    ownerId?: string | null,
+    catalogId?: string | null
+  ) {
+    const serviceProducts = await this.loadActiveStoreServiceProducts(
+      ownerId,
+      catalogId
+    );
 
     if (!serviceProducts.length) {
       throw new BadRequestException(
@@ -560,6 +636,9 @@ export class TrainerController {
         slug: slug?.trim() || undefined,
       })
     )) as { config?: Record<string, any> } | null;
+    if (slug?.trim() && configResult?.config?.site?.status === 'draft') {
+      return [];
+    }
     const serviceCatalogSource =
       configResult?.config?.serviceCatalog?.source ?? 'manual';
     const configuredServices = Array.isArray(configResult?.config?.services)
@@ -699,7 +778,11 @@ export class TrainerController {
     try {
       const result = await firstValueFrom(
         this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
-          configKey: 'default',
+          configKey: slug?.trim()
+            ? 'default'
+            : req?.user?.profileId
+            ? this.businessSiteConfigKey(req.user.profileId)
+            : 'default',
           slug: slug?.trim() || undefined,
           profileId: slug?.trim()
             ? undefined
@@ -709,6 +792,22 @@ export class TrainerController {
       if (!result || !result.config) {
         return { configId: null, config: null };
       }
+
+      // Slug lookups are also used by the public SSR app. A draft may still
+      // be loaded by its owner in the editor, but anonymous visitors (and
+      // other authenticated users) must continue to see only the last
+      // published version rather than draft-only edits.
+      const config = result.config as {
+        site?: { status?: string; ownerProfileId?: string };
+        leadContext?: { profileId?: string };
+      };
+      const isDraft = config.site?.status === 'draft';
+      const ownerProfileId =
+        config.site?.ownerProfileId || config.leadContext?.profileId;
+      if (slug?.trim() && isDraft && req?.user?.profileId !== ownerProfileId) {
+        return { configId: null, config: null };
+      }
+
       return result;
     } catch {
       return { configId: null, config: null };
@@ -847,7 +946,7 @@ export class TrainerController {
     @User() user: UserDetails,
     @Query('slug') slug?: string
   ) {
-    const { leads } = await this.loadBusinessLeads(slug);
+    const { leadContext, leads } = await this.loadBusinessLeads(slug);
     const lead = leads.find((entry) => entry?.userId === user.userId) ?? null;
     const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
     const bookings = (await firstValueFrom(
@@ -866,6 +965,11 @@ export class TrainerController {
       stage: lifecycle.stage,
       nextAction: lifecycle.nextAction,
       primaryAction: lifecycle.primaryAction,
+      lifecycleState: lead && this.isAcceptedLead(lead) ? 'active' : 'pending',
+      sessionRefresh: {
+        required: !!lead && this.isAcceptedLead(lead),
+        appScope: leadContext.appScope,
+      },
     };
   }
 
@@ -959,6 +1063,28 @@ export class TrainerController {
     @Param('id') id: string,
     @User() user: UserDetails
   ) {
+    const ownerLeadResult = (await firstValueFrom(
+      this.leadService.send(
+        { cmd: LeadCommands.FIND_ALL },
+        {
+          profileId: user.profileId,
+          appScope: 'business-site',
+        }
+      )
+    )) as any[] | Record<string, unknown> | null;
+    const ownerLeads = Array.isArray(ownerLeadResult)
+      ? ownerLeadResult
+      : ownerLeadResult
+      ? [ownerLeadResult]
+      : [];
+    const scopedLead = ownerLeads.find((entry) => entry?.id === id);
+
+    if (!scopedLead) {
+      throw new ForbiddenException(
+        'You do not have access to approve this business client.'
+      );
+    }
+
     const lead = await firstValueFrom(
       this.leadService.send(
         { cmd: LeadCommands.UPDATE },
@@ -972,7 +1098,99 @@ export class TrainerController {
       )
     );
 
-    return this.toProspectRecord(lead);
+    return {
+      ...this.toProspectRecord(lead),
+      lifecycleState: 'active',
+      moderationDecision: decideModerationCase(
+        createModerationCase({
+          id: `business-client:${lead.id}`,
+          workspaceId: null,
+          appScope: 'business-site',
+          subject: {
+            domain: 'business',
+            resourceType: 'client-lead',
+            resourceId: lead.id,
+            workspaceId: null,
+          },
+          reporterId: lead.profileId || user.profileId,
+          reason: 'other',
+          evidence: [],
+          retention: { deleteAfter: '2027-08-23T00:00:00.000Z' },
+          occurredAt: new Date().toISOString(),
+        }),
+        {
+          outcome: 'approve',
+          actorId: user.profileId,
+          occurredAt: new Date().toISOString(),
+        }
+      ).decision,
+      sessionRefresh: {
+        required: false,
+        appScope: 'business-site',
+      },
+    };
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('owner/leads/:id/reject')
+  async rejectOwnerProspect(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
+    const leads = (await firstValueFrom(
+      this.leadService.send(
+        { cmd: LeadCommands.FIND_ALL },
+        { profileId: user.profileId, appScope: 'business-site' }
+      )
+    )) as any[];
+    const scopedLead = leads.find((entry) => entry?.id === id);
+    if (!scopedLead) {
+      throw new ForbiddenException(
+        'You do not have access to reject this business client.'
+      );
+    }
+    const lead = await firstValueFrom(
+      this.leadService.send(
+        { cmd: LeadCommands.UPDATE },
+        {
+          id,
+          profileId: user.profileId,
+          dto: { status: LeadStatus.LOST },
+        }
+      )
+    );
+    return {
+      ...this.toProspectRecord(lead),
+      lifecycleState: 'revoked',
+      moderationDecision: decideModerationCase(
+        createModerationCase({
+          id: `business-client:${lead.id}`,
+          workspaceId: null,
+          appScope: 'business-site',
+          subject: {
+            domain: 'business',
+            resourceType: 'client-lead',
+            resourceId: lead.id,
+            workspaceId: null,
+          },
+          reporterId: lead.profileId || user.profileId,
+          reason: 'other',
+          evidence: [],
+          retention: { deleteAfter: '2027-08-23T00:00:00.000Z' },
+          occurredAt: new Date().toISOString(),
+        }),
+        {
+          outcome: 'reject',
+          actorId: user.profileId,
+          occurredAt: new Date().toISOString(),
+        }
+      ).decision,
+      sessionRefresh: {
+        required: true,
+        appScope: 'business-site',
+      },
+    };
   }
 
   @RequirePermissions('app-config.update')
@@ -1169,13 +1387,21 @@ export class TrainerController {
   }
 
   @RequirePermissions('app-config.update')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'slug',
+    strict: true,
+    optional: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Put('site-config')
   async updateSiteConfig(
     @Body()
     payload: { configId?: string | null; config: Record<string, unknown> },
     @User() user: UserDetails,
-    @Query('slug') slug?: string
+    @Query('slug') slug?: string,
+    @Req() request?: any
   ) {
     const normalizedSlug = slug?.trim();
     const config = {
@@ -1185,6 +1411,8 @@ export class TrainerController {
         appScope: 'business-site',
       },
     };
+
+    await this.assertCatalogReferencesBelongToWorkspace(config, request);
 
     if (!payload.configId) {
       return firstValueFrom(
@@ -1206,7 +1434,14 @@ export class TrainerController {
   }
 
   @RequirePermissions('business-site.catalog.update')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'slug',
+    strict: true,
+    optional: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Put('site-config/catalog-source')
   async updateCatalogSource(
     @Body()
@@ -1214,9 +1449,11 @@ export class TrainerController {
       configId?: string | null;
       source: 'manual' | 'store';
       storeEnabled?: boolean;
+      catalogId?: string | null;
     },
     @User() user: UserDetails,
-    @Query('slug') slug?: string
+    @Query('slug') slug?: string,
+    @Req() request?: any
   ) {
     const normalizedSlug = slug?.trim();
     const catalogOwnerId = normalizedSlug
@@ -1224,7 +1461,31 @@ export class TrainerController {
       : user.userId;
 
     if (payload.source === 'store') {
-      await this.assertStoreCatalogPublishReady(catalogOwnerId);
+      const catalogId = payload.catalogId?.trim();
+      if (catalogId) {
+        const workspace = request?.workspaceContext?.workspace;
+        if (!workspace) {
+          throw new BadRequestException(
+            'A business-site workspace is required when selecting a store catalog.'
+          );
+        }
+        const catalogs = (await firstValueFrom(
+          this.storeService.send(CatalogCommands.FIND_STORE_CATALOGS, {
+            ownerId: workspace.ownerProfileId,
+            workspaceId: workspace.workspaceId,
+            appScope: workspace.appScope,
+          })
+        )) as Array<{ id?: string }>;
+        if (!catalogs.some((catalog) => catalog.id === catalogId)) {
+          throw new ForbiddenException(
+            'The selected store catalog is outside the current workspace.'
+          );
+        }
+      }
+      await this.assertStoreCatalogPublishReady(
+        catalogOwnerId,
+        payload.catalogId?.trim()
+      );
     }
 
     const existingConfig = normalizedSlug
@@ -1246,6 +1507,8 @@ export class TrainerController {
       serviceCatalog: {
         ...(existingConfig?.serviceCatalog ?? {}),
         source: payload.source,
+        catalogId:
+          payload.source === 'store' ? payload.catalogId?.trim() || null : null,
       },
     };
 

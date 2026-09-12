@@ -130,6 +130,37 @@ Use this when you want the non-debug image startup path.
 docker compose up -d
 ```
 
+### Batched Image Pulls
+
+For a registry refresh without starting the stack, use the bounded batched pull
+helper:
+
+```bash
+./scripts/batch-pull.sh --dry-run
+./scripts/batch-pull.sh --batch-size 5 --retries 2
+```
+
+The default batch size is `5`. A failed batch is retried at most two times and
+then stops, so a registry or network problem cannot create an unbounded retry
+loop. Adjust the batch size and retry policy with `--batch-size`, `--retries`,
+and `--retry-delay`, or the corresponding `BATCH_PULL_*` environment variables.
+Use `--env-file` or `--compose-file` when the Compose interpolation context is
+not the repository default.
+
+The helper passes Ollama settings through to Compose; it does not download
+models. For the remote Ollama host, provide the endpoint explicitly when
+needed:
+
+```bash
+./scripts/batch-pull.sh --dry-run \
+  --ollama-host 100.89.87.124 \
+  --ollama-port 11434 \
+  --learning-ollama-url http://100.89.87.124:11434
+```
+
+Use an environment file for normal pulls so endpoint settings remain outside
+the repository, for example `COMPOSE_ENV_FILE=.env.production`.
+
 ### Production Registry Overrides
 
 Use Compose env substitution when deployed app URLs or OAuth callback hosts need

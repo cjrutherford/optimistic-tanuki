@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@optimistic-tanuki/logger';
-import loadConfig from './config';
+import loadConfig, { resolveOllamaEndpoint } from './config';
 
 @Module({
   imports: [
@@ -23,7 +23,10 @@ import loadConfig from './config';
     {
       provide: 'API_BASE_URL',
       useFactory: (config: ConfigService) =>
-        `http://${config.get('ollama.apiUrl')}:${config.get('ollama.apiPort')}`,
+        resolveOllamaEndpoint({
+          apiUrl: config.get<string>('ollama.apiUrl'),
+          apiPort: config.get<string | number>('ollama.apiPort'),
+        }),
       inject: [ConfigService],
     },
   ],

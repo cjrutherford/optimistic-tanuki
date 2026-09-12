@@ -61,3 +61,60 @@ export const demoAppConfig: Partial<AppConfigurationEntity> = {
     fontFamily: 'Arial, sans-serif',
   },
 };
+
+/**
+ * Returns the canonical seed for a particular product surface. The original
+ * business-site fixture intentionally remains unchanged; configurable-client
+ * needs a publishable manifest and a real catalog reference so its Blog route
+ * can be exercised against the public shell.
+ */
+export function demoAppConfigForScope(
+  appScope: string,
+  blogCatalogId?: string
+): Partial<AppConfigurationEntity> {
+  if (appScope !== 'configurable-client') {
+    return demoAppConfig;
+  }
+
+  if (!blogCatalogId?.trim()) {
+    throw new Error(
+      'The configurable-client demo requires a seeded Blog catalog ID'
+    );
+  }
+
+  return {
+    ...demoAppConfig,
+    domain: 'demo-app.configurable-client.local',
+    routes: [
+      {
+        id: 'blogging-posts-public',
+        path: '/blog',
+        name: 'Blog',
+        componentType: 'feature',
+        featureName: 'blogging',
+        order: 1,
+        showInNav: true,
+      },
+    ],
+    features: {
+      ...demoAppConfig.features,
+      blogging: { enabled: true },
+    },
+    manifest: {
+      schemaVersion: 1,
+      surfaceType: 'business-site',
+      capabilities: {
+        'blogging.posts': {
+          enabled: true,
+          placement: 'public-navigation',
+          permissions: ['blog.post.read'],
+          resourceRef: {
+            type: 'blog-catalog',
+            id: blogCatalogId.trim(),
+          },
+          deepLink: { path: '/blog', label: 'Blog' },
+        },
+      },
+    },
+  };
+}

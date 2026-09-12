@@ -92,7 +92,7 @@ import {
 
       .panel-meta p {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         line-height: 1.5;
       }
 
@@ -113,7 +113,7 @@ import {
 
       label {
         font-weight: 500;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       @media (max-width: 720px) {

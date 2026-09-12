@@ -10,6 +10,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 describe('PostController', () => {
   let controller: PostController;
@@ -106,11 +107,17 @@ describe('PostController', () => {
             checkPermission: jest.fn().mockResolvedValue(true),
           },
         },
+        {
+          provide: WorkspaceContextGuard,
+          useValue: { canActivate: () => true },
+        },
       ],
     })
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(WorkspaceContextGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
@@ -125,11 +132,11 @@ describe('PostController', () => {
     it('should return published posts', async () => {
       mockBlogService.send.mockReturnValue(of([mockPublishedPost]));
 
-      const result = await controller.getPublishedPosts();
+      const result = await controller.getPublishedPosts('catalog-north');
 
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.FIND_PUBLISHED },
-        {}
+        { catalogId: 'catalog-north' }
       );
       expect(result).toEqual([mockPublishedPost]);
     });
@@ -145,15 +152,100 @@ describe('PostController', () => {
     });
   });
 
+  it('creates a post with the session author and resolved workspace scope', async () => {
+    mockBlogService.send.mockReturnValue(of(mockPost));
+    const request = {
+      workspaceContext: {
+        workspace: {
+          ownerProfileId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      },
+    };
+
+    await controller.createPost(
+      {
+        title: 'New Post',
+        content: 'Content',
+        authorId: 'forged-author',
+      } as any,
+      request,
+      mockUser
+    );
+
+    expect(mockBlogService.send).toHaveBeenCalledWith(
+      { cmd: BlogPostCommands.CREATE },
+      expect.objectContaining({
+        authorId: 'profile-1',
+        workspaceScope: {
+          ownerId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      })
+    );
+  });
+
+  it('moves the selected catalog into the resolved post scope', async () => {
+    mockBlogService.send.mockReturnValue(of(mockPost));
+    const request = {
+      workspaceContext: {
+        workspace: {
+          ownerProfileId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      },
+    };
+
+    await controller.createPost(
+      {
+        title: 'Catalog Post',
+        content: 'Content',
+        authorId: 'forged-author',
+        selectedCatalogId: 'catalog-1',
+      } as any,
+      request,
+      mockUser
+    );
+
+    expect(mockBlogService.send).toHaveBeenCalledWith(
+      { cmd: BlogPostCommands.CREATE },
+      expect.objectContaining({
+        workspaceScope: expect.objectContaining({ catalogId: 'catalog-1' }),
+      })
+    );
+  });
+
   describe('getDraftsByAuthor', () => {
     it('should return drafts for the specified author', async () => {
       mockBlogService.send.mockReturnValue(of([mockPost]));
 
-      const result = await controller.getDraftsByAuthor('profile-1');
+      const result = await controller.getDraftsByAuthor(
+        'forged-author',
+        {
+          workspaceContext: {
+            workspace: {
+              ownerProfileId: 'profile-1',
+              workspaceId: 'workspace-1',
+              appScope: 'business-site',
+            },
+          },
+        },
+        mockUser
+      );
 
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR },
-        { authorId: 'profile-1' }
+        {
+          authorId: 'profile-1',
+          workspaceScope: {
+            ownerId: 'profile-1',
+            workspaceId: 'workspace-1',
+            appScope: 'business-site',
+          },
+        }
       );
       expect(result).toEqual([mockPost]);
     });
@@ -215,11 +307,27 @@ describe('PostController', () => {
     it('should publish a draft post', async () => {
       mockBlogService.send.mockReturnValue(of(mockPublishedPost));
 
-      const result = await controller.publishPost('post-1', mockUser);
+      const result = await controller.publishPost('post-1', mockUser, {
+        workspaceContext: {
+          workspace: {
+            ownerProfileId: 'profile-1',
+            workspaceId: 'workspace-1',
+            appScope: 'business-site',
+          },
+        },
+      });
 
       expect(mockBlogService.send).toHaveBeenCalledWith(
         { cmd: BlogPostCommands.PUBLISH },
-        { id: 'post-1', requestingAuthorId: 'profile-1' }
+        {
+          id: 'post-1',
+          requestingAuthorId: 'profile-1',
+          workspaceScope: {
+            ownerId: 'profile-1',
+            workspaceId: 'workspace-1',
+            appScope: 'business-site',
+          },
+        }
       );
       expect(result).toEqual(mockPublishedPost);
     });
@@ -253,7 +361,16 @@ describe('PostController', () => {
       const result = await controller.updatePost(
         'post-1',
         updateData,
-        mockUser
+        mockUser,
+        {
+          workspaceContext: {
+            workspace: {
+              ownerProfileId: 'profile-1',
+              workspaceId: 'workspace-1',
+              appScope: 'business-site',
+            },
+          },
+        }
       );
 
       expect(mockBlogService.send).toHaveBeenCalledWith(
@@ -262,6 +379,11 @@ describe('PostController', () => {
           id: 'post-1',
           updatePostDto: updateData,
           requestingAuthorId: 'profile-1',
+          workspaceScope: {
+            ownerId: 'profile-1',
+            workspaceId: 'workspace-1',
+            appScope: 'business-site',
+          },
         }
       );
       expect(result.title).toBe('Updated Title');
@@ -275,5 +397,31 @@ describe('PostController', () => {
         controller.updatePost('post-1', updateData, userWithoutProfile)
       ).rejects.toThrow(HttpException);
     });
+  });
+
+  it('deletes a post with the resolved workspace scope', async () => {
+    mockBlogService.send.mockReturnValue(of(undefined));
+
+    await controller.deletePost('post-1', {
+      workspaceContext: {
+        workspace: {
+          ownerProfileId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      },
+    });
+
+    expect(mockBlogService.send).toHaveBeenCalledWith(
+      { cmd: BlogPostCommands.DELETE },
+      {
+        id: 'post-1',
+        workspaceScope: {
+          ownerId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      }
+    );
   });
 });

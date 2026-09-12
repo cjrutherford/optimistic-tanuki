@@ -1,4 +1,5 @@
 import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
+import { BUSINESS_SITE_PRESENCE_FEATURE } from '@optimistic-tanuki/business-presence-feature';
 import { appRoutes } from './app.routes';
 import { bookingFeatureGuard } from './booking-feature.guard';
 import { clientAuthGuard } from './client-auth.guard';
@@ -146,6 +147,44 @@ describe('appRoutes', () => {
     );
 
     expect(tenantRoute?.title).toBe('Business Site');
+  });
+
+  it('loads the hosted Blog direct route before the tenant landing route', async () => {
+    const blogRouteIndex = appRoutes.findIndex(
+      (route) => route.path === 'sites/:siteSlug/blog'
+    );
+    const landingRouteIndex = appRoutes.findIndex(
+      (route) => route.path === 'sites/:siteSlug'
+    );
+    const route = appRoutes[blogRouteIndex];
+
+    expect(blogRouteIndex).toBeGreaterThanOrEqual(0);
+    expect(blogRouteIndex).toBeLessThan(landingRouteIndex);
+    expect(route.canActivate).toBeUndefined();
+    await expect(route.loadComponent?.()).resolves.toEqual(
+      expect.objectContaining({ name: 'BusinessBlogPageComponent' })
+    );
+  });
+
+  it('uses the business presence feature shell for the public site and owner editor', () => {
+    const tenantRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug'
+    );
+    const ownerRoute = appRoutes.find((route) => route.path === 'owner');
+    const ownerEditorRoute = (ownerRoute?.children ?? []).find(
+      (route) => route.path === 'site'
+    );
+
+    expect(tenantRoute?.data).toEqual(
+      expect.objectContaining({
+        configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+      })
+    );
+    expect(ownerEditorRoute?.data).toEqual(
+      expect.objectContaining({
+        configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+      })
+    );
   });
 
   it('adds public product detail routes for hosted and root business sites', () => {

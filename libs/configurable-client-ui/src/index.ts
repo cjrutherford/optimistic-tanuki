@@ -1,4 +1,10 @@
 export { ConfigurableLandingPageComponent } from './lib/configurable-landing-page.component';
+export {
+  PublishedAppShellComponent,
+  type PublishedFeatureRegistryEntry,
+} from './lib/published-app-shell.component';
+export type { PublishedFeatureContext } from '@optimistic-tanuki/configurable-plugin-contracts';
+export { ConfiguratorEditorWorkspaceComponent } from './lib/configurator-editor-workspace.component';
 export { EditorBlockTreeComponent } from './lib/editor-block-tree.component';
 export {
   EditorDesignSystemPanelComponent,

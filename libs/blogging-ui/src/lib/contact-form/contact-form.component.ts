@@ -30,6 +30,8 @@ export class ContactFormComponent {
   @Input() title = 'Reach out!';
   @Input() buttonText = 'Subscribe';
   @Input() subjects: { value: string; label: string }[] = [];
+  @Input() subjectId = 'contact-subject';
+  @Input() subjectLabel = 'Subject';
   @Input() bannerImage = 'https://picsum.photos/1200/300';
   @Output() formSubmit = new EventEmitter<{
     name: string;

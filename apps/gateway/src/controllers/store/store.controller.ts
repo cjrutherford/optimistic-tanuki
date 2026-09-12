@@ -2,16 +2,20 @@ import {
   Body,
   Controller,
   Delete,
+  BadRequestException,
   Get,
   Inject,
   Param,
   Post,
   Put,
+  Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ProductCommands,
+  CatalogCommands,
   SubscriptionCommands,
   DonationCommands,
   OrderCommands,
@@ -35,11 +39,14 @@ import {
   UpdateAvailabilityDto,
   CreateResourceDto,
   UpdateResourceDto,
+  CreateStoreCatalogDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { AuthGuard } from '../../auth/auth.guard';
+import { WorkspaceContext } from '../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 @Controller('store')
 export class StoreController {
@@ -48,60 +55,206 @@ export class StoreController {
     private readonly storeService: ClientProxy
   ) {}
 
+  private catalogScope(request: any) {
+    const workspace = request.workspaceContext?.workspace;
+    if (!workspace) {
+      throw new BadRequestException('A resolved workspace is required');
+    }
+    return {
+      ownerId: workspace.ownerProfileId,
+      workspaceId: workspace.workspaceId,
+      appScope: workspace.appScope,
+    };
+  }
+
+  private productScope(request: any) {
+    return this.catalogScope(request);
+  }
+
+  private async assertCatalogBelongsToWorkspace(
+    catalogId: string,
+    request: any
+  ): Promise<void> {
+    const catalogs = await firstValueFrom(
+      this.storeService.send(
+        CatalogCommands.FIND_STORE_CATALOGS,
+        this.catalogScope(request)
+      )
+    );
+
+    if (!catalogs.some((catalog: { id: string }) => catalog.id === catalogId)) {
+      throw new BadRequestException(
+        'The selected catalog does not belong to the resolved workspace'
+      );
+    }
+  }
+
+  @RequirePermissions('store.product.view')
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @Get('catalogs/mine')
+  async findMyCatalogs(@Req() request: any) {
+    return firstValueFrom(
+      this.storeService.send(
+        CatalogCommands.FIND_STORE_CATALOGS,
+        this.catalogScope(request)
+      )
+    );
+  }
+
+  @RequirePermissions('store.product.create')
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @Post('catalogs')
+  async createCatalog(
+    @Body() createCatalogDto: CreateStoreCatalogDto,
+    @Req() request: any
+  ) {
+    return firstValueFrom(
+      this.storeService.send(CatalogCommands.CREATE_STORE_CATALOG, {
+        createCatalogDto,
+        scope: this.catalogScope(request),
+      })
+    );
+  }
+
   // Product endpoints
   @RequirePermissions('store.product.create')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Post('products')
-  async createProduct(@Body() createProductDto: CreateProductDto) {
+  async createProduct(
+    @Body() createProductDto: CreateProductDto,
+    @Req() request: any
+  ) {
+    if (createProductDto.catalogId) {
+      await this.assertCatalogBelongsToWorkspace(
+        createProductDto.catalogId,
+        request
+      );
+    }
     return await firstValueFrom(
-      this.storeService.send(ProductCommands.CREATE_PRODUCT, createProductDto)
+      this.storeService.send(ProductCommands.CREATE_PRODUCT, {
+        createProductDto,
+        scope: this.productScope(request),
+      })
     );
   }
 
   @Get('products')
-  async findAllProducts() {
+  async findAllProducts(@Query('catalogId') catalogId?: string) {
+    if (!catalogId?.trim()) {
+      throw new BadRequestException(
+        'A catalog is required for public product reads'
+      );
+    }
     return await firstValueFrom(
-      this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
+      this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {
+        catalogId: catalogId.trim(),
+        public: true,
+      })
     );
   }
 
   @RequirePermissions('store.product.view')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Get('products/owner/:ownerId')
-  async findOwnerProducts(@Param('ownerId') ownerId: string) {
+  async findOwnerProducts(
+    @Param('ownerId') _ownerId: string,
+    @Req() request: any
+  ) {
     return await firstValueFrom(
-      this.storeService.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+      this.storeService.send(
+        ProductCommands.FIND_OWNER_PRODUCTS,
+        this.productScope(request)
+      )
     );
   }
 
   @Get('products/:id')
-  async findOneProduct(@Param('id') id: string) {
+  async findOneProduct(
+    @Param('id') id: string,
+    @Query('catalogId') catalogId?: string
+  ) {
+    if (!catalogId?.trim()) {
+      throw new BadRequestException(
+        'A catalog is required for public product reads'
+      );
+    }
     return await firstValueFrom(
-      this.storeService.send(ProductCommands.FIND_ONE_PRODUCT, id)
+      this.storeService.send(ProductCommands.FIND_ONE_PRODUCT, {
+        id,
+        catalogId: catalogId.trim(),
+        public: true,
+      })
     );
   }
 
   @RequirePermissions('store.product.update')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Put('products/:id')
   async updateProduct(
     @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto
+    @Body() updateProductDto: UpdateProductDto,
+    @Req() request: any
   ) {
+    if (updateProductDto.catalogId) {
+      await this.assertCatalogBelongsToWorkspace(
+        updateProductDto.catalogId,
+        request
+      );
+    }
     return await firstValueFrom(
       this.storeService.send(ProductCommands.UPDATE_PRODUCT, {
         id,
         updateProductDto,
+        scope: this.productScope(request),
       })
     );
   }
 
   @RequirePermissions('store.product.delete')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'workspaceSlug',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Delete('products/:id')
-  async removeProduct(@Param('id') id: string) {
+  async removeProduct(@Param('id') id: string, @Req() request: any) {
     return await firstValueFrom(
-      this.storeService.send(ProductCommands.REMOVE_PRODUCT, id)
+      this.storeService.send(ProductCommands.REMOVE_PRODUCT, {
+        id,
+        scope: this.productScope(request),
+      })
     );
   }
 

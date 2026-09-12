@@ -25,3 +25,4 @@ export * from './lib/blog-compose/components/example-components/image-gallery.co
 export * from './lib/comments/comments.component';
 
 export * from './lib/tag-list/tag-list.component';
+export * from './lib/authoring/blog-authoring-shell.component';

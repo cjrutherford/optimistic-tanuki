@@ -76,7 +76,7 @@ export default [
             },
             {
               sourceTag: 'type:contracts',
-              onlyDependOnLibsWithTags: ['type:util'],
+              onlyDependOnLibsWithTags: ['type:contracts', 'type:util'],
             },
             {
               sourceTag: 'type:util',

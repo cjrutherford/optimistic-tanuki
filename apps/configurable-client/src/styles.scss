@@ -5,6 +5,41 @@
   --border: #d8e1ea;
   --primary: #356c91;
   --error: #d32f2f;
+
+  // Defaults for the configurable client's themed surfaces. Components use
+  // these semantic fallbacks so the tenant theme can still override the
+  // canonical tokens without repeating palette literals in every stylesheet.
+  --ot-client-white: #fff;
+  --ot-client-public-foreground: #172033;
+  --ot-client-public-primary: #0b5cad;
+  --ot-client-public-background: #f8fafc;
+  --ot-client-public-muted: #435066;
+  --ot-client-public-border: #c8d0dc;
+  --ot-client-public-danger: #a32626;
+  --ot-client-login-danger: #b42318;
+
+  --ot-client-workspace-background: #f3f0e9;
+  --ot-client-workspace-foreground: #1b1d1a;
+  --ot-client-workspace-border: #c8c2b8;
+  --ot-client-workspace-surface: #f8f6f1;
+  --ot-client-workspace-accent: #d4f34a;
+  --ot-client-workspace-accent-soft: #d4f34a55;
+  --ot-client-workspace-primary: #5b690e;
+  --ot-client-workspace-muted: #6e6b63;
+  --ot-client-workspace-danger: #b6422d;
+  --ot-client-workspace-danger-strong: #8d2e1d;
+  --ot-client-workspace-muted-light: #9d9e96;
+  --ot-client-workspace-warning: #f0a84a;
+  --ot-client-workspace-error: #ef765f;
+  --ot-client-workspace-border-subtle: #d9d4cb;
+  --ot-client-workspace-success-soft: #e6ebd1;
+  --ot-client-workspace-error-soft: #f6ded8;
+  --ot-client-workspace-overlay: #1b1d1acc;
+
+  --ot-client-section-foreground: #111827;
+  --ot-client-section-background: #ffffff;
+  --ot-client-section-primary: #007bff;
+  --ot-client-section-border: #e0e0e0;
 }
 
 html,

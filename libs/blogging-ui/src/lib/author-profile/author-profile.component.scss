@@ -13,7 +13,7 @@
 .bio {
   // Text renders directly on the dark scrim above, so it stays light
   // regardless of theme mode (mirrors the on-primary contrast token).
-  color: var(--primary-foreground, #fff);
+  color: var(--primary-foreground);
   margin-left: 20px;
   flex-direction: column;
 }

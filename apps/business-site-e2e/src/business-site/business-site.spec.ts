@@ -1,5 +1,8 @@
-import { expect, Locator, Page, test } from '@playwright/test';
+import { Locator, Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+
+import { expect, test } from '../support/fixtures';
+import { getOwnerAuthScope } from '../support/owner-auth-scope';
 
 const OWNER_EMAIL = 'owner@localbusiness.test';
 const OWNER_PASSWORD = 'BusinessOwnerPass123!';
@@ -7,6 +10,9 @@ const CLIENT_EMAIL = 'client@localbusiness.test';
 const CLIENT_PASSWORD = 'ClientPass123!';
 const PENDING_CLIENT_EMAIL = 'pending-client@localbusiness.test';
 const PENDING_CLIENT_PASSWORD = 'PendingClientPass123!';
+const BUSINESS_TEST_CATALOG_NAME = 'Business Site E2E Catalog';
+const BUSINESS_TEST_CATALOG_DESCRIPTION =
+  'Deterministic catalog used by the Business Site browser suite.';
 const BUSINESS_API_BASE_URL =
   process.env['BUSINESS_API_BASE_URL'] || 'http://127.0.0.1:3000';
 const OWNER_ACCOUNTS = [
@@ -51,7 +57,7 @@ const SEEDED_SAMPLE_TENANTS = [
     slug: 'steady-hand-contracting',
     businessName: 'Steady Hand Contracting',
     heroCopy:
-      'Use this seeded example to showcase estimate requests, repair scheduling, and homeowner communication.',
+      'Keep estimate requests, repair scheduling, and homeowner communication moving in one place.',
     cta: 'Request an estimate',
     serviceName: 'Repair visit',
   },
@@ -59,7 +65,7 @@ const SEEDED_SAMPLE_TENANTS = [
     slug: 'ovenbird-bakeshop',
     businessName: 'Ovenbird Bakeshop',
     heroCopy:
-      'This preset shows how a made-to-order bakery can capture event details, custom notes, and pickup timing cleanly.',
+      'Capture event details, custom notes, and pickup timing without losing the thread.',
     cta: 'Start an order',
     serviceName: 'Custom cake order',
   },
@@ -84,6 +90,14 @@ function resolveBookingPath(
 function svgDataUrl(label: string, fill: string) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="${fill}"/><text x="60" y="120" fill="#ffffff" font-size="64" font-family="Arial, sans-serif">${label}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function cookieSessionHeaders(sessionCookie: string) {
+  return {
+    Cookie: `ot_session=${sessionCookie}`,
+    'x-ot-appscope': 'business-site',
+    'x-ot-session-mode': 'cookie',
+  };
 }
 
 async function openSiteEditor(page: Page) {
@@ -146,105 +160,51 @@ async function loginClient(
       : /\/client\/dashboard$/
   );
 
-  const clientToken = await page.evaluate(() =>
-    localStorage.getItem('business-site:client-token')
-  );
-
-  expect(clientToken).toBeTruthy();
   await expect
     .poll(async () => {
-      return page.evaluate(() => {
-        const raw = localStorage.getItem('business-site:client-user');
-        if (!raw) {
-          return '';
-        }
-
-        try {
-          const clientUser = JSON.parse(raw) as { profileId?: string };
-          return clientUser.profileId ?? '';
-        } catch {
-          return '';
-        }
-      });
+      return page.evaluate(() =>
+        sessionStorage.getItem('business-site:session-kind')
+      );
     })
-    .toBeTruthy();
+    .toBe('client');
 
-  const clientProfileId = await page.evaluate(() => {
-    const raw = localStorage.getItem('business-site:client-user');
-    if (!raw) {
-      return '';
-    }
+  const sessionCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'ot_session' && cookie.value
+  );
+  expect(sessionCookie?.httpOnly).toBe(true);
+  expect(sessionCookie?.value).toBeTruthy();
 
-    try {
-      const clientUser = JSON.parse(raw) as { profileId?: string };
-      return clientUser.profileId ?? '';
-    } catch {
-      return '';
+  const sessionResponse = await page.request.get(
+    '/api/authentication/session',
+    {
+      headers: cookieSessionHeaders(sessionCookie!.value),
     }
-  });
-
-  const clientUserId = await page.evaluate(() => {
-    const raw = localStorage.getItem('business-site:client-user');
-    if (!raw) {
-      return '';
-    }
-
-    try {
-      const clientUser = JSON.parse(raw) as { userId?: string };
-      return clientUser.userId ?? '';
-    } catch {
-      return '';
-    }
-  });
+  );
+  expect(sessionResponse.ok()).toBeTruthy();
+  const sessionPayload = (await sessionResponse.json()) as {
+    data?: { userId?: string; profileId?: string };
+  };
 
   return {
-    token: clientToken as string,
-    profileId: clientProfileId as string,
-    userId: clientUserId as string,
+    cookieValue: sessionCookie!.value,
+    profileId: sessionPayload.data?.profileId ?? '',
+    userId: sessionPayload.data?.userId ?? '',
   };
 }
 
 async function loginOwner(page: Page) {
-  await page.goto('/auth');
-  await page.getByLabel('Email').fill(OWNER_EMAIL);
-  await page.getByLabel('Password').fill(OWNER_PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).click();
+  await page.goto('/owner/dashboard');
   await expect(page).toHaveURL(/\/owner\/dashboard$/);
 
   await expect
     .poll(async () => {
-      return page.evaluate(() => {
-        const raw = localStorage.getItem('business-site:user');
-        if (!raw) {
-          return '';
-        }
-
-        try {
-          const ownerUser = JSON.parse(raw) as { profileId?: string };
-          return ownerUser.profileId ?? '';
-        } catch {
-          return '';
-        }
-      });
+      return page.evaluate(() =>
+        sessionStorage.getItem('business-site:session-kind')
+      );
     })
-    .toBeTruthy();
+    .toBe('owner');
 
-  const ownerToken = await page.evaluate(() => {
-    const raw = localStorage.getItem('business-site:user');
-    if (!raw) {
-      return '';
-    }
-
-    try {
-      const ownerUser = JSON.parse(raw) as { token?: string };
-      return ownerUser.token ?? '';
-    } catch {
-      return '';
-    }
-  });
-  expect(ownerToken).toBeTruthy();
-
-  return ownerToken as string;
+  return loginOwnerApi(page);
 }
 
 async function loginOwnerWithCredentials(
@@ -280,31 +240,69 @@ async function registerOwner(
   await page.getByRole('button', { name: /create owner account/i }).click();
 }
 
-async function loginOwnerApi(page: Page) {
-  const response = await page.request.post('/api/authentication/login', {
-    headers: {
-      'content-type': 'application/json',
-      'x-ot-appscope': 'business-site',
-    },
-    data: {
-      email: OWNER_EMAIL,
-      password: OWNER_PASSWORD,
-    },
-  });
-  expect(response.ok()).toBeTruthy();
-  const payload = (await response.json()) as {
-    data?: { token?: string; newToken?: string };
-    token?: string;
-    newToken?: string;
-  };
+let cachedOwnerSessionToken: string | undefined;
 
-  return (
-    payload.data?.token ||
-    payload.data?.newToken ||
-    payload.token ||
-    payload.newToken ||
-    ''
+async function loginOwnerApi(page: Page) {
+  if (cachedOwnerSessionToken) {
+    return cachedOwnerSessionToken;
+  }
+
+  const sessionCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'ot_session'
   );
+  expect(sessionCookie?.value).toBeTruthy();
+  cachedOwnerSessionToken = sessionCookie?.value;
+  return cachedOwnerSessionToken as string;
+}
+
+async function readSessionCookie(page: Page): Promise<string> {
+  const sessionCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'ot_session' && cookie.value
+  );
+  expect(sessionCookie?.value).toBeTruthy();
+  return sessionCookie!.value;
+}
+
+async function ensureBusinessTestBlogCatalog(
+  page: Page,
+  ownerToken: string
+): Promise<string> {
+  const headers = cookieSessionHeaders(ownerToken);
+  const workspaceQuery = 'workspaceSlug=north-star-advisory';
+  const listResponse = await page.request.get(
+    `/api/blog/catalogs/mine?${workspaceQuery}`,
+    { headers }
+  );
+  expect(listResponse.ok()).toBeTruthy();
+
+  const catalogs = (await listResponse.json()) as Array<{
+    id?: string;
+    name?: string;
+  }>;
+  const existingCatalog = catalogs.find(
+    (catalog) => catalog.name === BUSINESS_TEST_CATALOG_NAME && catalog.id
+  );
+  if (existingCatalog?.id) {
+    return existingCatalog.id;
+  }
+
+  const createResponse = await page.request.post(
+    `/api/blog/catalogs?${workspaceQuery}`,
+    {
+      headers: {
+        ...headers,
+        'content-type': 'application/json',
+      },
+      data: {
+        name: BUSINESS_TEST_CATALOG_NAME,
+        description: BUSINESS_TEST_CATALOG_DESCRIPTION,
+      },
+    }
+  );
+  expect(createResponse.ok()).toBeTruthy();
+  const createdCatalog = (await createResponse.json()) as { id?: string };
+  expect(createdCatalog.id).toBeTruthy();
+  return createdCatalog.id as string;
 }
 
 async function createLeadRequest(
@@ -443,10 +441,7 @@ async function waitForOwnerBooking(
 
 async function fetchBookings(page: Page, token: string) {
   const response = await page.request.get('/api/business/bookings', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'x-ot-appscope': 'business-site',
-    },
+    headers: cookieSessionHeaders(token),
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as Array<{
@@ -460,10 +455,7 @@ async function fetchBookings(page: Page, token: string) {
 
 async function fetchOwnerProspects(page: Page, token: string) {
   const response = await page.request.get('/api/business/owner/leads', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'x-ot-appscope': 'business-site',
-    },
+    headers: cookieSessionHeaders(token),
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as Array<{
@@ -492,8 +484,7 @@ async function enableClientTasksFeature(page: Page, token: string) {
     `${BUSINESS_API_BASE_URL}/api/business/site-config`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'x-ot-appscope': 'business-site',
+        ...cookieSessionHeaders(token),
         'content-type': 'application/json',
       },
       data: {
@@ -519,13 +510,18 @@ async function enableClientTasksFeature(page: Page, token: string) {
   expect(response.ok()).toBeTruthy();
 }
 
-async function fetchSiteConfig(page: Page) {
-  const response = await page.request.get(
-    `${BUSINESS_API_BASE_URL}/api/business/site-config`,
-    {
-      timeout: 30_000,
-    }
-  );
+async function fetchSiteConfig(
+  page: Page,
+  token?: string,
+  tenantSlug = OWNER_ACCOUNTS[0].slug
+) {
+  const siteConfigUrl = `${BUSINESS_API_BASE_URL}/api/business/site-config?slug=${encodeURIComponent(
+    tenantSlug
+  )}`;
+  const response = await page.request.get(siteConfigUrl, {
+    headers: token ? cookieSessionHeaders(token) : undefined,
+    timeout: 30_000,
+  });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as {
     configId: string | null;
@@ -536,15 +532,17 @@ async function fetchSiteConfig(page: Page) {
 async function updateSiteConfig(
   page: Page,
   token: string,
-  mutate: (config: Record<string, any>) => Record<string, any>
+  mutate: (config: Record<string, any>) => Record<string, any>,
+  tenantSlug = OWNER_ACCOUNTS[0].slug
 ) {
-  const payload = await fetchSiteConfig(page);
+  const payload = await fetchSiteConfig(page, token, tenantSlug);
   const response = await page.request.put(
-    `${BUSINESS_API_BASE_URL}/api/business/site-config`,
+    `${BUSINESS_API_BASE_URL}/api/business/site-config?slug=${encodeURIComponent(
+      tenantSlug
+    )}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'x-ot-appscope': 'business-site',
+        ...cookieSessionHeaders(token),
         'content-type': 'application/json',
       },
       data: {
@@ -572,8 +570,7 @@ async function fetchClientRoutines(
     `/api/business/client/routines?${params.toString()}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'x-ot-appscope': 'business-site',
+        ...cookieSessionHeaders(token),
       },
     }
   );
@@ -599,8 +596,7 @@ async function fetchClientCheckIns(
     `/api/business/client/check-ins?${params.toString()}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'x-ot-appscope': 'business-site',
+        ...cookieSessionHeaders(token),
       },
     }
   );
@@ -615,10 +611,7 @@ async function fetchClientCheckIns(
 
 async function fetchOwnerBookings(page: Page, token: string) {
   const response = await page.request.get('/api/business/owner/bookings', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'x-ot-appscope': 'business-site',
-    },
+    headers: cookieSessionHeaders(token),
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as Array<{
@@ -645,10 +638,7 @@ async function fetchOwnerAvailabilityOverrides(page: Page, token: string) {
   const response = await page.request.get(
     '/api/business/owner/availability-overrides',
     {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'x-ot-appscope': 'business-site',
-      },
+      headers: cookieSessionHeaders(token),
     }
   );
   expect(response.ok()).toBeTruthy();
@@ -663,10 +653,7 @@ async function removeOwnerAvailabilityOverride(
   const response = await page.request.delete(
     `/api/business/owner/availability-overrides/${overrideId}`,
     {
-      headers: {
-        Authorization: `Bearer ${ownerToken}`,
-        'x-ot-appscope': 'business-site',
-      },
+      headers: cookieSessionHeaders(ownerToken),
     }
   );
   expect(response.ok()).toBeTruthy();
@@ -684,8 +671,7 @@ async function updateOwnerBookingStatus(
       : `/api/business/owner/bookings/${bookingId}/complete`;
   const response = await page.request.put(endpoint, {
     headers: {
-      Authorization: `Bearer ${token}`,
-      'x-ot-appscope': 'business-site',
+      ...cookieSessionHeaders(token),
       'content-type': 'application/json',
     },
     data:
@@ -793,8 +779,7 @@ async function createOwnerAvailabilityOverride(
     '/api/business/owner/availability-overrides',
     {
       headers: {
-        Authorization: `Bearer ${ownerToken}`,
-        'x-ot-appscope': 'business-site',
+        ...cookieSessionHeaders(ownerToken),
         'content-type': 'application/json',
       },
       data: {
@@ -858,41 +843,374 @@ test.describe('Business site user stories', () => {
 
     await expect(page.locator('body')).toContainText('North Star Advisory');
     await expect(page.locator('body')).toContainText(
-      'Operational guidance for growing service businesses.'
+      'Clear scheduling, better client handoff, and a simpler approval flow.'
     );
     await expect(
       page.getByRole('link', { name: 'Book a strategy session' }).first()
     ).toBeVisible();
   });
 
+  test('keeps the public hero readable and unobscured at mobile and desktop widths', async ({
+    page,
+  }) => {
+    for (const viewport of [
+      { width: 375, height: 812 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/sites/north-star-advisory');
+
+      const hero = page.locator('otui-public-landing-hero');
+      const heading = hero.locator('h1');
+      const body = hero.locator('[slot="body"]');
+      await expect(heading).toHaveCount(1);
+      await expect(heading).toBeVisible();
+      await expect(body).toBeVisible();
+      await expect(hero).not.toContainText(
+        /(?:\bP\d+(?:\.\d+)?\b|\bslice\b|\bpreset\b)/i
+      );
+
+      const boxes = await Promise.all([
+        heading.boundingBox(),
+        body.boundingBox(),
+      ]);
+      expect(boxes[0]).not.toBeNull();
+      expect(boxes[1]).not.toBeNull();
+      expect(boxes[1]!.y).toBeGreaterThanOrEqual(
+        boxes[0]!.y + boxes[0]!.height - 1
+      );
+    }
+  });
+
+  test('renders only the configured blog catalog on the published tenant route', async ({
+    ownerPage: page,
+  }) => {
+    const ownerToken = await loginOwnerApi(page);
+    const original = await fetchSiteConfig(
+      page,
+      ownerToken,
+      'north-star-advisory'
+    );
+    const originalConfig = JSON.parse(
+      JSON.stringify(original.config ?? {})
+    ) as Record<string, any>;
+    const catalogId = await ensureBusinessTestBlogCatalog(page, ownerToken);
+    const sectionTitle = uniqueLabel('Operations notes');
+    const catalogPostTitle = uniqueLabel('Catalog-specific update');
+
+    await page.route(
+      `**/api/blog/catalogs/${catalogId}/posts`,
+      async (route) => {
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: '4f0a7c50-41d2-434e-b7cc-bf82a3cbdc78',
+              name: catalogPostTitle,
+              description: 'This entry belongs only to the configured catalog.',
+            },
+          ]),
+        });
+      }
+    );
+
+    try {
+      await updateSiteConfig(
+        page,
+        ownerToken,
+        (config) => ({
+          ...config,
+          site: {
+            ...(config['site'] ?? {}),
+            slug: 'north-star-advisory',
+            status: 'published',
+          },
+          plugins: {
+            schemaVersion: 1,
+            surfaceType: 'business-site',
+            capabilities: {
+              ...(config['plugins']?.capabilities ?? {}),
+              'blogging.posts': {
+                enabled: true,
+                placement: 'public-content',
+                resourceRef: { type: 'blog-catalog', id: catalogId },
+              },
+            },
+          },
+          landingPage: {
+            ...(config['landingPage'] ?? {}),
+            sections: [
+              ...((config['landingPage']?.sections ?? []) as Array<any>).filter(
+                (section) => section.id !== 'p8-blog-runtime'
+              ),
+              {
+                id: 'p8-blog-runtime',
+                type: 'blog',
+                title: sectionTitle,
+                enabled: true,
+                order: 999,
+              },
+            ],
+          },
+        }),
+        'north-star-advisory'
+      );
+
+      await page.goto('/sites/north-star-advisory');
+      await expect(
+        page.getByRole('heading', { name: sectionTitle })
+      ).toBeVisible();
+      await expect(page.getByText(catalogPostTitle)).toBeVisible();
+      await expect(
+        page.getByText('This entry belongs only to the configured catalog.')
+      ).toBeVisible();
+    } finally {
+      await updateSiteConfig(
+        page,
+        ownerToken,
+        () => originalConfig,
+        'north-star-advisory'
+      );
+      await page.unroute(`**/api/blog/catalogs/${catalogId}/posts`);
+    }
+  });
+
+  test('keeps Blog preview, published placement, and direct entry on one catalog', async ({
+    ownerPage: page,
+  }) => {
+    const ownerToken = await loginOwnerApi(page);
+    const original = await fetchSiteConfig(
+      page,
+      ownerToken,
+      'north-star-advisory'
+    );
+    const originalConfig = JSON.parse(
+      JSON.stringify(original.config ?? {})
+    ) as Record<string, any>;
+    const catalogId = await ensureBusinessTestBlogCatalog(page, ownerToken);
+    const sectionTitle = uniqueLabel('Preview parity notes');
+    const catalogPostTitle = uniqueLabel('One catalog across every entry');
+
+    await page.route(
+      `**/api/blog/catalogs/${catalogId}/posts`,
+      async (route) => {
+        await route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: '8856de43-b9a7-4e27-9f67-9fcbba79c84a',
+              name: catalogPostTitle,
+              description: 'The direct route and placement share this catalog.',
+            },
+          ]),
+        });
+      }
+    );
+
+    try {
+      await updateSiteConfig(
+        page,
+        ownerToken,
+        (config) => ({
+          ...config,
+          site: {
+            ...(config['site'] ?? {}),
+            slug: 'north-star-advisory',
+            status: 'published',
+          },
+          plugins: {
+            schemaVersion: 1,
+            surfaceType: 'business-site',
+            capabilities: {
+              ...(config['plugins']?.capabilities ?? {}),
+              'blogging.posts': {
+                enabled: true,
+                placement: 'public-content',
+                resourceRef: { type: 'blog-catalog', id: catalogId },
+              },
+            },
+          },
+          landingPage: {
+            ...(config['landingPage'] ?? {}),
+            sections: [
+              ...((config['landingPage']?.sections ?? []) as Array<any>).filter(
+                (section) => section.id !== 'p8-3-blog-runtime'
+              ),
+              {
+                id: 'p8-3-blog-runtime',
+                type: 'blog',
+                title: sectionTitle,
+                enabled: true,
+                order: 999,
+              },
+            ],
+          },
+        }),
+        'north-star-advisory'
+      );
+
+      await page.goto('/sites/north-star-advisory');
+      await expect(page.getByText(catalogPostTitle)).toBeVisible();
+
+      await page.goto('/sites/north-star-advisory/blog');
+      await expect(page.getByText(catalogPostTitle)).toBeVisible();
+
+      await loginOwner(page);
+      await openSiteEditor(page);
+      await switchToStudio(page);
+      await expect(
+        page.locator('business-landing-page').getByText(catalogPostTitle)
+      ).toBeVisible();
+    } finally {
+      await updateSiteConfig(
+        page,
+        ownerToken,
+        () => originalConfig,
+        'north-star-advisory'
+      );
+      await page.unroute(`**/api/blog/catalogs/${catalogId}/posts`);
+    }
+  });
+
   for (const owner of OWNER_ACCOUNTS) {
     test(`lets ${owner.email} sign in, open the site editor, and load ${owner.slug}`, async ({
       page,
+      ownerPage,
     }) => {
-      await loginOwnerWithCredentials(page, owner.email, owner.password);
+      const authScope = getOwnerAuthScope(owner.email);
+      const authenticatedPage = authScope === 'reusable' ? ownerPage : page;
+      await authenticatedPage.goto('about:blank');
+      if (authScope === 'credentials') {
+        await loginOwnerWithCredentials(page, owner.email, owner.password);
+      } else {
+        await authenticatedPage.goto('/owner/dashboard');
+      }
 
-      await expect(page).toHaveURL(/\/owner\/dashboard$/);
+      await expect(authenticatedPage).toHaveURL(/\/owner\/dashboard$/);
       await expect(
-        page.getByRole('link', { name: 'Site Editor' })
+        authenticatedPage.getByRole('link', { name: 'Site Editor' })
       ).toBeVisible();
 
-      await page.getByRole('link', { name: 'Site Editor' }).click();
-      await expect(page).toHaveURL(/\/owner\/site$/);
+      await authenticatedPage
+        .getByRole('link', { name: 'Site Editor' })
+        .click();
+      await expect(authenticatedPage).toHaveURL(/\/owner\/site$/);
       await expect(
-        page.getByRole('heading', { name: 'Site Content Editor' })
+        authenticatedPage.getByRole('heading', { name: 'Site Content Editor' })
       ).toBeVisible();
-      await expect(businessNameInput(page)).toHaveValue(owner.publicHeading);
+      await expect(businessNameInput(authenticatedPage)).toHaveValue(
+        owner.publicHeading
+      );
       await expect(
-        page.getByRole('button', { name: 'Save Changes' })
+        authenticatedPage.getByRole('button', { name: 'Save Changes' })
       ).toBeVisible();
 
-      await page.goto(`/sites/${owner.slug}`);
-      await expect(page.locator('body')).toContainText(owner.publicHeading);
+      await authenticatedPage.goto(`/sites/${owner.slug}`);
+      await expect(authenticatedPage.locator('body')).toContainText(
+        owner.publicHeading
+      );
     });
   }
 
-  test('applies on-change studio updates for hero, custom, image, and gallery sections', async ({
+  test('keeps owner views and mutations isolated across tenant configurations', async ({
     page,
+    ownerPage,
+  }) => {
+    const primaryOwner = OWNER_ACCOUNTS[0];
+    const secondOwner = OWNER_ACCOUNTS[1];
+    const primaryToken = await readSessionCookie(ownerPage);
+
+    // The reusable owner session can only load its own owner workspace.
+    await ownerPage.goto('/owner/site');
+    await expect(businessNameInput(ownerPage)).toHaveValue(
+      primaryOwner.publicHeading
+    );
+    await expect(ownerPage.locator('body')).not.toContainText(
+      secondOwner.publicHeading
+    );
+
+    // A second owner session resolves the second tenant independently.
+    await loginOwnerWithCredentials(
+      page,
+      secondOwner.email,
+      secondOwner.password
+    );
+    await expect(page).toHaveURL(/\/owner\/dashboard$/);
+    const secondToken = await readSessionCookie(page);
+    await page.goto('/owner/site');
+    await expect(businessNameInput(page)).toHaveValue(
+      secondOwner.publicHeading
+    );
+    await expect(page.locator('body')).not.toContainText(
+      primaryOwner.publicHeading
+    );
+
+    const primaryConfigResponse = await ownerPage.request.get(
+      `${BUSINESS_API_BASE_URL}/api/business/site-config`,
+      { headers: cookieSessionHeaders(primaryToken), timeout: 30_000 }
+    );
+    const secondConfigResponse = await page.request.get(
+      `${BUSINESS_API_BASE_URL}/api/business/site-config`,
+      { headers: cookieSessionHeaders(secondToken), timeout: 30_000 }
+    );
+    expect(primaryConfigResponse.ok()).toBeTruthy();
+    expect(secondConfigResponse.ok()).toBeTruthy();
+    const primaryConfig = (await primaryConfigResponse.json()) as {
+      config?: { brand?: { businessName?: string } };
+    };
+    const secondConfig = (await secondConfigResponse.json()) as {
+      configId?: string | null;
+      config?: Record<string, any> | null;
+    };
+    expect(primaryConfig.config?.brand?.businessName).toBe(
+      primaryOwner.publicHeading
+    );
+    expect(secondConfig.config?.brand?.businessName).toBe(
+      secondOwner.publicHeading
+    );
+
+    // The public slug may be read for rendering, but an owner from another
+    // workspace cannot use it to update the second tenant's configuration.
+    const publicSecondBefore = await fetchSiteConfig(
+      ownerPage,
+      undefined,
+      secondOwner.slug
+    );
+    const crossTenantUpdate = await ownerPage.request.put(
+      `${BUSINESS_API_BASE_URL}/api/business/site-config?slug=${encodeURIComponent(
+        secondOwner.slug
+      )}`,
+      {
+        headers: {
+          ...cookieSessionHeaders(primaryToken),
+          'content-type': 'application/json',
+        },
+        data: {
+          configId: publicSecondBefore.configId,
+          config: {
+            ...(publicSecondBefore.config ?? {}),
+            brand: {
+              ...(publicSecondBefore.config?.['brand'] ?? {}),
+              businessName: 'Cross-tenant mutation should be rejected',
+            },
+          },
+        },
+        timeout: 30_000,
+      }
+    );
+    expect(crossTenantUpdate.ok()).toBeFalsy();
+
+    const publicSecondAfter = await fetchSiteConfig(
+      ownerPage,
+      undefined,
+      secondOwner.slug
+    );
+    expect(publicSecondAfter.configId).toBe(publicSecondBefore.configId);
+    expect(publicSecondAfter.config).toEqual(publicSecondBefore.config);
+  });
+
+  test('applies on-change studio updates for hero, custom, image, and gallery sections', async ({
+    ownerPage: page,
   }) => {
     test.setTimeout(240_000);
 
@@ -923,7 +1241,7 @@ test.describe('Business site user stories', () => {
     const selectedSectionShell = page.locator('.selected-section-shell');
 
     try {
-      await loginOwnerWithCredentials(page, OWNER_EMAIL, OWNER_PASSWORD);
+      await page.goto('/owner/dashboard');
       await expect(page).toHaveURL(/\/owner\/dashboard$/);
 
       await openSiteEditor(page);
@@ -1034,6 +1352,14 @@ test.describe('Business site user stories', () => {
     test(`serves seeded sample tenant ${tenant.slug} with distinct public content`, async ({
       page,
     }) => {
+      const rawResponse = await page.request.get(`/sites/${tenant.slug}`);
+      expect(rawResponse.ok()).toBeTruthy();
+      const rawHtml = await rawResponse.text();
+      expect(rawHtml).toContain(tenant.businessName);
+      expect(rawHtml).toContain(tenant.heroCopy);
+      expect(rawHtml).toContain(tenant.serviceName);
+      expect(rawHtml).not.toContain('My Business');
+
       await page.goto(`/sites/${tenant.slug}`);
 
       await expect(page.locator('body')).toContainText(tenant.businessName);
@@ -1046,43 +1372,63 @@ test.describe('Business site user stories', () => {
   }
 
   test('reflects owner site-config changes on the hosted tenant route', async ({
-    page,
+    ownerPage: page,
   }) => {
     const ownerToken = await loginOwnerApi(page);
     const original = await fetchSiteConfig(page);
+    const originalConfig = JSON.parse(
+      JSON.stringify(original.config ?? {})
+    ) as Record<string, any>;
     const updatedName = uniqueLabel('North Star Studio');
-    const updatedTagline = uniqueLabel('Advisory systems that keep up');
+    const updatedHeroHeading = uniqueLabel('Advisory systems that keep up');
 
-    await updateSiteConfig(page, ownerToken, (config) => ({
-      ...config,
-      site: {
-        ...(config['site'] ?? {}),
-        slug: 'north-star-advisory',
-        status: 'published',
-      },
-      brand: {
-        ...(config['brand'] ?? {}),
-        businessName: updatedName,
-        tagline: updatedTagline,
-      },
-    }));
+    try {
+      await updateSiteConfig(page, ownerToken, (config) => ({
+        ...config,
+        site: {
+          ...(config['site'] ?? {}),
+          slug: 'north-star-advisory',
+          status: 'published',
+        },
+        brand: {
+          ...(config['brand'] ?? {}),
+          businessName: updatedName,
+        },
+        landingPage: {
+          ...(config['landingPage'] ?? {}),
+          sections: Array.isArray(config['landingPage']?.sections)
+            ? config['landingPage'].sections.map(
+                (section: Record<string, any>) =>
+                  section.id === 'hero'
+                    ? {
+                        ...section,
+                        richContent: {
+                          ...(section['richContent'] ?? {}),
+                          title: updatedHeroHeading,
+                        },
+                      }
+                    : section
+              )
+            : config['landingPage']?.sections,
+        },
+      }));
 
-    await page.goto('/sites/north-star-advisory');
-    await expect(page.locator('body')).toContainText(updatedName);
-    await expect(page.locator('body')).toContainText(updatedTagline);
-
-    await updateSiteConfig(page, ownerToken, () => ({
-      ...(original.config ?? {}),
-    }));
+      await page.goto('/sites/north-star-advisory');
+      await expect(page.locator('body')).toContainText(updatedName);
+      await expect(page.locator('body')).toContainText(updatedHeroHeading);
+    } finally {
+      await updateSiteConfig(page, ownerToken, () => originalConfig);
+    }
   });
 
   test('routes owners with incomplete onboarding into the onboarding flow', async ({
     page,
+    ownerPage,
   }) => {
-    const ownerToken = await loginOwnerApi(page);
-    const original = await fetchSiteConfig(page);
+    const ownerToken = await loginOwnerApi(ownerPage);
+    const original = await fetchSiteConfig(ownerPage);
 
-    await updateSiteConfig(page, ownerToken, (config) => ({
+    await updateSiteConfig(ownerPage, ownerToken, (config) => ({
       ...config,
       site: {
         ...(config['site'] ?? {}),
@@ -1100,7 +1446,7 @@ test.describe('Business site user stories', () => {
     await expect(page).toHaveURL(/\/owner\/onboarding$/);
     await expect(page.locator('body')).toContainText('Guided Setup');
 
-    await updateSiteConfig(page, ownerToken, () => ({
+    await updateSiteConfig(ownerPage, ownerToken, () => ({
       ...(original.config ?? {}),
     }));
   });
@@ -1124,12 +1470,20 @@ test.describe('Business site user stories', () => {
     await expect(page.locator('body')).toContainText('Guided Setup');
 
     await businessNameInput(page).fill(businessName);
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await page.getByRole('button', { name: 'Save as draft' }).click();
     await expect(
       page.getByText('Site content saved successfully.')
     ).toBeVisible();
 
+    const logoutResponse = page.waitForResponse((response) => {
+      return (
+        response.url().endsWith('/api/authentication/logout') &&
+        response.request().method() === 'POST'
+      );
+    });
     await page.getByRole('button', { name: 'Sign Out' }).click();
+    const response = await logoutResponse;
+    expect(response.ok()).toBeTruthy();
     await expect(page).toHaveURL(/\/$/);
 
     await loginOwnerWithCredentials(page, email, password);
@@ -1176,6 +1530,7 @@ test.describe('Business site user stories', () => {
 
   test('supports client and owner CRUD across bookings, routines, and check-ins', async ({
     page,
+    ownerPage,
   }) => {
     const tenantSlug = OWNER_ACCOUNTS[0].slug;
     const bookingTitle = uniqueLabel('client-session');
@@ -1184,15 +1539,15 @@ test.describe('Business site user stories', () => {
     const routineTitle = uniqueLabel('four-week-plan');
     const checkInNotes = uniqueLabel('check-in-notes');
 
-    const { token: clientToken, userId: clientUserId } = await loginClient(
-      page,
-      CLIENT_EMAIL,
-      CLIENT_PASSWORD,
-      tenantSlug
+    const { cookieValue: clientSessionCookie, userId: clientUserId } =
+      await loginClient(page, CLIENT_EMAIL, CLIENT_PASSWORD, tenantSlug);
+    const ownerToken = await loginOwnerApi(ownerPage);
+    await clearClientBookingsForSharedStack(
+      ownerPage,
+      ownerToken,
+      clientUserId
     );
-    const ownerToken = await loginOwnerApi(page);
-    await clearClientBookingsForSharedStack(page, ownerToken, clientUserId);
-    await createOwnerAvailabilityOverride(page, ownerToken, tenantSlug);
+    await createOwnerAvailabilityOverride(ownerPage, ownerToken, tenantSlug);
     await loginClient(page, CLIENT_EMAIL, CLIENT_PASSWORD, tenantSlug);
     await expect(page.locator('body')).toContainText('Upcoming sessions');
 
@@ -1203,37 +1558,37 @@ test.describe('Business site user stories', () => {
 
     await expect
       .poll(async () => {
-        const bookings = await fetchBookings(page, clientToken);
+        const bookings = await fetchBookings(page, clientSessionCookie);
         return bookings.some((booking) => booking.title === bookingTitle);
       })
       .toBe(true);
 
-    await loginOwner(page);
-    await enableClientTasksFeature(page, ownerToken);
+    await loginOwner(ownerPage);
+    await enableClientTasksFeature(ownerPage, ownerToken);
     const pendingBooking = await waitForOwnerBooking(
-      page,
+      ownerPage,
       ownerToken,
       bookingTitle
     );
-    await page.goto('/sites/north-star-advisory');
-    await loginOwner(page);
+    await ownerPage.goto('/sites/north-star-advisory');
+    await loginOwner(ownerPage);
 
-    await page
+    await ownerPage
       .getByRole('main')
       .getByRole('link', { name: 'Requests' })
       .click();
-    await expect(page).toHaveURL(/\/owner\/requests$/);
+    await expect(ownerPage).toHaveURL(/\/owner\/requests$/);
     await expect
       .poll(
         async () =>
-          page
+          ownerPage
             .locator('article.queue-row')
             .filter({ hasText: bookingDescription })
             .count(),
         { timeout: 15000 }
       )
       .toBe(1);
-    let bookingRow = page
+    let bookingRow = ownerPage
       .locator('article.queue-row')
       .filter({ hasText: bookingDescription })
       .first();
@@ -1241,37 +1596,43 @@ test.describe('Business site user stories', () => {
     await expect(bookingRow).toContainText(CLIENT_EMAIL);
     await expect(bookingRow).toContainText(bookingDescription);
 
-    await page.getByRole('main').getByRole('link', { name: 'Clients' }).click();
-    await expect(page.locator('body')).toContainText('Approved clients');
-    await page
+    await ownerPage
+      .getByRole('main')
+      .getByRole('link', { name: 'Clients' })
+      .click();
+    await expect(ownerPage.locator('body')).toContainText('Approved clients');
+    await ownerPage
       .getByRole('button', { name: new RegExp(CLIENT_EMAIL, 'i') })
       .first()
       .click();
-    await page.getByLabel('Title').fill(routineTitle);
-    await page
+    await ownerPage.getByLabel('Title').fill(routineTitle);
+    await ownerPage
       .getByLabel('Summary')
       .fill('3 training sessions, mobility finishers, and weekly check-ins.');
-    await page.getByRole('button', { name: /assign routine/i }).click();
+    await ownerPage.getByRole('button', { name: /assign routine/i }).click();
 
-    await page.getByRole('main').getByRole('link', { name: 'Clients' }).click();
-    await expect(page.locator('body')).toContainText(routineTitle);
+    await ownerPage
+      .getByRole('main')
+      .getByRole('link', { name: 'Clients' })
+      .click();
+    await expect(ownerPage.locator('body')).toContainText(routineTitle);
 
-    await page
+    await ownerPage
       .getByRole('main')
       .getByRole('link', { name: 'Requests' })
       .click();
-    await expect(page).toHaveURL(/\/owner\/requests$/);
+    await expect(ownerPage).toHaveURL(/\/owner\/requests$/);
     await expect
       .poll(
         async () =>
-          page
+          ownerPage
             .locator('article.queue-row')
             .filter({ hasText: bookingTitle })
             .count(),
         { timeout: 15000 }
       )
       .toBe(1);
-    bookingRow = page
+    bookingRow = ownerPage
       .locator('article.queue-row')
       .filter({ hasText: bookingTitle })
       .first();
@@ -1284,19 +1645,19 @@ test.describe('Business site user stories', () => {
 
     await expect
       .poll(async () => {
-        const bookings = await fetchOwnerBookings(page, ownerToken);
+        const bookings = await fetchOwnerBookings(ownerPage, ownerToken);
         const booking = bookings.find((entry) => entry.title === bookingTitle);
         return booking?.status ?? null;
       })
       .toBe('completed');
 
-    const completedBooking = (await fetchOwnerBookings(page, ownerToken)).find(
-      (entry) => entry.title === bookingTitle
-    );
+    const completedBooking = (
+      await fetchOwnerBookings(ownerPage, ownerToken)
+    ).find((entry) => entry.title === bookingTitle);
     expect(completedBooking?.id).toBe(pendingBooking.id);
     expect(completedBooking?.totalCost).toBe('0.00');
 
-    bookingRow = page
+    bookingRow = ownerPage
       .locator('article.queue-row')
       .filter({ hasText: bookingTitle })
       .first();
@@ -1305,8 +1666,10 @@ test.describe('Business site user stories', () => {
       bookingRow.getByRole('button', { name: 'Generate invoice' })
     ).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Client Portal' }).click();
-    await expect(page).toHaveURL(/\/client\/dashboard$/);
+    await page.goto(`/sites/${tenantSlug}/client/dashboard`);
+    await expect(page).toHaveURL(
+      new RegExp(`/sites/${tenantSlug}/client/dashboard$`)
+    );
     await page
       .getByRole('main')
       .getByRole('link', { name: 'Routines' })
@@ -1328,9 +1691,10 @@ test.describe('Business site user stories', () => {
 
   test('queues non-accepted signed-in clients for owner approval instead of creating bookings', async ({
     page,
+    ownerPage,
   }) => {
     const pendingGoal = uniqueLabel('pending-client-intake');
-    const ownerToken = await loginOwner(page);
+    const ownerToken = await loginOwner(ownerPage);
 
     await loginClient(page, PENDING_CLIENT_EMAIL, PENDING_CLIENT_PASSWORD);
     await createLeadRequest(page, {
@@ -1342,22 +1706,31 @@ test.describe('Business site user stories', () => {
 
     await expect
       .poll(async () => {
-        const prospects = await fetchOwnerProspects(page, ownerToken);
+        const prospects = await fetchOwnerProspects(ownerPage, ownerToken);
         return prospects.some((entry) => entry.email === PENDING_CLIENT_EMAIL);
       })
       .toBe(true);
 
-    await page.getByRole('link', { name: 'Workspace' }).click();
-    await expect(page).toHaveURL(/\/owner\/dashboard$/);
-    await page
+    await ownerPage.getByRole('link', { name: 'Workspace' }).click();
+    await expect(ownerPage).toHaveURL(/\/owner\/dashboard$/);
+    await ownerPage
       .getByRole('main')
       .getByRole('link', { name: 'Requests' })
       .click();
-    const prospectRow = page
-      .locator('article.queue-row.prospect-row')
-      .filter({ hasText: PENDING_CLIENT_EMAIL })
+    const prospectRow = ownerPage
+      .locator('article.queue-row')
+      .filter({
+        has: ownerPage.getByText(PENDING_CLIENT_EMAIL, { exact: true }),
+      })
       .first();
     await expect(prospectRow).toBeVisible();
+    await expect(
+      prospectRow.getByText(PENDING_CLIENT_EMAIL, { exact: true })
+    ).toBeVisible();
+    await expect(prospectRow.locator('.status-pill')).toHaveText('new');
+    await expect(prospectRow).toContainText(
+      'Accept the client or follow up before booking.'
+    );
     await expect(
       prospectRow.getByRole('button', { name: 'Accept client' })
     ).toBeVisible();

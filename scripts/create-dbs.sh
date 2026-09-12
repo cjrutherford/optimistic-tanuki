@@ -10,7 +10,6 @@ database_exists() {
 echo "Additional databases: $ADDITIONAL_DBS"
 echo "Waiting for postgres to be ready..."
 echo "postgres user: $POSTGRES_USER"
-echo "postgres password: $POSTGRES_PASSWORD"
 if command -v pg_isready >/dev/null 2>&1; then
     until pg_isready \
         -h "$POSTGRES_HOST" \

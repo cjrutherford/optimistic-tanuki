@@ -64,7 +64,7 @@ form {
       right: 0;
       width: 12px;
       height: 12px;
-      background: var(--primary, #007acc);
+      background: var(--primary);
       border: 2px solid var(--primary-foreground, white);
       border-radius: var(--border-radius-sm, 2px);
       cursor: nwse-resize;
@@ -80,7 +80,7 @@ form {
 
   .resizable-image-wrapper.resizable-image-selected {
     img {
-      box-shadow: 0 0 0 3px var(--primary, #007acc);
+      box-shadow: 0 0 0 3px var(--primary);
     }
 
     .resize-handle {
@@ -176,11 +176,11 @@ button {
 /* Component injection styles */
 .injected-components-container {
   margin: var(--spacing-md, 16px) 0;
-  border: 2px dashed var(--secondary, #c0af4b);
+  border: 2px dashed var(--secondary);
   border-radius: var(--border-radius-lg, 8px);
   padding: var(--spacing-md, 16px);
   min-height: 100px;
-  background-color: var(--background, #ffffff);
+  background-color: var(--background);
   @include p.personality-transition(all);
 
   &:empty {

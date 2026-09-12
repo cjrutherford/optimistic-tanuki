@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient } from '@angular/common/http';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 import { OAuthService } from '@optimistic-tanuki/auth-ui';
 
@@ -37,7 +37,10 @@ describe('LoginComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             queryParams: of(queryParams),
-            snapshot: { queryParams },
+            snapshot: {
+              queryParams,
+              queryParamMap: convertToParamMap(queryParams),
+            },
           },
         },
       ],
@@ -46,6 +49,7 @@ describe('LoginComponent', () => {
     const fixture = TestBed.createComponent(LoginComponent);
     const router = TestBed.inject(Router);
     jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
     fixture.detectChanges();
     return { fixture, component: fixture.componentInstance };
   }
@@ -157,7 +161,7 @@ describe('LoginComponent', () => {
       true
     );
     expect(restoreSession).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
 
     initiateOAuthLogin.mockRestore();
   });
@@ -171,6 +175,108 @@ describe('LoginComponent', () => {
     await Promise.resolve();
 
     expect(restoreSession).toHaveBeenCalledTimes(1);
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+  });
+
+  it('restores the cookie session before navigating to a safe password deep link', async () => {
+    const sessionRestored = new Subject<boolean>();
+    login.mockReturnValue(of({ data: {} }));
+    restoreSession.mockReturnValue(sessionRestored.asObservable());
+    const { component } = createComponent({
+      returnUrl: '/dashboard/operations?tab=oauth#providers',
+    });
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'owner@example.com', password: 'password' });
+    await Promise.resolve();
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+
+    sessionRestored.next(true);
+    sessionRestored.complete();
+    await Promise.resolve();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      '/dashboard/operations?tab=oauth#providers'
+    );
+  });
+
+  it.each([
+    'https://evil.example/phishing',
+    '//evil.example/phishing',
+    '/dashboard/%0A/operations',
+    '/login',
+  ])(
+    'uses the dashboard after an unsafe password return target %s',
+    async (returnUrl) => {
+      login.mockReturnValue(of({ data: {} }));
+      const { component } = createComponent({ returnUrl });
+      const router = TestBed.inject(Router);
+
+      component.onLogin({ email: 'owner@example.com', password: 'password' });
+      await Promise.resolve();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    }
+  );
+
+  it('does not navigate after password login when the cookie session cannot be restored', async () => {
+    login.mockReturnValue(of({ data: {} }));
+    restoreSession.mockReturnValue(of(false));
+    const { component } = createComponent({
+      returnUrl: '/dashboard/operations',
+    });
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'owner@example.com', password: 'password' });
+    await Promise.resolve();
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(component.error).toContain('session could not be restored');
+  });
+
+  it('does not navigate after OAuth success when the cookie session cannot be restored', async () => {
+    const initiateOAuthLogin = jest
+      .spyOn(OAuthService.prototype, 'initiateOAuthLogin')
+      .mockResolvedValue({ success: true, session: true });
+    restoreSession.mockReturnValue(of(false));
+    const { component } = createComponent({
+      returnUrl: '/dashboard/operations',
+    });
+    const router = TestBed.inject(Router);
+
+    await component.onOAuthProvider({ provider: 'google' } as any);
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(component.error).toContain('session could not be restored');
+
+    initiateOAuthLogin.mockRestore();
+  });
+
+  it('restores the cookie session before navigating to a safe OAuth deep link', async () => {
+    const initiateOAuthLogin = jest
+      .spyOn(OAuthService.prototype, 'initiateOAuthLogin')
+      .mockResolvedValue({ success: true, session: true });
+    const sessionRestored = new Subject<boolean>();
+    restoreSession.mockReturnValue(sessionRestored.asObservable());
+    const { component } = createComponent({
+      returnUrl: '/dashboard/store/products?filter=featured',
+    });
+    const router = TestBed.inject(Router);
+
+    const signIn = component.onOAuthProvider({ provider: 'google' } as any);
+    await Promise.resolve();
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+
+    sessionRestored.next(true);
+    sessionRestored.complete();
+    await signIn;
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      '/dashboard/store/products?filter=featured'
+    );
+
+    initiateOAuthLogin.mockRestore();
   });
 });

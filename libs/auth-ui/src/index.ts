@@ -1,6 +1,11 @@
 export * from './lib/auth-ui';
 export * from './lib/auth-ui/index';
 export { OAuthService } from './lib/services/oauth.service';
+export { normalizeAuthReturnTo } from './lib/oauth-callback/oauth-return';
+export type {
+  AuthReturnTarget,
+  AuthReturnNormalizationOptions,
+} from './lib/oauth-callback/oauth-return';
 export { oauthCallbackReferrerPolicy } from './lib/oauth-callback/oauth-callback-referrer-policy';
 export { EmailAuthClientService } from './lib/services/email-auth.service';
 export type { EmailActionPurpose } from './lib/services/email-auth.service';

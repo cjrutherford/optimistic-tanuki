@@ -1,0 +1,26 @@
+{
+  "name": "blogging-feature",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/blogging-feature/src",
+  "projectType": "library",
+  "tags": ["scope:blogging", "type:feature"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/blogging-feature",
+        "main": "libs/blogging-feature/src/index.ts",
+        "tsConfig": "libs/blogging-feature/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/blogging-feature/jest.config.ts"
+      }
+    }
+  }
+}

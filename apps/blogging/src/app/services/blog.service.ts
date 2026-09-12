@@ -34,6 +34,9 @@ export class BlogService {
     if (query.ownerId) {
       where.ownerId = query.ownerId;
     }
+    if (query.catalogId) {
+      where.catalogId = query.catalogId;
+    }
     if (query.createdAt && query.createdAt.length == 2) {
       where.createdAt = Between(
         new Date(query.createdAt[0]),

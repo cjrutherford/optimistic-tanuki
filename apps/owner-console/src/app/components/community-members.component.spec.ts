@@ -20,6 +20,9 @@ describe('CommunityMembersComponent', () => {
     updateMemberRole: jest.Mock;
     removeMember: jest.Mock;
     inviteMember: jest.Mock;
+    suspendMember: jest.Mock;
+    reactivateMember: jest.Mock;
+    getMembershipAudit: jest.Mock;
   };
   let messageService: {
     addMessage: jest.Mock;
@@ -45,6 +48,21 @@ describe('CommunityMembersComponent', () => {
       updateMemberRole: jest.fn().mockReturnValue(of({})),
       removeMember: jest.fn().mockReturnValue(of(undefined)),
       inviteMember: jest.fn().mockReturnValue(of({})),
+      suspendMember: jest.fn().mockReturnValue(of({})),
+      reactivateMember: jest.fn().mockReturnValue(of({})),
+      getMembershipAudit: jest.fn().mockReturnValue(
+        of([
+          {
+            workspaceId: 'community-1',
+            subjectId: 'profile-1',
+            actorId: 'owner-1',
+            actor: 'owner',
+            action: 'suspend',
+            from: 'active',
+            to: 'suspended',
+          },
+        ])
+      ),
     };
 
     messageService = {
@@ -178,5 +196,86 @@ describe('CommunityMembersComponent', () => {
       content: 'Permission denied: community.manage in app scope local-hub',
       type: 'error',
     });
+  });
+
+  it('normalizes lifecycle state and exposes only the permitted next action', () => {
+    const fixture = TestBed.createComponent(CommunityMembersComponent);
+    const component = fixture.componentInstance as any;
+
+    expect(component.getLifecycleState({ status: 'approved' })).toBe('active');
+    expect(component.getLifecycleAction({ status: 'approved' })).toBe(
+      'suspend'
+    );
+    expect(component.getLifecycleAction({ status: 'suspended' })).toBe(
+      'reactivate'
+    );
+    expect(component.getLifecycleAction({ status: 'revoked' })).toBeNull();
+    expect(
+      component.getLifecycleAction({ status: 'approved', role: 'owner' })
+    ).toBeNull();
+  });
+
+  it('does not expose lifecycle mutations for the current community manager', () => {
+    communityService.getCommunityManager.mockReturnValue(
+      of({ userId: 'user-1', profileId: 'profile-1' })
+    );
+
+    const fixture = TestBed.createComponent(CommunityMembersComponent);
+    const component = fixture.componentInstance as any;
+    fixture.detectChanges();
+
+    expect(
+      component.getLifecycleAction({
+        status: 'approved',
+        role: 'admin',
+        profileId: 'profile-1',
+      })
+    ).toBeNull();
+  });
+
+  it('suspends an active member and reports success through the existing feedback surface', () => {
+    const fixture = TestBed.createComponent(CommunityMembersComponent);
+    const component = fixture.componentInstance as any;
+    fixture.detectChanges();
+
+    component.suspendMember({ id: 'member-1', status: 'approved' });
+
+    expect(communityService.suspendMember).toHaveBeenCalledWith(
+      'community-1',
+      'member-1'
+    );
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Member suspended successfully.',
+      type: 'success',
+    });
+  });
+
+  it('does not offer or invoke a lifecycle mutation for a revoked member', () => {
+    const fixture = TestBed.createComponent(CommunityMembersComponent);
+    const component = fixture.componentInstance as any;
+
+    component.suspendMember({ id: 'member-1', status: 'revoked' });
+    component.reactivateMember({ id: 'member-1', status: 'revoked' });
+
+    expect(communityService.suspendMember).not.toHaveBeenCalled();
+    expect(communityService.reactivateMember).not.toHaveBeenCalled();
+    expect(component.getLifecycleAction({ status: 'revoked' })).toBeNull();
+  });
+
+  it('loads a member-scoped audit reference into the existing surface', () => {
+    const fixture = TestBed.createComponent(CommunityMembersComponent);
+    const component = fixture.componentInstance as any;
+    fixture.detectChanges();
+
+    component.viewMembershipAudit({ id: 'member-1' });
+
+    expect(communityService.getMembershipAudit).toHaveBeenCalledWith(
+      'community-1',
+      'member-1'
+    );
+    expect(component.auditMemberId).toBe('member-1');
+    expect(component.membershipAudit).toEqual([
+      expect.objectContaining({ action: 'suspend', to: 'suspended' }),
+    ]);
   });
 });

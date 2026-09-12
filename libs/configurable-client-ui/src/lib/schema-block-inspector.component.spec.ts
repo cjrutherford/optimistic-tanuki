@@ -85,4 +85,67 @@ describe('SchemaBlockInspectorComponent', () => {
     expect(styleField?.querySelector('select')).toBeTruthy();
     expect(columnsField?.querySelector('select')).toBeTruthy();
   });
+
+  it('emits a typed collection with its configured default item', () => {
+    const collectionChanged = jest.fn();
+    const collectionField: BlockDefinition = {
+      ...definition,
+      fields: [
+        {
+          key: 'items',
+          type: 'array',
+          label: 'Grid items',
+          itemFields: [
+            {
+              key: 'title',
+              type: 'string',
+              label: 'Title',
+              defaultValue: 'New item',
+            },
+          ],
+        },
+      ],
+    };
+    component.definition = collectionField;
+    component.block = { ...block, data: { items: [] } };
+    component.collectionChanged.subscribe(collectionChanged);
+
+    const collectionItemField = collectionField.fields?.[0];
+    if (!collectionItemField) {
+      throw new Error(
+        'Expected the collection definition to include item fields'
+      );
+    }
+    component.addCollectionItem(collectionItemField);
+
+    expect(collectionChanged).toHaveBeenCalledWith({
+      key: 'items',
+      items: [{ title: 'New item' }],
+    });
+  });
+
+  it('names the collection item targeted by its remove control', () => {
+    component.definition = {
+      ...definition,
+      fields: [
+        {
+          key: 'items',
+          type: 'array',
+          label: 'Grid items',
+          itemFields: [{ key: 'title', type: 'string', label: 'Title' }],
+        },
+      ],
+    };
+    component.block = {
+      ...block,
+      data: { items: [{ title: 'Featured guide' }] },
+    };
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement
+        .querySelector('.tag-remove')
+        ?.getAttribute('aria-label')
+    ).toBe('Remove item 1');
+  });
 });

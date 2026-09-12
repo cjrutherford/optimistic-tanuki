@@ -57,6 +57,7 @@ export {
   ContactCommands,
   EventCommands as BlogEventCommands,
   PostCommands as BlogPostCommands,
+  BlogCatalogCommands,
 } from './lib/libs/blog';
 
 export {
@@ -65,6 +66,10 @@ export {
   AppScopeCommands,
   ALL_APP_SCOPES,
   AppScopeName,
+  WORKSPACE_OWNER_PERMISSION_CONTRACTS,
+  WorkspaceOwnerAppScope,
+  WorkspaceOwnerPermissionContract,
+  getWorkspaceOwnerPermissionContract,
 } from './lib/libs/permissions';
 
 export {
@@ -73,10 +78,12 @@ export {
   DonationCommands,
   OrderCommands,
   PaymentCommands,
+  CatalogCommands,
 } from './lib/libs/store';
 
 export { AppConfigCommands } from './lib/libs/app-config';
 export { TrainerConfigCommands } from './lib/libs/trainer';
+export { WorkspaceCommands } from './lib/libs/workspace';
 export { HardwareCommands } from './lib/libs/system-configurator';
 export {
   AppointmentCommands,

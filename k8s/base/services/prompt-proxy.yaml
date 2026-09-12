@@ -38,6 +38,20 @@ spec:
               value: 'http://seaweedfs:8888'
             - name: S3_BUCKET
               value: 'assets'
+            # Optional overrides; config.yaml supplies 100.89.87.124:11434
+            # when these keys are absent from the deployment secret.
+            - name: OLLAMA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: OLLAMA_HOST
+                  optional: true
+            - name: OLLAMA_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: OLLAMA_PORT
+                  optional: true
           envFrom:
             - secretRef:
                 name: optimistic-tanuki-secrets

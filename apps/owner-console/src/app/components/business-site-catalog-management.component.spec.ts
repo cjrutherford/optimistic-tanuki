@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
+import { convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { BusinessSiteCatalogManagementComponent } from './business-site-catalog-management.component';
@@ -17,6 +19,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
 
   const storeService = {
     getProducts: jest.fn(),
+    getMyCatalogs: jest.fn(),
   };
 
   const authService = {
@@ -108,6 +111,17 @@ describe('BusinessSiteCatalogManagementComponent', () => {
         },
       ])
     );
+    storeService.getMyCatalogs.mockReturnValue(
+      of([
+        {
+          id: 'catalog-north',
+          name: 'North catalog',
+          ownerId: 'profile-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      ])
+    );
     operatorQueueService.getQueueByDomain.mockReturnValue(
       of([
         {
@@ -136,6 +150,14 @@ describe('BusinessSiteCatalogManagementComponent', () => {
         { provide: OperatorQueueService, useValue: operatorQueueService },
         { provide: RolesService, useValue: rolesService },
         { provide: StoreService, useValue: storeService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({ slug: 'north-site' }),
+            },
+          },
+        },
       ],
     }).compileComponents();
   });
@@ -172,14 +194,20 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     const fixture = createComponent();
     const component = fixture.componentInstance;
     component.setCatalogMode('store');
+    component.setStoreCatalog('catalog-north');
     component.save();
 
     expect(
       businessSiteAdminService.updateCommerceSettings
-    ).toHaveBeenCalledWith('cfg-1', {
-      source: 'store',
-      storeEnabled: false,
-    });
+    ).toHaveBeenCalledWith(
+      'cfg-1',
+      {
+        source: 'store',
+        storeEnabled: false,
+        catalogId: 'catalog-north',
+      },
+      'north-site'
+    );
     expect(component.successMessage()).toBe(
       'Business-site catalog mode updated.'
     );
@@ -189,6 +217,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     const fixture = createComponent();
     const component = fixture.componentInstance;
     component.setCatalogMode('store');
+    component.setStoreCatalog('catalog-north');
     component.save();
 
     expect(
@@ -227,6 +256,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     const fixture = createComponent();
     const component = fixture.componentInstance;
     component.setCatalogMode('store');
+    component.setStoreCatalog('catalog-north');
     component.save();
 
     expect(component.successMessage()).toBe('');
@@ -311,16 +341,22 @@ describe('BusinessSiteCatalogManagementComponent', () => {
       serviceCatalog: {
         ...config.serviceCatalog,
         source: 'store',
+        catalogId: 'catalog-north',
       },
     }));
     component.save();
 
     expect(
       businessSiteAdminService.updateCommerceSettings
-    ).toHaveBeenCalledWith('cfg-1', {
-      source: 'store',
-      storeEnabled: true,
-    });
+    ).toHaveBeenCalledWith(
+      'cfg-1',
+      {
+        source: 'store',
+        storeEnabled: true,
+        catalogId: 'catalog-north',
+      },
+      'north-site'
+    );
   });
 
   it('uses the session profile for catalog governance access', () => {

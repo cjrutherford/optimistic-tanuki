@@ -3,3 +3,4 @@ export { Post } from './post.entity';
 export { Contact } from './contact.entity';
 export { Blog } from './blog.entity';
 export { BlogComponent } from './blog-component.entity';
+export { BlogCatalog } from './blog-catalog.entity';

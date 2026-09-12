@@ -10,7 +10,7 @@ export interface FeatureGuardOptions {
   /** Selects the feature flag to check off the resolved site config. */
   isFeatureEnabled: (site: BusinessSiteConfig) => boolean;
   /** Router commands used to build the redirect UrlTree when the feature is disabled. */
-  redirectTo: string[];
+  redirectTo: string[] | ((route: ActivatedRouteSnapshot) => string[]);
   /**
    * When true, reads the `siteSlug` route param and forwards it to
    * `BusinessSiteConfigStore.fetch(false, siteSlug)` so hosted (slug-scoped)
@@ -31,13 +31,18 @@ export function createFeatureGuard({
   return (route: ActivatedRouteSnapshot) => {
     const siteConfig = inject(BusinessSiteConfigStore);
     const router = inject(Router);
-    const siteSlug = useRouteSlug ? route.paramMap.get('siteSlug') : undefined;
+    const siteSlug = useRouteSlug
+      ? route.paramMap?.get('siteSlug') ??
+        route.parent?.paramMap.get('siteSlug')
+      : undefined;
+    const redirectCommands =
+      typeof redirectTo === 'function' ? redirectTo(route) : redirectTo;
 
     return siteConfig
       .fetch(false, siteSlug)
       .pipe(
         map((site) =>
-          isFeatureEnabled(site) ? true : router.createUrlTree(redirectTo)
+          isFeatureEnabled(site) ? true : router.createUrlTree(redirectCommands)
         )
       );
   };

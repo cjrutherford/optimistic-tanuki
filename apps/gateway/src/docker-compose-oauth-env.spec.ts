@@ -88,6 +88,43 @@ describe('docker compose oauth environment wiring', () => {
     );
   });
 
+  it('raises development login throttling without changing the production default', () => {
+    const productionCompose = fs.readFileSync(
+      path.resolve(__dirname, '../../../docker-compose.yaml'),
+      'utf8'
+    );
+    const developmentCompose = fs.readFileSync(
+      path.resolve(__dirname, '../../../docker-compose.dev.yaml'),
+      'utf8'
+    );
+    const productionGatewaySection = productionCompose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+    const developmentGatewaySection = developmentCompose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(productionGatewaySection).toBeTruthy();
+    expect(developmentGatewaySection).toBeTruthy();
+    expect(developmentGatewaySection).toContain('THROTTLE_LOGIN_LIMIT=100');
+    expect(productionGatewaySection).not.toMatch(/THROTTLE_LOGIN_LIMIT/);
+  });
+
+  it('allows the development stack to auto-verify isolated test registrations explicitly', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../docker-compose.dev.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const authenticationSection = compose.match(
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(authenticationSection).toContain(
+      'AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-true}'
+    );
+  });
+
   it('keeps the dev default callback proxy neutral while registering Forge as an exact app origin', () => {
     const composePath = path.resolve(
       __dirname,
@@ -151,5 +188,47 @@ describe('docker compose oauth environment wiring', () => {
     expect(gatewaySection).toContain(
       'CI_GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo'
     );
+  });
+
+  it('runs the focused gateway E2E stack outside production callback enforcement', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../e2e/docker-compose.gateway-e2e.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toBeTruthy();
+    expect(gatewaySection).toContain('NODE_ENV: test');
+  });
+
+  it('connects the focused Gateway E2E profile service to its migrated database', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../e2e/docker-compose.gateway-e2e.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const profileSection = compose.match(
+      /^ {2}profile:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(profileSection).toBeTruthy();
+    expect(profileSection).toContain('DATABASE_NAME: ot_profile');
+  });
+
+  it('auto-verifies focused Gateway E2E accounts so authenticated flows can run', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../e2e/docker-compose.gateway-e2e.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const authenticationSection = compose.match(
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(authenticationSection).toBeTruthy();
+    expect(authenticationSection).toContain("AUTH_AUTO_VERIFY_EMAILS: 'true'");
   });
 });

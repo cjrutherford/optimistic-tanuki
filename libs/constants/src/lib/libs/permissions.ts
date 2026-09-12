@@ -34,6 +34,37 @@ export const AppScopeCommands = {
 };
 
 /**
+ * Permission contract used when a workspace is provisioned for an app.
+ * The role is looked up in the app scope and assigned only to the workspace
+ * child scope, so app owners cannot inherit another app's authority.
+ */
+export const WORKSPACE_OWNER_PERMISSION_CONTRACTS = {
+  'business-site': {
+    appScope: 'business-site',
+    roleName: 'business_site_owner',
+    label: 'Business site',
+  },
+  'configurable-client': {
+    appScope: 'configurable-client',
+    roleName: 'configurable_client_owner',
+    label: 'Configurable client',
+  },
+} as const;
+
+export type WorkspaceOwnerAppScope =
+  keyof typeof WORKSPACE_OWNER_PERMISSION_CONTRACTS;
+export type WorkspaceOwnerPermissionContract =
+  (typeof WORKSPACE_OWNER_PERMISSION_CONTRACTS)[WorkspaceOwnerAppScope];
+
+export function getWorkspaceOwnerPermissionContract(
+  appScope: string
+): WorkspaceOwnerPermissionContract | undefined {
+  return WORKSPACE_OWNER_PERMISSION_CONTRACTS[
+    appScope as WorkspaceOwnerAppScope
+  ];
+}
+
+/**
  * List of all application scopes in the platform.
  * Used for owner-console registration to assign owner roles across all apps.
  */
@@ -53,6 +84,8 @@ export const ALL_APP_SCOPES = [
   'owner-console',
   'store',
   'store-client',
+  'business-site',
+  'configurable-client',
   'forum',
   'D6',
   'wellness',
