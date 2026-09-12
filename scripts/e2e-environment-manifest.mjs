@@ -35,6 +35,7 @@ function lifecyclePhases({
           'permissions-seed',
           'store-seed',
           'app-configurator',
+          'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
@@ -45,6 +46,11 @@ function lifecyclePhases({
     completion: 'completed-successfully',
   });
   if (app !== 'app-configurator') add('app-configurator', ['app-configurator']);
+  // The seed script needs app-configurator's schema, so it waits for the
+  // service rather than starting with the other dependencies.
+  add('app-configurator-seed', ['app-configurator-seed'], {
+    completion: 'completed-successfully',
+  });
   add('gateway', ['gateway']);
   if (app !== 'gateway') add('application', [app], profile ? { profile } : {});
   return { phases };
@@ -303,6 +309,11 @@ const UI_ENVIRONMENTS = [
       'authentication',
       'profile',
       'social',
+      // Creating a community now provisions its workspace through the gateway
+      // (CommunitiesController.provisionCommunityWorkspace), and that error is
+      // rethrown. Without the service the create answered 500 on
+      // `getaddrinfo EAI_AGAIN workspace`.
+      'workspace',
       'permissions',
       'permissions-seed',
       'chat-collector',
@@ -468,9 +479,11 @@ const UI_ENVIRONMENTS = [
       'redis',
       'db-setup',
       'app-configurator',
+      // Publishes the apps the landing page's discovery list asserts on.
+      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup'],
+    completedServices: ['db-setup', 'app-configurator-seed'],
   },
 ];
 

@@ -4,7 +4,22 @@ import {
   Transport,
 } from '@nestjs/microservices';
 import { AppConfigCommands } from '@optimistic-tanuki/constants';
+import { firstValueFrom } from 'rxjs';
 
+/**
+ * The app-configurator TCP contract as it stands after the ownership work.
+ *
+ * Owner reads — GetAll, GetByName, Get, GetByContext — now require a complete
+ * app configuration context (owner, workspace, app instance and membership)
+ * and refuse without one. The previous version of this suite called GetAll
+ * with `{}` and GetByName with just a name, and expected a seeded `demo-app`
+ * that nothing in this stack creates; both cases failed with "A complete app
+ * configuration context is required". Proving an owner read properly needs
+ * persisted workspace and membership rows, which gateway-e2e's P3.3 fixture
+ * already builds end to end, so this suite covers what a bare microservice
+ * stack can honestly assert: owner reads are closed without context, and the
+ * public surfaces answer without one.
+ */
 describe('AppConfigurator Microservice (TCP)', () => {
   let client: ClientProxy;
 
@@ -14,10 +29,7 @@ describe('AppConfigurator Microservice (TCP)', () => {
 
     client = ClientProxyFactory.create({
       transport: Transport.TCP,
-      options: {
-        host,
-        port,
-      },
+      options: { host, port },
     });
     await client.connect();
   });
@@ -26,23 +38,47 @@ describe('AppConfigurator Microservice (TCP)', () => {
     await client.close();
   });
 
-  it('should get all configurations', async () => {
-    const res = await client
-      .send({ cmd: AppConfigCommands.GetAll }, {})
-      .toPromise();
-
-    expect(Array.isArray(res)).toBe(true);
-    // There should be at least the demo config we seeded
-    expect(res.length).toBeGreaterThanOrEqual(1);
-    expect(res[0]).toHaveProperty('name');
+  it('refuses to list configurations without an owner context', async () => {
+    await expect(
+      firstValueFrom(client.send({ cmd: AppConfigCommands.GetAll }, {}))
+    ).rejects.toMatchObject({
+      message: expect.stringContaining(
+        'A complete app configuration context is required'
+      ),
+    });
   });
 
-  it('should get a configuration by name (demo)', async () => {
-    const res = await client
-      .send({ cmd: AppConfigCommands.GetByName }, { name: 'demo-app' })
-      .toPromise();
+  it('refuses a by-name read without an owner context', async () => {
+    await expect(
+      firstValueFrom(
+        client.send({ cmd: AppConfigCommands.GetByName }, { name: 'demo-app' })
+      )
+    ).rejects.toMatchObject({
+      message: expect.stringContaining(
+        'A complete app configuration context is required'
+      ),
+    });
+  });
 
-    expect(res).toBeDefined();
-    expect(res.name).toBe('demo-app');
+  it('answers anonymous discovery with a list', async () => {
+    const apps = await firstValueFrom(
+      client.send(
+        { cmd: AppConfigCommands.DiscoverPublishedApps },
+        { identity: null, query: {} }
+      )
+    );
+
+    expect(Array.isArray(apps)).toBe(true);
+  });
+
+  it('does not expose an unpublished domain', async () => {
+    await expect(
+      firstValueFrom(
+        client.send(
+          { cmd: AppConfigCommands.GetPublishedByDomain },
+          { domain: 'nothing-published-here.example.test' }
+        )
+      )
+    ).rejects.toBeDefined();
   });
 });
