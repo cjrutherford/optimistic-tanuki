@@ -26,8 +26,8 @@ import { FooterSection } from '@optimistic-tanuki/app-config-models';
         padding: 3rem 2rem;
         background-color: color-mix(
           in srgb,
-          var(--foreground, #111827) 88%,
-          var(--background, #ffffff)
+          var(--foreground, var(--ot-client-section-foreground)) 88%,
+          var(--background, var(--ot-client-section-background))
         );
         color: var(--primary-foreground, white);
       }

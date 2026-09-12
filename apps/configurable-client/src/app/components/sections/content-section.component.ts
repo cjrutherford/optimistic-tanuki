@@ -33,8 +33,8 @@ import { ContentSection } from '@optimistic-tanuki/app-config-models';
     `
       .content-section {
         padding: 4rem 2rem;
-        color: var(--foreground, #111827);
-        background: var(--background, #ffffff);
+        color: var(--foreground, var(--ot-client-section-foreground));
+        background: var(--background, var(--ot-client-section-background));
       }
       .content-wrapper {
         display: grid;

@@ -1,4 +1,14 @@
 describe('DEV_BUSINESS_TENANT_PRESETS', () => {
+  it('keeps internal preset and slice language out of public tenant copy', async () => {
+    const { DEV_BUSINESS_TENANT_PRESETS } = await import(
+      './sample-tenants.mjs'
+    );
+
+    expect(JSON.stringify(DEV_BUSINESS_TENANT_PRESETS)).not.toMatch(
+      /(?:\bpreset\b|\bseeded\b|\bslice\b|\bP\d+(?:\.\d+)?\b)/i
+    );
+  });
+
   it('does not use tenant wording in owner-facing preset copy', async () => {
     const { DEV_BUSINESS_TENANT_PRESETS } = await import(
       './sample-tenants.mjs'
@@ -10,6 +20,21 @@ describe('DEV_BUSINESS_TENANT_PRESETS', () => {
     });
 
     expect(ownerFacingText).not.toContain('tenant');
+  });
+
+  it('does not seed the retired Clearcrest hero explanation copy', async () => {
+    const { DEV_BUSINESS_TENANT_PRESETS } = await import(
+      './sample-tenants.mjs'
+    );
+
+    const clearcrest = DEV_BUSINESS_TENANT_PRESETS.find(
+      (preset: { site: { slug: string } }) =>
+        preset.site.slug === 'clearcrest-pressure-washing'
+    );
+
+    expect(JSON.stringify(clearcrest)).not.toContain(
+      'This preset highlights quick quote conversion for seasonal and repeat exterior cleaning work.'
+    );
   });
 
   it('includes an accountant POC preset with bookkeeping and tax advisory services', async () => {

@@ -81,12 +81,14 @@ export class AuthGuard implements CanActivate {
   private async introspectToken(
     token: string,
     userId: string
-  ): Promise<boolean> {
-    const response = await firstValueFrom(
+  ): Promise<{ isValid: boolean; emailVerified: boolean }> {
+    const response = (await firstValueFrom(
       this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
-    );
-    // Assuming the response contains a field `isValid` to indicate token validity
-    return response && response.isValid;
+    )) as { isValid?: boolean; emailVerified?: boolean };
+    return {
+      isValid: Boolean(response?.isValid),
+      emailVerified: response?.emailVerified === true,
+    };
   }
 
   async parseToken(token: string): Promise<UserDetails> {
@@ -111,12 +113,23 @@ export class AuthGuard implements CanActivate {
         : '';
     const credential = bearerToken || cookieToken;
 
-    // Try to attach user if token exists, even for public routes
+    // Try to attach user if token exists, even for public routes. Signature
+    // verification alone is not sufficient here: a revoked session still
+    // carries a structurally valid JWT. Optional identities must pass the same
+    // authentication-service introspection as protected requests before they
+    // can influence membership-aware responses.
     if (credential) {
       try {
         const user = await this.jwt.verifyAsync<UserDetails>(credential);
-        // Optional: Introspect if strict validation needed, but verifyAsync checks signature/exp
-        // const isAuthenticated = await this.introspectToken(credential, user.userId);
+        const authentication = await this.introspectToken(
+          credential,
+          user.userId
+        );
+        if (!authentication.isValid) {
+          throw new UnauthorizedException(
+            'Unauthorized: Token Invalid (Introspection failed).'
+          );
+        }
 
         const userContext: UserContext = {
           userId: user.userId,
@@ -126,6 +139,7 @@ export class AuthGuard implements CanActivate {
           scopes: [],
           roles: [],
         };
+        userContext.emailVerified = authentication.emailVerified;
         request.user = userContext;
         // The credential itself, whichever way it arrived.
         //
@@ -135,8 +149,14 @@ export class AuthGuard implements CanActivate {
         // taking a token from the request has to take it from here.
         request.credential = credential;
       } catch (e) {
-        // If public, ignore auth errors. If private, the check below will fail.
+        // A public endpoint remains anonymously accessible when an optional
+        // credential is malformed, expired, revoked, or unavailable to the
+        // introspection service. In that case request.user must stay empty so
+        // downstream resolvers cannot treat the caller as a member.
         if (!isPublic) {
+          if (e instanceof UnauthorizedException) {
+            throw e;
+          }
           throw new UnauthorizedException(
             'Unauthorized: Token Invalid or Expired.'
           );
@@ -156,26 +176,6 @@ export class AuthGuard implements CanActivate {
       }
       // If we reached here, auth header existed but parsing failed and caught above
       throw new UnauthorizedException('Unauthorized: Token Invalid.');
-    }
-
-    // If we want to enforce introspection for protected routes:
-    // We can do it here if we didn't do it in the optional block.
-    // Ideally we should reuse the logic.
-
-    // For now, relying on verifyAsync is standard for stateless JWTs unless revocation checks are strict.
-    // The original code did introspect. Let's restore that for protected routes if needed,
-    // or assume verifyAsync is enough for now.
-    // BUT the original code called introspectToken.
-
-    // Let's add strict introspection check for protected routes.
-    const isAuthenticated = await this.introspectToken(
-      credential,
-      request.user.userId
-    );
-    if (!isAuthenticated) {
-      throw new UnauthorizedException(
-        'Unauthorized: Token Invalid (Introspection failed).'
-      );
     }
 
     await this.assertPrivilegedScopeAccess(

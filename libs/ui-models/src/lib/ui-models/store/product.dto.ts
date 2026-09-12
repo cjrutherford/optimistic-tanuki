@@ -7,6 +7,7 @@ export class CreateProductDto {
   imageUrl?: string;
   stock?: number;
   active?: boolean;
+  catalogId?: string | null;
 }
 
 export class UpdateProductDto {
@@ -17,4 +18,5 @@ export class UpdateProductDto {
   imageUrl?: string;
   stock?: number;
   active?: boolean;
+  catalogId?: string | null;
 }

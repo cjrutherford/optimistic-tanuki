@@ -1,14 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, map, of, switchMap } from 'rxjs';
 import {
   BusinessApiService,
+  BusinessSiteConfig,
+  BusinessSiteConfigStore,
   BusinessStoreProduct,
   injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
+import {
+  BUSINESS_PUBLIC_DARK_ACCENT_TEXT,
+  BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT,
+} from './public-contrast.tokens';
 
 @Component({
   selector: 'business-product-detail-page',
@@ -66,6 +72,17 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
     `
       :host {
         display: block;
+        --business-public-accent-text: var(
+          --primary-2,
+          ${BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT}
+        );
+      }
+
+      :host-context([data-mode='dark']) {
+        --business-public-accent-text: var(
+          --primary-8,
+          ${BUSINESS_PUBLIC_DARK_ACCENT_TEXT}
+        );
       }
 
       .product-detail-page {
@@ -83,7 +100,7 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
       .back-link {
         justify-self: start;
-        color: var(--primary);
+        color: var(--business-public-accent-text);
         font-weight: 700;
         text-decoration: none;
       }
@@ -147,7 +164,7 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
       .eyebrow {
         margin: 0;
-        color: var(--primary);
+        color: var(--business-public-accent-text);
         font-size: 0.75rem;
         font-weight: 800;
         letter-spacing: 0.14em;
@@ -211,14 +228,36 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 export class BusinessProductDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(BusinessApiService);
-  private readonly siteSlug = injectSiteSlugSignal();
+  private readonly siteConfig = inject(BusinessSiteConfigStore);
+  readonly siteSlug = injectSiteSlugSignal();
+  private readonly routeSiteSlug = computed(() => this.siteSlug());
+  private readonly routeSite = toSignal(
+    toObservable(this.routeSiteSlug).pipe(
+      switchMap((siteSlug) =>
+        this.siteConfig
+          .fetch(false, siteSlug)
+          .pipe(catchError(() => of<BusinessSiteConfig | null>(null)))
+      )
+    ),
+    { initialValue: null }
+  );
   private readonly productId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('productId'))),
     { initialValue: this.route.snapshot.paramMap.get('productId') }
   );
-  private readonly products = toSignal(this.api.getStoreProducts(), {
-    initialValue: [],
-  });
+  private readonly products = toSignal(
+    toObservable(this.routeSite).pipe(
+      switchMap((site) => {
+        const catalogId = site?.serviceCatalog.catalogId;
+        return catalogId
+          ? this.api
+              .getStoreProducts(catalogId)
+              .pipe(catchError(() => of<BusinessStoreProduct[]>([])))
+          : of<BusinessStoreProduct[]>([]);
+      })
+    ),
+    { initialValue: [] }
+  );
 
   readonly product = computed(() => {
     const productId = this.productId();

@@ -9,7 +9,8 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { AppModule } from '../app/app.module';
 import { ConfigurationsService } from '../app/configurations.service';
-import { demoAppConfig } from './demo-config';
+import { resolveAppConfigSeedContext } from './seed-context';
+import { seedDemoConfiguration } from './seed-helper';
 
 async function seed() {
   const logger = new Logger('AppConfiguratorSeed');
@@ -19,31 +20,21 @@ async function seed() {
 
     const app = await NestFactory.createApplicationContext(AppModule);
     const configurationsService = app.get(ConfigurationsService);
+    const context = resolveAppConfigSeedContext();
 
-    // Check if demo configuration exists
-    const allConfigs = await configurationsService.getAllConfigurations();
-    logger.log(`Found ${allConfigs.length} configurations in database`);
-
-    const existing = allConfigs.find((c: any) => c.name === demoAppConfig.name);
-
-    if (!existing) {
-      logger.log(
-        `Creating demo configuration with name: ${demoAppConfig.name}...`
+    if (!context) {
+      logger.warn(
+        'Skipping demo configuration seed: complete app context is required'
       );
-      const created = await configurationsService.createConfiguration(
-        demoAppConfig as any
-      );
-      logger.log('✓ Demo configuration created successfully');
-      logger.log(`  - ID: ${created.id}`);
-      logger.log(`  - Name: ${created.name}`);
-    } else {
-      logger.log(
-        `✓ Demo configuration already exists (name: ${existing.name}, id: ${existing.id})`
-      );
+      await app.close();
+      process.exit(0);
     }
 
-    // Log all configurations for debugging
-    const finalConfigs = await configurationsService.getAllConfigurations();
+    const { created, configurations: finalConfigs } =
+      await seedDemoConfiguration(configurationsService, context, logger);
+    logger.log('✓ Demo configuration is ready');
+    logger.log(`  - ID: ${created.id}`);
+    logger.log(`  - Name: ${created.name}`);
     logger.log(`Total configurations after seeding: ${finalConfigs.length}`);
     finalConfigs.forEach((config: any) => {
       logger.log(

@@ -43,14 +43,9 @@ import { BlockInstance } from '@optimistic-tanuki/app-config-models';
         width: 100%;
         padding: 0.95rem 1rem;
         border-radius: var(--personality-card-radius, 1rem);
-        border: 1px solid
-          color-mix(in srgb, var(--border, #e2e8f0) 86%, transparent);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #ffffff)
-        );
-        color: var(--foreground, #111827);
+        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
+        color: var(--foreground);
         text-align: left;
         cursor: pointer;
         transition: transform 0.18s ease, border-color 0.18s ease,
@@ -59,41 +54,23 @@ import { BlockInstance } from '@optimistic-tanuki/app-config-models';
 
       .canvas-block-card:hover {
         transform: translateY(-1px);
-        border-color: color-mix(
-          in srgb,
-          var(--primary, #3f51b5) 34%,
-          var(--border, #e2e8f0)
-        );
-        background: color-mix(
-          in srgb,
-          var(--primary, #3f51b5) 6%,
-          var(--surface, #ffffff)
-        );
+        border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+        background: color-mix(in srgb, var(--primary) 6%, var(--surface));
         box-shadow: 0 12px 28px
-          color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
+          color-mix(in srgb, var(--foreground) 10%, transparent);
       }
 
       .canvas-block-card:focus-visible {
-        outline: 2px solid
-          color-mix(in srgb, var(--primary, #3f51b5) 72%, transparent);
+        outline: 2px solid color-mix(in srgb, var(--primary) 72%, transparent);
         outline-offset: 3px;
       }
 
       .canvas-block-card.selected {
-        border-color: color-mix(
-          in srgb,
-          var(--primary, #3f51b5) 46%,
-          var(--border, #e2e8f0)
-        );
-        background: color-mix(
-          in srgb,
-          var(--primary, #3f51b5) 10%,
-          var(--surface, #ffffff)
-        );
+        border-color: color-mix(in srgb, var(--primary) 46%, var(--border));
+        background: color-mix(in srgb, var(--primary) 10%, var(--surface));
         box-shadow: 0 0 0 1px
-            color-mix(in srgb, var(--primary, #3f51b5) 28%, transparent),
-          0 16px 34px
-            color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
+            color-mix(in srgb, var(--primary) 28%, transparent),
+          0 16px 34px color-mix(in srgb, var(--foreground) 10%, transparent);
       }
 
       .canvas-block-index {
@@ -104,20 +81,20 @@ import { BlockInstance } from '@optimistic-tanuki/app-config-models';
         border-radius: 999px;
         background: color-mix(
           in srgb,
-          var(--foreground, #111827) 92%,
-          var(--background, #ffffff)
+          var(--foreground) 92%,
+          var(--background)
         );
-        color: var(--background, #ffffff);
+        color: var(--background);
         font-size: 0.82rem;
         font-weight: 800;
         letter-spacing: 0.02em;
         box-shadow: inset 0 0 0 1px
-          color-mix(in srgb, var(--foreground, #111827) 14%, transparent);
+          color-mix(in srgb, var(--foreground) 14%, transparent);
       }
 
       .canvas-block-card.selected .canvas-block-index {
-        background: var(--primary, #3f51b5);
-        color: var(--primary-foreground, #ffffff);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
 
       .canvas-block-copy {
@@ -130,7 +107,7 @@ import { BlockInstance } from '@optimistic-tanuki/app-config-models';
         font-size: 0.96rem;
         font-weight: 700;
         line-height: 1.25;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -150,14 +127,9 @@ import { BlockInstance } from '@optimistic-tanuki/app-config-models';
         max-width: 100%;
         padding: 0.24rem 0.56rem;
         border-radius: 999px;
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--primary, #3f51b5) 18%,
-            var(--border, #e2e8f0)
-          );
-        background: color-mix(in srgb, var(--primary, #3f51b5) 8%, transparent);
-        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         font-size: 0.68rem;
         font-weight: 800;
         letter-spacing: 0.1em;

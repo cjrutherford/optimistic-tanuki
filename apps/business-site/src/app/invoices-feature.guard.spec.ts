@@ -56,4 +56,46 @@ describe('invoicesFeatureGuard', () => {
     expect(createUrlTree).toHaveBeenCalledWith(['/client/dashboard']);
     expect(result).toBe(dashboardTree);
   });
+
+  it('fetches the hosted tenant config and keeps disabled billing redirects tenant-scoped', async () => {
+    const dashboardTree = {
+      redirectedTo: '/sites/steady-hand-contracting/client/dashboard',
+    };
+    const createUrlTree = jest.fn().mockReturnValue(dashboardTree);
+    const fetch = jest
+      .fn()
+      .mockReturnValue(of({ features: { invoices: { enabled: false } } }));
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: BusinessSiteConfigStore, useValue: { fetch } },
+        { provide: Router, useValue: { createUrlTree } },
+      ],
+    });
+
+    const route = {
+      paramMap: {
+        get: () => null,
+      },
+      parent: {
+        paramMap: {
+          get: (key: string) =>
+            key === 'siteSlug' ? 'steady-hand-contracting' : null,
+        },
+      },
+    } as never;
+
+    const result = await TestBed.runInInjectionContext(() =>
+      firstValueFrom(invoicesFeatureGuard(route, {} as never) as never)
+    );
+
+    expect(fetch).toHaveBeenCalledWith(false, 'steady-hand-contracting');
+    expect(createUrlTree).toHaveBeenCalledWith([
+      '/sites',
+      'steady-hand-contracting',
+      'client',
+      'dashboard',
+    ]);
+    expect(result).toBe(dashboardTree);
+  });
 });

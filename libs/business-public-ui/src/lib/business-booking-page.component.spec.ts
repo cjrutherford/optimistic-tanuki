@@ -152,6 +152,12 @@ describe('BusinessBookingPageComponent', () => {
     );
     expect(businessBookingPageStyles).toContain('--booking-copy-ink');
     expect(businessBookingPageStyles).toContain('--booking-form-surface');
+    expect(businessBookingPageStyles).toContain(
+      '--booking-accent: var(--primary-2, #0f5f4b)'
+    );
+    expect(businessBookingPageStyles).toContain(
+      '--booking-accent: var(--primary-8, #9fe0ca)'
+    );
   });
 
   it('keeps the hosted tenant slug in the create-account link', async () => {

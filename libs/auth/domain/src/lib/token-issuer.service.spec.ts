@@ -21,6 +21,7 @@ describe('TokenIssuerService', () => {
         name: 'Ada Lovelace',
         email: 'ada@example.com',
         profileId: '',
+        jti: expect.any(String),
       },
       {
         secret: 'test-secret',
@@ -49,5 +50,28 @@ describe('TokenIssuerService', () => {
       expect.objectContaining({ profileId: 'profile-1' }),
       expect.any(Object)
     );
+  });
+
+  it('issues distinct JWTs for same-second logins with distinct issuance ids', () => {
+    const signer = {
+      sign: jest.fn((payload) => JSON.stringify(payload)),
+    };
+    const service = new TokenIssuerService(signer, 'test-secret');
+    const user = {
+      userId: 'user-1',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+    };
+
+    const first = service.issueForUser(user);
+    const second = service.issueForUser(user);
+
+    expect(first).not.toBe(second);
+    const firstPayload = JSON.parse(first) as { jti?: string };
+    const secondPayload = JSON.parse(second) as { jti?: string };
+    expect(firstPayload.jti).toEqual(expect.any(String));
+    expect(secondPayload.jti).toEqual(expect.any(String));
+    expect(firstPayload.jti).not.toBe(secondPayload.jti);
   });
 });

@@ -31,6 +31,7 @@ services:
   db-setup:
     image: node:24-alpine
     container_name: local_hub_e2e_db_setup
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /workspace
     volumes:
       - .:/workspace
@@ -232,6 +233,7 @@ services:
   e2e-test-runner:
     image: mcr.microsoft.com/playwright:v1.42.1
     container_name: local_hub_e2e_runner
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /app
     volumes:
       - .:/app

@@ -35,6 +35,9 @@ export class ProductEntity {
   @Column({ type: 'uuid', nullable: true })
   ownerId: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  catalogId: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

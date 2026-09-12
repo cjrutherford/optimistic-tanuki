@@ -1,8 +1,10 @@
-import { Route } from '@angular/router';
+import { inject } from '@angular/core';
+import { ResolveFn, Route } from '@angular/router';
 import {
   createFinanceRoutes,
   FINANCE_HOST_CONFIG,
 } from '@optimistic-tanuki/finance-ui';
+import { BUSINESS_SITE_PRESENCE_FEATURE } from '@optimistic-tanuki/business-presence-feature';
 import { bookingFeatureGuard } from './booking-feature.guard';
 import { businessAuthGuard } from './trainer-auth.guard';
 import { clientAuthGuard } from './client-auth.guard';
@@ -14,6 +16,15 @@ import {
   emailAuthRoutes,
   oauthCallbackRoutes,
 } from '@optimistic-tanuki/auth-ui';
+import {
+  BusinessApiService,
+  type SiteConfigResponse,
+} from '@optimistic-tanuki/business-data-access';
+
+const businessSiteConfigResolver: ResolveFn<SiteConfigResponse> = (route) =>
+  inject(BusinessApiService).getSiteConfigForSlug(
+    route.paramMap.get('siteSlug')
+  );
 
 const ownerFinanceConfig = {
   routeBase: '/owner/finance',
@@ -44,6 +55,9 @@ const ownerChildren: Route[] = [
       import('@optimistic-tanuki/business-portal-ui').then(
         (m) => m.BusinessSiteEditorPageComponent
       ),
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
   },
   {
     path: 'requests',
@@ -140,12 +154,27 @@ export const appRoutes: Route[] = [
     title: 'View Product',
   },
   {
+    path: 'sites/:siteSlug/blog',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessBlogPageComponent
+      ),
+    title: 'Blog',
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
+  },
+  {
     path: 'sites/:siteSlug',
+    resolve: { siteConfig: businessSiteConfigResolver },
     loadComponent: () =>
       import('@optimistic-tanuki/business-public-ui').then(
         (m) => m.BusinessLandingPageComponent
       ),
     title: 'Business Site',
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
   },
   {
     path: 'sites/:siteSlug/products/:productId',

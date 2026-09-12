@@ -4,6 +4,8 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import { ɵsetAngularAppEngineManifest } from '@angular/ssr';
+import angularAppEngineManifest from './angular-app-engine-manifest.mjs';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
@@ -14,16 +16,13 @@ import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-pe
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
+ɵsetAngularAppEngineManifest(angularAppEngineManifest);
+
 const app = express();
 app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
-startNodeRuntimeMonitoring({
-  appId: 'configurable-client',
-  gatewayEndpoint: gatewayUrl,
-  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
-});
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -81,6 +80,11 @@ app.use('/**', (req, res, next) => {
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
+  startNodeRuntimeMonitoring({
+    appId: 'configurable-client',
+    gatewayEndpoint: gatewayUrl,
+    otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+  });
   const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);

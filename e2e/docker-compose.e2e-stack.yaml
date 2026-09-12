@@ -32,6 +32,7 @@ services:
     build:
       context: ..
       dockerfile: ./docker/db-setup/Dockerfile
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
     working_dir: /workspace
     volumes:
       - ..:/workspace
@@ -106,6 +107,25 @@ services:
       SERVICE_AUTHENTICATION_PORT: 3001
       SERVICE_PROFILE_HOST: profile
       SERVICE_PROFILE_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  workspace:
+    image: cjrutherford/optimistic_tanuki_workspace:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/workspace/Dockerfile
+    ports:
+      - '3024:3024'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_workspace
     depends_on:
       db:
         condition: service_healthy
@@ -230,6 +250,8 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     volumes:
       - ../apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
@@ -360,26 +382,6 @@ services:
       db-setup:
         condition: service_completed_successfully
 
-  app-configurator-seed:
-    image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
-    build:
-      context: ..
-      dockerfile: ./apps/app-configurator/Dockerfile
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: ot_app_configurator
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      PORT: 3014
-    depends_on:
-      app-configurator:
-        condition: service_started
-    command: sh -c "sleep 5 && node seed-data/seed-script.js"
-    restart: 'no'
-
   lead-tracker:
     image: cjrutherford/optimistic_tanuki_lead-tracker:${E2E_IMAGE_TAG:-latest}
     build:
@@ -440,6 +442,8 @@ services:
       PROFILE_PORT: 3002
       SOCIAL_HOST: social
       SOCIAL_PORT: 3003
+      WORKSPACE_HOST: workspace
+      WORKSPACE_PORT: 3024
       ASSET_HOST: assets
       ASSET_PORT: 3005
       PROJECT_PLANNING_HOST: project-planning
@@ -466,6 +470,8 @@ services:
       profile:
         condition: service_started
       social:
+        condition: service_started
+      workspace:
         condition: service_started
       assets:
         condition: service_started

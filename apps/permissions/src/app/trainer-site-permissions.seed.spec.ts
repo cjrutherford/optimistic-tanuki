@@ -39,6 +39,14 @@ describe('business-site permission seeds', () => {
       'app-config.read',
       'app-config.update',
       'business-site.catalog.update',
+      'store.product.view',
+      'store.product.create',
+      'store.product.update',
+      'store.product.delete',
+      'blog.post.read',
+      'blog.post.create',
+      'blog.post.update',
+      'blog.post.delete',
     ];
 
     for (const permission of expectedPermissions) {
@@ -52,44 +60,34 @@ describe('business-site permission seeds', () => {
   });
 
   it('maps business owner and client roles to the expected business-site permissions', () => {
-    expect(
-      seedData.role_permissions.some(
-        (entry: {
-          role: string;
-          permission: string;
-          permissionAppScope: string;
-        }) =>
-          entry.role === 'business_site_owner' &&
-          entry.permission === 'app-config.update' &&
-          entry.permissionAppScope === 'business-site'
-      )
-    ).toBe(true);
+    const ownerPermissions = [
+      'app-config.read',
+      'app-config.update',
+      'business-site.catalog.update',
+      'store.product.view',
+      'store.product.create',
+      'store.product.update',
+      'store.product.delete',
+      'blog.post.read',
+      'blog.post.create',
+      'blog.post.update',
+      'blog.post.delete',
+    ];
 
-    expect(
-      seedData.role_permissions.some(
-        (entry: {
-          role: string;
-          permission: string;
-          permissionAppScope: string;
-        }) =>
-          entry.role === 'business_site_owner' &&
-          entry.permission === 'business-site.catalog.update' &&
-          entry.permissionAppScope === 'business-site'
-      )
-    ).toBe(true);
-
-    expect(
-      seedData.role_permissions.some(
-        (entry: {
-          role: string;
-          permission: string;
-          permissionAppScope: string;
-        }) =>
-          entry.role === 'business_site_owner' &&
-          entry.permission === 'app-config.read' &&
-          entry.permissionAppScope === 'business-site'
-      )
-    ).toBe(true);
+    for (const permission of ownerPermissions) {
+      expect(
+        seedData.role_permissions.some(
+          (entry: {
+            role: string;
+            permission: string;
+            permissionAppScope: string;
+          }) =>
+            entry.role === 'business_site_owner' &&
+            entry.permission === permission &&
+            entry.permissionAppScope === 'business-site'
+        )
+      ).toBe(true);
+    }
 
     expect(
       seedData.role_permissions.some(
@@ -112,5 +110,18 @@ describe('business-site permission seeds', () => {
     expect(shellSeed).toContain("('app-config.update'");
     expect(shellSeed).toContain("('app-config.read'");
     expect(shellSeed).toContain("('business-site.catalog.update'");
+    expect(shellSeed).toContain("('store.product.view'");
+    expect(shellSeed).toContain("('blog.post.read'");
+  });
+
+  it('resolves seed-user profiles from the authentication and profile services', () => {
+    expect(shellSeed).toContain(
+      'AUTHENTICATION_DB=${AUTHENTICATION_DB:-ot_authentication}'
+    );
+    expect(shellSeed).toContain('PROFILE_DB=${PROFILE_DB:-ot_profile}');
+    expect(shellSeed).toContain('resolve_profile_id()');
+    expect(shellSeed).toContain('FROM user_entity');
+    expect(shellSeed).toContain('FROM profile');
+    expect(shellSeed).not.toContain('FROM "user" p');
   });
 });

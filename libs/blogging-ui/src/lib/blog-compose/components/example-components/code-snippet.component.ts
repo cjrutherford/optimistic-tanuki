@@ -37,8 +37,8 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
         justify-content: space-between;
         align-items: center;
         padding: 0.75rem 1rem;
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #e9ecef;
+        background-color: var(--surface);
+        border-bottom: 1px solid var(--border);
       }
 
       .code-title {
@@ -48,14 +48,14 @@ import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 
       .code-language {
         font-size: 0.8rem;
-        color: #6c757d;
+        color: var(--muted-foreground);
         text-transform: uppercase;
       }
 
       .code-content {
         margin: 0;
         padding: 1rem;
-        background-color: #f8f9fa;
+        background-color: var(--surface);
         overflow-x: auto;
         font-family: 'Courier New', monospace;
         font-size: 0.9rem;

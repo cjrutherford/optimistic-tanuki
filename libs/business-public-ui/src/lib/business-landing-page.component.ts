@@ -1,21 +1,34 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import {
+  AfterViewInit,
   Component,
+  Directive,
+  ElementRef,
   EventEmitter,
   Input,
+  OnDestroy,
   Output,
+  Renderer2,
   computed,
+  effect,
   inject,
 } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, combineLatest, map, of, startWith, switchMap } from 'rxjs';
 import {
   BusinessApiService,
+  BusinessSiteConfig,
   BusinessSiteConfigStore,
   LandingSection,
   LandingSectionMediaItem,
   LandingSectionMotionConfig,
   BusinessStoreProduct,
+  BusinessBlogPost,
+  type SiteConfigResponse,
+  mergeBusinessSiteConfig,
   injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import {
@@ -33,8 +46,221 @@ import {
 // the eagerly-used effects and defeat the @defer below.
 import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui/murmuration-scene';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
+import {
+  resolvePublishedBlogCatalogId,
+  type PublishedBlogCapability,
+} from '@optimistic-tanuki/blogging-data-access';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
+import {
+  LandingHeaderComponent,
+  LandingHeroComponent,
+  type DiscoveryNavItem,
+} from '@optimistic-tanuki/common-ui';
 import { BusinessRichContentRendererComponent } from './business-rich-content-renderer.component';
+import {
+  BUSINESS_PUBLIC_DARK_ACCENT_TEXT,
+  BUSINESS_PUBLIC_DARK_LABEL_TEXT,
+  BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT,
+  BUSINESS_PUBLIC_LIGHT_LABEL_TEXT,
+} from './public-contrast.tokens';
+
+type RouteSite = {
+  slug: string | null;
+  site: BusinessSiteConfig;
+};
+
+export const businessLandingPageContrastStyles = `
+      :host {
+        --business-public-accent-text: var(--primary-2, ${BUSINESS_PUBLIC_LIGHT_ACCENT_TEXT});
+        --business-public-label-text: var(--foreground, ${BUSINESS_PUBLIC_LIGHT_LABEL_TEXT});
+        --business-public-dark-label-text: ${BUSINESS_PUBLIC_DARK_LABEL_TEXT};
+        --business-public-on-brand: var(--on-primary, var(--primary-foreground, #ffffff));
+      }
+
+      :host,
+      .landing-page-root,
+      .landing-shell,
+      .layout-column,
+      .section-shell,
+      .section-surface {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      :host-context([data-mode='dark']) {
+        --business-public-accent-text: var(--primary-8, ${BUSINESS_PUBLIC_DARK_ACCENT_TEXT});
+        --business-public-label-text: var(--foreground, ${BUSINESS_PUBLIC_DARK_LABEL_TEXT});
+      }
+
+      otui-public-landing-header,
+      otui-public-landing-hero {
+        --otui-public-landing-brand: var(--business-public-accent-text);
+        --otui-public-landing-focus: var(--business-public-accent-text);
+        --otui-public-landing-muted: var(--business-public-label-text);
+        --on-primary: var(--business-public-on-brand);
+        --primary-foreground: var(--business-public-on-brand);
+      }
+
+      .cta-primary {
+        color: var(--business-public-on-brand);
+      }
+
+      .eyebrow,
+      .type,
+      .offer-badge,
+      .offer-rate strong {
+        color: var(--business-public-accent-text);
+      }
+
+      .contact-label {
+        color: var(--business-public-label-text);
+      }
+
+      /* Projected motion is a decorative background. Keep it inert even when
+         consumer styles are encapsulated by the shared hero component. */
+      .hero-motion {
+        pointer-events: none;
+      }
+
+      .offer-rate span,
+      .offer-rate small,
+      .testimonial footer span {
+        color: var(--business-public-label-text);
+      }
+
+      .contact-subject-label {
+        display: block;
+        margin: 0 0 0.35rem;
+        color: var(--business-public-dark-label-text);
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid var(--business-public-accent-text);
+        outline-offset: 3px;
+      }
+
+      .contact-form-panel ::ng-deep lib-contact-form .form {
+        --background-overlay: #1a221d;
+        --background: #1a221d;
+        --surface: #27322c;
+        --foreground: ${BUSINESS_PUBLIC_DARK_LABEL_TEXT};
+        --foreground-secondary: ${BUSINESS_PUBLIC_DARK_LABEL_TEXT};
+        --muted: ${BUSINESS_PUBLIC_DARK_LABEL_TEXT};
+        --primary: ${BUSINESS_PUBLIC_DARK_ACCENT_TEXT};
+        --border: rgba(237, 243, 239, 0.28);
+      }
+
+      .contact-grid,
+      .contact-column,
+      .contact-form-panel,
+      .contact-form-panel ::ng-deep lib-contact-form,
+      .contact-form-panel ::ng-deep lib-contact-form otui-card,
+      .contact-form-panel ::ng-deep lib-contact-form .row,
+      .contact-form-panel ::ng-deep lib-contact-form .img,
+      .contact-form-panel ::ng-deep lib-contact-form .form,
+      .contact-form-panel ::ng-deep lib-contact-form lib-text-input,
+      .contact-form-panel ::ng-deep lib-contact-form lib-select,
+      .contact-form-panel ::ng-deep lib-contact-form lib-text-area {
+        box-sizing: border-box;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .contact-form-panel ::ng-deep lib-contact-form .form
+        lib-text-input .form-label,
+      .contact-form-panel ::ng-deep lib-contact-form .form
+        lib-text-area .form-label {
+        color: var(--business-public-dark-label-text) !important;
+      }
+
+      .contact-form-panel ::ng-deep lib-contact-form .contact-media-fallback {
+        display: none;
+        min-height: 12rem;
+        place-items: center;
+        padding: 1rem;
+        border-radius: var(--border-radius-lg, 0.5rem);
+        background: #27322c;
+        color: var(--business-public-dark-label-text);
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .contact-form-panel ::ng-deep
+        lib-contact-form .contact-media-fallback.is-visible {
+        display: grid;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .entrance,
+        .cta-primary,
+        .cta-secondary,
+        .testimonial,
+        .offer {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+          transform: none !important;
+        }
+      }
+`;
+
+@Directive({
+  selector: 'lib-contact-form[publicContactMediaFallback]',
+  standalone: true,
+})
+class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
+  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly document = inject(DOCUMENT);
+  private readonly renderer = inject(Renderer2);
+  private image: HTMLImageElement | null = null;
+  private fallback: HTMLSpanElement | null = null;
+
+  private readonly onImageError = () => {
+    if (!this.image || !this.fallback) {
+      return;
+    }
+
+    const image = this.image;
+    image.hidden = true;
+    image.setAttribute('aria-hidden', 'true');
+    this.renderer.removeChild(image.parentElement, image);
+    this.fallback.classList.add('is-visible');
+    this.fallback.removeAttribute('aria-hidden');
+  };
+
+  ngAfterViewInit(): void {
+    this.image = this.host.nativeElement.querySelector(
+      'img[alt="Newsletter Banner"]'
+    );
+    if (!this.image) {
+      return;
+    }
+
+    this.fallback = this.document.createElement('span');
+    this.fallback.className = 'contact-media-fallback';
+    this.fallback.setAttribute('role', 'img');
+    this.fallback.setAttribute('aria-label', 'Newsletter Banner');
+    this.fallback.setAttribute('aria-hidden', 'true');
+    this.fallback.textContent = 'Newsletter Banner';
+    this.image.insertAdjacentElement('afterend', this.fallback);
+    this.image.addEventListener('error', this.onImageError);
+
+    if (this.image.complete && this.image.naturalWidth === 0) {
+      this.onImageError();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.image?.removeEventListener('error', this.onImageError);
+  }
+}
 
 @Component({
   selector: 'business-landing-page',
@@ -52,7 +278,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
     TopographicDriftComponent,
     ShimmerBeamComponent,
     ContactFormComponent,
+    PublicContactMediaFallbackDirective,
     ProductCardComponent,
+    LandingHeaderComponent,
+    LandingHeroComponent,
     BusinessRichContentRendererComponent,
   ],
   template: `
@@ -141,6 +370,17 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       } } } }
     </ng-template>
 
+    @if (routeSite()) {
+    <otui-public-landing-header
+      [brandLabel]="site().brand.businessName"
+      [brandHref]="heroFragmentHref()"
+      [navItems]="tenantNavigation()"
+    >
+      @if (site().features.clientPortal.enabled) {
+      <a slot="actions" [routerLink]="clientPortalRoute()">Client Portal</a>
+      }
+    </otui-public-landing-header>
+
     <ng-template #renderSection let-section>
       @switch (section.type) { @case ('hero') {
       <div
@@ -153,47 +393,60 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
         (click)="onPreviewSectionClick($event, section.id)"
       >
-        <section class="hero" [class.has-motion]="!!motion(section)" id="hero">
-          <div class="hero-motion">
+        <otui-public-landing-hero
+          class="hero shared-hero"
+          [class.hero-has-background]="!!motion(section)"
+          [id]="section.id"
+          [eyebrow]="site().brand.businessName"
+          [heading]="section.richContent?.title || site().brand.tagline"
+          [description]="heroDescription()"
+        >
+          @if (section.richContent?.content?.trim()) {
+          <business-rich-content-renderer
+            slot="body"
+            class="hero-rich-content"
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          }
+          <div
+            slot="visual"
+            class="hero-motion"
+            data-public-landing-background
+            aria-hidden="true"
+          >
             <ng-container
               [ngTemplateOutlet]="renderMotion"
               [ngTemplateOutletContext]="{ $implicit: section }"
             ></ng-container>
           </div>
-          <div class="hero-content">
-            <div class="copy hero-panel entrance" style="animation-delay: 0.1s">
-              <p class="eyebrow">{{ site().brand.businessName }}</p>
-              @if (section.richContent?.content) {
-              <business-rich-content-renderer
-                [content]="section.richContent ?? null"
-              ></business-rich-content-renderer>
-              } @else {
-              <h1>{{ site().brand.tagline }}</h1>
-              <p class="lede">{{ site().brand.intro }}</p>
-              <p class="body">{{ site().brand.longBio }}</p>
-              }
-              <div class="actions">
-                @if (section.ctaHref?.startsWith('#')) {
-                <a class="cta-primary" [href]="section.ctaHref">{{
-                  section.ctaLabel || 'Explore now'
-                }}</a>
-                } @else if (site().features.booking.enabled && siteSlug()) {
-                <a class="cta-primary" [routerLink]="bookingRoute()">{{
-                  site().contact.consultationLabel
-                }}</a>
-                } @else if (section.ctaHref) {
-                <a class="cta-primary" [href]="section.ctaHref">{{
-                  section.ctaLabel || 'Explore now'
-                }}</a>
-                } @if (site().features.clientPortal.enabled) {
-                <a class="cta-secondary" [routerLink]="clientPortalRoute()"
-                  >Client Portal</a
-                >
-                }
-              </div>
-            </div>
+          <div slot="actions" class="actions">
+            @if (section.ctaHref?.startsWith('#')) {
+            <a
+              class="cta-primary public-landing-action public-landing-action--primary"
+              [href]="sectionCtaHref(section)"
+              >{{ section.ctaLabel || 'Explore now' }}</a
+            >
+            } @else if (site().features.booking.enabled && siteSlug()) {
+            <a
+              class="cta-primary public-landing-action public-landing-action--primary"
+              [routerLink]="bookingRoute()"
+              >{{ site().contact.consultationLabel }}</a
+            >
+            } @else if (section.ctaHref) {
+            <a
+              class="cta-primary public-landing-action public-landing-action--primary"
+              [href]="section.ctaHref"
+              >{{ section.ctaLabel || 'Explore now' }}</a
+            >
+            } @if (site().features.clientPortal.enabled) {
+            <a
+              class="cta-secondary public-landing-action public-landing-action--secondary"
+              [routerLink]="clientPortalRoute()"
+              >Client Portal</a
+            >
+            }
           </div>
-        </section>
+        </otui-public-landing-hero>
       </div>
       } @case ('about') {
       <div
@@ -216,6 +469,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="about-section entrance section-surface"
+          [id]="section.id"
           style="animation-delay: 0.18s"
         >
           <div class="section-head">
@@ -274,7 +528,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="entrance section-surface"
-          id="results"
+          [id]="section.id"
           style="animation-delay: 0.2s"
         >
           <div class="section-head">
@@ -340,7 +594,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="store-section entrance section-surface"
-          id="storefront"
+          [id]="section.id"
           style="animation-delay: 0.22s"
         >
           <div class="section-head">
@@ -375,6 +629,46 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           </div>
         </section>
       </div>
+      } @case ('blog') {
+      <div
+        class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
+        [class.preview-section-selected]="
+          embeddedPreview && selectedSectionId === section.id
+        "
+        [attr.data-section-id]="section.id"
+        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
+        (click)="onPreviewSectionClick($event, section.id)"
+      >
+        @if (motion(section)) {
+        <div class="section-motion">
+          <ng-container
+            [ngTemplateOutlet]="renderMotion"
+            [ngTemplateOutletContext]="{ $implicit: section }"
+          ></ng-container>
+        </div>
+        }
+        <section
+          class="blog-runtime entrance section-surface"
+          [id]="section.id"
+          aria-label="Blog posts"
+        >
+          <div class="section-head">
+            <p class="eyebrow">From the blog</p>
+            <h2>{{ section.title }}</h2>
+          </div>
+          <div class="post-grid">
+            @for (post of blogPosts(); track post.id) {
+            <article class="post-card">
+              <h3>{{ post.name }}</h3>
+              <p>{{ post.description }}</p>
+            </article>
+            } @empty {
+            <p class="empty-state">No posts are live in this catalog yet.</p>
+            }
+          </div>
+        </section>
+      </div>
       } @case ('testimonials') {
       <div
         class="layout-item section-shell"
@@ -396,6 +690,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="entrance section-surface"
+          [id]="section.id"
           style="animation-delay: 0.15s"
         >
           <div class="section-head">
@@ -445,6 +740,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="contact entrance section-surface"
+          [id]="section.id"
           style="animation-delay: 0.24s"
         >
           <div class="section-head">
@@ -488,7 +784,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="contact entrance section-surface"
-          id="contact"
+          [id]="section.id"
           style="animation-delay: 0.3s"
         >
           <div class="section-head">
@@ -542,6 +838,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             </div>
             <div class="contact-column contact-form-panel">
               <lib-contact-form
+                publicContactMediaFallback
                 [title]="'Contact ' + site().brand.businessName"
                 [buttonText]="
                   contactSubmitting
@@ -551,6 +848,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                     : 'Send message'
                 "
                 [subjects]="contactSubjects"
+                [subjectId]="'business-contact-subject'"
                 (formSubmit)="submitContactForm($event)"
               ></lib-contact-form>
               @if (contactStatus) {
@@ -581,7 +879,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="custom-section entrance section-surface"
-          [attr.data-section-id]="section.id"
+          [id]="section.id"
           style="animation-delay: 0.22s"
         >
           <div class="section-head">
@@ -624,6 +922,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="image-section entrance section-surface"
+          [id]="section.id"
           style="animation-delay: 0.22s"
         >
           <div class="section-head">
@@ -669,6 +968,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         }
         <section
           class="gallery-section entrance section-surface"
+          [id]="section.id"
           style="animation-delay: 0.22s"
         >
           <div class="section-head">
@@ -701,6 +1001,13 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             } }
           </div>
         </section>
+      </div>
+      } @default {
+      <div
+        class="layout-item section-shell unsupported-section"
+        [attr.data-block-type]="section.type"
+      >
+        <p>Unsupported section</p>
       </div>
       } }
     </ng-template>
@@ -761,9 +1068,15 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       </div>
       }
     </div>
+    } @else {
+    <!-- Do not stream fallback tenant branding while the hosted config is pending. -->
+    <div class="landing-config-pending" aria-hidden="true"></div>
+    }
   `,
   styles: [
     `
+      ${businessLandingPageContrastStyles}
+
       :host {
         display: grid;
         gap: 1.5rem;
@@ -938,6 +1251,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         position: absolute;
         inset: 0;
         z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
       }
 
       .hero-motion ::ng-deep .particle-veil {
@@ -981,7 +1296,6 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary);
       }
 
       h1,
@@ -1024,7 +1338,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .offer p,
       .testimonial p,
       .contact p {
-        color: color-mix(in srgb, var(--foreground) 72%, transparent);
+        color: var(--business-public-label-text);
         line-height: 1.6;
       }
 
@@ -1182,7 +1496,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .testimonial footer span {
         font-size: 0.82rem;
-        color: color-mix(in srgb, var(--foreground) 58%, transparent);
+        color: var(--business-public-label-text);
       }
 
       .offer-stack {
@@ -1231,17 +1545,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .offer-rate span {
         font-size: 0.85rem;
-        color: color-mix(in srgb, var(--foreground) 62%, transparent);
       }
 
       .offer-rate strong {
         font-size: 1.25rem;
-        color: var(--primary);
       }
 
       .offer-rate small {
         font-size: 0.8rem;
-        color: color-mix(in srgb, var(--foreground) 58%, transparent);
         font-weight: 500;
       }
 
@@ -1261,8 +1572,64 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         gap: 1rem;
       }
 
+      .blog-runtime {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .post-grid {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      }
+
+      .post-card {
+        display: grid;
+        gap: 0.45rem;
+        padding: 1rem;
+        border: var(--personality-border-width, 1px) solid var(--border);
+        border-radius: var(--personality-card-radius, 0.75rem);
+        background: color-mix(in srgb, var(--foreground) 6%, transparent);
+      }
+
+      .post-card h3,
+      .post-card p,
+      .empty-state {
+        margin: 0;
+      }
+
+      .post-card p,
+      .empty-state {
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
+      }
+
       .custom-section business-rich-content-renderer {
         display: block;
+      }
+
+      .public-landing-hero__body business-rich-content-renderer {
+        display: block;
+      }
+
+      .public-landing-hero__body
+        business-rich-content-renderer
+        ::ng-deep
+        > .rich-content-renderer {
+        display: grid;
+        gap: 1rem;
+        color: color-mix(in srgb, var(--foreground) 88%, transparent);
+        line-height: 1.7;
+      }
+
+      .public-landing-hero__body business-rich-content-renderer ::ng-deep p,
+      .public-landing-hero__body business-rich-content-renderer ::ng-deep ul,
+      .public-landing-hero__body business-rich-content-renderer ::ng-deep ol {
+        margin: 0;
+      }
+
+      .public-landing-hero__body business-rich-content-renderer ::ng-deep ul,
+      .public-landing-hero__body business-rich-content-renderer ::ng-deep ol {
+        padding-left: 1.25rem;
       }
 
       .custom-section
@@ -1402,7 +1769,6 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: color-mix(in srgb, var(--foreground) 52%, transparent);
         min-width: 5.5rem;
       }
 
@@ -1430,8 +1796,64 @@ export class BusinessLandingPageComponent {
 
   private readonly api = inject(BusinessApiService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  readonly site = this.siteConfig.site;
+  private readonly title = inject(Title);
+  private readonly route = inject(ActivatedRoute);
   readonly siteSlug = injectSiteSlugSignal();
+  private readonly routeSiteSlug = computed(() => this.siteSlug());
+  private readonly routeData$ = (this.route.data ?? of({})).pipe(startWith({}));
+  readonly routeSite = toSignal(
+    combineLatest([toObservable(this.routeSiteSlug), this.routeData$]).pipe(
+      switchMap(([siteSlug, routeData]) => {
+        const resolvedConfig = (routeData as Record<string, unknown>)[
+          'siteConfig'
+        ] as SiteConfigResponse | undefined;
+        if (siteSlug && resolvedConfig) {
+          return of<RouteSite>({
+            slug: siteSlug,
+            site: mergeBusinessSiteConfig(resolvedConfig.config),
+          });
+        }
+
+        const api = this.api as BusinessApiService & {
+          getSiteConfigForSlug?: (
+            siteSlug?: string | null
+          ) => ReturnType<BusinessApiService['getSiteConfigForSlug']>;
+        };
+        if (typeof api.getSiteConfigForSlug === 'function') {
+          return api.getSiteConfigForSlug(siteSlug).pipe(
+            map((response) => ({
+              slug: siteSlug,
+              site: mergeBusinessSiteConfig(response?.config),
+            })),
+            catchError(() => of<RouteSite | null>(null))
+          );
+        }
+
+        // Lightweight component test doubles and older host integrations may
+        // only expose the shared store. Keep that fallback for compatibility;
+        // the production API path above is intentionally independent of the
+        // app-level unscoped store request.
+        return this.siteConfig.fetch(false, siteSlug).pipe(
+          map((site): RouteSite => ({ slug: siteSlug, site })),
+          catchError(() => of<RouteSite | null>(null))
+        );
+      })
+    ),
+    { initialValue: null }
+  );
+  /**
+   * Hosted pages must render every public surface from the same slug-scoped
+   * response. The app-level store also performs an initial unscoped fetch;
+   * reading it directly here allowed that default response to race the
+   * route-scoped one, producing a hybrid header/contact with a tenant hero.
+   */
+  readonly site = computed(() => {
+    const siteSlug = this.siteSlug();
+    const routeSite = this.routeSite();
+    return siteSlug && routeSite?.slug === siteSlug
+      ? routeSite.site
+      : this.siteConfig.site();
+  });
   readonly activeLayout = computed(() => this.site().landingPage.layout);
   readonly layoutClass = computed(
     () => `layout-${this.site().landingPage.layout}`
@@ -1439,13 +1861,44 @@ export class BusinessLandingPageComponent {
   readonly offers = toSignal(this.api.getOffers(this.siteSlug()), {
     initialValue: [],
   });
-  readonly storeProducts = toSignal(this.api.getStoreProducts(), {
-    initialValue: [],
-  });
+  readonly storeProducts = toSignal(
+    toObservable(this.routeSite).pipe(
+      switchMap((routeSite) => {
+        const catalogId = routeSite?.site.serviceCatalog.catalogId;
+        return catalogId
+          ? this.api
+              .getStoreProducts(catalogId)
+              .pipe(catchError(() => of<BusinessStoreProduct[]>([])))
+          : of<BusinessStoreProduct[]>([]);
+      })
+    ),
+    { initialValue: [] }
+  );
   readonly storefrontProducts = computed(() =>
     this.storeProducts().filter(
       (product) => product.active && product.type !== 'service'
     )
+  );
+  readonly blogCatalogId = computed(() => {
+    return (
+      resolvePublishedBlogCatalogId(
+        this.site().plugins.capabilities['blogging.posts'] as
+          | PublishedBlogCapability
+          | undefined
+      ) ?? null
+    );
+  });
+  readonly blogPosts = toSignal(
+    toObservable(this.blogCatalogId).pipe(
+      switchMap((catalogId) =>
+        catalogId
+          ? this.api
+              .getBlogPosts(catalogId)
+              .pipe(catchError(() => of<BusinessBlogPost[]>([])))
+          : of<BusinessBlogPost[]>([])
+      )
+    ),
+    { initialValue: [] }
   );
   contactSubmitting = false;
   contactStatus: string | null = null;
@@ -1468,6 +1921,41 @@ export class BusinessLandingPageComponent {
       .filter((section) => section.enabled)
       .filter((section) => this.isSectionEnabled(section.type))
   );
+  readonly tenantNavigation = computed<DiscoveryNavItem[]>(() =>
+    this.visibleSections().map((section) => ({
+      label: section.title,
+      href: this.tenantFragmentHref(`#${section.id}`),
+    }))
+  );
+  readonly heroFragmentHref = computed(() => {
+    const hero = this.visibleSections().find(
+      (section) => section.type === 'hero'
+    );
+
+    return this.tenantFragmentHref(`#${hero?.id ?? 'hero'}`);
+  });
+
+  constructor() {
+    effect(() => {
+      const siteSlug = this.siteSlug();
+      const routeSite = this.routeSite();
+
+      if (siteSlug && routeSite?.slug !== siteSlug) {
+        return;
+      }
+
+      const site = siteSlug ? routeSite?.site : this.site();
+      if (!site) {
+        return;
+      }
+
+      const businessName = site.brand.businessName?.trim() || 'Business';
+      const tagline = site.brand.tagline?.trim();
+      this.title.setTitle(
+        tagline ? `${businessName} | ${tagline}` : businessName
+      );
+    });
+  }
 
   clientPortalRoute(): string[] {
     const siteSlug = this.siteSlug();
@@ -1493,7 +1981,7 @@ export class BusinessLandingPageComponent {
     }
 
     if (rawHref.startsWith('#')) {
-      return rawHref;
+      return this.tenantFragmentHref(rawHref);
     }
 
     if (
@@ -1513,8 +2001,19 @@ export class BusinessLandingPageComponent {
     );
 
     return matchedSection
-      ? `#${matchedSection.id}`
-      : `#${this.slugify(rawHref)}`;
+      ? this.tenantFragmentHref(`#${matchedSection.id}`)
+      : this.tenantFragmentHref(`#${this.slugify(rawHref)}`);
+  }
+
+  private tenantFragmentHref(fragment: string): string {
+    const normalizedFragment = fragment.startsWith('#')
+      ? fragment
+      : `#${fragment}`;
+    const siteSlug = this.siteSlug();
+
+    return siteSlug
+      ? `/sites/${siteSlug}${normalizedFragment}`
+      : normalizedFragment;
   }
 
   ownerName(): string {
@@ -1523,6 +2022,13 @@ export class BusinessLandingPageComponent {
       this.site().brand.trainerName ||
       'Business Owner'
     );
+  }
+
+  heroDescription(): string {
+    // The editable rich body is projected below the heading. Keep the hero
+    // description concise so the long-form explanation is not repeated above
+    // it and does not push the primary action beneath the visual layer.
+    return this.site().brand.intro || '';
   }
 
   motion(section: LandingSection): LandingSectionMotionConfig | null {
@@ -1577,6 +2083,10 @@ export class BusinessLandingPageComponent {
       return this.site().features.store.enabled;
     }
 
+    if (type === 'blog') {
+      return this.blogCatalogId() !== null;
+    }
+
     if (type === 'booking') {
       return this.site().features.booking.enabled;
     }
@@ -1626,10 +2136,6 @@ export class BusinessLandingPageComponent {
       stock: product.stock,
       type: product.type,
     };
-  }
-
-  constructor() {
-    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 
   submitContactForm(event: {

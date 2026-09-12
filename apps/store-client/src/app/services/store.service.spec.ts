@@ -56,6 +56,14 @@ describe('StoreService', () => {
       expect(req.request.method).toBe('GET');
       req.flush(mockProducts);
     });
+
+    it('adds a catalog filter when a public catalog is selected', () => {
+      service.getProducts('catalog-1').subscribe();
+
+      const req = httpMock.expectOne('/api/store/products?catalogId=catalog-1');
+      expect(req.request.method).toBe('GET');
+      req.flush([]);
+    });
   });
 
   describe('getProduct', () => {

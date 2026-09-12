@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CatalogComponent } from './catalog.component';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { StoreService, Product } from '../../services/store.service';
 import { of, throwError } from 'rxjs';
 
@@ -33,6 +33,10 @@ describe('CatalogComponent', () => {
         {
           provide: Router,
           useValue: { navigate: jest.fn() },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({}) } },
         },
         {
           provide: StoreService,

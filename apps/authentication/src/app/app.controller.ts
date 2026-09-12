@@ -130,7 +130,6 @@ export class AppController {
   @MessagePattern({ cmd: AuthCommands.Login })
   async login(@Payload() data: LoginRequest & { profileId: string }) {
     try {
-      this.l.log('login:', data);
       const missingFields = validateRequiredFields<LoginRequest>(data, [
         'email',
         'password',
@@ -141,7 +140,6 @@ export class AppController {
         );
       }
       const { email, password, mfa } = data;
-      this.l.log('login:', email, password, mfa);
       return await this.appService.login(email, password, mfa, data.profileId);
     } catch (e) {
       if (e instanceof RpcException) {

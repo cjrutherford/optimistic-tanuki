@@ -304,13 +304,13 @@ import {
       }
 
       .component-editor-wrapper.hovered {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         background-color: rgba(0, 122, 204, 0.03);
         z-index: 1; /* Ensure hovered wrapper is above siblings */
       }
 
       .component-editor-wrapper.locked {
-        border-color: #2196f3;
+        border-color: var(--info);
         background-color: rgba(33, 150, 243, 0.08);
         box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
         z-index: 3; /* Locked wrapper is above selected */
@@ -318,14 +318,14 @@ import {
       }
 
       .component-editor-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         background-color: rgba(0, 122, 204, 0.08);
         box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.15);
         z-index: 2; /* Selected wrapper is above hovered */
       }
 
       .component-editor-wrapper.editing {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         z-index: 100; /* Editing wrapper is above everything */
       }
 
@@ -339,7 +339,7 @@ import {
         justify-content: space-between;
         align-items: center;
         padding: 4px 8px;
-        background: var(--accent, #007acc);
+        background: var(--primary);
         border-radius: 6px 6px 0 0;
         opacity: 0;
         visibility: hidden;
@@ -421,7 +421,7 @@ import {
       }
 
       .delete-btn:hover {
-        background: #dc3545;
+        background: var(--danger);
       }
 
       /* Component Content */
@@ -435,9 +435,9 @@ import {
 
       .component-preview {
         padding: 16px;
-        background: var(--background-secondary, #f8f9fa);
+        background: var(--surface);
         border-radius: 6px;
-        border: 1px dashed var(--border-color, #dee2e6);
+        border: 1px dashed var(--border);
       }
 
       .preview-header {
@@ -450,17 +450,17 @@ import {
       .preview-header h4 {
         margin: 0;
         font-size: 1rem;
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .preview-header mat-icon {
-        color: var(--accent, #007acc);
+        color: var(--primary);
       }
 
       .preview-description {
         margin: 0 0 12px 0;
         font-size: 0.875rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
       }
 
       .preview-data {
@@ -476,16 +476,16 @@ import {
         padding: 4px 8px;
         background: white;
         border-radius: 4px;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border);
       }
 
       .data-label {
         font-weight: 500;
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .data-value {
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
         max-width: 150px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -499,7 +499,7 @@ import {
         left: 0;
         right: 0;
         background: white;
-        border: 1px solid var(--border-color, #dee2e6);
+        border: 1px solid var(--border);
         border-radius: 0 0 8px 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 20;
@@ -514,8 +514,8 @@ import {
         justify-content: space-between;
         align-items: flex-start;
         padding: 12px 16px;
-        background: var(--background-secondary, #f8f9fa);
-        border-bottom: 1px solid var(--border-color, #dee2e6);
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
         flex-shrink: 0;
       }
 
@@ -530,21 +530,21 @@ import {
         font-size: 24px;
         width: 24px;
         height: 24px;
-        color: var(--accent, #007acc);
+        color: var(--primary);
         flex-shrink: 0;
       }
 
       .quick-edit-header h4 {
         margin: 0 0 4px 0;
         font-size: 1rem;
-        color: var(--foreground, #333);
+        color: var(--foreground);
         font-weight: 600;
       }
 
       .component-description {
         margin: 0;
         font-size: 0.85rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
         line-height: 1.4;
       }
 
@@ -557,13 +557,13 @@ import {
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
         flex-shrink: 0;
       }
 
       .close-btn:hover {
         background: rgba(0, 0, 0, 0.05);
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .quick-edit-form {
@@ -589,7 +589,7 @@ import {
         gap: 6px;
         font-size: 0.9rem;
         font-weight: 500;
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .output-indicator {
@@ -599,23 +599,23 @@ import {
       .property-description {
         margin: 0;
         font-size: 0.8rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
         line-height: 1.4;
       }
 
       .form-input {
         padding: 8px 12px;
-        border: 1px solid var(--border-color, #dee2e6);
+        border: 1px solid var(--border);
         border-radius: 4px;
         font-size: 0.9rem;
         transition: border-color 0.15s ease;
         background: var(--background, white);
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .form-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -634,24 +634,24 @@ import {
 
       .checkbox-label {
         font-size: 0.9rem;
-        color: var(--foreground, #333);
+        color: var(--foreground);
         cursor: pointer;
       }
 
       .select-input {
         width: 100%;
         padding: 8px 12px;
-        border: 1px solid var(--border-color, #dee2e6);
+        border: 1px solid var(--border);
         border-radius: 4px;
         background: var(--background, white);
-        color: var(--foreground, #333);
+        color: var(--foreground);
         font-size: 0.9rem;
         cursor: pointer;
       }
 
       .select-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -659,19 +659,19 @@ import {
         width: 100%;
         min-height: 100px;
         padding: 10px 12px;
-        border: 1px solid var(--border-color, #dee2e6);
+        border: 1px solid var(--border);
         border-radius: 4px;
         font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
         font-size: 0.85rem;
         line-height: 1.5;
         resize: vertical;
         background: var(--background, white);
-        color: var(--foreground, #333);
+        color: var(--foreground);
       }
 
       .json-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -680,8 +680,8 @@ import {
         justify-content: flex-end;
         gap: 8px;
         padding: 12px 16px;
-        border-top: 1px solid var(--border-color, #dee2e6);
-        background: var(--background-secondary, #f8f9fa);
+        border-top: 1px solid var(--border);
+        background: var(--surface);
         flex-shrink: 0;
       }
 
@@ -697,22 +697,25 @@ import {
 
       .cancel-btn {
         background: white;
-        border: 1px solid var(--border-color, #dee2e6);
-        color: var(--foreground, #333);
+        border: 1px solid var(--border);
+        color: var(--foreground);
       }
 
       .cancel-btn:hover {
-        background: var(--background-secondary, #f8f9fa);
-        border-color: var(--foreground-secondary, #999);
+        background: var(--surface);
+        border-color: var(--muted-foreground);
       }
 
       .save-btn {
-        background: var(--accent, #007acc);
+        background: var(--primary);
         color: white;
       }
 
       .save-btn:hover {
-        background: var(--accent-dark, #005999);
+        background: var(
+          --primary-3,
+          color-mix(in srgb, var(--primary) 85%, black)
+        );
       }
 
       /* Resize Handle */
@@ -720,7 +723,7 @@ import {
         position: absolute;
         width: 12px;
         height: 12px;
-        background: var(--accent, #007acc);
+        background: var(--primary);
         border: 2px solid white;
         border-radius: 2px;
       }

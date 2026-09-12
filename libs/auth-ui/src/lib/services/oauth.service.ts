@@ -193,6 +193,7 @@ export class OAuthService {
       this.messageSubscription = fromEvent<MessageEvent>(window, 'message')
         .pipe(
           filter((event) => event.origin === callbackOrigin),
+          filter((event) => event.source === this.popup),
           filter((event) => event.data && event.data.type === 'oauth-callback'),
           take(1),
           timeout(300000)
@@ -312,19 +313,26 @@ export class OAuthService {
     });
   }
 
+  /**
+   * Compatibility wrapper for consumers of the retired client-side
+   * registration flow. Registration now happens during the server-owned OAuth
+   * callback; the legacy identity and authorization-code arguments are kept
+   * only for source compatibility and must not be sent back to the server.
+   */
   async completeOAuthRegistration(
-    _provider?: string,
-    _providerUserId?: string,
-    _email?: string,
-    _firstName?: string,
-    _lastName?: string,
-    _bio?: string
+    provider: string,
+    _providerUserId: string,
+    _email: string,
+    _firstName: string,
+    _lastName: string,
+    _code: string
   ): Promise<OAuthLoginResult> {
-    return {
-      success: false,
-      error:
-        'OAuth registration is handled by the shared server callback and should not be called client-side.',
-    };
+    const result = await this.initiateOAuthLogin(provider);
+    if (result.session === false) {
+      const { session: _session, ...legacyResult } = result;
+      return legacyResult;
+    }
+    return result;
   }
 
   private buildStartUrl(

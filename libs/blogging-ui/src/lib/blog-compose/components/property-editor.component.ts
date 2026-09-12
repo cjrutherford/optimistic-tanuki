@@ -196,7 +196,7 @@ import {
         justify-content: space-between;
         align-items: center;
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color, #e0e0e0);
+        border-bottom: 1px solid var(--border);
       }
 
       .editor-header h3 {
@@ -213,13 +213,13 @@ import {
       }
 
       .close-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: color-mix(in srgb, var(--primary) 8%, var(--surface));
       }
 
       .component-info {
         padding: 1rem;
-        background-color: var(--background-secondary, #f8f9fa);
-        border-bottom: 1px solid var(--border-color, #e0e0e0);
+        background-color: var(--surface);
+        border-bottom: 1px solid var(--border);
       }
 
       .component-info h4 {
@@ -230,7 +230,7 @@ import {
       .component-info p {
         margin: 0;
         font-size: 0.875rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
       }
 
       .properties-form {
@@ -260,7 +260,7 @@ import {
       .property-description {
         margin: 0 0 0.5rem 0;
         font-size: 0.8rem;
-        color: var(--foreground-secondary, #666);
+        color: var(--muted-foreground);
       }
 
       .checkbox-container {
@@ -291,7 +291,7 @@ import {
         width: 100%;
         min-height: 80px;
         padding: 0.75rem;
-        border: 1px solid var(--border-color, #e0e0e0);
+        border: 1px solid var(--border);
         border-radius: 4px;
         font-family: monospace;
         font-size: 0.85rem;
@@ -313,7 +313,7 @@ import {
 
       .editor-actions {
         padding: 1rem;
-        border-top: 1px solid var(--border-color, #e0e0e0);
+        border-top: 1px solid var(--border);
         display: flex;
         justify-content: flex-end;
         gap: 0.5rem;

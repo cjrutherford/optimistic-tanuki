@@ -6,7 +6,7 @@ import {
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { BusinessAuthService, BusinessAuthUser } from './business-auth.service';
+import { BusinessAuthService } from './business-auth.service';
 
 const SESSION_KIND_KEY = 'business-site:session-kind';
 
@@ -392,9 +392,10 @@ describe('BusinessAuthService session lifecycle', () => {
 
       service.logout();
 
-      // A cookie session never carries a bearer token, so no revocation call is
-      // made — see the note in the accompanying report.
-      httpMock.expectNone('/api/authentication/logout');
+      const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+      expect(logoutRequest.request.method).toBe('POST');
+      expect(logoutRequest.request.body).toEqual({});
+      logoutRequest.flush({ ok: true });
       expect(service.user()).toBeNull();
       expect(service.isAuthenticated()).toBe(false);
       expect(service.getAuthHeaders()).toEqual({});
@@ -418,7 +419,10 @@ describe('BusinessAuthService session lifecycle', () => {
 
       service.logoutClient();
 
-      httpMock.expectNone('/api/authentication/logout');
+      const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+      expect(logoutRequest.request.method).toBe('POST');
+      expect(logoutRequest.request.body).toEqual({});
+      logoutRequest.flush({ ok: true });
       expect(service.clientUser()).toBeNull();
       expect(service.isClientAuthenticated()).toBe(false);
       expect(service.clientToken()).toBeNull();
@@ -426,16 +430,20 @@ describe('BusinessAuthService session lifecycle', () => {
       expect(sessionStorage.getItem(SESSION_KIND_KEY)).toBeNull();
     });
 
-    it('keeps the owner session intact when only the client session is dropped', () => {
+    it('clears the shared owner session when the client cookie session is dropped', () => {
       createService();
       establishOwnerSession();
-      const owner: BusinessAuthUser | null = service.user();
 
       service.logoutClient();
 
+      const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+      expect(logoutRequest.request.method).toBe('POST');
+      expect(logoutRequest.request.body).toEqual({});
+      logoutRequest.flush({ ok: true });
+
       expect(service.clientUser()).toBeNull();
-      expect(service.user()).toEqual(owner);
-      expect(service.isAuthenticated()).toBe(true);
+      expect(service.user()).toBeNull();
+      expect(service.isAuthenticated()).toBe(false);
     });
   });
 });

@@ -56,3 +56,6 @@ configMapGenerator:
   - name: app-registry-config
     files:
       - app-registry.json=config/app-registry.json
+  - name: prompt-proxy-config
+    files:
+      - config.yaml=config/prompt-proxy-config.yaml

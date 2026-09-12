@@ -1,5 +1,7 @@
 import { DataSourceOptions } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
+import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
+import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
 import loadConfig from '../config';
 
 export default (): DataSourceOptions => {
@@ -12,8 +14,8 @@ export default (): DataSourceOptions => {
     username: appConfig.database.username,
     password: appConfig.database.password,
     database: appConfig.database.database,
-    entities: [AppConfigurationEntity],
-    synchronize: process.env.NODE_ENV !== 'production',
+    entities: [AppConfigurationEntity, AppInstanceEntity, AppMembershipEntity],
+    synchronize: false,
     logging: process.env.NODE_ENV === 'development',
   };
 

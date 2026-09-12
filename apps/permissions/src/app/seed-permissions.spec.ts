@@ -101,4 +101,120 @@ describe('permissions seed integrity', () => {
       'permission "missing.permission" is not declared in app scope "global"'
     );
   });
+
+  it('declares the configurable-client owner contract in its own app scope', () => {
+    expect(seedData.app_scopes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'configurable-client', active: true }),
+      ])
+    );
+    expect(seedData.roles).toContainEqual({
+      name: 'configurable_client_owner',
+      description: 'Configurable-client workspace owner for app configuration',
+      appScope: 'configurable-client',
+    });
+
+    expect(
+      seedData.role_permissions.filter(
+        (association) => association.role === 'configurable_client_owner'
+      )
+    ).toEqual([
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.create',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.read',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.update',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'app-config.delete',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.create',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.read',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.update',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.delete',
+        permissionAppScope: 'configurable-client',
+      },
+      {
+        role: 'configurable_client_owner',
+        permission: 'blog.post.publish',
+        permissionAppScope: 'configurable-client',
+      },
+    ]);
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'configurable_client_owner',
+        permissionAppScope: 'business-site',
+      })
+    );
+  });
+
+  it('keeps the shell seed aligned with the configurable-client blog contract', () => {
+    const shellSeed = fs.readFileSync(
+      path.resolve(__dirname, '../../../../scripts/seed-permissions.sh'),
+      'utf8'
+    );
+
+    for (const permission of [
+      "('blog.post.read', 'Read configurable-client Blog posts and catalogs'",
+      "('blog.post.create', 'Create configurable-client Blog posts and catalogs'",
+      "('blog.post.update', 'Update configurable-client Blog posts'",
+      "('blog.post.delete', 'Delete configurable-client Blog posts'",
+      "('blog.post.publish', 'Publish configurable-client Blog posts'",
+    ]) {
+      expect(shellSeed).toContain(permission);
+    }
+
+    expect(shellSeed).toContain(
+      "'blog.post.publish'\n) AND p.\"appScopeId\" = (SELECT id FROM app_scope WHERE name='configurable-client')"
+    );
+  });
+
+  it('canonicalizes duplicate targetless permissions without collapsing targeted rows', () => {
+    const shellSeed = fs.readFileSync(
+      path.resolve(__dirname, '../../../../scripts/seed-permissions.sh'),
+      'utf8'
+    );
+
+    expect(shellSeed).toContain(
+      'CREATE UNIQUE INDEX IF NOT EXISTS permission_name_appscope_targetless_idx'
+    );
+    expect(shellSeed).toContain('WHERE "targetId" IS NULL;');
+    expect(shellSeed).toContain(
+      'CREATE TEMP TABLE permission_targetless_aliases'
+    );
+    expect(shellSeed).toContain('DELETE FROM "role_permissions"');
+    expect(shellSeed).toContain('UPDATE "role_permissions"');
+    expect(shellSeed).toContain('DELETE FROM "permission"');
+    expect(shellSeed).not.toContain(
+      'CREATE UNIQUE INDEX IF NOT EXISTS permission_name_appscope_idx ON "permission" (name, "appScopeId");'
+    );
+    expect(shellSeed).toContain(
+      'ON CONFLICT (name, "appScopeId") WHERE "targetId" IS NULL DO NOTHING;'
+    );
+  });
 });

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   LoginBlockComponent,
+  normalizeAuthReturnTo,
   OAuthProviderEvent,
   OAuthService,
 } from '@optimistic-tanuki/auth-ui';
@@ -192,6 +193,7 @@ export class LoginComponent implements OnInit {
 
   onLogin(loginData: LoginType): void {
     this.error = '';
+    const returnUrl = this.safeReturnUrl();
 
     this.authService.login(loginData.email, loginData.password).subscribe({
       next: async () => {
@@ -203,7 +205,7 @@ export class LoginComponent implements OnInit {
             'Sign-in succeeded, but the session could not be restored. Please try again.';
           return;
         }
-        this.router.navigate(['/dashboard']);
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.error = err.error?.message || 'Login failed. Please try again.';
@@ -213,6 +215,7 @@ export class LoginComponent implements OnInit {
 
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
     this.error = '';
+    const returnUrl = this.safeReturnUrl();
 
     try {
       const result = await this.oauthService.initiateOAuthLogin(
@@ -225,8 +228,15 @@ export class LoginComponent implements OnInit {
         if (result.token) {
           this.authService.setToken(result.token);
         }
-        await firstValueFrom(this.authService.restoreSession());
-        this.router.navigate(['/dashboard']);
+        const sessionRestored = await firstValueFrom(
+          this.authService.restoreSession()
+        );
+        if (!sessionRestored) {
+          this.error =
+            'Sign-in succeeded, but the session could not be restored. Please try again.';
+          return;
+        }
+        this.router.navigateByUrl(returnUrl);
       } else if (result.needsRegistration && result.userData) {
         this.error =
           'This OAuth account is not authorized for the Owner Console. Ask an existing operator to have this account provisioned for access.';
@@ -236,5 +246,20 @@ export class LoginComponent implements OnInit {
     } catch (err: any) {
       this.error = err.message || 'OAuth login failed. Please try again.';
     }
+  }
+
+  private safeReturnUrl(): string {
+    const returnTo =
+      this.route.snapshot.queryParamMap?.get('returnUrl') ??
+      this.route.snapshot.queryParams?.['returnUrl'];
+    const currentOrigin =
+      typeof window === 'undefined' ? '' : window.location.origin;
+    const normalizedReturnTo = normalizeAuthReturnTo(returnTo, {
+      currentOrigin,
+    });
+
+    return normalizedReturnTo?.isCurrentOrigin
+      ? normalizedReturnTo.path
+      : '/dashboard';
   }
 }

@@ -4,10 +4,22 @@ import {
   getBuildCommand,
   getComposeArgs,
   getSetupSeedCommands,
+  getOwnerStorageStatePath,
   getStackStartupCommands,
 } from './global-setup';
+import { getOwnerAuthScope } from './src/support/owner-auth-scope';
 
 describe('business-site e2e global setup', () => {
+  it('reuses owner storage only for the canonical North Star account', () => {
+    expect(getOwnerAuthScope('owner@localbusiness.test')).toBe('reusable');
+    expect(getOwnerAuthScope('owner-handyman@localbusiness.test')).toBe(
+      'credentials'
+    );
+    expect(getOwnerAuthScope('owner-pressure@localbusiness.test')).toBe(
+      'credentials'
+    );
+  });
+
   it('builds only the business-site workflow apps without replaying nx cache outputs', () => {
     const workspaceRoot = '/workspace';
 
@@ -18,7 +30,7 @@ describe('business-site e2e global setup', () => {
         'nx',
         'run-many',
         '--target=build',
-        '--projects=authentication,profile,permissions,store,lead-tracker,gateway,business-site',
+        '--projects=authentication,profile,permissions,store,lead-tracker,blogging,gateway,business-site',
         '--configuration=development',
         '--skip-nx-cache',
       ],
@@ -128,6 +140,7 @@ describe('business-site e2e global setup', () => {
           'permissions',
           'store',
           'lead-tracker',
+          'blogging',
           'gateway',
         ],
         cwd: workspaceRoot,
@@ -176,5 +189,14 @@ describe('business-site e2e global setup', () => {
         },
       },
     ]);
+  });
+
+  it('stores the reused owner session outside the source tree', () => {
+    expect(getOwnerStorageStatePath()).toBe(
+      join(
+        __dirname,
+        '../../dist/apps/business-site-e2e/owner-storage-state.json'
+      )
+    );
   });
 });

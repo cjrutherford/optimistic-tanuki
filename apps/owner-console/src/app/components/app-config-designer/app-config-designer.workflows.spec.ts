@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { CdkDragDrop } from '@angular/cdk/drag-drop';
@@ -15,6 +17,7 @@ import { AppConfigDesignerComponent } from './app-config-designer.component';
 
 const baseConfig = (): AppConfiguration => ({
   id: 'cfg-1',
+  revision: 0,
   name: 'Workspace Config',
   description: 'Shared workspace test',
   domain: 'workspace.local',
@@ -122,6 +125,8 @@ describe('AppConfigDesignerComponent workflows', () => {
     TestBed.configureTestingModule({
       imports: [AppConfigDesignerComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AppConfigService,
           useValue: {
@@ -174,6 +179,8 @@ describe('AppConfigDesignerComponent workflows', () => {
       TestBed.configureTestingModule({
         imports: [AppConfigDesignerComponent],
         providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
           {
             provide: AppConfigService,
             useValue: {
@@ -455,15 +462,7 @@ describe('AppConfigDesignerComponent workflows', () => {
   });
 
   describe('drag and drop', () => {
-    // KNOWN BUG (pinned, not asserted as desired behaviour): dropping a section
-    // onto a new index leaves the canvas order unchanged. `onSectionDrop` calls
-    // `moveBlockInWorkspace` (libs/app-config-models/src/lib/app-configuration.model.ts),
-    // which splices the block into the target position and then hands the result
-    // to `normalizeBlockOrder`. That helper re-sorts by each block's stale
-    // `order` field before renumbering, which undoes the splice every time. The
-    // same defect makes `moveSelectedBlock` a no-op. Fixing it belongs in the
-    // shared lib, so this test records today's behaviour rather than the intent.
-    it('resolves the dragged section but currently leaves the order unchanged', () => {
+    it('moves the dragged section to the requested position', () => {
       const { component } = createComponent();
 
       component.onSectionDrop({
@@ -472,8 +471,8 @@ describe('AppConfigDesignerComponent workflows', () => {
       } as CdkDragDrop<Section[]>);
 
       expect(component.canvasBlocks().map((b) => b.id)).toEqual([
-        'hero-1',
         'cta-1',
+        'hero-1',
       ]);
     });
 
@@ -663,6 +662,7 @@ describe('AppConfigDesignerComponent workflows', () => {
       expect(publishConfiguration).toHaveBeenCalledWith('cfg-1', {
         releaseNotes: 'Launch',
         changeSummary: undefined,
+        expectedRevision: 0,
       });
     });
 
@@ -734,6 +734,7 @@ describe('AppConfigDesignerComponent workflows', () => {
     it('stays put when the operator declines', () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
       const { component } = createComponent();
+      component.config.name = 'Unsaved change';
 
       component.onCancel();
 

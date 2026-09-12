@@ -129,7 +129,9 @@ export class PrivacyService {
     contentType: 'post' | 'comment' | 'profile' | 'community' | 'message',
     contentId: string,
     reason: ReportReason,
-    description?: string
+    description?: string,
+    appScope = 'social',
+    workspaceId: string | null = null
   ): Promise<ContentReport> {
     const report = this.contentReportRepo.create({
       reporterId,
@@ -137,6 +139,8 @@ export class PrivacyService {
       contentId,
       reason,
       description,
+      appScope,
+      workspaceId,
       status: 'pending',
     });
 
@@ -150,8 +154,9 @@ export class PrivacyService {
     });
   }
 
-  async getAllReports(): Promise<ContentReport[]> {
+  async getAllReports(workspaceId?: string): Promise<ContentReport[]> {
     return await this.contentReportRepo.find({
+      ...(workspaceId ? { where: { workspaceId } } : {}),
       order: { createdAt: 'DESC' },
     });
   }
@@ -159,15 +164,22 @@ export class PrivacyService {
   async updateReportStatus(
     id: string,
     status: 'pending' | 'reviewed' | 'actioned' | 'dismissed',
-    adminNotes?: string
+    adminNotes?: string,
+    workspaceId?: string
   ): Promise<ContentReport | null> {
+    const where = workspaceId ? { id, workspaceId } : { id };
+    const report = await this.contentReportRepo.findOne({ where });
+    if (!report) {
+      return null;
+    }
+
     await this.contentReportRepo.update(id, {
       status,
       adminNotes,
     });
 
     return await this.contentReportRepo.findOne({
-      where: { id },
+      where,
     });
   }
 

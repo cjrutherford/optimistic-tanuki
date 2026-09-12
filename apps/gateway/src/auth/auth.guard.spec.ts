@@ -49,6 +49,75 @@ describe('AuthGuard', () => {
   });
 
   describe('canActivate', () => {
+    it('allows anonymous access to a public route without a credential', async () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      const request: any = { headers: {} };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(request.user).toBeUndefined();
+      expect(clientProxy.send).not.toHaveBeenCalled();
+    });
+
+    it('attaches an optional identity only after authentication introspection succeeds', async () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      clientProxy.send = jest.fn().mockReturnValue(
+        of({
+          isValid: true,
+          emailVerified: true,
+        })
+      );
+      const request: any = {
+        headers: { authorization: 'Bearer optional-token' },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Validate },
+        { token: 'optional-token', userId: mockUserDetails.userId }
+      );
+      expect(request.user).toEqual(
+        expect.objectContaining({
+          userId: mockUserDetails.userId,
+          emailVerified: true,
+        })
+      );
+    });
+
+    it('treats a revoked optional credential as anonymous on a public route', async () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      clientProxy.send = jest.fn().mockReturnValue(
+        of({
+          isValid: false,
+          emailVerified: false,
+        })
+      );
+      const request: any = {
+        headers: { authorization: 'Bearer revoked-token' },
+      };
+      const context = {
+        switchToHttp: () => ({ getRequest: () => request }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Validate },
+        { token: 'revoked-token', userId: mockUserDetails.userId }
+      );
+      expect(request.user).toBeUndefined();
+    });
+
     it('authenticates a browser session from the HttpOnly session cookie', async () => {
       clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
       const context = {

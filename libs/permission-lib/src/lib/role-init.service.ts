@@ -117,7 +117,7 @@ export class RoleInitService {
         description: p.description || '',
         resource: p.resource,
         action: p.action,
-        targetId: p.targetId ?? appScopeId,
+        targetId: p.targetId,
       };
       try {
         const created = await firstValueFrom(
@@ -177,7 +177,7 @@ export class RoleInitService {
             description: permission.description || '',
             resource: permission.resource,
             action: permission.action,
-            targetId: targetScope.id,
+            targetId: permission.targetId,
           };
 
           try {

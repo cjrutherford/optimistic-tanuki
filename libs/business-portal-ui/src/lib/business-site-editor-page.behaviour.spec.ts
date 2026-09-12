@@ -23,6 +23,7 @@ describe('BusinessSiteEditorPageComponent behaviour', () => {
   const listAssets = jest.fn();
   const getStoreProducts = jest.fn();
   const getOwnerProducts = jest.fn();
+  const listOwnedBusinessWorkspaces = jest.fn();
   const getOffers = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
@@ -110,6 +111,7 @@ describe('BusinessSiteEditorPageComponent behaviour', () => {
     updateSiteConfig.mockReturnValue(of({ id: 'saved-config-1' }));
     getStoreProducts.mockReturnValue(of([]));
     getOwnerProducts.mockReturnValue(of([]));
+    listOwnedBusinessWorkspaces.mockReturnValue(of([]));
     getOffers.mockReturnValue(of([]));
     listAssets.mockReturnValue(
       of([
@@ -135,6 +137,7 @@ describe('BusinessSiteEditorPageComponent behaviour', () => {
             updateSiteConfig,
             getStoreProducts,
             getOwnerProducts,
+            listOwnedBusinessWorkspaces,
             getOffers,
             listAssets,
           },

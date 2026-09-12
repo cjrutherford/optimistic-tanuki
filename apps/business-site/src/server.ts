@@ -23,11 +23,6 @@ const app = express();
 app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
-startNodeRuntimeMonitoring({
-  appId: 'business-site',
-  gatewayEndpoint: gatewayUrl,
-  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
-});
 const gatewayOrigin = new URL(gatewayUrl).origin;
 const gatewayHost = new URL(gatewayUrl).host;
 
@@ -125,6 +120,11 @@ app.use('/**', (req, res, next) => {
 });
 
 if (isMainModule(import.meta.url)) {
+  startNodeRuntimeMonitoring({
+    appId: 'business-site',
+    gatewayEndpoint: gatewayUrl,
+    otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+  });
   const port = process.env['PORT'] || 4214;
   app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);

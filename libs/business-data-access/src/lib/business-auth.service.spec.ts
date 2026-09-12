@@ -13,6 +13,7 @@ describe('BusinessAuthService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
 
     TestBed.configureTestingModule({
       providers: [
@@ -29,6 +30,7 @@ describe('BusinessAuthService', () => {
   afterEach(() => {
     httpMock.verify();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('creates a cookie session for owner login without persisting a token', () => {
@@ -69,6 +71,21 @@ describe('BusinessAuthService', () => {
       profileId: 'profile-1',
       email: 'owner@example.com',
       name: '',
+    });
+    expect(service.authState()).toEqual({
+      status: 'signed-in',
+      identity: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+        name: '',
+      },
+      session: {
+        kind: 'owner',
+        appScope: 'business-site',
+        transport: 'cookie',
+      },
+      recovery: null,
     });
     expect(localStorage.getItem('business-site:token')).toBeNull();
   });
@@ -219,5 +236,188 @@ describe('BusinessAuthService', () => {
 
     expect(clientUserId).toBe('client-user-1');
     expect(localStorage.getItem('business-site:client-user')).toBeNull();
+  });
+
+  it('refreshes the business client cookie session without accepting a client-supplied profile scope', () => {
+    let refreshedUser: { userId?: string; profileId?: string } | null = null;
+
+    service.refreshClientSession().subscribe((user) => {
+      refreshedUser = user;
+    });
+
+    const sessionRequest = httpMock.expectOne('/api/authentication/session');
+    expect(sessionRequest.request.method).toBe('GET');
+    expect(sessionRequest.request.withCredentials).toBe(true);
+    expect(sessionRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
+    expect(sessionRequest.request.headers.get('x-ot-profile-id')).toBeNull();
+    sessionRequest.flush({
+      data: {
+        userId: 'client-user-1',
+        profileId: 'client-profile-1',
+        email: 'client@example.com',
+      },
+    });
+
+    expect(refreshedUser).toEqual(
+      expect.objectContaining({
+        userId: 'client-user-1',
+        profileId: 'client-profile-1',
+      })
+    );
+  });
+
+  it('logs out with an empty cookie-session request and clears all local auth state', () => {
+    service.loginAndExchange('owner@example.com', 'secret').subscribe();
+
+    httpMock.expectOne('/api/authentication/login').flush({ data: {} });
+    httpMock.expectOne('/api/authentication/session').flush({
+      data: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+      },
+    });
+
+    localStorage.setItem('business-site:user', 'legacy-owner');
+    localStorage.setItem('business-site:token', 'legacy-owner-token');
+    localStorage.setItem('business-site:client-user', 'legacy-client');
+    localStorage.setItem('business-site:client-token', 'legacy-client-token');
+
+    service.logout();
+
+    const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+    expect(logoutRequest.request.method).toBe('POST');
+    expect(logoutRequest.request.body).toEqual({});
+    expect(logoutRequest.request.withCredentials).toBe(true);
+    expect(logoutRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
+    expect(logoutRequest.request.headers.get('X-ot-session-mode')).toBe(
+      'cookie'
+    );
+
+    logoutRequest.flush({ ok: true });
+
+    expect(service.user()).toBeNull();
+    expect(service.clientUser()).toBeNull();
+    expect(service.authState()).toEqual({
+      status: 'signed-out',
+      identity: null,
+      session: null,
+      recovery: null,
+    });
+    expect(sessionStorage.getItem('business-site:session-kind')).toBeNull();
+    expect(localStorage.getItem('business-site:user')).toBeNull();
+    expect(localStorage.getItem('business-site:token')).toBeNull();
+    expect(localStorage.getItem('business-site:client-user')).toBeNull();
+    expect(localStorage.getItem('business-site:client-token')).toBeNull();
+  });
+
+  it('posts client logout even without a local token and stays signed out on server error', () => {
+    localStorage.setItem('business-site:client-user', 'legacy-client');
+    localStorage.setItem('business-site:client-token', 'legacy-client-token');
+    sessionStorage.setItem('business-site:session-kind', 'client');
+
+    service.logoutClient();
+
+    const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+    expect(logoutRequest.request.method).toBe('POST');
+    expect(logoutRequest.request.body).toEqual({});
+    expect(logoutRequest.request.withCredentials).toBe(true);
+    expect(logoutRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
+    expect(logoutRequest.request.headers.get('X-ot-session-mode')).toBe(
+      'cookie'
+    );
+
+    logoutRequest.flush({}, { status: 500, statusText: 'Server Error' });
+
+    expect(service.user()).toBeNull();
+    expect(service.clientUser()).toBeNull();
+    expect(service.authState()).toEqual({
+      status: 'signed-out',
+      identity: null,
+      session: null,
+      recovery: null,
+    });
+    expect(sessionStorage.getItem('business-site:session-kind')).toBeNull();
+    expect(localStorage.getItem('business-site:user')).toBeNull();
+    expect(localStorage.getItem('business-site:token')).toBeNull();
+    expect(localStorage.getItem('business-site:client-user')).toBeNull();
+    expect(localStorage.getItem('business-site:client-token')).toBeNull();
+  });
+
+  it('clears auth state synchronously before the cookie logout request completes', () => {
+    service.loginAndExchange('owner@example.com', 'secret').subscribe();
+
+    httpMock.expectOne('/api/authentication/login').flush({ data: {} });
+    httpMock.expectOne('/api/authentication/session').flush({
+      data: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+      },
+    });
+
+    service.logout();
+
+    expect(service.user()).toBeNull();
+    expect(service.clientUser()).toBeNull();
+    expect(service.authState()).toEqual({
+      status: 'signed-out',
+      identity: null,
+      session: null,
+      recovery: null,
+    });
+    expect(sessionStorage.getItem('business-site:session-kind')).toBeNull();
+
+    httpMock.expectOne('/api/authentication/logout').flush({ ok: true });
+  });
+
+  it('does not let a late restore response overwrite a newly established login', () => {
+    sessionStorage.setItem('business-site:session-kind', 'client');
+    service.restoreSession().subscribe();
+
+    const restoreRequest = httpMock.expectOne('/api/authentication/session');
+
+    service.logout();
+    const logoutRequest = httpMock.expectOne('/api/authentication/logout');
+
+    service.loginAndExchange('owner@example.com', 'secret').subscribe();
+    httpMock.expectOne('/api/authentication/login').flush({ data: {} });
+
+    const loginSessionRequest = httpMock.match(
+      '/api/authentication/session'
+    )[0];
+    expect(loginSessionRequest).toBeDefined();
+
+    loginSessionRequest.flush({
+      data: {
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+      },
+    });
+    expect(service.user()).toEqual(
+      expect.objectContaining({ userId: 'owner-1' })
+    );
+
+    restoreRequest.flush({
+      data: {
+        userId: 'stale-client-1',
+        profileId: 'stale-client-profile',
+        email: 'stale-client@example.com',
+      },
+    });
+    expect(service.user()).toEqual(
+      expect.objectContaining({ userId: 'owner-1' })
+    );
+    expect(service.clientUser()).toBeNull();
+    expect(service.authState().session?.kind).toBe('owner');
+
+    logoutRequest.flush({ ok: true });
   });
 });

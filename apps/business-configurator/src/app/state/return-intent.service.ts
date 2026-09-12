@@ -1,5 +1,8 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { normalizeAuthReturnTo } from '@optimistic-tanuki/auth-ui';
+
+const SERVER_ORIGIN = 'http://business-configurator.invalid';
 
 @Injectable({
   providedIn: 'root',
@@ -13,7 +16,16 @@ export class ReturnIntentService {
       return;
     }
 
-    localStorage.setItem(this.key, url);
+    const normalized = normalizeAuthReturnTo(url, {
+      currentOrigin: this.currentOrigin(),
+    });
+
+    if (!normalized?.isCurrentOrigin) {
+      this.clear();
+      return;
+    }
+
+    sessionStorage.setItem(this.key, normalized.path);
   }
 
   consume(): string | null {
@@ -21,10 +33,28 @@ export class ReturnIntentService {
       return null;
     }
 
-    const value = localStorage.getItem(this.key);
-    if (value) {
-      localStorage.removeItem(this.key);
+    const value = sessionStorage.getItem(this.key);
+    sessionStorage.removeItem(this.key);
+
+    if (!value) {
+      return null;
     }
-    return value;
+
+    const normalized = normalizeAuthReturnTo(value, {
+      currentOrigin: this.currentOrigin(),
+    });
+    return normalized?.isCurrentOrigin ? normalized.path : null;
+  }
+
+  clear(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      sessionStorage.removeItem(this.key);
+    }
+  }
+
+  private currentOrigin(): string {
+    return typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : SERVER_ORIGIN;
   }
 }

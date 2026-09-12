@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StoreService, Product } from '../services/store.service';
+import { ActivatedRoute } from '@angular/router';
+import { StoreCatalog, StoreService, Product } from '../services/store.service';
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -19,6 +20,7 @@ interface ProductFormModel {
   imageUrl?: string;
   stock?: number;
   active?: boolean;
+  catalogId?: string | null;
 }
 
 @Component({
@@ -37,13 +39,24 @@ export class ProductManagementComponent implements OnInit {
   isCreating = false;
   loading = false;
   error: string | null = null;
+  storeCatalogs: StoreCatalog[] = [];
+  readonly workspaceSlug: string | null;
 
   productForm: ProductFormModel = this.getEmptyForm();
 
-  constructor(private storeService: StoreService) {}
+  constructor(private storeService: StoreService, route: ActivatedRoute) {
+    this.workspaceSlug =
+      route.snapshot.queryParamMap.get('slug')?.trim() || null;
+  }
 
   ngOnInit(): void {
     this.loadProducts();
+    if (this.workspaceSlug) {
+      this.storeService.getMyCatalogs(this.workspaceSlug).subscribe({
+        next: (catalogs) => (this.storeCatalogs = catalogs),
+        error: () => (this.storeCatalogs = []),
+      });
+    }
   }
 
   loadProducts(): void {
@@ -106,6 +119,7 @@ export class ProductManagementComponent implements OnInit {
       imageUrl: '',
       stock: 0,
       active: true,
+      catalogId: null,
     };
   }
 
@@ -129,6 +143,7 @@ export class ProductManagementComponent implements OnInit {
       imageUrl: product.imageUrl,
       stock: product.stock,
       active: product.active,
+      catalogId: product.catalogId ?? null,
     };
   }
 
@@ -158,8 +173,9 @@ export class ProductManagementComponent implements OnInit {
       imageUrl: this.productForm.imageUrl,
       stock: this.productForm.stock,
       active: this.productForm.active,
+      catalogId: this.productForm.catalogId || null,
     };
-    this.storeService.createProduct(dto).subscribe({
+    this.storeService.createProduct(dto, this.workspaceSlug).subscribe({
       next: () => {
         this.loadProducts();
         this.cancelEdit();
@@ -186,19 +202,22 @@ export class ProductManagementComponent implements OnInit {
       imageUrl: this.productForm.imageUrl,
       stock: this.productForm.stock,
       active: this.productForm.active,
+      catalogId: this.productForm.catalogId || null,
     };
-    this.storeService.updateProduct(this.selectedProduct.id, dto).subscribe({
-      next: () => {
-        this.loadProducts();
-        this.cancelEdit();
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Failed to update product';
-        this.loading = false;
-        console.error(err);
-      },
-    });
+    this.storeService
+      .updateProduct(this.selectedProduct.id, dto, this.workspaceSlug)
+      .subscribe({
+        next: () => {
+          this.loadProducts();
+          this.cancelEdit();
+          this.loading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to update product';
+          this.loading = false;
+          console.error(err);
+        },
+      });
   }
 
   deleteProduct(product: Product): void {

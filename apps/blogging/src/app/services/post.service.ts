@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Post } from '../entities';
+import { Blog, Post } from '../entities';
 import { FindOptionsWhere, Repository, Like, Between } from 'typeorm';
 import {
   CreateBlogPostDto,
@@ -17,18 +17,63 @@ import {
 import { SanitizationService } from './sanitization.service';
 import { RpcException } from '@nestjs/microservices';
 
+export interface BlogWorkspaceScope {
+  ownerId: string;
+  workspaceId: string;
+  appScope: string;
+  catalogId?: string;
+}
+
+type ScopedBlogPostQuery = BlogPostQueryDto & {
+  catalogId?: string;
+  workspaceId?: string;
+  appScope?: string;
+  workspaceScope?: BlogWorkspaceScope;
+};
+
+interface PublishedBlogCatalogQuery {
+  catalogId?: string;
+}
+
+interface ScopedPublishedBlogQuery {
+  catalogId: string;
+  workspaceId: string;
+  appScope: string;
+}
+
+interface NormalizedPublishedBlogQuery {
+  catalogId?: string;
+  workspaceId?: string;
+  appScope?: string;
+  workspaceScope?: BlogWorkspaceScope;
+}
+
 @Injectable()
 export class PostService {
   constructor(
     @Inject(getRepositoryToken(Post))
     private readonly postRepository: Repository<Post>,
-    private readonly sanitizationService: SanitizationService
+    private readonly sanitizationService: SanitizationService,
+    @Inject(getRepositoryToken(Blog))
+    private readonly blogRepository: Repository<Blog>
   ) {
     console.log('PostService initialized');
   }
 
-  async create(createPostDto: CreateBlogPostDto): Promise<BlogPostDto> {
+  async create(
+    createPostDto: CreateBlogPostDto & {
+      workspaceScope?: BlogWorkspaceScope;
+    }
+  ): Promise<BlogPostDto> {
     try {
+      if (
+        createPostDto.workspaceScope &&
+        createPostDto.authorId !== createPostDto.workspaceScope.ownerId
+      ) {
+        throw new ForbiddenException(
+          'A post author must match the resolved workspace owner'
+        );
+      }
       // Validate and sanitize input
       this.validatePostContent(createPostDto.content);
 
@@ -38,9 +83,34 @@ export class PostService {
       const sanitizedTitle = this.sanitizationService.sanitizePlainText(
         createPostDto.title
       );
+      const { workspaceScope, ...postInput } = createPostDto;
+
+      const blog = workspaceScope?.catalogId
+        ? await this.blogRepository.findOne({
+            where: {
+              catalogId: workspaceScope.catalogId,
+              ownerId: workspaceScope.ownerId,
+              workspaceId: workspaceScope.workspaceId,
+              appScope: workspaceScope.appScope,
+            },
+          })
+        : undefined;
+
+      if (workspaceScope?.catalogId && !blog) {
+        throw new NotFoundException(
+          'The selected catalog does not belong to the resolved workspace'
+        );
+      }
 
       const postData = {
-        ...createPostDto,
+        ...postInput,
+        ...(workspaceScope
+          ? {
+              workspaceId: workspaceScope.workspaceId,
+              appScope: workspaceScope.appScope,
+            }
+          : {}),
+        ...(blog ? { blog } : {}),
         title: sanitizedTitle,
         content: sanitizedContent,
         isDraft:
@@ -73,7 +143,7 @@ export class PostService {
     }
   }
 
-  async findAll(query: BlogPostQueryDto): Promise<BlogPostDto[]> {
+  async findAll(query: ScopedBlogPostQuery): Promise<BlogPostDto[]> {
     const where: FindOptionsWhere<Post> = {};
     if (query.title) {
       where.title = query.title;
@@ -99,15 +169,54 @@ export class PostService {
         new Date(query.updatedAt[1])
       );
     }
+    if (query.catalogId) {
+      where.blog = { catalogId: query.catalogId } as any;
+    }
+    if (query.workspaceScope) {
+      where.authorId = query.workspaceScope.ownerId;
+      where.appScope = query.workspaceScope.appScope;
+      where.workspaceId = query.workspaceScope.workspaceId;
+    }
     return this.postRepository.find({ where });
   }
 
   /**
    * Find published posts only (for public consumption)
    */
-  async findPublished(): Promise<BlogPostDto[]> {
+  async findPublished(
+    queryOrScope:
+      | PublishedBlogCatalogQuery
+      | ScopedPublishedBlogQuery
+      | BlogWorkspaceScope = {}
+  ): Promise<BlogPostDto[]> {
+    const query: NormalizedPublishedBlogQuery =
+      'ownerId' in queryOrScope
+        ? { workspaceScope: queryOrScope }
+        : queryOrScope;
     return this.postRepository.find({
-      where: { isDraft: false },
+      where: {
+        isDraft: false,
+        ...(query.catalogId
+          ? {
+              blog: {
+                catalogId: query.catalogId,
+                ...(query.workspaceId
+                  ? { workspaceId: query.workspaceId }
+                  : {}),
+                ...(query.appScope ? { appScope: query.appScope } : {}),
+              } as any,
+            }
+          : {}),
+        ...(query.workspaceId ? { workspaceId: query.workspaceId } : {}),
+        ...(query.appScope ? { appScope: query.appScope } : {}),
+        ...(query.workspaceScope
+          ? {
+              authorId: query.workspaceScope.ownerId,
+              appScope: query.workspaceScope.appScope,
+              workspaceId: query.workspaceScope.workspaceId,
+            }
+          : {}),
+      },
       order: { publishedAt: 'DESC' },
     });
   }
@@ -115,15 +224,41 @@ export class PostService {
   /**
    * Find drafts for a specific author
    */
-  async findDraftsByAuthor(authorId: string): Promise<BlogPostDto[]> {
+  async findDraftsByAuthor(
+    authorId: string,
+    workspaceScope?: BlogWorkspaceScope
+  ): Promise<BlogPostDto[]> {
     return this.postRepository.find({
-      where: { authorId, isDraft: true },
+      where: {
+        authorId,
+        isDraft: true,
+        ...(workspaceScope
+          ? {
+              appScope: workspaceScope.appScope,
+              workspaceId: workspaceScope.workspaceId,
+            }
+          : {}),
+      },
       order: { updatedAt: 'DESC' },
     });
   }
 
-  async findOne(id: string): Promise<BlogPostDto> {
-    return await this.postRepository.findOne({ where: { id } });
+  async findOne(
+    id: string,
+    workspaceScope?: BlogWorkspaceScope
+  ): Promise<BlogPostDto> {
+    return await this.postRepository.findOne({
+      where: {
+        id,
+        ...(workspaceScope
+          ? {
+              authorId: workspaceScope.ownerId,
+              appScope: workspaceScope.appScope,
+              workspaceId: workspaceScope.workspaceId,
+            }
+          : {}),
+      },
+    });
   }
 
   /**
@@ -136,9 +271,10 @@ export class PostService {
   async update(
     id: string,
     updatePostDto: UpdateBlogPostDto,
-    requestingAuthorId: string
+    requestingAuthorId: string,
+    workspaceScope?: BlogWorkspaceScope
   ): Promise<BlogPostDto> {
-    const existingPost = await this.postRepository.findOne({ where: { id } });
+    const existingPost = await this.findOne(id, workspaceScope);
     if (!existingPost) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
@@ -175,7 +311,7 @@ export class PostService {
     }
 
     await this.postRepository.update(id, updateData);
-    return await this.postRepository.findOne({ where: { id } });
+    return await this.findOne(id, workspaceScope);
   }
 
   /**
@@ -207,8 +343,12 @@ export class PostService {
   /**
    * Publish a draft post (set isDraft to false and set publishedAt)
    */
-  async publish(id: string, requestingAuthorId: string): Promise<BlogPostDto> {
-    const existingPost = await this.postRepository.findOne({ where: { id } });
+  async publish(
+    id: string,
+    requestingAuthorId: string,
+    workspaceScope?: BlogWorkspaceScope
+  ): Promise<BlogPostDto> {
+    const existingPost = await this.findOne(id, workspaceScope);
     if (!existingPost) {
       throw new NotFoundException(`Post with id ${id} not found`);
     }
@@ -226,10 +366,13 @@ export class PostService {
       publishedAt: new Date(),
     });
 
-    return await this.postRepository.findOne({ where: { id } });
+    return await this.findOne(id, workspaceScope);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, workspaceScope?: BlogWorkspaceScope): Promise<void> {
+    if (workspaceScope && !(await this.findOne(id, workspaceScope))) {
+      throw new NotFoundException(`Post with id ${id} not found`);
+    }
     await this.postRepository.delete(id);
   }
 

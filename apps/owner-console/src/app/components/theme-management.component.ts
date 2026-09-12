@@ -31,6 +31,15 @@ type ThemeDraft = Required<ThemeConfig>;
       </header>
 
       <div class="error" *ngIf="error" aria-live="polite">{{ error }}</div>
+      <button
+        *ngIf="hasRevisionConflict"
+        class="btn secondary"
+        type="button"
+        data-reload-latest
+        (click)="reloadLatestConfiguration()"
+      >
+        Reload latest theme configuration
+      </button>
       <div class="success" *ngIf="successMessage" aria-live="polite">
         {{ successMessage }}
       </div>
@@ -580,6 +589,7 @@ export class ThemeManagementComponent implements OnInit {
   error = '';
   successMessage = '';
   saving = false;
+  hasRevisionConflict = false;
   releaseNotes = '';
   changeSummary = '';
 
@@ -632,12 +642,19 @@ export class ThemeManagementComponent implements OnInit {
       return;
     }
 
+    const expectedRevision = this.requireMutationRevision('save');
+    if (expectedRevision === null) {
+      return;
+    }
+
     this.saving = true;
     this.error = '';
+    this.hasRevisionConflict = false;
     this.successMessage = '';
 
     this.appConfigService
       .updateConfiguration(this.selectedConfiguration.id, {
+        expectedRevision,
         theme: { ...this.themeDraft },
       })
       .subscribe({
@@ -653,10 +670,7 @@ export class ThemeManagementComponent implements OnInit {
           this.themeDraft = this.createDraft(updatedConfiguration.theme);
           this.applyPreviewTheme();
         },
-        error: () => {
-          this.saving = false;
-          this.error = 'Failed to save theme settings.';
-        },
+        error: (error) => this.handleMutationError(error, 'save'),
       });
   }
 
@@ -670,12 +684,19 @@ export class ThemeManagementComponent implements OnInit {
       return;
     }
 
+    const expectedRevision = this.requireMutationRevision('publish');
+    if (expectedRevision === null) {
+      return;
+    }
+
     this.saving = true;
     this.error = '';
+    this.hasRevisionConflict = false;
     this.successMessage = '';
 
     this.appConfigService
       .publishConfiguration(this.selectedConfiguration.id, {
+        expectedRevision,
         releaseNotes: this.releaseNotes.trim(),
         changeSummary: this.changeSummary.trim() || undefined,
       })
@@ -685,10 +706,7 @@ export class ThemeManagementComponent implements OnInit {
           this.successMessage = `Theme published for ${publishedConfiguration.name}.`;
           this.syncSelectedConfiguration(publishedConfiguration);
         },
-        error: () => {
-          this.saving = false;
-          this.error = 'Failed to publish theme settings.';
-        },
+        error: (error) => this.handleMutationError(error, 'publish'),
       });
   }
 
@@ -697,12 +715,19 @@ export class ThemeManagementComponent implements OnInit {
       return;
     }
 
+    const expectedRevision = this.requireMutationRevision('rollback');
+    if (expectedRevision === null) {
+      return;
+    }
+
     this.saving = true;
     this.error = '';
+    this.hasRevisionConflict = false;
     this.successMessage = '';
 
     this.appConfigService
       .rollbackConfiguration(this.selectedConfiguration.id, {
+        expectedRevision,
         version,
         releaseNotes: 'Rollback from theme management',
       })
@@ -712,11 +737,27 @@ export class ThemeManagementComponent implements OnInit {
           this.successMessage = `Theme rolled back for ${rolledBackConfiguration.name}.`;
           this.syncSelectedConfiguration(rolledBackConfiguration);
         },
-        error: () => {
-          this.saving = false;
-          this.error = 'Failed to rollback theme settings.';
-        },
+        error: (error) => this.handleMutationError(error, 'rollback'),
       });
+  }
+
+  reloadLatestConfiguration(): void {
+    if (!this.selectedConfiguration) {
+      return;
+    }
+
+    const configurationId = this.selectedConfiguration.id;
+    this.appConfigService.getConfiguration(configurationId).subscribe({
+      next: (configuration) => {
+        this.syncSelectedConfiguration(configuration);
+        this.hasRevisionConflict = false;
+        this.error = '';
+        this.successMessage = `Reloaded the latest theme configuration for ${configuration.name}.`;
+      },
+      error: () => {
+        this.error = 'Failed to reload the latest theme configuration.';
+      },
+    });
   }
 
   releaseStatusLabel(): string {
@@ -804,6 +845,43 @@ export class ThemeManagementComponent implements OnInit {
     this.releaseNotes = configuration.release?.releaseNotes ?? '';
     this.changeSummary = configuration.release?.changeSummary ?? '';
     this.applyPreviewTheme();
+  }
+
+  private handleMutationError(
+    error: unknown,
+    operation: 'save' | 'publish' | 'rollback'
+  ): void {
+    this.saving = false;
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      error.status === 409
+    ) {
+      this.hasRevisionConflict = true;
+      this.error =
+        'This theme changed elsewhere. Your draft is preserved; reload the latest theme configuration before trying again.';
+      return;
+    }
+
+    this.error = `Failed to ${operation} theme settings.`;
+  }
+
+  private requireMutationRevision(
+    operation: 'save' | 'publish' | 'rollback'
+  ): number | null {
+    const revision = this.selectedConfiguration?.revision;
+    if (
+      typeof revision === 'number' &&
+      Number.isInteger(revision) &&
+      revision >= 0
+    ) {
+      return revision;
+    }
+
+    this.hasRevisionConflict = true;
+    this.error = `Cannot ${operation} theme settings: a valid nonnegative integer revision is required. Reload the latest theme configuration before trying again.`;
+    return null;
   }
 
   private withAlpha(hexColor: string, alpha: number): string {

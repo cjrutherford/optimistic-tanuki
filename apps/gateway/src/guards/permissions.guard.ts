@@ -23,6 +23,10 @@ import {
 } from '../decorators/permissions.decorator';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ProfileDto } from '@optimistic-tanuki/models';
+import {
+  WORKSPACE_CONTEXT_KEY,
+  WorkspaceContextRequirement,
+} from '../decorators/workspace-context.decorator';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -58,6 +62,33 @@ export class PermissionsGuard implements CanActivate {
     if (!user) {
       this.logger.warn('User not authenticated');
       throw new ForbiddenException('User not authenticated');
+    }
+
+    // A controller-level PermissionsGuard runs before method-level guards. If
+    // this handler requires workspace resolution, defer this early pass so the
+    // method-level WorkspaceContextGuard can attach the authoritative child
+    // scope before PermissionsGuard evaluates the permission. Only recognize
+    // actual workspace metadata here: the guard must not defer when a test or
+    // caller reflects unrelated permission metadata for another key.
+    const workspaceRequirement =
+      this.reflector.getAllAndOverride<WorkspaceContextRequirement>(
+        WORKSPACE_CONTEXT_KEY,
+        [context.getHandler(), context.getClass()]
+      );
+    const hasWorkspaceMetadata =
+      !!workspaceRequirement &&
+      typeof workspaceRequirement.source === 'string' &&
+      typeof workspaceRequirement.path === 'string';
+    const workspaceSelector = hasWorkspaceMetadata
+      ? request[workspaceRequirement.source]?.[workspaceRequirement.path]
+      : undefined;
+    if (
+      hasWorkspaceMetadata &&
+      !request.workspaceContext &&
+      (!workspaceRequirement.optional ||
+        (typeof workspaceSelector === 'string' && workspaceSelector.trim()))
+    ) {
+      return true;
     }
 
     // Extract app scope from header
@@ -200,6 +231,73 @@ export class PermissionsGuard implements CanActivate {
           `Access granted via global scope permissions for profile ${globalPermissionProfileId}`
         );
         return true;
+      }
+    }
+
+    const workspaceContext = request.workspaceContext as
+      | {
+          workspace?: { appScope?: string };
+          workspaceScope?: string;
+          strict?: boolean;
+        }
+      | undefined;
+    if (workspaceContext?.workspaceScope) {
+      if (workspaceContext.workspace?.appScope !== appScopeName) {
+        throw new ForbiddenException(
+          'Workspace does not belong to this app scope'
+        );
+      }
+      const workspaceScope = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          { name: workspaceContext.workspaceScope }
+        )
+      );
+      if (!workspaceScope) {
+        throw new ForbiddenException(
+          'Workspace permission scope was not found'
+        );
+      }
+
+      let allWorkspacePermissionsGranted = true;
+      for (const permission of permissions) {
+        let hasPermission = await this.cacheService.get(
+          appScopePermissionProfileId,
+          permission,
+          workspaceScope.id,
+          targetId
+        );
+        if (hasPermission === null) {
+          hasPermission = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId: appScopePermissionProfileId,
+                permission,
+                profileAppScope: workspaceContext.workspaceScope,
+                appScopeId: workspaceScope.id,
+                targetId,
+              }
+            )
+          );
+          await this.cacheService.set(
+            appScopePermissionProfileId,
+            permission,
+            workspaceScope.id,
+            hasPermission,
+            targetId
+          );
+        }
+        if (!hasPermission) {
+          allWorkspacePermissionsGranted = false;
+          break;
+        }
+      }
+      if (allWorkspacePermissionsGranted) {
+        return true;
+      }
+      if (workspaceContext.strict) {
+        throw new ForbiddenException('Workspace permission denied');
       }
     }
 

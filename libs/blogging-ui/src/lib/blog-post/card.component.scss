@@ -7,8 +7,8 @@
 }
 .content {
   padding: 30px;
-  background-color: var(--surface, rgba(0, 0, 0, 0.6));
-  color: var(--foreground, #fff);
+  background-color: var(--surface, var(--background-overlay));
+  color: var(--foreground, var(--primary-foreground));
   border-bottom-left-radius: var(--border-radius-lg, 8px);
   border-bottom-right-radius: var(--border-radius-lg, 8px);
 }
@@ -23,7 +23,7 @@
 }
 .author-info {
   font-size: 16px;
-  color: var(--muted-foreground, #888);
+  color: var(--muted-foreground, var(--muted));
   margin: 18px;
 }
 

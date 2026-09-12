@@ -1,3 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -18,9 +23,13 @@ import { TenantThemeService } from '../services/tenant-theme.service';
 // Named interfaces (not index signatures) because
 // noPropertyAccessFromIndexSignature is on for this project.
 interface ConfigurationServiceStub {
-  getConfigurationByName: jest.Mock<Observable<AppConfiguration>, [string]>;
+  getConfigurationByName: jest.Mock<
+    Observable<AppConfiguration>,
+    [string, string?]
+  >;
   getConfigurationByDomain: jest.Mock<Observable<AppConfiguration>, [string]>;
   setConfiguration: jest.Mock<void, [AppConfiguration]>;
+  setProtectedConfiguration: jest.Mock<void, [AppConfiguration]>;
   getCurrentConfiguration: jest.Mock<AppConfiguration | null, []>;
 }
 
@@ -65,23 +74,26 @@ describe('AppResolverComponent', () => {
   let configService: ConfigurationServiceStub;
   let tenantTheme: TenantThemeServiceStub;
   let logSpy: jest.SpyInstance;
-  let errorSpy: jest.SpyInstance;
 
   interface HarnessOptions {
     platform?: 'browser' | 'server';
     appNameParam?: string | null;
     queryParams?: Record<string, string>;
     hostname?: string;
+    session?: 'signed-in' | 'signed-out' | 'pending';
   }
 
-  function createComponent(
+  async function createComponent(
     options: HarnessOptions = {}
-  ): ComponentFixture<AppResolverComponent> {
+  ): Promise<ComponentFixture<AppResolverComponent>> {
     const {
       platform = 'browser',
       appNameParam = null,
       queryParams = {},
       hostname = 'localhost',
+      session = appNameParam || queryParams['appName']
+        ? 'signed-in'
+        : 'signed-out',
     } = options;
 
     useHostname(hostname);
@@ -91,6 +103,7 @@ describe('AppResolverComponent', () => {
         paramMap: convertToParamMap(
           appNameParam === null ? {} : { appName: appNameParam }
         ),
+        queryParamMap: convertToParamMap(queryParams),
       },
       queryParams: of(queryParams),
     };
@@ -98,6 +111,8 @@ describe('AppResolverComponent', () => {
     TestBed.configureTestingModule({
       imports: [AppResolverComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([]),
         { provide: ConfigurationService, useValue: configService },
         { provide: TenantThemeService, useValue: tenantTheme },
@@ -108,7 +123,28 @@ describe('AppResolverComponent', () => {
       ],
     });
 
-    return TestBed.createComponent(AppResolverComponent);
+    const fixture = TestBed.createComponent(AppResolverComponent);
+    fixture.detectChanges();
+
+    if (platform === 'browser' && session !== 'pending') {
+      const sessionRequest = TestBed.inject(HttpTestingController).match(
+        '/api/authentication/session'
+      )[0];
+      if (sessionRequest) {
+        if (session === 'signed-in') {
+          sessionRequest.flush({ data: { id: 'test-user' } });
+        } else {
+          sessionRequest.flush(null, {
+            status: 401,
+            statusText: 'Unauthorized',
+          });
+        }
+        await settle();
+        fixture.detectChanges();
+      }
+    }
+
+    return fixture;
   }
 
   /** Lets `apply().finally(...)` (and any chained microtask) settle. */
@@ -121,6 +157,7 @@ describe('AppResolverComponent', () => {
       getConfigurationByName: jest.fn(),
       getConfigurationByDomain: jest.fn(),
       setConfiguration: jest.fn(),
+      setProtectedConfiguration: jest.fn(),
       getCurrentConfiguration: jest.fn(),
     };
     tenantTheme = {
@@ -128,12 +165,10 @@ describe('AppResolverComponent', () => {
       applyDefaults: jest.fn().mockResolvedValue(undefined),
     };
     logSpy = jest.spyOn(console, 'log').mockImplementation();
-    errorSpy = jest.spyOn(console, 'error').mockImplementation();
   });
 
   afterEach(() => {
     logSpy.mockRestore();
-    errorSpy.mockRestore();
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: realLocation,
@@ -142,8 +177,8 @@ describe('AppResolverComponent', () => {
   });
 
   describe('server-side rendering', () => {
-    it('skips configuration loading and drops straight out of the loading state', () => {
-      const fixture = createComponent({ platform: 'server' });
+    it('skips configuration loading and drops straight out of the loading state', async () => {
+      const fixture = await createComponent({ platform: 'server' });
       fixture.detectChanges();
 
       const component = fixture.componentInstance;
@@ -163,15 +198,17 @@ describe('AppResolverComponent', () => {
       const config = makeConfig({ name: 'route-app' });
       configService.getConfigurationByName.mockReturnValue(of(config));
 
-      const fixture = createComponent({ appNameParam: 'route-app' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ appNameParam: 'route-app' });
       const component = fixture.componentInstance;
 
       expect(tenantTheme.applyDefaults).toHaveBeenCalledTimes(1);
       expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-        'route-app'
+        'route-app',
+        undefined
       );
-      expect(configService.setConfiguration).toHaveBeenCalledWith(config);
+      expect(configService.setProtectedConfiguration).toHaveBeenCalledWith(
+        config
+      );
       expect(tenantTheme.apply).toHaveBeenCalledWith(config.theme);
       expect(component.loadingMessage).toBe('Loading app: route-app');
 
@@ -183,26 +220,25 @@ describe('AppResolverComponent', () => {
       ).toBeTruthy();
     });
 
-    it('prefers the route parameter over a non-local hostname', () => {
+    it('prefers the route parameter over a non-local hostname', async () => {
       configService.getConfigurationByName.mockReturnValue(of(makeConfig()));
 
-      const fixture = createComponent({
+      const fixture = await createComponent({
         appNameParam: 'route-app',
         hostname: 'tenant.example.com',
       });
-      fixture.detectChanges();
 
       expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-        'route-app'
+        'route-app',
+        undefined
       );
       expect(configService.getConfigurationByDomain).not.toHaveBeenCalled();
     });
 
-    it('loads by hostname when there is no route parameter', () => {
+    it('loads by hostname when there is no route parameter', async () => {
       configService.getConfigurationByDomain.mockReturnValue(of(makeConfig()));
 
-      const fixture = createComponent({ hostname: 'tenant.example.com' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ hostname: 'tenant.example.com' });
 
       expect(configService.getConfigurationByDomain).toHaveBeenCalledWith(
         'tenant.example.com'
@@ -213,22 +249,21 @@ describe('AppResolverComponent', () => {
       );
     });
 
-    // Development hosts must never hit the domain lookup; they fall through
-    // to the query-parameter/default branch instead.
-    it.each(['localhost', '127.0.0.1', 'acme.local'])(
+    // The explicit local hosts fall through to the query-parameter branch.
+    it.each(['localhost', '127.0.0.1'])(
       'treats %s as local development and falls back to the query parameter',
-      (hostname) => {
+      async (hostname) => {
         configService.getConfigurationByName.mockReturnValue(of(makeConfig()));
 
-        const fixture = createComponent({
+        const fixture = await createComponent({
           hostname,
           queryParams: { appName: 'query-app' },
         });
-        fixture.detectChanges();
 
         expect(configService.getConfigurationByDomain).not.toHaveBeenCalled();
         expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-          'query-app'
+          'query-app',
+          undefined
         );
         expect(fixture.componentInstance.loadingMessage).toBe(
           'Loading app: query-app'
@@ -236,35 +271,30 @@ describe('AppResolverComponent', () => {
       }
     );
 
-    it('falls back to demo-app when nothing selects an application', () => {
+    it('keeps an unqualified local root on public discovery', async () => {
       configService.getConfigurationByName.mockReturnValue(of(makeConfig()));
 
-      const fixture = createComponent();
-      fixture.detectChanges();
+      const fixture = await createComponent();
 
-      expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-        'demo-app'
-      );
-      expect(fixture.componentInstance.loadingMessage).toBe(
-        'Loading default application'
-      );
+      expect(configService.getConfigurationByName).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.publicRoot).toBe(true);
+      expect(fixture.componentInstance.outcome).toBe('discovery');
     });
   });
 
   describe('loading state', () => {
-    it('renders the spinner and the loading message until the config arrives', () => {
+    it('renders the spinner and the loading message until the config arrives', async () => {
       // Never emits, so the component is pinned in its loading state.
       configService.getConfigurationByName.mockReturnValue(
         new Subject<AppConfiguration>()
       );
 
-      const fixture = createComponent({ appNameParam: 'slow-app' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ appNameParam: 'slow-app' });
 
       const element = fixture.nativeElement as HTMLElement;
       expect(fixture.componentInstance.loading).toBe(true);
-      expect(element.querySelector('.loading-spinner')).toBeTruthy();
-      expect(element.querySelector('.loading-message')?.textContent).toContain(
+      expect(element.querySelector('otui-landing-status')).toBeTruthy();
+      expect(fixture.componentInstance.loadingMessage).toBe(
         'Loading app: slow-app'
       );
       expect(element.querySelector('router-outlet')).toBeNull();
@@ -273,47 +303,43 @@ describe('AppResolverComponent', () => {
 
   describe('load-by-name failures', () => {
     it.each<[number, string]>([
-      [404, 'Configuration not found.'],
-      [500, 'Server error.'],
-    ])('reports HTTP %i as "%s"', async (status, expectedHint) => {
+      [
+        404,
+        'Failed to load application configuration for "missing-app". Configuration not found.',
+      ],
+      [
+        500,
+        'We couldn\'t load application configuration for "missing-app" right now. Try again.',
+      ],
+    ])('reports HTTP %i as "%s"', async (status, expectedError) => {
       configService.getConfigurationByName.mockReturnValue(
         throwError(() => ({ status }))
       );
 
-      const fixture = createComponent({ appNameParam: 'missing-app' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ appNameParam: 'missing-app' });
       await settle();
       fixture.detectChanges();
 
       const component = fixture.componentInstance;
-      expect(component.error).toBe(
-        `Failed to load application configuration for "missing-app". ${expectedHint}`
-      );
+      expect(component.error).toBe(expectedError);
       expect(component.loading).toBe(false);
-      expect(configService.setConfiguration).not.toHaveBeenCalled();
+      expect(configService.setProtectedConfiguration).not.toHaveBeenCalled();
       expect(tenantTheme.apply).not.toHaveBeenCalled();
 
       const element = fixture.nativeElement as HTMLElement;
-      expect(element.querySelector('.error-message')?.textContent).toContain(
-        expectedHint
-      );
+      expect(element.querySelector('otui-landing-status')).toBeTruthy();
       expect(element.querySelector('router-outlet')).toBeNull();
     });
 
-    it('logs the failing app name alongside the error', () => {
+    it('surfaces the failing app name in the current error contract', async () => {
       const failure = { status: 500 };
       configService.getConfigurationByName.mockReturnValue(
         throwError(() => failure)
       );
 
-      const fixture = createComponent({ appNameParam: 'missing-app' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ appNameParam: 'missing-app' });
 
-      expect(errorSpy).toHaveBeenCalledWith(
-        '[AppResolver] Failed to load configuration by name:',
-        'missing-app',
-        failure
-      );
+      expect(fixture.componentInstance.error).toContain('missing-app');
     });
   });
 
@@ -322,11 +348,11 @@ describe('AppResolverComponent', () => {
       const config = makeConfig({
         name: 'tenant',
         theme: { mode: 'light', primaryColor: '#abcdef' },
-      });
+        publishedVersion: 1,
+      } as Partial<AppConfiguration> & { publishedVersion: number });
       configService.getConfigurationByDomain.mockReturnValue(of(config));
 
-      const fixture = createComponent({ hostname: 'tenant.example.com' });
-      fixture.detectChanges();
+      const fixture = await createComponent({ hostname: 'tenant.example.com' });
 
       expect(configService.setConfiguration).toHaveBeenCalledWith(config);
       expect(tenantTheme.apply).toHaveBeenCalledWith(config.theme);
@@ -336,60 +362,37 @@ describe('AppResolverComponent', () => {
       expect(fixture.componentInstance.error).toBeNull();
     });
 
-    it('falls back to the query parameter when the domain lookup fails', () => {
+    it('falls back to the protected query app when the domain is not published', async () => {
       configService.getConfigurationByDomain.mockReturnValue(
         throwError(() => ({ status: 404 }))
       );
       configService.getConfigurationByName.mockReturnValue(of(makeConfig()));
-
-      const fixture = createComponent({
+      const fixture = await createComponent({
         hostname: 'tenant.example.com',
         queryParams: { appName: 'query-app' },
       });
-      fixture.detectChanges();
 
       expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-        'query-app'
+        'query-app',
+        undefined
       );
-      expect(fixture.componentInstance.loadingMessage).toBe(
-        'Domain not found, loading: query-app'
-      );
+      expect(configService.setProtectedConfiguration).toHaveBeenCalled();
+      expect(fixture.componentInstance.outcome).toBe('resolved');
       expect(fixture.componentInstance.error).toBeNull();
     });
 
-    it('falls back to demo-app when the domain lookup fails with no query parameter', () => {
-      configService.getConfigurationByDomain.mockReturnValue(
-        throwError(() => ({ status: 404 }))
-      );
-      configService.getConfigurationByName.mockReturnValue(of(makeConfig()));
-
-      const fixture = createComponent({ hostname: 'tenant.example.com' });
-      fixture.detectChanges();
-
-      expect(configService.getConfigurationByName).toHaveBeenCalledWith(
-        'demo-app'
-      );
-      expect(fixture.componentInstance.loadingMessage).toBe(
-        'Domain not found, loading default application'
-      );
-    });
-
-    it('surfaces an error when the domain lookup and its by-name fallback both fail', async () => {
+    it('reports a transient failure when the domain service fails', async () => {
       configService.getConfigurationByDomain.mockReturnValue(
         throwError(() => ({ status: 500 }))
       );
-      configService.getConfigurationByName.mockReturnValue(
-        throwError(() => ({ status: 404 }))
-      );
 
-      const fixture = createComponent({ hostname: 'tenant.example.com' });
-      fixture.detectChanges();
-      await settle();
+      const fixture = await createComponent({ hostname: 'tenant.example.com' });
 
-      expect(fixture.componentInstance.error).toBe(
-        'Failed to load application configuration for "demo-app". Configuration not found.'
+      expect(configService.getConfigurationByName).not.toHaveBeenCalled();
+      expect(fixture.componentInstance.outcome).toBe('transient-failure');
+      expect(fixture.componentInstance.error).toContain(
+        "couldn't load the published experience"
       );
-      expect(fixture.componentInstance.loading).toBe(false);
     });
   });
 });

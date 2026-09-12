@@ -34,15 +34,11 @@ function lifecyclePhases({
           'db-setup',
           'permissions-seed',
           'app-configurator',
-          'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
   );
   if (app !== 'app-configurator') add('app-configurator', ['app-configurator']);
-  add('app-configurator-seed', ['app-configurator-seed'], {
-    completion: 'completed-successfully',
-  });
   add('gateway', ['gateway']);
   if (app !== 'gateway') add('application', [app], profile ? { profile } : {});
   return { phases };
@@ -181,6 +177,7 @@ const MICROSERVICE_ENTRIES = [
       'authentication',
       'profile',
       'social',
+      'workspace',
       'assets',
       'project-planning',
       'chat-collector',
@@ -190,12 +187,11 @@ const MICROSERVICE_ENTRIES = [
       'permissions',
       'store',
       'app-configurator',
-      'app-configurator-seed',
       'lead-tracker',
       'permissions-seed',
     ],
     imageBudget: 19,
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
   }),
   sharedEntry({
     project: 'permissions-e2e',
@@ -413,10 +409,9 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'app-configurator',
-      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
   },
   {
     project: 'store-client-e2e',
@@ -448,10 +443,9 @@ const UI_ENVIRONMENTS = [
       'redis',
       'db-setup',
       'app-configurator',
-      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup', 'app-configurator-seed'],
+    completedServices: ['db-setup'],
   },
 ];
 

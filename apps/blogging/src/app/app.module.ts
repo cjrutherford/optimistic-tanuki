@@ -9,6 +9,7 @@ import {
   ContactController,
   BlogController,
   BlogComponentController,
+  BlogCatalogController,
 } from './controllers';
 import {
   EventService,
@@ -16,6 +17,7 @@ import {
   ContactService,
   BlogService,
   BlogComponentService,
+  BlogCatalogService,
   RssService,
   SeoService,
   SitemapService,
@@ -25,7 +27,14 @@ import {
 import config from './config';
 import loadDatabase from './loadDatabase';
 import { DataSource } from 'typeorm';
-import { Contact, Event, Post, Blog, BlogComponent } from './entities';
+import {
+  Contact,
+  Event,
+  Post,
+  Blog,
+  BlogCatalog,
+  BlogComponent,
+} from './entities';
 
 @Module({
   imports: [
@@ -45,6 +54,7 @@ import { Contact, Event, Post, Blog, BlogComponent } from './entities';
     ContactController,
     BlogController,
     BlogComponentController,
+    BlogCatalogController,
   ],
   providers: [
     EventService,
@@ -52,6 +62,7 @@ import { Contact, Event, Post, Blog, BlogComponent } from './entities';
     ContactService,
     BlogService,
     BlogComponentService,
+    BlogCatalogService,
     RssService,
     SeoService,
     SitemapService,
@@ -75,6 +86,11 @@ import { Contact, Event, Post, Blog, BlogComponent } from './entities';
     {
       provide: getRepositoryToken(Blog),
       useFactory: (ds: DataSource) => ds.getRepository(Blog),
+      inject: ['BLOGGING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(BlogCatalog),
+      useFactory: (ds: DataSource) => ds.getRepository(BlogCatalog),
       inject: ['BLOGGING_CONNECTION'],
     },
     {

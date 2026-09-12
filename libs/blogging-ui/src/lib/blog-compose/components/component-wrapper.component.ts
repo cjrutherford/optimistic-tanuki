@@ -86,12 +86,12 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .component-wrapper.hover {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         background-color: rgba(0, 122, 204, 0.05);
       }
 
       .component-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary);
         background-color: rgba(0, 122, 204, 0.1);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
       }
@@ -120,43 +120,46 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .edit-btn {
-        background-color: var(--accent, #007acc);
-        color: white;
+        background-color: var(--primary);
+        color: var(--primary-foreground);
       }
 
       .edit-btn:hover {
-        background-color: var(--accent-dark, #005999);
+        background-color: var(
+          --primary-3,
+          color-mix(in srgb, var(--primary) 85%, black)
+        );
       }
 
       .delete-btn {
-        background-color: #dc3545;
-        color: white;
+        background-color: var(--danger);
+        color: var(--danger-foreground);
       }
 
       .delete-btn:hover {
-        background-color: #c82333;
+        background-color: var(--danger);
       }
 
       .move-up-btn,
       .move-down-btn,
       .drag-handle {
-        background-color: var(--background, white);
-        color: var(--foreground, #333);
-        border: 1px solid var(--border-color, #e0e0e0);
+        background-color: var(--background);
+        color: var(--foreground);
+        border: 1px solid var(--border);
       }
 
       .move-up-btn:hover,
       .move-down-btn:hover,
       .drag-handle:hover {
-        background-color: var(--background-secondary, #f8f9fa);
+        background-color: var(--surface);
       }
 
       .component-label {
         position: absolute;
         top: -8px;
         left: 8px;
-        background-color: var(--accent, #007acc);
-        color: white;
+        background-color: var(--primary);
+        color: var(--primary-foreground);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 0.75rem;

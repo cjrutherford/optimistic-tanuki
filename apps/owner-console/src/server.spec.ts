@@ -10,6 +10,32 @@ describe('owner-console admin API proxy boundary', () => {
     );
   });
 
+  it('starts runtime monitoring only for the main server module', () => {
+    const server = fs.readFileSync(path.join(__dirname, 'server.ts'), 'utf8');
+
+    expect(server).toMatch(
+      /if \(isMainModule\(import\.meta\.url\)\) \{\s*startNodeRuntimeMonitoring\(/
+    );
+  });
+
+  it('keeps the listener guarded and request handler available on import', () => {
+    const server = fs.readFileSync(path.join(__dirname, 'server.ts'), 'utf8');
+    const mainGuardStart = server.indexOf(
+      'if (isMainModule(import.meta.url)) {'
+    );
+    const mainGuardEnd = server.indexOf('\n}', mainGuardStart);
+    const listener = server.indexOf('app.listen(');
+    const requestHandlerExport = server.indexOf(
+      'export const reqHandler = createNodeRequestHandler(app);'
+    );
+
+    expect(mainGuardStart).toBeGreaterThanOrEqual(0);
+    expect(mainGuardEnd).toBeGreaterThan(mainGuardStart);
+    expect(listener).toBeGreaterThan(mainGuardStart);
+    expect(listener).toBeLessThan(mainGuardEnd);
+    expect(requestHandlerExport).toBeGreaterThan(mainGuardEnd);
+  });
+
   it('blocks bootstrap paths and authorizes privileged requests before proxying', () => {
     const server = fs.readFileSync(path.join(__dirname, 'server.ts'), 'utf8');
     const blockIndex = server.indexOf("'/admin-api/api/bootstrap'");

@@ -18,7 +18,11 @@
         ></lib-text-input>
       </div>
       @if(subjects.length > 0) {
+      <label class="contact-subject-label" [for]="subjectId">{{
+        subjectLabel
+      }}</label>
       <lib-select
+        [id]="subjectId"
         [options]="subjects"
         (valueChange)="onSubjectChange($event)"
       ></lib-select>

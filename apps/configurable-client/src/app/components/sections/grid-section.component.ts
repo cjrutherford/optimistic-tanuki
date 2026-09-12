@@ -35,8 +35,8 @@ import { GridSection } from '@optimistic-tanuki/app-config-models';
     `
       .grid-section {
         padding: 4rem 2rem;
-        color: var(--foreground, #111827);
-        background: var(--background, #ffffff);
+        color: var(--foreground, var(--ot-client-section-foreground));
+        background: var(--background, var(--ot-client-section-background));
       }
       .grid-container {
         display: grid;
@@ -45,10 +45,10 @@ import { GridSection } from '@optimistic-tanuki/app-config-models';
         margin: 2rem auto 0;
       }
       .grid-item {
-        border: 1px solid var(--border, #e0e0e0);
+        border: 1px solid var(--border, var(--ot-client-section-border));
         border-radius: 8px;
         padding: 1.5rem;
-        background: var(--surface, #ffffff);
+        background: var(--surface, var(--ot-client-section-background));
       }
       .grid-item img {
         width: 100%;

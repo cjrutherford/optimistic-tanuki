@@ -7,6 +7,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
+import { AppInstanceEntity } from '../configurations/entities/app-instance.entity';
+import { AppMembershipEntity } from '../configurations/entities/app-membership.entity';
 import { ConfigurationsService } from './configurations.service';
 import { ConfigurationsController } from '../configurations/configurations.controller';
 
@@ -29,6 +31,16 @@ import { ConfigurationsController } from '../configurations/configurations.contr
     {
       provide: getRepositoryToken(AppConfigurationEntity),
       useFactory: (ds: DataSource) => ds.getRepository(AppConfigurationEntity),
+      inject: ['APP-CONFIGURATOR_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AppInstanceEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AppInstanceEntity),
+      inject: ['APP-CONFIGURATOR_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AppMembershipEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AppMembershipEntity),
       inject: ['APP-CONFIGURATOR_CONNECTION'],
     },
   ],

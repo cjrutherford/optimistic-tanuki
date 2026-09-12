@@ -67,6 +67,16 @@ describe('BlogService', () => {
     );
   });
 
+  it('findAll scopes blogs to a selected catalog when requested', async () => {
+    blogRepo.find.mockResolvedValue([]);
+
+    await service.findAll({ catalogId: 'catalog-north' } as any);
+
+    expect(blogRepo.find).toHaveBeenCalledWith({
+      where: { catalogId: 'catalog-north' },
+    });
+  });
+
   it('findOne should return a blog', async () => {
     blogRepo.findOne.mockResolvedValue({ id: '1' } as any);
     const result = await service.findOne('1');

@@ -1,8 +1,20 @@
 import { Inject, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { normalizeAuthReturnTo } from '@optimistic-tanuki/auth-ui';
 import { LoginRequest, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../services/authentication.service';
+
+export type ConfiguratorAuthStatus =
+  | 'signed-out'
+  | 'loading'
+  | 'signed-in'
+  | 'expired';
+
+export interface ConfiguratorAuthRecovery {
+  reason: 'expired';
+  returnUrl: string | null;
+}
 
 export interface UserData {
   userId: string;
@@ -22,13 +34,17 @@ export class AuthStateService {
   private readonly authService = inject(AuthenticationService);
   private readonly platformId = inject(PLATFORM_ID);
 
-  private readonly tokenSubject = new BehaviorSubject<string | null>(null);
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private readonly statusSubject = new BehaviorSubject<ConfiguratorAuthStatus>(
+    'signed-out'
+  );
   private readonly decodedTokenSubject = new BehaviorSubject<UserData | null>(
     null
   );
+  private recoveryState: ConfiguratorAuthRecovery | null = null;
 
   private authenticated = false;
+  private logoutInProgress = false;
 
   isAuthenticated$(): Observable<boolean> {
     return this.isAuthenticatedSubject.asObservable();
@@ -38,28 +54,38 @@ export class AuthStateService {
     return this.authenticated;
   }
 
+  get status(): ConfiguratorAuthStatus {
+    return this.statusSubject.value;
+  }
+
+  status$(): Observable<ConfiguratorAuthStatus> {
+    return this.statusSubject.asObservable();
+  }
+
+  get recovery(): ConfiguratorAuthRecovery | null {
+    return this.recoveryState;
+  }
+
   async login(
     loginRequest: LoginRequest
   ): Promise<{ data: Record<string, never> }> {
     const response = await this.authService.login(loginRequest);
-    await this.restoreSession();
+    const restored = await this.restoreSession();
+    if (!restored) {
+      throw new Error('Unable to restore the configurator session');
+    }
     return response;
   }
 
-  setToken(token: string): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      this.tokenSubject.next(token);
-      this.isAuthenticatedSubject.next(true);
-      this.authenticated = true;
-    }
-  }
-
-  async restoreSession(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return false;
+    const wasAuthenticated = this.authenticated;
+    this.statusSubject.next('loading');
     try {
       const response = await this.authService.currentSession();
-      this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
+      this.statusSubject.next('signed-in');
+      this.recoveryState = null;
       this.decodedTokenSubject.next({
         userId: response.data.userId,
         name: response.data.name,
@@ -67,11 +93,14 @@ export class AuthStateService {
         profileId: '',
       });
       this.authenticated = true;
+      return true;
     } catch {
-      this.tokenSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.decodedTokenSubject.next(null);
-      this.authenticated = false;
+      if (wasAuthenticated) {
+        this.setExpiredState(null);
+      } else {
+        this.setSignedOutState();
+      }
+      return false;
     }
   }
 
@@ -82,15 +111,37 @@ export class AuthStateService {
 
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
-    this.tokenSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
-    this.decodedTokenSubject.next(null);
-    this.authenticated = false;
-    void this.authService.logout().catch(() => undefined);
+    this.setSignedOutState();
+    if (this.logoutInProgress) {
+      return;
+    }
+
+    this.logoutInProgress = true;
+    void this.authService
+      .logout()
+      .catch(() => undefined)
+      .finally(() => {
+        this.logoutInProgress = false;
+      });
   }
 
-  getToken(): string | null {
-    return this.tokenSubject.value;
+  markExpired(returnUrl?: string | null): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.setExpiredState(returnUrl);
+    if (this.logoutInProgress) {
+      return;
+    }
+
+    this.logoutInProgress = true;
+    void this.authService
+      .logout()
+      .catch(() => undefined)
+      .finally(() => {
+        this.logoutInProgress = false;
+      });
   }
 
   getDecodedTokenValue(): UserData | null {
@@ -137,5 +188,36 @@ export class AuthStateService {
 
     const profile = localStorage.getItem(this.selectedProfileKey);
     return profile ? (JSON.parse(profile) as ProfileDto) : null;
+  }
+
+  private setSignedOutState(): void {
+    this.isAuthenticatedSubject.next(false);
+    this.statusSubject.next('signed-out');
+    this.recoveryState = null;
+    this.decodedTokenSubject.next(null);
+    this.authenticated = false;
+  }
+
+  private setExpiredState(returnUrl: string | null | undefined): void {
+    this.isAuthenticatedSubject.next(false);
+    this.statusSubject.next('expired');
+    this.recoveryState = {
+      reason: 'expired',
+      returnUrl: this.normalizeReturnUrl(returnUrl),
+    };
+    this.decodedTokenSubject.next(null);
+    this.authenticated = false;
+  }
+
+  private normalizeReturnUrl(
+    returnUrl: string | null | undefined
+  ): string | null {
+    const target = normalizeAuthReturnTo(returnUrl, {
+      currentOrigin:
+        typeof window !== 'undefined' && window.location.origin
+          ? window.location.origin
+          : 'http://business-configurator.invalid',
+    });
+    return target?.isCurrentOrigin ? target.path : null;
   }
 }

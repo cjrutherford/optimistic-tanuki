@@ -15,6 +15,7 @@ import { ResourceEntity } from '../appointments/entities/resource.entity';
 import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
 import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
 import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
+import { CatalogEntity } from '../catalog/entities/catalog.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -48,6 +49,7 @@ const entities = [
   TrainerRoutineAssignmentEntity,
   TrainerProgressCheckInEntity,
   TrainerSiteConfigEntity,
+  CatalogEntity,
 ];
 
 const staticSource = new DataSource({

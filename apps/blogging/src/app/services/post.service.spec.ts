@@ -14,6 +14,7 @@ import {
   BlogPostQueryDto,
 } from '@optimistic-tanuki/models';
 import { Post } from '../entities';
+import { Blog } from '../entities/blog.entity';
 import { PostService } from './post.service';
 import { Repository } from 'typeorm';
 import { SanitizationService } from './sanitization.service';
@@ -22,6 +23,7 @@ describe('PostService', () => {
   let service: PostService;
   let postRepo: jest.Mocked<Partial<Repository<Post>>>;
   let sanitizationService: jest.Mocked<Partial<SanitizationService>>;
+  let blogRepo: jest.Mocked<Partial<Repository<Blog>>>;
 
   const mockPost: Post = {
     id: 'post-1',
@@ -52,6 +54,7 @@ describe('PostService', () => {
       delete: jest.fn(),
       createQueryBuilder: jest.fn(),
     };
+    blogRepo = { findOne: jest.fn() };
     sanitizationService = {
       sanitizeHtml: jest.fn((c: string) => c),
       sanitizeUserInput: jest.fn((c: string) => c),
@@ -60,7 +63,8 @@ describe('PostService', () => {
     };
     service = new PostService(
       postRepo as Repository<Post>,
-      sanitizationService as any
+      sanitizationService as any,
+      blogRepo as Repository<Blog>
     );
   });
 
@@ -88,6 +92,72 @@ describe('PostService', () => {
       });
       expect(postRepo.save).toHaveBeenCalledWith(createdPost);
       expect(result).toEqual(createdPost);
+    });
+
+    it('rejects a post whose author does not match the resolved workspace owner', async () => {
+      const dto: CreateBlogPostDto & { workspaceScope: any } = {
+        title: 'Forged Post',
+        content: 'Content',
+        authorId: 'forged-author',
+        workspaceScope: {
+          ownerId: 'owner-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      };
+
+      await expect(service.create(dto)).rejects.toThrow(RpcException);
+      expect(postRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('persists the resolved workspace ID for a scoped post', async () => {
+      const dto: CreateBlogPostDto & { workspaceScope: any } = {
+        title: 'Workspace post',
+        content: 'Content for the selected workspace',
+        authorId: 'author-1',
+        workspaceScope: {
+          ownerId: 'author-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        },
+      };
+      const createdPost = { ...mockPost, ...dto, workspaceId: 'workspace-1' };
+      postRepo.create.mockReturnValue(createdPost as Post);
+      postRepo.save.mockResolvedValue(createdPost as Post);
+
+      await service.create(dto);
+
+      expect(postRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+        })
+      );
+    });
+
+    it('binds a scoped post to the selected catalog blog aggregate', async () => {
+      const catalogBlog = { id: 'blog-1', catalogId: 'catalog-1' };
+      const dto: CreateBlogPostDto & { workspaceScope: any } = {
+        title: 'Catalog post',
+        content: 'Content for the selected catalog',
+        authorId: 'author-1',
+        workspaceScope: {
+          ownerId: 'author-1',
+          workspaceId: 'workspace-1',
+          appScope: 'business-site',
+          catalogId: 'catalog-1',
+        },
+      };
+      const createdPost = { ...mockPost, ...dto };
+      blogRepo.findOne.mockResolvedValue(catalogBlog as Blog);
+      postRepo.create.mockReturnValue(createdPost as Post);
+      postRepo.save.mockResolvedValue(createdPost as Post);
+
+      await service.create(dto);
+
+      expect(postRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ blog: catalogBlog })
+      );
     });
 
     it('should throw BadRequestException if content is empty', async () => {
@@ -256,6 +326,50 @@ describe('PostService', () => {
       });
       expect(result).toEqual(publishedPosts);
     });
+
+    it('filters public posts to a catalog and excludes drafts', async () => {
+      postRepo.find.mockResolvedValue([mockPublishedPost]);
+
+      await service.findPublished({
+        catalogId: 'catalog-north',
+        workspaceId: 'workspace-north',
+        appScope: 'configurable-client',
+      });
+
+      expect(postRepo.find).toHaveBeenCalledWith({
+        where: {
+          isDraft: false,
+          workspaceId: 'workspace-north',
+          appScope: 'configurable-client',
+          blog: {
+            catalogId: 'catalog-north',
+            workspaceId: 'workspace-north',
+            appScope: 'configurable-client',
+          },
+        },
+        order: { publishedAt: 'DESC' },
+      });
+    });
+  });
+
+  it('narrows published posts to the canonical owner and app scope', async () => {
+    postRepo.find.mockResolvedValue([mockPublishedPost]);
+
+    await service.findPublished({
+      ownerId: 'author-1',
+      workspaceId: 'workspace-1',
+      appScope: 'business-site',
+    });
+
+    expect(postRepo.find).toHaveBeenCalledWith({
+      where: {
+        isDraft: false,
+        authorId: 'author-1',
+        appScope: 'business-site',
+        workspaceId: 'workspace-1',
+      },
+      order: { publishedAt: 'DESC' },
+    });
   });
 
   describe('findDraftsByAuthor', () => {
@@ -292,6 +406,47 @@ describe('PostService', () => {
 
       expect(result).toBeNull();
     });
+  });
+
+  it('requires the canonical workspace owner when updating a post', async () => {
+    postRepo.findOne.mockResolvedValue(mockPost);
+
+    await service
+      .update('post-1', { id: 'post-1', title: 'Scoped title' }, 'author-1', {
+        ownerId: 'different-owner',
+        workspaceId: 'workspace-1',
+        appScope: 'business-site',
+      })
+      .catch(() => undefined);
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+        authorId: 'different-owner',
+        appScope: 'business-site',
+        workspaceId: 'workspace-1',
+      },
+    });
+  });
+
+  it('deletes only after a scoped post lookup succeeds', async () => {
+    postRepo.findOne.mockResolvedValue(mockPost);
+
+    await service.remove('post-1', {
+      ownerId: 'author-1',
+      workspaceId: 'workspace-1',
+      appScope: 'business-site',
+    });
+
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: {
+        id: 'post-1',
+        authorId: 'author-1',
+        appScope: 'business-site',
+        workspaceId: 'workspace-1',
+      },
+    });
+    expect(postRepo.delete).toHaveBeenCalledWith('post-1');
   });
 
   describe('update', () => {

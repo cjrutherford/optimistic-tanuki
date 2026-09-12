@@ -30,11 +30,6 @@ app.use((_request, response, next) => {
 const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
-startNodeRuntimeMonitoring({
-  appId: 'owner-console',
-  gatewayEndpoint: gatewayUrl,
-  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
-});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
 const adminApiUrl =
   process.env['ADMIN_API_URL'] ||
@@ -141,6 +136,11 @@ app.use('/**', (req, res, next) => {
 });
 
 if (isMainModule(import.meta.url)) {
+  startNodeRuntimeMonitoring({
+    appId: 'owner-console',
+    gatewayEndpoint: gatewayUrl,
+    otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+  });
   const port = process.env['PORT'] || 4000;
   app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);

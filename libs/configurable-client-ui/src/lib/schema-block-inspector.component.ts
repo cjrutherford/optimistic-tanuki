@@ -12,6 +12,7 @@ import {
   TextAreaComponent,
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
+import { SchemaCollectionPanelComponent } from './schema-collection-panel.component';
 
 @Component({
   selector: 'app-schema-block-inspector',
@@ -23,6 +24,7 @@ import {
     TextAreaComponent,
     CheckboxComponent,
     SelectComponent,
+    SchemaCollectionPanelComponent,
   ],
   template: `
     <div class="schema-block-inspector" data-schema-inspector>
@@ -64,6 +66,24 @@ import {
             [value]="booleanFieldValue(field.key)"
             (changeEvent)="fieldChanged.emit({ key: field.key, value: $event })"
           ></lib-checkbox>
+          } @case ('array') {
+          <app-schema-collection-panel
+            [title]="field.label"
+            [description]="field.description || ''"
+            [items]="collectionItems(field.key)"
+            [fields]="field.itemFields || []"
+            addLabel="Add item"
+            (itemAdded)="addCollectionItem(field)"
+            (itemRemoved)="removeCollectionItem(field, $event)"
+            (itemFieldChanged)="
+              updateCollectionItem(
+                field,
+                $event.index,
+                $event.key,
+                $event.value
+              )
+            "
+          ></app-schema-collection-panel>
           } @default {
           <lib-text-input
             [id]="'field-' + field.key"
@@ -97,6 +117,10 @@ export class SchemaBlockInspectorComponent {
     key: string;
     value: string | number | boolean;
   }>();
+  @Output() collectionChanged = new EventEmitter<{
+    key: string;
+    items: Array<Record<string, unknown>>;
+  }>();
 
   fieldValue(fieldKey: string): string {
     if (!this.block) {
@@ -122,6 +146,47 @@ export class SchemaBlockInspectorComponent {
   booleanFieldValue(fieldKey: string): boolean {
     const value = this.readPath(fieldKey);
     return typeof value === 'boolean' ? value : false;
+  }
+
+  collectionItems(fieldKey: string): Array<Record<string, unknown>> {
+    const value = this.readPath(fieldKey);
+    return Array.isArray(value)
+      ? value.filter(
+          (item): item is Record<string, unknown> =>
+            !!item && typeof item === 'object'
+        )
+      : [];
+  }
+
+  addCollectionItem(field: BlockFieldDefinition): void {
+    const item = Object.fromEntries(
+      (field.itemFields ?? []).map((itemField) => [
+        itemField.key,
+        itemField.defaultValue ?? '',
+      ])
+    );
+    this.emitCollection(field.key, [...this.collectionItems(field.key), item]);
+  }
+
+  removeCollectionItem(field: BlockFieldDefinition, index: number): void {
+    this.emitCollection(
+      field.key,
+      this.collectionItems(field.key).filter(
+        (_item, itemIndex) => itemIndex !== index
+      )
+    );
+  }
+
+  updateCollectionItem(
+    field: BlockFieldDefinition,
+    index: number,
+    key: string,
+    value: string | boolean
+  ): void {
+    const items = this.collectionItems(field.key).map((item, itemIndex) =>
+      itemIndex === index ? { ...item, [key]: value } : item
+    );
+    this.emitCollection(field.key, items);
   }
 
   fieldOptions(
@@ -152,5 +217,12 @@ export class SchemaBlockInspectorComponent {
 
       return (current as Record<string, unknown>)[segment];
     }, this.block.data);
+  }
+
+  private emitCollection(
+    key: string,
+    items: Array<Record<string, unknown>>
+  ): void {
+    this.collectionChanged.emit({ key, items });
   }
 }

@@ -10,8 +10,12 @@ import {
   Type,
   ViewChild,
   ViewContainerRef,
+  inject,
+  SecurityContext,
+  PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { DomSanitizer } from '@angular/platform-browser';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import DOMPurify from 'dompurify';
 import {
   CalloutBoxComponent,
@@ -31,7 +35,11 @@ const COMPONENT_MAP: Record<string, Type<unknown>> = {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div #contentRoot class="rich-content-renderer"></div>
+    <div
+      #contentRoot
+      class="rich-content-renderer"
+      [innerHTML]="sanitizedContent"
+    ></div>
     <ng-container #componentHost></ng-container>
   `,
 })
@@ -47,7 +55,32 @@ export class BusinessRichContentRendererComponent
   private readonly componentHost?: ViewContainerRef;
 
   private readonly componentRefs: ComponentRef<unknown>[] = [];
+  private readonly sanitizer = inject(DomSanitizer);
+  private readonly platformId = inject(PLATFORM_ID);
   private viewReady = false;
+
+  /**
+   * Keep persisted rich content in Angular's render tree. Updating
+   * `innerHTML` only from `ngAfterViewInit` is invisible to Angular SSR's
+   * serialization and produces an empty hero/body until hydration runs.
+   */
+  get sanitizedContent(): string {
+    const html = this.content?.content?.trim() ?? '';
+    if (!html) {
+      return '';
+    }
+
+    // DOMPurify retains compose placeholder data attributes in the browser.
+    // On the server its package export is a factory without a DOM, so use
+    // Angular's server-safe sanitizer for the raw SSR response instead.
+    const browserPurifier = DOMPurify as unknown as {
+      sanitize?: (value: string) => string;
+    };
+    if (isPlatformBrowser(this.platformId) && browserPurifier.sanitize) {
+      return browserPurifier.sanitize(html);
+    }
+    return this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
+  }
 
   ngAfterViewInit(): void {
     this.viewReady = true;
@@ -73,10 +106,7 @@ export class BusinessRichContentRendererComponent
 
     this.destroyComponentRefs();
 
-    const html = this.content?.content?.trim() ?? '';
-    this.contentRoot.nativeElement.innerHTML = html
-      ? DOMPurify.sanitize(html)
-      : '';
+    this.contentRoot.nativeElement.innerHTML = this.sanitizedContent;
 
     if (!this.content?.injectedComponents?.length) {
       return;

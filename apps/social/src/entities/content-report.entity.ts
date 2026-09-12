@@ -29,6 +29,12 @@ export class ContentReport {
   @Column()
   contentId: string;
 
+  @Column({ type: 'varchar', default: 'social' })
+  appScope: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  workspaceId: string | null;
+
   @Column({ type: 'enum', enum: ReportReason })
   reason: ReportReason;
 

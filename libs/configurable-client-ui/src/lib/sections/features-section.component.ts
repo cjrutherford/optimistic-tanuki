@@ -26,8 +26,8 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
     `
       .features-section {
         padding: 4rem 2rem;
-        color: var(--foreground, var(--text-color, #111827));
-        background: var(--background, var(--background-color, #ffffff));
+        color: var(--foreground, var(--text-color));
+        background: var(--background, var(--background-color));
       }
 
       h2 {
@@ -46,10 +46,10 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
 
       .feature-card {
         padding: 2rem;
-        border: 1px solid var(--border, #e0e0e0);
+        border: 1px solid var(--border);
         border-radius: 8px;
         text-align: center;
-        background: var(--surface, #ffffff);
+        background: var(--surface);
       }
 
       .feature-icon {
@@ -63,7 +63,7 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
       }
 
       p {
-        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
+        color: color-mix(in srgb, var(--foreground) 70%, transparent);
         line-height: 1.6;
       }
     `,

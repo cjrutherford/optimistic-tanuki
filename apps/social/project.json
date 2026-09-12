@@ -52,7 +52,7 @@
     "typeorm:migration:generate": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate migrations/%npm_config_name%",
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate migrations/$npm_config_name",
         "cwd": "apps/social",
         "env": {
           "TS_NODE_PROJECT": "tsconfig.app.json"

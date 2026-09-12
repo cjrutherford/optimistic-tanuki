@@ -19,6 +19,7 @@ import { Link } from '../entities/link.entity';
 import { SocialComponent } from '../entities/social-component.entity';
 import { Community } from '../entities/community.entity';
 import { CommunityMember } from '../entities/community-member.entity';
+import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { CommunityInvite } from '../entities/community-invite.entity';
 import { CommunityElection } from '../entities/community-election.entity';
 import { ElectionCandidate } from '../entities/election-candidate.entity';
@@ -152,6 +153,12 @@ import { EventService } from './services/event.service';
     {
       provide: getRepositoryToken(CommunityMember),
       useFactory: (ds: DataSource) => ds.getRepository(CommunityMember),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunityMembershipAudit),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(CommunityMembershipAudit),
       inject: ['SOCIAL_CONNECTION'],
     },
     {

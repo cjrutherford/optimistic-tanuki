@@ -8,3 +8,8 @@ export {
   OAuthCallbackComponent,
   oauthCallbackRoutes,
 } from '../oauth-callback/oauth-callback.component';
+export { normalizeAuthReturnTo } from '../oauth-callback/oauth-return';
+export type {
+  AuthReturnTarget,
+  AuthReturnNormalizationOptions,
+} from '../oauth-callback/oauth-return';

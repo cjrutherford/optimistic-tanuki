@@ -37,6 +37,25 @@ export class PostDto {
   updatedAt!: Date;
 }
 
+/** The only fields allowed across the anonymous published Blog boundary. */
+export interface PublishedBlogPostDto {
+  id: string;
+  title: string;
+  content: string;
+  publishedAt: Date | string | null;
+}
+
+export function toPublishedBlogPost(
+  post: Pick<PostDto, 'id' | 'title' | 'content' | 'publishedAt'>
+): PublishedBlogPostDto {
+  return {
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    publishedAt: post.publishedAt,
+  };
+}
+
 export class CreateBlogPostDto {
   @ApiProperty({ description: 'Post title', example: 'My First Blog Post' })
   @IsString()
@@ -54,6 +73,14 @@ export class CreateBlogPostDto {
   @IsString()
   @IsUUID()
   authorId!: string;
+
+  @ApiProperty({
+    description: 'Selected Blog catalog ID for scoped authoring',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  selectedCatalogId?: string;
 
   @ApiProperty({ description: 'Is draft', required: false, default: true })
   @IsOptional()

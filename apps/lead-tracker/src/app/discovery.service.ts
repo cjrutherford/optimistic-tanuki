@@ -47,6 +47,8 @@ import {
 import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-discovery.provider';
 import { LeadQualificationService } from './lead-qualification.service';
 
+const CONTACT_FETCH_TIMEOUT_MS = 5000;
+
 @Injectable()
 export class DiscoveryService {
   private readonly logger = new Logger(DiscoveryService.name);
@@ -731,6 +733,7 @@ export class DiscoveryService {
             accept:
               'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           },
+          signal: AbortSignal.timeout(CONTACT_FETCH_TIMEOUT_MS),
         });
 
         if (response.ok) {

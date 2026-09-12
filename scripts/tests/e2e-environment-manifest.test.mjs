@@ -80,7 +80,6 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   ]);
   assert.deepEqual(resolveE2eTarget('owner-console-e2e').completedServices, [
     'db-setup',
-    'app-configurator-seed',
     'permissions-seed',
   ]);
   assert.deepEqual(resolveE2eServices('configurable-client-e2e'), [
@@ -88,7 +87,6 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'redis',
     'db-setup',
     'app-configurator',
-    'app-configurator-seed',
     'gateway',
     'configurable-client',
   ]);
@@ -127,6 +125,7 @@ test('gateway communities E2E runs after the real permissions corpus is seeded',
   const gateway = resolveE2eTarget('gateway-e2e');
 
   assert.ok(gateway.backendDependencies.includes('permissions-seed'));
+  assert.ok(gateway.backendDependencies.includes('workspace'));
   assert.ok(gateway.completedServices.includes('permissions-seed'));
   assert.deepEqual(
     gateway.lifecycle.phases.find((phase) => phase.name === 'permissions-seed'),
@@ -135,6 +134,20 @@ test('gateway communities E2E runs after the real permissions corpus is seeded',
       services: ['permissions-seed'],
       completion: 'completed-successfully',
     }
+  );
+});
+
+test('shared Gateway E2E composition includes the Workspace service closure', () => {
+  const compose = readFileSync(
+    new URL('../../e2e/docker-compose.e2e-stack.yaml', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(compose, /^  workspace:\n/m);
+  assert.match(compose, /WORKSPACE_HOST: workspace\n\s+WORKSPACE_PORT: 3024/);
+  assert.match(
+    compose,
+    /gateway:[\s\S]*?workspace:\n\s+condition: service_started/
   );
 });
 
@@ -292,7 +305,6 @@ test('manifest owns ordered lifecycle phases and multi-probe UI readiness', () =
       'permissions-seed',
       'dependencies',
       'app-configurator',
-      'app-configurator-seed',
       'gateway',
       'application',
     ]
@@ -303,10 +315,10 @@ test('manifest owns ordered lifecycle phases and multi-probe UI readiness', () =
     undefined
   );
   assert.equal(
-    owner.lifecycle.phases.find(
+    owner.lifecycle.phases.some(
       (phase) => phase.name === 'app-configurator-seed'
-    ).completion,
-    'completed-successfully'
+    ),
+    false
   );
 });
 

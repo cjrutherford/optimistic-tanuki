@@ -25,6 +25,9 @@ export class Post {
   @Column({ type: 'varchar', default: 'blogging' })
   appScope: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  workspaceId: string | null;
+
   @Column({ default: true })
   isDraft: boolean;
 

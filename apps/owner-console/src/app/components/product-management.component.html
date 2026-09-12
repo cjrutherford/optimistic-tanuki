@@ -129,6 +129,16 @@
           <option [value]="false">Inactive</option>
         </select>
       </div>
+
+      <div class="form-group">
+        <label for="catalogId">Workspace catalog</label>
+        <select id="catalogId" [(ngModel)]="productForm.catalogId">
+          <option [ngValue]="null">Ungrouped (legacy compatibility)</option>
+          <option *ngFor="let catalog of storeCatalogs" [value]="catalog.id">
+            {{ catalog.name }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <div class="form-group">

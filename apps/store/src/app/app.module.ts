@@ -20,6 +20,9 @@ import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-p
 import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
 import { TrainerConfigController } from '../trainer-config/trainer-config.controller';
 import { TrainerConfigService } from '../trainer-config/trainer-config.service';
+import { CatalogEntity } from '../catalog/entities/catalog.entity';
+import { CatalogController } from '../catalog/catalog.controller';
+import { CatalogService } from '../catalog/catalog.service';
 import { ProductsController } from '../products/products.controller';
 import { ProductsService } from '../products/products.service';
 import { SubscriptionsController } from '../subscriptions/subscriptions.controller';
@@ -63,6 +66,7 @@ import loadDatabase from './loadDatabase';
     ResourcesController,
     TrainerRoutinesController,
     TrainerConfigController,
+    CatalogController,
   ],
   providers: [
     AppService,
@@ -75,9 +79,15 @@ import loadDatabase from './loadDatabase';
     ResourcesService,
     TrainerRoutinesService,
     TrainerConfigService,
+    CatalogService,
     {
       provide: getRepositoryToken(ProductEntity),
       useFactory: (ds: DataSource) => ds.getRepository(ProductEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CatalogEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(CatalogEntity),
       inject: ['STORE_CONNECTION'],
     },
     {

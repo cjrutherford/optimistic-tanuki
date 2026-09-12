@@ -1,6 +1,10 @@
 import { of, throwError } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
-import { CommunityCommands, RoleCommands } from '@optimistic-tanuki/constants';
+import {
+  AppScopeCommands,
+  CommunityCommands,
+  RoleCommands,
+} from '@optimistic-tanuki/constants';
 import { CommunityMembershipStatus } from '@optimistic-tanuki/models';
 import { CommunitiesController } from './communities.controller';
 
@@ -13,6 +17,7 @@ describe('Gateway CommunitiesController handlers', () => {
   let controller: CommunitiesController;
   let social: { send: jest.Mock };
   let permissions: { send: jest.Mock };
+  let workspace: { send: jest.Mock };
 
   const user = { userId: 'user-1', profileId: 'profile-1' } as never;
 
@@ -26,16 +31,41 @@ describe('Gateway CommunitiesController handlers', () => {
 
   beforeEach(() => {
     social = { send: jest.fn().mockReturnValue(of(null)) };
-    permissions = { send: jest.fn().mockReturnValue(of(null)) };
+    permissions = {
+      send: jest.fn((pattern: { cmd: string }) => {
+        if (pattern.cmd === AppScopeCommands.GetByName) {
+          return of({ id: 'workspace-scope-1' });
+        }
+        if (pattern.cmd === RoleCommands.GetByName) {
+          return of({ id: 'community-owner-role-1' });
+        }
+        return of({ id: 'assignment-1' });
+      }),
+    };
+    workspace = {
+      send: jest.fn().mockReturnValue(
+        of({
+          workspaceId: '00000000-0000-4000-8000-000000000001',
+          status: 'active',
+        })
+      ),
+    };
 
     controller = new CommunitiesController(
       social as unknown as ClientProxy,
-      permissions as unknown as ClientProxy
+      permissions as unknown as ClientProxy,
+      workspace as unknown as ClientProxy
     );
 
     // Silence the per-instance logger rather than the console.
-    (controller as unknown as { logger: { error: jest.Mock } }).logger = {
+    (
+      controller as unknown as {
+        logger: { debug: jest.Mock; error: jest.Mock; warn: jest.Mock };
+      }
+    ).logger = {
+      debug: jest.fn(),
       error: jest.fn(),
+      warn: jest.fn(),
     } as never;
   });
 
@@ -125,6 +155,8 @@ describe('Gateway CommunitiesController handlers', () => {
           ownerProfileId: 'profile-1',
         },
         userId: 'user-1',
+        profileId: 'profile-1',
+        appScope: 'local-hub',
       });
     });
 
@@ -223,7 +255,7 @@ describe('Gateway CommunitiesController handlers', () => {
       expect(lastPattern()).toEqual({ cmd: CommunityCommands.INVITE });
       expect(lastPayload()).toEqual({
         dto: { communityId: 'c-1', inviteeUserId: 'user-2' },
-        userId: 'user-1',
+        inviterId: 'user-1',
       });
 
       sendRejects();

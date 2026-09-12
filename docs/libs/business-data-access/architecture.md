@@ -9,11 +9,10 @@
 - `businessHttpInterceptor`: automatic scope and token propagation for `/api/*` calls
 - `BusinessSiteConfigStore`: cached site-config state built on signals and API fetches
 - `business-site.config.ts`: config schema and merge helpers
-- `business-site-blocks.ts`: config-document conversion helpers
 
 ## Design Intent
 
-The library keeps business-specific HTTP concerns out of consuming components. Components should depend on the store, auth service, and API methods instead of hand-writing route paths or token headers.
+The library keeps business-specific HTTP concerns out of consuming components. Components should depend on the store, auth service, and API methods instead of hand-writing route paths or token headers. The business presence feature owns editor block definitions and config-document conversion; this library supplies its business domain types and pure configuration merge helpers.
 
 ## Authentication Model
 

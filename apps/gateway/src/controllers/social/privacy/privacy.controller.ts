@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  NotFoundException,
   Controller,
   Get,
   Post,
@@ -6,6 +8,8 @@ import {
   Put,
   Body,
   Param,
+  Query,
+  Req,
   UseGuards,
   Logger,
   Inject,
@@ -13,11 +17,24 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '../../../auth/auth.guard';
 import { User, UserDetails } from '../../../decorators/user.decorator';
+import { AppScope } from '../../../decorators/appscope.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { PrivacyCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  CommentCommands,
+  CommunityCommands,
+  PostCommands,
+  PrivacyCommands,
+  ServiceTokens,
+  WorkspaceCommands,
+} from '@optimistic-tanuki/constants';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
-import { RequirePermissions } from '../../../decorators/permissions.decorator';
+import {
+  PermissionTarget,
+  RequirePermissions,
+} from '../../../decorators/permissions.decorator';
+import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 
 export interface BlockUserDto {
   blockedId: string;
@@ -56,8 +73,80 @@ export class PrivacyController {
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    @Inject(ServiceTokens.WORKSPACE_SERVICE)
+    private readonly workspaceClient: ClientProxy
   ) {}
+
+  private async resolveReportWorkspaceId(
+    dto: ReportContentDto,
+    appScope: string
+  ): Promise<string | null> {
+    let communityId: string | null = null;
+
+    if (dto.contentType === 'community') {
+      const community = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommunityCommands.FIND },
+          { id: dto.contentId }
+        )
+      );
+      if (!community) {
+        throw new BadRequestException('Reported community was not found.');
+      }
+      communityId = community.id;
+    }
+
+    if (dto.contentType === 'post') {
+      const post = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: PostCommands.FIND },
+          { id: dto.contentId }
+        )
+      );
+      if (!post) {
+        throw new BadRequestException('Reported post was not found.');
+      }
+      communityId = post.communityId || null;
+    }
+
+    if (dto.contentType === 'comment') {
+      const comment = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommentCommands.FIND },
+          { id: dto.contentId }
+        )
+      );
+      if (!comment) {
+        throw new BadRequestException('Reported comment was not found.');
+      }
+      if (comment.postId) {
+        const post = await firstValueFrom(
+          this.socialClient.send(
+            { cmd: PostCommands.FIND },
+            { id: comment.postId }
+          )
+        );
+        if (!post) {
+          throw new BadRequestException('Reported comment post was not found.');
+        }
+        communityId = post.communityId || null;
+      }
+    }
+
+    if (!communityId) {
+      return null;
+    }
+
+    const workspace = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.RESOLVE_BY_SOURCE, {
+        appScope,
+        source: { service: 'social', sourceId: communityId },
+        requireActive: true,
+      })
+    );
+    return workspace.workspaceId;
+  }
 
   // Block endpoints
   @Post('block')
@@ -184,8 +273,11 @@ export class PrivacyController {
   @ApiResponse({ status: 201, description: 'Content reported successfully.' })
   async reportContent(
     @Body() dto: ReportContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ): Promise<any> {
+    const workspaceId = await this.resolveReportWorkspaceId(dto, appScope);
+
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.REPORT_CONTENT },
@@ -195,6 +287,8 @@ export class PrivacyController {
           contentId: dto.contentId,
           reason: dto.reason,
           description: dto.description,
+          appScope,
+          workspaceId,
         }
       )
     );
@@ -213,33 +307,61 @@ export class PrivacyController {
   }
 
   @Get('admin/reports')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'query',
+    path: 'communityId',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Get all content reports for moderation review' })
-  async getAllReports(): Promise<any[]> {
+  async getAllReports(@Req() request: any): Promise<any[]> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PrivacyCommands.GET_ALL_REPORTS }, {})
+      this.socialClient.send(
+        { cmd: PrivacyCommands.GET_ALL_REPORTS },
+        {
+          workspaceId: request.workspaceContext.workspace.workspaceId,
+        }
+      )
     );
   }
 
   @Put('admin/reports/:id')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'query',
+    path: 'communityId',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
+  @PermissionTarget('query', 'communityId')
   @ApiOperation({ summary: 'Update a content report moderation status' })
   async updateReportStatus(
     @Param('id') id: string,
-    @Body() dto: UpdateReportStatusDto
+    @Body() dto: UpdateReportStatusDto,
+    @Req() request: any
   ): Promise<any> {
-    return await firstValueFrom(
+    const updated = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.UPDATE_REPORT_STATUS },
         {
           id,
           status: dto.status,
           adminNotes: dto.adminNotes,
+          workspaceId: request.workspaceContext.workspace.workspaceId,
         }
       )
     );
+    if (!updated) {
+      throw new NotFoundException(
+        'Content report was not found in this workspace.'
+      );
+    }
+    return updated;
   }
 
   @Put('admin/moderation')

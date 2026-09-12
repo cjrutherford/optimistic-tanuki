@@ -5,8 +5,10 @@ import { PostService, RssService, SeoService } from '../services';
 import {
   CreateBlogPostDto,
   BlogPostDto,
+  PublishedBlogPostDto,
   BlogPostQueryDto,
   UpdateBlogPostDto,
+  toPublishedBlogPost,
 } from '@optimistic-tanuki/models';
 
 @Controller('post')
@@ -45,37 +47,123 @@ export class PostController {
       id: string;
       updatePostDto: UpdateBlogPostDto;
       requestingAuthorId: string;
+      workspaceScope?: {
+        ownerId: string;
+        workspaceId: string;
+        appScope: string;
+      };
     }
   ): Promise<BlogPostDto> {
-    return await this.postService.update(
-      data.id,
-      data.updatePostDto,
-      data.requestingAuthorId
-    );
+    const args: [
+      string,
+      UpdateBlogPostDto,
+      string,
+      { ownerId: string; workspaceId: string; appScope: string }?
+    ] = [data.id, data.updatePostDto, data.requestingAuthorId];
+    if (data.workspaceScope) {
+      args.push(data.workspaceScope);
+    }
+    return await this.postService.update(...args);
   }
 
   @MessagePattern({ cmd: BlogPostCommands.DELETE })
-  async deletePost(@Payload('id') id: string): Promise<void> {
-    return await this.postService.remove(id);
+  async deletePost(
+    @Payload()
+    data:
+      | string
+      | {
+          id: string;
+          workspaceScope?: {
+            ownerId: string;
+            workspaceId: string;
+            appScope: string;
+          };
+        }
+  ): Promise<void> {
+    const id = typeof data === 'string' ? data : data.id;
+    const workspaceScope =
+      typeof data === 'string' ? undefined : data.workspaceScope;
+    return workspaceScope
+      ? await this.postService.remove(id, workspaceScope)
+      : await this.postService.remove(id);
   }
 
   @MessagePattern({ cmd: BlogPostCommands.FIND_PUBLISHED })
-  async findPublishedPosts(): Promise<BlogPostDto[]> {
-    return await this.postService.findPublished();
+  async findPublishedPosts(
+    @Payload() query: { catalogId?: string } = {}
+  ): Promise<PublishedBlogPostDto[]> {
+    const catalogId = query.catalogId?.trim();
+    const posts = await this.postService.findPublished(
+      catalogId ? { catalogId } : {}
+    );
+    return posts.map(toPublishedBlogPost);
+  }
+
+  @MessagePattern({ cmd: BlogPostCommands.FIND_PUBLISHED_SCOPED })
+  async findScopedPublishedPosts(
+    @Payload()
+    query: {
+      catalogId?: string;
+      workspaceId?: string;
+      appScope?: string;
+    } = {}
+  ): Promise<PublishedBlogPostDto[]> {
+    const catalogId = query.catalogId?.trim();
+    const workspaceId = query.workspaceId?.trim();
+    const appScope = query.appScope?.trim();
+    if (!catalogId || !workspaceId || !appScope) {
+      throw new Error('catalogId, workspaceId, and appScope are required');
+    }
+    const posts = await this.postService.findPublished({
+      catalogId,
+      workspaceId,
+      appScope,
+    });
+    return posts.map(toPublishedBlogPost);
   }
 
   @MessagePattern({ cmd: BlogPostCommands.FIND_DRAFTS_BY_AUTHOR })
   async findDraftsByAuthor(
-    @Payload('authorId') authorId: string
+    @Payload()
+    data:
+      | string
+      | {
+          authorId: string;
+          workspaceScope?: {
+            ownerId: string;
+            workspaceId: string;
+            appScope: string;
+          };
+        }
   ): Promise<BlogPostDto[]> {
-    return await this.postService.findDraftsByAuthor(authorId);
+    const authorId = typeof data === 'string' ? data : data.authorId;
+    const workspaceScope =
+      typeof data === 'string' ? undefined : data.workspaceScope;
+    return workspaceScope
+      ? await this.postService.findDraftsByAuthor(authorId, workspaceScope)
+      : await this.postService.findDraftsByAuthor(authorId);
   }
 
   @MessagePattern({ cmd: BlogPostCommands.PUBLISH })
   async publishPost(
-    @Payload() data: { id: string; requestingAuthorId: string }
+    @Payload()
+    data: {
+      id: string;
+      requestingAuthorId: string;
+      workspaceScope?: {
+        ownerId: string;
+        workspaceId: string;
+        appScope: string;
+      };
+    }
   ): Promise<BlogPostDto> {
-    return await this.postService.publish(data.id, data.requestingAuthorId);
+    return data.workspaceScope
+      ? await this.postService.publish(
+          data.id,
+          data.requestingAuthorId,
+          data.workspaceScope
+        )
+      : await this.postService.publish(data.id, data.requestingAuthorId);
   }
 
   @MessagePattern({ cmd: BlogPostCommands.GENERATE_RSS })

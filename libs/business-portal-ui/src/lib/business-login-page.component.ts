@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
   injectSiteSlugSignal,
   mergeBusinessSiteConfig,
+  normalizeBusinessReturnTo,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
@@ -265,6 +266,7 @@ export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
@@ -310,6 +312,50 @@ export class BusinessLoginPageComponent {
     return siteSlug ? ['/sites', siteSlug, 'owner', route] : ['/owner', route];
   }
 
+  private ownerReturnUrl(): string | null {
+    const returnUrl = normalizeBusinessReturnTo(
+      this.route?.snapshot.queryParamMap.get('returnUrl')
+    );
+    if (!returnUrl) return null;
+
+    try {
+      const path =
+        decodeURIComponent(
+          new URL(returnUrl, 'https://business-site.invalid').pathname
+        ).replace(/\/+$/, '') || '/';
+      const siteSlug = this.siteSlug();
+      const ownerPrefix = siteSlug ? `/sites/${siteSlug}/owner` : '/owner';
+      const isAuthLoop =
+        new Set([
+          '/auth',
+          '/login',
+          '/register',
+          '/owner/login',
+          '/owner/register',
+          '/client/login',
+          '/client/register',
+        ]).has(path) ||
+        /^\/sites\/[^/]+\/(?:owner|client)\/(?:login|register)$/.test(path);
+
+      return !isAuthLoop &&
+        (path === ownerPrefix || path.startsWith(`${ownerPrefix}/`))
+        ? returnUrl
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private navigateOwnerAfterLogin(onboardingCompletedAt?: string | null): void {
+    const returnUrl = this.ownerReturnUrl();
+    if (returnUrl) {
+      void this.router.navigateByUrl(returnUrl);
+      return;
+    }
+
+    void this.router.navigate(this.ownerPostLoginRoute(onboardingCompletedAt));
+  }
+
   setMode(mode: 'owner' | 'client'): void {
     this.mode.set(mode);
     this.errorMsg.set('');
@@ -348,13 +394,11 @@ export class BusinessLoginPageComponent {
           next: (response) => {
             const config = mergeBusinessSiteConfig(response?.config);
             this.loading.set(false);
-            void this.router.navigate(
-              this.ownerPostLoginRoute(config.site.onboardingCompletedAt)
-            );
+            this.navigateOwnerAfterLogin(config.site.onboardingCompletedAt);
           },
           error: () => {
             this.loading.set(false);
-            void this.router.navigate(this.ownerPostLoginRoute(null));
+            this.navigateOwnerAfterLogin(null);
           },
         });
       },
