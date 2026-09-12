@@ -376,9 +376,20 @@ describe('OwnerWorkspaceDashboardComponent', () => {
     const success = fixture.nativeElement.querySelector(
       '[data-server-confirmed="true"]'
     ) as HTMLElement;
+    const expectedPublishedDate = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(published.configuration.updatedAt);
+    const expectedPublishedTime = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(published.configuration.updatedAt);
     expect(success).not.toBeNull();
     expect(success.textContent).toContain('Published revision 8');
-    expect(success.textContent).toContain('Aug 31, 2026 · 12:45 PM');
+    expect(success.textContent).toContain(
+      `${expectedPublishedDate} · ${expectedPublishedTime}`
+    );
   });
 
   it('reopens the failed publish with the same workspace and draft revision context', () => {
