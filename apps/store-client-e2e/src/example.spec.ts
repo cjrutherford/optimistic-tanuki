@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { SEEDED_CATALOG_PATH } from './support/seeded-catalog';
+import {
+  isProductsRequest,
+  SEEDED_CATALOG_PATH,
+} from './support/seeded-catalog';
 
 test.describe('Store Client E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -56,7 +59,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should display error message when API fails', async ({ page }) => {
     // Intercept API call and make it fail
-    await page.route('**/api/store/products', (route) => {
+    await page.route(isProductsRequest, (route) => {
       route.abort();
     });
 

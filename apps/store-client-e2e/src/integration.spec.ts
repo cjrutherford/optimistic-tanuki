@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { SEEDED_CATALOG_PATH } from './support/seeded-catalog';
+import {
+  isProductsRequest,
+  SEEDED_CATALOG_PATH,
+} from './support/seeded-catalog';
 
 test.describe('Store Integration Tests - Backend to Frontend', () => {
   test('should load real products from backend API', async ({ page }) => {
@@ -130,7 +133,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     let productData = null;
 
     // Intercept API response to check data structure
-    await page.route('**/api/store/products', async (route) => {
+    await page.route(isProductsRequest, async (route) => {
       const response = await route.fetch();
       const data = await response.json();
       productData = data;
@@ -168,7 +171,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
 
   test('should handle slow API responses', async ({ page }) => {
     // Delay API response
-    await page.route('**/api/store/products', async (route) => {
+    await page.route(isProductsRequest, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const response = await route.fetch();
       await route.fulfill({ response });
