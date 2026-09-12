@@ -652,10 +652,10 @@ importers:
     dependencies:
       '@angular/common':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/core@20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+        version: 20.3.30(@angular/core@20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
       '@angular/core':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+        version: 20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1)
       '@optimistic-tanuki/app-config-models':
         specifier: workspace:*
         version: link:../app-config-models
@@ -724,10 +724,10 @@ importers:
     dependencies:
       '@angular/common':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/core@20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+        version: 20.3.30(@angular/core@20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
       '@angular/core':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+        version: 20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1)
       '@optimistic-tanuki/models':
         specifier: workspace:*
         version: link:../models
@@ -742,10 +742,10 @@ importers:
     dependencies:
       '@angular/common':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/core@20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
+        version: 20.3.30(@angular/core@20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2)
       '@angular/core':
         specifier: ^20.0.0
-        version: 20.2.4(@angular/compiler@20.2.4)(rxjs@7.8.2)(zone.js@0.15.1)
+        version: 20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1)
       '@optimistic-tanuki/blogging-data-access':
         specifier: workspace:*
         version: link:../blogging-data-access
