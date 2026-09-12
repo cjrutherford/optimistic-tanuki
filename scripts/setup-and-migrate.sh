@@ -39,7 +39,7 @@ echo "Validating TypeORM migration definitions..."
 node "$ROOT_DIR/scripts/validate-typeorm-migrations.mjs"
 
 # Run database creation script
-(cd "$ROOT_DIR" && sh ./scripts/create-dbs.sh)
+(cd "$ROOT_DIR" && bash ./scripts/create-dbs.sh)
 
 # Run TypeORM migrations for each service
 # Loop through ADDITIONAL_DBS, map DB name to app directory, and run migrations.

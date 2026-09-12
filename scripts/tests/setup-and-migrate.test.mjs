@@ -7,7 +7,9 @@ const setupScript = new URL('../setup-and-migrate.sh', import.meta.url);
 test('validates TypeORM migrations before creating databases', async () => {
   const source = await readFile(setupScript, 'utf8');
   const validationIndex = source.indexOf('validate-typeorm-migrations.mjs');
-  const databaseCreationIndex = source.indexOf('sh ./scripts/create-dbs.sh');
+  const databaseCreationInvocation =
+    '(cd "$ROOT_DIR" && bash ./scripts/create-dbs.sh)';
+  const databaseCreationIndex = source.indexOf(databaseCreationInvocation);
 
   assert.notEqual(
     validationIndex,
@@ -17,7 +19,7 @@ test('validates TypeORM migrations before creating databases', async () => {
   assert.notEqual(
     databaseCreationIndex,
     -1,
-    'db setup must create the required databases'
+    'db setup must invoke the Bash database creation script with Bash'
   );
   assert.ok(
     validationIndex < databaseCreationIndex,
