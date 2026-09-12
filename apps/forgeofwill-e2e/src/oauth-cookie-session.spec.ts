@@ -106,15 +106,13 @@ test.describe('OAuth cookie session', () => {
         path: '/',
       })
     );
-    // The Forge session must not be readable on the Client Interface origin.
-    // Addressed by loopback here for the same reason as above.
-    expect(
-      (
-        await context.cookies(
-          'http://127.0.0.1:8080/api/authentication/session'
-        )
-      ).find((cookie) => cookie.name === 'ot_session')
-    ).toBeUndefined();
+    // No cross-origin check here: cookies are not isolated by port, so a
+    // host-only cookie for 127.0.0.1 is sent to every port on that host, and
+    // in this stack Forge and the Client Interface differ only by port. The
+    // standalone forgeofwill composition gave them distinct hostnames
+    // (forgeofwill.localhost against localhost) and the separation held there.
+    // The property that does hold, and that actually limits the cookie to one
+    // host, is the absent Domain attribute asserted above.
     expect(
       await page.evaluate(() =>
         Object.keys(localStorage).filter((key) => /token/i.test(key))

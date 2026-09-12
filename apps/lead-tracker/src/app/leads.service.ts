@@ -86,10 +86,26 @@ export class LeadsService {
     }));
   }
 
+  /**
+   * An id that is not a UUID cannot match a row, and handing it to Postgres
+   * raises `invalid input syntax for type uuid` — a 500 for what is really a
+   * miss. Treat it as not found, which is what the gateway already turns into
+   * a 404.
+   */
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value
+    );
+  }
+
   async findOne(
     id: string,
     profileId: string
   ): Promise<(Lead & { isFlagged: boolean }) | null> {
+    if (!this.isUuid(id)) {
+      return null;
+    }
+
     const lead = await this.leadRepository.findOne({
       where: { id, profileId },
       relations: { flags: true },
@@ -133,8 +149,13 @@ export class LeadsService {
     return this.findOne(id, profileId);
   }
 
-  async delete(id: string, profileId: string): Promise<void> {
-    await this.leadRepository.delete({ id, profileId });
+  async delete(id: string, profileId: string): Promise<{ deleted: number }> {
+    // Returns a value rather than void: a microservice handler that resolves
+    // with nothing completes its observable without emitting, and the
+    // gateway's `firstValueFrom` then rejects with an EmptyError that surfaces
+    // as a 500 on a delete that actually succeeded.
+    const result = await this.leadRepository.delete({ id, profileId });
+    return { deleted: result.affected ?? 0 };
   }
 
   async sendResponse(
@@ -351,8 +372,14 @@ export class LeadsService {
     return this.leadTopicRepository.findOneBy({ id, profileId });
   }
 
-  async deleteTopic(id: string, profileId: string): Promise<void> {
-    await this.leadTopicRepository.delete({ id, profileId });
+  async deleteTopic(
+    id: string,
+    profileId: string
+  ): Promise<{ deleted: number }> {
+    // Returns a value for the same reason as `delete` above: a void handler
+    // leaves the gateway's `firstValueFrom` with nothing to emit.
+    const result = await this.leadTopicRepository.delete({ id, profileId });
+    return { deleted: result.affected ?? 0 };
   }
 
   /**
