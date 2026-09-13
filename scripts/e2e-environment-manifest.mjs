@@ -33,12 +33,24 @@ function lifecyclePhases({
           'redis',
           'db-setup',
           'permissions-seed',
+          'store-seed',
           'app-configurator',
+          'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
   );
+  // store-seed runs against an already-started store, so it needs its own
+  // phase after 'dependencies' rather than starting alongside it.
+  add('store-seed', ['store-seed'], {
+    completion: 'completed-successfully',
+  });
   if (app !== 'app-configurator') add('app-configurator', ['app-configurator']);
+  // The seed script needs app-configurator's schema, so it waits for the
+  // service rather than starting with the other dependencies.
+  add('app-configurator-seed', ['app-configurator-seed'], {
+    completion: 'completed-successfully',
+  });
   add('gateway', ['gateway']);
   if (app !== 'gateway') add('application', [app], profile ? { profile } : {});
   return { phases };
@@ -192,6 +204,11 @@ const MICROSERVICE_ENTRIES = [
     ],
     imageBudget: 19,
     completedServices: ['db-setup'],
+    // The gateway mounts every HTTP route under the `api` global prefix, so a
+    // probe of `/` answers 404 and never satisfies the readiness check. Use the
+    // Swagger document, which is the same probe the UI suites already use for
+    // the gateway.
+    readinessUrl: 'http://127.0.0.1:3000/api-docs',
   }),
   sharedEntry({
     project: 'permissions-e2e',
@@ -292,6 +309,11 @@ const UI_ENVIRONMENTS = [
       'authentication',
       'profile',
       'social',
+      // Creating a community now provisions its workspace through the gateway
+      // (CommunitiesController.provisionCommunityWorkspace), and that error is
+      // rethrown. Without the service the create answered 500 on
+      // `getaddrinfo EAI_AGAIN workspace`.
+      'workspace',
       'permissions',
       'permissions-seed',
       'chat-collector',
@@ -334,6 +356,13 @@ const UI_ENVIRONMENTS = [
       'profile',
       'permissions',
       'permissions-seed',
+      // forum-access.spec.ts reads /api/forum/topics and project-crud.spec.ts
+      // drives the planning boards. Neither service was listed, so the gateway
+      // failed those calls with `getaddrinfo EAI_AGAIN forum` and the suite saw
+      // a 500. The forum seeds its own topics on module init, so listing it is
+      // enough for the seeded 'Project Execution' topic to exist.
+      'forum',
+      'project-planning',
       'client-interface',
       'oauth-provider',
       'gateway',
@@ -353,6 +382,9 @@ const UI_ENVIRONMENTS = [
       'profile',
       'permissions',
       'permissions-seed',
+      // The suite drives /api/finance; without this the gateway had nothing
+      // to forward those calls to.
+      'finance',
       'client-interface',
       'oauth-provider',
       'gateway',
@@ -428,8 +460,12 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'store',
+      'store-seed',
       'gateway',
     ],
+    // store-seed populates the catalog; the suite asserts against those
+    // products, so the app must not start browsing before it finishes.
+    completedServices: ['db-setup', 'store-seed'],
   },
   {
     project: 'configurable-client-e2e',
@@ -443,9 +479,11 @@ const UI_ENVIRONMENTS = [
       'redis',
       'db-setup',
       'app-configurator',
+      // Publishes the apps the landing page's discovery list asserts on.
+      'app-configurator-seed',
       'gateway',
     ],
-    completedServices: ['db-setup'],
+    completedServices: ['db-setup', 'app-configurator-seed'],
   },
 ];
 

@@ -46,6 +46,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'authentication',
     'profile',
     'social',
+    'workspace',
     'permissions',
     'permissions-seed',
     'chat-collector',
@@ -55,6 +56,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'gateway',
     'client-interface',
   ]);
+  // forum and project-planning back the forum-access and project-crud specs.
   assert.deepEqual(resolveE2eServices('forgeofwill-e2e'), [
     'db',
     'db-setup',
@@ -62,6 +64,8 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'profile',
     'permissions',
     'permissions-seed',
+    'forum',
+    'project-planning',
     'client-interface',
     'oauth-provider',
     'gateway',
@@ -87,15 +91,22 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'redis',
     'db-setup',
     'app-configurator',
+    'app-configurator-seed',
     'gateway',
     'configurable-client',
   ]);
+  assert.deepEqual(
+    resolveE2eTarget('configurable-client-e2e').completedServices,
+    ['db-setup', 'app-configurator-seed']
+  );
   const uiServiceSets = listE2eTargets('ui').map((entry) =>
     resolveE2eServices(entry).join(',')
   );
   assert.equal(new Set(uiServiceSets).size, 9);
+  // client-interface is the largest closure at 14, since community creation
+  // provisions a workspace.
   assert.ok(
-    uiServiceSets.every((services) => services.split(',').length <= 13)
+    uiServiceSets.every((services) => services.split(',').length <= 14)
   );
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });
