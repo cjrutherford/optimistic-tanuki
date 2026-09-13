@@ -755,6 +755,7 @@ export class OAuthController {
         (origin ? new URL(origin).hostname : host?.split(':')[0]);
 
       this.logger.debug(`Getting OAuth configuration for domain=${domain}`);
+      const appScope = this.resolveAppScopeForConfigRequest(request);
       const result: Record<string, unknown> = {};
 
       for (const provider of this.providers) {
@@ -768,15 +769,9 @@ export class OAuthController {
           redirectUri: this.resolveProviderRedirectUri(
             provider,
             config,
-            origin
-              ? this.resolveAppScopeForReturnTo(origin) ?? undefined
-              : undefined
+            appScope
           ),
-          callbackOrigin: new URL(
-            this.resolveCallbackBase(
-              origin ? this.resolveAppScopeForReturnTo(origin) : undefined
-            )
-          ).origin,
+          callbackOrigin: new URL(this.resolveCallbackBase(appScope)).origin,
           scopes: config.scopes || [],
           authorizationEndpoint: config.authorizationEndpoint,
           enabled: true,
@@ -865,6 +860,48 @@ export class OAuthController {
         }
       )
     );
+  }
+
+  /**
+   * The app scope of the page asking for OAuth config. Browsers omit `Origin`
+   * on same-origin GETs, which is how an app's own login page fetches
+   * /api/oauth/config through its SSR proxy. Without a fallback every such
+   * request resolved to the client-interface callback base, so forgeofwill was
+   * told to accept popup messages only from client-interface's origin and
+   * dropped its own callback's postMessage. Referer and the proxied Host still
+   * identify the page; either only counts if it maps to a configured or
+   * registered app origin, so a forged header can only pick a known app.
+   */
+  private resolveAppScopeForConfigRequest(
+    request: Request
+  ): string | undefined {
+    const headers = (request?.headers ?? {}) as Record<
+      string,
+      string | string[] | undefined
+    >;
+    const header = (name: string): string | undefined => {
+      const value = headers[name];
+      return (Array.isArray(value) ? value[0] : value)?.split(',')[0]?.trim();
+    };
+
+    const origin = header('origin');
+    if (origin) return this.resolveAppScopeForReturnTo(origin) ?? undefined;
+
+    const host = header('x-forwarded-host') || header('host');
+    const proto =
+      header('x-forwarded-proto') ||
+      (request as { protocol?: string } | undefined)?.protocol ||
+      'http';
+    const candidates = [
+      header('referer'),
+      host ? `${proto}://${host}` : undefined,
+    ];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const appScope = this.resolveAppScopeForReturnTo(candidate);
+      if (appScope) return appScope;
+    }
+    return undefined;
   }
 
   private resolveAppScopeForReturnTo(returnTo: string): string | null {

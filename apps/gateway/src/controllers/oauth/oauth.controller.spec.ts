@@ -1341,6 +1341,95 @@ describe('OAuthController', () => {
       );
     });
 
+    // An app's own login page fetches this config with a same-origin GET, which
+    // carries no Origin header. Resolving that to client-interface told Forge to
+    // accept popup messages only from client-interface's origin.
+    describe('without an Origin header', () => {
+      const enableGoogle = () => {
+        process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://127.0.0.1:8080';
+        process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+          forgeofwill: 'http://127.0.0.1:8081',
+          finance: 'http://127.0.0.1:8089',
+        });
+        configGet.mockImplementation((key: string) =>
+          key === 'oauth.google'
+            ? {
+                enabled: true,
+                clientId: 'public-client-id',
+                authorizationEndpoint:
+                  'https://accounts.google.com/o/oauth2/v2/auth',
+              }
+            : undefined
+        );
+      };
+
+      it('uses the Referer of a same-origin request', async () => {
+        enableGoogle();
+        const result = await controller.getOAuthConfig(
+          {
+            headers: {
+              host: '127.0.0.1:8081',
+              referer: 'http://127.0.0.1:8081/login',
+            },
+          } as any,
+          undefined
+        );
+
+        expect((result as any).google.callbackOrigin).toBe(
+          'http://127.0.0.1:8081'
+        );
+        expect((result as any).google.redirectUri).toBe(
+          'http://127.0.0.1:8081/api/oauth/callback/google'
+        );
+      });
+
+      it('falls back to the proxied Host when there is no Referer', async () => {
+        enableGoogle();
+        const result = await controller.getOAuthConfig(
+          { headers: { host: '127.0.0.1:8089' }, protocol: 'http' } as any,
+          undefined
+        );
+
+        expect((result as any).google.callbackOrigin).toBe(
+          'http://127.0.0.1:8089'
+        );
+      });
+
+      it('ignores a Host or Referer that is not a known app origin', async () => {
+        enableGoogle();
+        const result = await controller.getOAuthConfig(
+          {
+            headers: {
+              host: 'evil.example',
+              referer: 'https://evil.example/login',
+            },
+          } as any,
+          undefined
+        );
+
+        expect((result as any).google.callbackOrigin).toBe(
+          'http://127.0.0.1:8080'
+        );
+      });
+
+      it('still prefers an explicit Origin header', async () => {
+        enableGoogle();
+        const result = await controller.getOAuthConfig(
+          {
+            headers: {
+              origin: 'http://127.0.0.1:8089',
+              referer: 'http://127.0.0.1:8081/login',
+            },
+          } as any,
+          undefined
+        );
+
+        expect((result as any).google.callbackOrigin).toBe(
+          'http://127.0.0.1:8089'
+        );
+      });
+    });
+
     it('returns sanitized provider config from the gateway source of truth', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
