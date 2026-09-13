@@ -2,17 +2,28 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Owner Console E2E Tests', () => {
   test.describe('Homepage & Authentication Redirect', () => {
-    test('should redirect to login when not authenticated', async ({
+    // The root no longer bounces anonymous visitors to /login. app.routes.ts
+    // redirects '' to '/control-center', which loads
+    // PublicControlCenterComponent — deliberately unguarded, described in its
+    // own copy as "This login-free view is intended for internal network
+    // access". The guarded surface is /dashboard, which is asserted below.
+    test('lands anonymous visitors on the login-free control center', async ({
       page,
     }) => {
       await page.goto('/');
 
-      // Should redirect to /login
-      await expect(page).toHaveURL(/.*login/);
+      await expect(page).toHaveURL(/\/control-center$/);
+      await expect(
+        page.getByRole('heading', { name: 'Platform control center' })
+      ).toBeVisible();
+    });
 
-      // Verify login page content
-      const title = page.locator('h1');
-      await expect(title).toContainText('Owner Console');
+    test('sends an unauthenticated visitor from the dashboard to login', async ({
+      page,
+    }) => {
+      await page.goto('/dashboard');
+
+      await expect(page).toHaveURL(/.*login/);
     });
 
     test('should have proper document structure', async ({ page }) => {
@@ -39,7 +50,15 @@ test.describe('Owner Console E2E Tests', () => {
       await page.goto('/register');
 
       await expect(page).toHaveURL(/\/login\?provisioning=required/);
-      await expect(page.getByRole('status')).toContainText(
+      // The login page renders two `role="status"` regions: this one and the
+      // OAuth notice. This suite's stack has no oauth-provider, so the OAuth
+      // notice is always present and a bare getByRole('status') trips strict
+      // mode. Select the provisioning message specifically.
+      await expect(
+        page
+          .getByRole('status')
+          .filter({ hasText: 'Owner accounts must be provisioned' })
+      ).toContainText(
         'Owner accounts must be provisioned by an existing operator.'
       );
     });

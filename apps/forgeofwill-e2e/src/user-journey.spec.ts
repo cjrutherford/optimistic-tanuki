@@ -84,11 +84,15 @@ test.describe('User Journey', () => {
     const modalContent = await openProfileEditorFromSettings(page);
 
     console.log('Updating bio');
-    await page
+    await modalContent
       .locator('lib-text-input[formControlName="profileName"] input')
       .fill(`Forge Test User ${timestamp}`);
-    await page
-      .locator('lib-text-input[formControlName="bio"] input')
+    // Bio is a `lib-text-area` in profile-editor.component.html, so
+    // `lib-text-input[formControlName="bio"] input` matched nothing and the
+    // fill sat until the test timed out. The client-interface journey and the
+    // shared workspace-ui helper both already address it as a textarea.
+    await modalContent
+      .locator('lib-text-area[formControlName="bio"] textarea')
       .fill(testUser.updatedBio);
 
     console.log('Submitting profile update');

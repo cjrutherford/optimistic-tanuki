@@ -5,6 +5,20 @@ describe('Leads API E2E Tests', () => {
   const baseURL = process.env.BASE_URL || 'http://localhost:3000';
   const api = axios.create({
     baseURL: `${baseURL}/api`,
+    // Two different identifiers, deliberately. x-ot-app-id names the app for
+    // registration, which the gateway needs to attribute the account and its
+    // verification mail; x-ot-appscope names the permission scope the
+    // PermissionsGuard resolves the caller's profile and roles in.
+    // `opportunity-compass` maps to the `leads-app` profile scope — see
+    // profileScopeForApp in the authentication controller — and every
+    // `lead.*` permission is defined in `leads-app` and granted through
+    // `leads_app_member`, which the app-scope defaults assign. Sending
+    // `client-interface` here authenticated fine and then failed every call
+    // with 403, because that profile holds no lead permissions at all.
+    headers: {
+      'x-ot-appscope': 'leads-app',
+      'x-ot-app-id': 'opportunity-compass',
+    },
     validateStatus: () => true,
   });
 

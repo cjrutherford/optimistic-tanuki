@@ -315,6 +315,11 @@ async function insertAppConfigRows(
 
   const ownerDomain = `${FIXTURE_PREFIX}-a.example.test`;
   const foreignDomain = `${FIXTURE_PREFIX}-b.example.test`;
+  // A publication only counts if its history holds the matching `publish`
+  // revision: hasConfirmedPublication requires an entry whose version equals
+  // publishedVersion and whose snapshot serialises identically to
+  // publishedSnapshot. With `history: []` the anonymous by-domain lookup could
+  // never find this configuration and answered 404.
   const release = (domain: string) =>
     JSON.stringify({
       status: 'published',
@@ -322,7 +327,15 @@ async function insertAppConfigRows(
       releaseNotes: 'P33 fixture release',
       changeSummary: 'P33 fixture release',
       publishedSnapshot: snapshot(domain),
-      history: [],
+      history: [
+        {
+          version: 1,
+          action: 'publish',
+          releaseNotes: 'P33 fixture release',
+          changeSummary: 'P33 fixture release',
+          snapshot: snapshot(domain),
+        },
+      ],
     });
 
   await appConfigPool.query(

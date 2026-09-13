@@ -240,7 +240,15 @@ test.describe('entity membership role isolation', () => {
         role: 'finance_member',
       }
     );
-    expect(nonOwnerMutation.status()).toBe(404);
+    // 403, not 404: the PermissionsGuard rejects this before any handler runs,
+    // because a plain member holds `finance_member` and member administration
+    // needs `finance.member.manage`. The two `tenant/current` cases above do
+    // answer 404 — those reach the finance service, which finds no tenant for
+    // that profile — but this one never gets that far.
+    expect(
+      nonOwnerMutation.status(),
+      `non-owner mutation: ${await nonOwnerMutation.text()}`
+    ).toBe(403);
 
     const revokeResponse = await ownerTenantApi.delete(
       `/api/finance/tenant/members/${revokedMembership.id}`
