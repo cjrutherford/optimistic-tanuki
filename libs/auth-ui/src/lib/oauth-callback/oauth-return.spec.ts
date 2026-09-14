@@ -39,11 +39,52 @@ describe('normalizeAuthReturnTo', () => {
     '/%5C%5Cevil.example/phish',
     '/dashboard\\evil',
     '/dashboard\n/evil',
+  ])('rejects unsafe destination %s', (returnTo) => {
+    expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+  });
+
+  const authLoopPaths = [
     '/login',
     '/register',
+    '/auth/login',
+    '/login/',
+    'https://app.example/login?next=x',
     '/oauth/callback/google',
-  ])('rejects unsafe or auth-loop destination %s', (returnTo) => {
-    expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+  ];
+
+  // Guards and login pages rely on null here to apply their own fallback.
+  it.each(authLoopPaths)(
+    'rejects auth-loop destination %s by default',
+    (returnTo) => {
+      expect(normalizeAuthReturnTo(returnTo, options)).toBeNull();
+    }
+  );
+
+  // The OAuth callback opts in: sign-in started from /login must still redeem.
+  it.each(authLoopPaths)(
+    'sends auth-loop destination %s to the origin root when asked',
+    (returnTo) => {
+      expect(
+        normalizeAuthReturnTo(returnTo, {
+          ...options,
+          authLoopFallback: 'origin-root',
+        })
+      ).toEqual({
+        origin: 'https://app.example',
+        path: '/',
+        href: 'https://app.example/',
+        isCurrentOrigin: true,
+      });
+    }
+  );
+
+  it('still refuses an auth-loop path on an unregistered origin', () => {
+    expect(
+      normalizeAuthReturnTo('https://evil.example/login', {
+        ...options,
+        authLoopFallback: 'origin-root',
+      })
+    ).toBeNull();
   });
 
   it('rejects whitespace padding, malformed escapes, and unsupported origins', () => {

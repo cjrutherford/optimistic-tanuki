@@ -5,11 +5,14 @@ test.describe('OAuth cookie session', () => {
     page,
     context,
   }) => {
-    const configResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/oauth/config')
-    );
+    // The login page requests /api/oauth/config in its constructor, but these
+    // apps enable provideClientHydration(), which turns on Angular's HTTP
+    // transfer cache. The request is therefore issued during SSR and replayed
+    // from TransferState on the client, so the browser never puts it on the
+    // wire and waiting for the response here always timed out. Assert on the
+    // observable result instead: the provider button only renders once the
+    // config has been applied.
     await page.goto('/login');
-    await expect((await configResponse).ok()).toBe(true);
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();
 
@@ -23,13 +26,19 @@ test.describe('OAuth cookie session', () => {
         );
       }
     );
+    // The provider redirect target is the gateway endpoint, which
+    // OAuthController.resolveProviderRedirectUri builds as
+    // `<callbackBase>/api/oauth/callback/<provider>` whenever an app scope is
+    // present. Without the `/api` prefix this matched nothing and the wait
+    // burned the whole test budget, even though the flow itself completed —
+    // the gateway logged a fully authenticated oauth-e2e@example.test.
     const callbackRequestPromise = context.waitForEvent(
       'request',
       (request) => {
         const url = new URL(request.url());
         return (
           url.origin === new URL(page.url()).origin &&
-          url.pathname === '/oauth/callback/google'
+          url.pathname === '/api/oauth/callback/google'
         );
       }
     );
@@ -57,7 +66,11 @@ test.describe('OAuth cookie session', () => {
       await context.cookies(`${appOrigin}/api/authentication/session`)
     ).find((cookie) => cookie.name === 'ot_session');
     expect(sessionCookie).toEqual(
-      expect.objectContaining({ httpOnly: true, path: '/api' })
+      // The gateway sets this cookie at path '/', in both
+      // OAuthController's redeem handler and
+      // AuthenticationController.browserSessionCookieOptions(). '/api'
+      // was never a path it emits.
+      expect.objectContaining({ httpOnly: true, path: '/' })
     );
     expect(sessionCookie?.value).toBeTruthy();
     expect(

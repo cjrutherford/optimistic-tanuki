@@ -232,6 +232,39 @@ describe('gateway security helpers', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  const coopFor = (request: Request): string | undefined => {
+    const headers = new Map<string, string>();
+    const response = {
+      setHeader(name: string, value: string) {
+        headers.set(name, value);
+      },
+    };
+    applyGatewaySecurityHeaders(request, response as never, jest.fn());
+    return headers.get('Cross-Origin-Opener-Policy');
+  };
+
+  // These load inside the OAuth popup. A COOP mismatch with the opener cut
+  // window.opener, so the popup never posted back or closed.
+  it.each([
+    '/api/oauth/start/google',
+    '/api/oauth/link/github',
+    '/api/oauth/callback/google',
+  ])('keeps the opener for the OAuth popup navigation GET %s', (path) => {
+    expect(coopFor(createRequest({ method: 'GET', path }))).toBe('unsafe-none');
+  });
+
+  it.each([
+    ['POST', '/api/oauth/callback/redeem'],
+    ['GET', '/api/oauth/callback/redeem'],
+    ['POST', '/api/oauth/link/github'],
+    ['GET', '/api/oauth/config'],
+    ['GET', '/api/oauth/start/google/extra'],
+  ])('keeps the stricter policy for %s %s', (method, path) => {
+    expect(coopFor(createRequest({ method, path }))).toBe(
+      'same-origin-allow-popups'
+    );
+  });
+
   it('allows proxied browser mutations when forwarded origin is trusted', () => {
     expect(
       shouldRejectBrowserMutation(

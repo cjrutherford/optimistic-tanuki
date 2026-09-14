@@ -5,6 +5,15 @@ describe('Gateway E2E Tests', () => {
   const baseURL = process.env.BASE_URL || 'http://localhost:3000';
   const api = axios.create({
     baseURL: `${baseURL}/api`,
+    // Registration must be attributable to an app: the gateway resolves a
+    // canonical app id from x-ot-app-id, x-ot-appscope or Origin, and answers
+    // 400 "Email authentication is not configured for this application" when
+    // it cannot. Without these headers every auth test failed, and the token
+    // they produce is what the rest of the suite authenticates with.
+    headers: {
+      'x-ot-appscope': 'client-interface',
+      'x-ot-app-id': 'client-interface',
+    },
     validateStatus: () => true, // Don't throw on any status code
   });
 

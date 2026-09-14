@@ -24,11 +24,18 @@ describe('FinanceController', () => {
   const financeClient = {
     send: jest.fn(),
   };
+  // Tenant creation now assigns finance_admin through the permissions service.
+  const permissionsClient = {
+    send: jest.fn().mockReturnValue(of(null)),
+  };
   const reflector = new Reflector();
 
   beforeEach(async () => {
     financeClient.send.mockReset();
-    controller = new FinanceController(financeClient as any);
+    controller = new FinanceController(
+      financeClient as any,
+      permissionsClient as any
+    );
   });
 
   it('scopes account lookups to the authenticated user context', async () => {

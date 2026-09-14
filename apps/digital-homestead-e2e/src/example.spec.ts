@@ -172,9 +172,13 @@ test.describe('Digital Homestead E2E Tests', () => {
       await page.goto('/blog');
       await page.waitForLoadState('domcontentloaded');
 
-      // New Post button should not be visible for unauthenticated users
-      const newPostButton = page.locator('text=New Post');
-      await expect(newPostButton).toBeHidden();
+      // New Post button should not be visible for unauthenticated users.
+      // `text=New Post` matched the welcome message's "Sign in to create new
+      // posts." — `text=` is a case-insensitive substring match, so "new post"
+      // inside that sentence counted as a hit and the assertion failed on a
+      // paragraph rather than a button. Address the button itself.
+      const newPostButton = page.locator('.sidebar-header otui-button');
+      await expect(newPostButton).toHaveCount(0);
     });
 
     test('should display welcome message with sign-in link', async ({

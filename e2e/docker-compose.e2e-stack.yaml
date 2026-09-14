@@ -68,6 +68,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3001,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   profile:
     image: cjrutherford/optimistic_tanuki_profile:${E2E_IMAGE_TAG:-latest}
@@ -89,6 +97,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3002,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   social:
     image: cjrutherford/optimistic_tanuki_social:${E2E_IMAGE_TAG:-latest}
@@ -112,6 +128,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3003,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   workspace:
     image: cjrutherford/optimistic_tanuki_workspace:${E2E_IMAGE_TAG:-latest}
@@ -126,6 +150,14 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_workspace
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3024,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       db:
         condition: service_healthy
@@ -150,6 +182,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3005,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   project-planning:
     image: cjrutherford/optimistic_tanuki_project-planning:${E2E_IMAGE_TAG:-latest}
@@ -169,6 +209,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3006,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   chat-collector:
     image: cjrutherford/optimistic_tanuki_chat-collector:${E2E_IMAGE_TAG:-latest}
@@ -183,6 +231,44 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_chat_collector
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3007,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # fin-commander-e2e drives /api/finance, which the gateway forwards to this
+  # service. It was never part of this composition, so those calls had nothing
+  # behind them. No host port is published: only the gateway talks to it, over
+  # the compose network, and 3016 on the host already belongs to
+  # oauth-provider.
+  finance:
+    image: cjrutherford/optimistic_tanuki_finance:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/finance/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_finance
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3016,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       db:
         condition: service_healthy
@@ -236,6 +322,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3008,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   prompt-proxy:
     image: cjrutherford/optimistic_tanuki_prompt-proxy:${E2E_IMAGE_TAG:-latest}
@@ -259,6 +353,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3009,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   ai-orchestrator:
     image: cjrutherford/optimistic_tanuki_ai-orchestrator:${E2E_IMAGE_TAG:-latest}
@@ -303,6 +405,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3011,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   permissions:
     image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
@@ -322,6 +432,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3012,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   permissions-seed:
     image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
@@ -357,6 +475,35 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3013,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # The store catalog is empty without this. seed-store.js is already built as
+  # an additional entry point in apps/store/webpack.config.js; it just was
+  # never wired into the e2e stack, so every store-client catalog assertion
+  # had nothing to render.
+  store-seed:
+    image: cjrutherford/optimistic_tanuki_store:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/store/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_store
+    depends_on:
+      store:
+        condition: service_started
+    command: ['node', './seed-store.js']
+    restart: 'no'
 
   app-configurator:
     image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
@@ -381,6 +528,62 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3014,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # configurable-client's landing page lists published apps, and nothing in
+  # this stack published any, so its discovery assertions had nothing to find.
+  # dev-seed.sh builds these same P11 fixtures through the gateway to get real
+  # owner and workspace ids; discovery reads only the app-configurator database,
+  # and the seed script creates its own app instance and owner membership, so
+  # fixed ids stand in here. Each fixture gets its own workspace because an app
+  # instance is unique per workspace and scope. Private Studio is seeded too so
+  # the suite's "private apps stay hidden" assertion is tested, not vacuous.
+  app-configurator-seed:
+    image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/app-configurator/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ot_app_configurator
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_CONFIG_SEED_APP_SCOPE: configurable-client
+      APP_CONFIG_SEED_BLOG_CATALOG_ID: 0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7e00
+      APP_CONFIG_SEED_PUBLISH: 'true'
+    entrypoint: ['sh', '-c']
+    command:
+      - >-
+        set -e;
+        seed() {
+        APP_CONFIG_SEED_OWNER_USER_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7e$$1"
+        APP_CONFIG_SEED_OWNER_PROFILE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d7f$$1"
+        APP_CONFIG_SEED_WORKSPACE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d70$$1"
+        APP_CONFIG_SEED_APP_INSTANCE_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d71$$1"
+        APP_CONFIG_SEED_MEMBERSHIP_ID="0c0f11e5-7b1a-4d2e-8f3c-9a4b5c6d72$$1"
+        APP_CONFIG_SEED_CONFIG_NAME="$$2"
+        APP_CONFIG_SEED_ACCESS_POLICY="$$3"
+        APP_CONFIG_SEED_DOMAIN="$$4"
+        node seed-script.js;
+        };
+        seed 01 '' public '';
+        seed 02 'Open Community' joinable community.configurable-client.local;
+        seed 03 'Access Request Hub' request-only access.configurable-client.local;
+        seed 04 'Private Studio' private private.configurable-client.local
+    depends_on:
+      app-configurator:
+        condition: service_healthy
+    restart: 'no'
 
   lead-tracker:
     image: cjrutherford/optimistic_tanuki_lead-tracker:${E2E_IMAGE_TAG:-latest}
@@ -400,6 +603,14 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3020,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   gateway:
     image: cjrutherford/optimistic_tanuki_gateway:${E2E_IMAGE_TAG:-latest}
@@ -421,8 +632,29 @@ services:
       THROTTLE_LOGIN_LIMIT: 100
       JWT_SECRET: e2e-test-jwt-secret
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
-      CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080
-      CLIENT_INTERFACE_DOMAIN: localhost
+      # These must match the origin the suites actually drive. Every UI target
+      # in scripts/e2e-environment-manifest.mjs uses a 127.0.0.1 baseUrl, but
+      # tools/registry/apps.yaml declares every app on `localhost` (correct for
+      # local development), and OAuth matches origins exactly. The gateway
+      # therefore redirected each popup back to a different origin than its
+      # opener, and the suites timed out waiting for a callback that arrived
+      # somewhere else. CORS_ALLOWED_ORIGINS lists both spellings, which is why
+      # nothing but OAuth noticed.
+      #
+      # Keys are app *scopes*, not app ids: fin-commander asks the gateway for
+      # the `finance` scope (see its finance-appscope.interceptor and the
+      # appScope it passes to initiateOAuthLogin), so keying its origin under
+      # `fin-commander` made resolveAppScopeForReturnTo disagree with the scope
+      # the app requested, and beginOAuthFlow rejected the mismatch with
+      # "appScope must match the registered returnTo application".
+      #
+      # APP_SCOPE_ORIGINS is the gateway's designed per-environment override:
+      # resolveCallbackBase() consults it before the registry, so the registry
+      # stays correct for development while CI pins the loopback origins it
+      # actually serves. Keep in step with the manifest's UI baseUrls.
+      APP_SCOPE_ORIGINS: '{"client-interface":"http://127.0.0.1:8080","forgeofwill":"http://127.0.0.1:8081","digital-homestead":"http://127.0.0.1:8082","christopherrutherford-net":"http://127.0.0.1:8083","owner-console":"http://127.0.0.1:8084","store":"http://127.0.0.1:8085","finance":"http://127.0.0.1:8089","configurable-client":"http://127.0.0.1:8090","learning":"http://127.0.0.1:8099"}'
+      CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
+      CLIENT_INTERFACE_DOMAIN: 127.0.0.1
       CI_GOOGLE_CLIENT_ID: e2e-google-client-id
       CI_GOOGLE_CLIENT_SECRET: e2e-google-client-secret
       CI_GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize
@@ -454,6 +686,13 @@ services:
       FORUM_PORT: 3015
       BLOGGING_HOST: blogging
       BLOGGING_PORT: 3011
+      # apps/gateway/src/assets/config.yaml points learning_service at the
+      # production container name `ot_learning_service` rather than the plain
+      # service name every other entry uses, so without this override the
+      # gateway cannot resolve it here: `getaddrinfo EAI_AGAIN
+      # ot_learning_service`, surfacing as a 500 where the suite expects a 404.
+      LEARNING_SERVICE_HOST: learning-service
+      LEARNING_SERVICE_PORT: 3024
       PERMISSIONS_HOST: permissions
       PERMISSIONS_PORT: 3012
       STORE_HOST: store
@@ -462,31 +701,37 @@ services:
       APP_CONFIGURATOR_PORT: 3014
       LEAD_TRACKER_HOST: lead-tracker
       LEAD_TRACKER_PORT: 3020
+    # service_healthy, not service_started: a started container is not a
+    # listening one. The gateway opens its microservice clients at boot and
+    # OAuthController does not recover from a refused connection, so starting
+    # it while authentication was still coming up left OAuth dead for the whole
+    # run — `connect ECONNREFUSED authentication:3001`, five seconds before that
+    # service finished booting.
     depends_on:
       db:
         condition: service_healthy
       authentication:
-        condition: service_started
+        condition: service_healthy
       profile:
-        condition: service_started
+        condition: service_healthy
       social:
-        condition: service_started
+        condition: service_healthy
       workspace:
         condition: service_started
       assets:
-        condition: service_started
+        condition: service_healthy
       blogging:
-        condition: service_started
+        condition: service_healthy
       permissions:
-        condition: service_started
+        condition: service_healthy
       store:
-        condition: service_started
+        condition: service_healthy
       forum:
-        condition: service_started
+        condition: service_healthy
       app-configurator:
-        condition: service_started
+        condition: service_healthy
       lead-tracker:
-        condition: service_started
+        condition: service_healthy
 
   oauth-provider:
     # An explicit tag keeps batched CI builds and project-scoped Compose runs
@@ -521,6 +766,15 @@ services:
   # a stranger submitted.
   learning-runner:
     profiles: [learning]
+    # Every other service here names its published image. This one only had a
+    # `build:`, and CI pulls the manifest's services and then brings them up
+    # with `--no-build`, so learning-runner could neither be pulled nor
+    # created and the whole learning stack failed to start — only `db` was
+    # left standing. db-setup and oauth-provider are the deliberate
+    # build-locally exceptions and are excluded from the pull list; this is
+    # not one of them. The image is built and published by the same
+    # Image Check / Publish Images matrix as its siblings.
+    image: cjrutherford/optimistic_tanuki_learning-runner:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/learning-runner/Dockerfile
@@ -558,6 +812,14 @@ services:
       db-setup:
         condition: service_completed_successfully
     networks: [default, learning-internal]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3024,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   learning:
     profiles: [learning]
@@ -660,6 +922,8 @@ services:
         condition: service_started
       app-configurator:
         condition: service_started
+      app-configurator-seed:
+        condition: service_completed_successfully
 
 networks:
   default:

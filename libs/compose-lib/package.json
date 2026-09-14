@@ -2,8 +2,8 @@
   "name": "@optimistic-tanuki/compose-lib",
   "version": "0.0.1",
   "peerDependencies": {
-    "@angular/common": "^20.2.0",
-    "@angular/core": "^20.2.0",
+    "@angular/common": "^20.3.30",
+    "@angular/core": "^20.3.30",
     "@tiptap/core": "^3.0.1",
     "@tiptap/pm": "^3.0.1",
     "ngx-tiptap": "^14.0.1",

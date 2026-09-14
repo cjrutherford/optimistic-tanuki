@@ -158,8 +158,12 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
+    // Sign-in is often started from the login page, so an auth-page returnTo
+    // must still redeem; it lands on the site root rather than being refused
+    // as an invalid destination.
     const returnTarget = normalizeAuthReturnTo(returnTo, {
       currentOrigin: window.location.origin,
+      authLoopFallback: 'origin-root',
     });
 
     if (window.opener) {

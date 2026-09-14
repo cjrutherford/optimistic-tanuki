@@ -1929,45 +1929,55 @@ describe('BusinessLandingPageComponent SSR', () => {
 
     destroyPlatform();
     const html = await renderApplication(
-      () =>
-        bootstrapApplication(ServerBusinessLandingHostComponent, {
-          providers: [
-            provideServerRendering(),
-            provideRouter([]),
-            {
-              provide: ActivatedRoute,
-              useValue: {
-                snapshot: {
-                  paramMap: convertToParamMap({ siteSlug: 'emberline-studio' }),
-                },
-                paramMap: of(
-                  convertToParamMap({ siteSlug: 'emberline-studio' })
-                ),
-              },
-            },
-            {
-              provide: BusinessSiteConfigStore,
-              useValue: {
-                site: signal(DEFAULT_BUSINESS_SITE_CONFIG),
-                fetch: jest.fn().mockReturnValue(of(tenantConfig)),
-              },
-            },
-            {
-              provide: BusinessApiService,
-              useValue: {
-                getOffers: jest.fn().mockReturnValue(of([])),
-                getStoreProducts: jest.fn().mockReturnValue(of([])),
-                getBlogPosts: jest.fn().mockReturnValue(of([])),
-                getSiteConfigForSlug: jest
-                  .fn()
-                  .mockReturnValue(
-                    of({ configId: 'emberline-config', config: tenantConfig })
+      // Forwards the BootstrapContext renderApplication supplies. Angular 20.3
+      // requires bootstrapApplication on the server to receive it and raises
+      // NG0401 "Missing Platform" without it; 20.2 did not. This is the same
+      // change the 20 apps' main.server.ts entries needed for the Angular bump.
+      (context) =>
+        bootstrapApplication(
+          ServerBusinessLandingHostComponent,
+          {
+            providers: [
+              provideServerRendering(),
+              provideRouter([]),
+              {
+                provide: ActivatedRoute,
+                useValue: {
+                  snapshot: {
+                    paramMap: convertToParamMap({
+                      siteSlug: 'emberline-studio',
+                    }),
+                  },
+                  paramMap: of(
+                    convertToParamMap({ siteSlug: 'emberline-studio' })
                   ),
+                },
               },
-            },
-            { provide: Title, useValue: { setTitle: jest.fn() } },
-          ],
-        }),
+              {
+                provide: BusinessSiteConfigStore,
+                useValue: {
+                  site: signal(DEFAULT_BUSINESS_SITE_CONFIG),
+                  fetch: jest.fn().mockReturnValue(of(tenantConfig)),
+                },
+              },
+              {
+                provide: BusinessApiService,
+                useValue: {
+                  getOffers: jest.fn().mockReturnValue(of([])),
+                  getStoreProducts: jest.fn().mockReturnValue(of([])),
+                  getBlogPosts: jest.fn().mockReturnValue(of([])),
+                  getSiteConfigForSlug: jest
+                    .fn()
+                    .mockReturnValue(
+                      of({ configId: 'emberline-config', config: tenantConfig })
+                    ),
+                },
+              },
+              { provide: Title, useValue: { setTitle: jest.fn() } },
+            ],
+          },
+          context
+        ),
       {
         document: '<app-root></app-root>',
         url: '/sites/emberline-studio',

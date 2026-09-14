@@ -79,6 +79,8 @@ jobs:
       deploy_staging: ${{ steps.flags.outputs.deploy_staging }}
       image_tag: ${{ steps.flags.outputs.image_tag }}
       e2e_image_tag: ${{ steps.flags.outputs.e2e_image_tag }}
+      e2e_fallback_tag: ${{ steps.flags.outputs.e2e_fallback_tag }}
+      push_e2e_images: ${{ steps.flags.outputs.push_e2e_images }}
       microservices_e2e_matrix: ${{ steps.e2e_matrix.outputs.microservices_e2e_matrix }}
       ui_e2e_matrix: ${{ steps.e2e_matrix.outputs.ui_e2e_matrix }}
     steps:
@@ -153,6 +155,9 @@ jobs:
 
       - name: Resolve publish and deploy flags
         id: flags
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           SHORT_SHA="sha-${GITHUB_SHA::7}"
           RUN_DOCKER=true
@@ -185,13 +190,32 @@ jobs:
           echo "publish_images=$PUBLISH_IMAGES" >> "$GITHUB_OUTPUT"
           echo "deploy_staging=$DEPLOY_STAGING" >> "$GITHUB_OUTPUT"
 
-          if [ "$PUBLISH_IMAGES" = "true" ]; then
-            echo "e2e_image_tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "e2e_image_tag=${{ github.base_ref || 'main' }}" >> "$GITHUB_OUTPUT"
+          # The tag to reach for when this run has not built an image itself.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FALLBACK_TAG="${{ github.base_ref || 'main' }}"
           else
-            echo "e2e_image_tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            FALLBACK_TAG="${{ github.ref_name }}"
           fi
+
+          # e2e should exercise the images this run built, not whatever the
+          # base branch last published — otherwise a change to service code
+          # cannot be verified until after it has already been merged. That
+          # needs image_check to push its SHA tag, which needs registry
+          # credentials; a run without them (a fork, or Dependabot, which does
+          # not receive secrets) keeps the old behaviour rather than failing.
+          PUSH_E2E_IMAGES=false
+          if [ "$PUBLISH_IMAGES" != "true" ] && [ "$RUN_E2E" = "true" ] &&
+             [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            PUSH_E2E_IMAGES=true
+          fi
+          echo "push_e2e_images=$PUSH_E2E_IMAGES" >> "$GITHUB_OUTPUT"
+
+          if [ "$PUBLISH_IMAGES" = "true" ] || [ "$PUSH_E2E_IMAGES" = "true" ]; then
+            echo "e2e_image_tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "e2e_image_tag=$FALLBACK_TAG" >> "$GITHUB_OUTPUT"
+          fi
+          echo "e2e_fallback_tag=$FALLBACK_TAG" >> "$GITHUB_OUTPUT"
           echo "image_tag=$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Validate E2E environment and resolve target matrices
@@ -245,6 +269,7 @@ jobs:
           node --test \
             scripts/tests/e2e-environment-manifest.test.mjs \
             scripts/tests/wait-for-e2e-readiness.test.mjs \
+            scripts/tests/resolve-e2e-images.test.mjs \
             scripts/tests/ui-e2e-ci-contract.test.mjs
           for target in \
             client-interface-e2e \
@@ -253,6 +278,7 @@ jobs:
             christopherrutherford-net-e2e \
             owner-console-e2e \
             store-client-e2e \
+            learning-e2e \
             configurable-client-e2e; do
             printf 'Validating Playwright CI config: %s\n' "$target"
             CI=true env -u BASE_URL pnpm exec playwright test --config="apps/$target/playwright.config.ts" --list
@@ -444,8 +470,18 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
-      - name: Log in to Docker Hub for verified release images
-        if: needs.plan.outputs.publish_images == 'true'
+      # Also logs in when the image is only being pushed so that e2e can run
+      # against it, not just for a verified release.
+      #
+      # RETENTION: pushing for e2e means every credentialed run leaves a
+      # `sha-<short>` tag per affected app in the registry, and nothing removes
+      # them. scripts/docker-image-cleanup.sh only prunes the runner's local
+      # images, not published tags. There is no policy for these yet; either
+      # set one on the registry side or add a step that deletes a run's SHA
+      # tags once its e2e jobs have finished. Left deliberately visible here
+      # rather than buried in a document.
+      - name: Log in to Docker Hub
+        if: needs.plan.outputs.publish_images == 'true' || needs.plan.outputs.push_e2e_images == 'true'
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -456,15 +492,15 @@ jobs:
         with:
           context: .
           file: ./apps/${{ matrix.app }}/Dockerfile
-          push: ${{ needs.plan.outputs.publish_images == 'true' }}
+          push: ${{ needs.plan.outputs.publish_images == 'true' || needs.plan.outputs.push_e2e_images == 'true' }}
           tags: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}
           cache-from: type=gha,scope=${{ matrix.app }}
           # GitHub Actions' shared cache is limited repository-wide.  Large,
           # parallel `mode=max` exports routinely exhaust it, then fail after
-          # the image has already built.  Release checks push the verified SHA
-          # image, so embed its reusable cache metadata in that image instead.
-          # PR checks remain read-only consumers of the existing GHA cache.
-          cache-to: ${{ needs.plan.outputs.publish_images == 'true' && 'type=inline' || '' }}
+          # the image has already built.  Any check that pushes its SHA image
+          # embeds reusable cache metadata in that image instead.  Checks that
+          # push nothing remain read-only consumers of the existing GHA cache.
+          cache-to: ${{ (needs.plan.outputs.publish_images == 'true' || needs.plan.outputs.push_e2e_images == 'true') && 'type=inline' || '' }}
 
   publish_images:
     name: Publish Images - ${{ matrix.app }}
@@ -505,7 +541,13 @@ jobs:
     name: Microservices E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
-    if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
+    # `!cancelled()` is load-bearing. A job whose `if` contains no status check
+    # function keeps the implicit skip propagation from `needs`, so the
+    # `needs.publish_images.result == 'skipped'` clause below never got a
+    # chance to matter: publish_images only runs on pushes to main, and on
+    # every other ref its skip silently skipped this job too. That is why the
+    # e2e suites appeared to "only run after merging to main".
+    if: ${{ !cancelled() && needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped') }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -550,13 +592,10 @@ jobs:
           cat /tmp/e2e-services
 
       - name: Pull target stack images
-        run: |
-          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
-          if [ "${#SERVICES[@]}" -gt 0 ]; then
-            docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml pull "${SERVICES[@]}"
-          fi
+        run: ./scripts/pull-e2e-images.sh /tmp/e2e-services
         env:
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+          E2E_FALLBACK_TAG: ${{ needs.plan.outputs.e2e_fallback_tag }}
 
       - name: Start target stack
         run: |
@@ -611,7 +650,9 @@ jobs:
     name: UI E2E - ${{ matrix.app }}
     runs-on: ubuntu-24.04
     needs: [plan, quality, image_check, publish_images]
-    if: needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped')
+    # See the note on microservices_e2e: without `!cancelled()` the skipped
+    # publish_images job skips this one on every ref except main.
+    if: ${{ !cancelled() && needs.plan.outputs.run_e2e == 'true' && needs.quality.result == 'success' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped') }}
     timeout-minutes: 35
     strategy:
       fail-fast: false
@@ -656,13 +697,10 @@ jobs:
           cat /tmp/e2e-services
 
       - name: Pull target stack images
-        run: |
-          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
-          if [ "${#SERVICES[@]}" -gt 0 ]; then
-            docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml --profile "${{ matrix.profile }}" pull "${SERVICES[@]}"
-          fi
+        run: ./scripts/pull-e2e-images.sh /tmp/e2e-services "${{ matrix.profile }}"
         env:
           E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+          E2E_FALLBACK_TAG: ${{ needs.plan.outputs.e2e_fallback_tag }}
 
       - name: Start target stack
         run: |

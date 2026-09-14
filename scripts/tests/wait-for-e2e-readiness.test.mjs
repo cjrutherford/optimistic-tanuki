@@ -284,6 +284,7 @@ test('resolves a manifest target to its compose files, dependency closure, and t
         'authentication',
         'profile',
         'social',
+        'workspace',
         'permissions',
         'permissions-seed',
         'chat-collector',

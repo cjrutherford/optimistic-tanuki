@@ -210,6 +210,18 @@ export const shouldRejectBrowserMutation = (
   return !isAllowedOrigin(normalizedOrigin, trustedOrigins);
 };
 
+// GET navigations a sign-in or account-link popup makes through the gateway:
+// oauth/start/:provider, oauth/link/:provider and oauth/callback/:provider.
+// The redeem endpoint is a fetch POST from an already-loaded page and keeps the
+// stricter policy.
+const OAUTH_POPUP_NAVIGATION_PATH =
+  /^\/api\/oauth\/(start|link|callback)\/[^/]+\/?$/;
+
+const isOAuthPopupNavigation = (request: Request): boolean =>
+  request.method.toUpperCase() === 'GET' &&
+  OAUTH_POPUP_NAVIGATION_PATH.test(request.path) &&
+  request.path !== '/api/oauth/callback/redeem';
+
 export const applyGatewaySecurityHeaders = (
   request: Request,
   response: Response,
@@ -225,7 +237,18 @@ export const applyGatewaySecurityHeaders = (
   // OAuth providers navigate popup windows to a different origin. `same-origin`
   // makes that live window appear closed to its opener, so keep popups in the
   // opener's browsing-context group while retaining the other security headers.
-  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  //
+  // `same-origin-allow-popups` only helps on the page that *opens* the popup.
+  // The OAuth start and provider-callback redirects are loaded *inside* the
+  // popup, whose opener (an SSR app page) sends no COOP. Chrome enforces COOP on
+  // redirect hops, so that mismatch moved the popup into a new browsing-context
+  // group: window.opener became null, the callback redeemed in the popup and
+  // navigated instead of posting back and closing, and the opener saw a
+  // "closed" popup. These navigations must not sever the opener.
+  response.setHeader(
+    'Cross-Origin-Opener-Policy',
+    isOAuthPopupNavigation(request) ? 'unsafe-none' : 'same-origin-allow-popups'
+  );
   response.setHeader('Cross-Origin-Resource-Policy', 'same-site');
 
   if (request.path.startsWith('/api')) {

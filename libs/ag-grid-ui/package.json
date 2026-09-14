@@ -3,10 +3,10 @@
   "version": "0.0.1",
   "description": "AG Grid integration components for Angular",
   "peerDependencies": {
-    "@angular/common": ">=20.0.0",
-    "@angular/core": ">=20.0.0",
-    "ag-grid-angular": ">=35.0.0",
-    "ag-grid-community": ">=35.0.0"
+    "@angular/common": "^20.3.30",
+    "@angular/core": "^20.3.30",
+    "ag-grid-angular": "^35.3.1",
+    "ag-grid-community": "^35.3.1"
   },
   "dependencies": {
     "tslib": "^2.3.0"
