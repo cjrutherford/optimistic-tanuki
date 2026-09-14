@@ -11,6 +11,10 @@ describe('ThemeDesignerComponent', () => {
   beforeEach(async () => {
     mockThemeService = {
       getTheme: jest.fn().mockReturnValue('light'),
+      theme$: jest.fn().mockReturnValue(of('light')),
+      getCurrentPersonality: jest.fn().mockReturnValue(null),
+      setPersonality: jest.fn(),
+      availablePersonalities$: of([]),
       getAccentColor: jest.fn().mockReturnValue('#3f51b5'),
       setTheme: jest.fn(),
       setAccentColor: jest.fn(),

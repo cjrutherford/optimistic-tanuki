@@ -219,16 +219,16 @@ export interface EditorThemeFieldChange {
 
       .theme-personality-chip:hover {
         transform: translateY(-1px);
-        border-color: var(--accent, var(--primary));
+        border-color: var(--primary, var(--primary));
       }
 
       .theme-personality-chip.selected {
-        border-color: var(--accent, var(--primary));
+        border-color: var(--primary, var(--primary));
         box-shadow: 0 0 0 2px
-          color-mix(in srgb, var(--accent, var(--primary)) 18%, transparent);
+          color-mix(in srgb, var(--primary, var(--primary)) 18%, transparent);
         background: color-mix(
           in srgb,
-          var(--accent, var(--primary)) 8%,
+          var(--primary, var(--primary)) 8%,
           var(--surface)
         );
       }

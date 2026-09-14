@@ -16,7 +16,7 @@ Additional docs live under `libs/blogging-ui/docs/`.
 
 ## Documentation
 
-- generated API reference in `ui-playground`: `/docs/api/blogging-ui`
+- generated API reference in `ui-playground` (Storybook): `/api/blogging-ui/index.html`, linked from **Docs → API Reference**
 - deep feature notes under `libs/blogging-ui/docs/`
 
 ## Nx Commands

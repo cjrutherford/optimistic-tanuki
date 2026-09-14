@@ -434,6 +434,33 @@ export interface PersonalityPresentation {
       focusStyle: string;
     };
   };
+  /**
+   * How interactive surfaces (buttons, cards, list items, controls) respond to
+   * hover and press, and the accent border for emphasised surfaces. Emitted as
+   * `--personality-hover-transform`, `--personality-hover-shadow`,
+   * `--personality-active-transform`, `--personality-active-shadow` and
+   * `--personality-accent-border`. A field left out is cleared, so a
+   * component's `var(--personality-hover-shadow, <its own default>)` keeps its
+   * own behaviour for personalities without a distinct treatment.
+   */
+  interaction?: {
+    hoverTransform?: string;
+    hoverShadow?: string;
+    activeTransform?: string;
+    activeShadow?: string;
+    accentBorder?: string;
+  };
+  /**
+   * Type treatment for small structural text: tab labels, metadata, badges,
+   * table headers. Emitted as `--personality-label-font-family`,
+   * `--personality-label-text-transform` and `--personality-label-letter-spacing`,
+   * cleared when unset.
+   */
+  label?: {
+    fontFamily?: string;
+    textTransform?: string;
+    letterSpacing?: string;
+  };
 }
 
 /**

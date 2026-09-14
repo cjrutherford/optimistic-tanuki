@@ -267,7 +267,7 @@
   &:hover {
     background: var(--secondary);
     border-color: var(--secondary);
-    color: #000;
+    color: var(--foreground);
     transform: scale(1.1);
   }
 
@@ -361,7 +361,7 @@
       var(--secondary) 10px,
       var(--secondary) 20px
     );
-    color: #fff;
+    color: var(--on-primary);
     border: none;
 
     .modal-header {
@@ -463,88 +463,6 @@
   .modal-overlay,
   .modal-dialog {
     animation: none;
-  }
-}
-
-// ============================================
-// Personality-Specific Modal Enhancements
-// ============================================
-
-// Architect personality - brutalist
-body.personality-architect .modal-dialog {
-  border-radius: 0;
-  border: 3px solid var(--foreground);
-
-  .modal-header {
-    border-bottom-width: 3px;
-    padding: 12px 16px;
-  }
-}
-
-// Playful personality - bouncy animation
-body.personality-playful .modal-dialog {
-  animation: modal-bounce-in 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes modal-bounce-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  60% {
-    transform: scale(1.05);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-// Minimal personality - subtle fade
-body.personality-minimal .modal-dialog {
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-
-  .modal-header {
-    border-bottom: 1px solid var(--border);
-    background: transparent;
-    color: var(--foreground);
-    text-transform: none;
-    letter-spacing: normal;
-  }
-}
-
-// Electric personality - glow overlay
-body.personality-electric .modal-overlay {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-body.personality-electric .modal-dialog {
-  box-shadow: 0 0 40px var(--primary-alpha-40, rgba(63, 81, 181, 0.4));
-
-  .modal-header {
-    background: var(--gradient-primary);
-  }
-}
-
-// Soft Touch personality - rounded
-body.personality-soft-touch .modal-dialog {
-  border-radius: 20px;
-
-  .modal-header {
-    border-radius: 18px 18px 0 0;
-  }
-}
-
-// Control Center - technical
-body.personality-control-center .modal-dialog {
-  border-radius: 4px;
-  border: 1px solid var(--primary);
-
-  .modal-header {
-    background: var(--primary);
-    border-bottom: 2px solid var(--foreground);
   }
 }
 

@@ -53,7 +53,7 @@ const buildThemeServiceStub = () => ({
 });
 
 describe('AppComponent', () => {
-  it('initializes the shared personality theme in the browser', async () => {
+  it('leaves the personality to the app theme defaults', async () => {
     const themeServiceStub = buildThemeServiceStub();
 
     await TestBed.configureTestingModule({
@@ -80,9 +80,9 @@ describe('AppComponent', () => {
 
     TestBed.createComponent(AppComponent);
 
-    expect(themeServiceStub.setTheme).toHaveBeenCalled();
-    expect(themeServiceStub.setPersonality).toHaveBeenCalled();
-    expect(themeServiceStub.setPrimaryColor).toHaveBeenCalled();
+    expect(themeServiceStub.setTheme).not.toHaveBeenCalled();
+    expect(themeServiceStub.setPersonality).not.toHaveBeenCalled();
+    expect(themeServiceStub.setPrimaryColor).not.toHaveBeenCalled();
   });
 
   it('renders operator status details for the active workspace', async () => {

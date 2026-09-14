@@ -87,43 +87,9 @@
   font-size: 0.9rem;
 }
 
-// ============================================
-// Personality-Specific Login Block Enhancements
-// ============================================
-
-body.personality-architect .card-outer,
-body.personality-architect .card-inner {
-  border-radius: 0;
-}
-
-body.personality-playful .card-outer,
-body.personality-playful .card-inner {
-  border-radius: 16px;
-}
-
-body.personality-minimal .card-outer,
-body.personality-minimal .card-inner {
-  border-radius: 4px;
-  box-shadow: none;
-}
-
-body.personality-soft-touch .card-outer,
-body.personality-soft-touch .card-inner {
-  border-radius: 24px;
-}
-
-body.personality-electric .card-outer {
-  border: 2px solid var(--primary);
-}
-
 .hero img {
   max-width: min(300px, 100%);
   height: auto;
-}
-
-body.personality-control-center .card-outer,
-body.personality-control-center .card-inner {
-  border-radius: 4px;
 }
 
 @media (max-width: 480px) {

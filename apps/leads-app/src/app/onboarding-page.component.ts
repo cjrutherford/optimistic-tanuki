@@ -7,7 +7,6 @@ import {
   MadLibAnalysisRequest,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { InterviewWizardComponent } from './interview-wizard.component';
 import { LeadsService } from './leads.service';
 import { OnboardingGateService } from './onboarding-gate.service';
@@ -23,7 +22,6 @@ export class OnboardingPageComponent {
   private readonly leadsService = inject(LeadsService);
   private readonly onboardingGateService = inject(OnboardingGateService);
   private readonly router = inject(Router);
-  private readonly themeService = inject(ThemeService);
 
   @ViewChild(InterviewWizardComponent)
   private wizard?: InterviewWizardComponent;
@@ -32,10 +30,6 @@ export class OnboardingPageComponent {
   confirmError = '';
   confirmingTopics = false;
   private latestProfile: UserOnboardingProfile | null = null;
-
-  constructor() {
-    this.themeService.setPersonality('control-center');
-  }
 
   get errorMessage(): string {
     return this.confirmError || this.analysisError;

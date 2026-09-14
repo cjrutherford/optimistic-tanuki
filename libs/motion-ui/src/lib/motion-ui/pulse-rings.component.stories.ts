@@ -3,7 +3,7 @@ import { PulseRingsComponent } from './pulse-rings.component';
 
 const meta: Meta<PulseRingsComponent> = {
   component: PulseRingsComponent,
-  title: 'Motion/Pulse Rings',
+  title: 'Pulse Rings',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

@@ -1,17 +1,11 @@
 /* Global theme-aware defaults and legacy aliases */
 :root {
   /* Core standardized theme variables (can be overridden by ThemeService at runtime) */
-  --background: var(--background, #0a0a0f);
-  --foreground: var(--foreground, #e8e8ec);
-  --accent: var(--accent, #6366f1);
-  --complement: var(--complement, #c0af4b);
-  --tertiary: var(--tertiary, #6c757d);
-  --success: var(--success, #22c55e);
-  --danger: var(--danger, #ef4444);
-  --warning: var(--warning, #f59e0b);
-  --error: var(--error, #dc3545);
-  --error-surface: var(--error-surface, #f8d7da);
-  --error-border: var(--error-border, #f5c6cb);
+  --accent: var(--primary);
+  --complement: var(--secondary);
+  --error: var(--danger);
+  --error-surface: color-mix(in srgb, var(--danger) 12%, var(--background));
+  --error-border: color-mix(in srgb, var(--danger) 35%, var(--background));
 
   /* RGB triplets for rgba() usage */
   --background-rgb: 10, 10, 15;

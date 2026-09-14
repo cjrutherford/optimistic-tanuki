@@ -68,12 +68,12 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .component-wrapper.hover {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.05);
       }
 
       .component-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.1);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
       }
@@ -102,21 +102,25 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
       }
 
       .edit-btn {
-        background-color: var(--accent, #007acc);
+        background-color: var(--primary, #007acc);
         color: white;
       }
 
       .edit-btn:hover {
-        background-color: var(--accent-dark, #005999);
+        background-color: color-mix(in srgb, var(--primary) 80%, black);
       }
 
       .delete-btn {
-        background-color: #dc3545;
+        background-color: var(--danger);
         color: white;
       }
 
       .delete-btn:hover {
-        background-color: #c82333;
+        background-color: color-mix(
+          in srgb,
+          var(--danger) 85%,
+          var(--foreground)
+        );
       }
 
       .move-up-btn,
@@ -135,7 +139,7 @@ import { InjectedComponentInstance } from '../interfaces/component-injection.int
         position: absolute;
         top: -8px;
         left: 8px;
-        background-color: var(--accent, #007acc);
+        background-color: var(--primary, #007acc);
         color: white;
         padding: 2px 8px;
         border-radius: 4px;

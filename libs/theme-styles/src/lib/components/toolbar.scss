@@ -8,7 +8,7 @@
   margin-bottom: var(--spacing-xs, 4px);
   background: var(--local-background-gradient, var(--background-gradient));
   box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
-  border: 1px solid var(--local-complement, var(--complement));
+  border: 1px solid var(--local-complement, var(--secondary));
 }
 
 .toolbar-group {
@@ -48,7 +48,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs, 4px);
-  background: var(--local-complement, var(--complement));
+  background: var(--local-complement, var(--secondary));
   color: var(--local-foreground, var(--foreground));
   border: none;
   padding: var(--spacing-xs, 4px);
@@ -70,7 +70,7 @@
   );
 
   &:hover {
-    background-color: var(--local-accent, var(--accent));
+    background-color: var(--local-accent, var(--primary));
     color: var(--local-background, var(--background));
     box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     transform: translateY(-1px);
@@ -82,7 +82,7 @@
   }
 
   &.is-active {
-    background-color: var(--local-accent, var(--accent));
+    background-color: var(--local-accent, var(--primary));
     color: var(--local-background, var(--background));
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
 
@@ -94,19 +94,19 @@
       transform: translateX(-50%);
       width: 8px;
       height: 2px;
-      background-color: var(--local-accent, var(--accent));
+      background-color: var(--local-accent, var(--primary));
       border-radius: 1px;
     }
   }
 
   &.component-btn {
-    background-color: var(--local-accent, var(--accent));
+    background-color: var(--local-accent, var(--primary));
     color: var(--local-background, var(--background));
     font-weight: 500;
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 
     &:hover {
-      background-color: var(--local-complement, var(--complement));
+      background-color: var(--local-complement, var(--secondary));
       color: var(--local-foreground, var(--foreground));
     }
 
@@ -119,7 +119,7 @@
 .toolbar-separator {
   width: 1px;
   height: 40px;
-  background-color: var(--local-complement, var(--complement, #c0af4b));
+  background-color: var(--local-complement, var(--secondary, #c0af4b));
   opacity: 0.3;
   margin: 0 var(--spacing-xs, 4px);
 }
@@ -158,7 +158,7 @@
 
 /* Accessibility improvements */
 .toolbar-btn:focus {
-  outline: 2px solid var(--local-accent, var(--accent));
+  outline: 2px solid var(--local-accent, var(--primary));
   outline-offset: 2px;
 }
 

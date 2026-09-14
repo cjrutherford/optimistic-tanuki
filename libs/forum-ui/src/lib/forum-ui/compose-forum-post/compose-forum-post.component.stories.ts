@@ -6,7 +6,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 const meta: Meta<ComposeForumPostComponent> = {
-  title: 'Forum UI/Compose Forum Post',
+  title: 'Compose Forum Post',
   component: ComposeForumPostComponent,
   decorators: [
     applicationConfig({
@@ -27,7 +27,7 @@ export const Default: Story = {
     availableTopics: [
       {
         id: '1',
-        name: 'General',
+        title: 'General',
         description: 'General discussion',
         userId: '1',
         profileId: '1',

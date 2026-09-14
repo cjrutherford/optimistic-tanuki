@@ -112,3 +112,6 @@ ops/
 .setup-complete
 .setup-operator.json
 project-pilot-results.json
+
+# ui-playground Storybook: generated docs pages, compodoc output
+apps/ui-playground/generated/

@@ -319,7 +319,7 @@
     height: 20px;
     padding: 0 6px;
     background: var(--danger, #f44336);
-    color: #ffffff;
+    color: var(--on-primary);
     font-size: var(--font-size-xs, 0.75rem);
     font-weight: 600;
     border-radius: var(--border-radius-full, 50%);

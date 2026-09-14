@@ -22,7 +22,10 @@
             "input": "apps/video-client/public"
           }
         ],
-        "styles": ["apps/video-client/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/video-client/src/styles.scss"
+        ],
         "server": "apps/video-client/src/main.server.ts",
         "ssr": {
           "entry": "apps/video-client/src/server.ts"

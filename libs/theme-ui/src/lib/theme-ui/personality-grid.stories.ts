@@ -18,7 +18,7 @@ import { PersonalityGridComponent } from './personality-grid.component';
  */
 const meta: Meta<PersonalityGridComponent> = {
   component: PersonalityGridComponent,
-  title: 'Theme/Personality Grid (All 12)',
+  title: 'Personality Grid (All 12)',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

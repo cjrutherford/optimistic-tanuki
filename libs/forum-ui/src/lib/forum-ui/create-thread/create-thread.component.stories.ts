@@ -4,7 +4,7 @@ import { TopicDto } from '../models';
 
 const meta: Meta<CreateThreadComponent> = {
   component: CreateThreadComponent,
-  title: 'Forum UI/Create Thread',
+  title: 'Create Thread',
   args: {},
 };
 export default meta;
@@ -14,7 +14,7 @@ type Story = StoryObj<CreateThreadComponent>;
 const mockTopics: TopicDto[] = [
   {
     id: '1',
-    name: 'General Discussion',
+    title: 'General Discussion',
     description: 'Talk about anything',
     userId: 'user-1',
     profileId: 'profile-1',
@@ -26,7 +26,7 @@ const mockTopics: TopicDto[] = [
   },
   {
     id: '2',
-    name: 'Announcements',
+    title: 'Announcements',
     description: 'Important updates',
     userId: 'user-1',
     profileId: 'profile-1',

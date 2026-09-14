@@ -3,7 +3,7 @@ import { ParticleVeilComponent } from './particle-veil.component';
 
 const meta: Meta<ParticleVeilComponent> = {
   component: ParticleVeilComponent,
-  title: 'Motion/Particle Veil',
+  title: 'Particle Veil',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

@@ -1684,6 +1684,12 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
     },
   }),
   playful: createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-4px) scale(1.02)',
+      hoverShadow:
+        '0 15px 35px color-mix(in srgb, var(--shadow-color, #000) 15%, transparent)',
+      activeTransform: 'translateY(0) scale(0.98)',
+    },
     border: {
       style: 'dashed',
       width: 'medium',
@@ -1729,7 +1735,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '16px',
         borderWidth: '2px',
         focusStyle:
-          '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
+          '0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent)',
       },
     },
   }),
@@ -1775,11 +1781,15 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '0px',
         borderWidth: '1px',
         focusStyle:
-          '0 0 0 2px color-mix(in srgb, var(--primary) 16%, transparent)',
+          '0 2px 8px color-mix(in srgb, var(--primary) 20%, transparent)',
       },
     },
   }),
   minimal: createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-2px)',
+      hoverShadow: 'var(--shadow-md)',
+    },
     border: {
       style: 'solid',
       width: 'thin',
@@ -1820,12 +1830,23 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '1px',
-        focusStyle:
-          '0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent)',
+        focusStyle: '0 0 0 3px var(--background), 0 0 0 4px var(--primary)',
       },
     },
   }),
   architect: createPresentation({
+    interaction: {
+      hoverTransform: 'translate(-2px, -2px)',
+      hoverShadow: '4px 4px 0 var(--primary)',
+      activeTransform: 'translate(0, 0)',
+      activeShadow: '2px 2px 0 var(--primary)',
+      accentBorder: '2px solid var(--foreground)',
+    },
+    label: {
+      fontFamily: 'var(--font-mono)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+    },
     border: {
       style: 'solid',
       width: 'thick',
@@ -1866,12 +1887,16 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '3px',
-        focusStyle:
-          '0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)',
+        focusStyle: '4px 4px 0 var(--primary)',
       },
     },
   }),
   'soft-touch': createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-3px)',
+      hoverShadow:
+        '0 12px 24px color-mix(in srgb, var(--shadow-color, #000) 12%, transparent)',
+    },
     border: {
       style: 'solid',
       width: 'thin',
@@ -1918,11 +1943,17 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '18px',
         borderWidth: '1.5px',
         focusStyle:
-          '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
+          '0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent)',
       },
     },
   }),
   electric: createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-2px)',
+      hoverShadow:
+        '0 0 20px color-mix(in srgb, var(--primary) 45%, transparent)',
+      accentBorder: '2px solid var(--primary)',
+    },
     border: {
       style: 'solid',
       width: 'medium',
@@ -1964,11 +1995,21 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '10px',
         borderWidth: '2px',
         focusStyle:
-          '0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent)',
+          '0 0 20px color-mix(in srgb, var(--primary) 40%, transparent)',
       },
     },
   }),
   'control-center': createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-1px)',
+      hoverShadow: 'inset 0 0 0 1px var(--primary)',
+      activeShadow:
+        'inset 0 2px 4px color-mix(in srgb, var(--shadow-color, #000) 20%, transparent)',
+      accentBorder: '1px solid var(--primary)',
+    },
+    label: {
+      fontFamily: 'var(--font-mono)',
+    },
     border: {
       style: 'solid',
       width: 'thin',
@@ -2010,7 +2051,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '4px',
         borderWidth: '1px',
         focusStyle:
-          '0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent)',
+          'inset 0 2px 4px color-mix(in srgb, var(--primary) 10%, transparent)',
       },
     },
   }),

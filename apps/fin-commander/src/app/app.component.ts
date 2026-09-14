@@ -1,15 +1,7 @@
-import {
-  Component,
-  OnInit,
-  PLATFORM_ID,
-  computed,
-  inject,
-} from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ProfileContext } from './profile.context';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TenantContextService } from './tenant-context.service';
@@ -34,8 +26,6 @@ export class AppComponent implements OnInit {
     appUrl: '/fin-commander',
   };
 
-  private readonly themeService = inject(ThemeService);
-  private readonly platformId = inject(PLATFORM_ID);
   private readonly profileContext = inject(ProfileContext);
   private readonly tenantContext = inject(TenantContextService);
   private readonly router = inject(Router);
@@ -52,21 +42,6 @@ export class AppComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-
-      if (!hasStoredPersonalityTheme) {
-        this.themeService.setTheme('light');
-        this.themeService.setPersonality('professional');
-        this.themeService.setPrimaryColor('#0d5f73');
-        return;
-      }
-    }
-
-    this.themeService.setTheme(this.themeService.getTheme());
-
     if (this.profileContext.isAuthenticated()) {
       void this.profileContext.loadProfile().catch(() => undefined);
     }

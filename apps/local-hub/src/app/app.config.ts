@@ -21,9 +21,11 @@ import {
 } from '@optimistic-tanuki/chat-ui';
 import { AuthStateService } from './services/auth-state.service';
 import { AuthenticationService } from './services/authentication.service';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('local-hub'),
     provideClientHydration(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

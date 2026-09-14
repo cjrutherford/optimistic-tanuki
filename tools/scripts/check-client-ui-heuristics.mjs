@@ -34,7 +34,7 @@ const writeAllowlistPath = getFlagValue('--write-allowlist');
 function isFullyIgnoredDirectory(directory) {
   // A directory that ships its own `.gitignore` with a bare `*` line is
   // declaring "everything under here is generated, don't touch it" (e.g.
-  // compodoc output under apps/ui-playground/public/generated/compodoc/).
+  // compodoc output under apps/ui-playground/generated/compodoc/).
   // The common form also has a `!.gitignore` exception line so the marker
   // itself stays tracked -- that doesn't change the directory's meaning,
   // so check line-by-line rather than requiring the whole file to be `*`.

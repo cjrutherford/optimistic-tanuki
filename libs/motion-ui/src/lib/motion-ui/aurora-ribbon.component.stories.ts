@@ -3,7 +3,7 @@ import { AuroraRibbonComponent } from './aurora-ribbon.component';
 
 const meta: Meta<AuroraRibbonComponent> = {
   component: AuroraRibbonComponent,
-  title: 'Motion/Aurora Ribbon',
+  title: 'Aurora Ribbon',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

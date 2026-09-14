@@ -34,7 +34,6 @@ import {
     '[style.--local-accent]': 'accent',
     '[style.--local-complement]': 'complement',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
 })

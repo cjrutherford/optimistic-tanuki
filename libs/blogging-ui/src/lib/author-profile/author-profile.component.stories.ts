@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AuthorProfileComponent } from './author-profile.component';
-import { within } from '@storybook/test';
+import { expect, within } from '@storybook/test';
 import { componentWrapperDecorator } from '@storybook/angular';
-import { expect } from '@storybook/jest';
 
 const meta: Meta<AuthorProfileComponent> = {
   component: AuthorProfileComponent,

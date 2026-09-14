@@ -23,7 +23,10 @@
             "input": "apps/local-hub/public"
           }
         ],
-        "styles": ["apps/local-hub/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/local-hub/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/local-hub/src/main.server.ts",
         "ssr": {

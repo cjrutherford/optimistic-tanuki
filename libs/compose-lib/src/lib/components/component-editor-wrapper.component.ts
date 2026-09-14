@@ -304,7 +304,7 @@ import {
       }
 
       .component-editor-wrapper.hovered {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.03);
         z-index: 1; /* Ensure hovered wrapper is above siblings */
       }
@@ -318,14 +318,14 @@ import {
       }
 
       .component-editor-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.08);
         box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.15);
         z-index: 2; /* Selected wrapper is above hovered */
       }
 
       .component-editor-wrapper.editing {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         z-index: 100; /* Editing wrapper is above everything */
       }
 
@@ -339,7 +339,7 @@ import {
         justify-content: space-between;
         align-items: center;
         padding: 4px 8px;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border-radius: 6px 6px 0 0;
         opacity: 0;
         visibility: hidden;
@@ -454,7 +454,7 @@ import {
       }
 
       .preview-header mat-icon {
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
       }
 
       .preview-description {
@@ -530,7 +530,7 @@ import {
         font-size: 24px;
         width: 24px;
         height: 24px;
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
         flex-shrink: 0;
       }
 
@@ -615,7 +615,7 @@ import {
 
       .form-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -651,7 +651,7 @@ import {
 
       .select-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -671,7 +671,7 @@ import {
 
       .json-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -707,12 +707,12 @@ import {
       }
 
       .save-btn {
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         color: white;
       }
 
       .save-btn:hover {
-        background: var(--accent-dark, #005999);
+        background: color-mix(in srgb, var(--primary) 80%, black);
       }
 
       /* Resize Handle */
@@ -720,7 +720,7 @@ import {
         position: absolute;
         width: 12px;
         height: 12px;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border: 2px solid white;
         border-radius: 2px;
       }

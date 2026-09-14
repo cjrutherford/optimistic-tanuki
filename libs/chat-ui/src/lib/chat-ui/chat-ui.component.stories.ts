@@ -68,7 +68,7 @@ const conversations = [
 
 const meta: Meta<ChatUiComponent> = {
   component: ChatUiComponent,
-  title: 'Chat UI/Workspace',
+  title: 'Workspace',
   tags: ['autodocs'],
   args: {
     contacts,

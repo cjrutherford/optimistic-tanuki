@@ -29,9 +29,11 @@ import { appRoutes } from './app.routes';
 import { authenticationInterceptor } from './authentication.interceptor';
 import { provideRouter, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('forgeofwill'),
     provideClientHydration(withEventReplay()),
     provideHttpClient(
       withInterceptors([authenticationInterceptor]),

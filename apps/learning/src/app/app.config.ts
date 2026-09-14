@@ -18,9 +18,11 @@ import {
 import { isDevMode } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('learning'),
     // provideClientHydration() enables the HTTP transfer cache by default:
     // any GET the server makes is captured into TransferState and the
     // browser's identical GET on hydration replays it instead of refetching.

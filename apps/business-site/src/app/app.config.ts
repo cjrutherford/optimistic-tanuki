@@ -16,9 +16,11 @@ import { businessHttpInterceptor } from '@optimistic-tanuki/business-data-access
 import { appRoutes } from './app.routes';
 import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
 import { firstValueFrom } from 'rxjs';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('business-site'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(

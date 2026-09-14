@@ -17,6 +17,7 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 @Injectable()
 class AppScopeInterceptor implements HttpInterceptor {
@@ -46,6 +47,7 @@ class AppScopeInterceptor implements HttpInterceptor {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('christopherrutherford-net'),
     provideClientHydration(withEventReplay()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

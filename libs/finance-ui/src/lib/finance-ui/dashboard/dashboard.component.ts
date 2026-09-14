@@ -248,7 +248,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
         font-size: 30px;
         font-weight: bold;
         margin: 0;
-        color: var(--accent, #d97706);
+        color: var(--primary, #d97706);
       }
       .quick-actions {
         display: flex;

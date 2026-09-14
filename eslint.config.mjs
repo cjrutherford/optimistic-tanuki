@@ -14,6 +14,7 @@ export default [
       '**/playwright-report/**',
       '**/test-results/**',
       '**/public/generated/**',
+      'apps/ui-playground/generated/**',
       'dot/**',
     ],
   },
@@ -28,6 +29,11 @@ export default [
         {
           enforceBuildableLibDependency: false,
           allowCircularSelfDependency: true,
+          // Storybook configs share one preview and main factory.
+          allow: [
+            '../../../tools/storybook/main',
+            '../../../tools/storybook/preview',
+          ],
           depConstraints: [
             {
               sourceTag: 'type:app',

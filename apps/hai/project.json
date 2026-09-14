@@ -22,7 +22,10 @@
             "input": "apps/hai/public"
           }
         ],
-        "styles": ["apps/hai/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/hai/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/hai/src/main.server.ts",
         "ssr": {

@@ -55,7 +55,7 @@ export type SocialAuthoringState = 'loading' | 'denied' | 'empty' | 'ready';
         border: 0;
         border-radius: 0.5rem;
         background: var(--primary, #315fdd);
-        color: #fff;
+        color: var(--on-primary);
         font-weight: 700;
       }
     `,

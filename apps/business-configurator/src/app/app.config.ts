@@ -16,9 +16,11 @@ import { BusinessConfigStateService } from './state/business-config-state.servic
 import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './services/authentication.service';
 import { authenticationInterceptor } from './auth/auth.interceptor';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('business-configurator'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

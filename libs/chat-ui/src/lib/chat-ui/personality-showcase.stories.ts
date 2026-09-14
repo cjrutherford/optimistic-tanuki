@@ -3,7 +3,7 @@ import { ChatUiComponent } from './chat-ui.component';
 
 const meta: Meta<ChatUiComponent> = {
   component: ChatUiComponent,
-  title: 'Chat UI/Personality Showcase',
+  title: 'Theme/Personality Showcase',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

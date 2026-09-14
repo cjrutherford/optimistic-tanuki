@@ -201,6 +201,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
     // Pass data to the component
     componentRef.instance.personalities = this.personalities;
     componentRef.instance.currentPersonality = this.currentPersonality;
+    componentRef.instance.applyOnSelect = false;
 
     // Subscribe to component outputs
     componentRef.instance.personalitySelected.subscribe(

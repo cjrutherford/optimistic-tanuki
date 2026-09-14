@@ -1,11 +1,5 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import {
-  Component,
-  PLATFORM_ID,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
 import {
   NavigationEnd,
   Router,
@@ -14,7 +8,6 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { MarketingStateService } from './services/marketing-state.service';
 import {
   AppBarComponent,
@@ -270,8 +263,6 @@ import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
   ],
 })
 export class AppComponent {
-  private readonly themeService = inject(ThemeService);
-  private readonly platformId = inject(PLATFORM_ID);
   private readonly state = inject(MarketingStateService);
   private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
@@ -309,11 +300,6 @@ export class AppComponent {
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
       .subscribe((e) => this.currentUrl.set(e.urlAfterRedirects));
-    if (isPlatformBrowser(this.platformId)) {
-      this.themeService.setTheme('dark');
-      this.themeService.setPersonality('control-center');
-      this.themeService.setPrimaryColor('#d97706');
-    }
   }
 
   toggleMenu(): void {

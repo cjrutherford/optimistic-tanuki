@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 
 import { LeadsService } from './leads.service';
 import { LeadStats } from './leads.types';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   selector: 'app-dashboard',
@@ -15,7 +14,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 })
 export class DashboardComponent implements OnInit {
   private readonly leadsService = inject(LeadsService);
-  private readonly themeService = inject(ThemeService);
 
   stats: LeadStats | null = null;
   loading = true;
@@ -35,7 +33,6 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadStats();
-    this.themeService.setPersonality('control-center');
     this.loadActiveTopicCount();
   }
 

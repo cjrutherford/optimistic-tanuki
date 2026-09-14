@@ -30,9 +30,11 @@ import {
 } from '@optimistic-tanuki/chat-ui';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('client-interface'),
     provideClientHydration(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

@@ -15,13 +15,17 @@ import {
 } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { appRoutes } from './app.routes';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeService,
+  provideProductTheme,
+} from '@optimistic-tanuki/theme-lib';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { authInterceptor } from './http.interceptor';
 import { AuthStateService } from './auth-state.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('leads-app'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

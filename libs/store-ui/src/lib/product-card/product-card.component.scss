@@ -12,7 +12,7 @@
   background-color: var(--background);
 
   &:hover {
-    box-shadow: var(--shadow-md);
+    @include p.hover-lift(none, var(--shadow-md));
   }
 }
 
@@ -109,54 +109,5 @@
   &:disabled {
     background-color: var(--muted);
     cursor: not-allowed;
-  }
-}
-
-// ============================================
-// Personality-Specific Product Card Enhancements
-// ============================================
-
-body.personality-architect .product-card {
-  border-radius: 0;
-  &:hover {
-    box-shadow: 6px 6px 0 var(--primary);
-  }
-}
-
-body.personality-playful .product-card {
-  border-radius: var(--border-radius-lg, 16px);
-  &:hover {
-    transform: translateY(-4px) scale(1.01);
-  }
-}
-
-body.personality-minimal .product-card {
-  border-radius: var(--border-radius-md, 4px);
-  box-shadow: none;
-  &:hover {
-    box-shadow: 0 2px 8px
-      color-mix(in srgb, var(--shadow-color) 8%, transparent);
-  }
-}
-
-body.personality-soft-touch .product-card {
-  border-radius: var(--personality-card-radius, 24px);
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px
-      color-mix(in srgb, var(--shadow-color) 10%, transparent);
-  }
-}
-
-body.personality-electric .product-card {
-  &:hover {
-    box-shadow: 0 0 20px var(--primary);
-  }
-}
-
-body.personality-control-center .product-card {
-  border-radius: var(--border-radius-md, 4px);
-  &:hover {
-    box-shadow: inset 0 0 0 1px var(--primary);
   }
 }

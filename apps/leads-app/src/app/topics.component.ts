@@ -17,7 +17,6 @@ import {
   Topic,
   TopicDiscoveryResult,
 } from './leads.types';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { LocationAutocompleteSuggestion } from '@optimistic-tanuki/models';
 
 @Component({
@@ -29,7 +28,6 @@ import { LocationAutocompleteSuggestion } from '@optimistic-tanuki/models';
 })
 export class TopicsComponent implements OnInit, OnDestroy {
   private readonly leadsService = inject(LeadsService);
-  private readonly themeService = inject(ThemeService);
   private sub!: Subscription;
   private googleMapsCityAutocompleteSub?: Subscription;
   private googleMapsLocationAutocompleteSub?: Subscription;
@@ -89,7 +87,6 @@ export class TopicsComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit() {
-    this.themeService.setPersonality('control-center');
     this.reloadTopics();
   }
 

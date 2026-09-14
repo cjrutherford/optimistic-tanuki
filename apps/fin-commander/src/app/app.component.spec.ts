@@ -113,13 +113,13 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.querySelector('fc-title-bar')).not.toBeNull();
   });
 
-  it('defaults Fin Commander to the classic personality when no theme is stored', () => {
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const fixture = TestBed.createComponent(AppComponent);
 
     fixture.detectChanges();
 
-    expect(themeService.setPersonality).toHaveBeenCalledWith('professional');
-    expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#0d5f73');
+    expect(themeService.setPersonality).not.toHaveBeenCalled();
+    expect(themeService.setPrimaryColor).not.toHaveBeenCalled();
   });
 });

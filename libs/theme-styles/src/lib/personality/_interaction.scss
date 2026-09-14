@@ -1,0 +1,64 @@
+// ============================================================================
+// Personality interaction, focus, accent and label contract
+// ----------------------------------------------------------------------------
+// Like `_shadows.scss`, this partial defines no personality values. It wraps
+// the CSS custom properties ThemeService emits from each personality's
+// `presentation.interaction`, `presentation.label` and
+// `presentation.components.input.focusStyle`:
+//
+//   --personality-hover-transform / --personality-hover-shadow
+//   --personality-active-transform / --personality-active-shadow
+//   --personality-accent-border
+//   --personality-label-font-family / --personality-label-text-transform /
+//   --personality-label-letter-spacing
+//   --personality-input-focus-style
+//
+// Personalities without a distinct treatment leave these unset, so every mixin
+// takes the component's own default as its fallback. Components never branch
+// on a personality id: adding or tuning a personality means editing its data
+// in theme-models, not component styles.
+//
+//   @use 'personality' as p;
+//
+//   .card:hover {
+//     @include p.hover-lift(translateY(-2px), var(--shadow-lg));
+//   }
+// ============================================================================
+
+/// Hover response for an interactive surface: `transform` and `box-shadow`.
+@mixin hover-lift($transform: none, $shadow: none) {
+  transform: var(--personality-hover-transform, #{$transform});
+  box-shadow: var(--personality-hover-shadow, #{$shadow});
+}
+
+/// Pressed response for an interactive surface.
+@mixin press($transform: none, $shadow: none) {
+  transform: var(--personality-active-transform, #{$transform});
+  box-shadow: var(--personality-active-shadow, #{$shadow});
+}
+
+/// Focus ring for form controls and focusable surfaces, as a `box-shadow`.
+/// `$extra` is prepended (e.g. a resting elevation) and kept for every
+/// personality.
+@mixin focus-ring(
+  $fallback: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent),
+  $extra: null
+) {
+  @if $extra {
+    box-shadow: $extra, var(--personality-input-focus-style, #{$fallback});
+  } @else {
+    box-shadow: var(--personality-input-focus-style, #{$fallback});
+  }
+}
+
+/// Border for emphasised surfaces (dialogs, featured cards, data grids).
+@mixin accent-border($fallback) {
+  border: var(--personality-accent-border, #{$fallback});
+}
+
+/// Type treatment for small structural text: tabs, metadata, badges.
+@mixin label-type {
+  font-family: var(--personality-label-font-family, inherit);
+  text-transform: var(--personality-label-text-transform, none);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+}

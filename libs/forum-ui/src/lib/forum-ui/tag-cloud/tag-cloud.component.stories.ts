@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/angular';
 import { TagCloudComponent } from './tag-cloud.component';
 
 const meta: Meta<TagCloudComponent> = {
-  title: 'Forum UI/Tag Cloud',
+  title: 'Tag Cloud',
   component: TagCloudComponent,
   tags: ['autodocs'],
 };

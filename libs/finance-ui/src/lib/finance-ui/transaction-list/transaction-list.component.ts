@@ -166,12 +166,12 @@ import { FinanceWorkspaceScreenComponent } from '../finance-workspace-screen/fin
 
       :host ::ng-deep .review-chip[data-review='needs-review'] {
         background: rgba(180, 83, 9, 0.12);
-        color: #b45309;
+        color: color-mix(in srgb, var(--warning) 70%, var(--foreground));
       }
 
       :host ::ng-deep .review-chip[data-review='reviewed'] {
         background: rgba(22, 101, 52, 0.12);
-        color: #166534;
+        color: color-mix(in srgb, var(--success) 70%, var(--foreground));
       }
     `,
   ],

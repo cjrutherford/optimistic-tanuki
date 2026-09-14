@@ -6,69 +6,10 @@
   "sourceRoot": "apps/ui-playground/src",
   "tags": ["type:app", "scope:motion", "platform:web", "visibility:internal"],
   "targets": {
-    "build": {
-      "executor": "@angular/build:application",
-      "dependsOn": ["^build"],
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/apps/ui-playground",
-        "browser": "apps/ui-playground/src/main.ts",
-        "index": "apps/ui-playground/src/index.html",
-        "polyfills": ["zone.js"],
-        "tsConfig": "apps/ui-playground/tsconfig.app.json",
-        "inlineStyleLanguage": "scss",
-        "assets": [
-          {
-            "glob": "**/*",
-            "input": "apps/ui-playground/public"
-          }
-        ],
-        "styles": ["apps/ui-playground/src/styles.scss"]
-      },
-      "configurations": {
-        "production": {
-          "budgets": [
-            {
-              "type": "initial",
-              "maximumWarning": "1mb",
-              "maximumError": "2mb"
-            },
-            {
-              "type": "anyComponentStyle",
-              "maximumWarning": "10kb",
-              "maximumError": "18kb"
-            }
-          ],
-          "outputHashing": "all"
-        },
-        "development": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      },
-      "defaultConfiguration": "production"
-    },
-    "serve": {
-      "continuous": true,
-      "executor": "@angular/build:dev-server",
-      "options": {
-        "poll": 2000
-      },
-      "configurations": {
-        "production": {
-          "buildTarget": "ui-playground:build:production"
-        },
-        "development": {
-          "buildTarget": "ui-playground:build:development"
-        }
-      },
-      "defaultConfiguration": "development"
-    },
     "docs-content": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node tools/docs-site/build-docs-manifest.mjs"
+        "command": "node tools/docs-site/build-storybook-docs.mjs"
       }
     },
     "api-docs-content": {
@@ -81,10 +22,58 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "pnpm exec nx run ui-playground:docs-content",
-          "pnpm exec nx run ui-playground:api-docs-content"
+          "node tools/docs-site/build-compodoc-index.mjs",
+          "node tools/docs-site/build-storybook-docs.mjs"
         ],
         "parallel": false
+      }
+    },
+    "build": {
+      "executor": "@storybook/angular:build-storybook",
+      "dependsOn": ["docs-build"],
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/docs/**/*",
+        "{workspaceRoot}/tools/docs-site/**/*",
+        "{workspaceRoot}/tools/storybook/**/*",
+        "{workspaceRoot}/libs/*/src/**/*",
+        "{workspaceRoot}/libs/*/.storybook/*"
+      ],
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/apps/ui-playground/browser",
+        "configDir": "apps/ui-playground/.storybook",
+        "browserTarget": "ui-playground:build",
+        "compodoc": true,
+        "compodocArgs": ["-e", "json", "-d", "apps/ui-playground/generated"],
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        },
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@storybook/angular:start-storybook",
+      "dependsOn": ["docs-build"],
+      "options": {
+        "port": 4310,
+        "configDir": "apps/ui-playground/.storybook",
+        "browserTarget": "ui-playground:build",
+        "compodoc": true,
+        "compodocArgs": ["-e", "json", "-d", "apps/ui-playground/generated"],
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
       }
     },
     "lint": {
@@ -101,11 +90,12 @@
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",
+      "dependsOn": ["build"],
       "options": {
         "buildTarget": "ui-playground:build",
         "port": 4310,
         "staticFilePath": "dist/apps/ui-playground/browser",
-        "spa": true
+        "spa": false
       }
     }
   }

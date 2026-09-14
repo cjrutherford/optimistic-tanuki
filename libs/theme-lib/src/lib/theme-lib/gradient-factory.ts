@@ -1149,7 +1149,7 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
         stops: [0, 100],
         animation: { type: 'shimmer', duration: '3s' },
       },
@@ -1161,7 +1161,7 @@ export class GradientFactory {
       headerGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'transparent'],
+        colors: ['var(--primary)', 'transparent'],
       },
       backgroundGradient: {
         type: 'linear',
@@ -1171,7 +1171,7 @@ export class GradientFactory {
       borderGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
       },
       prefersAnimation: true,
       animationDuration: '200ms',
@@ -1221,29 +1221,29 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: '135deg',
-        colors: ['var(--accent)', 'var(--complement)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--secondary)', 'var(--tertiary)'],
         stops: [0, 50, 100],
         animation: { type: 'shimmer', duration: '3s' },
       },
       cardGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--background)', 'var(--accent)', 'var(--foreground)'],
+        colors: ['var(--background)', 'var(--primary)', 'var(--foreground)'],
         stops: [0, 30, 100],
         animation: { type: 'pulse', duration: '4s' },
       },
       headerGradient: {
         type: 'conic',
         direction: 'from bottom left',
-        colors: ['var(--accent)', 'var(--complement)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--secondary)', 'var(--tertiary)'],
         animation: { type: 'rotate', duration: '20s', direction: 'clockwise' },
       },
       backgroundGradient: {
         type: 'radial',
         direction: 'at center',
         colors: [
-          'rgba(var(--accent-rgb), 0.12)',
-          'rgba(var(--complement-rgb), 0.08)',
+          'color-mix(in srgb, var(--primary) 12%, transparent)',
+          'color-mix(in srgb, var(--secondary) 8%, transparent)',
           'rgba(var(--tertiary-rgb), 0.08)',
         ],
         animation: { type: 'wave', duration: '15s' },
@@ -1251,7 +1251,7 @@ export class GradientFactory {
       borderGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
         animation: { type: 'shimmer', duration: '2s' },
       },
       prefersAnimation: true,
@@ -1275,19 +1275,22 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--accent)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--tertiary)'],
         stops: [0, 100],
         animation: { type: 'breathe', duration: '4s' },
       },
       cardGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--background)', 'rgba(var(--accent-rgb), 0.08)'],
+        colors: [
+          'var(--background)',
+          'color-mix(in srgb, var(--primary) 8%, transparent)',
+        ],
       },
       headerGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--tertiary)'],
       },
       backgroundGradient: {
         type: 'linear',
@@ -1297,7 +1300,7 @@ export class GradientFactory {
       borderGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--tertiary)'],
       },
       prefersAnimation: true,
       animationDuration: '400ms',
@@ -1320,14 +1323,14 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
         stops: [0, 100],
       },
       cardGradient: { type: 'linear', direction: 'to bottom', colors: [] },
       headerGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'transparent'],
+        colors: ['var(--primary)', 'transparent'],
       },
       backgroundGradient: {
         type: 'linear',
@@ -1337,7 +1340,7 @@ export class GradientFactory {
       borderGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
       },
       prefersAnimation: false,
       animationDuration: '150ms',
@@ -1360,32 +1363,38 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: '135deg',
-        colors: ['var(--accent)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--tertiary)'],
         stops: [0, 100],
         animation: { type: 'shimmer', duration: '2s' },
       },
       cardGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--background)', 'rgba(var(--accent-rgb), 0.15)'],
+        colors: [
+          'var(--background)',
+          'color-mix(in srgb, var(--primary) 15%, transparent)',
+        ],
         animation: { type: 'breathe', duration: '3s' },
       },
       headerGradient: {
         type: 'conic',
         direction: 'from top left',
-        colors: ['var(--accent)', 'var(--complement)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--secondary)', 'var(--tertiary)'],
         animation: { type: 'rotate', duration: '15s', direction: 'clockwise' },
       },
       backgroundGradient: {
         type: 'radial',
         direction: 'at center',
-        colors: ['rgba(var(--accent-rgb), 0.1)', 'transparent'],
+        colors: [
+          'color-mix(in srgb, var(--primary) 10%, transparent)',
+          'transparent',
+        ],
         animation: { type: 'pulse', duration: '5s' },
       },
       borderGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--tertiary)'],
+        colors: ['var(--primary)', 'var(--tertiary)'],
         animation: { type: 'shimmer', duration: '2s' },
       },
       prefersAnimation: true,
@@ -1409,28 +1418,34 @@ export class GradientFactory {
       buttonGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
         stops: [0, 100],
       },
       cardGradient: {
         type: 'linear',
         direction: 'to bottom right',
-        colors: ['var(--background)', 'rgba(var(--accent-rgb), 0.05)'],
+        colors: [
+          'var(--background)',
+          'color-mix(in srgb, var(--primary) 5%, transparent)',
+        ],
       },
       headerGradient: {
         type: 'linear',
         direction: 'to right',
-        colors: ['var(--accent)', 'transparent'],
+        colors: ['var(--primary)', 'transparent'],
       },
       backgroundGradient: {
         type: 'linear',
         direction: '135deg',
-        colors: ['rgba(var(--accent-rgb), 0.03)', 'transparent'],
+        colors: [
+          'color-mix(in srgb, var(--primary) 3%, transparent)',
+          'transparent',
+        ],
       },
       borderGradient: {
         type: 'linear',
         direction: 'to bottom',
-        colors: ['var(--accent)', 'var(--complement)'],
+        colors: ['var(--primary)', 'var(--secondary)'],
       },
       prefersAnimation: true,
       animationDuration: '400ms',

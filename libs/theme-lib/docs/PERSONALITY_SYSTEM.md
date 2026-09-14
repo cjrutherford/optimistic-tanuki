@@ -8,7 +8,7 @@ The Personality System is a centralized theming solution that provides applicati
 
 ### Core Components
 
-1. **Personality Definition** (`libs/theme-lib/src/lib/theme-lib/personalities.ts`)
+1. **Personality Definition** (`libs/theme-models/src/lib/personalities.ts`)
 
    - Defines 12 predefined personalities with full configuration
    - Each personality includes: colors, typography, spacing, shadows, animations, borders
@@ -134,9 +134,50 @@ export class MyComponent extends Themeable {
 }
 ```
 
+## Giving an App Its Personality by Default
+
+Each app declares its default personality, mode, and primary colour once, in
+`PRODUCT_THEME_DEFAULTS` (`libs/theme-models/src/lib/product-personalities.ts`),
+and applies it in `app.config.ts`:
+
+```typescript
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideProductTheme('forgeofwill') /* ... */],
+};
+```
+
+`provideThemeDefaults({ personalityId, mode, primaryColor })` does the same for
+an explicit value. The theme service is created while the app initializes, so
+the personality is on the page before the first component renders.
+
+- The defaults show until the user saves a theme of their own. Any
+  `setPersonality()`, `setTheme()`, or `setPrimaryColor()` call saves one, and
+  a saved theme always wins on later loads. `hasStoredPreference()` reports
+  which of the two is showing.
+- Apps must not call `setPersonality()` during startup or on page init: it
+  overwrites the user's choice every time the app loads.
+- `mode: 'auto'` follows the operating system's colour-scheme preference.
+- The resolved mode is stamped on `<html>` as both `data-mode` and
+  `data-theme`.
+
+Add the base layer ahead of the app stylesheet so page background, text
+colour, typefaces, links, and focus rings come from the personality without
+any app CSS:
+
+```json
+"styles": ["libs/theme-styles/src/lib/base.scss", "apps/<app>/src/styles.scss"]
+```
+
+Every rule in `base.scss` has zero specificity, so app styles override it.
+
 ## Using the Personality Selector
 
-The theme-toggle component includes a popout personality selector:
+`<lib-personality-selector>` lists the theme service's personalities and applies
+the one the user picks, unless `[personalities]` or `[applyOnSelect]="false"`
+is passed. `<lib-theme-designer>` includes it, along with the mode switch and
+primary colour. The theme-toggle component includes a popout personality selector:
 
 1. Click the personality button to open dropdown
 2. Personalities are grouped by category (Professional, Creative, Casual, Technical)

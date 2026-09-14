@@ -153,10 +153,10 @@
 // The persona whose conversation is already open. Marked rather than hidden,
 // because choosing them again is a reasonable way to get back to that thread.
 .chosen-persona {
-  border-color: var(--accent, var(--primary));
+  border-color: var(--primary, var(--primary));
   background: color-mix(
     in srgb,
-    var(--accent, var(--primary)) 8%,
+    var(--primary, var(--primary)) 8%,
     var(--surface, var(--background))
   );
 }
@@ -164,7 +164,7 @@
 .chosen-badge {
   display: inline-block;
   padding: 2px 8px;
-  background: var(--accent, var(--primary));
+  background: var(--primary, var(--primary));
   color: var(--primary-foreground, #fff);
   border-radius: var(--border-radius-full, 12px);
   font-size: 0.75rem;

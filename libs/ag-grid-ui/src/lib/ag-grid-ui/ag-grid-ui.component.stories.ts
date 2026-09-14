@@ -109,7 +109,7 @@ const sampleRowData: SampleData[] = [
 
 const meta: Meta<AgGridUiComponent> = {
   component: AgGridUiComponent,
-  title: 'AG Grid UI/Wrapper Component',
+  title: 'Wrapper Component',
   tags: ['autodocs'],
 };
 

@@ -61,7 +61,7 @@ const mockRisks: Risk[] = [
 
 const meta: Meta<AgRisksTableComponent> = {
   component: AgRisksTableComponent,
-  title: 'Project UI/AG Grid Tables/Risks Table',
+  title: 'AG Grid Tables/Risks Table',
   decorators: [
     applicationConfig({
       providers: [provideHttpClient()],

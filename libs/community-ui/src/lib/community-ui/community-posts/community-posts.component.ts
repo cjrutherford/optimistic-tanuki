@@ -32,8 +32,6 @@ import { firstValueFrom } from 'rxjs';
     '[style.--local-accent]': 'accent',
     '[style.--local-complement]': 'complement',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
-    '[style.--local-variant]': 'variant',
   },
   templateUrl: './community-posts.component.html',
   styleUrls: ['./community-posts.component.scss'],
@@ -47,11 +45,10 @@ export class CommunityPostsComponent extends Variantable {
   override theme: 'light' | 'dark' = 'light';
   override background = 'var(--background, #ffffff)';
   override foreground = 'var(--foreground, #212121)';
-  override accent = 'var(--accent, #3f51b5)';
-  override complement = 'var(--complement, #c0af4b)';
-  override borderColor = 'var(--complement, #c0af4b)';
-  override borderGradient =
-    'var(--complement-gradient-light, linear-gradient(135deg, #c0af4b, #3f51b5))';
+  override accent = 'var(--primary, #3f51b5)';
+  override complement = 'var(--secondary, #c0af4b)';
+  override borderColor = 'var(--secondary, #c0af4b)';
+  override borderGradient = 'var(--gradient-secondary)';
 
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);

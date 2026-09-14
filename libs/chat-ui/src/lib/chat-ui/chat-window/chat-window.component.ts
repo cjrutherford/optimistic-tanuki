@@ -48,7 +48,6 @@ export declare type ChatWindowState =
     '[style.--local-accent]': 'accent',
     '[style.--local-accent-transparent]': 'accentTransparent',
     '[style.--local-complement]': 'complement',
-    '[style.--local-complement-transparent]': 'complementTransparent',
     '[style.--local-border-color]': 'borderColor',
     '[style.--local-transition-duration]': 'transitionDuration',
   },

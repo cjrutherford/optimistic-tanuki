@@ -22,7 +22,10 @@
             "input": "apps/fin-commander/public"
           }
         ],
-        "styles": ["apps/fin-commander/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/fin-commander/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/fin-commander/src/main.server.ts",
         "ssr": {

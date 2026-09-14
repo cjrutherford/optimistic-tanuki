@@ -14,7 +14,7 @@
 
 ## Documentation
 
-- generated API reference in `ui-playground`: `/docs/api/social-ui`
+- generated API reference in `ui-playground` (Storybook): `/api/social-ui/index.html`, linked from **Docs → API Reference**
 
 ## Nx Commands
 

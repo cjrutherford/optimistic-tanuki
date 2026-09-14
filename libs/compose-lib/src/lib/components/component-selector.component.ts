@@ -101,7 +101,7 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       }
 
       .close-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: var(--primary, #f0f0f0);
       }
 
       .component-categories {
@@ -122,13 +122,13 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       }
 
       .category-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: var(--primary, #f0f0f0);
       }
 
       .category-btn.active {
-        background-color: var(--accent, #007acc);
+        background-color: var(--primary, #007acc);
         color: white;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
       }
 
       .component-grid {
@@ -151,8 +151,8 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
       }
 
       .component-item:hover {
-        background-color: var(--accent, #f0f0f0);
-        border-color: var(--accent, #007acc);
+        background-color: var(--primary, #f0f0f0);
+        border-color: var(--primary, #007acc);
       }
 
       .component-icon {
@@ -161,7 +161,7 @@ import { InjectableComponent } from '../interfaces/component-injection.interface
         justify-content: center;
         width: 40px;
         height: 40px;
-        background-color: var(--accent, #f0f0f0);
+        background-color: var(--primary, #f0f0f0);
         border-radius: 4px;
       }
 

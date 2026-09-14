@@ -22,7 +22,10 @@
             "input": "apps/digital-homestead/public"
           }
         ],
-        "styles": ["apps/digital-homestead/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/digital-homestead/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/digital-homestead/src/main.server.ts",
         "ssr": {

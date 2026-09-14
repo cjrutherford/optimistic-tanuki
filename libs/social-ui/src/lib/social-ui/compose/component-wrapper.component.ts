@@ -303,23 +303,23 @@ import { PropertyDefinition } from './components/property-editor.component';
       }
 
       .component-wrapper.hovered {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.05);
       }
 
       .component-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.1);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
       }
 
       .component-wrapper.locked {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         border-style: dashed;
       }
 
       .component-wrapper.editing {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         border-width: 3px;
         background-color: rgba(0, 122, 204, 0.15);
       }
@@ -333,7 +333,7 @@ import { PropertyDefinition } from './components/property-editor.component';
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border-radius: 4px;
         padding: 4px 8px;
         opacity: 0;
@@ -406,23 +406,23 @@ import { PropertyDefinition } from './components/property-editor.component';
 
       .edit-btn:hover {
         background: rgba(255, 255, 255, 0.9);
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
       }
 
       .duplicate-btn:hover {
         background: rgba(255, 255, 255, 0.9);
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
       }
 
       .delete-btn:hover {
-        background: #dc3545;
+        background: var(--danger);
         color: white;
       }
 
       .move-up-btn:hover,
       .move-down-btn:hover {
         background: rgba(255, 255, 255, 0.9);
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
       }
 
       /* Component Content */
@@ -471,7 +471,7 @@ import { PropertyDefinition } from './components/property-editor.component';
         left: 0;
         right: 0;
         background: white;
-        border: 2px solid var(--accent, #007acc);
+        border: 2px solid var(--primary, #007acc);
         border-radius: 4px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         z-index: 200;
@@ -484,7 +484,7 @@ import { PropertyDefinition } from './components/property-editor.component';
         justify-content: space-between;
         align-items: flex-start;
         padding: 12px 16px;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         color: white;
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
       }
@@ -582,7 +582,7 @@ import { PropertyDefinition } from './components/property-editor.component';
       .select-input:focus,
       .json-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -640,12 +640,12 @@ import { PropertyDefinition } from './components/property-editor.component';
       }
 
       .save-btn {
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         color: white;
       }
 
       .save-btn:hover {
-        background: var(--accent-dark, #005999);
+        background: color-mix(in srgb, var(--primary) 80%, black);
       }
     `,
   ],

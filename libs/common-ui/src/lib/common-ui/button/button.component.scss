@@ -1,3 +1,4 @@
+@use 'personality' as p;
 @use '../../styles/mixins' as *;
 @use '../interfaces/variant' as variant;
 
@@ -83,78 +84,18 @@ button {
 
   // ---- Interaction ----
   &:hover:not(:disabled) {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-1px);
+    @include p.hover-lift(translateY(-1px), var(--shadow-lg));
   }
   &[data-emphasis='outline']:hover:not(:disabled),
   &[data-emphasis='ghost']:hover:not(:disabled) {
     background: color-mix(in oklab, var(--variant-bg-source) 12%, transparent);
   }
   &:active:not(:disabled) {
-    box-shadow: var(--shadow-sm);
-    transform: translateY(0);
+    @include p.press(translateY(0), var(--shadow-sm));
   }
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     box-shadow: none;
-  }
-}
-
-// ============================================
-// Personality-Specific Button Enhancements
-// Applied via body class based on current personality. These target the legacy
-// `.primary` class which is still emitted for backward compatibility.
-// ============================================
-
-:host-context(.personality-architect) button.primary,
-body.personality-architect button.primary {
-  &:hover:not(:disabled) {
-    box-shadow: 4px 4px 0 var(--primary);
-    transform: translate(-2px, -2px);
-  }
-  &:active:not(:disabled) {
-    box-shadow: 2px 2px 0 var(--primary);
-    transform: translate(0, 0);
-  }
-}
-
-body.personality-playful button.primary {
-  &:hover:not(:disabled) {
-    transform: translateY(-4px) scale(1.02);
-  }
-  &:active:not(:disabled) {
-    transform: translateY(0) scale(0.98);
-  }
-}
-
-body.personality-minimal button.primary {
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-body.personality-electric button.primary {
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px var(--primary);
-  }
-}
-
-body.personality-soft-touch button.primary {
-  &:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  }
-}
-
-body.personality-control-center button.primary {
-  &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  &:active:not(:disabled) {
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 }

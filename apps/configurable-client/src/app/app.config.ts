@@ -12,9 +12,11 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('configurable-client'),
     provideClientHydration(withEventReplay()),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),

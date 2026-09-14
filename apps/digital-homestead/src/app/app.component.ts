@@ -60,22 +60,6 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Initialize theme - only in browser to avoid SSR issues
-    if (isPlatformBrowser(this.platformId)) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-      if (!hasStoredPersonalityTheme) {
-        // Set default palette for digital-homestead
-        this.themeService.setTheme('dark');
-        this.themeService.setPersonality('soft-touch');
-        this.themeService.setPrimaryColor('#3f51b5');
-      } else {
-        // Apply stored theme mode
-        this.themeService.setTheme(this.themeService.getTheme());
-      }
-    }
-
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors || !isPlatformBrowser(this.platformId)) return;

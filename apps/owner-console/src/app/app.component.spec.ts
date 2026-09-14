@@ -4,8 +4,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
 import { Router, RouterModule } from '@angular/router';
 
-const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
-
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -33,20 +31,14 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
   });
 
-  it('bootstraps the control-center personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === PERSONALITY_STORAGE_KEY ? null : null
-      );
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('control-center');
-    getItemSpy.mockRestore();
+    expect(setPersonalitySpy).not.toHaveBeenCalled();
     setPersonalitySpy.mockRestore();
   });
 

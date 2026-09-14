@@ -5,8 +5,7 @@ import {
   type StoryObj,
 } from '@storybook/angular';
 import { FeaturedPostsComponent } from './featured-posts.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 const meta: Meta<FeaturedPostsComponent> = {

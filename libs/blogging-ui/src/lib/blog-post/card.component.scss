@@ -1,3 +1,4 @@
+@use 'personality' as p;
 .banner-image {
   width: 100%;
   height: 30%;
@@ -11,6 +12,7 @@
   color: var(--foreground, var(--primary-foreground));
   border-bottom-left-radius: var(--border-radius-lg, 8px);
   border-bottom-right-radius: var(--border-radius-lg, 8px);
+  @include p.accent-border(none);
 }
 .post-title {
   margin: 0 0 8px 0;
@@ -25,17 +27,4 @@
   font-size: 16px;
   color: var(--muted-foreground, var(--muted));
   margin: 18px;
-}
-
-// ============================================
-// Personality-Specific Card Enhancements
-// ============================================
-// The body.personality-* radius overrides this block used to hardcode
-// (architect: 0, playful: 16px, minimal: 4px, soft-touch: 24px,
-// control-center: 4px) are now redundant: ThemeService's
-// generatePersonalityBorderRadius() already scales --border-radius-lg per
-// personality (see theme.service.ts), which .banner-image/.content consume
-// above. Only the electric personality's non-radius decoration survives.
-body.personality-electric .content {
-  border: 2px dashed var(--primary);
 }

@@ -259,22 +259,22 @@ import { FinanceWorkspaceScreenComponent } from '../finance-workspace-screen/fin
         );
       }
       .status-pill[data-status='healthy'] {
-        color: #166534;
+        color: color-mix(in srgb, var(--success) 70%, var(--foreground));
         background: rgba(22, 101, 52, 0.12);
       }
       .status-pill[data-status='needs-reauth'],
       .status-pill[data-status='sync-error'] {
-        color: #b45309;
+        color: color-mix(in srgb, var(--warning) 70%, var(--foreground));
         background: rgba(180, 83, 9, 0.12);
       }
       .status-pill[data-status='disconnected'] {
-        color: #991b1b;
+        color: color-mix(in srgb, var(--danger) 70%, var(--foreground));
         background: rgba(153, 27, 27, 0.12);
       }
 
       .error-copy {
         margin: 0;
-        color: #991b1b;
+        color: color-mix(in srgb, var(--danger) 70%, var(--foreground));
       }
 
       :host ::ng-deep .grid-actions {

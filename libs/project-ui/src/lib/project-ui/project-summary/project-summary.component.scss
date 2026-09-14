@@ -17,7 +17,7 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--accent);
+  color: var(--primary);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -78,7 +78,7 @@ h4 {
 }
 
 .insight-grid button:hover {
-  border-color: var(--accent);
+  border-color: var(--primary);
 }
 
 .insight-grid small {
@@ -108,7 +108,7 @@ h4 {
 }
 
 .timeline button:hover strong {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .empty {

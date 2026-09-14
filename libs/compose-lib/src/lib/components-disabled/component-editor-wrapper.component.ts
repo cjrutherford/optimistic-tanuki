@@ -201,18 +201,18 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
       }
 
       .component-editor-wrapper.hovered {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.03);
       }
 
       .component-editor-wrapper.selected {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         background-color: rgba(0, 122, 204, 0.08);
         box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.15);
       }
 
       .component-editor-wrapper.editing {
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         z-index: 100;
       }
 
@@ -226,7 +226,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
         justify-content: space-between;
         align-items: center;
         padding: 4px 8px;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border-radius: 6px 6px 0 0;
         opacity: 0;
         visibility: hidden;
@@ -314,7 +314,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
       }
 
       .preview-header mat-icon {
-        color: var(--accent, #007acc);
+        color: var(--primary, #007acc);
       }
 
       .preview-description {
@@ -394,7 +394,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
       }
 
       .close-btn:hover {
-        background: var(--accent, rgba(0, 0, 0, 0.05));
+        background: var(--primary, rgba(0, 0, 0, 0.05));
       }
 
       .quick-edit-form {
@@ -426,7 +426,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
 
       .form-input:focus {
         outline: none;
-        border-color: var(--accent, #007acc);
+        border-color: var(--primary, #007acc);
         box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
       }
 
@@ -469,13 +469,13 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
       }
 
       .save-btn {
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border: none;
         color: white;
       }
 
       .save-btn:hover {
-        background: var(--accent-dark, #005999);
+        background: color-mix(in srgb, var(--primary) 80%, black);
       }
 
       /* Resize Handle */
@@ -483,7 +483,7 @@ import { COMPONENT_PROPERTY_DEFINITIONS } from '../configs/component-properties.
         position: absolute;
         width: 12px;
         height: 12px;
-        background: var(--accent, #007acc);
+        background: var(--primary, #007acc);
         border: 2px solid white;
         border-radius: 2px;
       }

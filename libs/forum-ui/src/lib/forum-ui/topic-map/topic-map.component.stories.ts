@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/angular';
 import { TopicMapComponent } from './topic-map.component';
 
 const meta: Meta<TopicMapComponent> = {
-  title: 'Forum UI/Topic Map',
+  title: 'Topic Map',
   component: TopicMapComponent,
   tags: ['autodocs'],
 };

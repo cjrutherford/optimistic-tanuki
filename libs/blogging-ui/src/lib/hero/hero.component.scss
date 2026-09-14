@@ -1,8 +1,10 @@
+@use 'personality' as p;
 .background-image {
   background-image: var(--background-image);
   background-size: cover;
   background-position: center;
   border-radius: var(--border-radius-lg, 10px);
+  @include p.accent-border(none);
   padding: 0;
   width: 100%;
   .background-filter {
@@ -21,17 +23,4 @@
       font-size: 18px;
     }
   }
-}
-
-// ============================================
-// Personality-Specific Hero Enhancements
-// ============================================
-// The body.personality-* radius overrides this block used to hardcode
-// (architect: 0, playful: 16px, minimal: 4px, soft-touch: 24px,
-// control-center: 4px) are now redundant: ThemeService's
-// generatePersonalityBorderRadius() already scales --border-radius-lg per
-// personality (see theme.service.ts), which .background-image consumes
-// above. Only the electric personality's non-radius decoration survives.
-body.personality-electric .background-image {
-  border: 2px solid var(--primary);
 }

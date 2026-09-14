@@ -11,7 +11,6 @@ import {
   LeadSource,
   LeadFlagReason,
 } from './leads.types';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { FlagLeadModalComponent } from './flag-lead-modal.component';
 import { LeadDetailModalComponent } from './lead-detail-modal.component';
 
@@ -30,7 +29,6 @@ import { LeadDetailModalComponent } from './lead-detail-modal.component';
 })
 export class LeadsComponent implements OnInit {
   private readonly leadsService = inject(LeadsService);
-  private readonly themeService = inject(ThemeService);
   private readonly route = inject(ActivatedRoute);
 
   leads: Lead[] = [];
@@ -79,7 +77,6 @@ export class LeadsComponent implements OnInit {
   ngOnInit() {
     this.loadLeads();
     this.loadStats();
-    this.themeService.setPersonality('control-center');
 
     this.route.queryParams.subscribe((params) => {
       if (params['quickAdd'] === 'true') {

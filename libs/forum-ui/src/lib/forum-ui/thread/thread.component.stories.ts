@@ -5,7 +5,7 @@ import { ThreadDto } from '../models';
 
 const meta: Meta<ThreadComponent> = {
   component: ThreadComponent,
-  title: 'Forum UI/Thread',
+  title: 'Thread',
 };
 export default meta;
 

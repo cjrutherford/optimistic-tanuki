@@ -149,7 +149,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         text-transform: capitalize;
       }
       .error {
-        color: #b91c1c;
+        color: var(--danger);
       }
       @media (max-width: 720px) {
         .board-header,

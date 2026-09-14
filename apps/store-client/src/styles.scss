@@ -3,65 +3,56 @@
    SSR and pre-bootstrap fallbacks. */
 :root {
   /* Core semantic palette */
-  --background: #ffffff;
-  --foreground: #212121;
-  --surface: #ffffff;
-  --surface-alt: #f5f5f5;
-  --surface-muted: #f8f9fa;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --border-subtle: #e0e0e0;
-  --border-input: #dddddd;
-  --border-disabled: #cccccc;
+  --surface-alt: color-mix(in srgb, var(--surface) 94%, var(--foreground));
+  --surface-muted: color-mix(in srgb, var(--surface) 97%, var(--foreground));
+  --border-subtle: color-mix(in srgb, var(--border) 85%, var(--background));
+  --border-input: var(--border);
+  --border-disabled: color-mix(in srgb, var(--border) 70%, var(--background));
 
   /* Text scale */
-  --text-strong: #333333;
-  --text-secondary: #555555;
-  --text-muted: #666666;
-  --text-disabled: #999999;
+  --text-strong: var(--foreground);
+  --text-secondary: var(--muted);
+  --text-muted: var(--muted);
+  --text-disabled: color-mix(in srgb, var(--muted) 60%, var(--background));
 
   /* Brand/Playful palette */
-  --primary: #667eea;
-  --primary-foreground: #ffffff;
-  --primary-hover: #5568d3;
-  --secondary: #764ba2;
-  --tertiary: #6c757d;
-  --accent: #667eea;
-  --accent-hover: #5568d3;
-  --on-accent: #ffffff;
-  --complement: #c0af4b;
+  --primary-hover: color-mix(in srgb, var(--primary) 85%, var(--foreground));
+  --accent: var(--primary);
+  --accent-hover: color-mix(in srgb, var(--primary) 85%, var(--foreground));
+  --on-accent: var(--on-primary);
+  --complement: var(--secondary);
 
   /* Neutral button palette */
-  --neutral: #6c757d;
-  --neutral-hover: #5a6268;
-  --neutral-foreground: #ffffff;
+  --neutral: var(--muted);
+  --neutral-hover: color-mix(in srgb, var(--muted) 85%, var(--foreground));
+  --neutral-foreground: var(--on-primary);
 
   /* Status palette */
-  --success: #28a745;
-  --success-foreground: #ffffff;
-  --danger: #dc3545;
-  --danger-foreground: #ffffff;
   --danger-hover: #c82333;
-  --warning: #ffc107;
-  --warning-foreground: #212121;
-  --info: #17a2b8;
-  --info-foreground: #ffffff;
 
   /* Soft alert/status pill tokens */
-  --success-soft-bg: #d4edda;
-  --success-soft-fg: #155724;
-  --success-soft-border: #c3e6cb;
-  --danger-soft-bg: #f8d7da;
-  --danger-soft-fg: #721c24;
-  --danger-soft-border: #f5c6cb;
-  --warning-soft-bg: #fff3cd;
-  --warning-soft-fg: #856404;
-  --info-soft-bg: #d1ecf1;
-  --info-soft-fg: #0c5460;
-  --neutral-soft-bg: #e2e3e5;
-  --neutral-soft-fg: #383d41;
-  --info-tint-bg: #e3f2fd;
-  --info-tint-fg: #1976d2;
+  --success-soft-bg: color-mix(in srgb, var(--success) 16%, var(--background));
+  --success-soft-fg: color-mix(in srgb, var(--success) 70%, var(--foreground));
+  --success-soft-border: color-mix(
+    in srgb,
+    var(--success) 30%,
+    var(--background)
+  );
+  --danger-soft-bg: color-mix(in srgb, var(--danger) 16%, var(--background));
+  --danger-soft-fg: color-mix(in srgb, var(--danger) 70%, var(--foreground));
+  --danger-soft-border: color-mix(
+    in srgb,
+    var(--danger) 30%,
+    var(--background)
+  );
+  --warning-soft-bg: color-mix(in srgb, var(--warning) 16%, var(--background));
+  --warning-soft-fg: color-mix(in srgb, var(--warning) 70%, var(--foreground));
+  --info-soft-bg: color-mix(in srgb, var(--info) 16%, var(--background));
+  --info-soft-fg: color-mix(in srgb, var(--info) 70%, var(--foreground));
+  --neutral-soft-bg: color-mix(in srgb, var(--muted) 16%, var(--background));
+  --neutral-soft-fg: var(--foreground);
+  --info-tint-bg: color-mix(in srgb, var(--info) 12%, var(--background));
+  --info-tint-fg: var(--info);
 
   /* Legacy aliases for components that still reference older names */
   --background-color: var(--background);
@@ -74,23 +65,6 @@
   --text-secondary-color: var(--text-muted);
   --surface-color: var(--surface);
   --nav-text-color: var(--on-accent);
-}
-
-[data-theme='dark'] {
-  --background: #1a1a1a;
-  --foreground: #f5f5f5;
-  --surface: #2d2d2d;
-  --surface-alt: #262626;
-  --surface-muted: #1f1f1f;
-  --muted: #9ca3af;
-  --border: #404040;
-  --border-subtle: #353535;
-  --border-input: #404040;
-  --border-disabled: #4a4a4a;
-  --text-strong: #f5f5f5;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
-  --text-disabled: #6b7280;
 }
 
 /* Basic page styling honoring theme variables */

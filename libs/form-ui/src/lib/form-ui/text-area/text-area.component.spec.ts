@@ -183,9 +183,6 @@ describe('TextAreaComponent', () => {
     expect(hostElement.style.getPropertyValue('--local-border-color')).toBe(
       '#1a2b3c'
     );
-    expect(hostElement.style.getPropertyValue('--local-border-gradient')).toBe(
-      'linear-gradient(to right, blue, green)'
-    );
     expect(
       hostElement.style.getPropertyValue('--local-transition-duration')
     ).toBe('0.5s');

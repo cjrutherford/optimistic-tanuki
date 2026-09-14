@@ -145,7 +145,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         font-weight: 800;
       }
       .error {
-        color: #b91c1c;
+        color: var(--danger);
       }
       @media (max-width: 760px) {
         .form-grid,

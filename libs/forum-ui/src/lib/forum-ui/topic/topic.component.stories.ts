@@ -5,7 +5,7 @@ import { TopicDto } from '../models';
 
 const meta: Meta<TopicComponent> = {
   component: TopicComponent,
-  title: 'Forum UI/Topic',
+  title: 'Topic',
 };
 export default meta;
 
@@ -13,7 +13,7 @@ type Story = StoryObj<TopicComponent>;
 
 const mockTopic: TopicDto = {
   id: '1',
-  name: 'General Discussion',
+  title: 'General Discussion',
   description: 'A place to talk about anything and everything.',
   userId: 'user-1',
   profileId: 'profile-1',

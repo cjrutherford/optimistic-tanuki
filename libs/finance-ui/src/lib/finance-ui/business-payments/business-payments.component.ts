@@ -71,7 +71,7 @@ import { FinanceWorkspace, Transaction } from '../models';
         color: var(--muted, #64748b);
       }
       .credit {
-        color: #047857;
+        color: color-mix(in srgb, var(--success) 70%, var(--foreground));
       }
     `,
   ],

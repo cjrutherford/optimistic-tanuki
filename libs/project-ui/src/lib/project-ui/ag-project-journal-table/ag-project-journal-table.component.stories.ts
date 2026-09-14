@@ -57,7 +57,7 @@ const mockJournals: ProjectJournal[] = [
 
 const meta: Meta<AgProjectJournalTableComponent> = {
   component: AgProjectJournalTableComponent,
-  title: 'Project UI/AG Grid Tables/Project Journal Table',
+  title: 'AG Grid Tables/Project Journal Table',
   decorators: [
     applicationConfig({
       providers: [provideHttpClient()],

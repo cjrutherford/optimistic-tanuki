@@ -20,7 +20,7 @@ See also:
 
 ## Documentation
 
-- generated API reference in `ui-playground`: `/docs/api/theme-ui`
+- generated API reference in `ui-playground` (Storybook): `/api/theme-ui/index.html`, linked from **Docs → API Reference**
 
 ## Nx Commands
 

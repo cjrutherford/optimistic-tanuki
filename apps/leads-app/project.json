@@ -37,7 +37,10 @@
             "input": "apps/leads-app/public"
           }
         ],
-        "styles": ["apps/leads-app/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/leads-app/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/leads-app/src/main.server.ts",
         "ssr": {

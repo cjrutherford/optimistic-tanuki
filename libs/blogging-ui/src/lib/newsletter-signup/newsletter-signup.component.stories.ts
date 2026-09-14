@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { NewsletterSignupComponent } from './newsletter-signup.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 
 const meta: Meta<NewsletterSignupComponent> = {
   component: NewsletterSignupComponent,
