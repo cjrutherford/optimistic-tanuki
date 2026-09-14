@@ -6,8 +6,8 @@
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "dependencies": {
-    "@angular/common": "^20.0.0",
-    "@angular/core": "^20.0.0",
+    "@angular/common": "^20.3.31",
+    "@angular/core": "^20.3.31",
     "@optimistic-tanuki/models": "workspace:*",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
