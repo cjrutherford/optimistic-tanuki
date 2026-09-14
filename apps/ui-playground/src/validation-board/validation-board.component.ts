@@ -299,6 +299,7 @@ class ValidationPersonaService {
         border-radius: var(--personality-card-radius, 8px);
         background: var(--surface);
         box-shadow: var(--personality-card-shadow, var(--shadow-md));
+        align-content: start;
       }
 
       .validation-card__header h3 {
@@ -319,6 +320,18 @@ class ValidationPersonaService {
 
       .validation-preview {
         min-width: 0;
+      }
+
+      /* Persona menu and message toasts are position: fixed overlays. A
+         transformed ancestor becomes their containing block, so they stay
+         inside their card instead of covering the whole board. */
+      .persona-preview,
+      .message-preview {
+        position: relative;
+        min-height: 20rem;
+        overflow: hidden;
+        transform: translateZ(0);
+        border-radius: var(--personality-card-radius, 8px);
       }
 
       .common-preview,

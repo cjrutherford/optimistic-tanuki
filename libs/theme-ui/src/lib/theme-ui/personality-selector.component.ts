@@ -361,7 +361,7 @@ interface GroupedPersonality {
         font-style: italic;
       }
 
-      // Scrollbar styling
+      /* Scrollbar styling */
       .overlay-content::-webkit-scrollbar {
         width: 8px;
       }
