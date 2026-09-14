@@ -19,6 +19,8 @@
     "../../../libs/auth-ui/src/**/*.ts",
     "../../../libs/blogging-ui/src/**/*.stories.ts",
     "../../../libs/blogging-ui/src/**/*.ts",
+    "../../../libs/business-portal-ui/src/**/*.stories.ts",
+    "../../../libs/business-portal-ui/src/**/*.ts",
     "../../../libs/business-ui/src/**/*.stories.ts",
     "../../../libs/business-ui/src/**/*.ts",
     "../../../libs/chat-ui/src/**/*.stories.ts",
