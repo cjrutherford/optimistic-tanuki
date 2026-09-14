@@ -16,6 +16,51 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/configurable-client-ui/.storybook",
+        "browserTarget": "configurable-client-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/configurable-client-ui",
+        "configDir": "libs/configurable-client-ui/.storybook",
+        "browserTarget": "configurable-client-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "configurable-client-ui:build-storybook",
+        "staticFilePath": "dist/storybook/configurable-client-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "configurable-client-ui:build-storybook:ci"
+        }
+      }
     }
   }
 }

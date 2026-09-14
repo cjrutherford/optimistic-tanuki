@@ -101,7 +101,7 @@ const financeServiceStub = {
 
 const meta: Meta<DashboardComponent> = {
   component: DashboardComponent,
-  title: 'Theme/Personality Showcase/Finance UI',
+  title: 'Theme/Personality Showcase',
   tags: ['autodocs'],
   decorators: [
     (story) => ({

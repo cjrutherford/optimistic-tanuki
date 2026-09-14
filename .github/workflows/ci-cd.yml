@@ -399,6 +399,59 @@ jobs:
             test-results/
           retention-days: 7
 
+  storybook:
+    name: Quality - storybook
+    runs-on: ubuntu-24.04
+    needs: [plan, validate]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Derive SHAs for nx affected
+        if: github.event_name != 'workflow_dispatch'
+        uses: nrwl/nx-set-shas@v4
+
+      # ui-playground reads every library's stories from the filesystem, so the
+      # Nx project graph does not see them as dependencies; decide from the diff.
+      - name: Check for UI library changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ui=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "${{ env.NX_BASE }}" "${{ env.NX_HEAD }}" | grep -qE '^(libs/|tools/storybook/|tools/docs-site/|apps/ui-playground/|docs/)'; then
+            echo "ui=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ui=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test Storybook docs tooling
+        if: steps.changes.outputs.ui == 'true'
+        run: pnpm exec jest -c tools/docs-site/jest.config.cjs
+        env:
+          CI: true
+          NODE_OPTIONS: --experimental-vm-modules
+
+      - name: Build composed Storybook
+        if: steps.changes.outputs.ui == 'true'
+        run: pnpm exec nx build ui-playground --outputStyle=static
+        env:
+          CI: true
+          NX_DAEMON: 'false'
+          NX_ISOLATE_PLUGINS: 'false'
+
   app_configurator_postgres_integration:
     name: App Configurator PostgreSQL Integration
     runs-on: ubuntu-24.04
