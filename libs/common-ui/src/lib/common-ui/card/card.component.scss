@@ -19,7 +19,12 @@
 // preserve the surface background/foreground for that tone specifically. Colored
 // tones (brand/success/…) still paint through the shared mixin above.
 .card[data-tone='neutral'] {
-  background: var(--background-elevated, var(--surface, var(--background)));
+  @include p.surface(
+    var(--background-elevated, var(--surface, var(--background))),
+    var(--personality-border-width, 1px) var(--personality-border-style, solid)
+      var(--border),
+    var(--personality-card-shadow, var(--shadow-md))
+  );
   color: var(--foreground);
 }
 

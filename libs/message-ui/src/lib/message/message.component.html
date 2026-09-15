@@ -1,13 +1,14 @@
-@if(messageService.messages().length > 0) {
-<otui-card class="message-container">
-  @for (message of messageService.messages(); track message) {
-  <otui-tile class="message" [ngClass]="message.type">
-    <span>{{ message.content }}</span>
-    <otui-button (click)="dismissMessage($index)">
-      <span aria-hidden="true">❌</span>
-      <span class="message-dismiss-label">Dismiss message</span>
-    </otui-button>
-  </otui-tile>
+@if (toasts().length > 0) {
+<div class="message-container" role="status" aria-live="polite">
+  @for (toast of toasts(); track toast) {
+  <otui-notification
+    class="message"
+    [notification]="toast"
+    [autoDismiss]="0"
+    [showProgress]="false"
+    animation="slide"
+    (dismiss)="dismissMessage($index)"
+  />
   }
-</otui-card>
+</div>
 }

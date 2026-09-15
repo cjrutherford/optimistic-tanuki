@@ -6,15 +6,17 @@
   gap: 0.75rem;
   text-align: center;
   padding: var(--state-message-padding, 2.5rem 1.5rem);
-  background: var(--state-message-background, transparent);
+  background: var(
+    --state-message-background,
+    var(--personality-surface-bg, transparent)
+  );
+  box-shadow: var(--personality-surface-shadow, none);
   color: var(--state-message-color, var(--foreground, inherit));
-  border-radius: var(--state-message-radius, var(--border-radius-md, 12px));
-  border: 1px dashed
-    color-mix(
-      in oklab,
-      var(--state-message-accent, currentColor) 35%,
-      transparent
-    );
+  border-radius: var(
+    --state-message-radius,
+    var(--personality-card-radius, var(--border-radius-md, 12px))
+  );
+  border: var(--personality-surface-border, 1px solid var(--border));
 
   &__icon {
     display: inline-flex;

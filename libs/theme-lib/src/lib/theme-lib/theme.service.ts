@@ -34,6 +34,9 @@ import {
   validateThemeContrast,
   getSuggestedTextColor,
   migratePaletteToPersonality,
+  resolveCompositionVariables,
+  getPersonalityComposition,
+  compositionDataAttributes,
 } from '@optimistic-tanuki/theme-models';
 import {
   generateThemeResponsiveColors,
@@ -824,6 +827,7 @@ export class ThemeService {
       foreground: adjustedForeground,
       surface: themeColors.surface,
       muted: themeColors.muted,
+      textSecondary: themeColors.textSecondary,
       border: themeColors.border,
       gradients: this.getPersonalityDrivenGradients(personality.id, {
         accent: colors.primary,
@@ -989,7 +993,8 @@ export class ThemeService {
     variables['--background-elevated'] = colors.surface;
     variables['--background-overlay'] = overlay;
     variables['--foreground-primary'] = colors.foreground;
-    variables['--foreground-secondary'] = colors.border;
+    // Secondary text, not the border colour it used to alias.
+    variables['--foreground-secondary'] = colors.textSecondary ?? colors.muted;
     variables['--foreground-muted'] = colors.muted;
 
     // Typography
@@ -1079,6 +1084,17 @@ export class ThemeService {
         label.textTransform ?? '';
       variables['--personality-label-letter-spacing'] =
         label.letterSpacing ?? '';
+
+      // Composition: density, primitive shape, header, surface, tabs,
+      // feedback and primary fill. Every key is emitted on each switch so the
+      // previous personality's values never linger.
+      Object.assign(
+        variables,
+        resolveCompositionVariables(
+          personality.presentation.composition ??
+            getPersonalityComposition(personality.id)
+        )
+      );
     }
 
     // Page background pattern (theme-responsive)
@@ -1285,6 +1301,14 @@ export class ThemeService {
     root.setAttribute(
       'data-animation-speed',
       theme.personality.animations.speed
+    );
+
+    // Mirror the composition as root attributes for debugging and tests.
+    const composition =
+      theme.personality.presentation?.composition ??
+      getPersonalityComposition(theme.personality.id);
+    Object.entries(compositionDataAttributes(composition)).forEach(
+      ([attribute, value]) => root.setAttribute(attribute, value)
     );
   }
 

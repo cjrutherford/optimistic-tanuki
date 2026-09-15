@@ -29,16 +29,28 @@
 
 .tabs-header {
   display: flex;
-  border-bottom: 1px solid var(--tabs-border-color, var(--border));
   gap: 4px;
+  width: var(--personality-tabs-track-width, auto);
+  padding: var(--personality-tabs-track-padding, 0px);
+  background: var(--personality-tabs-track-bg, transparent);
+  border: var(--personality-tabs-track-border, 0 solid transparent);
+  border-bottom: var(
+    --personality-tabs-track-underline,
+    1px solid var(--tabs-border-color, var(--border))
+  );
+  border-radius: calc(
+    var(--personality-tab-radius, 0px) +
+      var(--personality-tabs-track-padding, 0px)
+  );
 }
 
 .tab-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 18px;
   border: none;
+  border-radius: var(--personality-tab-radius, 0px);
   background: transparent;
   color: var(--tabs-inactive-color, var(--foreground));
   font-size: 14px;
@@ -48,13 +60,18 @@
   @include p.label-type;
   @include p.personality-transition('color, background-color', 'fast');
 
-  &:hover:not(.disabled) {
+  &:hover:not(.disabled):not(.active) {
     color: var(--tabs-active-color, var(--primary));
     background: var(--hover-bg, rgba(0, 0, 0, 0.05));
   }
 
   &.active {
-    color: var(--tabs-active-color, var(--primary));
+    color: var(
+      --personality-tab-active-fg,
+      var(--tabs-active-color, var(--primary))
+    );
+    background: var(--personality-tab-active-bg, transparent);
+    box-shadow: var(--personality-tab-active-shadow, none);
 
     &::after {
       content: '';
@@ -62,7 +79,7 @@
       bottom: -1px;
       left: 0;
       right: 0;
-      height: 2px;
+      height: var(--personality-tab-indicator, 2px);
       background: var(--tabs-active-color, var(--primary));
     }
   }
@@ -84,9 +101,9 @@
   min-width: 18px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 9px;
+  border-radius: var(--personality-primitive-radius, 9px);
   background: var(--tabs-active-color, var(--primary));
-  color: white;
+  color: var(--on-primary, #fff);
   font-size: 11px;
   font-weight: 600;
 }

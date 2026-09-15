@@ -14,10 +14,15 @@
 }
 
 .form-label {
-  font-family: var(--font-heading, system-ui, sans-serif);
+  font-family: var(
+    --personality-label-font-family,
+    var(--font-heading, system-ui, sans-serif)
+  );
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--muted, #6b7280);
+  text-transform: var(--personality-label-text-transform, none);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  color: var(--foreground-secondary, var(--foreground));
   margin-bottom: 6px;
   padding-left: 4px;
 }
@@ -25,13 +30,12 @@
 .form-control-textarea {
   width: 100%;
   min-height: 120px;
-  padding: 16px 20px;
+  padding: 12px var(--personality-control-padding-x, 20px);
   font-family: var(--font-body, system-ui, sans-serif);
   font-size: 0.9375rem;
   color: var(--foreground);
   background: var(--surface, var(--background));
-  border: var(--personality-input-border-width, 0.5px) solid
-    color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--personality-input-border-width, 1px) solid var(--border);
   border-radius: var(--personality-input-radius, var(--border-radius-lg, 20px));
   outline: none;
   resize: vertical;
@@ -76,7 +80,7 @@
 
   &::placeholder {
     color: var(--muted, rgba(107, 114, 128, 0.5));
-    font-style: italic;
+    font-style: normal;
   }
 
   // Error state

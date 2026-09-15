@@ -6,8 +6,9 @@
 .table-container {
   width: 100%;
   overflow-x: auto;
-  border-radius: var(--border-radius-md, 8px);
-  border: 1px solid var(--border);
+  border-radius: var(--personality-card-radius, var(--border-radius-md, 8px));
+  border: var(--personality-surface-border, 1px solid var(--border));
+  box-shadow: var(--personality-surface-shadow, none);
 
   &.sticky-header {
     max-height: 70vh;
@@ -39,10 +40,23 @@
 
   // Header styles
   thead {
-    background: var(--primary);
+    background: var(--personality-table-header-bg, var(--primary));
 
     th {
-      color: var(--primary-foreground, #fff);
+      color: var(
+        --personality-table-header-fg,
+        var(--primary-foreground, #fff)
+      );
+      border-bottom: var(
+        --personality-table-header-border,
+        0 solid transparent
+      );
+      // The shared table-base mixin paints header cells with --primary; the
+      // header row now carries the personality's header background instead.
+      background: transparent;
+      font-family: var(--personality-label-font-family, inherit);
+      text-transform: var(--personality-header-transform, none);
+      letter-spacing: var(--personality-header-tracking, normal);
       font-weight: 600;
       white-space: nowrap;
       position: relative;
@@ -74,7 +88,7 @@
       }
 
       &.sorted {
-        background: color-mix(in srgb, var(--primary) 90%, black);
+        background: color-mix(in srgb, currentColor 12%, transparent);
       }
 
       .sort-indicator {
@@ -169,7 +183,7 @@
         border-color: var(--primary);
 
         &:hover:not(:disabled) {
-          background: color-mix(in srgb, var(--primary) 90%, black);
+          background: color-mix(in srgb, currentColor 12%, transparent);
         }
       }
 
@@ -196,9 +210,9 @@
   .badge {
     display: inline-block;
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-    border-radius: var(--border-radius-full, 9999px);
-    background: var(--primary);
-    color: var(--primary-foreground, #fff);
+    border-radius: var(--personality-primitive-radius, 9999px);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
     font-size: var(--font-size-xs, 0.75rem);
     font-weight: 500;
   }
@@ -417,4 +431,17 @@
   .legacy-table-row .table-row {
     transition: none;
   }
+}
+
+// Row density follows the personality.
+.otui-table th,
+.otui-table td {
+  padding: var(
+    --personality-cell-padding,
+    var(--spacing-sm, 8px) var(--spacing-md, 16px)
+  );
+}
+
+.otui-table thead th.sortable {
+  padding: 0;
 }

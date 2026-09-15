@@ -102,6 +102,27 @@ function bodyFamily(p: Personality): string {
   return primaryFontToken(p.fonts.body.family);
 }
 
+const COMPOSITION_FIELDS = [
+  'density',
+  'shape',
+  'header',
+  'surface',
+  'fill',
+  'tabs',
+  'feedback',
+  'labelCase',
+] as const;
+
+/** Fraction of composition fields that differ; 0 when neither declares one. */
+function compositionDistance(a: Personality, b: Personality): number {
+  const ca = a.presentation?.composition;
+  const cb = b.presentation?.composition;
+  if (!ca && !cb) return 0;
+  if (!ca || !cb) return 1;
+  const differing = COMPOSITION_FIELDS.filter((f) => ca[f] !== cb[f]).length;
+  return differing / COMPOSITION_FIELDS.length;
+}
+
 function harmonySpread(p: Personality): number | undefined {
   return (
     p.colorHarmony.analogousSpread ??
@@ -281,7 +302,7 @@ const FIELD_SPECS: readonly FieldSpec[] = [
     distance: categorical((p) => p.animations.easing),
   },
 
-  // ---- Presentation (0.08) ----
+  // ---- Presentation (0.14) ----
   {
     id: 'presentation.border.radius',
     weight: 0.02,
@@ -303,6 +324,16 @@ const FIELD_SPECS: readonly FieldSpec[] = [
     distance: categorical(
       (p) => p.presentation?.components.button.textTransform
     ),
+  },
+  {
+    // How the personality composes shared components (density, primitive
+    // shape, header, surface, fill, tabs, feedback, label case). Scored as
+    // the fraction of composition fields that differ, so two personalities
+    // that share most of their component treatment read as close even when
+    // their fonts differ.
+    id: 'presentation.composition',
+    weight: 0.06,
+    distance: compositionDistance,
   },
 
   // ---- Color generation + icon (0.08) ----

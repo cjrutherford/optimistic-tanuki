@@ -18,8 +18,7 @@
 button {
   @include flex-center;
   width: 100%;
-  min-height: 44px;
-  height: 44px;
+  @include p.control-height;
   box-sizing: border-box;
   padding: var(
     --personality-button-padding,
@@ -44,6 +43,15 @@ button {
   // ---- Tone + emphasis (shared contract) ----
   @include variant.variant-surface;
 
+  // Neutral solid (the `secondary` variant) sat on `--surface-variant`, which
+  // is the page surface itself, so the button had no visible fill. Tint it
+  // with the foreground and give it a hairline edge; this works in both modes.
+  &[data-tone='neutral'][data-emphasis='solid'] {
+    background: color-mix(in srgb, var(--foreground) 9%, var(--surface));
+    border-color: color-mix(in srgb, var(--foreground) 18%, transparent);
+    color: var(--foreground);
+  }
+
   // Outline/ghost carry no elevation.
   &[data-emphasis='outline'],
   &[data-emphasis='ghost'] {
@@ -53,24 +61,24 @@ button {
   // ---- Size ----
   &[data-size='sm'],
   &[data-size='small'] {
-    min-height: 36px;
-    height: 36px;
+    @include p.control-height('sm');
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
     font-size: 0.75rem;
   }
   &[data-size='lg'],
   &[data-size='large'] {
-    min-height: 52px;
-    height: 52px;
+    @include p.control-height('lg');
     padding: var(--spacing-md, 16px) var(--spacing-lg, 32px);
     font-size: 1rem;
   }
 
   // ---- Flagship brand gradient (brand + solid + useGradient) ----
   &.use-gradient[data-tone='brand'][data-emphasis='solid'] {
+    // The personality decides the primary fill (flat / gradient); textured
+    // personalities clear it and keep their own `--button-gradient`.
     --variant-bg-source: var(
-      --button-gradient,
-      var(--gradient-primary, var(--primary))
+      --personality-fill-primary,
+      var(--button-gradient, var(--gradient-primary, var(--primary)))
     );
     background: var(--variant-bg-source);
     color: var(--on-primary, var(--primary-foreground, #fff));

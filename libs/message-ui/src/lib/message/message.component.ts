@@ -1,33 +1,40 @@
+import { Component, computed, inject } from '@angular/core';
 import {
-  ButtonComponent,
-  CardComponent,
-  TileComponent,
+  NotificationComponent,
+  type Notification,
 } from '@optimistic-tanuki/common-ui';
-import { Component, Input } from '@angular/core';
 
-import { CommonModule } from '@angular/common';
 import { MessageService } from '../message.service';
 
+/**
+ * App-level message stack. Messages come from `MessageService` (which also
+ * handles auto-dismiss) and render as common-ui toasts, so they follow the
+ * active personality's surface, feedback accent and icon set.
+ */
 @Component({
   selector: 'lib-message',
   standalone: true,
-  imports: [CommonModule, CardComponent, TileComponent, ButtonComponent],
+  imports: [NotificationComponent],
   templateUrl: './message.component.html',
   styleUrl: './message.component.scss',
 })
 export class MessageComponent {
-  messageService: MessageService;
-  constructor(_messageService: MessageService) {
-    this.messageService = _messageService;
-  }
+  readonly messageService = inject(MessageService);
+
+  /** Toast view of the current messages; recomputed only when they change. */
+  readonly toasts = computed<Notification[]>(() =>
+    this.messageService.messages().map((message, index) => ({
+      id: index,
+      type: message.type,
+      message: message.content,
+    }))
+  );
 
   dismissMessage(index: number) {
-    console.log('Dismissing message at index:', index);
     this.messageService.dismiss(index);
   }
 
   clearAll() {
-    console.log('Clearing all messages');
     this.messageService.clearMessages();
   }
 }

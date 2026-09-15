@@ -16,6 +16,7 @@ import {
   IconStyle,
   BorderStyle,
 } from './personality.interfaces';
+import { getPersonalityComposition } from './personality-composition';
 
 /**
  * Classic personality - The original design system aesthetic
@@ -1140,8 +1141,8 @@ export const electricPersonality: Personality = {
       preload: true,
     },
     heading: {
-      family: '"DM Serif Display", Georgia, serif',
-      weights: [400],
+      family: '"Sora", system-ui, sans-serif',
+      weights: [600, 700],
       display: 'swap',
       preload: true,
     },
@@ -1965,7 +1966,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
     shadow: { style: 'neon', value: '0 0 18px rgba(0,0,0,0.16)' },
     typography: {
       fontFamily: 'display',
-      headingFamily: 'display',
+      headingFamily: 'sans-serif',
       bodyFamily: 'sans-serif',
       fontWeight: 'bold',
       fontStyle: 'normal',
@@ -1984,7 +1985,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
         borderRadius: '10px',
         padding: '12px 24px',
         fontWeight: '700',
-        textTransform: 'uppercase',
+        textTransform: 'none',
       },
       card: {
         borderRadius: '14px',
@@ -2121,10 +2122,10 @@ export const PREDEFINED_PERSONALITIES: Personality[] = [
   foundationPersonality,
 ].map((personality) => ({
   ...personality,
-  presentation: withDerivedFontFamilies(
-    personality,
-    PRESENTATION_BY_ID[personality.id]
-  ),
+  presentation: {
+    ...withDerivedFontFamilies(personality, PRESENTATION_BY_ID[personality.id]),
+    composition: getPersonalityComposition(personality.id),
+  },
 }));
 
 /**

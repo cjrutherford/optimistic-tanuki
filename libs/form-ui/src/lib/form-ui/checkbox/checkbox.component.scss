@@ -37,11 +37,8 @@
     height: 22px;
     background: var(--surface, var(--background));
     border: var(--personality-input-border-width, 1.5px) solid
-      color-mix(in srgb, var(--primary) 20%, transparent);
-    border-radius: var(
-      --personality-input-radius,
-      var(--border-radius-md, 8px)
-    );
+      color-mix(in srgb, var(--foreground) 40%, transparent);
+    border-radius: var(--personality-check-radius, 4px);
     position: relative;
     @include p.personality-transition(all, 'normal');
     box-shadow: var(
@@ -71,27 +68,22 @@
     &:hover {
       border-color: color-mix(in srgb, var(--primary) 50%, transparent);
       background: var(--background);
-      transform: scale(1.05);
+      transform: none;
     }
   }
 
   // Checked state
   input:checked ~ .checkmark {
-    background: linear-gradient(
-      135deg,
-      var(--primary) 0%,
-      var(--secondary) 100%
-    );
+    background: var(--primary);
     border-color: var(--primary);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent);
+    box-shadow: none;
 
     &::after {
       display: block;
     }
 
     &:hover {
-      box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 40%, transparent);
-      transform: scale(1.1);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
     }
   }
 
@@ -110,7 +102,7 @@
 
     &:hover {
       transform: none;
-      border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+      border-color: color-mix(in srgb, var(--foreground) 40%, transparent);
     }
   }
 
@@ -118,7 +110,7 @@
   .form-check-label {
     font-family: var(--font-body, system-ui, sans-serif);
     font-size: 0.9375rem;
-    color: var(--foreground-secondary, var(--foreground));
+    color: var(--foreground);
     line-height: 1.5;
     @include p.personality-transition(color, 'fast');
   }
@@ -177,7 +169,7 @@ input:checked.form-check.has-error ~ .checkmark {
     height: 26px;
     border-radius: var(--border-radius-full, 13px);
     background: var(--surface);
-    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    border-color: color-mix(in srgb, var(--foreground) 40%, transparent);
 
     &::after {
       content: '';
