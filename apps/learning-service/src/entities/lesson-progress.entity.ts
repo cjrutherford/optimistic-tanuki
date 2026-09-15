@@ -15,12 +15,12 @@ import { EnrolmentEntity } from './enrolment.entity';
  * One row per learner per lesson, and the database enforces it.
  *
  * This is not bookkeeping: recordSolvedExercise merges awards with
- * `INSERT ... ON CONFLICT ("profileId", "lessonId")`, and Postgres resolves
+ * `INSERT ... ON CONFLICT ("profileId", "enrolmentId", "lessonId")`, and Postgres resolves
  * that target against a unique index on exactly those columns. Without this
  * the merge has nothing to conflict on, and two exercises finishing together
  * insert two rows instead of combining.
  */
-@Index(['profileId', 'lessonId'], { unique: true })
+@Index(['profileId', 'enrolmentId', 'lessonId'], { unique: true })
 @Index(['userId'])
 @Index(['profileId'])
 export class LessonProgressEntity {

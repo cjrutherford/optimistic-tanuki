@@ -19,11 +19,43 @@ describe('DocsContentComponent', () => {
 
   it('offers jump links to both sections', async () => {
     const element = await render();
-    const hrefs = Array.from(element.querySelectorAll('.jump a')).map((a) =>
-      a.getAttribute('href')
+    const labels = Array.from(element.querySelectorAll('.jump button')).map(
+      (button) => button.textContent?.trim()
     );
 
-    expect(hrefs).toEqual(['#learners', '#authors']);
+    expect(labels).toEqual(['For learners', 'For authors']);
+    expect(
+      element.querySelector('.jump button[aria-pressed="true"]')?.textContent
+    ).toContain('For learners');
+  });
+
+  it('marks the selected section when a jump button is activated', async () => {
+    TestBed.configureTestingModule({ imports: [DocsContentComponent] });
+    const fixture = TestBed.createComponent(DocsContentComponent);
+    fixture.detectChanges();
+
+    (
+      fixture.nativeElement.querySelector(
+        '.jump button:nth-of-type(2)'
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('.jump button[aria-pressed="true"]')
+        ?.textContent
+    ).toContain('For authors');
+  });
+
+  it('keeps the section navigation keyboard accessible', async () => {
+    const element = await render();
+
+    expect(
+      Array.from(element.querySelectorAll('.jump button')).every(
+        (button) => button.getAttribute('type') === 'button'
+      )
+    ).toBe(true);
+    expect(element.querySelector('.jump button:focus-visible')).toBeNull();
   });
 
   it('explains that reading needs no account but submitting needs enrolment', async () => {
@@ -31,6 +63,16 @@ describe('DocsContentComponent', () => {
     const learners = element.querySelector('#learners')?.textContent ?? '';
 
     expect(learners).toContain('Submitting work does');
+  });
+
+  it('documents all four supported activity types', async () => {
+    const element = await render();
+    const learners = element.querySelector('#learners')?.textContent ?? '';
+
+    expect(learners).toContain('Multiple choice');
+    expect(learners).toContain('Written response');
+    expect(learners).toContain('Project submission');
+    expect(learners).toContain('Code run');
   });
 
   it('explains that points are only added once per exercise', async () => {

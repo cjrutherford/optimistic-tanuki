@@ -72,6 +72,42 @@ describe('ActivityEditorComponent', () => {
     expect(changes[0][0].type).toBe('writing.response');
   });
 
+  it('exposes expected output for code activities', async () => {
+    const { element, changes } = await render([
+      {
+        type: 'code.run',
+        id: 'code-1',
+        prompt: 'Print the answer.',
+        starterCode: 'console.log("ok")',
+        expectedOutput: 'old',
+      },
+    ]);
+
+    expect(element.textContent).toContain('Expected output');
+    const boxes = element.querySelectorAll('textarea');
+    expect((boxes[2] as HTMLTextAreaElement).value).toBe('old');
+
+    (boxes[2] as HTMLTextAreaElement).value = 'ok';
+    boxes[2].dispatchEvent(new Event('input'));
+
+    expect(changes[0][0].expectedOutput).toBe('ok');
+  });
+
+  it('shows validation before an incomplete activity can be saved', async () => {
+    const { element } = await render([
+      {
+        type: 'code.run',
+        id: 'incomplete',
+        prompt: '',
+        starterCode: '',
+      },
+    ]);
+
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(
+      'Add a prompt'
+    );
+  });
+
   // Two is the minimum the schema accepts, so starting with one would make
   // every new quiz invalid on arrival.
   it('starts a new quiz with two options', async () => {

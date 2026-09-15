@@ -11,6 +11,9 @@ export const ActivityTypeSchema = z.enum([
 ]);
 export type ActivityType = z.infer<typeof ActivityTypeSchema>;
 
+export const CodeLanguageSchema = z.enum(['typescript', 'go', 'cpp', 'rust']);
+export type CodeLanguage = z.infer<typeof CodeLanguageSchema>;
+
 export const LanguageSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
@@ -265,7 +268,17 @@ export const CodeRunActivitySchema = z.object({
   ...activityBase,
   type: z.literal('code.run'),
   starterCode: z.string(),
+  /** Safe runtime metadata; the verifier and expected output stay server-side. */
+  languageId: CodeLanguageSchema.optional(),
   expectedOutput: z.string().optional(),
+  verifier: z
+    .object({
+      testCode: z.string().optional(),
+      validationPattern: z.string().optional(),
+      executionMode: z.enum(['run', 'test', 'benchmark']).optional(),
+    })
+    .optional(),
+  supportingFiles: z.record(z.string().min(1), z.string()).optional(),
 });
 export const QuizMcqActivitySchema = z.object({
   ...activityBase,
@@ -306,6 +319,7 @@ export const ActivitySchema = z.discriminatedUnion('type', [
 ]);
 export type Activity = z.infer<typeof ActivitySchema>;
 export type QuizMcqActivity = z.infer<typeof QuizMcqActivitySchema>;
+export type CodeRunActivity = z.infer<typeof CodeRunActivitySchema>;
 
 /**
  * An activity as a learner may see it.
@@ -323,7 +337,12 @@ export type QuizMcqActivity = z.infer<typeof QuizMcqActivitySchema>;
 export function publicActivity(activity: Activity) {
   switch (activity.type) {
     case 'code.run': {
-      const { expectedOutput: _expectedOutput, ...rest } = activity;
+      const {
+        expectedOutput: _expectedOutput,
+        verifier: _verifier,
+        supportingFiles: _supportingFiles,
+        ...rest
+      } = activity;
       return rest;
     }
     case 'quiz.mcq': {
@@ -348,6 +367,19 @@ export type WritingResponseActivity = z.infer<
 >;
 
 /** Workspace-owned exercise data, normalized from the former letsgo clients. */
+export const GoExecutionModeSchema = z.enum(['run', 'test', 'benchmark']);
+export type GoExecutionMode = z.infer<typeof GoExecutionModeSchema>;
+
+export const CodeExerciseVerifierSchema = z.object({
+  testCode: z.string().optional(),
+  validationPattern: z.string().optional(),
+  /**
+   * Go's source file may be a runnable program, a test file, or a benchmark.
+   * This stays with the server-held verifier so the browser never needs it.
+   */
+  executionMode: GoExecutionModeSchema.default('run'),
+});
+
 export const CodeExerciseSchema = z.object({
   id: z.string().min(1),
   languageId: z.enum(['typescript', 'go', 'cpp', 'rust']),
@@ -370,15 +402,14 @@ export const CodeExerciseSchema = z.object({
    */
   supportingFiles: z.record(z.string().min(1), z.string()).optional(),
   /** Never returned by the public catalog endpoint. */
-  verifier: z.object({
-    testCode: z.string().optional(),
-    validationPattern: z.string().optional(),
-  }),
+  verifier: CodeExerciseVerifierSchema,
 });
 export type CodeExercise = z.infer<typeof CodeExerciseSchema>;
 
 export const LessonProgressSchema = z.object({
   lessonId: z.string().min(1),
+  /** The offering selected for this progress row, when known. */
+  offeringId: z.string().min(1).optional(),
   completed: z.boolean(),
   completedExerciseIds: z.array(z.string()),
   points: z.number().nonnegative(),
@@ -488,6 +519,8 @@ export const OfferingSchema = z.object({
   unlockRules: z.array(UnlockRuleSchema).optional(),
 });
 export type Offering = z.infer<typeof OfferingSchema>;
+/** Patch value for optional author-written offering copy. */
+export type OfferingTextPatch = string | null;
 
 export const ProgramTrackSchema = z.object({
   id: z.string().min(1),
@@ -871,6 +904,28 @@ export const OfferingOwnershipSchema = z.object({
   updatedAt: z.string().datetime(),
 });
 export type OfferingOwnership = z.infer<typeof OfferingOwnershipSchema>;
+
+/** The largest collaboration group an authored offering may carry. */
+export const CO_EDITOR_PROFILE_ID_MAX = 50;
+
+/**
+ * Profile ids are UUIDs at the service boundary. The transform makes direct
+ * callers behave like the HTTP DTO: surrounding whitespace is harmless and
+ * duplicate invitations do not create duplicate authorization entries.
+ */
+export const CoEditorProfileIdsSchema = z
+  .array(z.string().uuid())
+  .max(CO_EDITOR_PROFILE_ID_MAX)
+  .transform((profileIds) => [...new Set(profileIds)]);
+
+export function normalizeCoEditorProfileIds(value: unknown) {
+  const trimmed = Array.isArray(value)
+    ? value.map((profileId) =>
+        typeof profileId === 'string' ? profileId.trim() : profileId
+      )
+    : value;
+  return CoEditorProfileIdsSchema.safeParse(trimmed);
+}
 
 export const OFFERING_AUTHORIZATION_ACTIONS = [
   'create',

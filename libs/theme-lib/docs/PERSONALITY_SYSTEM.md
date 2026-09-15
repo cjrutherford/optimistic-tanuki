@@ -95,8 +95,17 @@ The ThemeService generates comprehensive CSS variables when a personality is app
 
 /* Design tokens */
 --spacing-xs, --spacing-sm, --spacing-md, --spacing-lg, --spacing-xl
---shadow-sm, --shadow-md, --shadow-lg, --shadow-xl
+--shadow-inset, --shadow-sm, --shadow-md, --shadow-lg, --shadow-xl
 --border-radius-sm, --border-radius-md, --border-radius-lg
+```
+
+`--shadow-inset` is the personality-aware recessed shadow for wells, editors,
+and tactile controls. It is generated from the active shadow profile and mode,
+rather than being a fixed application-level literal. Consumers that need an
+SSR-safe adapter should provide a fallback:
+
+```scss
+--app-shadow-inset: var(--shadow-inset, inset 0 2px 6px rgba(0, 0, 0, 0.18));
 ```
 
 ### 3. Component Integration

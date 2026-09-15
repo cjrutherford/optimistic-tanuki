@@ -30,6 +30,13 @@ Relevant variables:
 
 The runner publishes no host port, on purpose.
 
+The isolated review launcher requires `LEARNING_REVIEW_HOST`, or derives a
+non-loopback host address when explicitly allowed. It reports the resulting
+review URL at startup rather than assuming a particular LAN. For an HTTP-only
+local review, it passes `AUTH_COOKIE_SECURE=false` to the gateway; the gateway
+keeps its normal production-secure default when that explicit override is
+absent.
+
 ## Kubernetes
 
 Manifests live at:
@@ -58,10 +65,11 @@ listed in `k8s/base/config/app-registry.json`.
    enforces nothing, which would leave an arbitrary-code executor with cluster
    and internet egress. Calico or Cilium; on MicroK8s,
    `microk8s enable community/calico`.
-3. **Set `--pod-max-pids` on the nodes the runner schedules to.** It is the
-   one Compose control (`pids_limit: 256`) with no pod-level equivalent in the
-   Kubernetes API. Until it is set, the memory limit is the only backstop
-   against a fork bomb in submitted code.
+3. **Set `--pod-max-pids=32` on the nodes the runner schedules to.** It is the
+   one Compose control (`pids_limit: 32`) with no pod-level equivalent in the
+   Kubernetes API. The runner also counts each child process group and kills it
+   above 32 processes, so the application-level ceiling remains in force when
+   the node setting is unavailable.
 4. **Patch `LEARNING_OLLAMA_URL`** to an inference host the cluster can reach.
    Grading fails soft — an unreachable grader stores the attempt unmarked
    rather than losing it — so this is not release-blocking, but written answers
@@ -78,10 +86,12 @@ listed in `k8s/base/config/app-registry.json`.
 
 `apps/learning-runner/server.mjs` states the security model plainly: the
 container is the sandbox. Six properties carry it — no capabilities, no new
-privileges, a read-only root filesystem, no network egress, a memory cap, and
-scratch storage wiped between runs — and each is expressed twice, once in
-Compose and once in the Kubernetes manifest, because none of the Compose
-controls translate. If you change one, change both.
+privileges, a read-only root filesystem, no network egress, a 256 MiB memory
+cap, and scratch storage wiped between runs — and each is expressed twice,
+once in Compose and once in the Kubernetes manifest, because none of the
+Compose controls translate. The runner additionally applies a 32-process and
+10-second CPU limit to every compiler or submitted process. If you change one,
+change both.
 
 The `tools/admin-env-wizard` catalog carries the same set as a `Sandbox` on the
 `learning-runner` preset, and both generators emit it — compose through

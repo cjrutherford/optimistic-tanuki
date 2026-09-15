@@ -39,10 +39,14 @@ services:
     environment:
       PORT: 3025
       LEARNING_SCRATCH_DIR: /scratch
+      LEARNING_RUNNER_PROCESS_LIMIT: 32
+      LEARNING_RUNNER_CPU_LIMIT_SECONDS: 10
+      LEARNING_RUNNER_GO_CONCURRENCY: 1
+      LEARNING_RUNNER_COMPILE_TIMEOUT_MS: 30000
     read_only: true
     tmpfs:
       - /tmp:size=16m,noexec,nosuid
-      - /scratch:size=512m,exec,nosuid,nodev,mode=1777
+      - /scratch:size=192m,exec,nosuid,nodev,mode=1777
     # On an internal network: the learning service can reach it, and it
     # cannot reach the internet. network_mode: none would be tighter but
     # also unreachable, which is no use to anyone.
@@ -50,8 +54,8 @@ services:
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
-    pids_limit: 256
-    mem_limit: 1g
+    pids_limit: 32
+    mem_limit: 256m
 
   # ──────────────── Identity ────────────────
   # Authoring is entirely behind a session: the gateway resolves a learning

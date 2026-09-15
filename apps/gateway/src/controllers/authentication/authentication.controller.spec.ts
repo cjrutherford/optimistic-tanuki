@@ -349,6 +349,37 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('honours an explicit insecure cookie setting for HTTP review runtimes', async () => {
+    const original = process.env.AUTH_COOKIE_SECURE;
+    process.env.AUTH_COOKIE_SECURE = 'false';
+    const response = { cookie: jest.fn() };
+    loginBootstrap.login.mockResolvedValueOnce({
+      data: { newToken: 'review-token' },
+    });
+
+    try {
+      await controller.loginUser(
+        { email: 'test@test.com', password: 'test' },
+        'test',
+        'cookie',
+        response as any
+      );
+    } finally {
+      if (original === undefined) delete process.env.AUTH_COOKIE_SECURE;
+      else process.env.AUTH_COOKIE_SECURE = original;
+    }
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'ot_session',
+      'review-token',
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+      })
+    );
+  });
+
   it('returns only non-secret session identity for an authenticated session', () => {
     expect(
       controller.currentSession({

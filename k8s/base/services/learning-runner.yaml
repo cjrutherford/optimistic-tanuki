@@ -14,10 +14,12 @@
 #   5. a memory cap                   -> resources.limits.memory
 #   6. scratch wiped between runs     -> memory-backed emptyDir volumes
 #
-# The one Compose control with no pod-level equivalent is `pids_limit: 256`.
+# The one Compose control with no pod-level equivalent is `pids_limit: 32`.
 # Kubernetes exposes process limits only per node, via the kubelet's
-# `--pod-max-pids`. Set that on any node this is scheduled to; the memory cap
-# is the backstop until then.
+# `--pod-max-pids`; set it to 32 or lower on every node this is scheduled to.
+# The runner also counts each child process group and kills it above 32
+# processes, so a cluster that cannot set the kubelet value still has an
+# application-level process ceiling.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -52,6 +54,14 @@ spec:
               value: '3025'
             - name: LEARNING_SCRATCH_DIR
               value: '/scratch'
+            - name: LEARNING_RUNNER_PROCESS_LIMIT
+              value: '32'
+            - name: LEARNING_RUNNER_CPU_LIMIT_SECONDS
+              value: '10'
+            - name: LEARNING_RUNNER_GO_CONCURRENCY
+              value: '1'
+            - name: LEARNING_RUNNER_COMPILE_TIMEOUT_MS
+              value: '30000'
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -64,11 +74,8 @@ spec:
               cpu: '250m'
             limits:
               # A memory-backed emptyDir is charged to the container's memory
-              # limit, exactly as a Compose tmpfs is charged to mem_limit, so
-              # this has to cover the scratch mount as well as the process.
-              # Go's build cache alone needs a few hundred MB the first time
-              # it compiles the standard library.
-              memory: '1Gi'
+              # limit, exactly as a Compose tmpfs is charged to mem_limit.
+              memory: '256Mi'
               cpu: '1000m'
           volumeMounts:
             - name: scratch
@@ -92,7 +99,7 @@ spec:
         - name: scratch
           emptyDir:
             medium: Memory
-            sizeLimit: 512Mi
+            sizeLimit: 192Mi
         - name: tmp
           emptyDir:
             medium: Memory

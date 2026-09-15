@@ -242,6 +242,70 @@ describe('CourseEditorComponent', () => {
     expect(element.textContent).toContain('Add Project submission');
   });
 
+  it('loads and saves the author-facing audience and outcome', async () => {
+    const { fixture, element, http, button } = await render(
+      detail({
+        offering: {
+          audience: 'People who want a practical start.',
+          outcome: 'Build a small colour study with confidence.',
+          activities: [
+            {
+              type: 'code.run',
+              id: 'a1',
+              prompt: 'Print the answer.',
+              starterCode: 'console.log("ok")',
+              expectedOutput: 'ok',
+            },
+          ],
+        },
+      })
+    );
+
+    expect(
+      (element.querySelector('.audience') as HTMLTextAreaElement).value
+    ).toBe('People who want a practical start.');
+    expect(
+      (element.querySelector('.outcome') as HTMLTextAreaElement).value
+    ).toBe('Build a small colour study with confidence.');
+    expect(element.textContent).toContain('Expected output');
+
+    fixture.componentInstance.audience.set('  Curious beginners.  ');
+    fixture.componentInstance.outcome.set(
+      '  Mix three pigments deliberately.  '
+    );
+    button('Save')?.click();
+
+    const request = http.expectOne('/api/learning/offerings/art-1');
+    expect(request.request.body.audience).toBe('Curious beginners.');
+    expect(request.request.body.outcome).toBe(
+      'Mix three pigments deliberately.'
+    );
+    expect(request.request.body.activities[0].expectedOutput).toBe('ok');
+  });
+
+  it('serializes an empty audience as an explicit clear while preserving outcome', async () => {
+    const { fixture, http, button } = await render(
+      detail({
+        offering: {
+          audience: 'People who want a practical start.',
+          outcome: 'Build a small colour study with confidence.',
+        },
+      })
+    );
+
+    fixture.componentInstance.audience.set('   ');
+    fixture.componentInstance.outcome.set(
+      '  Mix three pigments deliberately.  '
+    );
+    button('Save')?.click();
+
+    const request = http.expectOne('/api/learning/offerings/art-1');
+    expect(request.request.body.audience).toBeNull();
+    expect(request.request.body.outcome).toBe(
+      'Mix three pigments deliberately.'
+    );
+  });
+
   it('opens an empty course without falling over', async () => {
     const empty = detail({ offering: { modules: [], activities: [] } });
     const { element } = await render(empty);

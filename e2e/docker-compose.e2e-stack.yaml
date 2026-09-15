@@ -780,14 +780,18 @@ services:
       dockerfile: ./apps/learning-runner/Dockerfile
     environment:
       PORT: 3025
+      LEARNING_RUNNER_PROCESS_LIMIT: 32
+      LEARNING_RUNNER_CPU_LIMIT_SECONDS: 10
+      LEARNING_RUNNER_GO_CONCURRENCY: 1
+      LEARNING_RUNNER_COMPILE_TIMEOUT_MS: 30000
     networks: [learning-internal]
     read_only: true
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
-    pids_limit: 256
-    mem_limit: 1g
+    pids_limit: 32
+    mem_limit: 256m
     tmpfs:
-      - /scratch:exec,size=512m
+      - /scratch:exec,size=192m
 
   learning-service:
     profiles: [learning]

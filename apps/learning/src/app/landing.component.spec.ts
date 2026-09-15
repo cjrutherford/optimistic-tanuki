@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { LandingComponent } from './landing.component';
 import { LearningDataService } from './learning-data.service';
@@ -50,6 +50,7 @@ describe('LandingComponent', () => {
     TestBed.configureTestingModule({
       imports: [LandingComponent],
       providers: [
+        provideRouter([]),
         {
           provide: LearningDataService,
           useValue: {
@@ -159,35 +160,32 @@ describe('LandingComponent', () => {
     expect(typeof LearningAuthService.prototype.me).toBe('function');
   });
 
-  /**
-   * This page draws its own header rather than using the studio layout, so
-   * links added to that layout do not appear here. About and Docs were added
-   * to the layout and were reachable from every page except this one, which
-   * is the only page a stranger actually arrives on.
-   */
-  it('offers a stranger a way to read what this is', () => {
-    const labels = Array.from(
-      build({}).nativeElement.querySelectorAll('header nav button')
-    ).map((button) => (button as HTMLButtonElement).textContent?.trim());
+  it('keeps Menu and Challenges discoverable from the front door', () => {
+    const element = build({}).nativeElement as HTMLElement;
 
-    expect(labels).toEqual(expect.arrayContaining(['About', 'Docs']));
+    expect(element.querySelector('.menu-toggle')).toBeTruthy();
+    expect(element.querySelector('.challenge-toggle')).toBeTruthy();
+    expect(element.querySelector('.appearance-trigger')).toBeTruthy();
   });
 
-  it.each([
-    ['About', '/about'],
-    ['Docs', '/docs'],
-  ])('sends %s to %s', (label, path) => {
-    const nativeElement = build({}).nativeElement;
-    const navigate = jest.spyOn(TestBed.inject(Router), 'navigateByUrl');
-    const button = Array.from(
-      nativeElement.querySelectorAll('header nav button')
-    ).find(
-      (candidate) =>
-        (candidate as HTMLButtonElement).textContent?.trim() === label
-    ) as HTMLButtonElement;
+  it('opens the same navigation drawer pattern as the course shell', () => {
+    const fixture = build({});
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector('.menu-toggle') as HTMLButtonElement;
 
-    button.click();
+    toggle.click();
+    fixture.detectChanges();
 
-    expect(navigate).toHaveBeenCalledWith(path);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(
+      element.querySelector('.topbar-sheet')?.getAttribute('aria-hidden')
+    ).toBe('false');
+    expect(element.textContent).toContain('Browse courses');
+    expect(element.textContent).toContain('About');
+    expect(element.textContent).toContain('Docs');
+  });
+
+  it('keeps challenges discoverable from the front door', () => {
+    expect(build({}).nativeElement.textContent).toContain('Challenges');
   });
 });

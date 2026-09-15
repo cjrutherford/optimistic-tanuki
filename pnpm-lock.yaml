@@ -624,6 +624,12 @@ importers:
 
   apps/billing: {}
 
+  apps/learning-runner:
+    dependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   libs/ag-grid-ui:
     dependencies:
       '@angular/common':

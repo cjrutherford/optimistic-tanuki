@@ -93,4 +93,50 @@ describe('authentication config oauth env loading', () => {
     );
     expect(config.oauth.github?.enabled).toBe(false);
   });
+
+  it('reads JSON-as-YAML authentication config values without corrupting passwords', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const configDir = path.resolve('tmp/authentication-config-test');
+    const configPath = path.join(configDir, 'config.yaml');
+    const password = 'colon: # "quoted"\nwith whitespace';
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({
+        listenPort: 3001,
+        database: {
+          host: '127.0.0.1',
+          port: 5432,
+          name: 'ot_authentication',
+          username: 'postgres',
+          password,
+        },
+        auth: {},
+        oauth: {},
+      })
+    );
+
+    const originalPath = process.env.AUTHENTICATION_CONFIG_PATH;
+    const originalPassword = process.env.POSTGRES_PASSWORD;
+    process.env.AUTHENTICATION_CONFIG_PATH = configPath;
+    delete process.env.POSTGRES_PASSWORD;
+
+    try {
+      const { default: loadConfig } = await import('./config');
+      expect(loadConfig().database.password).toBe(password);
+    } finally {
+      if (originalPath === undefined) {
+        delete process.env.AUTHENTICATION_CONFIG_PATH;
+      } else {
+        process.env.AUTHENTICATION_CONFIG_PATH = originalPath;
+      }
+      if (originalPassword === undefined) {
+        delete process.env.POSTGRES_PASSWORD;
+      } else {
+        process.env.POSTGRES_PASSWORD = originalPassword;
+      }
+      fs.rmSync(configDir, { recursive: true, force: true });
+    }
+  });
 });

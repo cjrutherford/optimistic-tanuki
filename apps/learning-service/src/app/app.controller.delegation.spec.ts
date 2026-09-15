@@ -1,5 +1,31 @@
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { LearningAppService } from './app.controller';
+
+interface AppServiceDelegationDouble {
+  listPublicPrograms: jest.Mock;
+  listCatalog: jest.Mock;
+  submitAttempt: jest.Mock;
+  recordEvaluation: jest.Mock;
+  getLesson: jest.Mock;
+  listSubjects: jest.Mock;
+  listMyOfferings: jest.Mock;
+  getOfferingDetail: jest.Mock;
+  getProgress: jest.Mock;
+  saveProgress: jest.Mock;
+  runCode: jest.Mock;
+  getDashboard: jest.Mock;
+  submitExercise: jest.Mock;
+  answerActivity: jest.Mock;
+  listChallenges: jest.Mock;
+  enrol: jest.Mock;
+  withdraw: jest.Mock;
+  listEnrolments: jest.Mock;
+  createOffering: jest.Mock;
+  updateOffering: jest.Mock;
+  deleteOffering: jest.Mock;
+  getOfferingOwnership: jest.Mock;
+  setCoEditors: jest.Mock;
+}
 
 /**
  * The spec beside this one drives the controller against a real in-memory
@@ -10,9 +36,9 @@ import { AppService } from './app.service';
  */
 describe('AppController delegation', () => {
   let controller: AppController;
-  let appService: Record<string, jest.Mock>;
+  let appService: AppServiceDelegationDouble;
 
-  const methods = [
+  const methods: (keyof AppServiceDelegationDouble)[] = [
     'listPublicPrograms',
     'listCatalog',
     'submitAttempt',
@@ -27,6 +53,7 @@ describe('AppController delegation', () => {
     'getDashboard',
     'submitExercise',
     'answerActivity',
+    'listChallenges',
     'enrol',
     'withdraw',
     'listEnrolments',
@@ -38,10 +65,32 @@ describe('AppController delegation', () => {
   ];
 
   beforeEach(() => {
-    appService = Object.fromEntries(
-      methods.map((name) => [name, jest.fn(() => `result:${name}`)])
-    );
-    controller = new AppController(appService as unknown as AppService);
+    appService = {
+      listPublicPrograms: jest.fn(() => 'result:listPublicPrograms'),
+      listCatalog: jest.fn(() => 'result:listCatalog'),
+      submitAttempt: jest.fn(() => 'result:submitAttempt'),
+      recordEvaluation: jest.fn(() => 'result:recordEvaluation'),
+      getLesson: jest.fn(() => 'result:getLesson'),
+      listSubjects: jest.fn(() => 'result:listSubjects'),
+      listMyOfferings: jest.fn(() => 'result:listMyOfferings'),
+      getOfferingDetail: jest.fn(() => 'result:getOfferingDetail'),
+      getProgress: jest.fn(() => 'result:getProgress'),
+      saveProgress: jest.fn(() => 'result:saveProgress'),
+      runCode: jest.fn(() => 'result:runCode'),
+      getDashboard: jest.fn(() => 'result:getDashboard'),
+      submitExercise: jest.fn(() => 'result:submitExercise'),
+      answerActivity: jest.fn(() => 'result:answerActivity'),
+      listChallenges: jest.fn(() => 'result:listChallenges'),
+      enrol: jest.fn(() => 'result:enrol'),
+      withdraw: jest.fn(() => 'result:withdraw'),
+      listEnrolments: jest.fn(() => 'result:listEnrolments'),
+      createOffering: jest.fn(() => 'result:createOffering'),
+      updateOffering: jest.fn(() => 'result:updateOffering'),
+      deleteOffering: jest.fn(() => 'result:deleteOffering'),
+      getOfferingOwnership: jest.fn(() => 'result:getOfferingOwnership'),
+      setCoEditors: jest.fn(() => 'result:setCoEditors'),
+    };
+    controller = new AppController(appService as LearningAppService);
   });
 
   it.each<[string, () => unknown, string, unknown[]]>([
@@ -69,6 +118,18 @@ describe('AppController delegation', () => {
       () => controller.runCode({ activityId: 'act-1', code: 'x=1' }),
       'runCode',
       ['act-1', 'x=1'],
+    ],
+    [
+      'runCode',
+      () =>
+        controller.runCode({
+          activityId: 'act-1',
+          code: 'x=1',
+          profileId: 'p1',
+          offeringId: 'o1',
+        }),
+      'runCode',
+      ['act-1', 'x=1', 'p1', 'o1'],
     ],
     [
       'getDashboard',
@@ -155,10 +216,10 @@ describe('AppController delegation', () => {
       () =>
         controller.setCoEditors({
           offeringId: 'o1',
-          coEditorProfileIds: ['p2'],
+          coEditorProfileIds: ['123e4567-e89b-42d3-a456-426614174002'],
         }),
       'setCoEditors',
-      ['o1', ['p2']],
+      ['o1', ['123e4567-e89b-42d3-a456-426614174002']],
     ],
   ])(
     '%s forwards to the service and returns its result',
@@ -197,6 +258,38 @@ describe('AppController delegation', () => {
       expect(appService['getLesson']).toHaveBeenCalledWith('t1', 'l1', {});
     });
 
+    it('passes an offering selector when a lesson route carries one', () => {
+      controller.getLesson({
+        trackId: 't1',
+        lessonId: 'l1',
+        offeringId: 'o1',
+      });
+
+      expect(appService['getLesson']).toHaveBeenCalledWith(
+        't1',
+        'l1',
+        {},
+        'o1'
+      );
+    });
+
+    it('passes the module selector when a lesson route carries one', () => {
+      controller.getLesson({
+        trackId: 't1',
+        lessonId: 'l1',
+        offeringId: 'o1',
+        moduleId: 'm1',
+      });
+
+      expect(appService['getLesson']).toHaveBeenCalledWith(
+        't1',
+        'l1',
+        {},
+        'o1',
+        'm1'
+      );
+    });
+
     it('getOffering defaults a missing viewer', () => {
       controller.getOffering({ offeringId: 'o1' });
 
@@ -221,6 +314,31 @@ describe('AppController delegation', () => {
       expect(appService['recordEvaluation']).toHaveBeenCalledWith(
         expect.objectContaining({ humanOverride: true })
       );
+    });
+
+    it('normalizes direct co-editor calls before reaching the service', () => {
+      controller.setCoEditors({
+        offeringId: 'o1',
+        coEditorProfileIds: [
+          ' 123e4567-e89b-42d3-a456-426614174002 ',
+          '123e4567-e89b-42d3-a456-426614174002',
+        ],
+      });
+
+      expect(appService.setCoEditors).toHaveBeenCalledWith('o1', [
+        '123e4567-e89b-42d3-a456-426614174002',
+      ]);
+    });
+
+    it('refuses malformed direct co-editor calls without persistence', () => {
+      expect(() =>
+        controller.setCoEditors({
+          offeringId: 'o1',
+          coEditorProfileIds: ['not-a-uuid'],
+        })
+      ).toThrow();
+
+      expect(appService.setCoEditors).not.toHaveBeenCalled();
     });
 
     it('saveProgress sends only the lesson and completion flag', () => {

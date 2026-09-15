@@ -36,8 +36,23 @@ import { Component, computed, input } from '@angular/core';
     `
       .card {
         display: grid;
-        gap: 0.4rem;
-        padding: 1.1rem 0.35rem;
+        gap: 0.5rem;
+        padding: 1.35rem 1.6rem;
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-left: calc(var(--lx-border-width) + 3px) var(--lx-border-style)
+          var(--lx-accent);
+        border-radius: var(--lx-radius);
+        box-shadow: var(--lx-shadow-card);
+        transition: var(--lx-btn-transition);
+      }
+      :host-context(a:hover) .card,
+      .card:hover {
+        border-color: var(--lx-accent);
+        box-shadow: var(--lx-shadow-control);
+        transform: translate(-1px, -1px);
       }
       header {
         display: flex;
@@ -48,7 +63,7 @@ import { Component, computed, input } from '@angular/core';
       .variant,
       .draft {
         font: 700 0.68rem var(--lx-font-mono, ui-monospace, monospace);
-        letter-spacing: 0.1em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
       .variant {
@@ -56,27 +71,30 @@ import { Component, computed, input } from '@angular/core';
       }
       .draft {
         padding: 0.1rem 0.4rem;
-        border: 1px dashed var(--lx-border-strong, currentColor);
+        border: var(--lx-border-width) dashed
+          var(--lx-border-hard, currentColor);
         border-radius: var(--lx-radius, 2px);
         color: var(--lx-text-muted, currentColor);
       }
       h2 {
         margin: 0;
-        font-size: 1.2rem;
+        font-family: var(--lx-font-heading);
+        font-size: 1.25rem;
         letter-spacing: -0.01em;
       }
       .description {
         margin: 0;
-        max-width: 60ch;
+        max-width: 65ch;
         color: var(--lx-text-body, currentColor);
-        font-size: 0.92rem;
-        line-height: 1.5;
+        font-size: 0.94rem;
+        line-height: 1.55;
       }
       .facts,
       .author {
         margin: 0;
         color: var(--lx-text-muted, currentColor);
         font-size: 0.85rem;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
       }
     `,
   ],

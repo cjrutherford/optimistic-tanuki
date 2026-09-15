@@ -59,6 +59,15 @@ describe('LessonCompletionComponent', () => {
     expect(element.textContent).toContain('Saving');
   });
 
+  it('locks the undo control while an unread save is in flight', async () => {
+    const { element } = await render({ completed: true, busy: true });
+
+    expect(
+      (element.querySelector('.undo') as HTMLButtonElement | null)?.disabled
+    ).toBe(true);
+    expect(element.textContent).toContain('Saving');
+  });
+
   it('shows why a save did not stick', async () => {
     const { element } = await render({
       error: 'Enrol in this course to keep your progress.',

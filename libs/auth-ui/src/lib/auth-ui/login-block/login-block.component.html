@@ -8,15 +8,21 @@
           <img width="300" src="{{ heroSrc }}" alt="{{ heroAlt }}" />
         </div>
         <div class="form">
-          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <form
+            [formGroup]="loginForm"
+            autocomplete="on"
+            (ngSubmit)="onSubmit()"
+          >
             <lib-text-input
               formControlName="email"
               label="Email"
+              autocomplete="username"
             ></lib-text-input>
             <lib-text-input
               formControlName="password"
               label="Password"
               type="password"
+              autocomplete="current-password"
             ></lib-text-input>
             @if (errorMessage) {
             <p class="auth-error" role="alert">{{ errorMessage }}</p>

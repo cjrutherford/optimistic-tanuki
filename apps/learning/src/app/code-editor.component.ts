@@ -33,6 +33,34 @@ function hex(value: string): string {
 }
 
 /**
+ * Monaco 0.54 enables the browser EditContext API by default. Its native
+ * editing surface is intentionally a one-row input, which is not the right
+ * interaction model for this full code viewport. Use Monaco's supported
+ * textarea edit context instead; it preserves multiline input and lets the
+ * existing automatic layout own the viewport.
+ */
+export function monacoEditorOptions(value: string, language: string) {
+  return {
+    value,
+    language,
+    theme: THEME,
+    editContext: false,
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    fontSize: 13,
+    lineNumbersMinChars: 3,
+    padding: { top: 12, bottom: 12 },
+    tabSize: 4,
+    renderLineHighlight: 'line' as const,
+    wordBasedSuggestions: 'off' as const,
+    quickSuggestions: false,
+    occurrencesHighlight: 'off' as const,
+    links: false,
+  };
+}
+
+/**
  * The code editor for an exercise.
  *
  * A plain textarea renders first and stays in the DOM. Monaco is browser-only,
@@ -45,6 +73,12 @@ function hex(value: string): string {
   imports: [FormsModule],
   template: `
     <div class="editor" [class.mounted]="mounted()">
+      <div class="editor-topbar" aria-hidden="true">
+        <span class="editor-led"></span>
+        <span class="editor-topbar-label"
+          >Code viewport · {{ language() }}</span
+        >
+      </div>
       <div
         #host
         class="monaco"
@@ -65,12 +99,51 @@ function hex(value: string): string {
     `
       .editor {
         position: relative;
-        min-height: 260px;
+        min-width: 0;
+        min-height: 220px;
+        overflow: hidden;
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-strong);
+        border-radius: var(--lx-radius, 2px);
+        background-color: var(--lx-code);
+        background-image: var(--lx-surface-texture, none);
+        box-shadow: var(--lx-shadow-inset);
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
+      }
+      .editor:focus-within {
+        outline: var(--lx-border-width, 2px) solid var(--lx-focus);
+        outline-offset: 2px;
+      }
+      .editor-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-height: 2rem;
+        box-sizing: border-box;
+        padding: 0.45rem 0.7rem;
+        border-bottom: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft);
+        background: var(--lx-surface-active);
+        color: var(--lx-text-muted);
+        font: var(--lx-btn-weight, 800) 0.62rem/1
+          var(--lx-font-mono, ui-monospace, monospace);
+        letter-spacing: 0.08em;
+        text-transform: var(--lx-btn-transform, uppercase);
+      }
+      .editor-led {
+        display: inline-block;
+        width: 0.45rem;
+        height: 0.45rem;
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-bg);
+        border-radius: 50%;
+        background: var(--lx-accent);
+        box-shadow: var(--lx-shadow-sm);
       }
       .monaco {
         display: none;
-        height: 320px;
-        border: 1px solid var(--lx-border-strong);
+        height: clamp(220px, 32vw, 340px);
+        min-width: 0;
       }
       .editor.mounted .monaco {
         display: block;
@@ -79,16 +152,28 @@ function hex(value: string): string {
         display: block;
         box-sizing: border-box;
         width: 100%;
-        min-height: 260px;
-        padding: 1rem;
-        border: 1px solid var(--lx-border-strong);
+        height: clamp(220px, 32vw, 340px);
+        min-height: 220px;
+        padding: 0.9rem;
+        border: 0;
+        border-top: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft);
+        border-radius: 0;
         background: var(--lx-code);
         color: var(--lx-code-text);
         font: 400 0.82rem/1.6 var(--lx-font-mono, ui-monospace, monospace);
         resize: vertical;
       }
+      textarea:focus {
+        outline: none;
+      }
       .editor.mounted textarea {
         display: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .editor {
+          transition: none;
+        }
       }
     `,
   ],
@@ -226,24 +311,10 @@ export class CodeEditorComponent {
       requestAnimationFrame(() => resolve())
     );
 
-    this.editor = monaco.editor.create(this.host().nativeElement, {
-      value: this.code(),
-      language: this.monacoLanguage(),
-      theme: THEME,
-      automaticLayout: true,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      fontSize: 13,
-      lineNumbersMinChars: 3,
-      padding: { top: 12, bottom: 12 },
-      tabSize: 4,
-      renderLineHighlight: 'line',
-      // Nothing here needs the editor web worker, so these stay off.
-      wordBasedSuggestions: 'off',
-      quickSuggestions: false,
-      occurrencesHighlight: 'off',
-      links: false,
-    });
+    this.editor = monaco.editor.create(
+      this.host().nativeElement,
+      monacoEditorOptions(this.code(), this.monacoLanguage())
+    );
 
     this.editor.onDidChangeModelContent(() => {
       this.applying = true;

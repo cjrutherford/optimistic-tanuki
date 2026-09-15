@@ -150,16 +150,29 @@ export class TypeOrmLearningRepository implements LearningRepository {
     // Parsed, not spread and trusted. Modules and activities arrive from an
     // author, so this is where a lesson with neither a body nor a source path,
     // or a quiz with one option, is refused rather than stored.
+    const offeringToParse = { ...offering };
+    if (patch.audience !== undefined) {
+      if (patch.audience === null) {
+        delete offeringToParse.audience;
+      } else {
+        offeringToParse.audience = patch.audience;
+      }
+    }
+    if (patch.outcome !== undefined) {
+      if (patch.outcome === null) {
+        delete offeringToParse.outcome;
+      } else {
+        offeringToParse.outcome = patch.outcome;
+      }
+    }
     const updatedOffering = OfferingSchema.parse({
-      ...offering,
+      ...offeringToParse,
       ...(patch.displayName !== undefined
         ? { displayName: patch.displayName }
         : {}),
       ...(patch.description !== undefined
         ? { description: patch.description }
         : {}),
-      ...(patch.audience !== undefined ? { audience: patch.audience } : {}),
-      ...(patch.outcome !== undefined ? { outcome: patch.outcome } : {}),
       ...(patch.modules !== undefined ? { modules: patch.modules } : {}),
       ...(patch.activities !== undefined
         ? { activities: patch.activities }
@@ -182,8 +195,15 @@ export class TypeOrmLearningRepository implements LearningRepository {
   }
 
   async deleteOffering(offeringId: string): Promise<void> {
-    await this.programTrackRepo.delete({ trackId: offeringId });
-    await this.offeringOwnershipRepo.delete({ offeringId });
+    await this.programTrackRepo.manager.transaction(async (manager) => {
+      const deleted = await manager.delete(ProgramTrackEntity, {
+        trackId: offeringId,
+      });
+      if (!deleted.affected) {
+        throw new NotFoundException(`Unknown offering: ${offeringId}`);
+      }
+      await manager.delete(OfferingOwnershipEntity, { offeringId });
+    });
   }
 
   async getOwnership(
@@ -286,9 +306,12 @@ export class TypeOrmLearningRepository implements LearningRepository {
   }
 
   async getProgress(profileId: string): Promise<LessonProgress[]> {
-    return (await this.lessonProgressRepo.find({ where: { profileId } })).map(
-      (row) => this.toProgressDomain(row)
-    );
+    return (
+      await this.lessonProgressRepo.find({
+        where: { profileId },
+        relations: { enrolment: true },
+      })
+    ).map((row) => this.toProgressDomain(row));
   }
 
   async saveProgress(
@@ -298,7 +321,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
     progress: Omit<LessonProgress, 'updatedAt'>
   ): Promise<LessonProgress> {
     const existing = await this.lessonProgressRepo.findOne({
-      where: { profileId, lessonId: progress.lessonId },
+      where: { profileId, enrolmentId, lessonId: progress.lessonId },
     });
     const entity = this.lessonProgressRepo.create({
       ...(existing ?? {}),
@@ -339,7 +362,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
          ("userId", "profileId", "enrolmentId", "lessonId",
           "completed", "completedExerciseIds", "points")
        VALUES ($1, $2, $3, $4, false, $5::jsonb, $6)
-       ON CONFLICT ("profileId", "lessonId") DO UPDATE SET
+       ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE SET
          "completedExerciseIds" =
            CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
                 THEN "lp_lesson_progress"."completedExerciseIds"
@@ -350,10 +373,11 @@ export class TypeOrmLearningRepository implements LearningRepository {
            CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
                 THEN 0 ELSE $6 END,
          "updatedAt" = now()
-       RETURNING "lessonId", "completed", "completedExerciseIds", "points", "updatedAt"`,
+       RETURNING "lessonId", "enrolmentId", "completed", "completedExerciseIds", "points", "updatedAt"`,
       [userId, profileId, enrolmentId, lessonId, solved, exercise.points]
     )) as Array<{
       lessonId: string;
+      enrolmentId: string;
       completed: boolean;
       completedExerciseIds: string[];
       points: number;
@@ -470,6 +494,9 @@ export class TypeOrmLearningRepository implements LearningRepository {
   private toProgressDomain(entity: LessonProgressEntity): LessonProgress {
     return {
       lessonId: entity.lessonId,
+      ...(entity.enrolment?.offeringId
+        ? { offeringId: entity.enrolment.offeringId }
+        : {}),
       completed: entity.completed,
       completedExerciseIds: entity.completedExerciseIds,
       points: entity.points,

@@ -1,8 +1,8 @@
 /**
  * The test harness injected ahead of a learner's TypeScript submission.
  *
- * Written as plain JavaScript inside a string so the type stripper never has
- * to parse it, and kept to the matchers the exercises actually use.
+ * The runtime stays plain JavaScript, with small declarations at the top so
+ * learner tests type-check without adding a runtime dependency.
  *
  * Results are collected rather than thrown, then written after the marker on
  * exit, so a failing assertion still lets the remaining cases run and the
@@ -10,7 +10,13 @@
  */
 export const RESULT_MARKER = '__LEARNING_TEST_RESULTS__';
 
-export const TYPESCRIPT_HARNESS = `;(function () {
+export const TYPESCRIPT_HARNESS = `declare const process: any;
+declare function test(name: string, fn: () => void): void;
+declare function it(name: string, fn: () => void): void;
+declare function expect(actual: unknown): any;
+declare function spy(impl?: (...args: any[]) => any): any;
+
+;(function () {
   var _results = [];
 
   function test(name, fn) {

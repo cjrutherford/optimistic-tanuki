@@ -86,7 +86,7 @@ import { Component, input, output } from '@angular/core';
         margin: 0 0 0.9rem;
         font-family: var(--lx-font-mono);
         font-size: 0.72rem;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0.18em;
         text-transform: uppercase;
         color: var(--lx-accent);
@@ -114,21 +114,44 @@ import { Component, input, output } from '@angular/core';
         margin-top: 2rem;
       }
       button {
-        font: inherit;
-        font-weight: 600;
+        font-family: var(--lx-font-mono, monospace);
+        font-size: 0.88rem;
+        font-weight: var(--lx-btn-weight, 800);
+        text-transform: var(--lx-btn-transform, uppercase);
+        letter-spacing: 0.06em;
         padding: 0.8rem 1.4rem;
         border-radius: var(--lx-radius);
         cursor: pointer;
+        transition: var(--lx-btn-transition);
       }
       .primary {
-        border: 1px solid var(--lx-accent);
+        border: var(--lx-border-width) var(--lx-border-style) var(--lx-accent);
         background: var(--lx-accent);
         color: var(--lx-bg);
+        box-shadow: var(--lx-shadow-sm);
+      }
+      .primary:hover {
+        opacity: 0.92;
+        box-shadow: var(--lx-shadow-control);
+      }
+      .primary:active {
+        transform: translate(1px, 1px);
+        box-shadow: var(--lx-shadow-inset);
       }
       .secondary {
-        border: 1px solid var(--lx-border);
-        background: transparent;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-hard);
+        background: var(--lx-surface);
         color: inherit;
+        box-shadow: var(--lx-shadow-sm);
+      }
+      .secondary:hover {
+        background: var(--lx-surface-hover);
+        box-shadow: var(--lx-shadow-control);
+      }
+      .secondary:active {
+        transform: translate(1px, 1px);
+        box-shadow: var(--lx-shadow-inset);
       }
       button:focus-visible {
         outline: 2px solid var(--lx-focus);
@@ -142,10 +165,15 @@ import { Component, input, output } from '@angular/core';
 
       .sample {
         margin: 0;
-        padding: 1.4rem 1.5rem 1.6rem;
-        border: 1px solid var(--lx-border);
+        padding: 1.5rem 1.7rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-left: calc(var(--lx-border-width) + 2px) var(--lx-border-style)
+          var(--lx-accent);
         border-radius: var(--lx-radius);
-        background: var(--lx-surface);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-card);
       }
       figcaption {
         display: flex;
@@ -177,7 +205,8 @@ import { Component, input, output } from '@angular/core';
       .exercise {
         margin-top: 1.1rem !important;
         padding-top: 1rem;
-        border-top: 1px solid var(--lx-border);
+        border-top: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
       }
       .exercise .label {
         display: block;
@@ -197,7 +226,6 @@ export class LandingHeroComponent {
   readonly subhead = input<string>('');
   readonly primaryLabel = input<string>('Browse courses');
   readonly secondaryLabel = input<string>('Write a course');
-  /** What a visitor gets without signing up, said plainly under the buttons. */
   readonly reassurance = input<string>('');
   readonly sampleLesson = input<{
     courseName: string;

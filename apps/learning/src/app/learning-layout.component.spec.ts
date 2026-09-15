@@ -97,6 +97,17 @@ describe('LearningLayoutComponent', () => {
     expect(element.textContent).toContain('Your progress');
   });
 
+  it('offers the shared appearance controls from the menu', async () => {
+    const element = await render();
+    const trigger = element.querySelector(
+      'lib-theme-toggle .appearance-trigger'
+    ) as HTMLButtonElement | null;
+
+    expect(trigger).toBeTruthy();
+    expect(trigger?.textContent).toContain('Appearance');
+    expect(trigger?.getAttribute('aria-expanded')).toBe('false');
+  });
+
   // Nowhere told a visitor what enrolling, marking or authoring meant, so
   // these have to be reachable from every page, not just linked from one.
   it('links to the about and docs pages from every page', async () => {
@@ -200,5 +211,125 @@ describe('LearningLayoutComponent session', () => {
     const element = await render({ name: 'Ada Lovelace' });
 
     expect(element.textContent).toContain('Sign out');
+  });
+});
+
+describe('LearningLayoutComponent menu', () => {
+  async function render() {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [LearningLayoutComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    const fixture = TestBed.createComponent(LearningLayoutComponent);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    for (const pending of http.match('/api/learning/me')) pending.flush(null);
+    for (const pending of http.match('/api/learning/dashboard')) {
+      pending.flush([]);
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('keeps the closed drawer inert and opens it for the menu toggle', async () => {
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector('.menu-toggle') as HTMLButtonElement;
+    const sheet = element.querySelector('.topbar-sheet') as HTMLElement;
+
+    expect(sheet.getAttribute('aria-hidden')).toBe('true');
+    expect(sheet.hasAttribute('inert')).toBe(true);
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(sheet.getAttribute('aria-hidden')).toBe('false');
+    expect(sheet.hasAttribute('inert')).toBe(false);
+  });
+
+  it('restores focus to the toggle when the drawer Close button closes it', async () => {
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector('.menu-toggle') as HTMLButtonElement;
+
+    toggle.click();
+    fixture.detectChanges();
+    const close = element.querySelector('.sheet-dismiss') as HTMLButtonElement;
+    close.focus();
+    close.click();
+    fixture.detectChanges();
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  it('restores focus to the toggle when Escape closes the drawer', async () => {
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector('.menu-toggle') as HTMLButtonElement;
+
+    toggle.click();
+    fixture.detectChanges();
+    const link = element.querySelector('.sheet-nav a') as HTMLAnchorElement;
+    link.focus();
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+    );
+    fixture.detectChanges();
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(toggle);
+  });
+
+  it('does not steal focus when a navigation link closes the drawer', async () => {
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const toggle = element.querySelector('.menu-toggle') as HTMLButtonElement;
+
+    toggle.click();
+    fixture.detectChanges();
+    const link = element.querySelector('.sheet-nav a') as HTMLAnchorElement;
+    link.focus();
+    link.click();
+    fixture.detectChanges();
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(link);
+  });
+
+  it('keeps the navigation and challenges drawers mutually exclusive', async () => {
+    const fixture = await render();
+    const element = fixture.nativeElement as HTMLElement;
+    const menuToggle = element.querySelector(
+      '.menu-toggle'
+    ) as HTMLButtonElement;
+    const challengeToggle = element.querySelector(
+      '.challenge-toggle'
+    ) as HTMLButtonElement;
+
+    menuToggle.click();
+    fixture.detectChanges();
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('true');
+
+    challengeToggle.click();
+    fixture.detectChanges();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/learning/challenges')
+      .flush({
+        challenges: [],
+        enrolledCount: 0,
+        trackDisplayName: '',
+      });
+    fixture.detectChanges();
+
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(challengeToggle.getAttribute('aria-expanded')).toBe('true');
   });
 });

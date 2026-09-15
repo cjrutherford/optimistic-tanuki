@@ -20,15 +20,22 @@ describe('what a learner is allowed to see', () => {
       prompt: 'Print the title',
       lessonId,
       starterCode: 'package main',
+      languageId: 'go',
       expectedOutput: 'Dune',
+      verifier: { validationPattern: 'Dune' },
     };
 
     const seen = publicActivity(activity);
 
     expect(seen).not.toHaveProperty('expectedOutput');
+    expect(seen).not.toHaveProperty('verifier');
     expect(JSON.stringify(seen)).not.toContain('Dune');
     // The question itself still has to arrive.
-    expect(seen).toMatchObject({ id: 'a1', starterCode: 'package main' });
+    expect(seen).toMatchObject({
+      id: 'a1',
+      starterCode: 'package main',
+      languageId: 'go',
+    });
   });
 
   it('never sends which quiz option is correct', () => {

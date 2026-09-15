@@ -22,10 +22,20 @@ import { LearningLayoutComponent } from './learning-layout.component';
     `
       .back {
         display: inline-block;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1rem;
         color: var(--lx-text-muted);
-        font-size: 0.85rem;
+        font: var(--lx-btn-weight, 800) 0.72rem var(--lx-font-mono, monospace);
+        letter-spacing: 0.04em;
         text-decoration: none;
+        text-transform: var(--lx-btn-transform, uppercase);
+        transition: var(--lx-btn-transition);
+      }
+      .back:hover {
+        color: var(--lx-text);
+      }
+      .back:focus-visible {
+        outline: var(--lx-border-width) solid var(--lx-focus);
+        outline-offset: 3px;
       }
     `,
   ],

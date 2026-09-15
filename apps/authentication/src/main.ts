@@ -10,7 +10,8 @@ export async function bootstrap() {
 
   const httpApp = await NestFactory.create(AppModule);
   const httpPort = Number(config.get('BOOTSTRAP_HTTP_PORT') || '3099');
-  await httpApp.listen(httpPort);
+  const httpHost = process.env.BOOTSTRAP_HTTP_HOST || '127.0.0.1';
+  await httpApp.listen(httpPort, httpHost);
   Logger.log(`Bootstrap HTTP server listening on port ${httpPort}`);
 
   const microserviceApp =

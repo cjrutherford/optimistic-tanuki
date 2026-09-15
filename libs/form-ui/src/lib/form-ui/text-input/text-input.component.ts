@@ -39,6 +39,7 @@ export class TextInputComponent
   @Input() type: 'text' | 'password' | 'obscured' | 'date' = 'text';
   @Input() label = '';
   @Input() placeholder = '';
+  @Input() autocomplete = '';
   @Input() labelPosition: 'top' | 'left' | 'right' | 'bottom' = 'top';
   @Input() disabled = false;
   @Input() hasError = false;

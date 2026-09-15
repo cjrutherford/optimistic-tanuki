@@ -5,6 +5,8 @@ import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { catchError, shareReplay, timeout } from 'rxjs/operators';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
+export type OfferingTextPatch = string | null;
+
 /**
  * How long the server waits on the gateway for a public catalog read before
  * giving up and rendering degraded.
@@ -99,6 +101,9 @@ export interface OfferingDetail {
 }
 
 export interface DashboardEntry {
+  /** The selected enrolment; never infer this from a track with many offerings. */
+  offeringId?: string;
+  offering?: CatalogOffering;
   program: Program;
   totals: { lessons: number; exercises: number; points: number };
   progress: {
@@ -126,6 +131,9 @@ export interface AnswerableActivityDto {
   lessonId?: string;
   options?: { id: string; text: string }[];
   maxWords?: number;
+  /** Safe code-run metadata; expected output and verifier never leave the service. */
+  starterCode?: string;
+  languageId?: 'typescript' | 'go' | 'cpp' | 'rust';
 }
 export interface AnswerResult {
   attemptId: string;
@@ -133,6 +141,11 @@ export interface AnswerResult {
   score?: number;
   maxScore?: number;
   feedback: string;
+  output?: string;
+  errors?: string[];
+  passed?: boolean;
+  testsPassed?: boolean;
+  awardedPoints?: number;
   criteria?: {
     id: string;
     description: string;
@@ -144,6 +157,7 @@ export interface AnswerResult {
 }
 export interface LessonResponse {
   lesson: Lesson;
+  offeringId?: string;
   content: string;
   exercises: Exercise[];
   /** The work the course author set for this lesson. */
@@ -152,16 +166,40 @@ export interface LessonResponse {
 
 export interface LessonProgress {
   lessonId: string;
+  offeringId?: string;
   completed: boolean;
   completedExerciseIds: string[];
   points: number;
   updatedAt?: string;
 }
 
+export interface TestResultItem {
+  name: string;
+  passed: boolean;
+  error?: string;
+}
+
 export interface RunResult {
   output: string;
   errors: string[];
   testsPassed?: boolean;
+  testResults?: TestResultItem[];
+}
+
+export interface ChallengeListItem extends Exercise {
+  offeringId?: string;
+  trackId: string;
+  trackDisplayName: string;
+  moduleId: string;
+  lessonId: string;
+  lessonTitle: string;
+  solved: boolean;
+}
+
+export interface ChallengesResponse {
+  challenges: ChallengeListItem[];
+  enrolledCount: number;
+  trackDisplayName: string;
 }
 
 export interface SubmitResult extends RunResult {
@@ -267,6 +305,8 @@ export class LearningDataService {
     patch: {
       displayName?: string;
       description?: string;
+      audience?: OfferingTextPatch;
+      outcome?: OfferingTextPatch;
       modules?: unknown[];
       activities?: unknown[];
     }
@@ -303,10 +343,34 @@ export class LearningDataService {
       : of<DashboardEntry[]>([]);
   }
 
-  lesson(trackId: string, lessonId: string): Observable<LessonResponse> {
+  challenges(trackId?: string): Observable<ChallengesResponse> {
+    if (!this.isBrowser) {
+      return of<ChallengesResponse>({
+        challenges: [],
+        enrolledCount: 0,
+        trackDisplayName: '',
+      });
+    }
+    const query = trackId ? `?trackId=${encodeURIComponent(trackId)}` : '';
+    return this.http.get<ChallengesResponse>(
+      `/api/learning/challenges${query}`
+    );
+  }
+
+  lesson(
+    trackId: string,
+    lessonId: string,
+    offeringId?: string,
+    moduleId?: string
+  ): Observable<LessonResponse> {
+    const params = [
+      offeringId ? `offeringId=${encodeURIComponent(offeringId)}` : undefined,
+      moduleId ? `moduleId=${encodeURIComponent(moduleId)}` : undefined,
+    ].filter((value): value is string => value !== undefined);
+    const query = params.length ? `?${params.join('&')}` : '';
     return this.isBrowser
       ? this.http.get<LessonResponse>(
-          `/api/learning/programs/${trackId}/lessons/${lessonId}`
+          `/api/learning/programs/${trackId}/lessons/${lessonId}${query}`
         )
       : of(emptyLesson);
   }
@@ -327,16 +391,28 @@ export class LearningDataService {
    * Runs code without recording anything, but the run itself is compute and
    * needs a session, so a 401 becomes a NotSignedInError the caller can show.
    */
-  run(activityId: string, code: string): Observable<RunResult> {
+  run(
+    activityId: string,
+    code: string,
+    offeringId?: string
+  ): Observable<RunResult> {
     return this.http
       .post<RunResult>('/api/learning/runs', {
         activityId,
         code,
+        ...(offeringId ? { offeringId } : {}),
       })
       .pipe(
         catchError((error: HttpErrorResponse) =>
           error.status === 401
             ? throwError(() => new NotSignedInError())
+            : error.status === 409
+            ? throwError(
+                () =>
+                  new NotEnrolledError(
+                    (error.error as { offeringId?: string })?.offeringId ?? ''
+                  )
+              )
             : throwError(() => error)
         )
       );
@@ -346,10 +422,15 @@ export class LearningDataService {
    * Runs code against the exercise verifier and records the result. Needs a
    * session, so a 401 becomes a NotSignedInError the caller can show.
    */
-  submit(activityId: string, code: string): Observable<SubmitResult> {
+  submit(
+    activityId: string,
+    code: string,
+    offeringId?: string
+  ): Observable<SubmitResult> {
     return this.http
       .post<SubmitResult>(`/api/learning/exercises/${activityId}/submit`, {
         code,
+        ...(offeringId ? { offeringId } : {}),
       })
       .pipe(
         catchError((error: HttpErrorResponse) => {
@@ -374,13 +455,18 @@ export class LearningDataService {
    * The server refuses this without an enrolment, the same as submitting an
    * exercise, so a 409 carries the offering to enrol in.
    */
-  markLesson(lessonId: string, completed: boolean): Observable<LessonProgress> {
+  markLesson(
+    lessonId: string,
+    completed: boolean,
+    offeringId?: string
+  ): Observable<LessonProgress> {
     // Only these two facts. What the lesson is worth is the server's to
     // decide, from work it watched happen.
     return this.http
       .put<LessonProgress>('/api/learning/me/progress', {
         lessonId,
         completed,
+        ...(offeringId ? { offeringId } : {}),
       })
       .pipe(
         catchError((error: HttpErrorResponse) => {
@@ -404,11 +490,13 @@ export class LearningDataService {
    */
   answerActivity(
     activityId: string,
-    submission: unknown
+    submission: unknown,
+    offeringId?: string
   ): Observable<AnswerResult> {
     return this.http
       .post<AnswerResult>(`/api/learning/activities/${activityId}/answer`, {
         submission,
+        ...(offeringId ? { offeringId } : {}),
       })
       .pipe(
         catchError((error: HttpErrorResponse) => {
