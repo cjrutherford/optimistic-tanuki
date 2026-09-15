@@ -356,6 +356,47 @@ export type PersonalityAnimationStyle =
   | 'wobbly';
 export type PersonalityAnimationSpeed = 'fast' | 'normal' | 'slow';
 
+/** Control height, cell padding and surface padding scale. */
+export type PersonalityDensity = 'compact' | 'comfortable' | 'airy';
+/** Corner shape of small primitives: badges, chips, tabs, checkboxes. */
+export type PersonalityShape = 'square' | 'crisp' | 'soft' | 'rounded' | 'pill';
+/** Header treatment for dialogs and data tables. */
+export type PersonalityHeaderStyle =
+  | 'plain'
+  | 'rule'
+  | 'tint'
+  | 'bar'
+  | 'strip';
+/** Surface treatment for cards, tiles, toasts and dialog bodies. */
+export type PersonalitySurfaceStyle =
+  | 'elevated'
+  | 'outlined'
+  | 'inset'
+  | 'textured'
+  | 'borderless';
+/** Primary action fill. */
+export type PersonalityFillStyle = 'flat' | 'gradient' | 'texture';
+/** Active tab indicator. */
+export type PersonalityTabStyle = 'underline' | 'segment' | 'pill';
+/** How feedback (toasts, alerts) carries its tone colour. */
+export type PersonalityFeedbackStyle = 'stripe' | 'tint' | 'outline';
+
+/**
+ * How a personality composes shared components. Resolved to CSS variables by
+ * `resolveCompositionVariables` (theme-models) and emitted by ThemeService.
+ */
+export interface PersonalityComposition {
+  density: PersonalityDensity;
+  shape: PersonalityShape;
+  header: PersonalityHeaderStyle;
+  surface: PersonalitySurfaceStyle;
+  fill: PersonalityFillStyle;
+  tabs: PersonalityTabStyle;
+  feedback: PersonalityFeedbackStyle;
+  /** Letter case for dialog and table header titles. */
+  labelCase: 'none' | 'uppercase';
+}
+
 export interface PersonalityPresentation {
   border: {
     style: PersonalityBorderStyle;
@@ -434,6 +475,39 @@ export interface PersonalityPresentation {
       focusStyle: string;
     };
   };
+  /**
+   * How interactive surfaces (buttons, cards, list items, controls) respond to
+   * hover and press, and the accent border for emphasised surfaces. Emitted as
+   * `--personality-hover-transform`, `--personality-hover-shadow`,
+   * `--personality-active-transform`, `--personality-active-shadow` and
+   * `--personality-accent-border`. A field left out is cleared, so a
+   * component's `var(--personality-hover-shadow, <its own default>)` keeps its
+   * own behaviour for personalities without a distinct treatment.
+   */
+  interaction?: {
+    hoverTransform?: string;
+    hoverShadow?: string;
+    activeTransform?: string;
+    activeShadow?: string;
+    accentBorder?: string;
+  };
+  /**
+   * Type treatment for small structural text: tab labels, metadata, badges,
+   * table headers. Emitted as `--personality-label-font-family`,
+   * `--personality-label-text-transform` and `--personality-label-letter-spacing`,
+   * cleared when unset.
+   */
+  label?: {
+    fontFamily?: string;
+    textTransform?: string;
+    letterSpacing?: string;
+  };
+  /**
+   * How the personality composes shared components (density, primitive shape,
+   * headers, surfaces, fills, tabs, feedback). Attached from
+   * `COMPOSITION_BY_ID` when the registry is assembled.
+   */
+  composition?: PersonalityComposition;
 }
 
 /**
@@ -567,6 +641,8 @@ export interface PersonalityColors {
   foreground: string;
   surface: string;
   muted: string;
+  /** Secondary text: between foreground and muted, always readable. */
+  textSecondary?: string;
   border: string;
 
   // Gradients

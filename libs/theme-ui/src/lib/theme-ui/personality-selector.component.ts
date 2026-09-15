@@ -361,7 +361,7 @@ interface GroupedPersonality {
         font-style: italic;
       }
 
-      // Scrollbar styling
+      /* Scrollbar styling */
       .overlay-content::-webkit-scrollbar {
         width: 8px;
       }
@@ -383,8 +383,15 @@ interface GroupedPersonality {
   ],
 })
 export class PersonalitySelectorComponent implements OnInit, OnDestroy {
+  /** Personalities to offer. Left empty, the theme service's list is used. */
   @Input() personalities: Personality[] = [];
+  /** Highlighted personality. Left empty, the active personality is used. */
   @Input() currentPersonality: Personality | null = null;
+  /**
+   * Apply the selection through the theme service. Hosts that apply it
+   * themselves set this to false and handle `personalitySelected`.
+   */
+  @Input() applyOnSelect = true;
   @Output() personalitySelected = new EventEmitter<Personality>();
   @Output() onClose = new EventEmitter<void>();
 
@@ -396,7 +403,25 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
   constructor(private themeService: ThemeService) {}
 
   ngOnInit(): void {
-    this.groupPersonalities();
+    if (this.personalities.length) {
+      this.groupPersonalities();
+    } else {
+      this.themeService.availablePersonalities$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((personalities) => {
+          this.personalities = personalities;
+          this.groupPersonalities();
+        });
+    }
+
+    this.currentPersonality ??= this.themeService.getCurrentPersonality();
+    this.themeService.personality$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((personality) => {
+        if (personality) {
+          this.currentPersonality = personality;
+        }
+      });
 
     // Subscribe to primary color changes
     this.themeService.generatedTheme$
@@ -465,6 +490,10 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
   }
 
   selectPersonality(personality: Personality): void {
+    this.currentPersonality = personality;
+    if (this.applyOnSelect) {
+      void this.themeService.setPersonality(personality.id);
+    }
     this.personalitySelected.emit(personality);
   }
 

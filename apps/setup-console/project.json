@@ -15,7 +15,10 @@
         "polyfills": ["zone.js"],
         "tsConfig": "apps/setup-console/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "styles": ["apps/setup-console/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/setup-console/src/styles.scss"
+        ],
         "server": "apps/setup-console/src/main.server.ts",
         "ssr": { "entry": "apps/setup-console/src/server.ts" },
         "outputMode": "server"

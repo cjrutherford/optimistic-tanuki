@@ -6,7 +6,10 @@
   align-items: center;
   gap: 4px;
   border: 1px solid transparent;
-  border-radius: var(--border-radius-full, 16px);
+  border-radius: var(
+    --personality-primitive-radius,
+    var(--border-radius-full, 16px)
+  );
   font-weight: 500;
   @include p.personality-transition(all, 'fast');
   @include variant.variant-surface;

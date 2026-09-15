@@ -12,12 +12,17 @@ import {
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { errorInterceptor } from './http.error-interceptor';
 import { appRoutes } from './app.routes';
-import { FontLoadingService, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  FontLoadingService,
+  ThemeService,
+  provideProductTheme,
+} from '@optimistic-tanuki/theme-lib';
 import { AuthInterceptor } from './http.interceptor';
 import { financeAppScopeInterceptor } from './finance-appscope.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('fin-commander'),
     provideHttpClient(
       withInterceptors([
         AuthInterceptor,

@@ -97,10 +97,10 @@
 
 /* Color utilities */
 .bg-accent {
-  background-color: var(--accent, #3f51b5);
+  background-color: var(--primary, #3f51b5);
 }
 .bg-complement {
-  background-color: var(--complement, #c0af4b);
+  background-color: var(--secondary, #c0af4b);
 }
 .bg-tertiary {
   background-color: var(--tertiary, #7e57c2);
@@ -119,10 +119,10 @@
 }
 
 .text-accent {
-  color: var(--accent, #3f51b5);
+  color: var(--primary, #3f51b5);
 }
 .text-complement {
-  color: var(--complement, #c0af4b);
+  color: var(--secondary, #c0af4b);
 }
 .text-tertiary {
   color: var(--tertiary, #7e57c2);
@@ -142,10 +142,10 @@
 
 /* Border utilities */
 .border-accent {
-  border-color: var(--accent, #3f51b5);
+  border-color: var(--primary, #3f51b5);
 }
 .border-complement {
-  border-color: var(--complement, #c0af4b);
+  border-color: var(--secondary, #c0af4b);
 }
 .border-tertiary {
   border-color: var(--tertiary, #7e57c2);
@@ -229,7 +229,7 @@
 }
 
 .input-base {
-  border: 1px solid var(--complement, #c0af4b);
+  border: 1px solid var(--secondary, #c0af4b);
   border-radius: var(--border-radius-md, 4px);
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   background-color: var(--background, #ffffff);
@@ -239,7 +239,7 @@
 
   &:focus {
     outline: none;
-    border-color: var(--accent, #3f51b5);
+    border-color: var(--primary, #3f51b5);
     box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
   }
 }

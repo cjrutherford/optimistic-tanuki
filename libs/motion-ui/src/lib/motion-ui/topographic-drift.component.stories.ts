@@ -3,7 +3,7 @@ import { TopographicDriftComponent } from './topographic-drift.component';
 
 const meta: Meta<TopographicDriftComponent> = {
   component: TopographicDriftComponent,
-  title: 'Motion/Topographic Drift',
+  title: 'Topographic Drift',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

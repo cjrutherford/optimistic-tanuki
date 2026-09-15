@@ -87,9 +87,9 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         --local-complement: #4caf50;
 
         padding: var(--spacing-lg, 24px);
-        border: 2px solid var(--local-complement, var(--complement));
+        border: 2px solid var(--local-complement, var(--secondary));
         border-radius: var(--border-radius-lg, 8px);
-        background-color: var(--local-accent, var(--accent));
+        background-color: var(--local-accent, var(--primary));
         color: var(--background, #ffffff);
       }
 
@@ -99,7 +99,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         --local-complement: #ff9800;
 
         padding: var(--spacing-md, 16px);
-        border: 2px dashed var(--local-accent, var(--accent));
+        border: 2px dashed var(--local-accent, var(--primary));
         border-radius: var(--border-radius-lg, 8px);
       }
 
@@ -107,7 +107,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         /* Inherits parent's --local-accent and --local-complement */
         margin-top: var(--spacing-md, 16px);
         padding: var(--spacing-sm, 8px);
-        background-color: var(--local-complement, var(--complement));
+        background-color: var(--local-complement, var(--secondary));
         color: var(--background, #ffffff);
         border-radius: var(--border-radius-md, 4px);
       }
@@ -116,12 +116,12 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       .design-tokens-demo {
         margin-top: var(--spacing-xxl, 48px);
         padding: var(--spacing-lg, 24px);
-        border: 1px solid var(--complement, #c0af4b);
+        border: 1px solid var(--secondary, #c0af4b);
         border-radius: var(--border-radius-xl, 12px);
         background: linear-gradient(
           135deg,
-          var(--accent, #3f51b5),
-          var(--complement, #c0af4b)
+          var(--primary, #3f51b5),
+          var(--secondary, #c0af4b)
         );
         color: var(--background, #ffffff);
       }
@@ -166,7 +166,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       h1,
       h2,
       h3 {
-        color: var(--accent, #3f51b5);
+        color: var(--primary, #3f51b5);
         margin-bottom: var(--spacing-md, 16px);
       }
 

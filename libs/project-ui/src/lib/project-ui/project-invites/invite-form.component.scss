@@ -53,5 +53,5 @@
   // No danger token is defined in every application, so the accent stands in.
   // currentColor would give text the same colour as everything around it,
   // which is not a failure a reader notices.
-  color: var(--danger, var(--accent));
+  color: var(--danger, var(--primary));
 }

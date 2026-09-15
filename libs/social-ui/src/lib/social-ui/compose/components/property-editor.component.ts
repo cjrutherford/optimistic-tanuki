@@ -193,7 +193,7 @@ export interface PropertyDefinition {
       }
 
       .close-btn:hover {
-        background-color: var(--accent, #f0f0f0);
+        background-color: var(--primary, #f0f0f0);
       }
 
       .component-info {

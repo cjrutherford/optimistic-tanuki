@@ -1,8 +1,7 @@
-import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { Component, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -18,7 +17,7 @@ import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   readonly title = 'hai';
   readonly haiAboutConfig = {
     appId: 'hai',
@@ -30,7 +29,6 @@ export class AppComponent implements OnInit {
     appUrl: '/hai',
   };
 
-  private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
 
   get isBrowser(): boolean {
@@ -47,22 +45,5 @@ export class AppComponent implements OnInit {
     }
 
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-
-  ngOnInit(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-
-      if (!hasStoredPersonalityTheme) {
-        this.themeService.setTheme('light');
-        this.themeService.setPersonality('foundation');
-        this.themeService.setPrimaryColor('#204434');
-        return;
-      }
-    }
-
-    this.themeService.setTheme(this.themeService.getTheme());
   }
 }

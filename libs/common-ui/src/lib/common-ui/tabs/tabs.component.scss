@@ -29,31 +29,49 @@
 
 .tabs-header {
   display: flex;
-  border-bottom: 1px solid var(--tabs-border-color, var(--border));
   gap: 4px;
+  width: var(--personality-tabs-track-width, auto);
+  padding: var(--personality-tabs-track-padding, 0px);
+  background: var(--personality-tabs-track-bg, transparent);
+  border: var(--personality-tabs-track-border, 0 solid transparent);
+  border-bottom: var(
+    --personality-tabs-track-underline,
+    1px solid var(--tabs-border-color, var(--border))
+  );
+  border-radius: calc(
+    var(--personality-tab-radius, 0px) +
+      var(--personality-tabs-track-padding, 0px)
+  );
 }
 
 .tab-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 18px;
   border: none;
+  border-radius: var(--personality-tab-radius, 0px);
   background: transparent;
   color: var(--tabs-inactive-color, var(--foreground));
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   position: relative;
+  @include p.label-type;
   @include p.personality-transition('color, background-color', 'fast');
 
-  &:hover:not(.disabled) {
+  &:hover:not(.disabled):not(.active) {
     color: var(--tabs-active-color, var(--primary));
     background: var(--hover-bg, rgba(0, 0, 0, 0.05));
   }
 
   &.active {
-    color: var(--tabs-active-color, var(--primary));
+    color: var(
+      --personality-tab-active-fg,
+      var(--tabs-active-color, var(--primary))
+    );
+    background: var(--personality-tab-active-bg, transparent);
+    box-shadow: var(--personality-tab-active-shadow, none);
 
     &::after {
       content: '';
@@ -61,7 +79,7 @@
       bottom: -1px;
       left: 0;
       right: 0;
-      height: 2px;
+      height: var(--personality-tab-indicator, 2px);
       background: var(--tabs-active-color, var(--primary));
     }
   }
@@ -83,95 +101,15 @@
   min-width: 18px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 9px;
+  border-radius: var(--personality-primitive-radius, 9px);
   background: var(--tabs-active-color, var(--primary));
-  color: white;
+  color: var(--on-primary, #fff);
   font-size: 11px;
   font-weight: 600;
 }
 
 .tabs-content {
   padding: 16px 0;
-}
-
-// ============================================
-// Personality-Specific Tab Enhancements
-// ============================================
-
-// Architect personality - underline style
-body.personality-architect .tab-item {
-  font-family: var(--font-heading);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-
-  &.active::after {
-    height: 3px;
-    background: var(--primary);
-  }
-}
-
-// Playful personality - pill style
-body.personality-playful .tab-item {
-  border-radius: 20px;
-
-  &:hover:not(.disabled) {
-    background: color-mix(in srgb, var(--primary) 10%, transparent);
-  }
-
-  &.active {
-    background: var(--primary);
-    color: var(--primary-foreground);
-
-    &::after {
-      display: none;
-    }
-  }
-}
-
-// Minimal personality - subtle
-body.personality-minimal .tab-item {
-  padding: 8px 16px;
-  font-weight: 400;
-
-  &.active {
-    font-weight: 600;
-
-    &::after {
-      height: 1px;
-    }
-  }
-}
-
-// Electric personality - bold indicator
-body.personality-electric .tab-item {
-  &.active::after {
-    height: 4px;
-    border-radius: 2px;
-  }
-}
-
-// Soft Touch personality - rounded
-body.personality-soft-touch .tab-item {
-  border-radius: 12px;
-
-  &.active {
-    background: color-mix(in srgb, var(--primary) 15%, transparent);
-
-    &::after {
-      display: none;
-    }
-  }
-}
-
-// Control Center - technical underline
-body.personality-control-center .tab-item {
-  font-family: var(--font-mono);
-  font-size: 13px;
-
-  &.active::after {
-    height: 2px;
-    background: var(--primary);
-  }
 }
 
 // Pills variant

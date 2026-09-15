@@ -9,7 +9,6 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { NavigationLinkComponent } from '@optimistic-tanuki/app-registry';
 import { AuthStateService } from './state/auth-state.service';
@@ -46,7 +45,6 @@ export class AppComponent implements OnInit {
   );
 
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
 
   get isBrowser(): boolean {
@@ -69,11 +67,6 @@ export class AppComponent implements OnInit {
     this.authState.isAuthenticated$().subscribe((value) => {
       this.isAuthenticated.set(value);
     });
-
-    if (isPlatformBrowser(this.platformId)) {
-      this.themeService.setPersonality('control-center');
-      this.themeService.setPrimaryColor('#2dd4bf');
-    }
   }
 
   navigateHome(): void {

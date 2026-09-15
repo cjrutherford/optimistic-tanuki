@@ -4,7 +4,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 const meta: Meta<ThemeDesignerComponent> = {
   component: ThemeDesignerComponent,
-  title: 'Theme/ThemeDesigner',
+  title: 'ThemeDesigner',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

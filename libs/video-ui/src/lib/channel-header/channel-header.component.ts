@@ -143,9 +143,10 @@ import { Subscription } from 'rxjs';
         border-radius: 50%;
         overflow: hidden;
         flex-shrink: 0;
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 100, 100, 255), 0.4),
-          0 0 20px 4px rgba(var(--accent-rgb, 100, 100, 255), 0.15);
-        border: 3px solid rgba(var(--accent-rgb, 100, 100, 255), 0.5);
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--primary) 40%, transparent),
+          0 0 20px 4px color-mix(in srgb, var(--primary) 15%, transparent);
+        border: 3px solid color-mix(in srgb, var(--primary) 50%, transparent);
       }
 
       .channel-avatar img {
@@ -213,14 +214,14 @@ import { Subscription } from 'rxjs';
       }
 
       .subscribe-button.subscribed {
-        background: var(--accent, #6366f1);
+        background: var(--primary, #6366f1);
         color: var(--background, #000);
         border-color: transparent;
         font-weight: 700;
       }
 
       .subscribe-button.subscribed:hover:not(:disabled) {
-        box-shadow: 0 0 20px rgba(var(--accent-rgb, 100, 100, 255), 0.3);
+        box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent);
       }
 
       .subscribe-button:disabled {

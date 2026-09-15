@@ -22,7 +22,10 @@
             "input": "apps/christopherrutherford-net/public"
           }
         ],
-        "styles": ["apps/christopherrutherford-net/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/christopherrutherford-net/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/christopherrutherford-net/src/main.server.ts",
         "ssr": {

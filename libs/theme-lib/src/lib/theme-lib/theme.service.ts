@@ -3,7 +3,7 @@
  * Provides unified theming with personality-based design system
  */
 
-import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -34,6 +34,9 @@ import {
   validateThemeContrast,
   getSuggestedTextColor,
   migratePaletteToPersonality,
+  resolveCompositionVariables,
+  getPersonalityComposition,
+  compositionDataAttributes,
 } from '@optimistic-tanuki/theme-models';
 import {
   generateThemeResponsiveColors,
@@ -43,6 +46,7 @@ import {
 } from './color-harmony';
 import { FontLoadingService } from './font-loading.service';
 import { GradientFactory } from './gradient-factory';
+import { THEME_DEFAULTS } from './theme-defaults.token';
 
 /**
  * Storage key for personality themes
@@ -268,6 +272,9 @@ function generatePlayfulDropShadows(
   providedIn: 'root',
 })
 export class ThemeService {
+  // App-level defaults from `provideThemeDefaults()`; a saved user theme wins.
+  private readonly defaults = inject(THEME_DEFAULTS, { optional: true });
+
   // Compatibility state
   private _theme!: 'light' | 'dark';
   private paletteMode: 'custom' | 'predefined' = 'predefined';
@@ -384,18 +391,28 @@ export class ThemeService {
    * Initialize default values
    */
   private initializeDefaults(): void {
-    this._theme = 'light';
-    this.currentPersonality = getDefaultPersonality();
+    const defaults = this.defaults;
+    const personality =
+      (defaults && getPersonalityById(defaults.personalityId)) ||
+      getDefaultPersonality();
+    const mode = defaults?.mode ?? 'light';
+
+    this._theme = mode === 'auto' ? this.detectPreferredMode() : mode;
+    this.currentPersonality = personality;
     this.personalityConfig = {
-      personalityId: 'classic',
-      primaryColor: '#3f51b5',
-      mode: 'light',
+      personalityId: personality.id,
+      primaryColor: defaults?.primaryColor ?? '#3f51b5',
+      mode,
       version: '1.0.0',
     };
 
     this.theme.next(this._theme);
     this.personality.next(this.currentPersonality);
     this.generateAndApplyPersonalityTheme();
+
+    if (isPlatformBrowser(this.platformId)) {
+      void this.loadPersonalityFonts();
+    }
   }
 
   // ==================== PUBLIC API ====================
@@ -440,6 +457,14 @@ export class ThemeService {
    */
   get availablePersonalities$(): Observable<Personality[]> {
     return this.availablePersonalities.asObservable();
+  }
+
+  /**
+   * Whether the user has saved a theme of their own. While this is false the
+   * app's `provideThemeDefaults()` defaults are what is showing.
+   */
+  hasStoredPreference(): boolean {
+    return this.loadPersonalityTheme() !== null;
   }
 
   /**
@@ -802,6 +827,7 @@ export class ThemeService {
       foreground: adjustedForeground,
       surface: themeColors.surface,
       muted: themeColors.muted,
+      textSecondary: themeColors.textSecondary,
       border: themeColors.border,
       gradients: this.getPersonalityDrivenGradients(personality.id, {
         accent: colors.primary,
@@ -967,7 +993,8 @@ export class ThemeService {
     variables['--background-elevated'] = colors.surface;
     variables['--background-overlay'] = overlay;
     variables['--foreground-primary'] = colors.foreground;
-    variables['--foreground-secondary'] = colors.border;
+    // Secondary text, not the border colour it used to alias.
+    variables['--foreground-secondary'] = colors.textSecondary ?? colors.muted;
     variables['--foreground-muted'] = colors.muted;
 
     // Typography
@@ -1039,6 +1066,35 @@ export class ThemeService {
         personality.presentation.components.input.borderWidth;
       variables['--personality-input-focus-style'] =
         personality.presentation.components.input.focusStyle;
+
+      // Interaction and label treatments. Unset fields are emitted as '' so
+      // the previous personality's value is removed and each component's own
+      // `var(--personality-hover-shadow, <default>)` fallback applies.
+      const interaction = personality.presentation.interaction ?? {};
+      const label = personality.presentation.label ?? {};
+      variables['--personality-hover-transform'] =
+        interaction.hoverTransform ?? '';
+      variables['--personality-hover-shadow'] = interaction.hoverShadow ?? '';
+      variables['--personality-active-transform'] =
+        interaction.activeTransform ?? '';
+      variables['--personality-active-shadow'] = interaction.activeShadow ?? '';
+      variables['--personality-accent-border'] = interaction.accentBorder ?? '';
+      variables['--personality-label-font-family'] = label.fontFamily ?? '';
+      variables['--personality-label-text-transform'] =
+        label.textTransform ?? '';
+      variables['--personality-label-letter-spacing'] =
+        label.letterSpacing ?? '';
+
+      // Composition: density, primitive shape, header, surface, tabs,
+      // feedback and primary fill. Every key is emitted on each switch so the
+      // previous personality's values never linger.
+      Object.assign(
+        variables,
+        resolveCompositionVariables(
+          personality.presentation.composition ??
+            getPersonalityComposition(personality.id)
+        )
+      );
     }
 
     // Page background pattern (theme-responsive)
@@ -1238,14 +1294,21 @@ export class ThemeService {
     // Apply body class contract for personality selectors
     this.applyBodyPersonalityClass(theme.personality.id);
 
-    // Set root data attributes for mode/animation targeting
-    root.setAttribute(
-      'data-mode',
-      theme.config.mode === 'auto' ? 'light' : theme.config.mode
-    );
+    // Set root data attributes for mode/animation targeting. `data-theme`
+    // carries the same resolved mode for stylesheets that select on it.
+    root.setAttribute('data-mode', this._theme);
+    root.setAttribute('data-theme', this._theme);
     root.setAttribute(
       'data-animation-speed',
       theme.personality.animations.speed
+    );
+
+    // Mirror the composition as root attributes for debugging and tests.
+    const composition =
+      theme.personality.presentation?.composition ??
+      getPersonalityComposition(theme.personality.id);
+    Object.entries(compositionDataAttributes(composition)).forEach(
+      ([attribute, value]) => root.setAttribute(attribute, value)
     );
   }
 

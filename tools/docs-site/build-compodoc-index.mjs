@@ -3,11 +3,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const DEFAULT_CONFIG_PATH = 'tools/docs-site/compodoc-libraries.json';
-const DEFAULT_OUTPUT_PATH =
-  'apps/ui-playground/public/generated/compodoc-index.json';
-const DEFAULT_OUTPUT_ROOT = 'apps/ui-playground/public/generated/compodoc';
-const DEFAULT_PUBLIC_OUTPUT_ROOT =
-  'apps/ui-playground/public/generated/compodoc';
+const DEFAULT_OUTPUT_PATH = 'apps/ui-playground/generated/compodoc-index.json';
+// Served by ui-playground's Storybook under /api (see its .storybook/main.ts).
+const DEFAULT_OUTPUT_ROOT = 'apps/ui-playground/generated/compodoc';
+const DEFAULT_PUBLIC_OUTPUT_ROOT = 'api';
 
 async function pathExists(filePath) {
   try {
@@ -121,6 +120,8 @@ export async function buildCompodocIndex({
     compodocAvailable ?? (await resolvePackageAvailable(workspaceRoot));
 
   await fs.mkdir(outputRoot, { recursive: true });
+  // Generated output: tells check-client-ui-heuristics to skip the directory.
+  await fs.writeFile(path.join(outputRoot, '.gitignore'), '*\n');
 
   const items = [];
 
@@ -142,7 +143,7 @@ export async function buildCompodocIndex({
     items.push({
       ...library,
       outputPath: relativeOutputDir,
-      url: `/generated/compodoc/${library.slug}/index.html`,
+      url: `/${publicOutputRoot}/${library.slug}/index.html`,
       available,
       generatedAt: new Date().toISOString(),
     });

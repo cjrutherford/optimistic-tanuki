@@ -55,7 +55,7 @@ describe('buildCompodocIndex', () => {
       expect.objectContaining({
         slug: 'common-ui',
         available: false,
-        url: '/generated/compodoc/common-ui/index.html',
+        url: '/api/common-ui/index.html',
       }),
     ]);
   });

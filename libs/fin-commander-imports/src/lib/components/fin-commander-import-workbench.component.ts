@@ -189,7 +189,7 @@ import {
         font-weight: 700;
       }
       .secondary {
-        background: var(--accent, #d97706);
+        background: var(--primary, #d97706);
       }
       .ghost {
         background: transparent;

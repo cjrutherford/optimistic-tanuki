@@ -2,7 +2,7 @@ import { Meta, StoryObj } from '@storybook/angular';
 import { PosterProfileComponent } from './poster-profile.component';
 
 const meta: Meta<PosterProfileComponent> = {
-  title: 'Forum UI/Poster Profile',
+  title: 'Poster Profile',
   component: PosterProfileComponent,
   tags: ['autodocs'],
 };

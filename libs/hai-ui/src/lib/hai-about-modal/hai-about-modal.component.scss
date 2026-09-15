@@ -39,7 +39,7 @@
       ),
       transparent 55%
     ),
-    var(--local-hai-mark-gradient, var(--gradient-primary, var(--accent)));
+    var(--local-hai-mark-gradient, var(--gradient-primary, var(--primary)));
   box-shadow: var(
       --local-hai-hero-shadow,
       var(--personality-card-shadow, var(--shadow-lg))
@@ -103,7 +103,7 @@
     135deg,
     var(
       --local-hai-hero-panel,
-      color-mix(in srgb, var(--background) 82%, var(--complement) 18%)
+      color-mix(in srgb, var(--background) 82%, var(--secondary) 18%)
     ),
     color-mix(
       in srgb,
@@ -146,11 +146,11 @@
     var(--personality-border-style, solid)
     color-mix(
       in srgb,
-      var(--local-hai-link-primary-background, var(--accent)) 70%,
+      var(--local-hai-link-primary-background, var(--primary)) 70%,
       transparent
     );
   border-radius: var(--personality-button-radius, 999px);
-  background: var(--local-hai-link-primary-background, var(--accent));
+  background: var(--local-hai-link-primary-background, var(--primary));
   color: var(--local-hai-link-primary-foreground, var(--background));
   text-decoration: none;
   font-weight: var(--personality-button-font-weight, 700);
@@ -163,7 +163,7 @@
   box-shadow: 0 10px 24px
     color-mix(
       in srgb,
-      var(--local-hai-link-primary-background, var(--accent)) 28%,
+      var(--local-hai-link-primary-background, var(--primary)) 28%,
       transparent
     );
 }
@@ -173,13 +173,13 @@
   box-shadow: 0 14px 28px
     color-mix(
       in srgb,
-      var(--local-hai-link-primary-background, var(--accent)) 34%,
+      var(--local-hai-link-primary-background, var(--primary)) 34%,
       transparent
     );
 }
 
 .primary-link:focus-visible {
-  outline: 2px solid var(--local-hai-focus-ring, var(--accent));
+  outline: 2px solid var(--local-hai-focus-ring, var(--primary));
   outline-offset: 2px;
 }
 
@@ -235,9 +235,9 @@
   border-radius: calc(var(--personality-card-radius, 1rem) * 0.72);
   background: var(
     --local-hai-card-icon-surface,
-    color-mix(in srgb, var(--background) 86%, var(--accent) 14%)
+    color-mix(in srgb, var(--background) 86%, var(--primary) 14%)
   );
-  color: var(--local-hai-accent, var(--accent));
+  color: var(--local-hai-accent, var(--primary));
   overflow: hidden;
 }
 
@@ -280,7 +280,7 @@
   border-radius: var(--personality-button-radius, 999px);
   background: var(
     --local-hai-status-surface,
-    color-mix(in srgb, var(--background) 80%, var(--accent) 20%)
+    color-mix(in srgb, var(--background) 80%, var(--primary) 20%)
   );
   color: var(--local-hai-link-secondary-foreground, var(--foreground));
   font-size: 0.7rem;
@@ -336,12 +336,12 @@
 }
 
 .directory-link-primary {
-  background: var(--local-hai-link-primary-background, var(--accent));
+  background: var(--local-hai-link-primary-background, var(--primary));
   color: var(--local-hai-link-primary-foreground, var(--background));
   box-shadow: 0 8px 18px
     color-mix(
       in srgb,
-      var(--local-hai-link-primary-background, var(--accent)) 25%,
+      var(--local-hai-link-primary-background, var(--primary)) 25%,
       transparent
     );
 }
@@ -351,7 +351,7 @@
   box-shadow: 0 10px 22px
     color-mix(
       in srgb,
-      var(--local-hai-link-primary-background, var(--accent)) 32%,
+      var(--local-hai-link-primary-background, var(--primary)) 32%,
       transparent
     );
 }
@@ -378,7 +378,7 @@
 }
 
 .directory-link:focus-visible {
-  outline: 2px solid var(--local-hai-focus-ring, var(--accent));
+  outline: 2px solid var(--local-hai-focus-ring, var(--primary));
   outline-offset: 2px;
 }
 

@@ -3,7 +3,7 @@ import { ForumPostComponent } from './post.component';
 import { ForumPostDto } from '../models';
 
 const meta: Meta<ForumPostComponent> = {
-  title: 'Forum/Post',
+  title: 'Post',
   component: ForumPostComponent,
   tags: ['autodocs'],
   argTypes: {

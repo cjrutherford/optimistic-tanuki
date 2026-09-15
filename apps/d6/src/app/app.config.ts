@@ -4,10 +4,14 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { appRoutes } from './app.routes';
 import { AuthInterceptor } from './http.interceptor';
 import { API_BASE_URL } from './types';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  ThemeService,
+  provideProductTheme,
+} from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('d6'),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideHttpClient(withInterceptors([AuthInterceptor])),

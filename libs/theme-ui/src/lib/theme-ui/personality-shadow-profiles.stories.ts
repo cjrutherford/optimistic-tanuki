@@ -18,7 +18,7 @@ import { PersonalityTokenShowcaseComponent } from './personality-token-showcase.
  */
 const meta: Meta<PersonalityTokenShowcaseComponent> = {
   component: PersonalityTokenShowcaseComponent,
-  title: 'Theme/Personality Variation/Shadow Profiles',
+  title: 'Personality Variation/Shadow Profiles',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

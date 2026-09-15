@@ -3,7 +3,7 @@ import { SignalMeshComponent } from './signal-mesh.component';
 
 const meta: Meta<SignalMeshComponent> = {
   component: SignalMeshComponent,
-  title: 'Motion/Signal Mesh',
+  title: 'Signal Mesh',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

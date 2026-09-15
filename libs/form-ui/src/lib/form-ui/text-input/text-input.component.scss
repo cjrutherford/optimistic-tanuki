@@ -57,20 +57,24 @@
 }
 
 .form-label {
-  font-family: var(--font-heading, system-ui);
+  font-family: var(
+    --personality-label-font-family,
+    var(--font-heading, system-ui)
+  );
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--muted, var(--foreground-secondary));
+  text-transform: var(--personality-label-text-transform, none);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  color: var(--foreground-secondary, var(--foreground));
   margin-bottom: var(--spacing-xs, 6px);
   padding-left: var(--spacing-xs, 4px);
 }
 
 .form-control {
   width: 100%;
-  height: 44px;
-  min-height: 44px;
+  @include p.control-height;
   box-sizing: border-box;
-  padding: var(--spacing-sm, 12px) var(--spacing-md, 20px);
+  padding: 0 var(--personality-control-padding-x, var(--spacing-md, 20px));
   font-family: var(--font-body, system-ui);
   font-size: 0.9375rem;
   color: var(--foreground);
@@ -109,7 +113,7 @@
 
   &::placeholder {
     color: var(--muted);
-    font-style: italic;
+    font-style: normal;
   }
 
   &.has-error {
@@ -248,88 +252,6 @@
 
   .input-suffix {
     border-left: 0.5px solid color-mix(in srgb, var(--primary) 10%, transparent);
-  }
-}
-
-// ============================================
-// Personality-Specific Input Enhancements
-// ============================================
-// The base `.form-control` border-radius above already reads
-// `--personality-input-radius`. Architect's and control-center's radius
-// lines were removed below as truly redundant (their literals — 0 and 4px —
-// are exact matches for the contract's input radius for those two
-// personalities). Every other block's literal radius (playful: 12px,
-// minimal: 2px, soft-touch: 20px, elegant: 6px) is kept because the
-// contract's own value for that personality (16px / 0px / 18px / 0px)
-// differs enough to make removal a visible regression rather than a no-op
-// cleanup.
-
-// Architect - sharp corners, hard focus
-body.personality-architect .form-control {
-  &:focus {
-    border-width: 2px;
-    box-shadow: 4px 4px 0 var(--primary);
-  }
-}
-
-// Playful - bouncy, rounded
-body.personality-playful .form-control {
-  border-radius: 12px;
-
-  &:focus {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
-    transform: scale(1.01);
-  }
-}
-
-// Minimal - subtle, sharp
-body.personality-minimal .form-control {
-  border-radius: 2px;
-  border-width: 0.5px;
-
-  &:focus {
-    border-width: 1px;
-    box-shadow: none;
-    outline: 1px solid var(--primary);
-    outline-offset: 3px;
-  }
-}
-
-// Electric - glow effect
-body.personality-electric .form-control {
-  &:focus {
-    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
-    border-color: var(--primary);
-  }
-}
-
-// Soft Touch - rounded, gentle
-body.personality-soft-touch .form-control {
-  border-radius: 20px;
-
-  &:focus {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
-  }
-}
-
-// Control Center - technical
-body.personality-control-center .form-control {
-  font-family: var(--font-mono);
-
-  &:focus {
-    border-color: var(--primary);
-    box-shadow: inset 0 2px 4px
-      color-mix(in srgb, var(--primary) 10%, transparent);
-  }
-}
-
-// Elegant - refined
-body.personality-elegant .form-control {
-  border-radius: 6px;
-
-  &:focus {
-    border-color: var(--primary);
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 20%, transparent);
   }
 }
 

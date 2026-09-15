@@ -22,8 +22,9 @@
       "options": {
         "port": 4400,
         "configDir": "libs/community-ui/.storybook",
-        "browserTarget": "client-interface:build",
-        "compodoc": true
+        "browserTarget": "community-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
       },
       "configurations": {
         "ci": {
@@ -37,8 +38,9 @@
       "options": {
         "outputDir": "dist/storybook/community-ui",
         "configDir": "libs/community-ui/.storybook",
-        "browserTarget": "client-interface:build",
-        "compodoc": true
+        "browserTarget": "community-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
       },
       "configurations": {
         "ci": {

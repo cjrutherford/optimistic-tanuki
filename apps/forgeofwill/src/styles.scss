@@ -3,19 +3,8 @@
 /* Theme-driven CSS variables. ThemeService overrides at runtime.
    Literals below act as SSR and pre-bootstrap fallbacks. */
 :root {
-  /* Core semantic palette */
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --surface: #f8fafc;
-  --muted: #64748b;
-  --border: #e2e8f0;
-
   /* Primary palette (Bold personality) */
-  --primary: #0ea5e9;
-  --primary-foreground: #ffffff;
-  --secondary: #0284c7;
-  --tertiary: #0ea5e9;
-  --accent: #0ea5e9;
+  --accent: var(--primary);
 
   /* Forge of Will brand palette (literals here are fallbacks only.
      ThemeService re-maps these at runtime per personality.) */
@@ -33,15 +22,6 @@
   --forge-night-4: #252535;
   --forge-mist: #f0f0f5;
   --forge-fog: #a0a0b0;
-}
-
-/* Dark mode overrides */
-[data-theme='dark'] {
-  --background: #0a0a0f;
-  --foreground: #f0f0f5;
-  --surface: #12131a;
-  --muted: #a0a0b0;
-  --border: #252535;
 }
 
 * {

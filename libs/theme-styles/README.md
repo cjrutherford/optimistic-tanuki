@@ -40,7 +40,7 @@ app's browser target — can resolve directories under
 }
 ```
 
-`personality/_index.scss` (`@forward 'shadows';`) is the curated entry point.
+`personality/_index.scss` (forwarding `shadows`, `surfaces` and `interaction`) is the curated entry point.
 Add partials to `libs/theme-styles/src/lib/personality/` only as new
 consumers land (see the shadow/background/surface workstreams in
 `docs/plans/2026-07-18-personality-styles-refactor.md`) — do not recreate the
@@ -64,6 +64,25 @@ Thin wrappers over CSS custom properties emitted by `theme-lib`'s
 
 See the header comment in `personality/_shadows.scss` for the full
 `--shadow-*` / `--shadow-color` / `--shadow-opacity` variable contract.
+
+### `personality/_interaction.scss`
+
+How a component responds to interaction, per personality, without naming any
+personality. Each personality's `presentation.interaction`, `presentation.label`
+and `components.input.focusStyle` (theme-models) are emitted by `ThemeService`;
+personalities that declare nothing leave the variables unset, so each mixin's
+arguments are the component's own default.
+
+- `hover-lift($transform, $shadow)` — hover `transform` and `box-shadow`.
+- `press($transform, $shadow)` — pressed `transform` and `box-shadow`.
+- `focus-ring($fallback, $extra)` — focus ring as a `box-shadow`.
+- `accent-border($fallback)` — border for emphasised surfaces.
+- `label-type` — font family, case and letter spacing for small structural
+  text (tabs, metadata, badges, form labels).
+
+Never style a component with `body.personality-<id>` or
+`[data-personality='<id>']` selectors: change the personality's data in
+`libs/theme-models/src/lib/personalities.ts` instead.
 
 ### `components/toolbar.scss`
 

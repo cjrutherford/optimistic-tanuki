@@ -26,7 +26,9 @@ describe('ThemeDesignerComponent behaviour', () => {
   }
 
   let theme: ThemeMock & {
+    theme$: jest.Mock;
     themeColors$: unknown;
+    generatedTheme$: unknown;
     availablePalettes$: unknown;
   };
 
@@ -68,7 +70,9 @@ describe('ThemeDesignerComponent behaviour', () => {
       getPersonalityConfig: jest
         .fn()
         .mockReturnValue({ primaryColor: '#3f51b5' }),
+      theme$: jest.fn().mockReturnValue(of('light')),
       themeColors$: of({ accent: '#aaaaaa', complementary: '#bbbbbb' }),
+      generatedTheme$: of(undefined),
       availablePalettes$: of([palette('Ocean')]),
     };
 

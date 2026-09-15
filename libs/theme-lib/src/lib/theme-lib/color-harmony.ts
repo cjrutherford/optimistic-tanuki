@@ -486,6 +486,12 @@ const SURFACE_COOL_HUE = 210;
  */
 const MUTED_ON_SURFACE_MIN_RATIO = 1.9;
 
+/** Readable body-copy floor for muted/helper text against the background. */
+const MUTED_TEXT_MIN_RATIO = 4.5;
+
+/** Secondary text sits between foreground and muted, so it clears a higher floor. */
+const SECONDARY_TEXT_MIN_RATIO = 7;
+
 /** Resolves the hue used for the surface color under a given hue bias. */
 function resolveSurfaceHue(
   hueBias: 'none' | 'primary' | 'warm' | 'cool',
@@ -535,6 +541,7 @@ export function generateThemeResponsiveColors(
   foreground: string;
   surface: string;
   muted: string;
+  textSecondary: string;
   border: string;
   overlay: string;
 } {
@@ -574,27 +581,40 @@ export function generateThemeResponsiveColors(
   };
   const foreground = rgbToHex(hslToRgb(foregroundHsl));
 
-  // Secondary (less emphasized text)
-  const secondaryHsl: HSL = {
-    h: primaryHsl.h,
-    s: foregroundHsl.s,
-    l: Math.max(
+  // Secondary and muted text step from the foreground toward the background:
+  // lighter in light mode, darker in dark mode. Adding the offsets in both
+  // modes pushed dark-mode muted text to pure white, and in light mode left it
+  // too faint to read, so each tone is then walked back toward the foreground
+  // until it clears its contrast floor against the background.
+  const towardBackground = mode === 'light' ? 1 : -1;
+  const textTone = (offset: number, minimumRatio: number): string => {
+    let lightness = Math.max(
       0,
-      Math.min(100, foregroundLuminosity + params.secondaryLuminosityOffset)
-    ),
+      Math.min(100, foregroundLuminosity + towardBackground * offset)
+    );
+    let hex = rgbToHex(
+      hslToRgb({ h: primaryHsl.h, s: foregroundHsl.s, l: lightness })
+    );
+    while (
+      getContrastRatio(hex, background) < minimumRatio &&
+      Math.abs(lightness - foregroundLuminosity) > 1
+    ) {
+      lightness -= towardBackground * 2;
+      hex = rgbToHex(
+        hslToRgb({ h: primaryHsl.h, s: foregroundHsl.s, l: lightness })
+      );
+    }
+    return hex;
   };
-  const secondary = rgbToHex(hslToRgb(secondaryHsl));
+
+  // Secondary (less emphasized text)
+  const secondary = textTone(
+    Math.min(params.secondaryLuminosityOffset, params.mutedLuminosityOffset),
+    SECONDARY_TEXT_MIN_RATIO
+  );
 
   // Muted (helper text)
-  const mutedHsl: HSL = {
-    h: primaryHsl.h,
-    s: foregroundHsl.s,
-    l: Math.max(
-      0,
-      Math.min(100, foregroundLuminosity + params.mutedLuminosityOffset)
-    ),
-  };
-  const muted = rgbToHex(hslToRgb(mutedHsl));
+  const muted = textTone(params.mutedLuminosityOffset, MUTED_TEXT_MIN_RATIO);
 
   // Surface: derived from background luminosity + offset (unchanged single
   // source, Workstream E2), now ALSO carrying per-personality hue/saturation
@@ -674,6 +694,7 @@ export function generateThemeResponsiveColors(
     foreground,
     surface,
     muted,
+    textSecondary: secondary,
     border,
     overlay,
   };

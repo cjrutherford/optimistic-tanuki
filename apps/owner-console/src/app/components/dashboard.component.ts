@@ -34,9 +34,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.themeService.setPersonality('control-center');
-    this.themeService.setPrimaryColor('#2dd4bf');
-
     this.theme$.pipe(takeUntil(this.destroy$)).subscribe((theme) => {
       // Theme changes are handled by ThemeService via CSS variables
     });

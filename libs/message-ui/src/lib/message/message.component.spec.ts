@@ -36,12 +36,11 @@ describe('MessageUiComponent', () => {
       /\.message-container\s*\{[\s\S]*pointer-events:\s*none/
     );
     expect(styles).toMatch(/\.message\s*\{[\s\S]*pointer-events:\s*auto/);
-    expect(
-      fixture.nativeElement.querySelector('otui-button .message-dismiss-label')
-        ?.textContent
-    ).toContain('Dismiss message');
-    expect(
-      fixture.nativeElement.querySelector('otui-button button:not([disabled])')
-    ).toBeTruthy();
+    const dismiss: HTMLButtonElement | null =
+      fixture.nativeElement.querySelector(
+        'otui-notification button.notification-close'
+      );
+    expect(dismiss?.getAttribute('aria-label')).toContain('Dismiss');
+    expect(dismiss?.disabled).toBe(false);
   });
 });

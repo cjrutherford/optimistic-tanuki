@@ -2,8 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
 
-const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
-
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -11,20 +9,14 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('bootstraps the foundation personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === PERSONALITY_STORAGE_KEY ? null : null
-      );
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('foundation');
-    getItemSpy.mockRestore();
+    expect(setPersonalitySpy).not.toHaveBeenCalled();
     setPersonalitySpy.mockRestore();
   });
 

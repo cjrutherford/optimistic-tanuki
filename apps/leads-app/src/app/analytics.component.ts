@@ -12,7 +12,6 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { LeadsService } from './leads.service';
 import { Lead, LeadStats, LeadSource } from './leads.types';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -340,7 +339,6 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('trendChart') trendChartRef!: ElementRef<HTMLCanvasElement>;
 
   private readonly leadsService = inject(LeadsService);
-  private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
 
   leads: Lead[] = [];
@@ -354,7 +352,6 @@ export class AnalyticsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit() {
     this.loadData();
-    this.themeService.setPersonality('control-center');
   }
 
   ngAfterViewInit() {

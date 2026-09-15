@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
-import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import { ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { Observable, Subscription, filter } from 'rxjs';
 import { map, shareReplay, startWith } from 'rxjs/operators';
 import { firstValueFrom } from 'rxjs';
@@ -137,7 +137,6 @@ const AUTH_NAV_LINKS = [
 })
 export class AppComponent implements OnInit, OnDestroy {
   themeName = signal('light-theme');
-  themeService = inject(ThemeService);
   urlSub!: Subscription;
 
   public authState = inject(AuthStateService);
@@ -251,16 +250,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.updateViewportState();
-
-    // Apply documented default personality (soft-touch) only on first load.
-    if (this.isBrowser) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-      if (!hasStoredPersonalityTheme) {
-        void this.themeService.setPersonality('soft-touch');
-      }
-    }
 
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),

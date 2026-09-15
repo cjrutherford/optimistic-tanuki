@@ -60,7 +60,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         padding: 12px 18px;
         border: 0;
         border-radius: var(--border-radius-full, 999px);
-        background: var(--accent, #d97706);
+        background: var(--primary, #d97706);
         color: var(--background, #ffffff);
         font-weight: 700;
         cursor: pointer;

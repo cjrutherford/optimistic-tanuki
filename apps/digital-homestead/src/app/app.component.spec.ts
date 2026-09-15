@@ -7,8 +7,6 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
 
-const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
-
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -54,20 +52,14 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
-  it('bootstraps the soft-touch personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === PERSONALITY_STORAGE_KEY ? null : null
-      );
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('soft-touch');
-    getItemSpy.mockRestore();
+    expect(setPersonalitySpy).not.toHaveBeenCalled();
     setPersonalitySpy.mockRestore();
   });
 });

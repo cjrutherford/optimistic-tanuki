@@ -15,9 +15,7 @@ import {
   MessageType,
 } from '@optimistic-tanuki/message-ui';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
-
 import { AuthStateService } from './auth-state.service';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { AiAssistantBubbleComponent } from '@optimistic-tanuki/project-ui';
 import { AssistantService } from './assistant/assistant.service';
@@ -138,7 +136,6 @@ export class AppComponent implements OnInit {
   private readonly authState = inject(AuthStateService);
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
-  private readonly themeService = inject(ThemeService);
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -191,16 +188,6 @@ export class AppComponent implements OnInit {
         this.updateNavItems();
       });
     this.currentPath.set(this.router.url);
-
-    // Initialize theme - only in browser to avoid SSR issues
-    if (isPlatformBrowser(this.platformId)) {
-      // Set fixed Bold personality with clean professional + energetic accent
-      // No theme selection UI - this is the brand identity
-      this.themeService.setPersonality('bold');
-      this.themeService.setPrimaryColor('#0EA5E9'); // Sky blue - energetic, productive, action-oriented
-
-      console.log('[Forge of Will] Theme initialized with Bold personality');
-    }
   }
 
   updateNavItems() {

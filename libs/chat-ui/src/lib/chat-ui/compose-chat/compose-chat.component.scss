@@ -17,7 +17,7 @@
   @include p.personality-transition(border-color, 'fast');
 
   &:focus-within {
-    border-color: var(--accent);
+    border-color: var(--primary);
     @include p.shadow('sm');
   }
 }
@@ -45,7 +45,7 @@
   @include p.personality-transition(all, 'fast');
 
   &:hover {
-    background: color-mix(in srgb, var(--complement) 15%, transparent);
+    background: color-mix(in srgb, var(--secondary) 15%, transparent);
   }
 
   &:active {

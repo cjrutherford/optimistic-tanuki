@@ -9,6 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IconComponent } from '../icon/icon.component';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
 /**
@@ -83,7 +84,7 @@ export interface Notification {
 @Component({
   selector: 'otui-notification',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconComponent],
   templateUrl: './notification.component.html',
   styleUrls: ['./notification.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -352,13 +353,13 @@ export class NotificationComponent
 
   getTypeIcon(type: NotificationType): string {
     const icons: Record<NotificationType, string> = {
-      info: 'ℹ️',
-      success: '✅',
-      warning: '⚠️',
-      error: '❌',
+      info: 'info',
+      success: 'check-circle',
+      warning: 'alert-triangle',
+      error: 'alert-circle',
       neutral: '🔔',
     };
-    return icons[type] || '🔔';
+    return icons[type] || 'bell';
   }
 
   getTypeLabel(type: NotificationType): string {

@@ -18,9 +18,11 @@ import { AuthenticationService } from './services/authentication.service';
 import { AuthStateService } from './state/auth-state.service';
 import { ProfileService } from './state/profile.service';
 import { ReturnIntentService } from './state/return-intent.service';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('system-configurator'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

@@ -23,8 +23,6 @@ import { CommunityDto } from '../models';
     '[style.--local-accent]': 'accent',
     '[style.--local-complement]': 'complement',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
-    '[style.--local-variant]': 'variant',
   },
   templateUrl: './manage-groups.component.html',
   styleUrls: ['./manage-groups.component.scss'],

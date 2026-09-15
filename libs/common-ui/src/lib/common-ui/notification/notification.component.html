@@ -2,9 +2,10 @@
 @if (isSingleMode && notification) {
 <div
   class="notification-toast"
-  [class]="'notification-' + (notification.type || type)"
+  [class]="
+    'notification-' + (notification.type || type) + ' animation-' + animation
+  "
   [class.closable]="closable && notification.closable !== false"
-  [class]="'animation-' + animation"
   role="alert"
   [attr.aria-live]="ariaLive"
   [attr.aria-label]="ariaLabel || getTypeLabel(notification.type || type)"
@@ -13,7 +14,13 @@
   <!-- Icon -->
   @if (showIcon) {
   <span class="notification-icon" aria-hidden="true">
-    {{ notification.icon || getTypeIcon(notification.type || type) }}
+    @if (notification.icon) { {{ notification.icon }} } @else {
+    <otui-icon
+      [name]="getTypeIcon(notification.type || type)"
+      [size]="20"
+      stroke="currentColor"
+    />
+    }
   </span>
   }
 
@@ -127,7 +134,13 @@
       >
         <!-- Icon -->
         <span class="item-icon" aria-hidden="true">
-          {{ notification.icon || getTypeIcon(notification.type || 'neutral') }}
+          @if (notification.icon) { {{ notification.icon }} } @else {
+          <otui-icon
+            [name]="getTypeIcon(notification.type || 'neutral')"
+            [size]="20"
+            stroke="currentColor"
+          />
+          }
         </span>
 
         <!-- Content -->
@@ -198,16 +211,26 @@
   @for (notification of visibleNotifications; track notification.id) {
   <div
     class="notification-toast"
-    [class]="'notification-' + (notification.type || 'neutral')"
+    [class]="
+      'notification-' +
+      (notification.type || 'neutral') +
+      ' animation-' +
+      animation
+    "
     [class.closable]="closable && notification.closable !== false"
-    [class]="'animation-' + animation"
     role="alert"
     [attr.data-notification-id]="notification.id"
   >
     <!-- Icon -->
     @if (showIcon) {
     <span class="notification-icon" aria-hidden="true">
-      {{ notification.icon || getTypeIcon(notification.type || 'neutral') }}
+      @if (notification.icon) { {{ notification.icon }} } @else {
+      <otui-icon
+        [name]="getTypeIcon(notification.type || 'neutral')"
+        [size]="20"
+        stroke="currentColor"
+      />
+      }
     </span>
     }
 

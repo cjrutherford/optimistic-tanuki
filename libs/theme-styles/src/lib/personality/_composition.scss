@@ -1,0 +1,79 @@
+// ============================================================================
+// Personality composition contract
+// ----------------------------------------------------------------------------
+// Wraps the CSS custom properties ThemeService emits from each personality's
+// `presentation.composition` (see theme-models `resolveCompositionVariables`):
+//
+//   density   --personality-control-height[-sm|-lg], --personality-cell-padding,
+//             --personality-surface-padding, --personality-stack-gap
+//   shape     --personality-primitive-radius, --personality-check-radius
+//   header    --personality-header-*, --personality-table-header-*
+//   surface   --personality-surface-bg / -border / -shadow / -texture
+//   tabs      --personality-tabs-track-*, --personality-tab-*
+//   feedback  --personality-feedback-stripe / -tint / -outline
+//   fill      --personality-fill-primary
+//
+// Like the other partials, no personality values live here: every mixin keeps
+// the component's own default as the fallback.
+// ============================================================================
+
+/// Card-like surface: background, border, elevation and optional texture.
+@mixin surface(
+  $bg: var(--surface),
+  $border: 1px solid var(--border),
+  $shadow: none
+) {
+  background-color: var(--personality-surface-bg, #{$bg});
+  background-image: var(--personality-surface-texture, none);
+  border: var(--personality-surface-border, #{$border});
+  box-shadow: var(--personality-surface-shadow, #{$shadow});
+}
+
+/// Dialog-style header band.
+@mixin header-band {
+  background: var(--personality-header-bg, var(--primary));
+  color: var(--personality-header-fg, var(--on-primary, #fff));
+  border-bottom: var(--personality-header-border, 0 solid transparent);
+}
+
+/// Title inside a header band.
+@mixin header-title {
+  font-family: var(--personality-header-font, var(--font-heading, inherit));
+  font-size: var(--personality-header-size, 1.125rem);
+  font-weight: var(--personality-header-weight, 600);
+  text-transform: var(--personality-header-transform, none);
+  letter-spacing: var(--personality-header-tracking, normal);
+  color: inherit;
+}
+
+/// Height of a single-line control at the given size.
+@mixin control-height($size: 'md') {
+  @if $size == 'sm' {
+    height: var(--personality-control-height-sm, 36px);
+    min-height: var(--personality-control-height-sm, 36px);
+  } @else if $size == 'lg' {
+    height: var(--personality-control-height-lg, 52px);
+    min-height: var(--personality-control-height-lg, 52px);
+  } @else {
+    height: var(--personality-control-height, 44px);
+    min-height: var(--personality-control-height, 44px);
+  }
+}
+
+/// Toast / alert surface carrying a tone colour through `--tone`.
+@mixin feedback-surface {
+  background: color-mix(
+    in srgb,
+    var(--tone, var(--primary)) var(--personality-feedback-tint, 0%),
+    var(--personality-surface-bg, var(--surface))
+  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--tone, var(--primary)) var(--personality-feedback-outline, 0%),
+      var(--border)
+    );
+  border-left: var(--personality-feedback-stripe, 4px) solid
+    var(--tone, var(--primary));
+  box-shadow: var(--personality-surface-shadow, var(--shadow-md));
+}

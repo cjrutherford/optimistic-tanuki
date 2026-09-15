@@ -16,6 +16,51 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/finance-ui/.storybook",
+        "browserTarget": "finance-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/finance-ui",
+        "configDir": "libs/finance-ui/.storybook",
+        "browserTarget": "finance-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "finance-ui:build-storybook",
+        "staticFilePath": "dist/storybook/finance-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "finance-ui:build-storybook:ci"
+        }
+      }
     }
   }
 }

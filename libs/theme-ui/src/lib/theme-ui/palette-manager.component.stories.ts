@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { PaletteManagerComponent } from './palette-manager.component';
 
 const meta: Meta<PaletteManagerComponent> = {
-  title: 'Theme UI/Palette Manager',
+  title: 'Palette Manager',
   component: PaletteManagerComponent,
   parameters: {
     layout: 'fullscreen',

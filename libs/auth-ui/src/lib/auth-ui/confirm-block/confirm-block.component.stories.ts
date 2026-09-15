@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ConfirmBlockComponent } from './confirm-block.component';
-import { within } from '@storybook/test';
-import { expect } from '@storybook/jest';
+import { expect, within } from '@storybook/test';
 
 const meta: Meta<ConfirmBlockComponent> = {
   component: ConfirmBlockComponent,

@@ -3,7 +3,7 @@ import { GlassFogComponent } from './glass-fog.component';
 
 const meta: Meta<GlassFogComponent> = {
   component: GlassFogComponent,
-  title: 'Motion/Glass Fog',
+  title: 'Glass Fog',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

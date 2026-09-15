@@ -79,29 +79,9 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
-  it('does not overwrite the saved personality on startup', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === 'optimistic-tanuki-personality-theme'
-          ? '{"personalityId":"bold"}'
-          : null
-      );
-
+  it('leaves the personality to the app theme defaults', () => {
     fixture.detectChanges();
 
     expect(themeServiceMock.setPersonality).not.toHaveBeenCalled();
-    getItemSpy.mockRestore();
-  });
-
-  it('bootstraps the soft-touch personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockReturnValue(null);
-
-    fixture.detectChanges();
-
-    expect(themeServiceMock.setPersonality).toHaveBeenCalledWith('soft-touch');
-    getItemSpy.mockRestore();
   });
 });

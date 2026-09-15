@@ -3,7 +3,7 @@ import { MurmurationSceneComponent } from './murmuration-scene.component';
 
 const meta: Meta<MurmurationSceneComponent> = {
   component: MurmurationSceneComponent,
-  title: 'Motion/Murmuration Scene',
+  title: 'Murmuration Scene',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

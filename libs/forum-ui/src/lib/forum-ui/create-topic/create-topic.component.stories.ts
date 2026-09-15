@@ -3,7 +3,7 @@ import { CreateTopicComponent } from './create-topic.component';
 
 const meta: Meta<CreateTopicComponent> = {
   component: CreateTopicComponent,
-  title: 'Forum UI/Create Topic',
+  title: 'Create Topic',
   args: {},
 };
 export default meta;

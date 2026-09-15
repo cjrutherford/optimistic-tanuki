@@ -3,7 +3,7 @@ import { PersonalityPreviewComponent } from './personality-preview.component';
 
 const meta: Meta<PersonalityPreviewComponent> = {
   component: PersonalityPreviewComponent,
-  title: 'Theme/Personality Preview',
+  title: 'Personality Preview',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

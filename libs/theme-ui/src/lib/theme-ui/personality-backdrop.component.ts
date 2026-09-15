@@ -17,8 +17,8 @@
  * the fade-in must not run for reduced-motion users).
  *
  * Usage: drop `<lib-personality-backdrop />` once near the top of an app's
- * root component template (see `apps/ui-playground` and
- * `apps/forgeofwill` for the reference integration). If the app's
+ * root component template (see `apps/forgeofwill` for the reference
+ * integration). If the app's
  * `styles.scss` already paints `--page-background-pattern` on `body`
  * directly (the documented alternative, e.g. the pre-C2 `forgeofwill`
  * recipe), remove that rule when adopting this component so the pattern

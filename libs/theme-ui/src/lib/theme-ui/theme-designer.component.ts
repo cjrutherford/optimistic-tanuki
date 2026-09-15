@@ -114,11 +114,11 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
     { name: 'Subtle', value: '0 2px 4px rgba(0, 0, 0, 0.1)' },
     { name: 'Medium', value: '0 4px 6px rgba(0, 0, 0, 0.15)' },
     { name: 'Large', value: '0 10px 15px rgba(0, 0, 0, 0.2)' },
-    { name: 'Glow Accent', value: '0 0 20px var(--accent)' },
-    { name: 'Glow Complement', value: '0 0 20px var(--complement)' },
+    { name: 'Glow Accent', value: '0 0 20px var(--primary)' },
+    { name: 'Glow Complement', value: '0 0 20px var(--secondary)' },
     {
       name: 'Multi Glow',
-      value: '0 0 24px 8px var(--accent), 0 0 48px 16px var(--complement)',
+      value: '0 0 24px 8px var(--primary), 0 0 48px 16px var(--secondary)',
     },
   ];
 
@@ -137,6 +137,25 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((palettes) => {
         this.availablePalettes = palettes;
+      });
+
+    // Keep mode and primary colour in step with changes made elsewhere (the
+    // app bar toggle, the personality selector, another designer).
+    this.themeService
+      .theme$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((mode) => {
+        if (mode) {
+          this.currentTheme = mode;
+        }
+      });
+
+    this.themeService.generatedTheme$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((theme) => {
+        if (theme?.config?.primaryColor) {
+          this.primaryColor = theme.config.primaryColor;
+        }
       });
 
     // Subscribe to theme color changes
@@ -373,9 +392,8 @@ export class ThemeDesignerComponent implements OnInit, OnDestroy {
 
   // ==================== Personality Methods ====================
 
-  onPersonalitySelected(personality: any): void {
-    // Personality has been updated via the selector component
-    // The theme service has already been updated
+  onPersonalitySelected(personality: { name: string }): void {
+    // The selector applies the personality through the theme service itself.
     console.log('Personality selected:', personality.name);
   }
 

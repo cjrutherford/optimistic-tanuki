@@ -47,8 +47,6 @@ import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
     '[style.--local-accent]': 'accent',
     '[style.--local-complement]': 'complement',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
-    '[style.--local-variant]': 'variant',
   },
   templateUrl: './create-community.component.html',
   styleUrls: ['./create-community.component.scss'],

@@ -328,7 +328,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Typography
+      /* Typography */
       .typography-demo {
         h1,
         h2,
@@ -370,7 +370,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Colors
+      /* Colors */
       .color-palette {
         display: flex;
         flex-direction: column;
@@ -423,7 +423,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Components
+      /* Components */
       .components-demo {
         display: flex;
         flex-direction: column;
@@ -606,7 +606,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Spacing
+      /* Spacing */
       .spacing-demo {
         display: flex;
         gap: 0.5rem;
@@ -628,7 +628,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Shadows
+      /* Shadows */
       .shadow-demo {
         display: flex;
         gap: 1rem;
@@ -661,7 +661,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Border Radius
+      /* Border Radius */
       .radius-demo {
         display: flex;
         gap: 1rem;
@@ -696,7 +696,7 @@ import { Subject, takeUntil } from 'rxjs';
         }
       }
 
-      // Animation
+      /* Animation */
       .animation-demo {
         .animation-info {
           display: flex;

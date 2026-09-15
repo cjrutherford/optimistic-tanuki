@@ -10,6 +10,11 @@
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   @include p.shadow('sm');
+  @include p.personality-transition('transform, box-shadow', 'normal');
+
+  &:hover {
+    @include p.hover-lift(none, var(--shadow-sm));
+  }
 }
 
 .forum-compose-form {
@@ -38,6 +43,7 @@
     color: var(--foreground);
     font-size: var(--font-size-sm);
     font-family: var(--font-body, sans-serif);
+    @include p.label-type;
   }
 
   &.editor-group {
@@ -73,6 +79,7 @@
   border-radius: var(--border-radius-full);
   font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
+  @include p.label-type;
 }
 
 .tag-remove {
@@ -239,288 +246,6 @@
 
     otui-button {
       width: 100%;
-    }
-  }
-}
-
-// ── Personality Overrides ──
-
-// Professional
-:host-context([data-personality='classic']),
-:host-context([data-personality='professional']) {
-  .forum-compose-card {
-    border-radius: var(--border-radius-md);
-  }
-  .tag-chip {
-    border-radius: var(--border-radius-sm);
-  }
-}
-
-:host-context([data-personality='minimal']) {
-  .forum-compose-card {
-    border-width: 1px;
-    border-radius: var(--border-radius-sm);
-    @include p.shadow('none');
-  }
-  .form-actions {
-    border-top: none;
-  }
-  .tag-chip {
-    background-color: transparent;
-    border: 1px solid var(--primary);
-    color: var(--primary);
-    border-radius: var(--border-radius-sm);
-  }
-  .tag-remove {
-    color: var(--primary);
-  }
-}
-
-:host-context([data-personality='elegant']) {
-  .forum-compose-card {
-    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  }
-  .forum-compose-form h3 {
-    font-style: italic;
-    border-bottom-color: var(--primary);
-  }
-  .tag-chip {
-    background-color: transparent;
-    border: 1px solid var(--primary);
-    color: var(--primary);
-  }
-  .tag-remove {
-    color: var(--primary);
-  }
-}
-
-// Creative
-:host-context([data-personality='bold']) {
-  .forum-compose-card {
-    border-width: 3px;
-    border-radius: var(--border-radius-sm);
-  }
-  .forum-compose-form h3 {
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    font-weight: 800;
-    border-bottom-width: 3px;
-    border-bottom-color: var(--primary);
-  }
-  .form-actions {
-    border-top-width: 3px;
-    border-top-color: var(--primary);
-  }
-  .tag-chip {
-    font-weight: 700;
-    border-radius: var(--border-radius-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
-}
-
-:host-context([data-personality='playful']) {
-  .forum-compose-card {
-    border-radius: var(--border-radius-xl);
-    background: var(--gradient-surface);
-    border-color: var(--primary);
-  }
-  .tag-chip {
-    background: var(--gradient-primary);
-    border-radius: var(--border-radius-full);
-    font-weight: 600;
-  }
-  .editor-container {
-    border-radius: var(--border-radius-lg);
-  }
-  .editor-container.dragover::after {
-    border-radius: var(--border-radius-xl);
-    background: var(--gradient-primary);
-  }
-}
-
-:host-context([data-personality='electric']) {
-  .forum-compose-card {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 20%, transparent);
-  }
-  .editor-container:focus-within {
-    box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 30%, transparent);
-  }
-  .tag-chip {
-    box-shadow: 0 0 6px color-mix(in srgb, var(--primary) 25%, transparent);
-  }
-}
-
-// Casual
-:host-context([data-personality='soft']),
-:host-context([data-personality='soft-touch']) {
-  .forum-compose-card {
-    border: none;
-    background-color: color-mix(in srgb, var(--primary) 6%, var(--background));
-    border-radius: var(--border-radius-xl);
-    @include p.shadow('none');
-  }
-  .forum-compose-form h3 {
-    border-bottom: none;
-  }
-  .form-actions {
-    border-top: none;
-  }
-  .tag-chip {
-    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
-    color: var(--primary);
-    border-radius: var(--border-radius-full);
-  }
-  .tag-remove {
-    color: var(--primary);
-  }
-  .editor-container {
-    border-color: color-mix(in srgb, var(--border) 40%, transparent);
-    border-radius: var(--border-radius-lg);
-  }
-}
-
-// Technical
-:host-context([data-personality='architect']) {
-  .forum-compose-card {
-    border-radius: var(--border-radius-none);
-    @include p.shadow('lg');
-    border-top: 3px solid var(--primary);
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-  }
-}
-
-:host-context([data-personality='architect']),
-:host-context([data-personality='control-center']),
-:host-context([data-personality='foundation']) {
-  .forum-compose-card {
-    border-radius: var(--border-radius-none);
-  }
-  .forum-compose-form h3 {
-    font-family: var(--font-mono, monospace);
-    letter-spacing: 0.03em;
-  }
-  .form-group label {
-    font-family: var(--font-mono, monospace);
-    text-transform: uppercase;
-    font-size: var(--font-size-xs);
-    letter-spacing: 0.05em;
-  }
-  .tag-chip {
-    border-radius: var(--border-radius-none);
-    font-family: var(--font-mono, monospace);
-    text-transform: uppercase;
-    font-size: var(--font-size-xs);
-    letter-spacing: 0.04em;
-  }
-  .editor-container {
-    border-radius: var(--border-radius-none);
-  }
-}
-
-:host-context([data-personality='control-center']) {
-  .forum-compose-form {
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-  }
-}
-
-// ============================================
-// Personality-Specific Compose Forum Post (body class)
-// ============================================
-
-body.personality-architect {
-  :host {
-    .forum-compose-card {
-      border-width: 3px;
-      border-radius: var(--border-radius-none);
-      &:hover {
-        box-shadow: 4px 4px 0 var(--primary);
-      }
-    }
-    .form-group label {
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .tag-chip {
-      font-family: var(--font-mono);
-      border-radius: var(--border-radius-none);
-      text-transform: uppercase;
-    }
-  }
-}
-
-body.personality-playful {
-  :host {
-    .forum-compose-card {
-      border-radius: var(--border-radius-xl);
-      &:hover {
-        transform: translateY(-4px) scale(1.01);
-      }
-    }
-    .tag-chip {
-      border-radius: var(--border-radius-full);
-    }
-  }
-}
-
-body.personality-minimal {
-  :host {
-    .forum-compose-card {
-      border-width: 1px;
-      border-radius: var(--border-radius-sm);
-      @include p.shadow('none');
-    }
-  }
-}
-
-body.personality-electric {
-  :host {
-    .forum-compose-card {
-      &:hover {
-        box-shadow: 0 0 20px var(--primary);
-      }
-    }
-    .tag-chip {
-      box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 30%, transparent);
-    }
-  }
-}
-
-body.personality-soft-touch {
-  :host {
-    .forum-compose-card {
-      border-radius: var(--border-radius-xl);
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 28px
-          color-mix(in srgb, var(--shadow-color) 10%, transparent);
-      }
-    }
-    .tag-chip {
-      border-radius: var(--border-radius-full);
-    }
-  }
-}
-
-body.personality-control-center {
-  :host {
-    .forum-compose-card {
-      border-radius: var(--border-radius-none);
-    }
-    .forum-compose-form {
-      gap: var(--spacing-sm);
-      padding: var(--spacing-sm);
-    }
-    .tag-chip {
-      font-family: var(--font-mono);
-      border-radius: var(--border-radius-none);
-    }
-    &:hover {
-      box-shadow: inset 0 0 0 1px var(--primary);
     }
   }
 }

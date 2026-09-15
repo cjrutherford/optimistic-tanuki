@@ -3,7 +3,7 @@ import { ParallaxGridWarpComponent } from './parallax-grid-warp.component';
 
 const meta: Meta<ParallaxGridWarpComponent> = {
   component: ParallaxGridWarpComponent,
-  title: 'Motion/Parallax Grid Warp',
+  title: 'Parallax Grid Warp',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

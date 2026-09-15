@@ -129,7 +129,7 @@ describe('DashboardComponent', () => {
     expect(navigateSpy).toHaveBeenCalledWith(['/dashboard/overview']);
   });
 
-  it('initializes the owner console with the control-center personality', () => {
+  it('leaves the personality to the app theme defaults', () => {
     jest.spyOn(router, 'navigate').mockResolvedValue(true);
     Object.defineProperty(router, 'url', {
       configurable: true,
@@ -140,7 +140,7 @@ describe('DashboardComponent', () => {
 
     fixture.componentInstance.ngOnInit();
 
-    expect(themeService.setPersonality).toHaveBeenCalledWith('control-center');
-    expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#2dd4bf');
+    expect(themeService.setPersonality).not.toHaveBeenCalled();
+    expect(themeService.setPrimaryColor).not.toHaveBeenCalled();
   });
 });

@@ -3,7 +3,7 @@ import { ButtonComponent } from './button/button.component';
 
 const meta: Meta<ButtonComponent> = {
   component: ButtonComponent,
-  title: 'Theme Verification/Common UI',
+  title: 'Theme Verification',
   tags: ['autodocs'],
 };
 

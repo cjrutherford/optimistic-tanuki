@@ -38,28 +38,11 @@ import { Subject } from 'rxjs';
     '[style.--local-foreground]': 'foreground',
     '[style.--local-accent]': 'accent',
     '[style.--local-complement]': 'complement',
-    '[style.--local-tertiary]': 'tertiary',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
-    '[style.--local-variant]': 'variant',
-    '[style.--local-background-filter]': 'backgroundFilter',
     '[style.--local-border-width]': 'borderWidth',
     '[style.--local-border-radius]': 'borderRadius',
-    '[style.--local-border-style]': 'borderStyle',
     '[style.--local-background-gradient]': 'backgroundGradient',
-    '[style.--local-svg-pattern]': 'svgPattern',
-    '[style.--local-glow-filter]': 'glowFilter',
-    '[style.--local-gradient-type]': 'gradientType',
-    '[style.--local-gradient-stops]': 'gradientStops',
-    '[style.--local-gradient-colors]': 'gradientColors',
-    '[style.--local-animation]': 'animation',
-    '[style.--local-hover-box-shadow]': 'hoverBoxShadow',
-    '[style.--local-hover-gradient]': 'hoverGradient',
-    '[style.--local-hover-glow-filter]': 'hoverGlowFilter',
-    '[style.--local-inset-shadow]': 'insetShadow',
-    '[style.--local-body-gradient]': 'bodyGradient',
-    '[style.--local-background-pattern]': 'backgroundPattern',
     '[class.glass-effect]': 'glassEffect',
   },
 })
@@ -166,7 +149,7 @@ export class CardComponent extends Variantable implements OnChanges {
         ? Array.isArray(options.gradientColors)
           ? options.gradientColors.join(', ')
           : options.gradientColors
-        : this.gradientColors ?? 'var(--accent), var(--complement)';
+        : this.gradientColors ?? 'var(--primary), var(--secondary)';
     this.animation = options.animation ?? this.animation ?? 'none';
     this.hoverBoxShadow =
       options.hoverBoxShadow ??

@@ -8,8 +8,6 @@ import { NavigationService } from '@optimistic-tanuki/app-registry';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { of } from 'rxjs';
 
-const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
-
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
   let component: AppComponent;
@@ -65,20 +63,14 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-shell')).toBeTruthy();
   });
 
-  it('bootstraps the control-center personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === PERSONALITY_STORAGE_KEY ? null : null
-      );
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
 
     const localFixture = TestBed.createComponent(AppComponent);
     localFixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('control-center');
-    getItemSpy.mockRestore();
+    expect(setPersonalitySpy).not.toHaveBeenCalled();
     setPersonalitySpy.mockRestore();
   });
 

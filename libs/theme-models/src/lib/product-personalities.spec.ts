@@ -1,5 +1,8 @@
 import {
   PRODUCT_PERSONALITIES,
+  PRODUCT_THEME_DEFAULTS,
+  DEFAULT_PRIMARY_COLOR,
+  getProductThemeDefaults,
   PRODUCT_DESCRIPTORS,
   DEFAULT_PERSONALITY_ID,
   getProductPersonality,
@@ -43,9 +46,39 @@ describe('product-personalities', () => {
     }
   });
 
-  it('exposes a descriptor for every mapped product', () => {
-    for (const project of Object.keys(PRODUCT_PERSONALITIES)) {
-      expect(getProductDescriptor(project)).toBeDefined();
+  it('declares theme defaults for every described product', () => {
+    for (const descriptor of PRODUCT_DESCRIPTORS) {
+      expect(getProductDescriptor(descriptor.project)).toBe(descriptor);
+      expect(PRODUCT_THEME_DEFAULTS[descriptor.project]).toBeDefined();
     }
+  });
+
+  it('derives the personality mapping from the theme defaults', () => {
+    for (const [project, defaults] of Object.entries(PRODUCT_THEME_DEFAULTS)) {
+      expect(PRODUCT_PERSONALITIES[project]).toBe(defaults.personalityId);
+    }
+  });
+
+  it('gives every product a hex primary colour and a known mode', () => {
+    for (const defaults of Object.values(PRODUCT_THEME_DEFAULTS)) {
+      expect(defaults.primaryColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+      expect(['light', 'dark', 'auto']).toContain(defaults.mode);
+    }
+  });
+
+  it('returns the declared defaults for a mapped product', () => {
+    expect(getProductThemeDefaults('marketing-generator')).toEqual({
+      personalityId: 'control-center',
+      mode: 'dark',
+      primaryColor: '#d97706',
+    });
+  });
+
+  it('falls back to classic in light mode for unmapped products', () => {
+    expect(getProductThemeDefaults('does-not-exist')).toEqual({
+      personalityId: DEFAULT_PERSONALITY_ID,
+      mode: 'light',
+      primaryColor: DEFAULT_PRIMARY_COLOR,
+    });
   });
 });

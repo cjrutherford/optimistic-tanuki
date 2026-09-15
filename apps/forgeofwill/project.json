@@ -27,7 +27,10 @@
             "input": "apps/forgeofwill/public"
           }
         ],
-        "styles": ["apps/forgeofwill/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/forgeofwill/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/forgeofwill/src/main.server.ts",
         "ssr": {

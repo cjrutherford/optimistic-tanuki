@@ -267,7 +267,7 @@ describe('NotificationComponent behaviour', () => {
     it('falls back for a type outside the union', () => {
       const unknown = 'nonsense' as NotificationType;
 
-      expect(component.getTypeIcon(unknown)).toBe('🔔');
+      expect(component.getTypeIcon(unknown)).toBe('bell');
       expect(component.getTypeLabel(unknown)).toBe('Notification');
     });
 

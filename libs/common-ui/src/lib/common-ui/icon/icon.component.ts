@@ -79,7 +79,11 @@ export type IconName =
   | 'flame'
   | 'shield'
   | 'book'
-  | 'tool';
+  | 'tool'
+  | 'info'
+  | 'alert-triangle'
+  | 'alert-circle'
+  | 'check-circle';
 
 @Component({
   selector: 'otui-icon',

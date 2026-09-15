@@ -6,7 +6,6 @@ import { NavigationComponent } from './components/navigation/navigation.componen
 import { MessageService, MessageType } from './services/message.service';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -184,7 +183,6 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
 })
 export class AppComponent {
   private readonly messageService = inject(MessageService);
-  private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
   readonly haiAboutConfig = {
     appId: 'd6',
@@ -196,14 +194,6 @@ export class AppComponent {
   };
 
   messages = this.messageService.messages;
-
-  constructor() {
-    if (this.isBrowser) {
-      this.themeService.setTheme('light');
-      this.themeService.setPersonality('soft-touch');
-      this.themeService.setPrimaryColor('#6b8f8a');
-    }
-  }
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);

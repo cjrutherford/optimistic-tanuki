@@ -8,21 +8,21 @@
 
   h3 {
     margin: 0 0 var(--spacing-lg, 24px) 0;
-    color: var(--accent, #3f51b5);
+    color: var(--primary, #3f51b5);
     font-size: var(--font-size-xxl, 1.5rem);
     text-align: center;
   }
 
   h4 {
     margin: var(--spacing-lg, 24px) 0 var(--spacing-md, 16px) 0;
-    color: var(--accent, #3f51b5);
+    color: var(--primary, #3f51b5);
     font-size: var(--font-size-xl, 1.25rem);
   }
 
   h5 {
     margin: 0 0 var(--spacing-xs, 4px) 0;
     font-size: var(--font-size-lg, 1.125rem);
-    color: var(--accent, #3f51b5);
+    color: var(--primary, #3f51b5);
   }
 }
 
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs, 4px);
-  background-color: var(--accent, #3f51b5);
+  background-color: var(--primary, #3f51b5);
   color: var(--background, #ffffff);
   border: none;
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
@@ -52,14 +52,14 @@
   }
 
   &:hover {
-    background-color: var(--accent-3, #7986cb);
+    background-color: var(--primary-3);
     box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
     transform: translateY(-1px);
   }
 }
 
 .palette-form-container {
-  background-color: var(--accent-0, #e8eaf6);
+  background-color: var(--primary-0);
   padding: var(--spacing-lg, 24px);
   border-radius: var(--border-radius-lg, 8px);
   margin-bottom: var(--spacing-xl, 32px);
@@ -91,7 +91,7 @@
   input[type='text'],
   textarea {
     padding: var(--spacing-sm, 8px);
-    border: 1px solid var(--complement, #c0af4b);
+    border: 1px solid var(--secondary, #c0af4b);
     border-radius: var(--border-radius-md, 4px);
     font-size: var(--font-size-base, 1rem);
     background-color: var(--background, #ffffff);
@@ -100,8 +100,8 @@
 
     &:focus {
       outline: none;
-      border-color: var(--accent, #3f51b5);
-      box-shadow: 0 0 0 3px var(--accent-0, rgba(63, 81, 181, 0.1));
+      border-color: var(--primary, #3f51b5);
+      box-shadow: 0 0 0 3px var(--primary-0);
     }
 
     &.error {
@@ -137,7 +137,7 @@
   input[type='color'] {
     width: 50px;
     height: 40px;
-    border: 1px solid var(--complement, #c0af4b);
+    border: 1px solid var(--secondary, #c0af4b);
     border-radius: var(--border-radius-md, 4px);
     cursor: pointer;
     background-color: transparent;
@@ -177,7 +177,7 @@
   padding: var(--spacing-md, 16px);
   background-color: var(--background, #ffffff);
   border-radius: var(--border-radius-md, 4px);
-  border: 1px solid var(--complement, #c0af4b);
+  border: 1px solid var(--secondary, #c0af4b);
 
   h5 {
     margin-bottom: var(--spacing-sm, 8px);
@@ -209,7 +209,7 @@
   gap: var(--spacing-md, 16px);
   justify-content: flex-end;
   padding-top: var(--spacing-md, 16px);
-  border-top: 1px solid var(--complement, #c0af4b);
+  border-top: 1px solid var(--secondary, #c0af4b);
 }
 
 .save-btn,
@@ -239,11 +239,11 @@
 }
 
 .cancel-btn {
-  background-color: var(--complement, #c0af4b);
+  background-color: var(--secondary, #c0af4b);
   color: var(--foreground, #212121);
 
   &:hover {
-    background-color: var(--complement-3, #a69540);
+    background-color: var(--secondary-3);
     box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
   }
 }
@@ -261,7 +261,7 @@
 }
 
 .palette-card {
-  border: 2px solid var(--complement, #c0af4b);
+  border: 2px solid var(--secondary, #c0af4b);
   border-radius: var(--border-radius-lg, 8px);
   padding: var(--spacing-md, 16px);
   background-color: var(--background, #ffffff);
@@ -298,12 +298,12 @@
   gap: var(--spacing-xs, 4px);
   justify-content: flex-end;
   padding-top: var(--spacing-sm, 8px);
-  border-top: 1px solid var(--complement-0, #f5f3e8);
+  border-top: 1px solid var(--secondary-0);
 }
 
 .icon-btn {
   background-color: transparent;
-  border: 1px solid var(--complement, #c0af4b);
+  border: 1px solid var(--secondary, #c0af4b);
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
   border-radius: var(--border-radius-sm, 2px);
   cursor: pointer;
@@ -315,8 +315,8 @@
   }
 
   &:hover {
-    background-color: var(--accent, #3f51b5);
-    border-color: var(--accent, #3f51b5);
+    background-color: var(--primary, #3f51b5);
+    border-color: var(--primary, #3f51b5);
     color: var(--background, #ffffff);
     transform: scale(1.05);
   }

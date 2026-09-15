@@ -15,19 +15,19 @@ export const Default: Story = {
 
 export const Upvoted: Story = {
   args: {
-    voteState: 1,
+    currentVote: 1,
   },
 };
 
 export const Downvoted: Story = {
   args: {
-    voteState: -1,
+    currentVote: -1,
   },
 };
 
 export const Cancelled: Story = {
   args: {
-    voteState: 0,
+    currentVote: 0,
   },
 };
 

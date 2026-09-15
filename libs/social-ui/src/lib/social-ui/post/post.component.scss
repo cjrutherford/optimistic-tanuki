@@ -10,6 +10,11 @@
   width: 100%;
   box-sizing: border-box;
   font-family: var(--font-body, system-ui);
+  @include p.personality-transition('transform, box-shadow', 'normal');
+
+  &:hover {
+    @include p.hover-lift(none, none);
+  }
 
   ::ng-deep .post-header {
     display: flex;
@@ -327,81 +332,6 @@
 .post-container .actions {
   ::ng-deep button {
     @include social-vote-button;
-  }
-}
-
-// ============================================
-// Personality-Specific Post Enhancements
-// ============================================
-// Usage-map note (2026-07 batch 6): `.post-container` is a class applied
-// directly to the `<otui-card>` HOST element (see post.component.html) —
-// `otui-card`'s own `.card` styling (personality-driven radius/shadow via
-// `--personality-card-radius`/`--personality-card-shadow`) targets an INNER
-// `<div class="card">` in ITS OWN template (see
-// `card.component.html`/`.scss`, no `:host` rule there), a different box.
-// So these overrides are not duplicating styling already applied to the
-// same element; they're this component's own decoration of the outer host.
-// The `border-radius` literals for architect (0px) and control-center (4px)
-// exactly match `--personality-card-radius` for those personalities (see
-// `personalities.ts` PRESENTATION_BY_ID[...].components.card.borderRadius);
-// soft-touch's (20px) does too. Converted those three to reference the real
-// personality var (fallback preserves the identical rendered value) per
-// checklist item 3. playful (16px) and minimal (4px) do NOT match their
-// personality's card default (24px and 0px respectively) — deliberate
-// post-specific deviations, kept as literals (batch 5's conservative
-// "exact-match-only" rule: only wire up the var where it reproduces the
-// same rendered result).
-
-body.personality-architect .post-container {
-  border-radius: var(--personality-card-radius, 0);
-  border-width: 2px;
-
-  &:hover {
-    box-shadow: 6px 6px 0 var(--primary);
-    transform: translate(-2px, -2px);
-  }
-}
-
-body.personality-playful .post-container {
-  border-radius: 16px;
-
-  &:hover {
-    transform: translateY(-4px) scale(1.01);
-  }
-}
-
-body.personality-minimal .post-container {
-  border-radius: 4px;
-  border-width: 1px;
-  box-shadow: none;
-
-  &:hover {
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--shadow-color, #000) 8%, transparent);
-  }
-}
-
-body.personality-electric .post-container {
-  &:hover {
-    box-shadow: 0 0 30px color-mix(in srgb, var(--primary) 30%, transparent);
-  }
-}
-
-body.personality-soft-touch .post-container {
-  border-radius: var(--personality-card-radius, 20px);
-
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px
-      color-mix(in srgb, var(--shadow-color, #000) 10%, transparent);
-  }
-}
-
-body.personality-control-center .post-container {
-  border-radius: var(--personality-card-radius, 4px);
-
-  &:hover {
-    box-shadow: inset 0 0 0 1px var(--primary);
   }
 }
 

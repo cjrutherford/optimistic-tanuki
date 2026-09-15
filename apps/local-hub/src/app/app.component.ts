@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { Subject, filter } from 'rxjs';
 import { map, startWith, takeUntil } from 'rxjs/operators';
 import { Observable } from 'rxjs';
@@ -43,7 +42,6 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
 })
 export class AppComponent implements OnInit, OnDestroy {
   themeName = signal('light-theme');
-  themeService = inject(ThemeService);
 
   public authState = inject(AuthStateService);
   public currentUrl$!: Observable<string>;
@@ -86,16 +84,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // Apply documented default personality (soft-touch) only on first load.
-    if (this.isBrowser) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-      if (!hasStoredPersonalityTheme) {
-        void this.themeService.setPersonality('soft-touch');
-      }
-    }
-
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),

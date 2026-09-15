@@ -155,8 +155,8 @@ export class AgRisksTableComponent implements OnInit, OnChanges {
     editBtn.style.padding = '4px 12px';
     editBtn.style.cursor = 'pointer';
     editBtn.style.borderRadius = '4px';
-    editBtn.style.border = '1px solid var(--accent)';
-    editBtn.style.background = 'var(--accent)';
+    editBtn.style.border = '1px solid var(--primary)';
+    editBtn.style.background = 'var(--primary)';
     editBtn.style.color = 'white';
     editBtn.onclick = () => this.onEdit(params.data);
 

@@ -17,6 +17,7 @@ import { authInterceptor } from './interceptors/auth.interceptor';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { AuthService } from './services/auth.service';
 import { firstValueFrom } from 'rxjs';
+import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
 
 function initializeTheme() {
   // Lazy load ThemeService to avoid SSR issues
@@ -28,6 +29,7 @@ function initializeTheme() {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideProductTheme('owner-console'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

@@ -497,7 +497,7 @@
 }
 
 .decision-yes {
-  background: var(--local-accent, var(--accent, transparent));
+  background: var(--local-accent, var(--primary, transparent));
   color: var(--primary-foreground, inherit);
   border-color: transparent;
 }

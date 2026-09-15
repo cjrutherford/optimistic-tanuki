@@ -16,8 +16,6 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
 
-const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
-
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
   let app: AppComponent;
@@ -73,19 +71,13 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
-  it('bootstraps the elegant personality on first load', () => {
-    const getItemSpy = jest
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation((key) =>
-        key === PERSONALITY_STORAGE_KEY ? null : null
-      );
+  it('leaves the personality to the app theme defaults', () => {
     const themeService = TestBed.inject(ThemeService);
     const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
 
     fixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('elegant');
-    getItemSpy.mockRestore();
+    expect(setPersonalitySpy).not.toHaveBeenCalled();
     setPersonalitySpy.mockRestore();
   });
 });

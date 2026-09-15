@@ -3,8 +3,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 const DEFAULT_CONFIG_PATH = 'tools/docs-site/docs-source.config.json';
-const DEFAULT_OUTPUT_PATH =
-  'apps/ui-playground/public/generated/docs-manifest.json';
+const DEFAULT_OUTPUT_PATH = 'apps/ui-playground/generated/docs-manifest.json';
 
 function slugifySegment(value) {
   return value

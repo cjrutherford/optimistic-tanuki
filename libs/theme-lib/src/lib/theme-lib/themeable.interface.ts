@@ -19,20 +19,20 @@ import { ThemeService } from './theme.service';
 export abstract class Themeable implements OnInit, OnDestroy {
   theme: 'light' | 'dark' = 'light';
 
-  // Core theme colors using standardized names
-  background = 'var(--background, #ffffff)';
-  foreground = 'var(--foreground, #212121)';
-  accent = 'var(--accent, #3f51b5)';
-  complement = 'var(--complement, #c0af4b)';
-  tertiary = 'var(--tertiary, #7e57c2)';
-  success = 'var(--success, #4caf50)';
-  danger = 'var(--danger, #f44336)';
-  warning = 'var(--warning, #ff9800)';
+  // Resolved theme colours. Until the first theme emission these read the
+  // tokens ThemeService emits for the active personality. `accent` and
+  // `complement` are the legacy names for the primary and secondary colours.
+  background = 'var(--background)';
+  foreground = 'var(--foreground)';
+  accent = 'var(--primary)';
+  complement = 'var(--secondary)';
+  tertiary = 'var(--tertiary)';
+  success = 'var(--success)';
+  danger = 'var(--danger)';
+  warning = 'var(--warning)';
 
-  // Legacy support for existing components
-  borderColor = 'var(--complement, #c0af4b)';
-  borderGradient =
-    'var(--complement-gradient-light, linear-gradient(135deg, #c0af4b, #3f51b5))';
+  borderColor = 'var(--secondary)';
+  borderGradient = 'var(--gradient-secondary)';
   transitionDuration = '0.15s';
 
   themeColors?: ThemeColors;

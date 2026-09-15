@@ -63,13 +63,13 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
-  it('initializes a default reflective personality', () => {
+  it('leaves the personality to the app theme defaults', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(themeServiceStub.setPersonality).toHaveBeenCalledWith('soft-touch');
-    expect(themeServiceStub.setPrimaryColor).toHaveBeenCalledWith('#6b8f8a');
-    expect(themeServiceStub.setTheme).toHaveBeenCalledWith('light');
+    expect(themeServiceStub.setPersonality).not.toHaveBeenCalled();
+    expect(themeServiceStub.setPrimaryColor).not.toHaveBeenCalled();
+    expect(themeServiceStub.setTheme).not.toHaveBeenCalled();
   });
 
   it('dismiss delegates to the message service', () => {

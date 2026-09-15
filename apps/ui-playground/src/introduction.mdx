@@ -1,0 +1,51 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Playground/Introduction" />
+
+# UI Playground
+
+Every Optimistic Tanuki UI library in one Storybook, together with the repository documentation and generated API reference. Use the **Personality** and **Mode** toolbars to preview any component in any of the twelve personalities, light or dark.
+
+Each library's stories come from that library's own Storybook configuration (`libs/<lib>/.storybook/main.ts`), so what you see here is exactly what the library's Storybook shows.
+
+## Where to start
+
+- **Read the docs first.** Migration notes, architecture, runbooks, and package guidance: [Documentation](?path=/docs/docs-overview--docs) and the [API Reference](?path=/docs/docs-api-reference--docs).
+- **Start with core components.** Buttons, cards, modals, tables, and other reusable primitives live under **Common UI**.
+- **Validate themes and shared states.** The [Validation Board](?path=/story/playground-validation-board--board) puts one component from each library on a single page.
+
+## Library catalog
+
+| Library         | Category     | What it covers                                                                           |
+| --------------- | ------------ | ---------------------------------------------------------------------------------------- |
+| Common UI       | Core         | Core UI primitives: buttons, cards, modals, tables, lists, and layout components.        |
+| Form UI         | Forms        | Form inputs: text fields, checkboxes, radio buttons, selects, and file uploads.          |
+| Theme UI        | Theming      | Theming controls: palette selectors, personality previews, and design token managers.    |
+| Motion UI       | Decorative   | Ambient backgrounds and decorative motion primitives built with CSS and Three.js.        |
+| Navigation UI   | Navigation   | Navigation components: app bars, sidebars, and navigation menus.                         |
+| Notification UI | Feedback     | Notification components: bells, lists, and real-time update indicators.                  |
+| Message UI      | Feedback     | Dismissible message stack for system alerts and inline workflow feedback.                |
+| Auth UI         | Identity     | Authentication workflow primitives for login, registration, email confirmation, and MFA. |
+| Profile UI      | Identity     | Profile management surfaces for selectors, editors, and identity banners.                |
+| Persona UI      | Identity     | Assistant persona picker for selecting AI helpers and working modes.                     |
+| Social UI       | Social       | Social components: posts, comments, compose editors, and activity feeds.                 |
+| Community UI    | Social       | Community building and engagement components for social platforms.                       |
+| Forum UI        | Social       | Forum and discussion board components for community conversations.                       |
+| Chat UI         | Workflow     | Conversation primitives for contact rosters and embedded chat windows.                   |
+| Blogging UI     | Content      | Blog and content management components for editorial experiences.                        |
+| Store UI        | Commerce     | E-commerce components: product cards, lists, shopping carts, and donations.              |
+| Business UI     | Commerce     | Business directory cards, lists, detail pages, and the create-business form.             |
+| Classifieds UI  | Commerce     | Classified ad cards, listing grids, and the post/edit listing form.                      |
+| Payments UI     | Commerce     | Payment method selection for checkout flows.                                             |
+| Search UI       | Search       | Search and exploration surfaces for people, communities, and content discovery.          |
+| AG Grid UI      | Data         | Theme-aware enterprise data grid wrapper for dense application tables.                   |
+| HAI UI          | AI           | The HAI about tag, about modal, and expansion panel shared by HAI apps.                  |
+| Project UI      | Productivity | Project management and task tracking UI components.                                      |
+
+## Quick start
+
+```bash
+pnpm add @optimistic-tanuki/common-ui @optimistic-tanuki/theme-lib
+```
+
+All UI libraries are standalone Angular components. Give the app its personality with `provideProductTheme('<app>')` in `app.config.ts`, add `libs/theme-styles/src/lib/base.scss` ahead of the app stylesheet, then import the components you need.

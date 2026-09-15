@@ -24,14 +24,14 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.querySelector('router-outlet')).toBeTruthy();
   });
 
-  it('bootstraps the architect personality', () => {
+  it('leaves the personality to the app theme defaults', () => {
     configure('browser');
     const theme = TestBed.inject(ThemeService);
     const setPersonality = jest.spyOn(theme, 'setPersonality');
 
     TestBed.createComponent(AppComponent).detectChanges();
 
-    expect(setPersonality).toHaveBeenCalledWith('architect');
+    expect(setPersonality).not.toHaveBeenCalled();
   });
 
   // Touching the theme on the server would reach for document during SSR.

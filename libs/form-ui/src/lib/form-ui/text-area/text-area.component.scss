@@ -14,10 +14,15 @@
 }
 
 .form-label {
-  font-family: var(--font-heading, system-ui, sans-serif);
+  font-family: var(
+    --personality-label-font-family,
+    var(--font-heading, system-ui, sans-serif)
+  );
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--muted, #6b7280);
+  text-transform: var(--personality-label-text-transform, none);
+  letter-spacing: var(--personality-label-letter-spacing, normal);
+  color: var(--foreground-secondary, var(--foreground));
   margin-bottom: 6px;
   padding-left: 4px;
 }
@@ -25,13 +30,12 @@
 .form-control-textarea {
   width: 100%;
   min-height: 120px;
-  padding: 16px 20px;
+  padding: 12px var(--personality-control-padding-x, 20px);
   font-family: var(--font-body, system-ui, sans-serif);
   font-size: 0.9375rem;
   color: var(--foreground);
   background: var(--surface, var(--background));
-  border: var(--personality-input-border-width, 0.5px) solid
-    color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--personality-input-border-width, 1px) solid var(--border);
   border-radius: var(--personality-input-radius, var(--border-radius-lg, 20px));
   outline: none;
   resize: vertical;
@@ -57,7 +61,8 @@
       var(
         --shadow-lg,
         0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
-      );
+      ),
+      var(--personality-input-focus-style, 0 0 0 0 transparent);
     background: var(--background);
   }
 
@@ -75,7 +80,7 @@
 
   &::placeholder {
     color: var(--muted, rgba(107, 114, 128, 0.5));
-    font-style: italic;
+    font-style: normal;
   }
 
   // Error state
@@ -228,68 +233,6 @@
       margin: 0;
       padding: 0;
     }
-  }
-}
-
-// ============================================
-// Personality-Specific Textarea Enhancements
-// ============================================
-// The base `textarea` (`.form-control-textarea`) border-radius above already
-// reads `--personality-input-radius`. Only the blocks below whose literal
-// radius was an EXACT match for that contract value (architect: 0px,
-// control-center: 4px) had their radius line removed as truly redundant.
-// playful (12px) and soft-touch (16px) are kept hardcoded because the
-// contract's own input radius for those personalities (16px / 18px) differs
-// enough to be a visible change, not a no-op.
-
-body.personality-architect textarea {
-  &:focus {
-    border-width: 2px;
-    box-shadow: 4px 4px 0 var(--primary);
-  }
-}
-
-body.personality-playful textarea {
-  border-radius: 12px;
-
-  &:focus {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
-  }
-}
-
-body.personality-minimal textarea {
-  border-radius: 2px;
-  // Deliberately thinner than the contract's own minimal input border-width
-  // (1px) — "minimal" wants a near-invisible line, not just a bit less bold.
-  border-width: 0.5px;
-
-  &:focus {
-    box-shadow: none;
-    outline: 1px solid var(--primary);
-    outline-offset: 3px;
-  }
-}
-
-body.personality-electric textarea {
-  &:focus {
-    box-shadow: 0 0 20px color-mix(in srgb, var(--primary) 40%, transparent);
-  }
-}
-
-body.personality-soft-touch textarea {
-  border-radius: 16px;
-
-  &:focus {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
-  }
-}
-
-body.personality-control-center textarea {
-  font-family: var(--font-mono);
-
-  &:focus {
-    box-shadow: inset 0 2px 4px
-      color-mix(in srgb, var(--primary) 10%, transparent);
   }
 }
 

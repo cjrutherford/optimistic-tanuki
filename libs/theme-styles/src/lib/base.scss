@@ -1,0 +1,66 @@
+// ============================================================================
+// Personality base layer
+// ----------------------------------------------------------------------------
+// Global element styles that give an app its personality by default: page
+// background and text colour, body/heading/mono typefaces, link and focus
+// colour, and native control accents — all read from the CSS custom
+// properties ThemeService emits for the active personality and mode.
+//
+// Add this file ahead of the app's own stylesheet in the build target's
+// `styles` array:
+//
+//   "styles": [
+//     "libs/theme-styles/src/lib/base.scss",
+//     "apps/<app>/src/styles.scss"
+//   ]
+//
+// Every rule is wrapped in `:where()` so it carries zero specificity: any
+// selector in an app or component stylesheet overrides it without `!important`
+// or ordering tricks. Only `::selection` sits outside `:where()`, because
+// pseudo-elements are not allowed inside it.
+// ============================================================================
+
+:where(html) {
+  color-scheme: light;
+  accent-color: var(--primary);
+  -webkit-text-size-adjust: 100%;
+}
+
+:where(html[data-theme='dark']) {
+  color-scheme: dark;
+}
+
+:where(body) {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body, system-ui, sans-serif);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-heading, var(--font-body, inherit));
+  line-height: 1.2;
+}
+
+:where(code, kbd, pre, samp) {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+:where(button, input, select, textarea) {
+  font: inherit;
+}
+
+:where(a) {
+  color: var(--primary);
+}
+
+:where(:focus-visible) {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}

@@ -22,7 +22,7 @@ import { PersonalityTokenShowcaseComponent } from './personality-token-showcase.
  */
 const meta: Meta<PersonalityTokenShowcaseComponent> = {
   component: PersonalityTokenShowcaseComponent,
-  title: 'Theme/Personality Variation/Page Backgrounds',
+  title: 'Personality Variation/Page Backgrounds',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

@@ -21,7 +21,10 @@
             "input": "apps/configurable-client/public"
           }
         ],
-        "styles": ["apps/configurable-client/src/styles.scss"],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/configurable-client/src/styles.scss"
+        ],
         "server": "apps/configurable-client/src/main.server.ts",
         "prerender": false,
         "ssr": {

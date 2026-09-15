@@ -78,7 +78,8 @@
     color: var(--foreground);
     text-decoration: none;
 
-    a& {
+    // Contact items rendered as links.
+    &:is(a) {
       color: var(--primary);
     }
   }

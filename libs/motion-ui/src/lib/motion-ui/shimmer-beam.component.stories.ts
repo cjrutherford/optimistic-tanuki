@@ -3,7 +3,7 @@ import { ShimmerBeamComponent } from './shimmer-beam.component';
 
 const meta: Meta<ShimmerBeamComponent> = {
   component: ShimmerBeamComponent,
-  title: 'Motion/Shimmer Beam',
+  title: 'Shimmer Beam',
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

@@ -2,60 +2,27 @@
 @import 'leaflet/dist/leaflet.css';
 
 :root {
-  --font-heading: 'Playfair Display', serif;
-  --font-body: 'DM Sans', sans-serif;
-
   /* Animation defaults */
-  --animation-speed: normal;
-  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
-  --animation-duration-fast: 150ms;
-  --animation-duration-normal: 300ms;
-  --animation-duration-slow: 500ms;
   --animation-stagger-delay: 50ms;
 
   /* Light theme (default) */
-  --primary: #2d5a4a;
-  --primary-hover: #1e4035;
-  --secondary: #c9a66b;
-  --tertiary: #8b4513;
+  --primary-hover: color-mix(in srgb, var(--primary) 85%, var(--foreground));
   --accent: #d4724a;
-  --background: #faf6f0;
-  --surface: #ffffff;
-  --surface-elevated: #fefdfb;
-  --surface-variant: #f0ebe3;
-  --foreground: #2c2416;
-  --foreground-muted: #6b5d4d;
-  --muted: #ede8df;
-  --border: #d9ceb8;
-  --success: #4a7c59;
-  --success-bg: #e8f5e9;
-  --warning: #c9852d;
-  --warning-bg: #fff8e1;
-  --error: #b5463a;
-  --error-bg: #ffebee;
-  --hover-bg: rgba(45, 90, 74, 0.08);
+  --surface-elevated: var(--background-elevated);
+  --success-bg: color-mix(in srgb, var(--success) 12%, var(--background));
+  --warning-bg: color-mix(in srgb, var(--warning) 12%, var(--background));
+  --error: var(--danger);
+  --error-bg: color-mix(in srgb, var(--danger) 12%, var(--background));
+  --hover-bg: color-mix(in srgb, var(--primary) 8%, transparent);
 
   /* On colors for contrast */
-  --on-primary: #ffffff;
-  --on-secondary: #2c2416;
-  --on-tertiary: #ffffff;
-  --on-surface: #2c2416;
-  --on-surface-variant: #6b5d4d;
-  --on-background: #2c2416;
-  --on-success: #ffffff;
-  --on-warning: #ffffff;
-  --on-error: #ffffff;
+  --on-surface: var(--foreground);
+  --on-surface-variant: var(--muted);
+  --on-background: var(--foreground);
+  --on-error: var(--on-danger);
 
   /* Elevation shadows — warm-tinted for light theme */
   --shadow-xs: 0 1px 2px rgba(44, 36, 22, 0.05);
-  --shadow-sm: 0 2px 8px rgba(44, 36, 22, 0.06),
-    0 1px 2px rgba(44, 36, 22, 0.04);
-  --shadow-md: 0 4px 16px rgba(44, 36, 22, 0.08),
-    0 2px 4px rgba(44, 36, 22, 0.04);
-  --shadow-lg: 0 8px 32px rgba(44, 36, 22, 0.1),
-    0 4px 8px rgba(44, 36, 22, 0.05);
-  --shadow-xl: 0 16px 48px rgba(44, 36, 22, 0.12),
-    0 8px 16px rgba(44, 36, 22, 0.06);
 
   /* Card & interactive element elevation */
   --shadow-card: 0 1px 3px rgba(44, 36, 22, 0.04),
@@ -65,7 +32,7 @@
   --shadow-card-active: 0 2px 8px rgba(44, 36, 22, 0.08);
 
   /* Glow accent for focused/active interactive elements */
-  --ring-primary: 0 0 0 3px rgba(45, 90, 74, 0.12);
+  --ring-primary: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   --ring-accent: 0 0 0 3px rgba(212, 114, 74, 0.12);
 
   /* Glass / overlay tokens */
@@ -91,62 +58,23 @@
   --status-canceled-fg: var(--error);
 
   /* Info semantic colors */
-  --info: #1e5a9e;
-  --info-bg: #e3f2fd;
-  --info-border: #90caf9;
+  --info-bg: color-mix(in srgb, var(--info) 12%, var(--background));
+  --info-border: color-mix(in srgb, var(--info) 40%, var(--background));
 }
 
 /* Dark theme */
 [data-theme='dark'],
 .dark-theme {
-  --font-heading: 'Playfair Display', serif;
-  --font-body: 'DM Sans', sans-serif;
-
-  --primary: #4a9a7a;
-  --primary-hover: #5fb896;
-  --secondary: #d4b88a;
-  --tertiary: #c9874d;
   --accent: #e8956d;
-  --background: #121212;
-  --surface: #1e1e1e;
-  --surface-elevated: #2a2a2a;
-  --surface-variant: #2d2d2d;
-  --foreground: #e8e4dc;
-  --foreground-muted: #a89f8f;
-  --muted: #2d2d2d;
-  --border: #3d3d3d;
-  --success: #6aab82;
-  --success-bg: #1a3d2a;
-  --warning: #e0a850;
-  --warning-bg: #3d2e14;
-  --error: #d46a5e;
-  --error-bg: #3d1f1c;
-  --hover-bg: rgba(74, 154, 122, 0.15);
-
-  /* On colors for contrast */
-  --on-primary: #121212;
-  --on-secondary: #121212;
-  --on-tertiary: #121212;
-  --on-surface: #e8e4dc;
-  --on-surface-variant: #a89f8f;
-  --on-background: #e8e4dc;
-  --on-success: #121212;
-  --on-warning: #121212;
-  --on-error: #121212;
 
   /* Elevation shadows — cool-tinted for dark theme */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.2);
-  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.25);
 
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4),
     0 4px 8px rgba(0, 0, 0, 0.25);
   --shadow-card-active: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-  --ring-primary: 0 0 0 3px rgba(74, 154, 122, 0.25);
   --ring-accent: 0 0 0 3px rgba(232, 149, 109, 0.25);
 
   /* Glass / overlay tokens — frosted dark glass */
@@ -170,11 +98,6 @@
   --status-past-due-fg: var(--warning);
   --status-canceled-bg: var(--error-bg);
   --status-canceled-fg: var(--error);
-
-  /* Info semantic colors */
-  --info: #6eb5ff;
-  --info-bg: #1a3050;
-  --info-border: #2d4f7a;
 }
 
 * {

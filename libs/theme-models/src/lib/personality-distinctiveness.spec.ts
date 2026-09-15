@@ -146,14 +146,20 @@ describe('personality distinctiveness', () => {
 
   it('keeps the product-mapped personalities more mutually distinct than the general floor', () => {
     const productIds = new Set(Object.values(PRODUCT_PERSONALITIES));
-    // Confirm the exact product set the plan calls out (classic, soft-touch,
-    // bold, professional, electric, architect) hasn't silently drifted.
+    // Confirm the set of personalities the apps ship with (see
+    // PRODUCT_THEME_DEFAULTS) hasn't silently drifted. Several apps share a
+    // personality; the check runs over the unique set. Expanding the map to
+    // every client app moved the floor to `playful` vs `electric` at ~0.4654,
+    // still above PRODUCT_DISTINCTIVENESS_THRESHOLD.
     expect([...productIds].sort()).toEqual(
       [
         'architect',
         'bold',
-        'classic',
+        'control-center',
         'electric',
+        'elegant',
+        'foundation',
+        'playful',
         'professional',
         'soft-touch',
       ].sort()

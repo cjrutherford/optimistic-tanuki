@@ -61,7 +61,7 @@ const mockChanges: Change[] = [
 
 const meta: Meta<AgChangesTableComponent> = {
   component: AgChangesTableComponent,
-  title: 'Project UI/AG Grid Tables/Changes Table',
+  title: 'AG Grid Tables/Changes Table',
   decorators: [
     applicationConfig({
       providers: [provideHttpClient()],

@@ -16,6 +16,51 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint"
+    },
+    "storybook": {
+      "executor": "@storybook/angular:start-storybook",
+      "options": {
+        "port": 4400,
+        "configDir": "libs/classified-ui/.storybook",
+        "browserTarget": "classified-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "build-storybook": {
+      "executor": "@storybook/angular:build-storybook",
+      "outputs": ["{options.outputDir}"],
+      "options": {
+        "outputDir": "dist/storybook/classified-ui",
+        "configDir": "libs/classified-ui/.storybook",
+        "browserTarget": "classified-ui:build-storybook",
+        "compodoc": true,
+        "styles": ["libs/theme-styles/src/lib/base.scss"]
+      },
+      "configurations": {
+        "ci": {
+          "quiet": true
+        }
+      }
+    },
+    "static-storybook": {
+      "executor": "@nx/web:file-server",
+      "dependsOn": ["build-storybook"],
+      "options": {
+        "buildTarget": "classified-ui:build-storybook",
+        "staticFilePath": "dist/storybook/classified-ui",
+        "spa": true
+      },
+      "configurations": {
+        "ci": {
+          "buildTarget": "classified-ui:build-storybook:ci"
+        }
+      }
     }
   }
 }

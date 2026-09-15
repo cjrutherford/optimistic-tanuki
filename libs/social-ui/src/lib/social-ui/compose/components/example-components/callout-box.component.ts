@@ -24,23 +24,39 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       }
 
       .callout-info {
-        border-left-color: #2196f3;
-        background-color: #e3f2fd;
+        border-left-color: var(--info);
+        background-color: color-mix(
+          in srgb,
+          var(--info) 12%,
+          var(--background)
+        );
       }
 
       .callout-warning {
-        border-left-color: #ff9800;
-        background-color: #fff3e0;
+        border-left-color: var(--warning);
+        background-color: color-mix(
+          in srgb,
+          var(--warning) 12%,
+          var(--background)
+        );
       }
 
       .callout-success {
-        border-left-color: #4caf50;
-        background-color: #e8f5e8;
+        border-left-color: var(--success);
+        background-color: color-mix(
+          in srgb,
+          var(--success) 12%,
+          var(--background)
+        );
       }
 
       .callout-error {
-        border-left-color: #f44336;
-        background-color: #ffebee;
+        border-left-color: var(--danger);
+        background-color: color-mix(
+          in srgb,
+          var(--danger) 12%,
+          var(--background)
+        );
       }
 
       .callout-content {

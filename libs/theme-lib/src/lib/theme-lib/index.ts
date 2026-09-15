@@ -47,6 +47,10 @@ export {
   getDefaultPersonality,
   getPersonalityIds,
   getPersonalitiesByCategory,
+  // Product theme defaults
+  type ProductThemeDefaults,
+  PRODUCT_THEME_DEFAULTS,
+  getProductThemeDefaults,
   isValidPersonalityId,
   getPersonalityPreviewColors,
   // Color utilities
@@ -98,6 +102,7 @@ export {
 export * from './theme-storage';
 export * from './theme.interface';
 export * from './theme.service';
+export * from './theme-defaults';
 export * from './themeable.interface';
 export * from './theme-variable.service';
 export * from './theme-host-bindings.directive';

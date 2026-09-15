@@ -69,7 +69,8 @@ import { Subscription } from 'rxjs';
         inset: -40px;
         z-index: -1;
         border-radius: inherit;
-        box-shadow: 0 0 80px 20px rgba(var(--accent-rgb, 100, 100, 255), 0.15);
+        box-shadow: 0 0 80px 20px
+          color-mix(in srgb, var(--primary) 15%, transparent);
         pointer-events: none;
       }
 

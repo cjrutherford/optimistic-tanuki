@@ -189,9 +189,9 @@ describe('AppComponent', () => {
       expect(navigateSpy).toHaveBeenCalledWith(['/register']);
     });
 
-    it('should initialize theme in browser', () => {
-      expect(themeService.setPersonality).toHaveBeenCalledWith('bold');
-      expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#0EA5E9');
+    it('leaves the personality to the app theme defaults', () => {
+      expect(themeService.setPersonality).not.toHaveBeenCalled();
+      expect(themeService.setPrimaryColor).not.toHaveBeenCalled();
     });
 
     it('renders the pulse rings motion background shell', () => {

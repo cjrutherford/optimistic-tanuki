@@ -77,7 +77,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      this.themeService.setPersonality('control-center');
       this.isDark = this.themeService.getTheme() === 'dark';
       this.isOnboardingRoute = this.router.url.startsWith('/onboarding');
       this.subscriptions.add(

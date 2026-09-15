@@ -3,7 +3,7 @@ import { TextInputComponent } from './text-input/text-input.component';
 
 const meta: Meta<TextInputComponent> = {
   component: TextInputComponent,
-  title: 'Theme Verification/Form UI',
+  title: 'Theme Verification',
   tags: ['autodocs'],
 };
 

@@ -14,7 +14,7 @@
 
 ## Documentation
 
-- generated API reference in `ui-playground`: `/docs/api/common-ui`
+- generated API reference in `ui-playground` (Storybook): `/api/common-ui/index.html`, linked from **Docs → API Reference**
 - use `pnpm exec nx run ui-playground:api-docs-content` to regenerate the curated API index
 
 ## Nx Commands

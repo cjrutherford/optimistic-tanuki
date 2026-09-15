@@ -91,19 +91,6 @@ export class AppComponent implements OnInit, OnDestroy {
       this.updateNavItems();
     });
 
-    // Initialize theme - only in browser to avoid SSR issues
-    if (isPlatformBrowser(this.platformId)) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
-      if (!hasStoredPersonalityTheme) {
-        // Apply documented default personality (electric) for video-client.
-        void this.themeService.setPersonality('electric');
-      }
-      // Apply stored or default theme mode
-      this.themeService.setTheme(this.themeService.getTheme());
-    }
-
     this.themeSub = this.themeService.themeColors$.subscribe(
       (theme: ThemeColors | undefined) => {
         if (!theme || !isPlatformBrowser(this.platformId)) return;

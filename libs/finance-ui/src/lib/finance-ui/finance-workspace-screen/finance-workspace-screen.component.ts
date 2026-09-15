@@ -169,8 +169,8 @@ import { CommonModule } from '@angular/common';
       }
 
       :host ::ng-deep .workspace-button-danger {
-        background: #991b1b;
-        color: #ffffff;
+        background: var(--danger);
+        color: var(--on-danger);
         border-color: rgba(153, 27, 27, 0.45);
       }
 
