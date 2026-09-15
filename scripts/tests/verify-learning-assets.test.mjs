@@ -168,3 +168,33 @@ test('bounds response body reads', async () => {
     await new Promise((resolve) => fixture.server.close(resolve));
   }
 });
+
+test('rejects redirects before an asset can escape the review origin', async () => {
+  const external = await startServer((_request, response) => {
+    response.writeHead(200, { 'content-type': 'application/javascript' });
+    response.end('console.log("outside");');
+  });
+  const fixture = await startServer((request, response) => {
+    if (request.url === '/') {
+      response.writeHead(200, { 'content-type': 'text/html' });
+      response.end('<script src="/main-12345678.js"></script>');
+      return;
+    }
+    response.writeHead(302, {
+      location: `${external.url}/outside-12345678.js`,
+    });
+    response.end();
+  });
+
+  try {
+    await assert.rejects(
+      () => verifyLearningAssets(fixture.url),
+      /redirect|fetch failed/i
+    );
+  } finally {
+    await Promise.all([
+      new Promise((resolve) => fixture.server.close(resolve)),
+      new Promise((resolve) => external.server.close(resolve)),
+    ]);
+  }
+});

@@ -17,6 +17,16 @@ That means adding a new deployable app usually requires coordinated changes acro
 - `k8s/base/`
 - the overlay image lists
 
+### Learning Runner Network Boundary
+
+The learning runner executes untrusted submissions and does not share a
+Compose network with `learning-service`. The service sends run requests
+through `learning-runner-relay`, a fixed-route nginx hop connected to separate
+control and sandbox networks. The relay accepts only `POST /runs`; it cannot
+route arbitrary sandbox traffic back to application services. Kubernetes uses
+the equivalent NetworkPolicy in `k8s/base/services/learning-runner.yaml`,
+allowing ingress from `learning-service` while denying all runner egress.
+
 ## Local Development Modes
 
 ### 1. Full Compose Dev Stack

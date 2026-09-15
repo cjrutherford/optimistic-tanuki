@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -17,6 +18,7 @@ import {
   prepare,
   TYPESCRIPT_COMPILER_CONFIG,
   TYPESCRIPT_CONFIG_FILE,
+  TYPESCRIPT_HARNESS_FILE,
   verdict,
 } from './lib/run-plan.mjs';
 import { libtestResults } from './lib/libtest.mjs';
@@ -60,6 +62,7 @@ const limits = {
       ? Math.min(configuredTimeoutMs, 10_000)
       : 10_000,
   maxOutputBytes: 1_048_576,
+  maxRequestBytes: 1_048_576,
 };
 const configuredCompileTimeoutMs = Number(
   process.env.LEARNING_RUNNER_COMPILE_TIMEOUT_MS
@@ -122,7 +125,7 @@ function sandboxed(
   args,
   cwd,
   tempRoot,
-  { timeoutMs = limits.timeoutMs, applyCpuLimit = false } = {}
+  { timeoutMs = limits.timeoutMs, applyCpuLimit = false, resultToken } = {}
 ) {
   return new Promise((resolve) => {
     // Compose/Kubernetes enforce the cgroup memory and process ceilings. This
@@ -159,8 +162,12 @@ function sandboxed(
           TMPDIR: tempRoot,
         },
         detached: true,
+        stdio: ['ignore', 'pipe', 'pipe', resultToken ? 'pipe' : 'ignore'],
       }
     );
+    if (resultToken) {
+      child.stdio[3].end(resultToken);
+    }
 
     let output = '';
     let errors = '';
@@ -248,7 +255,7 @@ function sandboxed(
 }
 
 /** Compiles when the language needs it, then runs, in the sandbox. */
-async function execute(languageId, cwd, executionMode, tempRoot) {
+async function execute(languageId, cwd, executionMode, tempRoot, resultToken) {
   if (languageId === 'typescript' && typescriptCompilerError) {
     return {
       success: false,
@@ -298,7 +305,7 @@ async function execute(languageId, cwd, executionMode, tempRoot) {
     steps.run.slice(1),
     cwd,
     tempRoot,
-    { applyCpuLimit: true }
+    { applyCpuLimit: true, resultToken }
   );
   return {
     ...result,
@@ -408,6 +415,10 @@ async function handleRun(payload) {
         (languageId === 'typescript' ||
           languageId === 'rust' ||
           languageId === 'cpp');
+  const resultToken =
+    testMode && languageId === 'typescript'
+      ? randomBytes(32).toString('hex')
+      : undefined;
 
   const directory = await mkdtemp(join(scratchRoot, 'learning-run-'));
   const tempRoot = await mkdtemp(join(scratchRoot, 'learning-tmp-'));
@@ -431,11 +442,15 @@ async function handleRun(payload) {
         join(directory, TYPESCRIPT_CONFIG_FILE),
         JSON.stringify(TYPESCRIPT_COMPILER_CONFIG)
       );
+      await writeFile(
+        join(directory, TYPESCRIPT_HARNESS_FILE),
+        TYPESCRIPT_HARNESS
+      );
     }
 
     await writeFile(
       join(directory, learnerEntryPoint),
-      buildSource(languageId, code, testCode, TYPESCRIPT_HARNESS)
+      buildSource(languageId, code, testCode)
     );
 
     if (goTestMode && testCode) {
@@ -449,11 +464,15 @@ async function handleRun(payload) {
       languageId,
       directory,
       languageId === 'go' ? goMode : testMode,
-      tempRoot
+      tempRoot,
+      resultToken
     );
 
     if (testMode && languageId === 'typescript') {
-      const { output, testResults } = splitTestResults(result.output);
+      const { output, testResults } = splitTestResults(
+        result.output,
+        resultToken
+      );
       if (!result.success && testResults.length === 0) {
         return {
           ...result,
@@ -534,6 +553,46 @@ async function handleRun(payload) {
   }
 }
 
+function rejectOversizedRequest(req, res) {
+  res.writeHead(413, {
+    'content-type': 'application/json',
+    connection: 'close',
+  });
+  res.end(
+    JSON.stringify({
+      success: false,
+      output: '',
+      errors: ['Request body exceeds the runner limit.'],
+      timedOut: false,
+    }),
+    () => req.destroy()
+  );
+}
+
+async function readRequestBody(req, res) {
+  const contentLength = Number(req.headers['content-length']);
+  if (
+    Number.isFinite(contentLength) &&
+    contentLength > limits.maxRequestBytes
+  ) {
+    rejectOversizedRequest(req, res);
+    return undefined;
+  }
+
+  const chunks = [];
+  let bytesRead = 0;
+  for await (const chunk of req) {
+    bytesRead += chunk.length;
+    if (bytesRead > limits.maxRequestBytes) {
+      req.pause();
+      rejectOversizedRequest(req, res);
+      return undefined;
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, bytesRead).toString('utf8');
+}
+
 http
   .createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
@@ -551,10 +610,9 @@ http
       return res.end();
     }
 
-    let raw = '';
-    for await (const chunk of req) raw += chunk;
-
     try {
+      const raw = await readRequestBody(req, res);
+      if (raw === undefined) return;
       const result = await handleRun(JSON.parse(raw));
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(result));

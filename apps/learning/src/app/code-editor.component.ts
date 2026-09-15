@@ -161,6 +161,7 @@ export function monacoEditorOptions(value: string, language: string) {
         border-radius: 0;
         background: var(--lx-code);
         color: var(--lx-code-text);
+        caret-color: var(--lx-code-text);
         font: 400 0.82rem/1.6 var(--lx-font-mono, ui-monospace, monospace);
         resize: vertical;
       }
@@ -245,6 +246,7 @@ export class CodeEditorComponent {
       colors: {
         'editor.background': background,
         'editorGutter.background': background,
+        'editorCursor.foreground': token('--lx-code-text', '#d5e7f6'),
         'editorLineNumber.foreground': token('--lx-text-faint', '#66849a'),
         'editorLineNumber.activeForeground': token('--lx-accent', '#76e3d0'),
         'editor.lineHighlightBackground': token(

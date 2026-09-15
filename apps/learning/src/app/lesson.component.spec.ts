@@ -152,6 +152,28 @@ describe('LessonComponent', () => {
     expect(page.busy['go-b-01']).toBe(false);
   });
 
+  it('runs code against the offering selected by the lesson', () => {
+    const { component, data } = setup({
+      lesson: jest.fn(() =>
+        of({
+          offeringId: 'go-foundations-100-core',
+          lesson: { id: 'b-01', title: 'Hello', slug: 'hello-world' },
+          content: '# Hello',
+          exercises: [exercise],
+        })
+      ),
+    });
+    const page = component as Handlers;
+
+    page.run(exercise);
+
+    expect(data.run).toHaveBeenCalledWith(
+      'go-b-01',
+      'package main',
+      'go-foundations-100-core'
+    );
+  });
+
   it('records a passing submit with the points it awarded', () => {
     const { component, data } = setup();
     const page = component as Handlers;

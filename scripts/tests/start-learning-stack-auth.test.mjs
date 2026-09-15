@@ -130,7 +130,7 @@ fi
     `#!/bin/sh
 printf 'node %s\\n' "$*" >> "$COMMAND_LOG"
 case "$*" in
-  *"--input-type=module"*) exec /usr/bin/node "$@" ;;
+  *"--input-type=module"*) exec "$REAL_NODE" "$@" ;;
 esac
 `
   );
@@ -320,6 +320,7 @@ esac
       SS_COUNT: join(directory, 'ss.count'),
       SESSION_COUNT: join(directory, 'session.count'),
       DOCKER_STATE: join(directory, 'docker.state'),
+      REAL_NODE: process.execPath,
       ...(options.generateSecrets
         ? {
             CAPTURE_ENV: join(directory, 'captured.env'),

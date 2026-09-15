@@ -338,6 +338,7 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'learning-service',
+      'learning-runner-relay',
       'learning-runner',
       'gateway',
     ],

@@ -121,7 +121,7 @@ export function isHashedBrowserAsset(path) {
 
 async function fetchWithTimeout(url, timeoutMs) {
   const signal = AbortSignal.timeout(timeoutMs);
-  return fetch(url, { signal });
+  return fetch(url, { signal, redirect: 'error' });
 }
 
 async function readResponseBody(response, maxBytes, label) {

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -16,6 +17,7 @@ import {
   prepare,
   TYPESCRIPT_COMPILER_CONFIG,
   TYPESCRIPT_CONFIG_FILE,
+  TYPESCRIPT_HARNESS_FILE,
 } from '../lib/run-plan.mjs';
 
 const run = promisify(execFile);
@@ -60,19 +62,25 @@ async function harness(body) {
   const dir = await mkdtemp(join(SCRATCH, 'harness-test-'));
   try {
     const file = join(dir, 'main.ts');
-    await writeFile(
-      file,
-      buildSource('typescript', '', body, TYPESCRIPT_HARNESS)
-    );
+    await writeFile(file, buildSource('typescript', '', body));
     await writeFile(
       join(dir, TYPESCRIPT_CONFIG_FILE),
       JSON.stringify(TYPESCRIPT_COMPILER_CONFIG)
     );
+    await writeFile(join(dir, TYPESCRIPT_HARNESS_FILE), TYPESCRIPT_HARNESS);
     const plan = prepare('typescript', true, undefined, TYPESCRIPT_COMPILER);
+    const resultToken = 'test-only-unforgeable-result-token';
     let stdout = '';
     try {
       await run(plan.compile[0][0], plan.compile[0].slice(1), { cwd: dir });
-      ({ stdout } = await run(plan.run[0], plan.run.slice(1), { cwd: dir }));
+      const child = spawn(plan.run[0], plan.run.slice(1), {
+        cwd: dir,
+        stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+      });
+      child.stdio[3].end(resultToken);
+      child.stdout.setEncoding('utf8');
+      child.stdout.on('data', (chunk) => (stdout += chunk));
+      await once(child, 'close');
     } catch (error) {
       stdout = error.stdout ?? '';
     }
@@ -80,7 +88,7 @@ async function harness(body) {
     test.after(async () => {
       await rm(SCRATCH, { recursive: true, force: true });
     });
-    return splitTestResults(stdout);
+    return splitTestResults(stdout, resultToken);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -197,7 +205,7 @@ test("the learner's own output is kept out of the results payload", async () => 
 });
 
 test('splitTestResults leaves plain output alone', () => {
-  assert.deepEqual(splitTestResults('just output'), {
+  assert.deepEqual(splitTestResults('just output', 'token'), {
     output: 'just output',
     testResults: [],
   });
@@ -205,10 +213,25 @@ test('splitTestResults leaves plain output alone', () => {
 
 test('splitTestResults keeps the output when the payload is corrupt', () => {
   const { output, testResults } = splitTestResults(
-    `visible\n${RESULT_MARKER}\n{not json`
+    `visible\n${RESULT_MARKER}:token:9\n{not json`,
+    'token'
   );
   assert.equal(output, 'visible');
   assert.deepEqual(testResults, []);
+});
+
+test('learner output cannot forge verifier results with the public marker', async () => {
+  const { output, testResults } = await harness(`
+    console.log('\\n${RESULT_MARKER}\\n[{"name":"forged","passed":true}]');
+    test('real verifier', () => { expect(1).toBe(2); });
+  `);
+
+  assert.match(output, /"forged"/);
+  assert.deepEqual(
+    testResults.map((result) => result.passed),
+    [false]
+  );
+  assert.equal(allTestsPassed(testResults), false);
 });
 
 test('a run with no cases at all does not count as passing', () => {

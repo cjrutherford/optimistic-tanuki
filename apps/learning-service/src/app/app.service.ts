@@ -579,8 +579,8 @@ export class AppService {
    * `earned` is what the server watched the learner do, and only the two
    * callers that grade work supply it: submitting an exercise and answering
    * an activity. A learner marking a lesson read supplies nothing, and the
-   * points and solved exercises already on the record are carried forward
-   * untouched.
+   * points and solved exercises already on the record are preserved by the
+   * repository's atomic upsert.
    *
    * This used to take the whole record from the caller and write it verbatim,
    * so anyone could send themselves any score.
@@ -596,11 +596,28 @@ export class AppService {
       progress.lessonId,
       progress.offeringId
     );
-    const previous = (await this.getProgress(profileId)).find(
-      (item) =>
-        item.lessonId === progress.lessonId &&
-        item.offeringId === location.offering.id
-    );
+    if (earned) {
+      const previous = (await this.getProgress(profileId)).find(
+        (item) =>
+          item.lessonId === progress.lessonId &&
+          item.offeringId === location.offering.id
+      );
+      const newlyCompleted = earned.completedExerciseIds.find(
+        (id) => !previous?.completedExerciseIds.includes(id)
+      );
+      if (newlyCompleted) {
+        return await this.repository.recordSolvedExercise(
+          profileId,
+          userId,
+          location.enrolment.id,
+          progress.lessonId,
+          {
+            id: newlyCompleted,
+            points: Math.max(0, earned.points - (previous?.points ?? 0)),
+          }
+        );
+      }
+    }
     return await this.repository.saveProgress(
       profileId,
       userId,
@@ -609,9 +626,8 @@ export class AppService {
         lessonId: progress.lessonId,
         offeringId: location.offering.id,
         completed: progress.completed,
-        completedExerciseIds:
-          earned?.completedExerciseIds ?? previous?.completedExerciseIds ?? [],
-        points: earned?.points ?? previous?.points ?? 0,
+        completedExerciseIds: [],
+        points: 0,
       }
     );
   }

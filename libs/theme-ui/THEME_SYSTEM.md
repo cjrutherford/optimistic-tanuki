@@ -126,36 +126,6 @@ The system includes comprehensive utility classes:
 ```css
 .button-base    /* Base button styles */
 /* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
-/* Base button styles */
 .card-base      /* Base card styles */
 .input-base; /* Base input styles */
 ```

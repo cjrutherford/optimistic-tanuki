@@ -16,6 +16,7 @@ describe('ToolbarComponent', () => {
       themeColors$: new Subject(),
       generatedTheme$: new Subject(),
       personality$: new Subject(),
+      theme$: jest.fn().mockReturnValue(new Subject()),
       getTheme: jest.fn().mockReturnValue('light'),
       getAccentColor: jest.fn(),
       getCurrentPersonality: jest

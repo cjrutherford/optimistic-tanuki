@@ -74,13 +74,19 @@ class InMemoryLearningRepository implements LearningRepository {
     enrolmentId: string,
     input: Omit<LessonProgress, 'updatedAt'>
   ) {
+    const key = `${profileId}:${enrolmentId}:${input.lessonId}`;
+    const existing = this.progress.get(key);
     const value = {
       ...input,
+      offeringId:
+        input.offeringId ?? this.enrolmentsById(enrolmentId)?.offeringId,
+      completedExerciseIds: existing?.completedExerciseIds ?? [],
+      points: existing?.points ?? 0,
       userId,
       profileId,
       updatedAt: new Date().toISOString(),
     } as LessonProgress & { userId: string; profileId: string };
-    this.progress.set(`${profileId}:${enrolmentId}:${input.lessonId}`, value);
+    this.progress.set(key, value);
     return value;
   }
   /**
@@ -544,6 +550,28 @@ describe('AppService', () => {
       );
 
       expect(progress.offeringId).toBe('go-duplicate-published');
+    });
+
+    it('does not erase an exercise award when lesson completion is saved', async () => {
+      const profileId = 'profile-preserves-awards';
+      await service.enrol(profileId, 'go-foundations-100-core');
+      const [enrolment] = await service.listEnrolments(profileId);
+      await repository.recordSolvedExercise(
+        profileId,
+        'user-1',
+        enrolment.id,
+        'go-foundations-basics-variables-types',
+        { id: 'exercise-1', points: 25 }
+      );
+
+      const progress = await service.saveProgress(profileId, 'user-1', {
+        lessonId: 'go-foundations-basics-variables-types',
+        completed: true,
+      });
+
+      expect(progress.completed).toBe(true);
+      expect(progress.completedExerciseIds).toEqual(['exercise-1']);
+      expect(progress.points).toBe(25);
     });
 
     it('stops progress after withdrawal', async () => {
@@ -1903,6 +1931,20 @@ describe('AppService.answerActivity', () => {
               _e: string,
               progress: unknown
             ) => progress,
+            recordSolvedExercise: (
+              _p: string,
+              _u: string,
+              _e: string,
+              lessonId: string,
+              exercise: { id: string; points: number }
+            ) => ({
+              lessonId,
+              offeringId: 'art-1',
+              completed: false,
+              completedExerciseIds: [exercise.id],
+              points: exercise.points,
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            }),
           } as Partial<LearningRepository>,
         },
       ],

@@ -320,20 +320,40 @@ export class TypeOrmLearningRepository implements LearningRepository {
     enrolmentId: string,
     progress: Omit<LessonProgress, 'updatedAt'>
   ): Promise<LessonProgress> {
-    const existing = await this.lessonProgressRepo.findOne({
-      where: { profileId, enrolmentId, lessonId: progress.lessonId },
-    });
-    const entity = this.lessonProgressRepo.create({
-      ...(existing ?? {}),
-      userId,
-      profileId,
-      enrolmentId,
-      lessonId: progress.lessonId,
-      completed: progress.completed,
-      completedExerciseIds: progress.completedExerciseIds,
-      points: progress.points,
-    });
-    return this.toProgressDomain(await this.lessonProgressRepo.save(entity));
+    const [row] = (await this.lessonProgressRepo.query(
+      `WITH saved AS (
+         INSERT INTO "lp_lesson_progress"
+           ("userId", "profileId", "enrolmentId", "lessonId",
+            "completed", "completedExerciseIds", "points")
+         VALUES ($1, $2, $3, $4, $5, '[]'::jsonb, 0)
+         ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE SET
+           "userId" = EXCLUDED."userId",
+           "completed" = EXCLUDED."completed",
+           "updatedAt" = now()
+         RETURNING "lessonId", "enrolmentId", "completed",
+                   "completedExerciseIds", "points", "updatedAt"
+       )
+       SELECT saved.*, enrolment."offeringId"
+       FROM saved
+       JOIN "lp_enrolment" enrolment ON enrolment.id = saved."enrolmentId"`,
+      [userId, profileId, enrolmentId, progress.lessonId, progress.completed]
+    )) as Array<{
+      lessonId: string;
+      offeringId: string;
+      completed: boolean;
+      completedExerciseIds: string[];
+      points: number;
+      updatedAt: Date;
+    }>;
+
+    return {
+      lessonId: row.lessonId,
+      offeringId: row.offeringId,
+      completed: row.completed,
+      completedExerciseIds: row.completedExerciseIds,
+      points: row.points,
+      updatedAt: new Date(row.updatedAt).toISOString(),
+    };
   }
 
   /**
@@ -358,26 +378,32 @@ export class TypeOrmLearningRepository implements LearningRepository {
   ): Promise<LessonProgress> {
     const solved = JSON.stringify([exercise.id]);
     const [row] = (await this.lessonProgressRepo.query(
-      `INSERT INTO "lp_lesson_progress"
-         ("userId", "profileId", "enrolmentId", "lessonId",
-          "completed", "completedExerciseIds", "points")
-       VALUES ($1, $2, $3, $4, false, $5::jsonb, $6)
-       ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE SET
-         "completedExerciseIds" =
-           CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
-                THEN "lp_lesson_progress"."completedExerciseIds"
-                ELSE "lp_lesson_progress"."completedExerciseIds" || $5::jsonb
-           END,
-         "points" =
-           "lp_lesson_progress"."points" +
-           CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
-                THEN 0 ELSE $6 END,
-         "updatedAt" = now()
-       RETURNING "lessonId", "enrolmentId", "completed", "completedExerciseIds", "points", "updatedAt"`,
+      `WITH saved AS (
+         INSERT INTO "lp_lesson_progress"
+           ("userId", "profileId", "enrolmentId", "lessonId",
+            "completed", "completedExerciseIds", "points")
+         VALUES ($1, $2, $3, $4, false, $5::jsonb, $6)
+         ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE SET
+           "completedExerciseIds" =
+             CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
+                  THEN "lp_lesson_progress"."completedExerciseIds"
+                  ELSE "lp_lesson_progress"."completedExerciseIds" || $5::jsonb
+             END,
+           "points" =
+             "lp_lesson_progress"."points" +
+             CASE WHEN "lp_lesson_progress"."completedExerciseIds" @> $5::jsonb
+                  THEN 0 ELSE $6 END,
+           "updatedAt" = now()
+         RETURNING "lessonId", "enrolmentId", "completed",
+                   "completedExerciseIds", "points", "updatedAt"
+       )
+       SELECT saved.*, enrolment."offeringId"
+       FROM saved
+       JOIN "lp_enrolment" enrolment ON enrolment.id = saved."enrolmentId"`,
       [userId, profileId, enrolmentId, lessonId, solved, exercise.points]
     )) as Array<{
       lessonId: string;
-      enrolmentId: string;
+      offeringId: string;
       completed: boolean;
       completedExerciseIds: string[];
       points: number;
@@ -386,6 +412,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
 
     return {
       lessonId: row.lessonId,
+      offeringId: row.offeringId,
       completed: row.completed,
       completedExerciseIds: row.completedExerciseIds,
       points: row.points,

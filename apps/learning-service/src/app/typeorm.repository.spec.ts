@@ -558,6 +558,7 @@ describe('TypeOrmLearningRepository', () => {
       const query = jest.fn().mockResolvedValue([
         {
           lessonId: 'lesson-1',
+          offeringId: 'offering-1',
           completed: false,
           completedExerciseIds: ['ex-1'],
           points: 20,
@@ -598,10 +599,68 @@ describe('TypeOrmLearningRepository', () => {
       ]);
       expect(progress).toEqual({
         lessonId: 'lesson-1',
+        offeringId: 'offering-1',
         completed: false,
         completedExerciseIds: ['ex-1'],
         points: 20,
         updatedAt: '2026-01-01T00:00:00.000Z',
+      });
+    });
+
+    describe('saveProgress', () => {
+      it('updates completion atomically without overwriting earned progress', async () => {
+        const query = jest.fn().mockResolvedValue([
+          {
+            lessonId: 'lesson-1',
+            offeringId: 'offering-1',
+            completed: true,
+            completedExerciseIds: ['exercise-1'],
+            points: 25,
+            updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+          },
+        ]);
+        const repo = await buildRepository({
+          lessonProgress: { query } as never,
+        });
+
+        const progress = await repo.saveProgress(
+          'profile-1',
+          'user-1',
+          'enrolment-1',
+          {
+            lessonId: 'lesson-1',
+            offeringId: 'offering-1',
+            completed: true,
+            completedExerciseIds: [],
+            points: 0,
+          }
+        );
+
+        const [sql, params] = query.mock.calls[0];
+        expect(sql).toContain(
+          'ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE'
+        );
+        expect(sql).toContain('"completed" = EXCLUDED."completed"');
+        expect(sql).not.toMatch(
+          /DO UPDATE SET[\s\S]*"completedExerciseIds"\s*=\s*EXCLUDED/
+        );
+        expect(sql).not.toMatch(/DO UPDATE SET[\s\S]*"points"\s*=\s*EXCLUDED/);
+        expect(sql).toContain('enrolment."offeringId"');
+        expect(params).toEqual([
+          'user-1',
+          'profile-1',
+          'enrolment-1',
+          'lesson-1',
+          true,
+        ]);
+        expect(progress).toEqual({
+          lessonId: 'lesson-1',
+          offeringId: 'offering-1',
+          completed: true,
+          completedExerciseIds: ['exercise-1'],
+          points: 25,
+          updatedAt: '2026-01-02T00:00:00.000Z',
+        });
       });
     });
   });

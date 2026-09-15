@@ -37,6 +37,7 @@ const themeServiceMock = {
   }),
   generatedTheme$: of(undefined),
   personality$: of(undefined),
+  theme$: jest.fn().mockReturnValue(of('light')),
 };
 
 describe('AppComponent', () => {

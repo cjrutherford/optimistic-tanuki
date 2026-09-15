@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  FIXED_IMAGES,
   LOCALLY_BUILT,
   resolveE2eImages,
   splitImageRef,
@@ -71,6 +72,23 @@ test('services the workflow builds locally are left out', () => {
         'oauth-provider',
         'cjrutherford/optimistic_tanuki_oauth-provider:latest',
       ],
+      ['gateway', 'cjrutherford/optimistic_tanuki_gateway:latest'],
+    ]),
+    shaTag: 'sha-abc1234',
+    fallbackTag: 'main',
+  });
+
+  assert.deepEqual(
+    plan.map((entry) => entry.service),
+    ['gateway']
+  );
+});
+
+test('third-party fixed images are not rewritten to application SHA tags', () => {
+  const plan = resolveE2eImages({
+    services: [...FIXED_IMAGES, 'gateway'],
+    images: new Map([
+      ['learning-runner-relay', 'nginx:1.27-alpine'],
       ['gateway', 'cjrutherford/optimistic_tanuki_gateway:latest'],
     ]),
     shaTag: 'sha-abc1234',

@@ -1003,13 +1003,29 @@ services:
       # Marking written answers against an author's rubric.
       LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
       LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
-      LEARNING_RUNNER_URL: ${LEARNING_RUNNER_URL:-http://learning-runner:3025}
+      LEARNING_RUNNER_URL: ${LEARNING_RUNNER_URL:-http://learning-runner-relay:3025}
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-    networks: [default, learning-internal]
+      learning-runner-relay:
+        condition: service_started
+    networks: [default, learning-runner-control]
+  learning-runner-relay:
+    image: nginx:1.27-alpine
+    user: '101:101'
+    volumes:
+      - ./apps/learning-runner/relay.nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - learning-runner
+    networks: [learning-runner-control, learning-runner-sandbox]
+    read_only: true
+    tmpfs:
+      - /tmp:size=4m,noexec,nosuid,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
   learning-runner:
     container_name: ot_learning_runner
     build:
@@ -1034,10 +1050,10 @@ services:
       # The container memory ceiling is authoritative; the scratch size leaves
       # room for the process and /tmp within the 256 MiB contract.
       - /scratch:size=192m,exec,nosuid,nodev,mode=1777
-    # On an internal network: the learning service can reach it, and it
-    # cannot reach the internet. network_mode: none would be tighter but
-    # also unreachable, which is no use to anyone.
-    networks: [learning-internal]
+    # The relay is the only shared hop. The sandbox has no network in common
+    # with learning-service, so submitted code cannot reach its unauthenticated
+    # TCP listener directly.
+    networks: [learning-runner-sandbox]
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
@@ -1065,5 +1081,7 @@ volumes:
   video-processing-data:
 
 networks:
-  learning-internal:
+  learning-runner-control:
+    internal: true
+  learning-runner-sandbox:
     internal: true

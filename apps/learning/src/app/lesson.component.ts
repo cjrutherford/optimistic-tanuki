@@ -1142,7 +1142,11 @@ export class LessonComponent {
   protected run(exercise: Exercise): void {
     const generation = this.routeGeneration;
     this.busy[exercise.id] = true;
-    this.data.run(exercise.id, this.codeFor(exercise)).subscribe({
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.run(exercise.id, this.codeFor(exercise), offeringId)
+      : this.data.run(exercise.id, this.codeFor(exercise));
+    request.subscribe({
       next: (result) => {
         if (generation !== this.routeGeneration) return;
         this.results[exercise.id] = {

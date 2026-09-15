@@ -810,6 +810,9 @@ export class LearningController {
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
+    if (!(await this.offeringAuthorization.getOwnership(offeringId))) {
+      throw new NotFoundException(`Unknown offering: ${offeringId}`);
+    }
     const allowed = await this.offeringAuthorization.authorize(
       profileId,
       req.user.profileId,

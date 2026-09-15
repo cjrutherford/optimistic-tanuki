@@ -4,6 +4,7 @@ import { mkdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 
 const SERVER = join(
@@ -149,4 +150,52 @@ test('kills a TypeScript process that exceeds the runner timeout', async () => {
   assert.equal(result.timedOut, true);
   assert.equal(result.testsPassed, false);
   assert.doesNotMatch(JSON.stringify(result), /ERR_NO_TYPESCRIPT/);
+});
+
+test('rejects an oversized Content-Length before reading the body', async () => {
+  const status = await new Promise((resolve, reject) => {
+    const request = http.request(
+      {
+        host: '127.0.0.1',
+        port: PORT,
+        path: '/runs',
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'content-length': '1048577',
+        },
+      },
+      (response) => {
+        response.resume();
+        response.on('end', () => resolve(response.statusCode));
+      }
+    );
+    request.on('error', reject);
+    request.end('{}');
+  });
+
+  assert.equal(status, 413);
+});
+
+test('rejects an oversized chunked request while it is streaming', async () => {
+  const status = await new Promise((resolve, reject) => {
+    const request = http.request(
+      {
+        host: '127.0.0.1',
+        port: PORT,
+        path: '/runs',
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+      },
+      (response) => {
+        response.resume();
+        response.on('end', () => resolve(response.statusCode));
+      }
+    );
+    request.on('error', reject);
+    request.write(Buffer.alloc(700_000, 'a'));
+    request.end(Buffer.alloc(700_000, 'b'));
+  });
+
+  assert.equal(status, 413);
 });

@@ -784,7 +784,7 @@ services:
       LEARNING_RUNNER_CPU_LIMIT_SECONDS: 10
       LEARNING_RUNNER_GO_CONCURRENCY: 1
       LEARNING_RUNNER_COMPILE_TIMEOUT_MS: 30000
-    networks: [learning-internal]
+    networks: [learning-runner-sandbox]
     read_only: true
     cap_drop: [ALL]
     security_opt: ['no-new-privileges:true']
@@ -792,6 +792,21 @@ services:
     mem_limit: 256m
     tmpfs:
       - /scratch:exec,size=192m
+
+  learning-runner-relay:
+    profiles: [learning]
+    image: nginx:1.27-alpine
+    user: '101:101'
+    volumes:
+      - ../apps/learning-runner/relay.nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - learning-runner
+    networks: [learning-runner-control, learning-runner-sandbox]
+    read_only: true
+    tmpfs:
+      - /tmp:size=4m,noexec,nosuid,mode=1777
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
 
   learning-service:
     profiles: [learning]
@@ -806,7 +821,7 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_learning_service
       LEARNING_CONTENT_ROOT: /usr/src/app/assets/content
-      LEARNING_RUNNER_URL: http://learning-runner:3025
+      LEARNING_RUNNER_URL: http://learning-runner-relay:3025
       # Marking written answers. Unset in CI, where there is no model to ask,
       # and an answer that cannot be marked is recorded rather than lost.
       LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-}
@@ -815,7 +830,9 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-    networks: [default, learning-internal]
+      learning-runner-relay:
+        condition: service_started
+    networks: [default, learning-runner-control]
     healthcheck:
       test:
         - CMD-SHELL
@@ -933,5 +950,7 @@ networks:
   default:
   # No route out. The learning runner executes code a stranger submitted, so
   # the container boundary is the security boundary.
-  learning-internal:
+  learning-runner-control:
+    internal: true
+  learning-runner-sandbox:
     internal: true

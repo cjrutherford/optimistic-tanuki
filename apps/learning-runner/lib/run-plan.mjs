@@ -1,6 +1,7 @@
 import { cppCompileCommand } from './catch2.mjs';
 
 export const TYPESCRIPT_CONFIG_FILE = 'tsconfig.runner.json';
+export const TYPESCRIPT_HARNESS_FILE = 'test-harness.ts';
 
 export const TYPESCRIPT_COMPILER_CONFIG = {
   compilerOptions: {
@@ -15,7 +16,7 @@ export const TYPESCRIPT_COMPILER_CONFIG = {
     outDir: 'compiled',
     types: [],
   },
-  files: ['main.ts'],
+  files: ['main.ts', TYPESCRIPT_HARNESS_FILE],
 };
 
 export const GO_EXECUTION_MODES = ['run', 'test', 'benchmark'];
@@ -42,7 +43,15 @@ export function prepare(
         compile: [
           ['node', typescriptCompilerPath, '--project', TYPESCRIPT_CONFIG_FILE],
         ],
-        run: ['node', '--enable-source-maps', 'compiled/main.js'],
+        run: isTestMode(executionMode)
+          ? [
+              'node',
+              '--require',
+              `./compiled/${TYPESCRIPT_HARNESS_FILE.replace(/\.ts$/, '.js')}`,
+              '--enable-source-maps',
+              'compiled/main.js',
+            ]
+          : ['node', '--enable-source-maps', 'compiled/main.js'],
       };
 
     case 'go':
@@ -122,12 +131,14 @@ export function prepare(
  * Test code goes after the learner's code in every language, because each one
  * needs the definitions above the assertions that use them.
  */
-export function buildSource(languageId, code, testCode, typescriptHarness) {
+export function buildSource(languageId, code, testCode) {
   if (!testCode) return code;
 
   switch (languageId) {
     case 'typescript':
-      return `${code}\n${typescriptHarness}\n${testCode}`;
+      // The runtime harness is preloaded as a separate compiled module. Keep
+      // it out of main.ts so learner diagnostics retain their original lines.
+      return `${code}\n${testCode}`;
     case 'rust':
     case 'cpp':
       return `${code}\n\n${testCode}`;

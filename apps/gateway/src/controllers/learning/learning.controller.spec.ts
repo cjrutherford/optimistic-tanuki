@@ -504,6 +504,20 @@ describe('LearningController', () => {
       );
     });
 
+    it('returns not found before authorizing co-editors for an unknown offering', async () => {
+      offeringAuthorization.getOwnership.mockResolvedValueOnce(undefined);
+
+      await expect(
+        controller.setCoEditors(
+          'missing-offering',
+          { coEditorProfileIds: [] },
+          { user: { userId: 'user-1' } }
+        )
+      ).rejects.toMatchObject({ status: 404 });
+      expect(offeringAuthorization.authorize).not.toHaveBeenCalled();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
     it('rejects malformed co-editor payloads before authorization or persistence', async () => {
       const pipe = new ValidationPipe({
         forbidNonWhitelisted: true,

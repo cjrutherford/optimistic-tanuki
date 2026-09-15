@@ -50,6 +50,7 @@ const buildThemeServiceStub = () => ({
     },
   }),
   personality$: of({ id: 'control-center', name: 'Control Center' }),
+  theme$: jest.fn().mockReturnValue(of('dark')),
 });
 
 describe('AppComponent', () => {
