@@ -49,6 +49,7 @@ export interface LessonAddress {
       } @for (module of modules(); track $index; let moduleIndex = $index) {
       <article class="module">
         <div class="module-head">
+          <span class="grip" aria-hidden="true">:::</span>
           <input
             class="module-title"
             type="text"
@@ -88,6 +89,7 @@ export interface LessonAddress {
           @for (lesson of module.lessons; track $index; let lessonIndex =
           $index) {
           <li [class.selected]="isSelected(moduleIndex, lessonIndex)">
+            <span class="grip lesson-grip" aria-hidden="true">:::</span>
             <button
               type="button"
               class="pick"
@@ -160,8 +162,13 @@ export interface LessonAddress {
         display: grid;
         gap: 0.6rem;
         padding: 0.9rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
+        border-left-width: calc(var(--lx-border-width, 2px) + 2px);
         border-radius: var(--lx-radius, 2px);
+        background-color: var(--lx-surface, transparent);
+        background-image: var(--lx-surface-texture, none);
+        box-shadow: var(--lx-shadow-card, none);
       }
       .module-head {
         display: flex;
@@ -173,12 +180,25 @@ export interface LessonAddress {
         flex: 1 1 12rem;
         min-width: 0;
         padding: 0.4rem 0.5rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text, inherit);
         font: inherit;
         font-weight: 700;
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
+      }
+      .module-title:hover,
+      .module-title:focus {
+        border-color: var(--lx-accent, currentColor);
+      }
+      .grip {
+        flex: 0 0 auto;
+        color: var(--lx-text-faint, var(--lx-text-muted, currentColor));
+        font: var(--lx-btn-weight, 700) 0.82rem/1 var(--lx-font-mono, monospace);
+        letter-spacing: -0.12em;
+        user-select: none;
       }
       .module-actions,
       .lesson-actions {
@@ -186,24 +206,47 @@ export interface LessonAddress {
         gap: 0.3rem;
       }
       button {
+        min-height: 2.2rem;
         padding: 0.3rem 0.55rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
-        font: inherit;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text-body, inherit);
+        font: var(--lx-btn-weight, 700) 0.72rem var(--lx-font-mono, monospace);
+        text-transform: var(--lx-btn-transform, uppercase);
         font-size: 0.8rem;
         cursor: pointer;
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--lx-accent, currentColor);
+        box-shadow: var(--lx-shadow-control, none);
+        transform: translate(-1px, -1px);
+      }
+      button:active:not(:disabled) {
+        box-shadow: var(--lx-shadow-inset, none);
+        transform: translate(1px, 1px);
       }
       button:disabled {
         opacity: 0.35;
         cursor: default;
+        box-shadow: none;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-focus, currentColor);
+        outline-offset: 2px;
       }
       button.add {
+        border-color: var(--lx-accent, currentColor);
+        color: var(--lx-accent, currentColor);
         justify-self: start;
       }
       button.remove {
         color: var(--lx-danger, currentColor);
+        border-color: var(--lx-danger, currentColor);
       }
       .lessons {
         margin: 0;
@@ -218,16 +261,31 @@ export interface LessonAddress {
         align-items: center;
         justify-content: space-between;
         padding: 0.25rem 0.35rem;
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          transparent;
         border-radius: var(--lx-radius, 2px);
+        background: var(--lx-surface, transparent);
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
       }
       .lessons li.selected {
+        border-color: var(--lx-accent, currentColor);
         background: var(--lx-surface-active, transparent);
       }
       .pick {
         flex: 1;
+        min-width: 0;
         border: 0;
+        background: transparent;
+        color: var(--lx-text-body, inherit);
         text-align: left;
         font-size: 0.9rem;
+      }
+      .pick:hover:not(:disabled) {
+        box-shadow: none;
+        transform: none;
+      }
+      .lesson-grip {
+        margin-left: 0.1rem;
       }
       .unwritten {
         margin-left: 0.5rem;

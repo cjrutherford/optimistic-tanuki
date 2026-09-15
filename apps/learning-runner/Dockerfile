@@ -1,3 +1,17 @@
+FROM node:24-alpine AS dependencies
+
+WORKDIR /usr/src/app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/learning-runner/package.json ./apps/learning-runner/package.json
+
+RUN corepack enable && \
+    corepack prepare pnpm@11.0.9 --activate && \
+    pnpm install --filter @optimistic-tanuki/learning-runner --prod --frozen-lockfile && \
+    mkdir -p /opt/runner/typescript && \
+    cp -R apps/learning-runner/node_modules/typescript/. \
+      /opt/runner/typescript/
+
 FROM node:24-alpine
 
 RUN apk add --no-cache dumb-init go g++ rust cargo curl
@@ -34,10 +48,16 @@ RUN mkdir -p /scratch && chown node:node /scratch
 ENV LEARNING_SCRATCH_DIR=/scratch
 
 WORKDIR /app
+COPY --from=dependencies /opt/runner/typescript ./node_modules/typescript
 COPY apps/learning-runner/server.mjs ./server.mjs
 COPY apps/learning-runner/lib ./lib
 
 USER node
 ENV PORT=3025
+ENV LEARNING_TYPESCRIPT_COMPILER=/app/node_modules/typescript/lib/tsc.js
+ENV LEARNING_RUNNER_PROCESS_LIMIT=32
+ENV LEARNING_RUNNER_CPU_LIMIT_SECONDS=10
+ENV LEARNING_RUNNER_GO_CONCURRENCY=1
+ENV LEARNING_RUNNER_COMPILE_TIMEOUT_MS=30000
 EXPOSE 3025
 CMD ["dumb-init", "node", "server.mjs"]

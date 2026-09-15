@@ -262,7 +262,9 @@ jobs:
       - name: Validate TypeORM migration governance
         run: |
           pnpm run validate:typeorm-migrations
-          node --test scripts/tests/setup-and-migrate.test.mjs
+          node --test \
+            scripts/tests/setup-and-migrate.test.mjs \
+            scripts/tests/start-learning-stack-auth.test.mjs
 
       - name: Validate UI E2E CI contract
         run: |

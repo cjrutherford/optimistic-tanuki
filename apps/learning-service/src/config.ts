@@ -33,6 +33,9 @@ const loadConfig = (): LearningServiceConfigType => {
   if (process.env.DATABASE_NAME) {
     configData.database.database = process.env.DATABASE_NAME;
   }
+  if (process.env.LISTEN_PORT) {
+    configData.listenPort = parseInt(process.env.LISTEN_PORT, 10);
+  }
 
   return configData;
 };

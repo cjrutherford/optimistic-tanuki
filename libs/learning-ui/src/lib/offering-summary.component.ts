@@ -89,7 +89,7 @@ export interface OfferingPrerequisite {
       <div class="actions">
         @if (isEnrolled()) {
         <p class="enrolled" role="status">You are enrolled.</p>
-        } @else {
+        } @else if (showEnrolAction()) {
         <otui-button
           variant="primary"
           [useGradient]="false"
@@ -98,7 +98,7 @@ export interface OfferingPrerequisite {
         >
           {{ busy() ? 'Enrolling…' : 'Enrol' }}
         </otui-button>
-        } @if (hasLessons()) {
+        } @if (showOpenAction() && hasLessons()) {
         <otui-button variant="secondary" (action)="open.emit()">
           {{ isEnrolled() ? 'Continue' : 'Start reading' }}
         </otui-button>
@@ -120,6 +120,16 @@ export interface OfferingPrerequisite {
         display: grid;
         gap: 1.6rem;
       }
+      header {
+        padding: clamp(1rem, 3vw, 1.5rem);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
+        border-left-width: calc(var(--lx-border-width, 2px) + 2px);
+        border-radius: var(--lx-radius, 2px);
+        background-color: var(--lx-surface, transparent);
+        background-image: var(--lx-surface-texture, none);
+        box-shadow: var(--lx-shadow-card, 8px 8px 0 rgba(0, 0, 0, 0.14));
+      }
       .eyebrow {
         display: flex;
         gap: 0.6rem;
@@ -132,7 +142,8 @@ export interface OfferingPrerequisite {
       }
       .draft {
         padding: 0.1rem 0.4rem;
-        border: 1px dashed var(--lx-border-strong, currentColor);
+        border: var(--lx-border-width, 2px) dashed
+          var(--lx-border-strong, currentColor);
         border-radius: var(--lx-radius, 2px);
         color: var(--lx-text-muted, currentColor);
       }
@@ -147,8 +158,13 @@ export interface OfferingPrerequisite {
         gap: 1.25rem;
         margin: 0 0 1.75rem;
         padding: 1.15rem 1.25rem;
-        border-left: 2px solid var(--lx-accent);
-        background: var(--lx-surface-hover);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
+        border-left-width: calc(var(--lx-border-width, 2px) + 2px);
+        border-left-color: var(--lx-accent);
+        background-color: var(--lx-surface-hover);
+        background-image: var(--lx-surface-texture, none);
+        box-shadow: var(--lx-shadow-sm, 2px 2px 0 rgba(0, 0, 0, 0.14));
       }
       .pitch h2 {
         margin: 0 0 0.35rem;
@@ -185,8 +201,10 @@ export interface OfferingPrerequisite {
         gap: 2rem;
         margin: 0;
         padding: 1rem 0;
-        border-top: 1px solid var(--lx-border-soft, currentColor);
-        border-bottom: 1px solid var(--lx-border-soft, currentColor);
+        border-top: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
+        border-bottom: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
       }
       .facts div {
         display: grid;
@@ -217,6 +235,9 @@ export interface OfferingPrerequisite {
         gap: 0.7rem;
         align-items: center;
       }
+      .actions otui-button {
+        min-width: min(12rem, 100%);
+      }
       .enrolled {
         margin: 0;
         color: var(--lx-accent, currentColor);
@@ -230,6 +251,20 @@ export interface OfferingPrerequisite {
         margin: 0;
         color: var(--lx-text-muted, currentColor);
         font-size: 0.85rem;
+      }
+      @media (max-width: 35rem) {
+        .actions {
+          align-items: stretch;
+        }
+        .actions otui-button {
+          width: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .summary,
+        .pitch {
+          transition: none;
+        }
       }
     `,
   ],
@@ -254,6 +289,8 @@ export class OfferingSummaryComponent {
   readonly prerequisites = input<OfferingPrerequisite[]>([]);
   readonly isEnrolled = input<boolean>(false);
   readonly isDraft = input<boolean>(false);
+  readonly showEnrolAction = input<boolean>(true);
+  readonly showOpenAction = input<boolean>(true);
   readonly busy = input<boolean>(false);
   readonly error = input<string>('');
 

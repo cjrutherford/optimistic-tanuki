@@ -72,6 +72,7 @@ All theme variables now follow a consistent naming convention:
 
 /* Shadows */
 --shadow-none: none
+--shadow-inset: inset 0 2px 6px -1px rgba(0, 0, 0, 0.18)
 --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05)
 --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1)
 --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1)
@@ -124,6 +125,22 @@ The system includes comprehensive utility classes:
 
 ```css
 .button-base    /* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
+/* Base button styles */
 /* Base button styles */
 /* Base button styles */
 /* Base button styles */

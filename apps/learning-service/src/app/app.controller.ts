@@ -1,11 +1,12 @@
-import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Controller, Inject } from '@nestjs/common';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { LearningCommands } from '@optimistic-tanuki/constants';
 import {
   ActivityType,
   CatalogViewer,
   DraftOfferingInput,
   Evaluation,
+  normalizeCoEditorProfileIds,
   PublicationStatus,
 } from '@optimistic-tanuki/learning-domain';
 import { LessonProgress } from '@optimistic-tanuki/learning-domain';
@@ -34,9 +35,38 @@ interface RecordEvaluationDto {
   recordedByUserId?: string;
 }
 
+export type LearningAppService = Pick<
+  AppService,
+  | 'listPublicPrograms'
+  | 'listCatalog'
+  | 'submitAttempt'
+  | 'recordEvaluation'
+  | 'getLesson'
+  | 'listSubjects'
+  | 'listMyOfferings'
+  | 'getOfferingDetail'
+  | 'getProgress'
+  | 'saveProgress'
+  | 'runCode'
+  | 'getDashboard'
+  | 'submitExercise'
+  | 'answerActivity'
+  | 'listChallenges'
+  | 'enrol'
+  | 'withdraw'
+  | 'listEnrolments'
+  | 'createOffering'
+  | 'updateOffering'
+  | 'deleteOffering'
+  | 'getOfferingOwnership'
+  | 'setCoEditors'
+>;
+
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    @Inject(AppService) private readonly appService: LearningAppService
+  ) {}
 
   // Whole tracks, minus the mark schemes. This crosses the wire to the
   // gateway and on to a browser, so it must not carry quiz answers, expected
@@ -72,9 +102,28 @@ export class AppController {
     body: {
       trackId: string;
       lessonId: string;
+      offeringId?: string;
+      moduleId?: string;
       viewer?: CatalogViewer;
     }
   ) {
+    if (body.moduleId) {
+      return this.appService.getLesson(
+        body.trackId,
+        body.lessonId,
+        body.viewer ?? {},
+        body.offeringId,
+        body.moduleId
+      );
+    }
+    if (body.offeringId) {
+      return this.appService.getLesson(
+        body.trackId,
+        body.lessonId,
+        body.viewer ?? {},
+        body.offeringId
+      );
+    }
     return this.appService.getLesson(
       body.trackId,
       body.lessonId,
@@ -113,18 +162,35 @@ export class AppController {
       userId: string;
       lessonId: string;
       completed: boolean;
+      offeringId?: string;
     }
   ) {
     // No points and no exercise ids: a learner says only that they read it.
     return this.appService.saveProgress(body.profileId, body.userId, {
       lessonId: body.lessonId,
       completed: body.completed,
+      ...(body.offeringId ? { offeringId: body.offeringId } : {}),
     });
   }
 
   @MessagePattern({ cmd: LearningCommands.RunCode })
-  runCode(@Payload() body: { activityId: string; code: string }) {
-    return this.appService.runCode(body.activityId, body.code);
+  runCode(
+    @Payload()
+    body: {
+      activityId: string;
+      code: string;
+      profileId?: string;
+      offeringId?: string;
+    }
+  ) {
+    return body.profileId
+      ? this.appService.runCode(
+          body.activityId,
+          body.code,
+          body.profileId,
+          body.offeringId
+        )
+      : this.appService.runCode(body.activityId, body.code);
   }
 
   @MessagePattern({ cmd: LearningCommands.GetDashboard })
@@ -140,14 +206,35 @@ export class AppController {
       userId: string;
       activityId: string;
       code: string;
+      offeringId?: string;
     }
   ) {
-    return this.appService.submitExercise(
-      body.profileId,
-      body.userId,
-      body.activityId,
-      body.code
-    );
+    return body.offeringId
+      ? this.appService.submitExercise(
+          body.profileId,
+          body.userId,
+          body.activityId,
+          body.code,
+          body.offeringId
+        )
+      : this.appService.submitExercise(
+          body.profileId,
+          body.userId,
+          body.activityId,
+          body.code
+        );
+  }
+
+  @MessagePattern({ cmd: LearningCommands.ListChallenges })
+  listChallenges(
+    @Payload()
+    body: {
+      trackId?: string;
+      profileId?: string;
+      viewer?: CatalogViewer;
+    }
+  ) {
+    return this.appService.listChallenges(body ?? {});
   }
 
   @MessagePattern({ cmd: LearningCommands.AnswerActivity })
@@ -158,14 +245,23 @@ export class AppController {
       userId: string;
       activityId: string;
       submission: unknown;
+      offeringId?: string;
     }
   ) {
-    return this.appService.answerActivity(
-      body.profileId,
-      body.userId,
-      body.activityId,
-      body.submission
-    );
+    return body.offeringId
+      ? this.appService.answerActivity(
+          body.profileId,
+          body.userId,
+          body.activityId,
+          body.submission,
+          body.offeringId
+        )
+      : this.appService.answerActivity(
+          body.profileId,
+          body.userId,
+          body.activityId,
+          body.submission
+        );
   }
 
   @MessagePattern({ cmd: LearningCommands.Enrol })
@@ -218,11 +314,25 @@ export class AppController {
 
   @MessagePattern({ cmd: LearningCommands.SetCoEditors })
   setCoEditors(
-    @Payload() body: { offeringId: string; coEditorProfileIds: string[] }
+    @Payload()
+    body: {
+      offeringId: string;
+      coEditorProfileIds: unknown;
+    }
   ) {
+    const coEditorProfileIds = normalizeCoEditorProfileIds(
+      body?.coEditorProfileIds
+    );
+    if (!coEditorProfileIds.success) {
+      throw new RpcException({
+        statusCode: 400,
+        message:
+          'coEditorProfileIds must be an array of at most 50 profile UUIDs.',
+      });
+    }
     return this.appService.setCoEditors(
       body.offeringId,
-      body.coEditorProfileIds
+      coEditorProfileIds.data
     );
   }
 }

@@ -78,6 +78,15 @@ describe('ActivityAnswerComponent', () => {
     expect(answered).toHaveBeenCalledWith(['o1']);
   });
 
+  it('marks a selected option as a chip state', async () => {
+    const { fixture, element } = await render(mcq);
+
+    (element.querySelectorAll('input')[0] as HTMLInputElement).click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.option-chip.selected')).not.toBeNull();
+  });
+
   // A multiple choice can have more than one right answer.
   it('allows more than one choice', async () => {
     const { fixture, element, button } = await render(mcq);
@@ -196,6 +205,11 @@ describe('ActivityAnswerComponent', () => {
     fixture.detectChanges();
 
     expect(button('Marking…')?.disabled).toBe(true);
+    expect(
+      Array.from(
+        element.querySelectorAll<HTMLInputElement>('.option-input')
+      ).every((input) => input.disabled)
+    ).toBe(true);
   });
 
   it('surfaces an error next to the action', async () => {
@@ -213,5 +227,29 @@ describe('ActivityAnswerComponent', () => {
 
     expect(element.textContent).toContain('handed in outside the site');
     expect(button('Answer')).toBeUndefined();
+  });
+
+  it('offers distinct run and submit actions for authored code', async () => {
+    const code: AnswerableActivity = {
+      type: 'code.run',
+      id: 'code-1',
+      prompt: 'Print ok.',
+      starterCode: "console.log('ok')",
+      languageId: 'typescript',
+    };
+    const { fixture, element, button } = await render(code);
+    const run = jest.fn();
+    const submit = jest.fn();
+    fixture.componentInstance.runCode.subscribe(run);
+    fixture.componentInstance.submitCode.subscribe(submit);
+    fixture.componentRef.setInput('code', "console.log('ok')");
+    fixture.detectChanges();
+
+    button('Run')?.click();
+    button('Submit')?.click();
+
+    expect(run).toHaveBeenCalledWith("console.log('ok')");
+    expect(submit).toHaveBeenCalledWith("console.log('ok')");
+    expect(element.textContent).toContain('without scoring it');
   });
 });

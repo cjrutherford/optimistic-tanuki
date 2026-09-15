@@ -1,7 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { combineLatest, map, switchMap } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { combineLatest, distinctUntilChanged, map, shareReplay } from 'rxjs';
 import { LearningLayoutComponent } from './learning-layout.component';
 import {
   LearningDataService,
@@ -12,13 +13,11 @@ import {
 @Component({
   selector: 'learning-module',
   imports: [LearningLayoutComponent, AsyncPipe, NgIf, RouterLink],
-  template: ` <learning-layout [trackId]="trackId"
+  template: ` <learning-layout
+    [trackId]="trackId()"
+    [offeringId]="layoutOfferingId()"
     ><ng-container *ngIf="vm$ | async as vm"
-      ><a
-        [routerLink]="['/course', vm.track.program.offerings[0].id]"
-        class="back"
-        >← Course</a
-      >
+      ><a [routerLink]="['/course', vm.offering.id]" class="back">← Course</a>
       <header>
         <small *ngIf="variantLabel(vm.track.program) as label"
           >{{ label }} module</small
@@ -39,6 +38,7 @@ import {
               vm.module.id,
               lesson.id
             ]"
+            [queryParams]="{ offeringId: vm.offering.id }"
             ><small>{{ (index + 1).toString().padStart(2, '0') }}</small
             ><span>{{ lesson.title }}</span
             ><b>→</b></a
@@ -120,20 +120,57 @@ export class ModuleComponent {
    * this course's. Without it the module list vanished on the very page where
    * a reader is moving between modules.
    */
-  readonly trackId = this.route.snapshot.paramMap.get('trackId') ?? '';
-
-  readonly vm$ = combineLatest([
-    this.data.dashboard(),
+  private readonly routeState$ = combineLatest([
     this.route.paramMap,
+    this.route.queryParamMap,
   ]).pipe(
-    map(([paths, params]) => {
-      const track = paths.find(
-        (item) => item.program.id === params.get('trackId')
-      )!;
-      const module = track.program.offerings
-        .flatMap((offering) => offering.modules)
-        .find((item) => item.id === params.get('moduleId'))!;
-      return { track, module };
-    })
+    map(([params, query]) => ({
+      trackId: params.get('trackId') ?? '',
+      moduleId: params.get('moduleId') ?? '',
+      offeringId: query.get('offeringId') ?? '',
+    })),
+    distinctUntilChanged(
+      (left, right) =>
+        left.trackId === right.trackId &&
+        left.moduleId === right.moduleId &&
+        left.offeringId === right.offeringId
+    ),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  readonly trackId = toSignal(
+    this.routeState$.pipe(map((state) => state.trackId)),
+    {
+      initialValue: this.route.snapshot.paramMap.get('trackId') ?? '',
+    }
+  );
+  readonly vm$ = combineLatest([this.data.catalog(), this.routeState$]).pipe(
+    map(([tracks, routeState]) => {
+      const program = tracks.find((item) => item.id === routeState.trackId);
+      if (!program) return null;
+
+      const moduleId = routeState.moduleId;
+      const requestedOfferingId = routeState.offeringId;
+      const offering = requestedOfferingId
+        ? program.offerings.find(
+            (candidate) =>
+              candidate.id === requestedOfferingId &&
+              candidate.modules.some((item) => item.id === moduleId)
+          )
+        : program.offerings.find((candidate) =>
+            candidate.modules.some((item) => item.id === moduleId)
+          );
+      if (!offering) return null;
+
+      const module = offering.modules.find((item) => item.id === moduleId);
+      if (!module) return null;
+      return { track: { program }, offering, module };
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+  readonly layoutOfferingId = toSignal(
+    this.vm$.pipe(map((vm) => vm?.offering.id ?? '')),
+    {
+      initialValue: this.route.snapshot.queryParamMap.get('offeringId') ?? '',
+    }
   );
 }

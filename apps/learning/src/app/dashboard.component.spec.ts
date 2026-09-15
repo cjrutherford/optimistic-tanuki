@@ -22,12 +22,14 @@ describe('DashboardComponent', () => {
       completedExercises: number;
       points: number;
       nextLessonId: string | null;
-    }> = {}
+    }> = {},
+    offeringId = `${displayName}-100`
   ) => ({
+    offeringId,
     program: {
       id: displayName,
       displayName,
-      offerings: [{ id: `${displayName}-100`, displayName, modules: [] }],
+      offerings: [{ id: offeringId, displayName, modules: [] }],
     },
     totals,
     progress: {
@@ -39,7 +41,10 @@ describe('DashboardComponent', () => {
     },
   });
 
-  async function render(entries: unknown[]) {
+  async function render(
+    entries: unknown[],
+    person: { name: string } | null = null
+  ) {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [DashboardComponent],
@@ -52,7 +57,7 @@ describe('DashboardComponent', () => {
     const fixture = TestBed.createComponent(DashboardComponent);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    for (const pending of http.match('/api/learning/me')) pending.flush(null);
+    for (const pending of http.match('/api/learning/me')) pending.flush(person);
     for (const pending of http.match('/api/learning/dashboard')) {
       pending.flush(entries);
     }
@@ -149,5 +154,54 @@ describe('DashboardComponent', () => {
 
     expect(element.textContent).toContain('Open');
     expect(element.textContent).not.toContain('Read again');
+  });
+
+  it('exposes lesson progress as a readable progress value', async () => {
+    const element = await render([
+      entry(
+        'Tide Tables',
+        { lessons: 5, exercises: 0, points: 0 },
+        { completedLessons: 3, nextLessonId: 'l4' }
+      ),
+    ]);
+
+    const progress = element.querySelector('progress') as HTMLProgressElement;
+    expect(progress.value).toBe(60);
+    expect(progress.max).toBe(100);
+    expect(progress.getAttribute('aria-label')).toContain('60 percent');
+    expect(element.textContent).toContain('60% complete');
+    expect(element.textContent).toContain('in progress');
+  });
+
+  it('offers an anonymous visitor a safe sign-in return path', async () => {
+    const element = await render([]);
+
+    expect(element.textContent).toContain('Sign in to keep a course here');
+    expect(element.querySelector('a.action')?.getAttribute('href')).toContain(
+      '/sign-in?returnTo=%2F'
+    );
+  });
+
+  it('gives a signed-in visitor a useful catalog next step when empty', async () => {
+    const element = await render([], { name: 'Ada' });
+
+    expect(element.textContent).toContain('Ready when you are, Ada');
+    expect(element.textContent).not.toContain('Sign in to keep a course here');
+    expect(element.querySelector('a.action')?.getAttribute('href')).toBe(
+      '/courses'
+    );
+  });
+
+  it('links each dashboard entry to its own offering', async () => {
+    const element = await render([
+      entry('Shared Track', { lessons: 1, exercises: 0, points: 0 }, {}, 'o-1'),
+      entry('Shared Track', { lessons: 1, exercises: 0, points: 0 }, {}, 'o-2'),
+    ]);
+
+    expect(
+      Array.from(element.querySelectorAll<HTMLAnchorElement>('.path')).map(
+        (link) => link.getAttribute('href')
+      )
+    ).toEqual(['/course/o-1', '/course/o-2']);
   });
 });

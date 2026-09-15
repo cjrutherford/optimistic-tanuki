@@ -31,6 +31,7 @@ export interface EditableActivity {
   artifactTypes?: string[];
   /** code.run only. */
   starterCode?: string;
+  languageId?: 'typescript' | 'go' | 'cpp' | 'rust';
   expectedOutput?: string;
 }
 
@@ -145,9 +146,6 @@ const KIND_LABELS: Record<ActivityKind, string> = {
           </div>
           }
           <button type="button" (click)="addOption(index)">Add option</button>
-          @if (quizWarning(activity)) {
-          <p class="warning" role="status">{{ quizWarning(activity) }}</p>
-          }
         </div>
         } @if (activity.type === 'writing.response') {
         <label>
@@ -209,6 +207,18 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         </label>
         } @if (activity.type === 'code.run') {
         <label>
+          <span>Language</span>
+          <select
+            [value]="activity.languageId ?? 'typescript'"
+            (change)="setLanguage(index, $event)"
+          >
+            <option value="typescript">TypeScript</option>
+            <option value="go">Go</option>
+            <option value="cpp">C++</option>
+            <option value="rust">Rust</option>
+          </select>
+        </label>
+        <label>
           <span>Starter code</span>
           <textarea
             rows="4"
@@ -216,6 +226,17 @@ const KIND_LABELS: Record<ActivityKind, string> = {
             (input)="setStarterCode(index, $event)"
           ></textarea>
         </label>
+        <label>
+          <span>Expected output <em>(optional)</em></span>
+          <textarea
+            rows="3"
+            placeholder="What a correct run should print"
+            [value]="activity.expectedOutput ?? ''"
+            (input)="setExpectedOutput(index, $event)"
+          ></textarea>
+        </label>
+        } @if (activityWarning(activity)) {
+        <p class="warning" role="alert">{{ activityWarning(activity) }}</p>
         }
       </article>
       }
@@ -244,17 +265,31 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         flex-wrap: wrap;
       }
       button {
+        min-height: 2.2rem;
         padding: 0.3rem 0.55rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
-        font: inherit;
-        font-size: 0.8rem;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text-body, inherit);
+        font: var(--lx-btn-weight, 700) 0.72rem
+          var(--lx-font-mono, ui-monospace, monospace);
+        text-transform: var(--lx-btn-transform, uppercase);
         cursor: pointer;
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--lx-accent, currentColor);
+        box-shadow: var(--lx-shadow-control, none);
+        transform: translate(-1px, -1px);
+      }
+      button:active:not(:disabled) {
+        box-shadow: var(--lx-shadow-inset, none);
+        transform: translate(1px, 1px);
       }
       button.remove {
         color: var(--lx-danger, currentColor);
+        border-color: var(--lx-danger, currentColor);
       }
       .empty {
         margin: 0;
@@ -265,8 +300,14 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         display: grid;
         gap: 0.6rem;
         padding: 0.9rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
+        border-left-width: calc(var(--lx-border-width, 2px) + 2px);
+        border-left-color: var(--lx-accent, currentColor);
         border-radius: var(--lx-radius, 2px);
+        background-color: var(--lx-surface, transparent);
+        background-image: var(--lx-surface-texture, none);
+        box-shadow: var(--lx-shadow-card, none);
       }
       .activity-head {
         display: flex;
@@ -293,21 +334,40 @@ const KIND_LABELS: Record<ActivityKind, string> = {
       }
       select {
         padding: 0.4rem 0.5rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text, inherit);
         font: inherit;
       }
       input[type='text'],
       textarea {
         width: 100%;
         padding: 0.4rem 0.5rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text, inherit);
         font: inherit;
+        transition: var(--lx-btn-transition, all 0.1s steps(2));
+      }
+      select:hover,
+      input[type='text']:hover,
+      textarea:hover,
+      select:focus,
+      input[type='text']:focus,
+      textarea:focus {
+        border-color: var(--lx-accent, currentColor);
+      }
+      button:focus-visible,
+      select:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-focus, currentColor);
+        outline-offset: 2px;
       }
       textarea {
         resize: vertical;
@@ -337,10 +397,11 @@ const KIND_LABELS: Record<ActivityKind, string> = {
       .criterion input[type='number'] {
         width: 5rem;
         padding: 0.4rem 0.5rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft, currentColor);
         border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
+        background: var(--lx-surface, transparent);
+        color: var(--lx-text, inherit);
         font: inherit;
       }
       .hint {
@@ -352,6 +413,28 @@ const KIND_LABELS: Record<ActivityKind, string> = {
         margin: 0;
         color: var(--lx-warn, currentColor);
         font-size: 0.82rem;
+        font-weight: 700;
+      }
+      em {
+        color: var(--lx-text-faint, var(--lx-text-muted, currentColor));
+        font-style: normal;
+        font-weight: 400;
+        text-transform: none;
+      }
+      @media (max-width: 600px) {
+        .activity {
+          padding: 0.75rem;
+        }
+        .option,
+        .criterion {
+          align-items: stretch;
+          flex-wrap: wrap;
+        }
+        .option input[type='text'],
+        .criterion input[type='text'] {
+          min-width: 0;
+          flex: 1 1 12rem;
+        }
       }
     `,
   ],
@@ -411,7 +494,11 @@ export class ActivityEditorComponent {
       activity.correctOptionIds = [];
     }
     if (kind === 'project.submission') activity.artifactTypes = [];
-    if (kind === 'code.run') activity.starterCode = '';
+    if (kind === 'code.run') {
+      activity.starterCode = '';
+      activity.languageId = 'typescript';
+      activity.expectedOutput = '';
+    }
     next.push(activity);
     this.activitiesChange.emit(next);
   }
@@ -584,6 +671,40 @@ export class ActivityEditorComponent {
     const next = this.copy();
     next[index].starterCode = this.value(event);
     this.activitiesChange.emit(next);
+  }
+
+  protected setLanguage(index: number, event: Event): void {
+    const languageId = (event.target as HTMLSelectElement).value;
+    if (
+      languageId !== 'typescript' &&
+      languageId !== 'go' &&
+      languageId !== 'cpp' &&
+      languageId !== 'rust'
+    ) {
+      return;
+    }
+    const next = this.copy();
+    next[index].languageId = languageId;
+    this.activitiesChange.emit(next);
+  }
+
+  protected setExpectedOutput(index: number, event: Event): void {
+    const next = this.copy();
+    next[index].expectedOutput = this.value(event) || undefined;
+    this.activitiesChange.emit(next);
+  }
+
+  protected activityWarning(activity: EditableActivity): string {
+    if (!activity.prompt.trim())
+      return 'Add a prompt before saving this activity.';
+    if (activity.type === 'quiz.mcq') return this.quizWarning(activity);
+    if (
+      activity.type === 'project.submission' &&
+      !(activity.artifactTypes ?? []).length
+    ) {
+      return 'Name at least one kind of artifact a learner may hand in.';
+    }
+    return '';
   }
 
   private copy(): EditableActivity[] {

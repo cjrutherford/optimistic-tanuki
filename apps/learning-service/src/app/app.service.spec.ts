@@ -23,6 +23,7 @@ import {
   ACTIVITY_NOT_FOUND,
   LESSON_NOT_FOUND,
   NOT_ENROLLED,
+  OFFERING_NOT_FOUND,
   tutorialProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
 import { OfferingContentPatch } from './learning.repository';
@@ -31,7 +32,7 @@ import { join } from 'path';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
-  private readonly programs: ProgramTrack[] = sampleProgramTracks;
+  private readonly programs: ProgramTrack[] = [...sampleProgramTracks];
   private readonly attempts = new Map<string, Attempt>();
   private readonly evaluations = new Map<string, Evaluation>();
   private readonly progress = new Map<
@@ -43,6 +44,9 @@ class InMemoryLearningRepository implements LearningRepository {
 
   listPrograms() {
     return this.programs;
+  }
+  addProgram(track: ProgramTrack) {
+    this.programs.push(track);
   }
   createAttempt(input: Attempt) {
     this.attempts.set(input.id, input);
@@ -76,7 +80,7 @@ class InMemoryLearningRepository implements LearningRepository {
       profileId,
       updatedAt: new Date().toISOString(),
     } as LessonProgress & { userId: string; profileId: string };
-    this.progress.set(`${profileId}:${input.lessonId}`, value);
+    this.progress.set(`${profileId}:${enrolmentId}:${input.lessonId}`, value);
     return value;
   }
   /**
@@ -90,12 +94,13 @@ class InMemoryLearningRepository implements LearningRepository {
     lessonId: string,
     exercise: { id: string; points: number }
   ) {
-    const key = `${profileId}:${lessonId}`;
+    const key = `${profileId}:${enrolmentId}:${lessonId}`;
     const existing = this.progress.get(key);
     const already =
       existing?.completedExerciseIds.includes(exercise.id) ?? false;
     const value = {
       lessonId,
+      offeringId: this.enrolmentsById(enrolmentId)?.offeringId,
       completed: existing?.completed ?? false,
       completedExerciseIds: already
         ? existing?.completedExerciseIds ?? []
@@ -107,6 +112,11 @@ class InMemoryLearningRepository implements LearningRepository {
     } as LessonProgress & { userId: string; profileId: string };
     this.progress.set(key, value);
     return value;
+  }
+  private enrolmentsById(enrolmentId: string) {
+    return [...this.enrolments.values()].find(
+      (item) => item.id === enrolmentId
+    );
   }
   enrol(profileId: string, offeringId: string) {
     const key = `${profileId}:${offeringId}`;
@@ -172,24 +182,40 @@ class InMemoryLearningRepository implements LearningRepository {
     const index = this.programs.findIndex((track) => track.id === offeringId);
     if (index === -1) throw new Error(`Unknown offering: ${offeringId}`);
     const track = this.programs[index];
+    const nextOfferings = track.offerings.map((offering) => {
+      if (offering.id !== offeringId) return offering;
+      const nextOffering = { ...offering };
+      if (patch.displayName !== undefined) {
+        nextOffering.displayName = patch.displayName;
+      }
+      if (patch.description !== undefined) {
+        nextOffering.description = patch.description;
+      }
+      if (patch.audience !== undefined) {
+        if (patch.audience === null) delete nextOffering.audience;
+        else nextOffering.audience = patch.audience;
+      }
+      if (patch.outcome !== undefined) {
+        if (patch.outcome === null) delete nextOffering.outcome;
+        else nextOffering.outcome = patch.outcome;
+      }
+      if (patch.modules !== undefined) {
+        nextOffering.modules = patch.modules;
+      }
+      if (patch.activities !== undefined) {
+        nextOffering.activities = patch.activities;
+      }
+      if (patch.status !== undefined) {
+        nextOffering.status = patch.status;
+      }
+      return nextOffering;
+    });
     const updated: ProgramTrack = {
       ...track,
       ...(patch.displayName !== undefined
         ? { displayName: patch.displayName }
         : {}),
-      offerings: track.offerings.map((offering) =>
-        offering.id === offeringId
-          ? {
-              ...offering,
-              ...(patch.displayName !== undefined
-                ? { displayName: patch.displayName }
-                : {}),
-              ...(patch.description !== undefined
-                ? { description: patch.description }
-                : {}),
-            }
-          : offering
-      ),
+      offerings: nextOfferings,
     };
     this.programs[index] = updated;
     return updated;
@@ -220,6 +246,7 @@ class InMemoryLearningRepository implements LearningRepository {
 
 describe('AppService', () => {
   let service: AppService;
+  let repository: InMemoryLearningRepository;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -236,6 +263,7 @@ describe('AppService', () => {
     }).compile();
 
     service = moduleRef.get(AppService);
+    repository = moduleRef.get(InMemoryLearningRepository);
   });
 
   it('returns seeded programs', async () => {
@@ -243,6 +271,101 @@ describe('AppService', () => {
     expect(
       programs.map((program) => program.supportedLanguageIds?.[0])
     ).toEqual(expect.arrayContaining(['go', 'typescript', 'cpp', 'rust']));
+  });
+
+  it('passes Go execution mode without exposing verifier code on plain runs', async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = jest.fn().mockResolvedValue({
+      json: async () => ({
+        success: true,
+        output: '',
+        errors: [],
+        timedOut: false,
+        testsPassed: true,
+      }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      await service.runCode('go-t-02', '');
+      await service.runCode('go-tsg-02', '');
+
+      const testRequest = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(testRequest.verifier).toEqual({ executionMode: 'test' });
+      expect(testRequest.verifier.testCode).toBeUndefined();
+
+      const runRequest = JSON.parse(fetchMock.mock.calls[1][1].body);
+      expect(runRequest.verifier).toEqual({ executionMode: 'run' });
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('includes containing module ids in global challenge results', async () => {
+    const goTrack = (await service.listPrograms()).find(
+      (candidate) => candidate.id === 'go-foundations'
+    );
+    const goOffering = goTrack?.offerings[0];
+    expect(goOffering).toBeDefined();
+    repository.enrol('profile-global', goOffering!.id);
+
+    const result = await service.listChallenges({
+      profileId: 'profile-global',
+    });
+    const challenge = result.challenges.find(
+      (candidate) => candidate.languageId === 'go'
+    );
+
+    expect(challenge).toEqual(
+      expect.objectContaining({
+        trackId: expect.any(String),
+        moduleId: expect.any(String),
+        lessonId: expect.any(String),
+      })
+    );
+
+    const track = (await service.listPrograms()).find(
+      (candidate) => candidate.id === challenge?.trackId
+    );
+    const module = track?.offerings
+      .flatMap((offering) => offering.modules)
+      .find((candidate) => candidate.id === challenge?.moduleId);
+
+    expect(
+      module?.lessons.some((lesson) => lesson.id === challenge?.lessonId)
+    ).toBe(true);
+  });
+
+  it('reports actual enrollment for a track without programming challenges', async () => {
+    const source = sampleProgramTracks[0];
+    const track: ProgramTrack = {
+      ...source,
+      id: 'reading-only-track',
+      supportedLanguageIds: undefined,
+      offerings: source.offerings.map((offering) => ({
+        ...offering,
+        id: `reading-${offering.id}`,
+      })),
+    };
+    repository.addProgram(track);
+
+    const anonymous = await service.listChallenges({
+      trackId: track.id,
+    });
+    expect(anonymous).toMatchObject({
+      challenges: [],
+      enrolledCount: 0,
+    });
+
+    repository.enrol('profile-1', track.offerings[0].id);
+    const enrolled = await service.listChallenges({
+      trackId: track.id,
+      profileId: 'profile-1',
+    });
+    expect(enrolled).toMatchObject({
+      challenges: [],
+      enrolledCount: 1,
+    });
   });
 
   it('records evaluation results for submitted attempts', async () => {
@@ -388,6 +511,41 @@ describe('AppService', () => {
       expect(progress.lessonId).toBe('go-foundations-basics-variables-types');
     });
 
+    it('uses an active later offering for a legacy progress request', async () => {
+      const source = sampleProgramTracks.find(
+        (track) => track.id === 'go-foundations'
+      )!;
+      const duplicate: ProgramTrack = {
+        ...source,
+        id: 'go-duplicate',
+        offerings: [
+          {
+            ...source.offerings[0],
+            id: 'go-duplicate-hidden',
+            status: 'draft',
+          },
+          {
+            ...source.offerings[0],
+            id: 'go-duplicate-published',
+            status: 'published',
+          },
+        ],
+      };
+      repository.addProgram(duplicate);
+      await service.enrol('profile-duplicate', 'go-duplicate-published');
+
+      const progress = await service.saveProgress(
+        'profile-duplicate',
+        'user-duplicate',
+        {
+          lessonId: duplicate.offerings[0].modules[0].lessons[0].id,
+          completed: true,
+        }
+      );
+
+      expect(progress.offeringId).toBe('go-duplicate-published');
+    });
+
     it('stops progress after withdrawal', async () => {
       await service.enrol('profile-withdrawn', 'go-foundations-100-core');
       await service.withdraw('profile-withdrawn', 'go-foundations-100-core');
@@ -498,12 +656,135 @@ describe('AppService', () => {
       const updated = await service.updateOffering(track.id, {
         displayName: 'Watercolor Fundamentals',
         description: 'A gentler on-ramp than the old title implied.',
+        audience: 'Curious beginners.',
+        outcome: 'Mix three pigments deliberately.',
       });
 
       expect(updated.offerings[0].displayName).toBe('Watercolor Fundamentals');
       expect(updated.offerings[0].description).toBe(
         'A gentler on-ramp than the old title implied.'
       );
+      expect(updated.offerings[0].audience).toBe('Curious beginners.');
+      expect(updated.offerings[0].outcome).toBe(
+        'Mix three pigments deliberately.'
+      );
+
+      const cleared = await service.updateOffering(track.id, {
+        audience: null,
+      });
+
+      expect(cleared.offerings[0].audience).toBeUndefined();
+      expect(cleared.offerings[0].outcome).toBe(
+        'Mix three pigments deliberately.'
+      );
+    });
+
+    it('keeps outline and server-side activity content through metadata and publication updates', async () => {
+      const { track } = await service.createOffering('designer-profile', {
+        displayName: 'Authoring regression',
+        subjectId: 'programming',
+      });
+      const modules = [
+        {
+          id: 'module-1',
+          title: 'First module',
+          lessons: [
+            {
+              id: 'lesson-1',
+              title: 'First lesson',
+              slug: 'first-lesson',
+              content: [{ format: 'markdown' as const, body: '# Words' }],
+            },
+          ],
+        },
+      ];
+      const activities = [
+        {
+          id: 'activity-1',
+          type: 'code.run' as const,
+          prompt: 'Print the answer.',
+          lessonId: 'lesson-1',
+          starterCode: 'console.log("ok")',
+          languageId: 'typescript' as const,
+          expectedOutput: 'ok',
+        },
+      ];
+
+      await service.updateOffering(track.id, { modules, activities });
+      await service.updateOffering(track.id, {
+        description: 'Metadata does not replace the course document.',
+      });
+      await service.updateOffering(track.id, { status: 'published' });
+
+      const ownerPublished = await service.getOfferingDetail(track.id, {
+        profileId: 'designer-profile',
+      });
+      expect(ownerPublished.offering.modules).toEqual(modules);
+      expect(ownerPublished.offering.activities).toEqual(activities);
+
+      await service.setCoEditors(track.id, [
+        '123e4567-e89b-42d3-a456-426614174002',
+      ]);
+      const coEditorPublished = await service.getOfferingDetail(track.id, {
+        profileId: '123e4567-e89b-42d3-a456-426614174002',
+      });
+      expect(coEditorPublished.offering.activities).toEqual(activities);
+
+      const publicPublished = await service.getOfferingDetail(track.id, {});
+      expect(publicPublished.offering.modules).toEqual(modules);
+      expect(publicPublished.offering.activities[0]).not.toHaveProperty(
+        'expectedOutput'
+      );
+      const publicCatalog = await service.listCatalog({});
+      const publicOffering = publicCatalog
+        .flatMap((program) => program.offerings)
+        .find((offering) => offering.id === track.id);
+      expect(publicOffering?.modules).toEqual(modules);
+      const publicLesson = await service.getLesson(
+        track.id,
+        'lesson-1',
+        {},
+        track.id,
+        'module-1'
+      );
+      expect(publicLesson.content).toBe('# Words');
+      expect(publicLesson.activities).toEqual([
+        {
+          id: 'activity-1',
+          type: 'code.run',
+          prompt: 'Print the answer.',
+          lessonId: 'lesson-1',
+          starterCode: 'console.log("ok")',
+          languageId: 'typescript',
+        },
+      ]);
+
+      await service.updateOffering(track.id, { status: 'draft' });
+      const ownerDraft = await service.getOfferingDetail(track.id, {
+        profileId: 'designer-profile',
+      });
+      expect(ownerDraft.offering.modules).toEqual(modules);
+      expect(ownerDraft.offering.activities).toEqual(activities);
+    });
+
+    it('normalizes co-editor UUIDs and refuses malformed updates without persistence', async () => {
+      const { track } = await service.createOffering('designer-profile', {
+        displayName: 'Co-editor validation',
+        subjectId: 'art',
+      });
+      const coEditorId = '123e4567-e89b-42d3-a456-426614174002';
+
+      await service.setCoEditors(track.id, [` ${coEditorId} `, coEditorId]);
+      expect(
+        (await service.getOfferingOwnership(track.id))?.coEditorProfileIds
+      ).toEqual([coEditorId]);
+
+      await expect(
+        service.setCoEditors(track.id, ['not-a-uuid'])
+      ).rejects.toMatchObject({ error: { statusCode: 400 } });
+      expect(
+        (await service.getOfferingOwnership(track.id))?.coEditorProfileIds
+      ).toEqual([coEditorId]);
     });
 
     it('deletes an offering and its ownership record', async () => {
@@ -517,6 +798,12 @@ describe('AppService', () => {
       const programs = await service.listPrograms();
       expect(programs.some((program) => program.id === track.id)).toBe(false);
       expect(await service.getOfferingOwnership(track.id)).toBeUndefined();
+    });
+
+    it('returns a structured not-found error for an unknown offering', async () => {
+      await expect(
+        service.deleteOffering('missing-offering')
+      ).rejects.toMatchObject({ error: { code: OFFERING_NOT_FOUND } });
     });
   });
 });
@@ -704,6 +991,15 @@ describe('AppService.getDashboard with a course that has no language', () => {
           useValue: {
             listPrograms: () => [track],
             getProgress: () => [],
+            listEnrolments: () => [
+              {
+                id: 'enrolment-art-1',
+                profileId: 'profile-1',
+                offeringId: 'art-1',
+                status: 'active',
+                enrolledAt: '2026-01-01T00:00:00.000Z',
+              },
+            ],
             getOwnership: () => undefined,
           } as Partial<LearningRepository>,
         },
@@ -715,6 +1011,99 @@ describe('AppService.getDashboard with a course that has no language', () => {
     expect(dashboard).toHaveLength(1);
     expect(dashboard[0].totals.exercises).toBe(0);
     expect(dashboard[0].totals.points).toBe(0);
+  });
+});
+
+describe('AppService.getDashboard offering identity', () => {
+  it('keeps colliding lesson ids and progress separate per enrolled offering', async () => {
+    const draft = buildDraftProgramTrack('track-shared', {
+      displayName: 'Shared Track',
+      subjectId: 'art',
+    });
+    const lesson = (body: string) => ({
+      id: 'same-lesson',
+      title: body,
+      slug: 'same-lesson',
+      content: [{ format: 'markdown' as const, body }],
+    });
+    const firstOffering = {
+      ...draft.offerings[0],
+      id: 'offering-first',
+      status: 'published' as const,
+      modules: [
+        {
+          id: 'module-first',
+          title: 'First',
+          lessons: [lesson('First')],
+        },
+      ],
+    };
+    const secondOffering = {
+      ...draft.offerings[0],
+      id: 'offering-second',
+      status: 'published' as const,
+      modules: [
+        {
+          id: 'module-second',
+          title: 'Second',
+          lessons: [lesson('Second')],
+        },
+      ],
+    };
+    const track = {
+      ...draft,
+      offerings: [firstOffering, secondOffering],
+    };
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AppService,
+        { provide: GradingService, useValue: gradingStub() },
+        {
+          provide: LEARNING_REPOSITORY,
+          useValue: {
+            listPrograms: () => [track],
+            listEnrolments: () => [
+              {
+                id: 'enrolment-first',
+                profileId: 'profile-1',
+                offeringId: 'offering-first',
+                status: 'active',
+                enrolledAt: '2026-01-01T00:00:00.000Z',
+              },
+              {
+                id: 'enrolment-second',
+                profileId: 'profile-1',
+                offeringId: 'offering-second',
+                status: 'active',
+                enrolledAt: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+            getProgress: () => [
+              {
+                lessonId: 'same-lesson',
+                offeringId: 'offering-first',
+                completed: true,
+                completedExerciseIds: [],
+                points: 3,
+                updatedAt: '2026-01-01T00:00:00.000Z',
+              },
+            ],
+            getOwnership: () => undefined,
+          } as Partial<LearningRepository>,
+        },
+      ],
+    }).compile();
+
+    const dashboard = await moduleRef.get(AppService).getDashboard('profile-1');
+
+    expect(dashboard.map((entry) => entry.offeringId)).toEqual([
+      'offering-first',
+      'offering-second',
+    ]);
+    expect(dashboard[0].progress.completedLessons).toBe(1);
+    expect(dashboard[0].progress.points).toBe(3);
+    expect(dashboard[1].progress.completedLessons).toBe(0);
+    expect(dashboard[1].progress.points).toBe(0);
   });
 });
 
@@ -772,7 +1161,10 @@ describe('AppService authored content', () => {
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
 
-  async function serviceOver(tracks: ProgramTrack[]) {
+  async function serviceOver(
+    tracks: ProgramTrack[],
+    coEditorProfileIds: string[] = []
+  ) {
     const moduleRef = await Test.createTestingModule({
       providers: [
         AppService,
@@ -783,8 +1175,11 @@ describe('AppService authored content', () => {
           useValue: {
             listPrograms: () => tracks,
             getProgress: () => [],
+            listEnrolments: () => [],
             getOwnership: (offeringId: string) =>
-              offeringId === 'art-1' ? ownership : undefined,
+              offeringId === 'art-1'
+                ? { ...ownership, coEditorProfileIds }
+                : undefined,
             enrol: (profileId: string, offeringId: string) => ({
               id: 'e-1',
               profileId,
@@ -817,6 +1212,128 @@ describe('AppService authored content', () => {
     await expect(
       (await serviceOver([track])).getLesson('art-1', 'art-lesson-1')
     ).resolves.toBeDefined();
+  });
+
+  it('uses the requested offering when tracks contain colliding lesson ids', async () => {
+    const first = art('published', 'first offering');
+    const second = {
+      ...first,
+      offerings: [
+        {
+          ...first.offerings[0],
+          id: 'art-2',
+          displayName: 'Second offering',
+          modules: [
+            {
+              ...first.offerings[0].modules[0],
+              lessons: [
+                {
+                  ...first.offerings[0].modules[0].lessons[0],
+                  content: [{ format: 'markdown', body: 'second offering' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as ProgramTrack;
+    const track: ProgramTrack = {
+      ...first,
+      offerings: [first.offerings[0], second.offerings[0]],
+    };
+    const service = await serviceOver([track]);
+
+    await expect(
+      service.getLesson('art-1', 'art-lesson-1', {}, 'art-2')
+    ).resolves.toMatchObject({ content: 'second offering' });
+    await expect(
+      service.getLesson('art-1', 'art-lesson-1', {}, 'missing-offering')
+    ).rejects.toMatchObject({ error: { code: LESSON_NOT_FOUND } });
+    await expect(
+      service.getLesson('art-1', 'art-lesson-1', {}, 'art-2', 'missing-module')
+    ).rejects.toMatchObject({ error: { code: LESSON_NOT_FOUND } });
+  });
+
+  it('skips a hidden legacy match and serves the later published rendition', async () => {
+    const draft = art('draft', 'private words');
+    const published = {
+      ...draft,
+      offerings: [
+        {
+          ...draft.offerings[0],
+          id: 'art-2',
+          status: 'published' as const,
+          modules: draft.offerings[0].modules.map((module) => ({
+            ...module,
+            lessons: module.lessons.map((lesson) => ({
+              ...lesson,
+              content: [{ format: 'markdown', body: 'public words' }],
+            })),
+          })),
+        },
+      ],
+    } as unknown as ProgramTrack;
+    const track: ProgramTrack = {
+      ...draft,
+      offerings: [draft.offerings[0], published.offerings[0]],
+    };
+
+    await expect(
+      (await serviceOver([track])).getLesson('art-1', 'art-lesson-1', {})
+    ).resolves.toMatchObject({ content: 'public words' });
+  });
+
+  it('lets an authorized caller take the first visible draft rendition', async () => {
+    const draft = art('draft', 'private words');
+    const published = {
+      ...draft,
+      offerings: [
+        {
+          ...draft.offerings[0],
+          id: 'art-2',
+          status: 'published' as const,
+        },
+      ],
+    } as unknown as ProgramTrack;
+    const track: ProgramTrack = {
+      ...draft,
+      offerings: [draft.offerings[0], published.offerings[0]],
+    };
+
+    await expect(
+      (
+        await serviceOver([track])
+      ).getLesson('art-1', 'art-lesson-1', { profileId: 'author-profile' })
+    ).resolves.toMatchObject({ content: 'private words' });
+  });
+
+  it('does not select any legacy match when none is visible', async () => {
+    const first = art('draft', 'private one');
+    const second = {
+      ...first,
+      offerings: [
+        {
+          ...first.offerings[0],
+          id: 'art-2',
+          status: 'draft' as const,
+          modules: first.offerings[0].modules.map((module) => ({
+            ...module,
+            lessons: module.lessons.map((lesson) => ({
+              ...lesson,
+              content: [{ format: 'markdown', body: 'private two' }],
+            })),
+          })),
+        },
+      ],
+    } as unknown as ProgramTrack;
+
+    await expect(
+      (
+        await serviceOver([
+          { ...first, offerings: [first.offerings[0], second.offerings[0]] },
+        ])
+      ).getLesson('art-1', 'art-lesson-1', { profileId: 'learner' })
+    ).rejects.toMatchObject({ error: { code: LESSON_NOT_FOUND } });
   });
 
   describe('who sees a draft', () => {
@@ -950,9 +1467,17 @@ describe('AppService authored content', () => {
     it('refuses an unfinished course', async () => {
       const service = await serviceOver([art('draft', 'words')]);
 
-      await expect(service.enrol('learner', 'art-1')).rejects.toThrow(
-        /not published/
-      );
+      await expect(service.enrol('learner', 'art-1')).rejects.toMatchObject({
+        error: { code: OFFERING_NOT_FOUND, offeringId: 'art-1' },
+      });
+    });
+
+    it('refuses an unknown course with the same safe not-found code', async () => {
+      const service = await serviceOver([art('published', 'words')]);
+
+      await expect(service.enrol('learner', 'missing')).rejects.toMatchObject({
+        error: { code: OFFERING_NOT_FOUND, offeringId: 'missing' },
+      });
     });
 
     it('allows a published one', async () => {
@@ -1003,8 +1528,14 @@ describe('AppService authored content', () => {
       return track;
     }
 
-    async function activitiesSeenBy(profileId?: string) {
-      const service = await serviceOver([marked('published')]);
+    async function activitiesSeenBy(
+      profileId?: string,
+      coEditorProfileIds: string[] = []
+    ) {
+      const service = await serviceOver(
+        [marked('published')],
+        coEditorProfileIds
+      );
       const detail = await service.getOfferingDetail(
         'art-1',
         profileId ? { profileId } : {}
@@ -1036,6 +1567,17 @@ describe('AppService authored content', () => {
      */
     it('gives the author their own answers back', async () => {
       const [quiz, writing] = await activitiesSeenBy('author-profile');
+
+      expect(quiz['correctOptionIds']).toEqual(['o1']);
+      expect(writing['sampleResponse']).toBe(
+        'Green is mixed from blue and yellow.'
+      );
+    });
+
+    it('gives a co-editor the answers they must preserve when saving', async () => {
+      const [quiz, writing] = await activitiesSeenBy('co-editor', [
+        'co-editor',
+      ]);
 
       expect(quiz['correctOptionIds']).toEqual(['o1']);
       expect(writing['sampleResponse']).toBe(
@@ -1308,6 +1850,17 @@ describe('AppService.answerActivity', () => {
     rubric,
   };
 
+  const codeRun = {
+    type: 'code.run',
+    id: 'code-1',
+    prompt: 'Print ok.',
+    lessonId: 'l1',
+    languageId: 'typescript',
+    starterCode: "console.log('ok')",
+    expectedOutput: 'ok',
+    verifier: { validationPattern: '^ok$' },
+  };
+
   async function build(
     activities: unknown[],
     options: { enrolled?: boolean; grade?: unknown } = {}
@@ -1467,5 +2020,137 @@ describe('AppService.answerActivity', () => {
 
     expect(result.graded).toBe(true);
     expect(result.progress).toBeUndefined();
+  });
+
+  describe('code.run', () => {
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        json: async () => ({
+          success: true,
+          output: 'ok\n',
+          errors: [],
+          timedOut: false,
+          testsPassed: true,
+        }),
+      }) as unknown as typeof fetch;
+    });
+
+    afterEach(() => {
+      (global.fetch as unknown as jest.Mock | undefined)?.mockRestore?.();
+    });
+
+    it('runs authored code without creating an attempt or progress row', async () => {
+      const { service } = await build([codeRun]);
+
+      const result = await service.runCode(
+        'code-1',
+        "console.log('ok')",
+        'p1',
+        'art-1'
+      );
+
+      expect(result).toMatchObject({ output: 'ok\n', testsPassed: true });
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          body: expect.not.stringContaining('expectedOutput'),
+        })
+      );
+    });
+
+    it('marks correct authored output and records progress on submit', async () => {
+      const { service } = await build([codeRun]);
+
+      const result = await service.answerActivity(
+        'p1',
+        'u1',
+        'code-1',
+        "console.log('ok')",
+        'art-1'
+      );
+
+      expect(result).toMatchObject({
+        passed: true,
+        score: 1,
+        maxScore: 1,
+        output: 'ok\n',
+      });
+      expect(result.progress).toMatchObject({
+        lessonId: 'l1',
+        completedExerciseIds: ['code-1'],
+      });
+    });
+
+    it('returns a clear failure for compile or runtime failure without awarding points', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: false,
+          output: '',
+          errors: ['Compilation failed'],
+          timedOut: false,
+          testsPassed: false,
+        }),
+      });
+      const { service } = await build([codeRun]);
+
+      const result = await service.answerActivity(
+        'p1',
+        'u1',
+        'code-1',
+        'not valid',
+        'art-1'
+      );
+
+      expect(result).toMatchObject({
+        passed: false,
+        awardedPoints: 0,
+        errors: ['Compilation failed'],
+      });
+      expect(result.progress).toMatchObject({
+        completedExerciseIds: [],
+        points: 0,
+      });
+    });
+
+    it('does not pass when execution succeeds with the wrong output', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          output: 'wrong\n',
+          errors: [],
+          timedOut: false,
+          testsPassed: false,
+        }),
+      });
+      const { service } = await build([codeRun]);
+
+      const result = await service.answerActivity(
+        'p1',
+        'u1',
+        'code-1',
+        "console.log('wrong')",
+        'art-1'
+      );
+
+      expect('passed' in result && result.passed).toBe(false);
+      expect('awardedPoints' in result && result.awardedPoints).toBe(0);
+    });
+
+    it('requires enrolment for authored runs and submits', async () => {
+      const { service } = await build([codeRun], { enrolled: false });
+
+      await expect(
+        service.runCode('code-1', "console.log('ok')", 'p1', 'art-1')
+      ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
+      await expect(
+        service.answerActivity(
+          'p1',
+          'u1',
+          'code-1',
+          "console.log('ok')",
+          'art-1'
+        )
+      ).rejects.toMatchObject({ error: { code: NOT_ENROLLED } });
+    });
   });
 });

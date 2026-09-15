@@ -176,6 +176,7 @@ export function validateThemeContrast(
     foreground: string;
     background: string;
     primary: string;
+    primaryForeground?: string;
     secondary: string;
     muted: string;
   },
@@ -233,17 +234,21 @@ export function validateThemeContrast(
     );
   }
 
-  // White text on primary color (for primary buttons)
-  const whiteOnPrimary = generateContrastReport(
-    '#ffffff',
+  // The semantic foreground token on primary color (for primary buttons).
+  // Use the same suggested token that theme generation emits, rather than
+  // assuming every primary surface is dark enough for white text.
+  const primaryForeground =
+    colors.primaryForeground ?? getSuggestedTextColor(colors.primary).color;
+  const primaryTextOnPrimary = generateContrastReport(
+    primaryForeground,
     colors.primary,
     minRatio
   );
-  reports.push(whiteOnPrimary);
-  if (!whiteOnPrimary.isValid) {
-    violations.push(whiteOnPrimary);
-    autoFixes['whiteOnPrimary'] = ensureContrast(
-      '#ffffff',
+  reports.push(primaryTextOnPrimary);
+  if (!primaryTextOnPrimary.isValid) {
+    violations.push(primaryTextOnPrimary);
+    autoFixes['primaryForeground'] = ensureContrast(
+      primaryForeground,
       colors.primary,
       minRatio
     );

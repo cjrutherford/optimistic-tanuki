@@ -11,6 +11,10 @@ export interface Diagnostic {
 const POSITIONED =
   /^\s*(?:\.\/)?[\w./\\-]+?\.(?:go|cpp|cc|rs|ts|js|c|h|hpp):(\d+):(\d+):\s*(.*)$/;
 
+// TypeScript's compiler reports positions as "main.ts(6,2): error TS...".
+const TYPESCRIPT_POSITIONED =
+  /^\s*(?:\.\/)?[\w./\\-]+?\.tsx?\((\d+),(\d+)\):\s*(.*)$/;
+
 // Rust puts the message on one line and the position on the next:
 //   error[E0425]: cannot find value `x` in this scope
 //    --> main.rs:3:5
@@ -43,6 +47,17 @@ export function parseCompilerErrors(errors: readonly string[]): Diagnostic[] {
   for (const raw of errors) {
     const text = raw.replace(/\s+$/, '');
     if (!text.trim()) continue;
+
+    const typescript = TYPESCRIPT_POSITIONED.exec(text);
+    if (typescript) {
+      out.push({
+        line: Number(typescript[1]),
+        column: Number(typescript[2]),
+        message: typescript[3].replace(/^error\s+/i, '').trim(),
+        severity: severityOf(typescript[3]),
+      });
+      continue;
+    }
 
     const arrow = RUST_ARROW.exec(text);
     if (arrow) {

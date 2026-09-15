@@ -695,9 +695,13 @@ export class AuthenticationController {
   }
 
   private browserSessionCookieOptions() {
+    const configuredSecure = process.env.AUTH_COOKIE_SECURE;
     return {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        configuredSecure === undefined
+          ? process.env.NODE_ENV === 'production'
+          : configuredSecure === 'true',
       sameSite: 'lax' as const,
       path: '/',
       maxAge: 60 * 60 * 1000,

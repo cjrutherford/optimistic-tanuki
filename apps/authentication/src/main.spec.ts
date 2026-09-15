@@ -50,4 +50,36 @@ describe('bootstrap', () => {
     expect(createMicroserviceSpy).toHaveBeenCalled();
     expect(listenSpy).toHaveBeenCalled();
   });
+
+  it('defaults the bootstrap HTTP listener to loopback', async () => {
+    const originalHost = process.env.BOOTSTRAP_HTTP_HOST;
+    delete process.env.BOOTSTRAP_HTTP_HOST;
+
+    try {
+      await bootstrap();
+      expect(listenSpy.mock.calls[0]).toEqual([3099, '127.0.0.1']);
+    } finally {
+      if (originalHost === undefined) {
+        delete process.env.BOOTSTRAP_HTTP_HOST;
+      } else {
+        process.env.BOOTSTRAP_HTTP_HOST = originalHost;
+      }
+    }
+  });
+
+  it('binds the bootstrap HTTP listener to an explicitly configured host', async () => {
+    const originalHost = process.env.BOOTSTRAP_HTTP_HOST;
+    process.env.BOOTSTRAP_HTTP_HOST = '10.0.0.8';
+
+    try {
+      await bootstrap();
+      expect(listenSpy.mock.calls[0]).toEqual([3099, '10.0.0.8']);
+    } finally {
+      if (originalHost === undefined) {
+        delete process.env.BOOTSTRAP_HTTP_HOST;
+      } else {
+        process.env.BOOTSTRAP_HTTP_HOST = originalHost;
+      }
+    }
+  });
 });

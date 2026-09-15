@@ -11,6 +11,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
   isLessonNotFound,
   isOfferingNotFound,
   isNotEnrolled,
+  OfferingTextPatch,
   PublicationStatusSchema,
 } from '@optimistic-tanuki/learning-domain';
 import { Throttle } from '@nestjs/throttler';
@@ -35,6 +37,7 @@ import { Public } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
 import { OfferingAuthorizationService } from './offering-authorization.service';
 import { IdentityThrottlerGuard } from './identity-throttler.guard';
+import { SetCoEditorsDto } from './dto/set-co-editors.dto';
 
 const limitFromEnv = (envKey: string, fallback: number): number => {
   const raw = process.env[envKey];
@@ -101,6 +104,26 @@ export class LearningController {
     );
   }
 
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get('challenges')
+  async listChallenges(
+    @Req() req: { user?: { userId?: string; profileId?: string } },
+    @Query('trackId') trackId?: string
+  ) {
+    const viewer = await this.resolveViewer(req);
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.ListChallenges },
+        {
+          trackId: trackId || undefined,
+          profileId: viewer.profileId,
+          viewer,
+        }
+      )
+    );
+  }
+
   // The subjects in this caller's catalog, named by the server so the rule
   // for naming them is not duplicated in the browser.
   @Public()
@@ -158,14 +181,22 @@ export class LearningController {
   async getLesson(
     @Param('trackId') trackId: string,
     @Param('lessonId') lessonId: string,
-    @Req() req: { user?: { userId?: string; profileId?: string } }
+    @Req() req: { user?: { userId?: string; profileId?: string } },
+    @Query('offeringId') offeringId?: string,
+    @Query('moduleId') moduleId?: string
   ) {
     const viewer = await this.resolveViewer(req);
     return await this.asNotFoundWhenUnknown(() =>
       firstValueFrom(
         this.learningService.send(
           { cmd: LearningCommands.GetLesson },
-          { trackId, lessonId, viewer }
+          {
+            trackId,
+            lessonId,
+            ...(offeringId ? { offeringId } : {}),
+            ...(moduleId ? { moduleId } : {}),
+            viewer,
+          }
         )
       )
     );
@@ -187,7 +218,10 @@ export class LearningController {
     } catch (error) {
       const payload = (error as { error?: unknown })?.error ?? error;
       if (isLessonNotFound(payload) || isOfferingNotFound(payload)) {
-        throw new NotFoundException(payload);
+        // Keep the public response identical for unknown and private resources.
+        // The service payload is useful internally, but returning it would
+        // echo which identifier was supplied.
+        throw new NotFoundException('Learning resource not found');
       }
       throw error;
     }
@@ -332,10 +366,17 @@ export class LearningController {
   @Put('me/progress')
   async saveMyProgress(
     @Req() req: { user: { userId: string } },
-    @Body() body: { lessonId?: unknown; completed?: unknown }
+    @Body()
+    body: {
+      lessonId?: unknown;
+      completed?: unknown;
+      offeringId?: unknown;
+    }
   ) {
     const lessonId = typeof body?.lessonId === 'string' ? body.lessonId : '';
     if (!lessonId) throw new BadRequestException('lessonId is required');
+    const offeringId =
+      typeof body?.offeringId === 'string' ? body.offeringId : undefined;
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
@@ -348,6 +389,7 @@ export class LearningController {
             profileId,
             lessonId,
             completed: body?.completed !== false,
+            ...(offeringId ? { offeringId } : {}),
           }
         )
       )
@@ -359,9 +401,25 @@ export class LearningController {
   @UseGuards(AuthGuard, IdentityThrottlerGuard)
   @Throttle(RUN_THROTTLE)
   @Post('runs')
-  async runCode(@Body() body: { activityId: string; code: string }) {
-    return await firstValueFrom(
-      this.learningService.send({ cmd: LearningCommands.RunCode }, body)
+  async runCode(
+    @Body() body: { activityId: string; code: string; offeringId?: string },
+    @Req() req: { user: { userId: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await this.asConflictWhenNotEnrolled(
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.RunCode },
+          {
+            activityId: body.activityId,
+            code: body.code,
+            profileId,
+            ...(body.offeringId ? { offeringId: body.offeringId } : {}),
+          }
+        )
+      )
     );
   }
 
@@ -371,7 +429,7 @@ export class LearningController {
   @Post('exercises/:activityId/submit')
   async submitExercise(
     @Param('activityId') activityId: string,
-    @Body() body: { code: string },
+    @Body() body: { code: string; offeringId?: string },
     @Req() req: { user: { userId: string } }
   ) {
     const profileId = await this.learningProfiles.resolveProfileId(
@@ -388,6 +446,7 @@ export class LearningController {
             profileId,
             activityId,
             code: body.code,
+            ...(body.offeringId ? { offeringId: body.offeringId } : {}),
           }
         )
       )
@@ -433,7 +492,7 @@ export class LearningController {
   @Post('activities/:activityId/answer')
   async answerActivity(
     @Param('activityId') activityId: string,
-    @Body() body: { submission: unknown },
+    @Body() body: { submission: unknown; offeringId?: string },
     @Req() req: { user: { userId: string } }
   ) {
     const profileId = await this.learningProfiles.resolveProfileId(
@@ -448,6 +507,7 @@ export class LearningController {
             userId: req.user.userId,
             activityId,
             submission: body?.submission,
+            ...(body?.offeringId ? { offeringId: body.offeringId } : {}),
           }
         )
       )
@@ -465,10 +525,12 @@ export class LearningController {
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.Enrol },
-        { profileId, offeringId: body.offeringId }
+    return await this.asNotFoundWhenUnknown(() =>
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.Enrol },
+          { profileId, offeringId: body.offeringId }
+        )
       )
     );
   }
@@ -607,8 +669,8 @@ export class LearningController {
     body: {
       displayName?: string;
       description?: string;
-      audience?: string;
-      outcome?: string;
+      audience?: OfferingTextPatch;
+      outcome?: OfferingTextPatch;
       modules?: unknown[];
       activities?: unknown[];
     },
@@ -711,6 +773,12 @@ export class LearningController {
     const profileId = await this.learningProfiles.resolveProfileId(
       req.user.userId
     );
+    // Deletion is only meaningful for authored offerings. Resolve the
+    // ownership row before the role check so an unknown id is a 404 rather
+    // than an EmptyError from a microservice response or a misleading 403.
+    if (!(await this.offeringAuthorization.getOwnership(offeringId))) {
+      throw new NotFoundException(`Unknown offering: ${offeringId}`);
+    }
     const allowed = await this.offeringAuthorization.authorize(
       profileId,
       req.user.profileId,
@@ -722,10 +790,12 @@ export class LearningController {
         'Only the owning profile, learning_admin, or a platform owner may delete an offering.'
       );
     }
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.DeleteOffering },
-        { offeringId }
+    return await this.asNotFoundWhenUnknown(() =>
+      firstValueFrom(
+        this.learningService.send(
+          { cmd: LearningCommands.DeleteOffering },
+          { offeringId }
+        )
       )
     );
   }
@@ -734,7 +804,7 @@ export class LearningController {
   @Put('offerings/:offeringId/co-editors')
   async setCoEditors(
     @Param('offeringId') offeringId: string,
-    @Body() body: { coEditorProfileIds: string[] },
+    @Body() body: SetCoEditorsDto,
     @Req() req: { user: { userId: string; profileId?: string } }
   ) {
     const profileId = await this.learningProfiles.resolveProfileId(

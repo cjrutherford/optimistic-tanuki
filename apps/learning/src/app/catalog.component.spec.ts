@@ -76,6 +76,19 @@ describe('CatalogComponent', () => {
     expect(element.textContent).toContain('All about go.');
   });
 
+  it('keeps challenges discoverable beside the catalog', async () => {
+    const { element } = await render([track('go', 'programming')]);
+
+    expect(element.textContent).toContain('Challenges');
+  });
+
+  it('keeps Menu and Challenges controls together in the course shell', async () => {
+    const { element } = await render([track('go', 'programming')]);
+
+    expect(element.querySelector('.menu-toggle')).toBeTruthy();
+    expect(element.querySelector('.challenge-toggle')).toBeTruthy();
+  });
+
   it('says nothing about programming in its own copy', async () => {
     const { element } = await render([track('go', 'programming')]);
     const header = element.querySelector('header')?.textContent ?? '';

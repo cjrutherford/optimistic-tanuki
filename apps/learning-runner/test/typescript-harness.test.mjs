@@ -1,34 +1,85 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { createRequire } from 'node:module';
 import {
   TYPESCRIPT_HARNESS,
   RESULT_MARKER,
   splitTestResults,
   allTestsPassed,
 } from '../lib/typescript-harness.mjs';
+import {
+  buildSource,
+  prepare,
+  TYPESCRIPT_COMPILER_CONFIG,
+  TYPESCRIPT_CONFIG_FILE,
+} from '../lib/run-plan.mjs';
 
 const run = promisify(execFile);
+const require = createRequire(import.meta.url);
+const TYPESCRIPT_COMPILER = require.resolve('typescript/lib/tsc.js');
+const SCRATCH = join(process.cwd(), '.typescript-harness-test-scratch');
+
+test('does not hand a TypeScript file to Node native stripping', () => {
+  const plan = prepare('typescript', false);
+
+  assert.deepEqual(plan.compile, [
+    [
+      'node',
+      'node_modules/typescript/lib/tsc.js',
+      '--project',
+      TYPESCRIPT_CONFIG_FILE,
+    ],
+  ]);
+  assert.deepEqual(plan.run, [
+    'node',
+    '--enable-source-maps',
+    'compiled/main.js',
+  ]);
+  assert.doesNotMatch(plan.run.join(' '), /experimental-strip-types/);
+});
+
+test('keeps non-TypeScript dispatch on its existing toolchains', () => {
+  assert.deepEqual(prepare('go', false).run, ['./main']);
+  assert.deepEqual(prepare('rust', false), {
+    compile: [['rustc', '--edition', '2021', 'main.rs', '-o', 'main']],
+    run: ['./main'],
+  });
+  assert.deepEqual(prepare('cpp', false, '/opt/catch2'), {
+    compile: [['g++', '-std=c++17', 'main.cpp', '-o', 'main']],
+    run: ['./main'],
+  });
+});
 
 /** Runs harness + code the way the runner does, and reads the results back. */
 async function harness(body) {
-  const dir = await mkdtemp(join(tmpdir(), 'harness-test-'));
+  await mkdir(SCRATCH, { recursive: true });
+  const dir = await mkdtemp(join(SCRATCH, 'harness-test-'));
   try {
     const file = join(dir, 'main.ts');
-    await writeFile(file, `${TYPESCRIPT_HARNESS}\n${body}`);
+    await writeFile(
+      file,
+      buildSource('typescript', '', body, TYPESCRIPT_HARNESS)
+    );
+    await writeFile(
+      join(dir, TYPESCRIPT_CONFIG_FILE),
+      JSON.stringify(TYPESCRIPT_COMPILER_CONFIG)
+    );
+    const plan = prepare('typescript', true, undefined, TYPESCRIPT_COMPILER);
     let stdout = '';
     try {
-      ({ stdout } = await run(process.execPath, [
-        '--experimental-strip-types',
-        file,
-      ]));
+      await run(plan.compile[0][0], plan.compile[0].slice(1), { cwd: dir });
+      ({ stdout } = await run(plan.run[0], plan.run.slice(1), { cwd: dir }));
     } catch (error) {
       stdout = error.stdout ?? '';
     }
+
+    test.after(async () => {
+      await rm(SCRATCH, { recursive: true, force: true });
+    });
     return splitTestResults(stdout);
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -21,6 +21,11 @@ describe('LearningProfileResolver', () => {
 
   it('returns the existing learning profile without creating one', async () => {
     profileClient.send.mockReturnValue(of({ id: 'profile-1' }));
+    permissionsClient.send
+      .mockReturnValueOnce(
+        of({ id: 'role-learner', appScope: { id: 'scope-learning' } })
+      )
+      .mockReturnValueOnce(of({ id: 'assignment-1' }));
 
     const profileId = await resolver.resolveProfileId('user-1');
 
@@ -30,7 +35,14 @@ describe('LearningProfileResolver', () => {
       { userId: 'user-1', appScope: 'learning' }
     );
     expect(profileClient.send).toHaveBeenCalledTimes(1);
-    expect(permissionsClient.send).not.toHaveBeenCalled();
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.Assign },
+      {
+        roleId: 'role-learner',
+        profileId: 'profile-1',
+        appScopeId: 'scope-learning',
+      }
+    );
   });
 
   it('creates a learning profile and grants learning_learner on first visit', async () => {

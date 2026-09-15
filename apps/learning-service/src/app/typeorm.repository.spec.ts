@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
 import {
@@ -292,6 +293,8 @@ describe('TypeOrmLearningRepository', () => {
           id: 'art-1',
           type: 'course',
           displayName: 'Intro to Watercolour',
+          audience: 'People who want a practical start.',
+          outcome: 'Mix three pigments deliberately.',
           subjectId: 'art',
           level: 100,
           credits: 1,
@@ -355,6 +358,100 @@ describe('TypeOrmLearningRepository', () => {
       expect(track.offerings[0].displayName).toBe('Intro to Watercolour');
     });
 
+    it('preserves the full authored document across save, publish, metadata, and unpublish', async () => {
+      const { repo } = await repositoryWithStoredOffering();
+      const modules = [
+        {
+          id: 'm',
+          title: 'Pigments',
+          lessons: [lesson],
+        },
+      ];
+      const activities = [
+        {
+          id: 'code-1',
+          type: 'code.run' as const,
+          prompt: 'Print the answer.',
+          lessonId: lesson.id,
+          starterCode: 'console.log("ok")',
+          languageId: 'typescript' as const,
+          expectedOutput: 'ok',
+        },
+      ];
+
+      await repo.updateOfferingContent('art-1', { modules, activities });
+      await repo.updateOfferingContent('art-1', {
+        description: 'Metadata-only updates keep the document.',
+      });
+      const published = await repo.updateOfferingContent('art-1', {
+        status: 'published',
+      });
+      expect(published.offerings[0].modules).toEqual(modules);
+      expect(published.offerings[0].activities).toEqual(activities);
+
+      const unpublished = await repo.updateOfferingContent('art-1', {
+        status: 'draft',
+      });
+      expect(unpublished.offerings[0].modules).toEqual(modules);
+      expect(unpublished.offerings[0].activities).toEqual(activities);
+      expect(unpublished.offerings[0].activities[0]).toHaveProperty(
+        'expectedOutput',
+        'ok'
+      );
+    });
+
+    it('preserves optional copy when it is omitted from a patch', async () => {
+      const { repo } = await repositoryWithStoredOffering();
+
+      const track = await repo.updateOfferingContent('art-1', {
+        displayName: 'Watercolour Fundamentals',
+      });
+
+      expect(track.offerings[0].audience).toBe(
+        'People who want a practical start.'
+      );
+      expect(track.offerings[0].outcome).toBe(
+        'Mix three pigments deliberately.'
+      );
+    });
+
+    it('updates trimmed non-empty optional copy', async () => {
+      const { repo } = await repositoryWithStoredOffering();
+
+      const track = await repo.updateOfferingContent('art-1', {
+        audience: 'Curious beginners.',
+        outcome: 'Mix three pigments deliberately.',
+      });
+
+      expect(track.offerings[0].audience).toBe('Curious beginners.');
+      expect(track.offerings[0].outcome).toBe(
+        'Mix three pigments deliberately.'
+      );
+    });
+
+    it('clears one optional field without changing the other or restoring it on reload', async () => {
+      const { repo, entity } = await repositoryWithStoredOffering();
+
+      const cleared = await repo.updateOfferingContent('art-1', {
+        audience: null,
+      });
+
+      expect(cleared.offerings[0].audience).toBeUndefined();
+      expect(cleared.offerings[0].outcome).toBe(
+        'Mix three pigments deliberately.'
+      );
+
+      const reloaded = await repo.updateOfferingContent('art-1', {
+        displayName: 'Still a draft',
+      });
+
+      expect(reloaded.offerings[0].audience).toBeUndefined();
+      expect(
+        (entity.data as { offerings: Array<{ audience?: string }> })
+          .offerings[0].audience
+      ).toBeUndefined();
+    });
+
     // Content arrives from an author, so this is the boundary where it is
     // checked. Storing a lesson with no words would fail when a reader opened
     // it, long after whoever wrote it had moved on.
@@ -397,6 +494,57 @@ describe('TypeOrmLearningRepository', () => {
         } as never)
       ).rejects.toThrow(/sourcePath or a body/);
     });
+
+    describe('deleteOffering', () => {
+      it('deletes the track and ownership together', async () => {
+        const deleteTrack = jest.fn().mockResolvedValue({ affected: 1 });
+        const deleteOwnership = jest.fn().mockResolvedValue({ affected: 1 });
+        const transaction = jest.fn(
+          async (work: (manager: unknown) => unknown) =>
+            await work({
+              delete: jest
+                .fn()
+                .mockImplementationOnce(deleteTrack)
+                .mockImplementationOnce(deleteOwnership),
+            })
+        );
+        const manager = { transaction } as never;
+        const repo = await buildRepository({
+          programTrack: {
+            manager,
+          } as FakeRepository<ProgramTrackEntity>,
+        });
+
+        await repo.deleteOffering('authored-1');
+
+        expect(transaction).toHaveBeenCalledTimes(1);
+        expect(deleteTrack).toHaveBeenCalledWith(ProgramTrackEntity, {
+          trackId: 'authored-1',
+        });
+        expect(deleteOwnership).toHaveBeenCalledWith(OfferingOwnershipEntity, {
+          offeringId: 'authored-1',
+        });
+      });
+
+      it('reports a missing track without deleting ownership', async () => {
+        const deleteRow = jest.fn().mockResolvedValue({ affected: 0 });
+        const transaction = jest.fn(
+          async (work: (manager: unknown) => unknown) =>
+            await work({ delete: deleteRow })
+        );
+        const manager = { transaction } as never;
+        const repo = await buildRepository({
+          programTrack: {
+            manager,
+          } as FakeRepository<ProgramTrackEntity>,
+        });
+
+        await expect(repo.deleteOffering('missing')).rejects.toBeInstanceOf(
+          NotFoundException
+        );
+        expect(deleteRow).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe('recordSolvedExercise', () => {
@@ -435,7 +583,9 @@ describe('TypeOrmLearningRepository', () => {
       expect(query).toHaveBeenCalledTimes(1);
 
       const [sql, params] = query.mock.calls[0];
-      expect(sql).toContain('ON CONFLICT ("profileId", "lessonId") DO UPDATE');
+      expect(sql).toContain(
+        'ON CONFLICT ("profileId", "enrolmentId", "lessonId") DO UPDATE'
+      );
       // Containment is what makes a repeat submission add nothing twice.
       expect(sql).toContain('@> $5::jsonb');
       expect(params).toEqual([

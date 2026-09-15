@@ -64,7 +64,7 @@ function clampOpacity(opacity: number): number {
  * Generate personality-specific shadow tokens (Workstream B1 + B2, 2026-07-18
  * personality-styles-refactor plan; joint with the 07-14 plan's B2).
  *
- * `--shadow-sm/md/lg/xl` are resolved to literal CSS shadow strings at
+ * `--shadow-inset/sm/md/lg/xl` are resolved to literal CSS shadow strings at
  * generation time (not composed from `var(--shadow-color)` /
  * `var(--shadow-opacity)` via `color-mix`/similar) so they keep working as
  * plain CSS values wherever they're consumed. `shadowTintRgb` and
@@ -140,6 +140,7 @@ function generateLayeredShadows(
   const c = tint(opacity);
   return {
     none: 'none',
+    inset: `inset 0 ${2 * m}px ${6 * m}px -1px ${c}`,
     sm: `0 1px 2px 0 ${c}`,
     md: `0 4px ${6 * m}px -1px ${c}, 0 2px ${4 * m}px -1px ${c}`,
     lg: `0 10px ${15 * m}px -3px ${c}, 0 4px ${6 * m}px -2px ${c}`,
@@ -156,6 +157,7 @@ function generateDiffuseShadows(
   const c = tint(opacity * 0.6);
   return {
     none: 'none',
+    inset: `inset 0 0 ${12 * m}px 0 ${c}`,
     sm: `0 0 ${8 * m}px 0 ${c}`,
     md: `0 0 ${20 * m}px 0 ${c}`,
     lg: `0 0 ${36 * m}px 0 ${c}`,
@@ -172,6 +174,7 @@ function generateHardOffsetShadows(
   const c = tint(opacity);
   return {
     none: 'none',
+    inset: `inset ${2 * m}px ${2 * m}px 0 ${c}`,
     sm: `${2 * m}px ${2 * m}px 0px ${c}`,
     md: `${4 * m}px ${4 * m}px 0px ${c}`,
     lg: `${6 * m}px ${6 * m}px 0px ${c}`,
@@ -195,6 +198,9 @@ function generateNeonShadows(
     )})`;
   return {
     none: 'none',
+    inset: `inset 0 0 ${8 * m}px 0 ${glow(opacity * 0.75)}, inset 0 0 ${
+      2 * m
+    }px 0 ${glow(opacity)}`,
     sm: `0 0 ${4 * m}px 0 ${glow(opacity)}`,
     md: `0 0 ${12 * m}px 0 ${glow(opacity)}, 0 0 ${4 * m}px 0 ${glow(
       opacity * 1.4
@@ -221,6 +227,7 @@ function generateTechnicalShadows(
   const ring = tint(opacity * 0.8);
   return {
     none: 'none',
+    inset: `inset 0 1px ${2 * m}px 0 ${c}, inset 0 0 0 1px ${ring}`,
     sm: `0 1px 1px 0 ${c}, 0 0 0 1px ${ring}`,
     md: `0 1px ${2 * m}px 0 ${c}, 0 0 0 1px ${ring}`,
     lg: `0 2px ${4 * m}px 0 ${c}, 0 0 0 1px ${ring}`,
@@ -238,10 +245,18 @@ function generateMinimalShadows(
   opacity: number
 ): DesignTokens['shadows'] {
   if (opacity <= 0) {
-    return { none: 'none', sm: 'none', md: 'none', lg: 'none', xl: 'none' };
+    return {
+      none: 'none',
+      inset: 'none',
+      sm: 'none',
+      md: 'none',
+      lg: 'none',
+      xl: 'none',
+    };
   }
   return {
     none: 'none',
+    inset: `inset 0 1px 2px 0 ${tint(opacity * 0.55)}`,
     sm: 'none',
     md: `0 0 0 1px ${tint(opacity)}`,
     lg: `0 0 0 1px ${tint(opacity)}`,
@@ -261,6 +276,7 @@ function generatePlayfulDropShadows(
   const c = tint(opacity);
   return {
     none: 'none',
+    inset: `inset 0 ${2 * m}px ${3 * m}px 0 ${c}`,
     sm: `0 ${3 * m}px ${4 * m}px 0 ${c}`,
     md: `0 ${6 * m}px ${8 * m}px 0 ${c}`,
     lg: `0 ${10 * m}px ${14 * m}px 0 ${c}`,
@@ -541,6 +557,14 @@ export class ThemeService {
    */
   getPersonalityConfig(): PersonalityThemeConfig {
     return { ...this.personalityConfig };
+  }
+
+  /**
+   * Tell app shells whether a user preference exists before applying a
+   * product-specific default personality.
+   */
+  hasPersistedPersonalityTheme(): boolean {
+    return this.readPersonalityThemeStorage() !== null;
   }
 
   /**
@@ -838,12 +862,19 @@ export class ThemeService {
       }),
     };
 
+    // Keep the semantic foreground paired with the primary surface in both
+    // CSS variables and contrast validation. Architect's teal primary is
+    // intentionally bright, so its readable foreground is dark rather than
+    // the legacy assumption of white text.
+    const primaryForeground = getSuggestedTextColor(colors.primary).color;
+
     // Validate contrast
     const contrastValidation = validateThemeContrast(
       {
         foreground: adjustedForeground,
         background: themeColors.background,
         primary: colors.primary,
+        primaryForeground,
         secondary: colors.secondary,
         muted: themeColors.muted,
       },
@@ -854,6 +885,7 @@ export class ThemeService {
     const cssVariables = this.generatePersonalityCSSVariables(
       personality,
       personalityColors,
+      primaryForeground,
       mode,
       themeColors.overlay,
       shadowTintRgb,
@@ -890,6 +922,7 @@ export class ThemeService {
   private generatePersonalityCSSVariables(
     personality: Personality,
     colors: PersonalityColors,
+    primaryForeground: string,
     mode: 'light' | 'dark',
     overlay: string,
     shadowTintRgb: { r: number; g: number; b: number },
@@ -919,9 +952,7 @@ export class ThemeService {
 
     // Primary colors
     variables['--primary'] = colors.primary;
-    variables['--primary-foreground'] = getSuggestedTextColor(
-      colors.primary
-    ).color;
+    variables['--primary-foreground'] = primaryForeground;
     colors.primaryShades.forEach((shade, i) => {
       variables[`--primary-${i}`] = shade;
     });
@@ -1183,6 +1214,13 @@ export class ThemeService {
       '--shadow-color'
     ] = `rgb(${shadowTintRgb.r}, ${shadowTintRgb.g}, ${shadowTintRgb.b})`;
     variables['--shadow-opacity'] = String(shadowOpacity);
+    // Keep the recessed surface token in the personality CSS-variable
+    // output as well as the generated design-token scale. This makes the
+    // semantic value available to SSR/theme serializers before a browser DOM
+    // exists, while the consumer-side var() fallback remains safe if no
+    // personality has been applied yet.
+    variables['--shadow-inset'] =
+      shadows?.inset ?? DEFAULT_DESIGN_TOKENS.shadows.inset;
 
     return variables;
   }
@@ -1437,13 +1475,9 @@ export class ThemeService {
    * Load personality theme from storage
    */
   private loadPersonalityTheme(): PersonalityThemeConfig | null {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null;
-    }
-
-    try {
-      const stored = localStorage.getItem(PERSONALITY_THEME_KEY);
-      if (stored) {
+    const stored = this.readPersonalityThemeStorage();
+    if (stored) {
+      try {
         const parsed = JSON.parse(stored);
         // Validate required fields
         if (parsed.personalityId && parsed.primaryColor && parsed.mode) {
@@ -1451,12 +1485,27 @@ export class ThemeService {
           return parsed;
         }
         console.warn('[ThemeService] Invalid stored theme, using defaults');
+      } catch (error) {
+        console.error(
+          '[ThemeService] Failed to load personality theme:',
+          error
+        );
       }
-    } catch (error) {
-      console.error('[ThemeService] Failed to load personality theme:', error);
     }
 
     return null;
+  }
+
+  private readPersonalityThemeStorage(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    try {
+      return localStorage.getItem(PERSONALITY_THEME_KEY);
+    } catch {
+      return null;
+    }
   }
 
   /**

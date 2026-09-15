@@ -17,6 +17,7 @@ import {
   PREDEFINED_PERSONALITIES,
   getContrastRatio,
   ensureContrast,
+  validateThemeContrast,
 } from '@optimistic-tanuki/theme-models';
 import { generateThemeResponsiveColors } from './color-harmony';
 
@@ -618,6 +619,59 @@ describe('ThemeService', () => {
   // `--personality-card-shadow` are now derived from that same generator
   // output rather than a separately hand-authored literal.
   describe('shadow profile shape (D1)', () => {
+    it('emits a profile-aware inset shadow token across personality silhouettes', fakeAsync(() => {
+      const expectedProfiles = [
+        ['minimal', 'minimal'],
+        ['soft-touch', 'diffuse'],
+        ['electric', 'neon'],
+        ['architect', 'hard-offset'],
+        ['control-center', 'technical'],
+      ] as const;
+      const rootStyle = document.documentElement.style;
+      const insetByProfile = new Map<string, string>();
+
+      for (const [personalityId, profile] of expectedProfiles) {
+        const personality = getPersonalityById(personalityId);
+        expect(personality?.tokens.shadowProfile).toBe(profile);
+
+        service.setPersonality(personalityId);
+        tick(100);
+        flush();
+
+        const inset = rootStyle.getPropertyValue('--shadow-inset');
+        expect(inset).toBeTruthy();
+        expect(rootStyle.getPropertyValue('--shadow-inset')).toBe(inset);
+        insetByProfile.set(profile, inset);
+      }
+
+      expect(insetByProfile.get('minimal')).toBe('none');
+      expect(insetByProfile.get('diffuse')).toMatch(/^inset 0 0 /);
+      expect(insetByProfile.get('neon')).toContain('rgba(');
+      expect(insetByProfile.get('hard-offset')).toMatch(
+        /^inset [\d.]+px [\d.]+px 0 /
+      );
+      expect(insetByProfile.get('technical')).toContain('inset 0 0 0 1px');
+
+      expect(new Set(insetByProfile.values()).size).toBe(
+        expectedProfiles.length
+      );
+    }));
+
+    it('scales the inset token for the active light or dark mode', fakeAsync(() => {
+      service.setPersonality('architect');
+      tick(100);
+      flush();
+      const rootStyle = document.documentElement.style;
+      const lightInset = rootStyle.getPropertyValue('--shadow-inset');
+
+      service.setTheme('dark');
+      tick(100);
+      flush();
+      const darkInset = rootStyle.getPropertyValue('--shadow-inset');
+
+      expect(lightInset).not.toBe(darkInset);
+    }));
+
     it('emits structurally distinct --shadow-md shapes for personalities with different shadow profiles', fakeAsync(() => {
       const architect = getPersonalityById('architect');
       const minimal = getPersonalityById('minimal');
@@ -872,6 +926,44 @@ describe('ThemeService', () => {
 
       expect(surfaceVariant).toBeTruthy();
       expect(surfaceVariant).toBe(surface);
+    }));
+
+    it('pairs Architect primary with its contrast-safe semantic foreground', fakeAsync(() => {
+      const rootStyle = document.documentElement.style;
+
+      service.setPrimaryColor('#1dc9a9');
+      tick(100);
+      flush();
+      service.setPersonality('architect');
+      tick(100);
+      flush();
+
+      const primary = rootStyle.getPropertyValue('--primary');
+      const primaryForeground = rootStyle.getPropertyValue(
+        '--primary-foreground'
+      );
+
+      expect(primary).toBeTruthy();
+      expect(primaryForeground).not.toBe('#ffffff');
+      expect(
+        getContrastRatio(primaryForeground, primary)
+      ).toBeGreaterThanOrEqual(4.5);
+
+      const validation = validateThemeContrast(
+        {
+          foreground: '#000000',
+          background: '#ffffff',
+          primary: '#1dc9a9',
+          secondary: '#000000',
+          muted: '#000000',
+        },
+        4.5
+      );
+      const primaryReport = validation.reports.find(
+        (report) => report.background === '#1dc9a9'
+      );
+      expect(primaryReport?.foreground).toBe('#000000');
+      expect(primaryReport?.isValid).toBe(true);
     }));
 
     it('emits a real --gradient-primary so gradient surfaces do not degrade to a flat primary', fakeAsync(() => {

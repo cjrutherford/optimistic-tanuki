@@ -4,6 +4,8 @@ export interface CodeChallenge {
   title: string;
   description: string;
   starterCode: string;
+  testCode?: string;
+  executionMode?: 'run' | 'test' | 'benchmark';
   expectedOutput?: string;
   validationPattern?: string;
   hints: string[];
@@ -31,6 +33,17 @@ func main() {
     // Create and print a User
 }`,
     expectedOutput: '{1 Alice alice@example.com}',
+    testCode: `package main
+
+import "testing"
+
+func TestDefineUserStruct(t *testing.T) {
+	u := User{ID: 1, Name: "Alice", Email: "alice@example.com"}
+	if u.ID != 1 || u.Name != "Alice" || u.Email != "alice@example.com" {
+		t.Errorf("input (ID: 1, Name: Alice, Email: alice@example.com): struct fields do not match required types or values")
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use `type User struct { }` to define a struct',
       'Fields are defined as `FieldName FieldType`',
@@ -89,6 +102,18 @@ func main() {
 }`,
     expectedOutput: '25',
     validationPattern: '^25$',
+    testCode: `package main
+
+import "testing"
+
+func TestAgeTypeConversion(t *testing.T) {
+	var a Age = 25
+	var i int = int(a)
+	if i != 25 {
+		t.Errorf("input (Age(25)): expected int(a) to evaluate to 25, got %d", i)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Define: `type Age int` creates a new type',
       'Create: `var myAge Age = 25`',
@@ -150,6 +175,24 @@ func main() {
     fmt.Println("Result:", result)
 }`,
     expectedOutput: 'Error: division by zero',
+    testCode: `package main
+
+import "testing"
+
+func TestDivideZero(t *testing.T) {
+	_, err := divide(10, 0)
+	if err == nil {
+		t.Errorf("input (10, 0): expected error for division by zero, got nil")
+	}
+}
+
+func TestDivideValid(t *testing.T) {
+	res, err := divide(10, 2)
+	if err != nil || res != 5 {
+		t.Errorf("input (10, 2): expected (5.0, nil), got (%.2f, %v)", res, err)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use `errors.New("message")` to create errors',
       'Return `0, ErrDivideByZero` when divisor is 0',
@@ -182,6 +225,18 @@ func main() {
     // Call Birthday() and print age
 }`,
     expectedOutput: '31',
+    testCode: `package main
+
+import "testing"
+
+func TestBirthdayPointerReceiver(t *testing.T) {
+	p := Person{Name: "Alice", Age: 30}
+	p.Birthday()
+	if p.Age != 31 {
+		t.Errorf("input (Person{Age: 30}): expected age 31 after Birthday(), got %d (ensure pointer receiver *Person is used)", p.Age)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use `(p *Person) Birthday()` for pointer receiver',
       'Call with `p.Birthday()` - Go auto-dereferences',
@@ -373,6 +428,29 @@ func main() {
     fmt.Println(counter.value)
 }`,
     expectedOutput: '1000',
+    testCode: `package main
+
+import (
+	"sync"
+	"testing"
+)
+
+func TestConcurrentCounter(t *testing.T) {
+	var wg sync.WaitGroup
+	counter := Counter{}
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			counter.Increment()
+		}()
+	}
+	wg.Wait()
+	if counter.value != 100 {
+		t.Errorf("input (100 concurrent increments): expected counter.value == 100, got %d (ensure mutex locks around increment)", counter.value)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Add `mu sync.Mutex` and `value int` to struct',
       'Use `c.mu.Lock()` and `defer c.mu.Unlock()`',
@@ -411,6 +489,30 @@ func main() {
     fmt.Println(counter)
 }`,
     expectedOutput: '1000',
+    testCode: `package main
+
+import (
+	"sync"
+	"sync/atomic"
+	"testing"
+)
+
+func TestAtomicIncrement(t *testing.T) {
+	var counter int64
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			atomic.AddInt64(&counter, 1)
+		}()
+	}
+	wg.Wait()
+	if counter != 100 {
+		t.Errorf("input (100 atomic increments): expected counter == 100, got %d", counter)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use `atomic.AddInt64(&counter, 1)` to add atomically',
       'Import "sync/atomic" package',
@@ -440,6 +542,7 @@ func TestAdd(t *testing.T) {
     }
 }`,
     expectedOutput: 'PASS',
+    executionMode: 'test',
     hints: [
       'Define `func Add(a, b int) int { return a + b }`',
       'Tests run with `go test`',
@@ -478,6 +581,7 @@ func TestAddTable(t *testing.T) {
     }
 }`,
     expectedOutput: 'PASS',
+    executionMode: 'test',
     hints: [
       'Add test cases to the tests slice',
       'Use `tt.name`, `tt.a`, `tt.b`, `tt.want` in the test function',
@@ -506,6 +610,7 @@ func BenchmarkAdd(b *testing.B) {
     }
 }`,
     expectedOutput: 'PASS',
+    executionMode: 'benchmark',
     hints: [
       'Benchmark functions start with `Benchmark`',
       'Use `b.N` to get number of iterations',
@@ -536,6 +641,20 @@ func main() {
     fmt.Println(*p)
 }`,
     expectedOutput: '42',
+    testCode: `package main
+
+import "testing"
+
+func TestNewIntPointer(t *testing.T) {
+	p := newInt()
+	if p == nil {
+		t.Fatalf("newInt(): expected non-nil pointer")
+	}
+	if *p != 42 {
+		t.Errorf("newInt(): expected *p == 42, got %d", *p)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Returning `&localVariable` causes escape',
       'Go compiler decides stack vs heap automatically',
@@ -569,6 +688,22 @@ func main() {
     // Don't call ListenAndServe in playground
 }`,
     expectedOutput: 'Server would start on :8080',
+    testCode: `package main
+
+import (
+	"net/http/httptest"
+	"testing"
+)
+
+func TestHelloHandler(t *testing.T) {
+	req := httptest.NewRequest("GET", "/", nil)
+	rec := httptest.NewRecorder()
+	hello(rec, req)
+	if rec.Body.String() != "Hello, World!" {
+		t.Errorf("GET /: expected body "Hello, World!", got %q", rec.Body.String())
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use `w.Write([]byte("Hello, World!"))`',
       'http.HandleFunc registers a handler',
@@ -741,6 +876,24 @@ func main() {
     fmt.Println(err)
 }`,
     expectedOutput: 'negative value: -5',
+    testCode: `package main
+
+import "testing"
+
+func TestCheckPositiveSuccess(t *testing.T) {
+	res, err := checkPositive(10)
+	if err != nil || res != 10 {
+		t.Errorf("input (10): expected (10, nil), got (%d, %v)", res, err)
+	}
+}
+
+func TestCheckPositiveNegative(t *testing.T) {
+	_, err := checkPositive(-5)
+	if err == nil {
+		t.Errorf("input (-5): expected negative error, got nil")
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Implement the Error() method for custom errors',
       'Return (0, NegativeError{Value: n}) when negative',
@@ -828,6 +981,22 @@ func main() {
 }`,
     expectedOutput: 'Hello World From Go',
     validationPattern: 'Hello World From Go',
+    testCode: `package main
+
+import (
+	"strings"
+	"testing"
+)
+
+func TestBuildGoodBuilder(t *testing.T) {
+	words := []string{"Hello", "World", "From", "Go"}
+	got := strings.TrimSpace(buildGood(words))
+	want := "Hello World From Go"
+	if got != want {
+		t.Errorf("input (%v): expected %q, got %q", words, want, got)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'strings.Builder uses less memory than string concatenation',
       'Use b.WriteString() to add strings',
@@ -1051,6 +1220,28 @@ func main() {
     starterCode:
       'package main\n\nimport (\n    "encoding/json"\n    "fmt"\n)\n\ntype User struct {\n    Name   string `json:"name"`\n    Age    int    `json:"age"`\n    Active bool   `json:"active"`\n}\n\nfunc main() {\n    u := User{Name: "Alice", Age: 30, Active: true}\n    \n    data, _ := json.Marshal(u)\n    fmt.Println(string(data))\n}',
     expectedOutput: '{"name":"Alice","age":30,"active":true}',
+    testCode: `package main
+
+import (
+	"encoding/json"
+	"testing"
+)
+
+func TestUserJSON(t *testing.T) {
+	u := User{Name: "Alice", Age: 30, Active: true}
+	data, err := json.Marshal(u)
+	if err != nil {
+		t.Fatalf("json.Marshal failed: %v", err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("json.Unmarshal failed: %v", err)
+	}
+	if m["name"] != "Alice" || m["age"] != float64(30) || m["active"] != true {
+		t.Errorf("input (User{Name: "Alice", Age: 30, Active: true}): expected json tags name, age, active, got %s", string(data))
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use json.Marshal() to convert to JSON',
       'Use field tags: json:"fieldname"',
@@ -1419,6 +1610,17 @@ func main() {
     fmt.Printf("Result: %.2f", result)
 }`,
     expectedOutput: 'Result: 5.00',
+    testCode: `package main
+
+import "testing"
+
+func TestDivide(t *testing.T) {
+	res, err := divide(10, 2)
+	if err != nil || res != 5 {
+		t.Errorf("input (10, 2): expected (5.0, nil), got (%.2f, %v)", res, err)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Return multiple values with (result, error)',
       'Return a/b, nil when division succeeds',
@@ -1449,6 +1651,28 @@ func main() {
     fmt.Println(checkNumber(0))
 }`,
     expectedOutput: 'positive\nnegative\nzero',
+    testCode: `package main
+
+import "testing"
+
+func TestCheckNumberPositive(t *testing.T) {
+	if got := checkNumber(5); got != "positive" {
+		t.Errorf("input (5): expected "positive", got %q", got)
+	}
+}
+
+func TestCheckNumberNegative(t *testing.T) {
+	if got := checkNumber(-3); got != "negative" {
+		t.Errorf("input (-3): expected "negative", got %q", got)
+	}
+}
+
+func TestCheckNumberZero(t *testing.T) {
+	if got := checkNumber(0); got != "zero" {
+		t.Errorf("input (0): expected "zero", got %q", got)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Use if n > 0 { return "positive" }',
       'Use else if n < 0 { return "negative" }',
@@ -1591,6 +1815,18 @@ func main() {
     fmt.Println(c)
 }`,
     expectedOutput: '6',
+    testCode: `package main
+
+import "testing"
+
+func TestCounterIncrement(t *testing.T) {
+	var c Counter = 5
+	c = c.Increment()
+	if c != 6 {
+		t.Errorf("input (Counter(5).Increment()): expected 6, got %d", c)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Define method with (c Counter) receiver',
       'Return c + 1 cast to Counter',
@@ -1620,6 +1856,19 @@ func main() {
     fmt.Println(isEven(7))
 }`,
     expectedOutput: 'even\nodd',
+    testCode: `package main
+
+import "testing"
+
+func TestIsEven(t *testing.T) {
+	if got := isEven(4); got != "even" {
+		t.Errorf("input (4): expected "even", got %q", got)
+	}
+	if got := isEven(7); got != "odd" {
+		t.Errorf("input (7): expected "odd", got %q", got)
+	}
+}`,
+    executionMode: 'test',
     hints: ['Use n % 2 to check divisibility', 'If remainder is 0, it is even'],
     points: 10,
     difficulty: 'easy',
@@ -1647,6 +1896,28 @@ func main() {
     fmt.Println(dayName(8))
 }`,
     expectedOutput: 'Monday\nFriday\nInvalid',
+    testCode: `package main
+
+import "testing"
+
+func TestDayNameMonday(t *testing.T) {
+	if got := dayName(1); got != "Monday" {
+		t.Errorf("input (1): expected "Monday", got %q", got)
+	}
+}
+
+func TestDayNameFriday(t *testing.T) {
+	if got := dayName(5); got != "Friday" {
+		t.Errorf("input (5): expected "Friday", got %q", got)
+	}
+}
+
+func TestDayNameInvalid(t *testing.T) {
+	if got := dayName(8); got != "Invalid" {
+		t.Errorf("input (8): expected "Invalid", got %q", got)
+	}
+}`,
+    executionMode: 'test',
     hints: ['Use switch n { case 1: ... }', 'Use default for invalid numbers'],
     points: 15,
     difficulty: 'easy',
@@ -1803,6 +2074,19 @@ func main() {
     fmt.Println(err)
 }`,
     expectedOutput: 'something went wrong',
+    testCode: `package main
+
+import "testing"
+
+func TestFailReturnsError(t *testing.T) {
+	err := fail()
+	if err == nil {
+		t.Errorf("fail(): expected non-nil error")
+	} else if err.Error() != "something went wrong" {
+		t.Errorf("fail(): expected error message %q, got %q", "something went wrong", err.Error())
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'Return MyError{msg: "something went wrong"}',
       'Implement Error() string method',
@@ -2028,6 +2312,17 @@ func main() {
     fmt.Println(b.Title)
 }`,
     expectedOutput: 'Dune',
+    testCode: `package main
+
+import "testing"
+
+func TestBookStruct(t *testing.T) {
+	b := Book{Title: "Dune", Pages: 412}
+	if b.Title != "Dune" || b.Pages != 412 {
+		t.Errorf("input (Book{Title: "Dune", Pages: 412}): expected Title "Dune" and Pages 412, got Title %q, Pages %d", b.Title, b.Pages)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'A struct declaration is `type Name struct { ... }`, with each field written as `FieldName FieldType`',
       'Build it with a composite literal that names each field: `Book{Title: ..., Pages: ...}`',
@@ -2064,6 +2359,18 @@ func main() {
     fmt.Println(item.Price)
 }`,
     expectedOutput: '100',
+    testCode: `package main
+
+import "testing"
+
+func TestProductDiscount(t *testing.T) {
+	item := Product{Name: "Desk", Price: 200}
+	item.Discount()
+	if item.Price != 100 {
+		t.Errorf("input (Product{Price: 200}): expected price 100 after Discount(), got %.2f (method receiver must be a pointer)", item.Price)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'A value receiver operates on a copy of the struct',
       'Change (p Product) to (p *Product) so the method has the original',
@@ -2103,6 +2410,17 @@ func main() {
     fmt.Println(...)
 }`,
     expectedOutput: 'engine started',
+    testCode: `package main
+
+import "testing"
+
+func TestCarEmbedding(t *testing.T) {
+	c := Car{Engine: Engine{Horsepower: 300}, Make: "Saab"}
+	if got := c.Start(); got != "engine started" {
+		t.Errorf("input (Car with embedded Engine): expected c.Start() to return "engine started", got %q", got)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'An embedded field is written as just the type name, with no field name',
       'Embedded methods are promoted, so c.Start() works',
@@ -2139,6 +2457,17 @@ func main() {
     fmt.Println(s.Area())
 }`,
     expectedOutput: '16',
+    testCode: `package main
+
+import "testing"
+
+func TestSquareSatisfiesShape(t *testing.T) {
+	var s Shape = Square{Side: 4}
+	if got := s.Area(); got != 16 {
+		t.Errorf("input (Square{Side: 4}): expected Area() 16, got %.2f", got)
+	}
+}`,
+    executionMode: 'test',
     hints: ['func (s Square) Area() float64 { ... }', 'Return s.Side * s.Side'],
     points: 20,
     difficulty: 'easy',
@@ -2165,6 +2494,28 @@ func main() {
     fmt.Println(describe(3.5))
 }`,
     expectedOutput: 'int\nstring\nother',
+    testCode: `package main
+
+import "testing"
+
+func TestDescribeInt(t *testing.T) {
+	if got := describe(42); got != "int" {
+		t.Errorf("input (42): expected "int", got %q", got)
+	}
+}
+
+func TestDescribeString(t *testing.T) {
+	if got := describe("hi"); got != "string" {
+		t.Errorf("input ("hi"): expected "string", got %q", got)
+	}
+}
+
+func TestDescribeOther(t *testing.T) {
+	if got := describe(3.5); got != "other" {
+		t.Errorf("input (3.5): expected "other", got %q", got)
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'switch v.(type) { case int: ... }',
       'The default case handles everything you did not list',
@@ -2205,6 +2556,22 @@ func main() {
     }
 }`,
     expectedOutput: 'passed',
+    testCode: `package main
+
+import "testing"
+
+func TestValidateSuccess(t *testing.T) {
+	if err := validate(true); err != nil {
+		t.Errorf("input (true): expected nil error, got non-nil %v (check typed nil pointer trap)", err)
+	}
+}
+
+func TestValidateFailure(t *testing.T) {
+	if err := validate(false); err == nil {
+		t.Errorf("input (false): expected non-nil error, got nil")
+	}
+}`,
+    executionMode: 'test',
     hints: [
       'The returned interface holds (*ValidationError, nil), which is not nil',
       'Return the literal nil on the success path rather than a typed nil pointer',

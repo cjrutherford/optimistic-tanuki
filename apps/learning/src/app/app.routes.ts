@@ -3,14 +3,11 @@ import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
 import { CatalogComponent } from './catalog.component';
 import { OfferingComponent } from './offering.component';
 import { AuthorComponent } from './author.component';
-import { SignInComponent } from './sign-in.component';
 import { CourseEditorComponent } from './course-editor.component';
 import { DashboardComponent } from './dashboard.component';
 import { ModuleComponent } from './module.component';
 import { LandingComponent } from './landing.component';
 import { LessonComponent } from './lesson.component';
-import { AboutComponent } from './about.component';
-import { DocsComponent } from './docs.component';
 
 export const appRoutes: Routes = [
   // The landing page is the entrance, and the catalog is where you go once
@@ -23,9 +20,24 @@ export const appRoutes: Routes = [
     component: OfferingComponent,
     title: "Course | Let's Go",
   },
-  { path: 'sign-in', component: SignInComponent, title: "Sign in | Let's Go" },
-  { path: 'about', component: AboutComponent, title: "About | Let's Go" },
-  { path: 'docs', component: DocsComponent, title: "Docs | Let's Go" },
+  {
+    path: 'sign-in',
+    loadComponent: () =>
+      import('./sign-in.component').then((m) => m.SignInComponent),
+    title: "Sign in | Let's Go",
+  },
+  {
+    path: 'about',
+    loadComponent: () =>
+      import('./about.component').then((m) => m.AboutComponent),
+    title: "About | Let's Go",
+  },
+  {
+    path: 'docs',
+    loadComponent: () =>
+      import('./docs.component').then((m) => m.DocsComponent),
+    title: "Docs | Let's Go",
+  },
   {
     path: 'dashboard',
     component: DashboardComponent,

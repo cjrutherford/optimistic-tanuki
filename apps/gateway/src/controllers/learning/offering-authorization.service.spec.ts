@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { EMPTY, of } from 'rxjs';
 import { ClientProxy } from '@nestjs/microservices';
 import { LearningCommands, RoleCommands } from '@optimistic-tanuki/constants';
 import { OfferingOwnership } from '@optimistic-tanuki/learning-domain';
@@ -45,6 +45,14 @@ describe('OfferingAuthorizationService', () => {
     const allowed = await service.authorize('learner-1', undefined, 'create');
 
     expect(allowed).toBe(false);
+  });
+
+  it('treats an empty ownership response as missing rather than a 500', async () => {
+    learningService.send.mockReturnValue(EMPTY);
+
+    await expect(
+      service.getOwnership('missing-offering')
+    ).resolves.toBeUndefined();
   });
 
   it('lets a course designer create an offering', async () => {
