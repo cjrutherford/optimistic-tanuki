@@ -124,10 +124,17 @@ The system includes comprehensive utility classes:
 #### Component Base Classes
 
 ```css
-.button-base    /* Base button styles */
-/* Base button styles */
-.card-base      /* Base card styles */
-.input-base; /* Base input styles */
+.button-base {
+  /* Base button styles */
+}
+
+.card-base {
+  /* Base card styles */
+}
+
+.input-base {
+  /* Base input styles */
+}
 ```
 
 ## Usage
