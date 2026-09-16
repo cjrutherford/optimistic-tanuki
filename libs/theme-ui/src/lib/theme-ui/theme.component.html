@@ -1,85 +1,14 @@
-<button
-  type="button"
-  class="appearance-trigger"
-  cdkOverlayOrigin
-  #appearanceOrigin="cdkOverlayOrigin"
-  (click)="toggleControls()"
-  [attr.aria-expanded]="showControls"
-  [attr.aria-controls]="controlsId"
->
-  <span aria-hidden="true">◐</span>
-  <span class="appearance-trigger-label">Appearance</span>
-</button>
-
-<ng-template
-  cdkConnectedOverlay
-  [cdkConnectedOverlayOrigin]="appearanceOrigin"
-  [cdkConnectedOverlayOpen]="showControls"
-  [cdkConnectedOverlayHasBackdrop]="true"
-  cdkConnectedOverlayBackdropClass="appearance-menu-backdrop"
-  (backdropClick)="closeControls()"
-  (detach)="closeControls()"
->
-  <section
-    [id]="controlsId"
-    class="toggle-container"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Appearance controls"
-    cdkTrapFocus
-    cdkTrapFocusAutoCapture
+<div class="appearance-control">
+  <button
+    #appearanceTrigger
+    type="button"
+    class="appearance-trigger"
+    (click)="toggleControls(); $event.stopPropagation()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="showControls"
+    [attr.aria-controls]="controlsId"
   >
-    <div class="appearance-menu-heading">
-      <span>Appearance</span>
-      <button
-        type="button"
-        class="appearance-close"
-        (click)="closeControls()"
-        aria-label="Close appearance controls"
-      >
-        ×
-      </button>
-    </div>
-    <form>
-      <fieldset>
-        <legend>Theme settings</legend>
-        <div class="theme-switch">
-          <div class="theme-label">☀</div>
-          <label class="switch">
-            <input
-              type="checkbox"
-              [checked]="theme === 'dark'"
-              (change)="toggleTheme()"
-              aria-label="Use dark theme"
-            />
-            <span class="slider round">️</span>
-          </label>
-          <div class="theme-label">🌙</div>
-        </div>
-        <div class="accent-picker">
-          <input
-            type="color"
-            name="accent-color"
-            [(ngModel)]="accentColor"
-            (change)="updateAccentColor()"
-            aria-label="Accent color"
-          />
-        </div>
-        <div class="personality-selector">
-          <button
-            class="personality-trigger"
-            type="button"
-            (click)="togglePersonalityPicker()"
-            [class.active]="showPersonalityPicker"
-            aria-label="Select personality"
-          >
-            <span class="personality-current">
-              {{ currentPersonality?.name || 'Classic' }}
-            </span>
-            <span class="personality-icon">⚙</span>
-          </button>
-        </div>
-      </fieldset>
-    </form>
-  </section>
-</ng-template>
+    <span aria-hidden="true">◐</span>
+    <span class="appearance-trigger-label">Appearance</span>
+  </button>
+</div>

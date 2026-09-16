@@ -51,6 +51,9 @@ const loadConfig = () => {
       10
     );
   }
+  if (process.env.LISTEN_PORT) {
+    configData.listenPort = parseInt(process.env.LISTEN_PORT, 10);
+  }
 
   return configData;
 };

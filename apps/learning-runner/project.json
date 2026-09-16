@@ -18,7 +18,8 @@
           "node --check lib/typescript-harness.mjs",
           "node --check lib/catch2.mjs",
           "node --check lib/run-plan.mjs",
-          "node --check lib/libtest.mjs"
+          "node --check lib/libtest.mjs",
+          "node --check lib/gotest.mjs"
         ],
         "cwd": "apps/learning-runner",
         "parallel": false

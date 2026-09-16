@@ -6,6 +6,7 @@ import {
   Evaluation,
   LessonProgress,
   ModuleMetadata,
+  OfferingTextPatch,
   OfferingOwnership,
   ProgramTrack,
   PublicationStatus,
@@ -17,8 +18,8 @@ export interface OfferingContentPatch {
   displayName?: string;
   description?: string;
   /** Who the course is for, and what a learner can do afterwards. */
-  audience?: string;
-  outcome?: string;
+  audience?: OfferingTextPatch;
+  outcome?: OfferingTextPatch;
   /**
    * The course's structure, replaced wholesale rather than patched lesson by
    * lesson. An author works on an outline as a whole, and a whole-document

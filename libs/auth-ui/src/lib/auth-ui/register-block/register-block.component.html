@@ -8,31 +8,40 @@
           <img [src]="heroSource" alt="Hero Image" width="300" />
         </div>
         <div class="form">
-          <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+          <form
+            [formGroup]="registerForm"
+            autocomplete="on"
+            (ngSubmit)="onSubmit()"
+          >
             <lib-text-input
               formControlName="firstName"
               [label]="'First Name'"
               [type]="'text'"
+              autocomplete="given-name"
             ></lib-text-input>
             <lib-text-input
               formControlName="lastName"
               [label]="'Last Name'"
               [type]="'text'"
+              autocomplete="family-name"
             ></lib-text-input>
             <lib-text-input
               formControlName="email"
               [label]="'Email'"
               [type]="'text'"
+              autocomplete="username"
             ></lib-text-input>
             <lib-text-input
               formControlName="password"
               [label]="'Password'"
               [type]="'password'"
+              autocomplete="new-password"
             ></lib-text-input>
             <lib-text-input
               formControlName="confirmation"
               [label]="'Confirm Password'"
               [type]="'password'"
+              autocomplete="new-password"
             ></lib-text-input>
             @if (errorMessage) {
             <p class="auth-error" role="alert">{{ errorMessage }}</p>

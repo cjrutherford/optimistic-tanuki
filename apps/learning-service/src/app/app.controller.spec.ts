@@ -160,24 +160,31 @@ class InMemoryLearningRepository implements LearningRepository {
     const index = this.programs.findIndex((track) => track.id === offeringId);
     if (index === -1) throw new Error(`Unknown offering: ${offeringId}`);
     const track = this.programs[index];
+    const nextOfferings = track.offerings.map((offering) => {
+      if (offering.id !== offeringId) return offering;
+      const nextOffering = { ...offering };
+      if (patch.displayName !== undefined) {
+        nextOffering.displayName = patch.displayName;
+      }
+      if (patch.description !== undefined) {
+        nextOffering.description = patch.description;
+      }
+      if (patch.audience !== undefined) {
+        if (patch.audience === null) delete nextOffering.audience;
+        else nextOffering.audience = patch.audience;
+      }
+      if (patch.outcome !== undefined) {
+        if (patch.outcome === null) delete nextOffering.outcome;
+        else nextOffering.outcome = patch.outcome;
+      }
+      return nextOffering;
+    });
     const updated: ProgramTrack = {
       ...track,
       ...(patch.displayName !== undefined
         ? { displayName: patch.displayName }
         : {}),
-      offerings: track.offerings.map((offering) =>
-        offering.id === offeringId
-          ? {
-              ...offering,
-              ...(patch.displayName !== undefined
-                ? { displayName: patch.displayName }
-                : {}),
-              ...(patch.description !== undefined
-                ? { description: patch.description }
-                : {}),
-            }
-          : offering
-      ),
+      offerings: nextOfferings,
     };
     this.programs[index] = updated;
     return updated;

@@ -7,7 +7,8 @@
  * token worth inheriting.
  *
  * Adopted: the accent (dark only), danger, warning, both typefaces, corner
- * radius, and the focus ring.
+ * radius, border style/width, elevation shadows, background patterns,
+ * button typography and transition mechanics, and the focus ring.
  * Held: the surface ramp, because this app is deliberately a dark console in
  * both themes, and the light accent, which the personality cannot supply
  * legibly.
@@ -21,10 +22,10 @@
  * and Monaco is themed to match. developer-portal set the precedent for an
  * app-owned surface like this.
  *
- * The `architect` personality drives typography and the shared components:
- * raw, structural, monospace, which is what this surface already was. These
- * tokens name the surfaces the personality does not cover, so no component
- * ever repeats a literal.
+ * The `architect` personality drives typography, shadows, borders, textures,
+ * and the shared components: raw, structural, monospace, which is what this
+ * surface already was. These tokens name the surfaces the personality does
+ * not cover, so no component ever repeats a literal.
  *
  * Four blocks, in this order, so the viewer's toggle wins either way:
  *   1. :root                        the dark default
@@ -54,6 +55,35 @@
      choice for whichever ground is showing. Deciding it separately would mean
      deciding it wrong in one of the two themes. */
   --lx-focus: var(--lx-accent);
+
+  /* Border styles and widths from the personality pair. */
+  --lx-border-width: var(--personality-border-width, 2px);
+  --lx-border-style: var(--personality-border-style, solid);
+  --lx-border-hard: var(--lx-border-strong);
+
+  /* Hard-offset elevation shadows from the personality pair. */
+  --lx-shadow-card: var(
+    --personality-card-shadow,
+    var(--shadow-lg, 8px 8px 0px rgba(0, 0, 0, 0.14))
+  );
+  --lx-shadow-control: var(
+    --personality-box-shadow,
+    var(--shadow-md, 4px 4px 0px rgba(0, 0, 0, 0.18))
+  );
+  --lx-shadow-sm: var(--shadow-sm, 2px 2px 0px rgba(0, 0, 0, 0.18));
+  --lx-shadow-inset: var(--shadow-inset, inset 0 2px 6px rgba(0, 0, 0, 0.45));
+
+  /* Textures and patterns emitted by the personality engine. */
+  --page-background-pattern: none;
+  --surface-texture: none;
+  --lx-page-pattern: var(--page-background-pattern);
+  --lx-surface-texture: var(--surface-texture);
+
+  /* Button mechanics and typography prescribed by the personality. */
+  --lx-btn-transform: var(--personality-button-text-transform, uppercase);
+  --lx-btn-weight: var(--personality-button-font-weight, 800);
+  --lx-btn-transition: var(--personality-transition, all 0.1s steps(2));
+  --lx-transition: var(--lx-btn-transition);
 
   /* Surfaces, darkest to lightest. */
   --lx-bg: #07101a;
@@ -88,6 +118,23 @@
   --lx-accent-soft: #9fe8d8;
   --lx-danger: var(--danger, #d98b6a);
   --lx-warn: var(--warning, #f0c987);
+
+  /* Status text sits on the dark code well, not on the page surface. Keep
+     the semantic hue from the personality, but bias it toward code text so
+     even a very dark or bright semantic output remains readable. */
+  --lx-status-pass-on-code: var(--lx-code-text);
+  --lx-status-pass-on-code: color-mix(
+    in srgb,
+    var(--success, #3a9b72) 35%,
+    var(--lx-code-text)
+  );
+  --lx-status-fail-on-code: var(--lx-code-text);
+  --lx-status-fail-on-code: color-mix(
+    in srgb,
+    var(--danger, #b4552c) 35%,
+    var(--lx-code-text)
+  );
+  --lx-on-surface-active: var(--lx-text);
 
   /* Prism tokens, tuned to the surfaces above. */
   /* Was #5f7c91, which is 4.44:1 on --lx-code and so just misses AA. */
@@ -139,7 +186,8 @@
   }
 }
 
-[data-theme='light'] {
+[data-theme='light'],
+[data-mode='light'] {
   color-scheme: light;
 
   --lx-bg: #f2f6f8;
@@ -171,7 +219,8 @@
   --lx-warn: #8a6212;
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+[data-mode='dark'] {
   color-scheme: dark;
 
   --lx-bg: #07101a;

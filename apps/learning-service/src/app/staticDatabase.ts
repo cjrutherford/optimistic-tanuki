@@ -7,6 +7,7 @@ import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 import { EnrolmentEntity } from '../entities/enrolment.entity';
 import { OfferingOwnershipEntity } from '../entities/offering-ownership.entity';
 import { InitialLearningSchema1787753971919 } from '../migrations/1787753971919-InitialLearningSchema';
+import { QualifyLessonProgressByEnrolment1789478981715 } from '../migrations/1789478981715-QualifyLessonProgressByEnrolment';
 
 const config = {
   type: 'postgres' as const,
@@ -28,7 +29,10 @@ const config = {
   // Hand-written migrations drift from the entities, and this workspace has
   // been bitten by that: a schema the entities never described, and classes
   // renumbered after they had already run.
-  migrations: [InitialLearningSchema1787753971919],
+  migrations: [
+    InitialLearningSchema1787753971919,
+    QualifyLessonProgressByEnrolment1789478981715,
+  ],
   synchronize: false,
   logging: true,
 };

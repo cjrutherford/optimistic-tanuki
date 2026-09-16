@@ -18,6 +18,7 @@ export interface DesignTokens {
   // Shadow scale
   shadows: {
     none: string;
+    inset: string;
     sm: string;
     md: string;
     lg: string;

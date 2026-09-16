@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of, Subject, throwError } from 'rxjs';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+  Router,
+} from '@angular/router';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { LessonComponent } from './lesson.component';
 import {
   Exercise,
@@ -54,12 +59,16 @@ function setup(
     // The nested layout renders its own nav from this.
     dashboard: jest.fn(() => of([])),
     enrol: jest.fn(() => of({ offeringId: 'go-foundations-100-core' })),
+    challenges: jest.fn(() =>
+      of({ challenges: [], enrolledCount: 0, trackDisplayName: '' })
+    ),
     ...overrides,
   };
 
   TestBed.configureTestingModule({
     imports: [LessonComponent],
     providers: [
+      provideRouter([]),
       { provide: LearningDataService, useValue: data },
       // The layout asks who is signed in so it can render the header. Stubbed
       // rather than given an HttpClient, because none of these tests are
@@ -77,6 +86,7 @@ function setup(
               moduleId: 'basics',
               lessonId: 'b-01',
             }),
+            queryParamMap: convertToParamMap({}),
           },
           paramMap: of(
             convertToParamMap({
@@ -85,6 +95,7 @@ function setup(
               lessonId: 'b-01',
             })
           ),
+          queryParamMap: of(convertToParamMap({})),
         },
       },
     ],
@@ -139,6 +150,28 @@ describe('LessonComponent', () => {
     expect(page.results['go-b-01'].output).toBe('ran');
     expect(page.results['go-b-01'].passed).toBeUndefined();
     expect(page.busy['go-b-01']).toBe(false);
+  });
+
+  it('runs code against the offering selected by the lesson', () => {
+    const { component, data } = setup({
+      lesson: jest.fn(() =>
+        of({
+          offeringId: 'go-foundations-100-core',
+          lesson: { id: 'b-01', title: 'Hello', slug: 'hello-world' },
+          content: '# Hello',
+          exercises: [exercise],
+        })
+      ),
+    });
+    const page = component as Handlers;
+
+    page.run(exercise);
+
+    expect(data.run).toHaveBeenCalledWith(
+      'go-b-01',
+      'package main',
+      'go-foundations-100-core'
+    );
   });
 
   it('records a passing submit with the points it awarded', () => {
@@ -426,6 +459,49 @@ describe('LessonComponent', () => {
         'go-foundations-100-core'
       );
     });
+
+    it('explains an already-enrolled conflict without replaying the submit', () => {
+      const submit = jest
+        .fn()
+        .mockImplementationOnce(() =>
+          throwError(() => new NotEnrolledError('go-foundations-100-core'))
+        );
+      const { component, data } = setup({
+        submit,
+        enrol: jest.fn(() =>
+          throwError(() => ({ status: 409, message: 'Conflict' }))
+        ),
+      });
+      const page = component as Handlers;
+
+      page.submit(exercise);
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+
+      expect(data.submit).toHaveBeenCalledTimes(1);
+      expect(page.enrolError['go-foundations-100-core']).toContain(
+        'already enrolled'
+      );
+      expect(page.enrolError['go-foundations-100-core']).toContain('Refresh');
+    });
+
+    it('sends an anonymous enrolment attempt to sign-in at this lesson', () => {
+      const { component } = setup({
+        enrol: jest.fn(() => throwError(() => ({ status: 401 }))),
+      });
+      const page = component as Handlers;
+      const router = TestBed.inject(Router);
+      Object.defineProperty(router, 'url', {
+        configurable: true,
+        value: '/module/go-foundations/basics/b-01',
+      });
+      const navigate = jest.spyOn(router, 'navigate');
+
+      page.enrolThenRetry(exercise, 'go-foundations-100-core');
+
+      expect(navigate).toHaveBeenCalledWith(['/sign-in'], {
+        queryParams: { returnTo: '/module/go-foundations/basics/b-01' },
+      });
+    });
   });
 });
 
@@ -445,6 +521,93 @@ describe('LessonComponent marking a lesson read', () => {
     );
 
     expect(markLesson).toHaveBeenCalledWith('b-01', true);
+  });
+
+  describe('LessonComponent route reuse', () => {
+    it('reacts to param-only navigation and ignores late activity responses', () => {
+      const params = new BehaviorSubject(
+        convertToParamMap({
+          trackId: 'go-foundations',
+          moduleId: 'basics',
+          lessonId: 'b-01',
+        })
+      );
+      const query = new BehaviorSubject(
+        convertToParamMap({ offeringId: 'o-1' })
+      );
+      const firstRun = new Subject<{
+        output: string;
+        errors: string[];
+      }>();
+      const secondLesson = new Subject<{
+        lesson: { id: string; title: string; slug: string };
+        content: string;
+        exercises: Exercise[];
+      }>();
+      const data = {
+        lesson: jest.fn((_: string, lessonId: string) =>
+          lessonId === 'b-01'
+            ? of({
+                lesson: { id: 'b-01', title: 'First', slug: 'first' },
+                content: '# First',
+                exercises: [exercise],
+              })
+            : secondLesson.asObservable()
+        ),
+        myProgress: jest.fn(() => of([])),
+        run: jest.fn(() => firstRun.asObservable()),
+        submit: jest.fn(() => of(submitResult)),
+        dashboard: jest.fn(() => of([])),
+        challenges: jest.fn(() =>
+          of({ challenges: [], enrolledCount: 0, trackDisplayName: '' })
+        ),
+      };
+
+      TestBed.configureTestingModule({
+        imports: [LessonComponent],
+        providers: [
+          provideRouter([]),
+          { provide: LearningDataService, useValue: data },
+          {
+            provide: LearningAuthService,
+            useValue: { me: () => of(null), logout: () => of(null) },
+          },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                paramMap: params.value,
+                queryParamMap: query.value,
+              },
+              paramMap: params.asObservable(),
+              queryParamMap: query.asObservable(),
+            },
+          },
+        ],
+      });
+      const fixture = TestBed.createComponent(LessonComponent);
+      fixture.detectChanges();
+      const page = fixture.componentInstance as unknown as Handlers & {
+        trackId(): string;
+        moduleId(): string;
+      };
+
+      page.run(exercise);
+      params.next(
+        convertToParamMap({
+          trackId: 'go-foundations',
+          moduleId: 'advanced',
+          lessonId: 'b-02',
+        })
+      );
+      fixture.detectChanges();
+
+      expect(page.trackId()).toBe('go-foundations');
+      expect(page.moduleId()).toBe('advanced');
+      expect(page.results['go-b-01']).toBeUndefined();
+      firstRun.next({ output: 'late', errors: [] });
+      expect(page.results['go-b-01']).toBeUndefined();
+    });
   });
 
   /**

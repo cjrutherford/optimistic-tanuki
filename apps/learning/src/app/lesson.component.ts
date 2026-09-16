@@ -1,12 +1,22 @@
 import { Component, inject } from '@angular/core';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  BehaviorSubject,
+  combineLatest,
+  distinctUntilChanged,
+  map,
+  shareReplay,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import {
   ActivityAnswerComponent,
   AnswerMark,
+  CodeActivityResult,
   EnrolmentGateComponent,
   LessonCompletionComponent,
   LessonProseComponent,
@@ -15,6 +25,7 @@ import { LearningLayoutComponent } from './learning-layout.component';
 import { LessonMarkdownService } from './lesson-markdown.service';
 import { CodeEditorComponent } from './code-editor.component';
 import { CodeDraftStore } from './code-draft.store';
+import { addOfferingToLearningReturnTo } from './route-return';
 import { Diagnostic, parseCompilerErrors } from './code-diagnostics';
 import {
   Exercise,
@@ -22,6 +33,7 @@ import {
   LessonProgress,
   NotEnrolledError,
   NotSignedInError,
+  TestResultItem,
 } from './learning-data.service';
 
 interface ExerciseOutcome {
@@ -30,6 +42,8 @@ interface ExerciseOutcome {
   /** Absent for a plain run, which never judges the answer. */
   passed?: boolean;
   awardedPoints?: number;
+  testsPassed?: boolean;
+  testResults?: TestResultItem[];
   needsSignIn?: boolean;
   /** Which action needed the session, so the message fits what was tried. */
   needsSignInFor?: 'run' | 'submit';
@@ -53,9 +67,16 @@ interface ExerciseOutcome {
     LessonProseComponent,
     ActivityAnswerComponent,
   ],
-  template: `<learning-layout [trackId]="trackId"
+  template: `<learning-layout
+    [trackId]="trackId()"
+    [offeringId]="effectiveOfferingId()"
     ><ng-container *ngIf="vm$ | async as vm"
-      ><a [routerLink]="['/module', trackId, moduleId]" class="back"
+      ><a
+        [routerLink]="['/module', trackId(), moduleId()]"
+        [queryParams]="
+          effectiveOfferingId() ? { offeringId: effectiveOfferingId() } : null
+        "
+        class="back"
         >← Module</a
       >
       <header>
@@ -63,7 +84,7 @@ interface ExerciseOutcome {
         <h1>{{ vm.lesson.lesson.title }}</h1>
       </header>
       <div class="lesson-grid">
-        <div class="reading">
+        <article class="reading">
           <otlearn-lesson-prose [html]="vm.content"></otlearn-lesson-prose>
           <!--
             The work this lesson's author set. Authored activities were
@@ -76,11 +97,38 @@ interface ExerciseOutcome {
             @for (activity of vm.lesson.activities ?? []; track activity.id) {
             <otlearn-activity-answer
               [activity]="activity"
-              [mark]="marks[activity.id] ?? null"
+              [mark]="
+                activity.type === 'code.run' ? null : marks[activity.id] ?? null
+              "
               [busy]="answering === activity.id"
               [error]="answerErrors[activity.id] ?? ''"
+              [enrolling]="
+                activityOfferingId(activity.id)
+                  ? enrolling[activityOfferingId(activity.id)!] ?? false
+                  : false
+              "
+              [enrolError]="
+                activityOfferingId(activity.id)
+                  ? enrolError[activityOfferingId(activity.id)!] ?? ''
+                  : ''
+              "
+              [code]="activityCode[activity.id] ?? activity.starterCode ?? ''"
+              [codeResult]="activityResults[activity.id] ?? null"
               (answer)="answerActivity(activity.id, $event)"
-            ></otlearn-activity-answer>
+              (runCode)="runActivity(activity.id, $event)"
+              (submitCode)="submitActivity(activity.id, $event)"
+              (enrol)="enrolActivityThenRetry(activity.id, $event)"
+            >
+              @if (activity.type === 'code.run') {
+              <learning-code-editor
+                [code]="activityCode[activity.id] ?? activity.starterCode ?? ''"
+                (codeChange)="onActivityCodeChange(activity.id, $event)"
+                [language]="activity.languageId ?? 'typescript'"
+                [diagnostics]="activityDiagnostics[activity.id] ?? []"
+                [label]="activity.prompt + ' code'"
+              ></learning-code-editor>
+              }
+            </otlearn-activity-answer>
             }
           </section>
           }
@@ -95,16 +143,27 @@ interface ExerciseOutcome {
             [error]="markError"
             (toggle)="markRead(vm, $event)"
           ></otlearn-lesson-completion>
-        </div>
+        </article>
         <aside aria-label="Practice exercises">
           <div class="practice-head">
             <span>Practice</span>
             <span
-              >{{ vm.solvedCount }}/{{
-                vm.lesson.exercises.length
-              }}
-              solved</span
+              class="practice-count"
+              role="status"
+              aria-live="polite"
+              [attr.aria-label]="
+                vm.solvedCount +
+                ' of ' +
+                vm.lesson.exercises.length +
+                ' exercises solved'
+              "
             >
+              <span class="counter-led" aria-hidden="true"></span>
+              <span class="counter-value"
+                >{{ vm.solvedCount }}/{{ vm.lesson.exercises.length }}</span
+              >
+              <span class="counter-label">solved</span>
+            </span>
           </div>
           @for (exercise of vm.lesson.exercises; track exercise.id) {
           <section class="exercise" [class.solved]="vm.solved.has(exercise.id)">
@@ -150,7 +209,10 @@ interface ExerciseOutcome {
               }
             </div>
             }
-            <div class="actions">
+            <div
+              class="actions"
+              [attr.aria-busy]="busy[exercise.id] ? 'true' : null"
+            >
               <otui-button
                 variant="secondary"
                 [disabled]="busy[exercise.id]"
@@ -174,7 +236,9 @@ interface ExerciseOutcome {
                 Reset to starter
               </button>
               } @if (busy[exercise.id]) {
-              <span class="working">Running…</span>
+              <span class="working" role="status" aria-live="polite"
+                >Running…</span
+              >
               }
             </div>
             @if (results[exercise.id]; as result) {
@@ -204,14 +268,57 @@ interface ExerciseOutcome {
               </p>
               } @else { @if (result.passed === true) {
               <p class="verdict">
+                <span class="result-beacon" aria-hidden="true">PASS</span>
                 Passed@if (result.awardedPoints) {, +{{ result.awardedPoints }}
                 points }
               </p>
               } @else if (result.passed === false) {
-              <p class="verdict">Not passed yet</p>
-              }
-              <pre>{{ transcript(result) }}</pre>
-              }
+              <p class="verdict">
+                <span class="result-beacon" aria-hidden="true">FAIL</span>
+                Not passed yet
+              </p>
+              } @if (result.testResults && result.testResults.length > 0) {
+              <div class="test-suite-results">
+                @for (t of result.testResults; track t.name) {
+                <div
+                  class="test-item"
+                  [class.pass]="t.passed"
+                  [class.fail]="!t.passed"
+                >
+                  <div class="test-item-header">
+                    <span class="test-status-badge">{{
+                      t.passed ? 'PASS' : 'FAIL'
+                    }}</span>
+                    <span class="test-name">{{ t.name }}</span>
+                  </div>
+                  @if (!t.passed && t.error) {
+                  <p class="test-error">{{ t.error }}</p>
+                  }
+                </div>
+                }
+              </div>
+              } @if (result.errors.length) {
+              <div class="result-stream diagnostics-stream">
+                <span class="stream-label">Compiler / runtime diagnostics</span>
+                <pre>{{
+                  result.errors.join(
+                    '
+'
+                  )
+                }}</pre>
+              </div>
+              } @if (result.output) {
+              <div class="result-stream output-stream">
+                <span class="stream-label">Program output</span>
+                <pre>{{ result.output }}</pre>
+              </div>
+              } @if ( !result.errors.length && !result.output &&
+              !result.testResults?.length ) {
+              <div class="result-stream">
+                <span class="stream-label">Run result</span>
+                <pre>{{ transcript(result) }}</pre>
+              </div>
+              } }
             </div>
             }
           </section>
@@ -227,6 +334,9 @@ interface ExerciseOutcome {
         text-decoration: none;
         font-size: 0.85rem;
       }
+      .back:hover {
+        color: var(--lx-accent);
+      }
       header {
         margin: 2rem 0;
       }
@@ -239,13 +349,16 @@ interface ExerciseOutcome {
       }
       h1 {
         margin: 0.65rem 0;
-        font-size: clamp(2.5rem, 4.5vw, 4.6rem);
+        max-width: 16ch;
+        font-size: clamp(2.1rem, 5vw, 4.6rem);
         letter-spacing: -0.06em;
         line-height: 0.92;
+        text-wrap: balance;
       }
       .lesson-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(330px, 0.85fr);
+        align-items: start;
         gap: 1.2rem;
       }
       /*
@@ -253,15 +366,17 @@ interface ExerciseOutcome {
         shrink below its widest content. Without this a long line of code
         made the whole page scroll sideways on a phone.
       */
-      .reading {
-        min-width: 0;
-      }
-      article,
+      .reading,
       aside {
-        border: 1px solid var(--lx-border);
-        background: var(--lx-surface);
+        min-width: 0;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-strong);
+        border-radius: var(--lx-radius);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-card);
       }
-      article {
+      .reading {
         padding: 1.2rem 1.5rem 2rem;
       }
 
@@ -279,23 +394,75 @@ interface ExerciseOutcome {
         display: grid;
         gap: 1rem;
         margin-top: 2.5rem;
+        padding-top: 1.25rem;
+        border-top: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
       }
       .activities h2 {
         margin: 0;
+        color: var(--lx-text);
+        font: var(--lx-btn-weight) 0.78rem/1 var(--lx-font-mono, monospace);
+        letter-spacing: 0.1em;
         font-size: 1rem;
+        text-transform: var(--lx-btn-transform, uppercase);
       }
       aside {
+        position: relative;
         padding: 1.1rem;
       }
       .practice-head {
         display: flex;
+        position: sticky;
+        z-index: 2;
+        top: 0;
         justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        margin: -1.1rem -1.1rem 0;
+        padding: 1rem 1.1rem 0.85rem;
         padding-bottom: 1rem;
-        border-bottom: 1px solid var(--lx-border);
+        border-bottom: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-sm);
+      }
+      .practice-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-height: 1.75rem;
+        padding: 0.2rem 0.5rem 0.2rem 0.4rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-accent);
+        border-radius: var(--lx-radius);
+        background: var(--lx-surface-active);
+        color: var(--lx-text);
+        box-shadow: var(--lx-shadow-control);
+        font: var(--lx-btn-weight) 0.68rem/1 var(--lx-font-mono, monospace);
+        letter-spacing: 0.04em;
+        text-transform: var(--lx-btn-transform, uppercase);
+      }
+      .counter-led {
+        display: inline-block;
+        width: 0.48rem;
+        height: 0.48rem;
+        border: var(--lx-border-width) var(--lx-border-style) var(--lx-bg);
+        border-radius: 50%;
+        background: var(--lx-accent);
+        box-shadow: var(--lx-shadow-sm);
+      }
+      .counter-value {
+        color: var(--lx-on-surface-active);
+        font-size: 0.76rem;
+      }
+      .counter-label {
+        color: var(--lx-text-muted);
       }
       .exercise {
         padding: 1.2rem 0;
-        border-bottom: 1px solid var(--lx-border);
+        border-bottom: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
       }
       .exercise:last-child {
         border-bottom: 0;
@@ -327,7 +494,8 @@ interface ExerciseOutcome {
         min-height: 220px;
         margin: 1rem 0;
         padding: 1rem;
-        border: 1px solid var(--lx-border-strong);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-strong);
         background: var(--lx-code);
         color: var(--lx-code-text);
         font: 400 0.82rem/1.6 var(--lx-font-mono, ui-monospace, monospace);
@@ -356,7 +524,7 @@ interface ExerciseOutcome {
       }
       .hint-more {
         padding: 0.4rem 0.75rem;
-        border: 1px dashed var(--lx-border-strong);
+        border: var(--lx-border-width) dashed var(--lx-border-strong);
         border-radius: var(--lx-radius, 2px);
         background: none;
         color: var(--lx-text-muted);
@@ -368,7 +536,7 @@ interface ExerciseOutcome {
         color: var(--lx-accent);
       }
       .hint-more:focus-visible {
-        outline: 2px solid var(--lx-accent);
+        outline: var(--lx-border-width) solid var(--lx-focus);
         outline-offset: 2px;
       }
       .hint-more em {
@@ -380,33 +548,74 @@ interface ExerciseOutcome {
         gap: 0.6rem;
         align-items: center;
         flex-wrap: wrap;
+        padding-top: 0.75rem;
+        border-top: var(--lx-border-width) dashed var(--lx-border-soft);
+      }
+      .actions otui-button {
+        min-width: 7rem;
+        --personality-button-font-weight: var(--lx-btn-weight);
+        --personality-button-text-transform: var(--lx-btn-transform);
+        --personality-button-radius: var(--lx-radius);
+        --personality-border-width: var(--lx-border-width);
+        --personality-border-style: var(--lx-border-style);
+        --personality-box-shadow: var(--lx-shadow-control);
+        --shadow-lg: var(--lx-shadow-control);
+        --shadow-sm: var(--lx-shadow-sm);
+        --personality-transition: var(--lx-btn-transition);
       }
       .working {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2rem;
+        padding: 0 0.55rem;
+        border-left: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-accent);
+        background: var(--lx-surface-hover);
         color: var(--lx-text-subtle);
+        font: 700 0.68rem/1 var(--lx-font-mono, monospace);
         font-size: 0.8rem;
+        text-transform: var(--lx-btn-transform, uppercase);
       }
       .reset {
+        min-height: 2rem;
         padding: 0.4rem 0.7rem;
-        border: 1px solid transparent;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
         border-radius: var(--lx-radius, 2px);
-        background: none;
-        color: var(--lx-text-subtle);
-        font: 400 0.78rem inherit;
+        background: var(--lx-surface);
+        color: var(--lx-text-muted);
+        font: var(--lx-btn-weight) 0.68rem/1 var(--lx-font-mono, monospace);
+        text-transform: var(--lx-btn-transform, uppercase);
+        box-shadow: var(--lx-shadow-sm);
         cursor: pointer;
+        transition: var(--lx-btn-transition);
       }
       .reset:hover {
         border-color: var(--lx-border-strong);
-        color: var(--lx-text-body);
+        background: var(--lx-surface-hover);
+        color: var(--lx-text);
+        box-shadow: var(--lx-shadow-control);
+        transform: translateY(-1px);
+      }
+      .reset:active {
+        box-shadow: var(--lx-shadow-inset);
+        transform: translate(1px, 1px);
       }
       .reset:focus-visible {
-        outline: 2px solid var(--lx-accent);
+        outline: var(--lx-border-width) solid var(--lx-focus);
         outline-offset: 2px;
       }
       .result {
         margin: 1rem 0 0;
         padding: 0.8rem;
-        border-left: 3px solid var(--lx-border-strong);
-        background: var(--lx-well);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-strong);
+        border-left-width: calc(var(--lx-border-width) + 2px);
+        border-radius: var(--lx-radius);
+        background-color: var(--lx-code);
+        background-image: var(--lx-surface-texture);
+        color: var(--lx-code-text);
+        box-shadow: var(--lx-shadow-inset);
       }
       .result.pass {
         border-left-color: var(--lx-accent);
@@ -415,32 +624,144 @@ interface ExerciseOutcome {
         border-left-color: var(--lx-danger);
       }
       .result .verdict {
-        margin: 0 0 0.4rem;
-        color: var(--lx-text-body);
-        font: 700 0.8rem var(--lx-font-mono, ui-monospace, monospace);
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0 0 0.65rem;
+        color: var(--lx-code-text);
+        font: var(--lx-btn-weight) 0.78rem/1 var(--lx-font-mono, monospace);
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
       .result.pass .verdict {
-        color: var(--lx-accent);
+        color: var(--lx-status-pass-on-code);
       }
       .result.fail .verdict {
-        color: var(--lx-danger);
+        color: var(--lx-status-fail-on-code);
+      }
+      .result-beacon {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.3rem;
+        padding: 0.15rem 0.35rem;
+        border: var(--lx-border-width) var(--lx-border-style) currentColor;
+        border-radius: var(--lx-radius);
+        font-size: 0.58rem;
+        letter-spacing: 0.08em;
       }
       .result .detail {
         margin: 0;
-        color: var(--lx-text-subtle);
+        color: var(--lx-text-muted);
         font-size: 0.8rem;
+      }
+
+      .test-suite-results {
+        display: grid;
+        gap: 0.4rem;
+        margin: 0.6rem 0;
+      }
+      .test-item {
+        padding: 0.5rem 0.6rem;
+        border-radius: var(--lx-radius, 3px);
+        background: var(--lx-surface);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        box-shadow: var(--lx-shadow-sm);
+        font-size: 0.8rem;
+      }
+      .test-item.pass {
+        border-left: calc(var(--lx-border-width) + 1px) var(--lx-border-style)
+          var(--lx-accent);
+      }
+      .test-item.fail {
+        border-left: calc(var(--lx-border-width) + 1px) var(--lx-border-style)
+          var(--lx-danger);
+      }
+      .test-item-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .test-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.45rem;
+        min-height: 1.2rem;
+        padding: 0.1rem 0.25rem;
+        border: var(--lx-border-width) var(--lx-border-style) currentColor;
+        border-radius: var(--lx-radius);
+        font: var(--lx-btn-weight) 0.56rem/1 var(--lx-font-mono, monospace);
+        letter-spacing: 0.04em;
+      }
+      .test-item.pass .test-status-badge {
+        color: var(--lx-accent);
+      }
+      .test-item.fail .test-status-badge {
+        color: var(--lx-danger);
+      }
+      .test-name {
+        font-weight: 600;
+        color: var(--lx-text);
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
+        font-size: 0.78rem;
+      }
+      .test-error {
+        margin: 0.45rem 0 0 3.1rem;
+        color: var(--lx-danger);
+        font-size: 0.76rem;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
+        white-space: pre-wrap;
+      }
+
+      .result-stream {
+        display: grid;
+        gap: 0.35rem;
+        margin-top: 0.7rem;
+        padding-top: 0.6rem;
+        border-top: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+      }
+      .stream-label {
+        color: var(--lx-text-muted);
+        font: var(--lx-btn-weight) 0.6rem/1 var(--lx-font-mono, monospace);
+        letter-spacing: 0.08em;
+        text-transform: var(--lx-btn-transform, uppercase);
       }
       .result pre {
         margin: 0;
-        color: var(--lx-text-body);
+        color: var(--lx-code-text);
         white-space: pre-wrap;
         font: 400 0.78rem/1.5 var(--lx-font-mono, ui-monospace, monospace);
       }
       @media (max-width: 850px) {
         .lesson-grid {
           grid-template-columns: 1fr;
+        }
+        .practice-head {
+          position: static;
+          margin: -1.1rem -1.1rem 0;
+        }
+      }
+      @media (max-width: 520px) {
+        .reading {
+          padding: 1rem 0.9rem 1.5rem;
+        }
+        aside {
+          padding: 1rem 0.9rem;
+        }
+        .practice-head {
+          margin: -1rem -0.9rem 0;
+          padding-inline: 0.9rem;
+        }
+        .actions otui-button {
+          flex: 1 1 8rem;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .reset,
+        .practice-count {
+          transition: none;
         }
       }
     `,
@@ -449,6 +770,7 @@ interface ExerciseOutcome {
 export class LessonComponent {
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly markdown = inject(LessonMarkdownService);
   private readonly drafts = inject(CodeDraftStore);
 
@@ -459,21 +781,72 @@ export class LessonComponent {
   protected enrolError: Record<string, string> = {};
   protected busy: Record<string, boolean> = {};
 
-  readonly trackId = this.route.snapshot.paramMap.get('trackId')!;
-  readonly moduleId = this.route.snapshot.paramMap.get('moduleId')!;
-
-  private readonly lesson$ = this.route.paramMap.pipe(
-    switchMap((params) =>
-      this.data.lesson(params.get('trackId')!, params.get('lessonId')!)
+  private routeGeneration = 0;
+  private readonly routeState$ = combineLatest([
+    this.route.paramMap,
+    this.route.queryParamMap,
+  ]).pipe(
+    map(([params, query]) => ({
+      trackId: params.get('trackId') ?? '',
+      moduleId: params.get('moduleId') ?? '',
+      lessonId: params.get('lessonId') ?? '',
+      offeringId: query.get('offeringId') ?? '',
+    })),
+    distinctUntilChanged(
+      (left, right) =>
+        left.trackId === right.trackId &&
+        left.moduleId === right.moduleId &&
+        left.lessonId === right.lessonId &&
+        left.offeringId === right.offeringId
     ),
-    tap((lesson) =>
-      lesson.exercises.forEach((exercise) => {
-        // A saved draft wins over the starter, so navigating away and back
-        // does not throw away what the learner was in the middle of writing.
-        this.code[exercise.id] ??=
-          this.drafts.read(exercise.id) ?? exercise.starterCode;
-      })
-    )
+    tap(() => this.resetRouteState()),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  readonly trackId = toSignal(
+    this.routeState$.pipe(map((state) => state.trackId)),
+    {
+      initialValue: this.route.snapshot.paramMap.get('trackId') ?? '',
+    }
+  );
+  readonly moduleId = toSignal(
+    this.routeState$.pipe(map((state) => state.moduleId)),
+    {
+      initialValue: this.route.snapshot.paramMap.get('moduleId') ?? '',
+    }
+  );
+  private readonly lesson$ = this.routeState$.pipe(
+    switchMap((state) => {
+      const generation = this.routeGeneration;
+      return this.data
+        .lesson(
+          state.trackId,
+          state.lessonId,
+          state.offeringId || undefined,
+          state.moduleId || undefined
+        )
+        .pipe(
+          tap((lesson) => {
+            if (generation !== this.routeGeneration) return;
+            lesson.exercises.forEach((exercise) => {
+              // A saved draft wins over the starter, so navigating away and
+              // back does not throw away what the learner was writing.
+              this.code[exercise.id] ??=
+                this.drafts.read(exercise.id) ?? exercise.starterCode;
+            });
+          })
+        );
+    }),
+    shareReplay({ bufferSize: 1, refCount: true })
+  );
+
+  readonly effectiveOfferingId = toSignal(
+    combineLatest([this.routeState$, this.lesson$]).pipe(
+      map(([state, lesson]) => state.offeringId || lesson.offeringId || '')
+    ),
+    {
+      initialValue: this.route.snapshot.queryParamMap.get('offeringId') ?? '',
+    }
   );
 
   /** Pushed after a passing submit so the solved badges update immediately. */
@@ -483,10 +856,19 @@ export class LessonComponent {
     switchMap(() => this.data.myProgress())
   );
 
-  readonly vm$ = combineLatest([this.lesson$, this.progress$]).pipe(
-    map(([lesson, progress]) => {
+  readonly vm$ = combineLatest([
+    this.lesson$,
+    this.progress$,
+    this.routeState$,
+  ]).pipe(
+    map(([lesson, progress, routeState]) => {
+      const selectedOfferingId = routeState.offeringId || lesson.offeringId;
+      const scopedProgress = progress.filter(
+        (entry) =>
+          !selectedOfferingId || entry.offeringId === selectedOfferingId
+      );
       const solved = new Set(
-        progress.flatMap((entry) => entry.completedExerciseIds)
+        scopedProgress.flatMap((entry) => entry.completedExerciseIds)
       );
       return {
         lesson,
@@ -499,12 +881,14 @@ export class LessonComponent {
           solved.has(exercise.id)
         ).length,
         lessonCompleted: Boolean(
-          progress.find((entry) => entry.lessonId === lesson.lesson.id)
+          scopedProgress.find((entry) => entry.lessonId === lesson.lesson.id)
             ?.completed
         ),
         // Carried through so marking a lesson read does not wipe the
         // exercises already solved in it, or the points earned for them.
-        recorded: progress.find((entry) => entry.lessonId === lesson.lesson.id),
+        recorded: scopedProgress.find(
+          (entry) => entry.lessonId === lesson.lesson.id
+        ),
       };
     })
   );
@@ -516,6 +900,10 @@ export class LessonComponent {
   protected marks: Record<string, AnswerMark> = {};
   protected answering = '';
   protected answerErrors: Record<string, string> = {};
+  protected activityCode: Record<string, string> = {};
+  protected activityResults: Record<string, CodeActivityResult> = {};
+  protected activityDiagnostics: Record<string, Diagnostic[]> = {};
+  protected pendingActivityAction: Record<string, 'run' | 'submit'> = {};
 
   /**
    * Answers an activity the author set and shows what it was marked.
@@ -525,15 +913,22 @@ export class LessonComponent {
    * itself anything.
    */
   protected answerActivity(activityId: string, submission: unknown): void {
+    const generation = this.routeGeneration;
     this.answering = activityId;
     this.answerErrors = { ...this.answerErrors, [activityId]: '' };
-    this.data.answerActivity(activityId, submission).subscribe({
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.answerActivity(activityId, submission, offeringId)
+      : this.data.answerActivity(activityId, submission);
+    request.subscribe({
       next: (result) => {
+        if (generation !== this.routeGeneration) return;
         this.answering = '';
         this.marks = { ...this.marks, [activityId]: result };
         this.progressReload$.next();
       },
       error: (failure: unknown) => {
+        if (generation !== this.routeGeneration) return;
         this.answering = '';
         this.answerErrors = {
           ...this.answerErrors,
@@ -544,6 +939,145 @@ export class LessonComponent {
               ? 'Enrol in this course to answer.'
               : 'Could not send that just now.',
         };
+      },
+    });
+  }
+
+  protected onActivityCodeChange(activityId: string, code: string): void {
+    this.activityCode[activityId] = code;
+    this.activityDiagnostics[activityId] = [];
+  }
+
+  protected activityOfferingId(_activityId: string): string {
+    return this.effectiveOfferingId();
+  }
+
+  protected enrolActivityThenRetry(
+    activityId: string,
+    offeringId: string
+  ): void {
+    this.enrolling[offeringId] = true;
+    this.enrolError[offeringId] = '';
+    this.data.enrol(offeringId).subscribe({
+      next: () => {
+        this.enrolling[offeringId] = false;
+        const code = this.activityCode[activityId] ?? '';
+        const action = this.pendingActivityAction[activityId];
+        delete this.pendingActivityAction[activityId];
+        if (action === 'run') this.runActivity(activityId, code);
+        else this.submitActivity(activityId, code);
+      },
+      error: () => {
+        this.enrolling[offeringId] = false;
+        this.enrolError[offeringId] = 'Could not enrol just now.';
+      },
+    });
+  }
+
+  protected runActivity(activityId: string, code: string): void {
+    const generation = this.routeGeneration;
+    this.activityCode[activityId] = code;
+    this.answering = activityId;
+    this.answerErrors = { ...this.answerErrors, [activityId]: '' };
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.run(activityId, code, offeringId)
+      : this.data.run(activityId, code);
+    request.subscribe({
+      next: (result) => {
+        if (generation !== this.routeGeneration) return;
+        this.answering = '';
+        delete this.pendingActivityAction[activityId];
+        this.activityResults = {
+          ...this.activityResults,
+          [activityId]: {
+            output: result.output,
+            errors: result.errors,
+            testsPassed: result.testsPassed,
+          },
+        };
+        this.activityDiagnostics = {
+          ...this.activityDiagnostics,
+          [activityId]: parseCompilerErrors(result.errors),
+        };
+      },
+      error: (failure: unknown) => {
+        if (generation !== this.routeGeneration) return;
+        this.answering = '';
+        this.activityResults = {
+          ...this.activityResults,
+          [activityId]: {
+            output: '',
+            errors: [],
+            needsSignIn: failure instanceof NotSignedInError,
+            needsSignInFor: 'run',
+            needsEnrolmentIn:
+              failure instanceof NotEnrolledError
+                ? failure.offeringId || offeringId
+                : undefined,
+          },
+        };
+        if (failure instanceof NotEnrolledError) {
+          this.pendingActivityAction[activityId] = 'run';
+        }
+      },
+    });
+  }
+
+  protected submitActivity(activityId: string, code: string): void {
+    const generation = this.routeGeneration;
+    this.activityCode[activityId] = code;
+    this.answering = activityId;
+    this.answerErrors = { ...this.answerErrors, [activityId]: '' };
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.answerActivity(activityId, code, offeringId)
+      : this.data.answerActivity(activityId, code);
+    request.subscribe({
+      next: (result) => {
+        if (generation !== this.routeGeneration) return;
+        this.answering = '';
+        delete this.pendingActivityAction[activityId];
+        const passed =
+          result.passed ??
+          (result.maxScore !== undefined &&
+            result.score !== undefined &&
+            result.score === result.maxScore);
+        this.activityResults = {
+          ...this.activityResults,
+          [activityId]: {
+            output: result.output ?? '',
+            errors: result.errors ?? [],
+            passed,
+            testsPassed: result.testsPassed,
+            awardedPoints: result.awardedPoints,
+          },
+        };
+        this.activityDiagnostics = {
+          ...this.activityDiagnostics,
+          [activityId]: parseCompilerErrors(result.errors ?? []),
+        };
+        this.progressReload$.next();
+      },
+      error: (failure: unknown) => {
+        if (generation !== this.routeGeneration) return;
+        this.answering = '';
+        this.activityResults = {
+          ...this.activityResults,
+          [activityId]: {
+            output: '',
+            errors: [],
+            needsSignIn: failure instanceof NotSignedInError,
+            needsSignInFor: 'submit',
+            needsEnrolmentIn:
+              failure instanceof NotEnrolledError
+                ? failure.offeringId || offeringId
+                : undefined,
+          },
+        };
+        if (failure instanceof NotEnrolledError) {
+          this.pendingActivityAction[activityId] = 'submit';
+        }
       },
     });
   }
@@ -559,14 +1093,21 @@ export class LessonComponent {
     vm: { lesson: { lesson: { id: string } } },
     completed: boolean
   ): void {
+    const generation = this.routeGeneration;
     this.marking = true;
     this.markError = '';
-    this.data.markLesson(vm.lesson.lesson.id, completed).subscribe({
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.markLesson(vm.lesson.lesson.id, completed, offeringId)
+      : this.data.markLesson(vm.lesson.lesson.id, completed);
+    request.subscribe({
       next: () => {
+        if (generation !== this.routeGeneration) return;
         this.marking = false;
         this.progressReload$.next();
       },
       error: (failure: unknown) => {
+        if (generation !== this.routeGeneration) return;
         this.marking = false;
         this.markError =
           failure instanceof NotSignedInError
@@ -599,35 +1140,57 @@ export class LessonComponent {
   }
 
   protected run(exercise: Exercise): void {
+    const generation = this.routeGeneration;
     this.busy[exercise.id] = true;
-    this.data.run(exercise.id, this.codeFor(exercise)).subscribe({
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.run(exercise.id, this.codeFor(exercise), offeringId)
+      : this.data.run(exercise.id, this.codeFor(exercise));
+    request.subscribe({
       next: (result) => {
+        if (generation !== this.routeGeneration) return;
         this.results[exercise.id] = {
           output: result.output,
           errors: result.errors,
+          testsPassed: result.testsPassed,
+          testResults: result.testResults,
         };
         this.diagnostics[exercise.id] = parseCompilerErrors(result.errors);
         this.busy[exercise.id] = false;
       },
-      error: (error) => this.fail(exercise, error, 'run'),
+      error: (error) => {
+        if (generation !== this.routeGeneration) return;
+        this.fail(exercise, error, 'run');
+      },
     });
   }
 
   protected submit(exercise: Exercise): void {
+    const generation = this.routeGeneration;
     this.busy[exercise.id] = true;
-    this.data.submit(exercise.id, this.codeFor(exercise)).subscribe({
+    const offeringId = this.effectiveOfferingId();
+    const request = offeringId
+      ? this.data.submit(exercise.id, this.codeFor(exercise), offeringId)
+      : this.data.submit(exercise.id, this.codeFor(exercise));
+    request.subscribe({
       next: (result) => {
+        if (generation !== this.routeGeneration) return;
         this.results[exercise.id] = {
           output: result.output,
           errors: result.errors,
           passed: result.passed,
           awardedPoints: result.awardedPoints,
+          testsPassed: result.testsPassed,
+          testResults: result.testResults,
         };
         this.diagnostics[exercise.id] = parseCompilerErrors(result.errors);
         this.busy[exercise.id] = false;
         if (result.passed) this.progressReload$.next();
       },
-      error: (error) => this.fail(exercise, error, 'submit'),
+      error: (error) => {
+        if (generation !== this.routeGeneration) return;
+        this.fail(exercise, error, 'submit');
+      },
     });
   }
 
@@ -638,20 +1201,39 @@ export class LessonComponent {
    * afterwards would be a second ask for a decision they just made.
    */
   protected enrolThenRetry(exercise: Exercise, offeringId: string): void {
+    const generation = this.routeGeneration;
     if (this.enrolling[offeringId]) return;
     this.enrolling[offeringId] = true;
     this.enrolError[offeringId] = '';
 
     this.data.enrol(offeringId).subscribe({
       next: () => {
+        if (generation !== this.routeGeneration) return;
         this.enrolling[offeringId] = false;
         delete this.results[exercise.id];
         this.progressReload$.next();
         this.submit(exercise);
       },
-      error: (error: Error) => {
+      error: (error: Error & { status?: number }) => {
+        if (generation !== this.routeGeneration) return;
         this.enrolling[offeringId] = false;
-        this.enrolError[offeringId] = error?.message ?? 'Could not enrol';
+        if (error?.status === 401) {
+          // Do not retry a mutation after sign-in. Return to this exact lesson
+          // so the learner can make the enrolment decision once authenticated.
+          this.router.navigate(['/sign-in'], {
+            queryParams: {
+              returnTo: addOfferingToLearningReturnTo(
+                this.router.url,
+                this.effectiveOfferingId()
+              ),
+            },
+          });
+          return;
+        }
+        this.enrolError[offeringId] =
+          error?.status === 409
+            ? 'You are already enrolled. Refresh this lesson, then continue.'
+            : error?.message ?? 'Could not enrol';
       },
     });
   }
@@ -662,6 +1244,14 @@ export class LessonComponent {
    * would already be a real newline by the time Angular parsed it.
    */
   protected transcript(result: ExerciseOutcome): string {
+    if (
+      result.testResults &&
+      result.testResults.length > 0 &&
+      !result.output &&
+      result.errors.length === 0
+    ) {
+      return '';
+    }
     return result.output || result.errors.join('\n') || 'No output';
   }
 
@@ -700,7 +1290,10 @@ export class LessonComponent {
       this.results[exercise.id] = {
         output: '',
         errors: [],
-        needsEnrolmentIn: error.offeringId,
+        // Some gateway error serializers omit the offering id. The lesson
+        // route already carries the selected offering, so keep the enrolment
+        // invitation actionable instead of rendering an empty result well.
+        needsEnrolmentIn: error.offeringId || this.effectiveOfferingId(),
       };
       return;
     }
@@ -717,5 +1310,25 @@ export class LessonComponent {
       output: '',
       errors: [(error as Error)?.message ?? 'Code could not run'],
     };
+  }
+
+  private resetRouteState(): void {
+    this.routeGeneration += 1;
+    this.code = {};
+    this.results = {};
+    this.diagnostics = {};
+    this.enrolling = {};
+    this.enrolError = {};
+    this.busy = {};
+    this.marking = false;
+    this.markError = '';
+    this.marks = {};
+    this.answering = '';
+    this.answerErrors = {};
+    this.activityCode = {};
+    this.activityResults = {};
+    this.activityDiagnostics = {};
+    this.pendingActivityAction = {};
+    this.shownHints = {};
   }
 }

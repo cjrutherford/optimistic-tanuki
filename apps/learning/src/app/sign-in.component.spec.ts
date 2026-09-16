@@ -10,8 +10,12 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { of } from 'rxjs';
-import { SignInComponent } from './sign-in.component';
+import { of, Subject } from 'rxjs';
+import {
+  normalizeLearningReturnTo,
+  SignInComponent,
+} from './sign-in.component';
+import { addOfferingToLearningReturnTo } from './route-return';
 import { LearningAuthService } from './learning-auth.service';
 import { LearningDataService } from './learning-data.service';
 
@@ -38,6 +42,9 @@ describe('SignInComponent', () => {
                 returnTo === undefined ? {} : { returnTo }
               ),
             },
+            queryParamMap: of(
+              convertToParamMap(returnTo === undefined ? {} : { returnTo })
+            ),
           },
         },
       ],
@@ -58,6 +65,20 @@ describe('SignInComponent', () => {
     expect(element.textContent).toContain('Email');
     expect(element.textContent).toContain('Password');
     expect(element.textContent).toContain('Login');
+    expect(
+      element.querySelector('[role="tab"][aria-selected="true"]')?.textContent
+    ).toContain('Sign in');
+    expect(element.querySelector('[role="tabpanel"]')?.id).toBe(
+      'sign-in-panel'
+    );
+    expect(
+      element.querySelector('input[type="text"]')?.getAttribute('autocomplete')
+    ).toBe('username');
+    expect(
+      element
+        .querySelector('input[type="password"]')
+        ?.getAttribute('autocomplete')
+    ).toBe('current-password');
   });
 
   it('offers a way to create an account, since reading needs none', async () => {
@@ -65,11 +86,25 @@ describe('SignInComponent', () => {
 
     expect(element.textContent).toContain('No account yet?');
 
-    fixture.componentInstance.mode.set('register');
+    fixture.componentInstance.setMode('register');
     fixture.detectChanges();
 
     expect(fixture.componentInstance.mode()).toBe('register');
     expect(element.textContent).toContain('Already have one?');
+    expect(
+      element.querySelector('[role="tab"][aria-selected="true"]')?.textContent
+    ).toContain('Register');
+    expect(element.querySelector('[role="tabpanel"]')?.id).toBe(
+      'register-panel'
+    );
+    expect(
+      element.querySelector('input[type="text"]')?.getAttribute('autocomplete')
+    ).toBe('given-name');
+    expect(
+      element
+        .querySelectorAll('input[type="password"]')[0]
+        ?.getAttribute('autocomplete')
+    ).toBe('new-password');
   });
 
   it('sends the credentials and goes on to the catalog', async () => {
@@ -188,6 +223,9 @@ describe('SignInComponent returning somebody to where they were', () => {
                 returnTo === undefined ? {} : { returnTo }
               ),
             },
+            queryParamMap: of(
+              convertToParamMap(returnTo === undefined ? {} : { returnTo })
+            ),
           },
         },
       ],
@@ -236,6 +274,72 @@ describe('SignInComponent returning somebody to where they were', () => {
       expect(navigate).toHaveBeenCalledWith('/courses');
     }
   );
+
+  it('keeps an offering route with its local query string', async () => {
+    const navigate = await signInWith('/course/go-100?tab=curriculum');
+
+    expect(navigate).toHaveBeenCalledWith('/course/go-100?tab=curriculum');
+  });
+
+  it('adds an offering selector without dropping query or fragment state', () => {
+    expect(
+      addOfferingToLearningReturnTo(
+        '/module/go/basics/hello?tab=notes#practice',
+        'go-100'
+      )
+    ).toBe('/module/go/basics/hello?tab=notes&offeringId=go-100#practice');
+  });
+
+  it.each(['/\\evil.example', '/course/go-100\nnext'])(
+    'rejects unsafe local-looking return paths: %s',
+    (requested) => {
+      expect(normalizeLearningReturnTo(requested)).toBe('/courses');
+    }
+  );
+
+  it('reacts to query parameter changes on a reused sign-in route', () => {
+    const queryParams = new Subject<ReturnType<typeof convertToParamMap>>();
+    TestBed.configureTestingModule({
+      imports: [SignInComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LearningDataService, useValue: { dashboard: () => of([]) } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: convertToParamMap({
+                returnTo: '/module/go/basics/hello',
+              }),
+            },
+            queryParamMap: queryParams.asObservable(),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(SignInComponent);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.returnTo()).toBe(
+      '/module/go/basics/hello'
+    );
+
+    queryParams.next(
+      convertToParamMap({ returnTo: '/course/go-200?tab=curriculum' })
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.returnTo()).toBe(
+      '/course/go-200?tab=curriculum'
+    );
+
+    queryParams.next(
+      convertToParamMap({ returnTo: 'https://evil.example/steal' })
+    );
+    fixture.detectChanges();
+    expect(fixture.componentInstance.returnTo()).toBe('/courses');
+  });
 });
 
 describe('LearningAuthService', () => {

@@ -1,4 +1,8 @@
-import { CodeExercise, CodeExerciseSchema } from './learning-domain';
+import {
+  CodeExercise,
+  CodeExerciseSchema,
+  GoExecutionMode,
+} from './learning-domain';
 import { challenges as typescriptChallenges } from '../content/letsgots/challenges.source';
 import { challenges as goChallenges } from '../content/letsgogo/challenges.source';
 import { challenges as cppChallenges } from '../content/letsgocpp/challenges.source';
@@ -16,6 +20,7 @@ type ImportedChallenge = {
   testCode?: string;
   expectedOutput?: string;
   validationPattern?: string;
+  executionMode?: GoExecutionMode;
   supportingFiles?: Record<string, string>;
 };
 
@@ -31,6 +36,7 @@ const normalize = (
       verifier: {
         testCode: challenge.testCode,
         validationPattern: challenge.validationPattern,
+        executionMode: challenge.executionMode,
       },
     })
   );

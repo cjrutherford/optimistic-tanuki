@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import {
   GUARDS_METADATA,
   METHOD_METADATA,
@@ -10,12 +11,17 @@ import {
 } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
 import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { LESSON_NOT_FOUND } from '@optimistic-tanuki/learning-domain';
+import {
+  LESSON_NOT_FOUND,
+  NOT_ENROLLED,
+  OFFERING_NOT_FOUND,
+} from '@optimistic-tanuki/learning-domain';
 import { LearningController } from './learning.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { LearningProfileResolver } from './learning-profile.resolver';
 import { OfferingAuthorizationService } from './offering-authorization.service';
+import { SetCoEditorsDto } from './dto/set-co-editors.dto';
 
 describe('LearningController', () => {
   let client: jest.Mocked<ClientProxy>;
@@ -43,6 +49,11 @@ describe('LearningController', () => {
     offeringAuthorization = {
       authorize: jest.fn().mockResolvedValue(true),
       seesEveryDraft: jest.fn().mockResolvedValue(false),
+      getOwnership: jest.fn().mockResolvedValue({
+        offeringId: 'offering-1',
+        ownerProfileId: 'profile-1',
+        coEditorProfileIds: [],
+      }),
     } as unknown as jest.Mocked<OfferingAuthorizationService>;
 
     controller = new LearningController(
@@ -200,6 +211,65 @@ describe('LearningController', () => {
       );
       expect(result).toEqual({ passed: true, awardedPoints: 10 });
     });
+
+    describe('authored code run', () => {
+      it('forwards the resolved profile and selected offering', async () => {
+        client.send.mockReturnValue(of({ output: 'ok\n', errors: [] }));
+
+        await controller.runCode(
+          {
+            activityId: 'code-1',
+            code: 'console.log("ok")',
+            offeringId: 'o-1',
+          },
+          { user: { userId: 'user-1' } }
+        );
+
+        expect(client.send).toHaveBeenCalledWith(
+          { cmd: LearningCommands.RunCode },
+          {
+            activityId: 'code-1',
+            code: 'console.log("ok")',
+            profileId: 'profile-1',
+            offeringId: 'o-1',
+          }
+        );
+      });
+
+      it('maps an unenrolled authored run to a conflict', async () => {
+        client.send.mockReturnValue(
+          throwError(() => ({
+            error: { code: NOT_ENROLLED, offeringId: 'o-1' },
+          }))
+        );
+
+        await expect(
+          controller.runCode(
+            {
+              activityId: 'code-1',
+              code: 'console.log("ok")',
+              offeringId: 'o-1',
+            },
+            { user: { userId: 'user-1' } }
+          )
+        ).rejects.toMatchObject({ status: 409 });
+      });
+    });
+
+    it('forwards an optional offering selector end to end', async () => {
+      client.send.mockReturnValue(of({ passed: true }));
+
+      await controller.submitExercise(
+        'go-b-01',
+        { code: 'package main', offeringId: 'go-100' },
+        { user: { userId: 'user-1' } }
+      );
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.SubmitExercise },
+        expect.objectContaining({ offeringId: 'go-100' })
+      );
+    });
   });
 
   describe('enrolments', () => {
@@ -231,6 +301,27 @@ describe('LearningController', () => {
         { cmd: LearningCommands.Withdraw },
         { profileId: 'profile-1', offeringId: 'go-foundations-100-core' }
       );
+    });
+
+    it('maps unknown and unpublished offerings to the same safe not-found response', async () => {
+      const notFound = (offeringId: string) =>
+        throwError(() => ({
+          error: { code: OFFERING_NOT_FOUND, offeringId },
+        }));
+      client.send
+        .mockReturnValueOnce(notFound('missing'))
+        .mockReturnValueOnce(notFound('draft'));
+
+      const unknown = await controller
+        .enrol({ offeringId: 'missing' }, { user: { userId: 'user-1' } })
+        .catch((error) => error);
+      const unpublished = await controller
+        .enrol({ offeringId: 'draft' }, { user: { userId: 'user-1' } })
+        .catch((error) => error);
+
+      expect(unknown).toMatchObject({ status: 404 });
+      expect(unpublished).toMatchObject({ status: 404 });
+      expect(unknown.getResponse()).toEqual(unpublished.getResponse());
     });
 
     it('lists enrolments for the resolved profile', async () => {
@@ -380,6 +471,18 @@ describe('LearningController', () => {
       expect(client.send).not.toHaveBeenCalled();
     });
 
+    it('returns not found when the offering has no ownership record', async () => {
+      offeringAuthorization.getOwnership.mockResolvedValueOnce(undefined);
+
+      await expect(
+        controller.deleteOffering('missing-offering', {
+          user: { userId: 'user-1' },
+        })
+      ).rejects.toMatchObject({ status: 404 });
+      expect(offeringAuthorization.authorize).not.toHaveBeenCalled();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
     it('gates co-editor management the same way as delete', async () => {
       client.send.mockReturnValue(of({ ok: true }));
 
@@ -398,6 +501,72 @@ describe('LearningController', () => {
       expect(client.send).toHaveBeenCalledWith(
         { cmd: LearningCommands.SetCoEditors },
         { offeringId: 'offering-1', coEditorProfileIds: ['profile-2'] }
+      );
+    });
+
+    it('returns not found before authorizing co-editors for an unknown offering', async () => {
+      offeringAuthorization.getOwnership.mockResolvedValueOnce(undefined);
+
+      await expect(
+        controller.setCoEditors(
+          'missing-offering',
+          { coEditorProfileIds: [] },
+          { user: { userId: 'user-1' } }
+        )
+      ).rejects.toMatchObject({ status: 404 });
+      expect(offeringAuthorization.authorize).not.toHaveBeenCalled();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('rejects malformed co-editor payloads before authorization or persistence', async () => {
+      const pipe = new ValidationPipe({
+        forbidNonWhitelisted: true,
+        transform: true,
+      });
+
+      await expect(
+        pipe.transform(
+          { coEditorProfileIds: ['not-a-profile-id'] },
+          { type: 'body', metatype: SetCoEditorsDto, data: '' }
+        )
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(offeringAuthorization.authorize).not.toHaveBeenCalled();
+      expect(client.send).not.toHaveBeenCalled();
+    });
+
+    it('accepts a valid UUID list without changing authorization semantics', async () => {
+      client.send.mockReturnValue(of({ ok: true }));
+      const pipe = new ValidationPipe({ transform: true });
+      const body = (await pipe.transform(
+        {
+          coEditorProfileIds: [
+            '123e4567-e89b-42d3-a456-426614174002',
+            '123e4567-e89b-42d3-a456-426614174003',
+          ],
+        },
+        { type: 'body', metatype: SetCoEditorsDto, data: '' }
+      )) as SetCoEditorsDto;
+
+      await controller.setCoEditors('offering-1', body, {
+        user: { userId: 'user-1' },
+      });
+
+      expect(offeringAuthorization.authorize).toHaveBeenCalledWith(
+        'profile-1',
+        undefined,
+        'manageCoEditors',
+        'offering-1'
+      );
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.SetCoEditors },
+        {
+          offeringId: 'offering-1',
+          coEditorProfileIds: [
+            '123e4567-e89b-42d3-a456-426614174002',
+            '123e4567-e89b-42d3-a456-426614174003',
+          ],
+        }
       );
     });
   });
@@ -425,6 +594,11 @@ describe('LearningController catalog and publication', () => {
     offeringAuthorization = {
       authorize: jest.fn().mockResolvedValue(true),
       seesEveryDraft: jest.fn().mockResolvedValue(false),
+      getOwnership: jest.fn().mockResolvedValue({
+        offeringId: 'offering-1',
+        ownerProfileId: 'profile-1',
+        coEditorProfileIds: [],
+      }),
     } as unknown as jest.Mocked<OfferingAuthorizationService>;
     controller = new LearningController(
       client,
@@ -558,6 +732,27 @@ describe('LearningController catalog and publication', () => {
           trackId: 'art-1',
           lessonId: 'art-lesson-1',
           viewer: { profileId: 'profile-1', seesEveryDraft: false },
+        }
+      );
+    });
+
+    it('passes the selected offering through to lesson reads', async () => {
+      await controller.getLesson(
+        'art-1',
+        'art-lesson-1',
+        {},
+        'art-2',
+        'module-2'
+      );
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.GetLesson },
+        {
+          trackId: 'art-1',
+          lessonId: 'art-lesson-1',
+          offeringId: 'art-2',
+          moduleId: 'module-2',
+          viewer: {},
         }
       );
     });
@@ -754,6 +949,11 @@ describe('LearningController wiring', () => {
       offeringAuthorization = {
         authorize: jest.fn().mockResolvedValue(true),
         seesEveryDraft: jest.fn().mockResolvedValue(false),
+        getOwnership: jest.fn().mockResolvedValue({
+          offeringId: 'offering-1',
+          ownerProfileId: 'profile-1',
+          coEditorProfileIds: [],
+        }),
       } as unknown as jest.Mocked<OfferingAuthorizationService>;
       controller = new LearningController(
         client,
@@ -794,6 +994,23 @@ describe('LearningController wiring', () => {
             lessonId: 'l1',
             completed: true,
           }
+        );
+      });
+
+      it('forwards an optional offering selector for completion and undo', async () => {
+        await controller.saveMyProgress(req, {
+          lessonId: 'l1',
+          completed: false,
+          offeringId: 'o-2',
+        });
+
+        expect(client.send).toHaveBeenCalledWith(
+          { cmd: LearningCommands.SaveLessonProgress },
+          expect.objectContaining({
+            lessonId: 'l1',
+            completed: false,
+            offeringId: 'o-2',
+          })
         );
       });
 
@@ -852,6 +1069,23 @@ describe('LearningController wiring', () => {
           { patch: Record<string, unknown> }
         ];
         expect(payload.patch).toEqual({ modules });
+      });
+
+      it('forwards nullable optional-text clears while preserving omitted fields', async () => {
+        await controller.updateOffering(
+          'o-1',
+          { audience: null, outcome: 'A new outcome.' },
+          req
+        );
+
+        const [, payload] = client.send.mock.calls[0] as [
+          unknown,
+          { patch: Record<string, unknown> }
+        ];
+        expect(payload.patch).toEqual({
+          audience: null,
+          outcome: 'A new outcome.',
+        });
       });
 
       it('checks the publish authorization on the route that does publish', async () => {

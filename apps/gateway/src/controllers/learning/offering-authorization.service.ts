@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { defaultIfEmpty, firstValueFrom } from 'rxjs';
 import {
   LearningCommands,
   RoleCommands,
@@ -98,10 +98,9 @@ export class OfferingAuthorizationService {
     offeringId: string
   ): Promise<OfferingOwnership | undefined> {
     return (await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.GetOfferingOwnership },
-        { offeringId }
-      )
+      this.learningService
+        .send({ cmd: LearningCommands.GetOfferingOwnership }, { offeringId })
+        .pipe(defaultIfEmpty(undefined))
     )) as OfferingOwnership | undefined;
   }
 

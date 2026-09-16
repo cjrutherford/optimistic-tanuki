@@ -72,6 +72,7 @@ describe('AppComponent', () => {
       generatedTheme$: of(undefined),
       getCurrentPersonality: jest.fn().mockReturnValue(undefined),
       personality$: of(undefined),
+      theme$: jest.fn().mockReturnValue(of('light')),
     };
 
     await TestBed.configureTestingModule({

@@ -28,6 +28,7 @@ describe('AppComponent', () => {
     }),
     generatedTheme$: of(undefined),
     personality$: of(undefined),
+    theme$: jest.fn().mockReturnValue(of('light')),
     getTheme: jest.fn().mockReturnValue('light'),
     getAccentColor: jest.fn().mockReturnValue('#6b8f8a'),
     getCurrentPersonality: jest.fn().mockReturnValue(undefined),

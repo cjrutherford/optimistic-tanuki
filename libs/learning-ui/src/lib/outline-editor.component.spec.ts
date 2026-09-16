@@ -63,6 +63,14 @@ describe('OutlineEditorComponent', () => {
     expect(element.querySelectorAll('.unwritten')).toHaveLength(1);
   });
 
+  it('shows structural grips while keeping ordering keyboard-accessible', async () => {
+    const { element } = await render();
+
+    expect(element.querySelectorAll('.grip')).toHaveLength(4);
+    expect(element.textContent).toContain(':::');
+    expect(element.querySelector('[aria-label="Move Mixing up"]')).toBeTruthy();
+  });
+
   it('says an empty course needs a module', async () => {
     const { element } = await render([]);
 

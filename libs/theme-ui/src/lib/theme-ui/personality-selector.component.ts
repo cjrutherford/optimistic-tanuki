@@ -1,5 +1,5 @@
 /**
- * Personality Selector Component for CDK Overlay
+ * Personality Selector Component for the deferred personality picker
  * Allows users to choose from predefined design personalities
  */
 
@@ -32,7 +32,7 @@ interface GroupedPersonality {
   template: `
     <div class="personality-overlay-container">
       <div class="overlay-header">
-        <h2 class="overlay-title">Choose Your Style</h2>
+        <h2 class="overlay-title" [id]="titleId || null">Choose Your Style</h2>
         <button
           class="close-button"
           (click)="onClose.emit()"
@@ -123,13 +123,18 @@ interface GroupedPersonality {
       }
 
       .personality-overlay-container {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
         background: var(--surface, #ffffff);
         border: var(--border-width, 1px) solid var(--primary);
         border-radius: var(--border-radius-lg, 12px);
         box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
-        max-height: 80vh;
-        display: flex;
-        flex-direction: column;
+        width: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        min-width: 0;
+        min-height: 0;
         overflow: hidden;
         font-family: var(--font-body, system-ui, sans-serif);
       }
@@ -175,6 +180,11 @@ interface GroupedPersonality {
           transform: scale(1.1);
         }
 
+        &:focus-visible {
+          outline: 3px solid var(--primary-foreground, #ffffff);
+          outline-offset: 3px;
+        }
+
         svg {
           width: 20px;
           height: 20px;
@@ -183,8 +193,16 @@ interface GroupedPersonality {
 
       .overlay-content {
         flex: 1;
+        min-width: 0;
+        min-height: 0;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: var(--spacing-md, 16px);
+        overscroll-behavior: contain;
+        scroll-padding-block: var(--spacing-sm, 12px);
+        scrollbar-gutter: stable;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
       }
 
       .current-selection {
@@ -243,6 +261,7 @@ interface GroupedPersonality {
         display: flex;
         align-items: flex-start;
         gap: var(--spacing-sm, 12px);
+        min-width: 0;
         padding: var(--spacing-sm, 12px);
         background: transparent;
         border: 1px solid var(--border, #e5e7eb);
@@ -256,6 +275,12 @@ interface GroupedPersonality {
           background: var(--surface, #f9fafb);
           border-color: var(--primary);
           transform: translateX(4px);
+        }
+
+        &:focus-visible {
+          outline: 3px solid var(--primary);
+          outline-offset: 3px;
+          scroll-margin-block: var(--spacing-sm, 12px);
         }
 
         &.selected {
@@ -294,6 +319,7 @@ interface GroupedPersonality {
 
       .option-content {
         flex: 1;
+        min-width: 0;
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xs, 4px);
@@ -307,6 +333,7 @@ interface GroupedPersonality {
         font-size: 0.9375rem;
         font-weight: 600;
         color: var(--foreground, #171717);
+        overflow-wrap: anywhere;
       }
 
       .classic-badge {
@@ -328,6 +355,7 @@ interface GroupedPersonality {
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        overflow-wrap: anywhere;
       }
 
       .option-meta {
@@ -392,6 +420,7 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
    * themselves set this to false and handle `personalitySelected`.
    */
   @Input() applyOnSelect = true;
+  @Input() titleId = '';
   @Output() personalitySelected = new EventEmitter<Personality>();
   @Output() onClose = new EventEmitter<void>();
 

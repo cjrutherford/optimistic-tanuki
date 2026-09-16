@@ -27,6 +27,8 @@ export const LOCALLY_BUILT = new Set([
   'db-setup',
   'oauth-provider',
 ]);
+/** Third-party images keep their published tag instead of receiving a CI SHA. */
+export const FIXED_IMAGES = new Set(['learning-runner-relay']);
 
 /**
  * Splits an image reference into its repository and tag.
@@ -60,7 +62,7 @@ export function resolveE2eImages({ services, images, shaTag, fallbackTag }) {
   const seen = new Set();
 
   for (const service of services) {
-    if (LOCALLY_BUILT.has(service)) continue;
+    if (LOCALLY_BUILT.has(service) || FIXED_IMAGES.has(service)) continue;
 
     const ref = images.get(service);
     // A service with no image is built by the compose file itself.

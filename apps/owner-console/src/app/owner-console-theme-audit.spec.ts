@@ -95,6 +95,7 @@ describe('owner-console theme audit regressions', () => {
             themeColors$: themeColorsSubject,
             generatedTheme$: generatedThemeSubject,
             personality$: personalitySubject,
+            theme$: jest.fn().mockReturnValue(themeSubject),
             getTheme: jest.fn(() => 'light'),
             getAccentColor: jest.fn(() => '#2dd4bf'),
             getCurrentPersonality: jest.fn(() => CONTROL_CENTER_PERSONALITY),
@@ -113,6 +114,7 @@ describe('owner-console theme audit regressions', () => {
           provide: Router,
           useValue: {
             url: '/dashboard/overview',
+            events: of(),
             navigate: jest.fn().mockResolvedValue(true),
           },
         },

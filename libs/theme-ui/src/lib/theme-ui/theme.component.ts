@@ -1,31 +1,45 @@
 import {
+  ApplicationRef,
+  ChangeDetectorRef,
   Component,
+  ComponentRef,
+  EnvironmentInjector,
+  ElementRef,
   HostListener,
   OnDestroy,
   OnInit,
-  ViewContainerRef,
+  ViewChild,
+  createComponent,
   inject,
 } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { Subject, filter, takeUntil } from 'rxjs';
+import { NavigationStart, Router } from '@angular/router';
 
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
 import {
-  ThemeColors,
   ThemeService,
   Personality,
   PREDEFINED_PERSONALITIES,
   GeneratedTheme,
 } from '@optimistic-tanuki/theme-lib';
-import { PersonalitySelectorComponent } from './personality-selector.component';
+import {
+  THEME_PERSONALITY_PICKER_LOADER,
+  type PersonalityPickerHostContract,
+} from './personality-picker-loader';
+import {
+  AppearanceMenuOverlayComponent,
+  type AppearanceMenuOverlayContract,
+} from './appearance-menu-overlay.component';
+import {
+  PersonalityPickerOverlayComponent,
+  type PersonalityPickerOverlayContract,
+} from './personality-picker-overlay.component';
 
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
-  imports: [FormsModule, CommonModule, OverlayModule, A11yModule],
+  imports: [FormsModule, CommonModule],
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
@@ -48,6 +62,7 @@ import { PersonalitySelectorComponent } from './personality-selector.component';
 })
 export class ThemeToggleComponent implements OnInit, OnDestroy {
   private static nextControlsId = 0;
+  private static nextPersonalityPickerId = 0;
   theme: 'light' | 'dark';
   accentColor = '#ff4081';
   background = 'var(--background, #ffffff)';
@@ -70,20 +85,63 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   showPersonalityPicker = false;
   showControls = false;
   readonly controlsId = `appearance-controls-${ThemeToggleComponent.nextControlsId++}`;
+  readonly personalityPickerId = `personality-picker-${ThemeToggleComponent.nextPersonalityPickerId++}`;
+  readonly personalityPickerTitleId = `${this.personalityPickerId}-title`;
+  personalityPickerLoading = false;
+  personalityPickerError = false;
 
-  private overlayRef: OverlayRef | null = null;
+  @ViewChild('appearanceTrigger')
+  private appearanceTrigger?: ElementRef<HTMLButtonElement>;
+  private appearanceMenuRef: ComponentRef<AppearanceMenuOverlayContract> | null =
+    null;
+  private appearanceMenuHost: HTMLElement | null = null;
+  private appearanceMenuScrollListener: (() => void) | null = null;
+  private personalityPickerRef: ComponentRef<PersonalityPickerHostContract> | null =
+    null;
+  private personalityPickerRefDestroy$: Subject<void> | null = null;
+  private personalityPickerOverlayRef: ComponentRef<PersonalityPickerOverlayContract> | null =
+    null;
+  private personalityPickerOverlayHost: HTMLElement | null = null;
+  private personalityPickerRequest = 0;
+  private isDestroying = false;
+  private focusTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly applicationRef = inject(ApplicationRef);
+  private readonly environmentInjector = inject(EnvironmentInjector);
+  private readonly router = inject(Router, { optional: true });
+  private readonly personalityPickerLoader = inject(
+    THEME_PERSONALITY_PICKER_LOADER
+  );
 
-  constructor(
-    private readonly themeService: ThemeService,
-    private overlay: Overlay,
-    private viewContainerRef: ViewContainerRef
-  ) {
-    this.theme = this.themeService.getTheme();
+  constructor(private readonly themeService: ThemeService) {
+    this.theme = this.themeService.getTheme() || 'light';
     this.accentColor = this.themeService.getAccentColor();
     this.currentPersonality = this.themeService.getCurrentPersonality();
   }
 
   ngOnInit() {
+    this.router?.events
+      .pipe(
+        filter(
+          (event): event is NavigationStart => event instanceof NavigationStart
+        ),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => this.closeControls({ restoreFocus: false }));
+
+    this.themeService
+      .theme$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (theme) => {
+          if (theme) {
+            this.theme = theme;
+            this.syncAppearanceMenuInputs();
+          }
+        },
+      });
+
     // Subscribe to generated theme for personality-driven CSS variables
     this.themeService.generatedTheme$
       .pipe(
@@ -119,6 +177,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
             generatedTheme.personality.animations.duration.fast;
           this.animationDurationNormal =
             generatedTheme.personality.animations.duration.normal;
+          this.syncAppearanceMenuInputs();
         },
       });
 
@@ -127,34 +186,80 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
       next: (personality: Personality | undefined) => {
         if (personality) {
           this.currentPersonality = personality;
+          this.syncAppearanceMenuInputs();
         }
       },
     });
   }
 
   ngOnDestroy() {
+    this.isDestroying = true;
     this.destroy$.next(true);
     this.destroy$.complete();
-    this.closePersonalityPicker();
+    this.closeControls({ restoreFocus: false });
   }
 
   toggleTheme() {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     this.themeService.setTheme(this.theme);
+    this.syncAppearanceMenuInputs();
   }
 
   toggleControls() {
-    this.showControls = !this.showControls;
+    if (this.showControls) {
+      this.closeControls();
+      return;
+    }
+
+    this.showControls = true;
+    this.refreshView();
+    this.createAppearanceMenuOverlay();
+    this.scheduleFocus(() =>
+      this.appearanceMenuRef?.instance.focusFirstElement()
+    );
   }
 
-  closeControls() {
+  closeControls(options: { restoreFocus?: boolean } = {}) {
+    const restoreFocus = options.restoreFocus ?? true;
+    const wasOpen = this.showControls;
+    this.clearScheduledFocus();
+    if (
+      this.showPersonalityPicker ||
+      this.personalityPickerLoading ||
+      this.personalityPickerError
+    ) {
+      this.closePersonalityPicker({ restoreFocus: false });
+    }
+    this.destroyAppearanceMenuOverlay();
     this.showControls = false;
+    this.refreshView();
+    if (wasOpen && restoreFocus) {
+      this.scheduleFocus(() => this.focusAppearanceTrigger());
+    }
   }
 
-  @HostListener('document:keydown.escape')
-  handleEscape() {
-    this.closeControls();
-    this.closePersonalityPicker();
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscape(event?: Event) {
+    if (this.showPersonalityPicker) {
+      this.closePersonalityPicker();
+      event?.preventDefault();
+      return;
+    }
+    if (this.showControls) {
+      this.closeControls();
+      event?.preventDefault();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: MouseEvent) {
+    if (
+      this.showControls &&
+      !this.isInternalOverlayEvent(event) &&
+      !this.hostElement.nativeElement.contains(event.target as Node)
+    ) {
+      this.closeControls();
+    }
   }
 
   updateAccentColor() {
@@ -169,75 +274,338 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
     }
   }
 
-  openPersonalityPicker() {
-    if (this.overlayRef) {
+  private createAppearanceMenuOverlay(): void {
+    if (this.appearanceMenuRef || typeof document === 'undefined') {
       return;
     }
 
-    // Create overlay with proper positioning and backdrop
-    this.overlayRef = this.overlay.create({
-      hasBackdrop: true,
-      backdropClass: 'personality-picker-backdrop',
-      positionStrategy: this.overlay
-        .position()
-        .global()
-        .centerHorizontally()
-        .centerVertically(),
-      scrollStrategy: this.overlay.scrollStrategies.block(),
-      disposeOnNavigation: true,
-      width: '90vw',
-      maxWidth: '500px',
-      maxHeight: '80vh',
+    const hostElement = document.createElement('div');
+    hostElement.className = 'appearance-menu-overlay-host';
+    hostElement.style.position = 'fixed';
+    hostElement.style.zIndex = 'var(--z-index-dropdown, 1000)';
+    hostElement.style.visibility = 'hidden';
+    document.body.appendChild(hostElement);
+
+    const overlayRef = createComponent(AppearanceMenuOverlayComponent, {
+      environmentInjector: this.environmentInjector,
+      hostElement,
+    }) as ComponentRef<AppearanceMenuOverlayContract>;
+    overlayRef.instance.controlsId = this.controlsId;
+    overlayRef.instance.personalityPickerId = this.personalityPickerId;
+    overlayRef.instance.theme = this.theme;
+    overlayRef.instance.accentColor = this.accentColor;
+    overlayRef.instance.currentPersonality = this.currentPersonality;
+    overlayRef.instance.showPersonalityPicker = this.showPersonalityPicker;
+    overlayRef.instance.themeToggled
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.toggleTheme());
+    overlayRef.instance.accentColorChanged
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((color) => {
+        this.accentColor = color;
+        this.updateAccentColor();
+        this.syncAppearanceMenuInputs();
+      });
+    overlayRef.instance.personalityPickerToggled
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.togglePersonalityPicker());
+    overlayRef.instance.closed
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.closeControls());
+
+    this.applicationRef.attachView(overlayRef.hostView);
+    overlayRef.changeDetectorRef.detectChanges();
+    this.appearanceMenuRef = overlayRef;
+    this.appearanceMenuHost = hostElement;
+    this.appearanceMenuScrollListener = () => this.positionAppearanceMenu();
+    window.addEventListener('resize', this.appearanceMenuScrollListener, {
+      passive: true,
     });
-
-    // Create portal for the personality selector component
-    const portal = new ComponentPortal<PersonalitySelectorComponent>(
-      PersonalitySelectorComponent,
-      this.viewContainerRef
-    );
-
-    const componentRef = this.overlayRef.attach(portal);
-
-    // Pass data to the component
-    componentRef.instance.personalities = this.personalities;
-    componentRef.instance.currentPersonality = this.currentPersonality;
-    componentRef.instance.applyOnSelect = false;
-
-    // Subscribe to component outputs
-    componentRef.instance.personalitySelected.subscribe(
-      (personality: Personality) => {
-        this.selectPersonality(personality);
-      }
-    );
-    componentRef.instance.onClose.subscribe(() => {
-      this.closePersonalityPicker();
+    window.addEventListener('scroll', this.appearanceMenuScrollListener, {
+      capture: true,
+      passive: true,
     });
-
-    // Handle backdrop click
-    this.overlayRef.backdropClick().subscribe(() => {
-      this.closePersonalityPicker();
-    });
-
-    // Handle escape key
-    this.overlayRef.keydownEvents().subscribe((event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        this.closePersonalityPicker();
-      }
-    });
-
-    this.showPersonalityPicker = true;
+    this.positionAppearanceMenu();
+    hostElement.style.visibility = 'visible';
   }
 
-  closePersonalityPicker() {
-    if (this.overlayRef) {
-      this.overlayRef.dispose();
-      this.overlayRef = null;
+  private destroyAppearanceMenuOverlay(): void {
+    const overlayRef = this.appearanceMenuRef;
+    this.appearanceMenuRef = null;
+    if (this.appearanceMenuScrollListener) {
+      window.removeEventListener('resize', this.appearanceMenuScrollListener);
+      window.removeEventListener(
+        'scroll',
+        this.appearanceMenuScrollListener,
+        true
+      );
     }
+    this.appearanceMenuScrollListener = null;
+    if (overlayRef) {
+      this.applicationRef.detachView(overlayRef.hostView);
+    }
+    overlayRef?.destroy();
+    this.appearanceMenuHost?.remove();
+    this.appearanceMenuHost = null;
+  }
+
+  private positionAppearanceMenu(): void {
+    const host = this.appearanceMenuHost;
+    const trigger = this.appearanceTrigger?.nativeElement;
+    const menu = host?.querySelector<HTMLElement>('.toggle-container');
+    if (!host || !trigger || !menu || !trigger.isConnected) {
+      return;
+    }
+
+    const gutter = 16;
+    const triggerRect = trigger.getBoundingClientRect();
+    const width = Math.min(352, Math.max(0, window.innerWidth - gutter * 2));
+    host.style.width = `${width}px`;
+    host.style.maxWidth = `calc(100vw - ${gutter * 2}px)`;
+    menu.style.maxHeight = 'none';
+    menu.style.overflowY = 'hidden';
+
+    const naturalHeight = menu.getBoundingClientRect().height;
+    const belowSpace = Math.max(
+      0,
+      window.innerHeight - triggerRect.bottom - gutter
+    );
+    const aboveSpace = Math.max(0, triggerRect.top - gutter);
+    const placeBelow = belowSpace >= naturalHeight || belowSpace >= aboveSpace;
+    const availableSpace = placeBelow ? belowSpace : aboveSpace;
+    const height = Math.min(naturalHeight, availableSpace);
+    const top = placeBelow
+      ? triggerRect.bottom + 8
+      : triggerRect.top - height - 8;
+    const left = Math.min(
+      Math.max(gutter, triggerRect.left),
+      Math.max(gutter, window.innerWidth - width - gutter)
+    );
+
+    host.style.left = `${left}px`;
+    host.style.top = `${Math.max(gutter, top)}px`;
+    menu.style.maxHeight = `${Math.max(0, height)}px`;
+    menu.style.overflowY = naturalHeight > height ? 'auto' : 'visible';
+  }
+
+  private syncAppearanceMenuInputs(): void {
+    const instance = this.appearanceMenuRef?.instance;
+    if (!instance) {
+      return;
+    }
+    instance.theme = this.theme;
+    instance.accentColor = this.accentColor;
+    instance.currentPersonality = this.currentPersonality;
+    instance.showPersonalityPicker = this.showPersonalityPicker;
+    this.appearanceMenuRef?.changeDetectorRef.detectChanges();
+    this.positionAppearanceMenu();
+  }
+
+  private isInternalOverlayEvent(event: Event): boolean {
+    return event.composedPath().some((target) => {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+      return (
+        target.classList.contains('appearance-menu-overlay-host') ||
+        target.classList.contains('personality-picker-overlay-host')
+      );
+    });
+  }
+
+  async openPersonalityPicker() {
+    if (this.showPersonalityPicker) {
+      return;
+    }
+
+    const request = ++this.personalityPickerRequest;
+    this.showPersonalityPicker = true;
+    this.personalityPickerLoading = true;
+    this.personalityPickerError = false;
+    this.clearScheduledFocus();
+    this.refreshView();
+    this.syncAppearanceMenuInputs();
+    this.createPersonalityPickerOverlay();
+
+    try {
+      const pickerType = await this.personalityPickerLoader();
+      if (!this.isCurrentPersonalityPickerRequest(request)) {
+        return;
+      }
+
+      const overlayRef = this.personalityPickerOverlayRef;
+      if (!overlayRef) {
+        return;
+      }
+
+      this.destroyPersonalityPickerRef();
+      const componentRef =
+        overlayRef.instance.pickerHost.createComponent(pickerType);
+      componentRef.instance.personalities = this.personalities;
+      componentRef.instance.currentPersonality = this.currentPersonality;
+      componentRef.instance.titleId = this.personalityPickerTitleId;
+      const refDestroy$ = new Subject<void>();
+      componentRef.instance.personalitySelected
+        .pipe(takeUntil(this.destroy$), takeUntil(refDestroy$))
+        .subscribe((personality) => this.selectPersonality(personality));
+      componentRef.instance.closed
+        .pipe(takeUntil(this.destroy$), takeUntil(refDestroy$))
+        .subscribe(() => this.closePersonalityPicker());
+
+      this.personalityPickerRef = componentRef;
+      this.personalityPickerRefDestroy$ = refDestroy$;
+      this.personalityPickerLoading = false;
+      overlayRef.instance.state = 'ready';
+      overlayRef.changeDetectorRef.detectChanges();
+      overlayRef.instance.focusFirstElement();
+      this.refreshView();
+    } catch {
+      if (this.isCurrentPersonalityPickerRequest(request)) {
+        this.personalityPickerLoading = false;
+        this.personalityPickerError = true;
+        const overlayRef = this.personalityPickerOverlayRef;
+        if (overlayRef) {
+          overlayRef.instance.state = 'error';
+          overlayRef.changeDetectorRef.detectChanges();
+          overlayRef.instance.focusFirstElement();
+        }
+        this.syncAppearanceMenuInputs();
+        this.refreshView();
+      }
+    }
+  }
+
+  closePersonalityPicker(options: { restoreFocus?: boolean } = {}) {
+    const restoreFocus = options.restoreFocus ?? true;
+    const wasOpen =
+      this.showPersonalityPicker ||
+      this.personalityPickerLoading ||
+      this.personalityPickerError;
+    ++this.personalityPickerRequest;
+    this.clearScheduledFocus();
+    this.destroyPersonalityPickerRef();
+    this.destroyPersonalityPickerOverlay();
     this.showPersonalityPicker = false;
+    this.personalityPickerLoading = false;
+    this.personalityPickerError = false;
+    this.syncAppearanceMenuInputs();
+    this.refreshView();
+    if (wasOpen && restoreFocus) {
+      this.scheduleFocus(() => {
+        if (this.showControls) {
+          this.focusPersonalityTrigger();
+        } else {
+          this.focusAppearanceTrigger();
+        }
+      });
+    }
+  }
+
+  retryPersonalityPicker() {
+    this.closePersonalityPicker({ restoreFocus: false });
+    void this.openPersonalityPicker();
   }
 
   selectPersonality(personality: Personality) {
     this.themeService.setPersonality(personality.id);
     this.closePersonalityPicker();
+  }
+
+  private isCurrentPersonalityPickerRequest(request: number): boolean {
+    return (
+      request === this.personalityPickerRequest && this.showPersonalityPicker
+    );
+  }
+
+  private destroyPersonalityPickerRef(): void {
+    const ref = this.personalityPickerRef;
+    const refDestroy$ = this.personalityPickerRefDestroy$;
+    this.personalityPickerRef = null;
+    this.personalityPickerRefDestroy$ = null;
+    refDestroy$?.next();
+    refDestroy$?.complete();
+    ref?.destroy();
+  }
+
+  private createPersonalityPickerOverlay(): void {
+    const hostElement = document.createElement('div');
+    hostElement.className = 'personality-picker-overlay-host';
+    document.body.appendChild(hostElement);
+
+    const overlayRef = createComponent(PersonalityPickerOverlayComponent, {
+      environmentInjector: this.environmentInjector,
+      hostElement,
+    }) as ComponentRef<PersonalityPickerOverlayContract>;
+    overlayRef.instance.dialogId = this.personalityPickerId;
+    overlayRef.instance.titleId = this.personalityPickerTitleId;
+    overlayRef.instance.state = 'loading';
+    overlayRef.instance.closed
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.closePersonalityPicker());
+    overlayRef.instance.retry
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.retryPersonalityPicker());
+
+    this.applicationRef.attachView(overlayRef.hostView);
+    overlayRef.changeDetectorRef.detectChanges();
+    this.personalityPickerOverlayRef = overlayRef;
+    this.personalityPickerOverlayHost = hostElement;
+    overlayRef.instance.focusFirstElement();
+  }
+
+  private destroyPersonalityPickerOverlay(): void {
+    const overlayRef = this.personalityPickerOverlayRef;
+    this.personalityPickerOverlayRef = null;
+    if (overlayRef) {
+      this.applicationRef.detachView(overlayRef.hostView);
+    }
+    overlayRef?.destroy();
+    this.personalityPickerOverlayHost?.remove();
+    this.personalityPickerOverlayHost = null;
+  }
+
+  private focusPersonalityTrigger(): void {
+    const trigger =
+      this.appearanceMenuHost?.querySelector<HTMLButtonElement>(
+        '.personality-trigger'
+      ) ??
+      (this.hostElement.nativeElement.querySelector(
+        '.personality-trigger'
+      ) as HTMLButtonElement | null);
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+  }
+
+  private focusAppearanceTrigger(): void {
+    const trigger =
+      this.appearanceTrigger?.nativeElement ??
+      (this.hostElement.nativeElement.querySelector(
+        '.appearance-trigger'
+      ) as HTMLButtonElement | null);
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+  }
+
+  private refreshView(): void {
+    if (!this.isDestroying) {
+      this.changeDetectorRef.detectChanges();
+    }
+  }
+
+  private scheduleFocus(callback: () => void): void {
+    this.clearScheduledFocus();
+    this.focusTimer = setTimeout(() => {
+      this.focusTimer = null;
+      callback();
+    }, 0);
+  }
+
+  private clearScheduledFocus(): void {
+    if (this.focusTimer !== null) {
+      clearTimeout(this.focusTimer);
+      this.focusTimer = null;
+    }
   }
 }

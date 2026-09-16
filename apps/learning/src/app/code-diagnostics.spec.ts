@@ -22,6 +22,21 @@ describe('parseCompilerErrors', () => {
     ]);
   });
 
+  it('places a TypeScript compiler error on its source position', () => {
+    expect(
+      parseCompilerErrors([
+        'main.ts(6,2): error TS2322: Type string is not assignable to number',
+      ])
+    ).toEqual([
+      {
+        line: 6,
+        column: 2,
+        message: 'TS2322: Type string is not assignable to number',
+        severity: 'error',
+      },
+    ]);
+  });
+
   it('keeps a C++ warning as a warning', () => {
     const [first] = parseCompilerErrors([
       'main.cpp:9:1: warning: unused variable',

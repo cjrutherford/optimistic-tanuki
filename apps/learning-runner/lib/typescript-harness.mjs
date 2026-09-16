@@ -1,17 +1,27 @@
 /**
- * The test harness injected ahead of a learner's TypeScript submission.
+ * The test harness preloaded before a learner's TypeScript submission.
  *
- * Written as plain JavaScript inside a string so the type stripper never has
- * to parse it, and kept to the matchers the exercises actually use.
+ * The runtime stays plain JavaScript, with small declarations at the top so
+ * learner tests type-check without adding a runtime dependency.
  *
- * Results are collected rather than thrown, then written after the marker on
- * exit, so a failing assertion still lets the remaining cases run and the
- * learner sees every failure at once instead of only the first.
+ * Results are collected rather than thrown, then written after a per-run
+ * marker on exit, so a failing assertion still lets the remaining cases run
+ * and the learner sees every failure at once instead of only the first.
  */
 export const RESULT_MARKER = '__LEARNING_TEST_RESULTS__';
 
-export const TYPESCRIPT_HARNESS = `;(function () {
+export const TYPESCRIPT_HARNESS = `declare const process: any;
+declare function require(name: string): any;
+declare function test(name: string, fn: () => void): void;
+declare function it(name: string, fn: () => void): void;
+declare function expect(actual: unknown): any;
+declare function spy(impl?: (...args: any[]) => any): any;
+
+;(function () {
   var _results = [];
+  var _resultToken = require('node:fs').readFileSync(3, 'utf8');
+  require('node:fs').closeSync(3);
+  var _writeResult = process.stdout.write.bind(process.stdout);
 
   function test(name, fn) {
     try { fn(); _results.push({ name: name, passed: true }); }
@@ -114,7 +124,11 @@ export const TYPESCRIPT_HARNESS = `;(function () {
 
   process.on('exit', function () {
     if (_results.length > 0) {
-      process.stdout.write('\\n${RESULT_MARKER}\\n' + JSON.stringify(_results) + '\\n');
+      var payload = JSON.stringify(_results);
+      _writeResult(
+        '\\n${RESULT_MARKER}:' + _resultToken + ':' +
+        payload.length + '\\n' + payload
+      );
     }
   });
 })();
@@ -124,13 +138,25 @@ export const TYPESCRIPT_HARNESS = `;(function () {
  * Splits a run's stdout into what the learner wrote and what the harness
  * reported, so the results payload never leaks into the visible output.
  */
-export function splitTestResults(output) {
-  const marker = `\n${RESULT_MARKER}\n`;
+export function splitTestResults(output, resultToken) {
+  const marker = `\n${RESULT_MARKER}:${resultToken}:`;
   const at = output.indexOf(marker);
   if (at === -1) return { output, testResults: [] };
 
   const visible = output.slice(0, at);
-  const payload = output.slice(at + marker.length).trim();
+  const lengthStart = at + marker.length;
+  const lengthEnd = output.indexOf('\n', lengthStart);
+  if (lengthEnd === -1) return { output: visible, testResults: [] };
+
+  const payloadLength = Number(output.slice(lengthStart, lengthEnd));
+  if (!Number.isSafeInteger(payloadLength) || payloadLength < 0) {
+    return { output: visible, testResults: [] };
+  }
+  const payloadStart = lengthEnd + 1;
+  const payload = output.slice(payloadStart, payloadStart + payloadLength);
+  if (payload.length !== payloadLength) {
+    return { output: visible, testResults: [] };
+  }
   try {
     const parsed = JSON.parse(payload);
     return {

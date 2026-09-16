@@ -28,22 +28,31 @@ import { LearningDataService } from './learning-data.service';
     </header>
 
     @if (status(); as authorStatus) { @if (!authorStatus.isCourseDesigner) {
-    <section class="invite">
+    <section class="panel invite" aria-labelledby="author-invite-title">
+      <p class="panel-kicker">Author access</p>
+      <h2 id="author-invite-title">Make something useful.</h2>
       <p>
         Anyone can write a course here. You keep control of what you write:
         nobody else can change it unless you invite them, and nothing is visible
         until you publish it.
       </p>
-      <button type="button" (click)="optIn()" [disabled]="working()">
+      <button
+        type="button"
+        class="primary"
+        (click)="optIn()"
+        [disabled]="working()"
+        [attr.aria-busy]="working()"
+      >
         {{ working() ? 'Just a moment…' : 'Start writing' }}
       </button>
       @if (error()) {
-      <p class="error">{{ error() }}</p>
+      <p class="error" role="alert">{{ error() }}</p>
       }
     </section>
     } @else {
-    <section class="new">
-      <h2>Open a new course</h2>
+    <section class="panel new" aria-labelledby="new-course-title">
+      <p class="panel-kicker">Course authoring</p>
+      <h2 id="new-course-title">Open a new course</h2>
       <div class="fields">
         <label>
           <span>Name</span>
@@ -65,7 +74,9 @@ import { LearningDataService } from './learning-data.service';
         </label>
         <button
           type="button"
+          class="primary"
           [disabled]="!canCreate() || working()"
+          [attr.aria-busy]="working()"
           (click)="create()"
         >
           {{ working() ? 'Opening…' : 'Open it' }}
@@ -75,7 +86,7 @@ import { LearningDataService } from './learning-data.service';
         A new course starts empty and unpublished. Nobody sees it but you.
       </p>
       @if (error()) {
-      <p class="error">{{ error() }}</p>
+      <p class="error" role="alert">{{ error() }}</p>
       }
     </section>
 
@@ -83,6 +94,22 @@ import { LearningDataService } from './learning-data.service';
     <section class="courses" aria-label="Your courses">
       @for (course of mine; track course.offering.id) {
       <a class="course" [routerLink]="['/author', course.offering.id]">
+        <div class="course-meta">
+          <span
+            class="badge status"
+            [class.published]="course.offering.status === 'published'"
+            [class.draft]="course.offering.status !== 'published'"
+            >{{
+              course.offering.status === 'published' ? 'Published' : 'Draft'
+            }}</span
+          >
+          <span class="badge role">{{
+            course.isOwner ? 'Owner' : 'Co-editor'
+          }}</span>
+          @if (!course.isOwner) {
+          <span class="sr-only">You co-edit this one</span>
+          }
+        </div>
         <otlearn-course-card
           [displayName]="course.offering.displayName"
           [description]="course.offering.description ?? ''"
@@ -91,14 +118,15 @@ import { LearningDataService } from './learning-data.service';
           [credits]="course.offering.credits"
           [level]="course.offering.level"
         ></otlearn-course-card>
-        @if (!course.isOwner) {
-        <span class="role">You co-edit this one</span>
-        }
       </a>
       }
     </section>
     } @else {
-    <p class="empty">You have not written anything yet.</p>
+    <section class="panel empty" aria-labelledby="author-empty-title">
+      <p class="panel-kicker">Workspace clear</p>
+      <h2 id="author-empty-title">You have not written anything yet.</h2>
+      <p>Open a draft above and build the outline one useful step at a time.</p>
+    </section>
     } } } } @else {
     <otui-loading-state headline="Loading your courses"></otui-loading-state>
     }
@@ -119,22 +147,53 @@ import { LearningDataService } from './learning-data.service';
         letter-spacing: -0.045em;
       }
       h2 {
-        margin: 0 0 0.75rem;
-        font-size: 1rem;
+        margin: 0;
+        font-family: var(--lx-font-heading);
+        font-size: clamp(1.35rem, 3vw, 2rem);
+        line-height: 1.05;
       }
       .invite p,
-      .hint {
+      .hint,
+      .empty p {
         max-width: 58ch;
         color: var(--lx-text-muted);
       }
-      .invite {
+      .panel {
         display: grid;
-        gap: 1rem;
+        gap: 0.8rem;
+        padding: clamp(1.1rem, 3vw, 1.6rem);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-left-width: calc(var(--lx-border-width) + 3px);
+        border-left-color: var(--lx-accent);
+        border-radius: var(--lx-radius);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-card);
+      }
+      .panel-kicker {
+        margin: 0;
+        color: var(--lx-accent);
+        font: var(--lx-btn-weight) 0.68rem var(--lx-font-mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .invite {
         justify-items: start;
       }
       .new {
-        padding-bottom: 1.75rem;
-        border-bottom: 1px solid var(--lx-border-soft);
+        margin-bottom: 1.5rem;
       }
       .fields {
         display: flex;
@@ -153,56 +212,124 @@ import { LearningDataService } from './learning-data.service';
         text-transform: uppercase;
       }
       input {
+        min-width: min(15rem, 100%);
         padding: 0.45rem 0.55rem;
-        border: 1px solid var(--lx-border-soft);
-        border-radius: var(--lx-radius, 2px);
-        background: transparent;
-        color: inherit;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius);
+        background: var(--lx-surface);
+        color: var(--lx-text);
         font: inherit;
+        transition: var(--lx-btn-transition);
+      }
+      input:hover {
+        border-color: var(--lx-border-strong);
+      }
+      input:focus-visible,
+      button:focus-visible,
+      .course:focus-visible {
+        outline: var(--lx-border-width) var(--lx-border-style) var(--lx-focus);
+        outline-offset: 3px;
       }
       button {
+        min-height: 2.55rem;
         padding: 0.5rem 0.9rem;
-        border: 1px solid var(--lx-accent);
-        border-radius: var(--lx-radius, 2px);
+        border: var(--lx-border-width) var(--lx-border-style) var(--lx-accent);
+        border-radius: var(--lx-radius);
         background: transparent;
         color: var(--lx-accent);
-        font: inherit;
+        font: var(--lx-btn-weight) 0.75rem var(--lx-font-mono);
+        text-transform: var(--lx-btn-transform);
         cursor: pointer;
+        transition: var(--lx-btn-transition);
+      }
+      button.primary {
+        background: var(--lx-accent);
+        color: var(--lx-bg);
+        box-shadow: var(--lx-shadow-sm);
+      }
+      button:hover:not(:disabled) {
+        box-shadow: var(--lx-shadow-control);
+        transform: translate(-1px, -1px);
+      }
+      button:active:not(:disabled) {
+        box-shadow: var(--lx-shadow-inset);
+        transform: translate(1px, 1px);
       }
       button:disabled {
         opacity: 0.4;
         cursor: default;
+        box-shadow: none;
       }
       .hint {
         margin: 0.75rem 0 0;
         font-size: 0.85rem;
       }
       .courses {
-        margin-top: 1.5rem;
-        border-top: 1px solid var(--lx-border-soft);
+        display: grid;
+        gap: 1rem;
       }
       .course {
         display: block;
-        border-bottom: 1px solid var(--lx-border-soft);
         color: inherit;
         text-decoration: none;
       }
       .course:hover {
-        background: var(--lx-surface-hover);
+        color: inherit;
       }
-      .role {
-        display: block;
-        padding: 0 0.35rem 0.9rem;
+      .course-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0 0 -0.55rem 0.75rem;
+        position: relative;
+        z-index: 1;
+      }
+      .badge {
+        padding: 0.22rem 0.45rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius);
+        background: var(--lx-surface);
+        font: var(--lx-btn-weight) 0.65rem var(--lx-font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .badge.published {
+        border-color: var(--lx-accent);
+        color: var(--lx-accent);
+      }
+      .badge.draft {
+        border-style: dashed;
+        color: var(--lx-warn);
+      }
+      .badge.role {
         color: var(--lx-text-muted);
-        font-size: 0.8rem;
       }
       .empty,
       .error {
         margin-top: 1.5rem;
         color: var(--lx-text-muted);
       }
+      .empty {
+        margin-top: 0;
+      }
       .error {
         color: var(--lx-danger);
+      }
+      @media (max-width: 600px) {
+        .fields {
+          align-items: stretch;
+          flex-direction: column;
+        }
+        .fields label,
+        .fields button {
+          width: 100%;
+        }
+        input {
+          width: 100%;
+          box-sizing: border-box;
+        }
       }
     `,
   ],

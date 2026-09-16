@@ -780,15 +780,14 @@ func (c *Catalog) initServices() {
 				NoNewPrivileges:        true,
 				DropAllCapabilities:    true,
 				RunAsUser:              1000,
-				PidsLimit:              256,
-				MemoryLimit:            "1g",
+				PidsLimit:              32,
+				MemoryLimit:            "256m",
 				Tmpfs: []TmpfsMount{
 					{Path: "/tmp", Size: "16m"},
 					// Compiled binaries are executed from here, so this one
-					// mount has to allow exec. Go's build cache alone needs a
-					// few hundred MB the first time it builds the standard
-					// library, and tmpfs is charged to the memory limit.
-					{Path: "/scratch", Size: "512m", Exec: true},
+					// mount has to allow exec. The container memory limit, not
+					// the tmpfs size, is the authoritative 256 MiB ceiling.
+					{Path: "/scratch", Size: "192m", Exec: true},
 				},
 				InternalNetwork: "learning-internal",
 				IngressFrom:     []string{"learning-service"},

@@ -72,7 +72,8 @@ ESSENTIAL_API_SERVICES=(
 )
 FEATURE_SERVICES=(
     finance payments store assets project-planning chat-collector prompt-proxy
-    telos-docs-service blogging forum wellness classifieds learning-runner learning-service
+    telos-docs-service blogging forum wellness classifieds learning-runner
+    learning-runner-relay learning-service
 )
 HEAVY_SERVICES=(
     ai-orchestration lead-tracker video-transcoder-worker videos

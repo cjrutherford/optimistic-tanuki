@@ -11,10 +11,17 @@
 //
 // Variable contract (emitted per personality + mode by ThemeService):
 //
-//   --shadow-none / --shadow-sm / --shadow-md / --shadow-lg / --shadow-xl
+//   --shadow-none / --shadow-inset / --shadow-sm / --shadow-md / --shadow-lg /
+//   --shadow-xl
 //       Fully-resolved `box-shadow` values (offset + blur + spread + color),
 //       already tinted per the personality's `shadowTint` and scaled for the
 //       active light/dark mode.
+//
+//   --shadow-inset
+//       The profile-aware recessed/inset shadow for wells, editors, and other
+//       tactile surfaces. It is generated alongside the elevation scale, so
+//       minimal, diffuse, neon, hard-offset, and technical personalities keep
+//       their own silhouette instead of sharing a fixed inset literal.
 //
 //   --shadow-color
 //       The alpha-free rgb tint used to build the `--shadow-*` values above

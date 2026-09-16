@@ -22,6 +22,13 @@ describe('AboutContentComponent', () => {
     expect(element.textContent).toContain('quotation');
   });
 
+  it('describes the account work beyond simply reading', async () => {
+    const element = await render();
+
+    expect(element.textContent).toContain('submitting work');
+    expect(element.textContent).toContain('Four kinds of work');
+  });
+
   it('names the seven courses honestly rather than a round number', async () => {
     const element = await render();
 

@@ -37,38 +37,91 @@ import { LessonMarkdownService } from './lesson-markdown.service';
     <a routerLink="/author" class="back">← Your courses</a>
 
     <header>
-      <p class="eyebrow">
-        {{ isPublished() ? 'Published' : 'Draft' }}
-      </p>
-      <input
-        class="name"
-        type="text"
-        aria-label="Course name"
-        [value]="displayName()"
-        (input)="displayName.set(value($event))"
-      />
-      <textarea
-        class="description"
-        rows="2"
-        aria-label="Course description"
-        placeholder="What is this course about?"
-        [value]="description()"
-        (input)="description.set(value($event))"
-      ></textarea>
+      <div class="header-line">
+        <p class="eyebrow">
+          {{ isPublished() ? 'Published' : 'Draft' }}
+        </p>
+        <span class="ownership">{{ isOwner() ? 'Owner' : 'Co-editor' }}</span>
+      </div>
+      <label class="name-field">
+        <span class="sr-only">Course name</span>
+        <input
+          class="name"
+          type="text"
+          aria-label="Course name"
+          [value]="displayName()"
+          (input)="displayName.set(value($event))"
+        />
+      </label>
+      <label class="description-field">
+        <span>Description</span>
+        <textarea
+          class="description"
+          rows="2"
+          aria-label="Course description"
+          placeholder="What is this course about?"
+          [value]="description()"
+          (input)="description.set(value($event))"
+        ></textarea>
+      </label>
     </header>
 
+    <section class="metadata" aria-labelledby="metadata-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">Course brief</p>
+          <h2 id="metadata-title">Make the promise clear.</h2>
+        </div>
+        <p>These fields appear on the course page before a learner starts.</p>
+      </div>
+      <div class="metadata-grid">
+        <label>
+          <span>Who is this for?</span>
+          <textarea
+            class="audience"
+            rows="3"
+            placeholder="People who are ready to…"
+            [value]="audience()"
+            (input)="audience.set(value($event))"
+          ></textarea>
+        </label>
+        <label>
+          <span>What will they be able to do?</span>
+          <textarea
+            class="outcome"
+            rows="3"
+            placeholder="By the end, learners can…"
+            [value]="outcome()"
+            (input)="outcome.set(value($event))"
+          ></textarea>
+        </label>
+      </div>
+    </section>
+
     <div class="bar">
-      <button type="button" [disabled]="saving()" (click)="save()">
+      <button
+        type="button"
+        class="primary"
+        [disabled]="saving()"
+        [attr.aria-busy]="saving()"
+        (click)="save()"
+      >
         {{ saving() ? 'Saving…' : 'Save' }}
       </button>
       @if (isOwner()) {
-      <button type="button" [disabled]="saving()" (click)="togglePublished()">
+      <button
+        type="button"
+        class="secondary"
+        [disabled]="saving()"
+        [attr.aria-busy]="saving()"
+        (click)="togglePublished()"
+      >
         {{ isPublished() ? 'Unpublish' : 'Publish' }}
       </button>
       } @if (message()) {
       <span class="message" role="status">{{ message() }}</span>
       } @if (error()) {
-      <span class="error" role="status">{{ error() }}</span>
+      <span class="error" role="alert">{{ error() }}</span>
       }
     </div>
 
@@ -113,24 +166,59 @@ import { LessonMarkdownService } from './lesson-markdown.service';
         font-size: 0.85rem;
         text-decoration: none;
       }
+      .back:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: var(--lx-border-width) var(--lx-border-style) var(--lx-focus);
+        outline-offset: 3px;
+      }
+      .header-line {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
       .eyebrow {
         margin: 0;
         color: var(--lx-accent);
-        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
+        font: var(--lx-btn-weight) 0.7rem var(--lx-font-mono);
         letter-spacing: 0.1em;
         text-transform: uppercase;
+      }
+      .ownership {
+        padding: 0.18rem 0.45rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius);
+        color: var(--lx-text-muted);
+        font: var(--lx-btn-weight) 0.65rem var(--lx-font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
       .name,
       .description {
         display: block;
         width: 100%;
         margin-top: 0.5rem;
-        padding: 0.4rem 0.5rem;
-        border: 1px solid transparent;
-        border-radius: var(--lx-radius, 2px);
+        padding: 0.5rem 0.6rem;
+        border: var(--lx-border-width) var(--lx-border-style) transparent;
+        border-radius: var(--lx-radius);
         background: transparent;
-        color: inherit;
+        color: var(--lx-text);
         font: inherit;
+        transition: var(--lx-btn-transition);
       }
       .name {
         font-size: clamp(1.8rem, 3.5vw, 2.8rem);
@@ -141,11 +229,86 @@ import { LessonMarkdownService } from './lesson-markdown.service';
         color: var(--lx-text-muted);
         resize: vertical;
       }
+      .description-field,
+      .metadata label {
+        display: grid;
+        gap: 0.35rem;
+      }
+      .description-field > span,
+      .metadata label > span {
+        color: var(--lx-text-muted);
+        font: var(--lx-btn-weight) 0.68rem var(--lx-font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
       .name:hover,
       .description:hover,
       .name:focus,
       .description:focus {
-        border-color: var(--lx-border-soft);
+        border-color: var(--lx-border-strong);
+        background: var(--lx-surface);
+      }
+      .metadata {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding: 1.2rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-left-width: calc(var(--lx-border-width) + 3px);
+        border-left-color: var(--lx-accent);
+        border-radius: var(--lx-radius);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-card);
+      }
+      .section-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: end;
+      }
+      .section-kicker {
+        margin: 0 0 0.35rem;
+        color: var(--lx-accent);
+        font: var(--lx-btn-weight) 0.68rem var(--lx-font-mono);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .section-heading h2 {
+        margin: 0;
+        font-family: var(--lx-font-heading);
+        font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+        line-height: 1.05;
+      }
+      .section-heading > p {
+        max-width: 34ch;
+        margin: 0;
+        color: var(--lx-text-muted);
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+      .metadata textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.55rem 0.6rem;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius);
+        background: var(--lx-surface);
+        color: var(--lx-text);
+        font: inherit;
+        resize: vertical;
+        transition: var(--lx-btn-transition);
+      }
+      .metadata textarea:hover,
+      .metadata textarea:focus {
+        border-color: var(--lx-accent);
       }
       .bar {
         display: flex;
@@ -154,24 +317,43 @@ import { LessonMarkdownService } from './lesson-markdown.service';
         flex-wrap: wrap;
         margin: 1.5rem 0;
         padding: 0.9rem 0;
-        border-top: 1px solid var(--lx-border-soft);
-        border-bottom: 1px solid var(--lx-border-soft);
+        border-top: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-bottom: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
       }
       .bar button {
+        min-height: 2.55rem;
         padding: 0.45rem 0.9rem;
-        border: 1px solid var(--lx-accent);
-        border-radius: var(--lx-radius, 2px);
+        border: var(--lx-border-width) var(--lx-border-style) var(--lx-accent);
+        border-radius: var(--lx-radius);
         background: transparent;
         color: var(--lx-accent);
-        font: inherit;
+        font: var(--lx-btn-weight) 0.75rem var(--lx-font-mono);
+        text-transform: var(--lx-btn-transform);
         cursor: pointer;
+        transition: var(--lx-btn-transition);
+      }
+      .bar button.primary {
+        background: var(--lx-accent);
+        color: var(--lx-bg);
+        box-shadow: var(--lx-shadow-sm);
+      }
+      .bar button:hover:not(:disabled) {
+        box-shadow: var(--lx-shadow-control);
+        transform: translate(-1px, -1px);
+      }
+      .bar button:active:not(:disabled) {
+        box-shadow: var(--lx-shadow-inset);
+        transform: translate(1px, 1px);
       }
       .bar button:disabled {
         opacity: 0.4;
         cursor: default;
+        box-shadow: none;
       }
       .message {
-        color: var(--lx-text-muted);
+        color: var(--lx-accent);
         font-size: 0.85rem;
       }
       .error {
@@ -184,11 +366,19 @@ import { LessonMarkdownService } from './lesson-markdown.service';
         gap: 2rem;
         align-items: start;
         margin-bottom: 2.5rem;
+        padding-top: 0.5rem;
       }
       .pick {
         color: var(--lx-text-muted);
       }
       @media (max-width: 900px) {
+        .section-heading {
+          align-items: start;
+          flex-direction: column;
+        }
+        .metadata-grid {
+          grid-template-columns: 1fr;
+        }
         .workspace {
           grid-template-columns: 1fr;
         }
@@ -205,6 +395,8 @@ export class CourseEditorComponent {
   readonly loaded = signal(false);
   readonly displayName = signal('');
   readonly description = signal('');
+  readonly audience = signal('');
+  readonly outcome = signal('');
   readonly modules = signal<OutlineModule[]>([]);
   readonly activities = signal<EditableActivity[]>([]);
   readonly selected = signal<LessonAddress | null>(null);
@@ -264,6 +456,8 @@ export class CourseEditorComponent {
   private load(detail: OfferingDetail): void {
     this.displayName.set(detail.offering.displayName);
     this.description.set(detail.offering.description ?? '');
+    this.audience.set(detail.offering.audience ?? '');
+    this.outcome.set(detail.offering.outcome ?? '');
     this.isPublished.set(detail.offering.status === 'published');
     this.isOwner.set(detail.isOwner ?? false);
     this.modules.set(
@@ -321,6 +515,8 @@ export class CourseEditorComponent {
       .saveCourse(this.offeringId, {
         displayName: this.displayName().trim(),
         description: this.description().trim(),
+        audience: this.audience().trim() || null,
+        outcome: this.outcome().trim() || null,
         modules: this.toServerModules(),
         activities: this.activities(),
       })

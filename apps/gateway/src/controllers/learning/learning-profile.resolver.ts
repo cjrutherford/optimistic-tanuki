@@ -58,7 +58,10 @@ export class LearningProfileResolver {
         { userId, appScope: LEARNING_APP_SCOPE }
       )
     )) as LearningProfile | null;
-    if (existing) return existing.id;
+    if (existing) {
+      await this.grantRole(existing.id, LEARNING_LEARNER_ROLE);
+      return existing.id;
+    }
 
     const created = (await firstValueFrom(
       this.profileClient.send(

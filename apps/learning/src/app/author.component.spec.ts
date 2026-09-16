@@ -139,6 +139,20 @@ describe('AuthorComponent', () => {
       expect(element.textContent).toContain('You co-edit this one');
     });
 
+    it('labels ownership and publication state without relying on colour', async () => {
+      const { element } = await render(true, [
+        course('mine', 'published', true),
+        course('theirs', 'draft', false),
+      ]);
+
+      expect(element.querySelectorAll('.badge.published')).toHaveLength(1);
+      expect(element.querySelectorAll('.badge.draft')).toHaveLength(1);
+      expect(element.textContent).toContain('Owner');
+      expect(element.textContent).toContain('Co-editor');
+      expect(element.textContent).toContain('Published');
+      expect(element.textContent).toContain('Draft');
+    });
+
     it('does not say that about their own', async () => {
       const { element } = await render(true, [course('mine', 'draft')]);
 

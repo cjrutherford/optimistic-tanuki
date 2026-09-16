@@ -53,6 +53,57 @@ describe('LearningDataService', () => {
     );
   });
 
+  it('propagates an offering selector with exercise submissions', () => {
+    service.submit('go-b-01', 'package main', 'go-offering-2').subscribe();
+
+    const request = http.expectOne('/api/learning/exercises/go-b-01/submit');
+    expect(request.request.body).toEqual({
+      code: 'package main',
+      offeringId: 'go-offering-2',
+    });
+    request.flush({ output: '', errors: [], passed: false, awardedPoints: 0 });
+  });
+
+  it('propagates an offering selector with lesson progress writes', () => {
+    service.markLesson('lesson-1', false, 'offering-2').subscribe();
+
+    const request = http.expectOne('/api/learning/me/progress');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      lessonId: 'lesson-1',
+      completed: false,
+      offeringId: 'offering-2',
+    });
+    request.flush({
+      lessonId: 'lesson-1',
+      offeringId: 'offering-2',
+      completed: false,
+      completedExerciseIds: [],
+      points: 0,
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
+  it('carries a selected offering through lesson reads', () => {
+    const result = jest.fn();
+    service.lesson('track-a', 'lesson-1', 'offering-b').subscribe(result);
+
+    const request = http.expectOne(
+      '/api/learning/programs/track-a/lessons/lesson-1?offeringId=offering-b'
+    );
+    request.flush({
+      lesson: { id: 'lesson-1', title: 'Lesson', slug: 'lesson' },
+      content: 'content',
+      exercises: [],
+    });
+
+    expect(result).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lesson: { id: 'lesson-1', title: 'Lesson', slug: 'lesson' },
+      })
+    );
+  });
+
   it('turns a 401 on submit into a NotSignedInError', () => {
     const failure = jest.fn();
     service.submit('go-b-01', 'package main').subscribe({ error: failure });
@@ -74,6 +125,19 @@ describe('LearningDataService', () => {
 
     expect(failure).toHaveBeenCalledWith(
       expect.objectContaining({ status: 500 })
+    );
+  });
+
+  it('surfaces challenge catalog failures instead of treating them as empty', () => {
+    const failure = jest.fn();
+    service.challenges().subscribe({ error: failure });
+
+    http
+      .expectOne('/api/learning/challenges')
+      .flush('Unavailable', { status: 503, statusText: 'Service Unavailable' });
+
+    expect(failure).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 503 })
     );
   });
 
@@ -104,6 +168,18 @@ describe('LearningDataService', () => {
     );
   });
 
+  it('preserves an offering selector when running authored code', () => {
+    service.run('code-1', 'console.log("ok")', 'offering-1').subscribe();
+
+    const request = http.expectOne('/api/learning/runs');
+    expect(request.request.body).toEqual({
+      activityId: 'code-1',
+      code: 'console.log("ok")',
+      offeringId: 'offering-1',
+    });
+    request.flush({ output: 'ok', errors: [] });
+  });
+
   it('turns a 401 on run into a NotSignedInError', () => {
     const failure = jest.fn();
     service.run('go-b-01', 'package main').subscribe({ error: failure });
@@ -113,6 +189,24 @@ describe('LearningDataService', () => {
       .flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
 
     expect(failure).toHaveBeenCalledWith(expect.any(NotSignedInError));
+  });
+
+  it('turns an unenrolled authored run into a NotEnrolledError', () => {
+    const failure = jest.fn();
+    service.run('code-1', 'console.log("ok")', 'offering-1').subscribe({
+      error: failure,
+    });
+
+    http
+      .expectOne('/api/learning/runs')
+      .flush(
+        { offeringId: 'offering-1' },
+        { status: 409, statusText: 'Conflict' }
+      );
+
+    expect(failure).toHaveBeenCalledWith(
+      expect.objectContaining({ offeringId: 'offering-1' })
+    );
   });
 
   it('leaves other run failures alone', () => {
@@ -126,6 +220,43 @@ describe('LearningDataService', () => {
     expect(failure).toHaveBeenCalledWith(
       expect.objectContaining({ status: 500 })
     );
+  });
+
+  it('passes enrolment success through unchanged', () => {
+    const result = jest.fn();
+    service.enrol('go-100').subscribe(result);
+
+    const request = http.expectOne('/api/learning/enrolments');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ offeringId: 'go-100' });
+    request.flush({ offeringId: 'go-100' });
+
+    expect(result).toHaveBeenCalledWith({ offeringId: 'go-100' });
+  });
+
+  it('serializes explicit optional-text clears without inventing omitted fields', () => {
+    service
+      .saveCourse('art-1', { audience: null, outcome: 'A new outcome.' })
+      .subscribe();
+
+    const request = http.expectOne('/api/learning/offerings/art-1');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      audience: null,
+      outcome: 'A new outcome.',
+    });
+    request.flush({});
+  });
+
+  it.each([401, 409])('preserves enrolment HTTP status %s', (status) => {
+    const failure = jest.fn();
+    service.enrol('go-100').subscribe({ error: failure });
+
+    http
+      .expectOne('/api/learning/enrolments')
+      .flush('failure', { status, statusText: 'Failure' });
+
+    expect(failure).toHaveBeenCalledWith(expect.objectContaining({ status }));
   });
 });
 

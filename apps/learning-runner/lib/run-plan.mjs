@@ -1,24 +1,96 @@
 import { cppCompileCommand } from './catch2.mjs';
 
+export const TYPESCRIPT_CONFIG_FILE = 'tsconfig.runner.json';
+export const TYPESCRIPT_HARNESS_FILE = 'test-harness.ts';
+
+export const TYPESCRIPT_COMPILER_CONFIG = {
+  compilerOptions: {
+    target: 'ES2022',
+    module: 'CommonJS',
+    moduleResolution: 'Node',
+    skipLibCheck: true,
+    sourceMap: true,
+    rewriteRelativeImportExtensions: true,
+    noEmitOnError: true,
+    pretty: false,
+    outDir: 'compiled',
+    types: [],
+  },
+  files: ['main.ts', TYPESCRIPT_HARNESS_FILE],
+};
+
+export const GO_EXECUTION_MODES = ['run', 'test', 'benchmark'];
+
+function isTestMode(executionMode) {
+  return executionMode === true || executionMode === 'test';
+}
+
 /**
  * What to compile and what to run, per language.
  *
  * Kept apart from the sandbox so the decisions can be tested without needing
  * a compiler on the machine running the tests.
  */
-export function prepare(languageId, testMode, catch2Dir) {
+export function prepare(
+  languageId,
+  executionMode = 'run',
+  catch2Dir,
+  typescriptCompilerPath = 'node_modules/typescript/lib/tsc.js'
+) {
   switch (languageId) {
     case 'typescript':
       return {
-        compile: [],
-        run: ['node', '--experimental-strip-types', 'main.ts'],
+        compile: [
+          ['node', typescriptCompilerPath, '--project', TYPESCRIPT_CONFIG_FILE],
+        ],
+        run: isTestMode(executionMode)
+          ? [
+              'node',
+              '--require',
+              `./compiled/${TYPESCRIPT_HARNESS_FILE.replace(/\.ts$/, '.js')}`,
+              '--enable-source-maps',
+              'compiled/main.js',
+            ]
+          : ['node', '--enable-source-maps', 'compiled/main.js'],
       };
 
     case 'go':
-      return { compile: [], run: ['go', 'run', 'main.go'] };
+      switch (executionMode) {
+        case true:
+        case 'test':
+          return {
+            compile: [['go', 'test', '-c', '-o', 'main.test', '.']],
+            run: [
+              './main.test',
+              '-test.v',
+              '-test.run',
+              '^Test',
+              '-test.count=1',
+            ],
+          };
+        case 'benchmark':
+          return {
+            compile: [['go', 'test', '-c', '-o', 'main.test', '.']],
+            run: [
+              './main.test',
+              '-test.v',
+              '-test.run',
+              '^$',
+              '-test.bench',
+              '^Benchmark',
+              '-test.benchtime=100ms',
+              '-test.count=1',
+            ],
+          };
+        default:
+          return {
+            compile: [['go', 'build', '-o', 'main', 'main.go']],
+            run: ['./main'],
+          };
+      }
 
     case 'rust':
-      return testMode
+      return isTestMode(executionMode)
         ? {
             compile: [
               ['rustc', '--edition', '2021', '--test', 'main.rs', '-o', 'main'],
@@ -36,13 +108,15 @@ export function prepare(languageId, testMode, catch2Dir) {
           cppCompileCommand({
             source: 'main.cpp',
             output: 'main',
-            test: testMode,
+            test: isTestMode(executionMode),
             dir: catch2Dir,
           }),
         ],
         // The compact reporter is terser than the default and easier to read
         // back, which is what parseCatch2Output expects.
-        run: testMode ? ['./main', '--reporter', 'compact'] : ['./main'],
+        run: isTestMode(executionMode)
+          ? ['./main', '--reporter', 'compact']
+          : ['./main'],
       };
 
     default:
@@ -51,17 +125,20 @@ export function prepare(languageId, testMode, catch2Dir) {
 }
 
 /**
- * The single file handed to the compiler.
+ * The learner source handed to the compiler. Go test and benchmark source is
+ * placed in a _test.go file by the server, so the Go tool recognizes it.
  *
  * Test code goes after the learner's code in every language, because each one
  * needs the definitions above the assertions that use them.
  */
-export function buildSource(languageId, code, testCode, typescriptHarness) {
+export function buildSource(languageId, code, testCode) {
   if (!testCode) return code;
 
   switch (languageId) {
     case 'typescript':
-      return `${typescriptHarness}\n${code}\n${testCode}`;
+      // The runtime harness is preloaded as a separate compiled module. Keep
+      // it out of main.ts so learner diagnostics retain their original lines.
+      return `${code}\n${testCode}`;
     case 'rust':
     case 'cpp':
       return `${code}\n\n${testCode}`;

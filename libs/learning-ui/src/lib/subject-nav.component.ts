@@ -49,27 +49,45 @@ export interface SubjectNavItem {
       .subjects {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 0.6rem;
       }
       .chip {
         display: inline-flex;
         align-items: baseline;
-        gap: 0.45rem;
+        gap: 0.5rem;
         padding: 0.45rem 0.85rem;
-        border: 1px solid var(--lx-border-soft, currentColor);
-        border-radius: 999px;
-        background: transparent;
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft, currentColor);
+        border-radius: var(--lx-radius);
+        background: var(--lx-surface);
         color: var(--lx-text-body, currentColor);
-        font: inherit;
-        font-size: 0.9rem;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
+        font-size: 0.82rem;
+        font-weight: var(--lx-btn-weight, 800);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
         cursor: pointer;
+        box-shadow: var(--lx-shadow-sm);
+        transition: var(--lx-btn-transition);
       }
       .chip:hover {
         background: var(--lx-surface-hover, transparent);
+        border-color: var(--lx-border-hard);
+        box-shadow: var(--lx-shadow-control);
+      }
+      .chip:active {
+        transform: translate(1px, 1px);
+        box-shadow: var(--lx-shadow-inset);
+      }
+      .chip:focus-visible {
+        outline: 2px solid var(--lx-focus);
+        outline-offset: 2px;
       }
       .chip.selected {
         border-color: var(--lx-accent, currentColor);
-        color: var(--lx-accent, currentColor);
+        background: var(--lx-accent);
+        color: var(--lx-bg);
+        box-shadow: var(--lx-shadow-sm);
       }
       .count {
         color: var(--lx-text-muted, currentColor);
@@ -77,6 +95,7 @@ export interface SubjectNavItem {
       }
       .chip.selected .count {
         color: inherit;
+        opacity: 0.8;
       }
     `,
   ],

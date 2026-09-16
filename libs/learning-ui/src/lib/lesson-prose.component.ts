@@ -42,6 +42,7 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
       :host {
         display: block;
         min-width: 0;
+        max-width: 76ch;
         color: var(--lx-text-body, currentColor);
         line-height: 1.7;
         overflow-wrap: break-word;
@@ -98,19 +99,29 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
       }
       :host ::ng-deep a {
         color: var(--lx-accent);
+        text-decoration-thickness: 0.08em;
+        text-underline-offset: 0.16em;
+      }
+      :host ::ng-deep a:hover {
+        color: var(--lx-text);
       }
       :host ::ng-deep strong {
         color: var(--lx-text);
       }
       :host ::ng-deep blockquote {
-        padding: 0.2rem 0 0.2rem 1rem;
-        border-left: 3px solid var(--lx-border-strong);
+        padding: 0.65rem 0.9rem 0.65rem 1rem;
+        border-left: calc(var(--lx-border-width, 2px) + 1px)
+          var(--lx-border-style, solid) var(--lx-border-accent);
+        border-radius: 0 var(--lx-radius, 2px) var(--lx-radius, 2px) 0;
+        background: var(--lx-well);
+        box-shadow: var(--lx-shadow-inset, inset 0 2px 6px transparent);
         color: var(--lx-text-muted);
       }
       :host ::ng-deep hr {
         margin: 2rem 0;
         border: 0;
-        border-top: 1px solid var(--lx-border);
+        border-top: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border);
       }
       :host ::ng-deep table {
         display: block;
@@ -122,11 +133,13 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
       :host ::ng-deep th,
       :host ::ng-deep td {
         padding: 0.5rem 0.7rem;
-        border: 1px solid var(--lx-border);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border);
         text-align: left;
       }
       :host ::ng-deep th {
-        color: var(--lx-text-muted);
+        background: var(--lx-surface-active);
+        color: var(--lx-text);
         font-size: 0.78rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -134,7 +147,9 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
       /* Inline code, but not the code inside a highlighted block. */
       :host ::ng-deep :not(pre) > code {
         padding: 0.12em 0.4em;
-        border-radius: 3px;
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius, 2px);
         background: var(--lx-inline-code);
         color: var(--lx-accent-soft);
         font: 400 0.85em var(--lx-font-mono, ui-monospace, monospace);
@@ -143,10 +158,14 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
         margin: 0 0 1.15rem;
         padding: 0.95rem 1.1rem;
         overflow-x: auto;
-        border: 1px solid var(--lx-border-strong);
-        border-left: 3px solid var(--lx-border-accent);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-strong);
+        border-left-width: calc(var(--lx-border-width, 2px) + 1px);
+        border-left-color: var(--lx-border-accent);
+        border-radius: var(--lx-radius, 2px);
         background: var(--lx-code);
         color: var(--lx-code-text);
+        box-shadow: var(--lx-shadow-inset, inset 0 2px 6px transparent);
         font: 400 0.83rem/1.65 var(--lx-font-mono, ui-monospace, monospace);
       }
       :host ::ng-deep pre code {
@@ -216,10 +235,14 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
         margin: 0 0 1.15rem;
         padding: 0.95rem;
         overflow-x: auto;
-        border: 1px solid var(--lx-border-strong);
-        border-left: 3px solid var(--lx-border-accent);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-border-strong);
+        border-left-width: calc(var(--lx-border-width, 2px) + 1px);
+        border-left-color: var(--lx-border-accent);
         border-radius: var(--lx-radius, 2px);
-        background: var(--lx-surface);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        box-shadow: var(--lx-shadow-inset, inset 0 2px 6px transparent);
         text-align: center;
       }
       :host ::ng-deep .lesson-mermaid-diagram svg {
@@ -228,9 +251,11 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
       :host ::ng-deep .lesson-mermaid-error {
         margin: 0 0 1.15rem;
         padding: 0.95rem 1.1rem;
-        border: 1px solid var(--lx-danger);
+        border: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-danger);
         border-radius: var(--lx-radius, 2px);
         background: var(--lx-well);
+        box-shadow: var(--lx-shadow-inset, inset 0 2px 6px transparent);
       }
       :host ::ng-deep .lesson-mermaid-error pre {
         margin: 0 0 0.5rem;
@@ -250,6 +275,9 @@ const KATEX_CSS_ID = 'otlearn-katex-css';
         overflow-x: auto;
         overflow-y: hidden;
         padding: 0.2rem 0;
+      }
+      :host ::ng-deep .katex {
+        color: var(--lx-text);
       }
     `,
   ],

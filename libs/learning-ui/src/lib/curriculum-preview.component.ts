@@ -65,8 +65,9 @@ export interface CurriculumPreviewCourse {
         display: block;
       }
       .preview {
-        padding: 3rem 0;
-        border-top: 1px solid var(--lx-border);
+        padding: 3.5rem 0;
+        border-top: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
       }
       header h2 {
         margin: 0;
@@ -84,9 +85,7 @@ export interface CurriculumPreviewCourse {
         margin: 2rem 0 0;
         padding: 0;
         display: grid;
-        gap: 1px;
-        background: var(--lx-border);
-        border: 1px solid var(--lx-border);
+        gap: 1.25rem;
       }
       @media (min-width: 48rem) {
         ul {
@@ -94,27 +93,43 @@ export interface CurriculumPreviewCourse {
         }
       }
       li {
-        background: var(--lx-surface);
+        background-color: var(--lx-surface);
+        background-image: var(--lx-surface-texture);
+        border: var(--lx-border-width) var(--lx-border-style)
+          var(--lx-border-soft);
+        border-radius: var(--lx-radius);
+        box-shadow: var(--lx-shadow-card);
+        overflow: hidden;
+        transition: var(--lx-transition);
+      }
+      li:hover {
+        border-color: var(--lx-accent);
+        box-shadow: var(--lx-shadow-control);
+        transform: translate(-1px, -1px);
       }
       button {
         display: grid;
         gap: 0.4rem;
         width: 100%;
         height: 100%;
-        padding: 1.25rem 1.35rem;
+        padding: 1.35rem 1.5rem;
         font: inherit;
         text-align: left;
         color: inherit;
         background: none;
         border: 0;
         cursor: pointer;
+        transition: var(--lx-transition);
       }
-      button:hover,
-      button:focus-visible {
+      button:hover {
         background: var(--lx-surface-hover);
       }
+      button:active {
+        background: var(--lx-surface-active);
+      }
       button:focus-visible {
-        outline: 2px solid var(--lx-focus);
+        outline: var(--lx-border-width, 2px) var(--lx-border-style, solid)
+          var(--lx-focus);
         outline-offset: -2px;
       }
       .subject {
@@ -142,6 +157,12 @@ export interface CurriculumPreviewCourse {
       .empty {
         margin: 2rem 0 0;
         color: var(--lx-text-muted);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        li,
+        button {
+          transition: none;
+        }
       }
     `,
   ],

@@ -102,37 +102,45 @@ interface CatalogRow {
       .eyebrow {
         margin: 0;
         color: var(--lx-accent);
-        font: 700 0.7rem var(--lx-font-mono, ui-monospace, monospace);
-        letter-spacing: 0.1em;
+        font-family: var(--lx-font-mono, ui-monospace, monospace);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
         text-transform: uppercase;
       }
       h1 {
         margin: 0.6rem 0;
+        font-family: var(--lx-font-heading);
         font-size: clamp(2.7rem, 5vw, 5rem);
         line-height: 0.95;
         letter-spacing: -0.05em;
       }
       .lede {
-        max-width: 52ch;
+        max-width: 54ch;
         margin: 0 0 2rem;
+        font-size: 1.05rem;
+        line-height: 1.6;
         color: var(--lx-text-muted);
       }
       .courses {
-        margin-top: 1.75rem;
-        border-top: 1px solid var(--lx-border-soft);
+        margin-top: 2rem;
+        display: grid;
+        gap: 1.25rem;
       }
       .course {
         display: block;
-        border-bottom: 1px solid var(--lx-border-soft);
         color: inherit;
         text-decoration: none;
+        border-radius: var(--lx-radius);
       }
-      .course:hover {
-        background: var(--lx-surface-hover);
+      .course:focus-visible {
+        outline: 2px solid var(--lx-focus);
+        outline-offset: 2px;
       }
       .empty {
         margin-top: 2rem;
         color: var(--lx-text-muted);
+        font-family: var(--lx-font-mono, monospace);
       }
     `,
   ],

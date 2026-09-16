@@ -1,6 +1,9 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { CodeEditorComponent } from './code-editor.component';
+import {
+  CodeEditorComponent,
+  monacoEditorOptions,
+} from './code-editor.component';
 import { Diagnostic } from './code-diagnostics';
 
 @Component({
@@ -87,6 +90,10 @@ describe('CodeEditorComponent (fallback)', () => {
     const container = element.querySelector('.monaco');
 
     expect(container?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('uses Monaco textarea editing instead of the one-row native EditContext', () => {
+    expect(monacoEditorOptions('package main', 'go').editContext).toBe(false);
   });
 
   it('accepts diagnostics without an editor to put them in', async () => {

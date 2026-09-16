@@ -2,6 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import {
   Activity,
+  CodeExercise,
+  CodeRunActivity,
+  GoExecutionMode,
+  LessonMetadata,
   ACTIVITY_NOT_FOUND,
   ActivityNotFoundPayload,
   Attempt,
@@ -20,6 +24,7 @@ import {
   isOfferingVisibleTo,
   LESSON_NOT_FOUND,
   LessonNotFoundPayload,
+  normalizeCoEditorProfileIds,
   OFFERING_NOT_FOUND,
   OfferingNotFoundPayload,
   lessonHasVariant,
@@ -41,6 +46,99 @@ import {
   OfferingContentPatch,
   RecordEvaluationInput,
 } from './learning.repository';
+
+interface RunnerResult {
+  success: boolean;
+  output: string;
+  errors: string[];
+  timedOut: boolean;
+  testsPassed?: boolean;
+  testResults?: Array<{
+    name: string;
+    passed: boolean;
+    error?: string;
+  }>;
+}
+
+interface RunnerRequest {
+  languageId: string;
+  code: string;
+  expectedOutput?: string;
+  verifier?: {
+    testCode?: string;
+    validationPattern?: string;
+    executionMode?: GoExecutionMode;
+  };
+  supportingFiles?: Record<string, string>;
+}
+
+interface AuthoredCodeLocation {
+  offering: ProgramTrack['offerings'][number];
+  activity: CodeRunActivity;
+}
+
+interface ChallengeLessonLocation {
+  lesson: LessonMetadata;
+  moduleId: string;
+  offeringId: string;
+}
+
+type PublicExercise = ReturnType<typeof publicExercise>;
+
+interface ChallengeListItem extends PublicExercise {
+  trackId: string;
+  trackDisplayName: string;
+  offeringId?: string;
+  moduleId: string;
+  lessonId: string;
+  lessonTitle: string;
+  solved: boolean;
+}
+
+function indexChallengeLessons(
+  offerings: readonly ProgramTrack['offerings'][number][]
+): Map<string, ChallengeLessonLocation> {
+  const index = new Map<string, ChallengeLessonLocation>();
+  for (const offering of offerings) {
+    for (const module of offering.modules) {
+      for (const lesson of module.lessons) {
+        if (!index.has(lesson.slug)) {
+          index.set(lesson.slug, {
+            lesson,
+            moduleId: module.id,
+            offeringId: offering.id,
+          });
+        }
+      }
+    }
+  }
+  return index;
+}
+
+function mapChallenges(
+  track: ProgramTrack,
+  lessonIndex: ReadonlyMap<string, ChallengeLessonLocation>,
+  exercises: readonly CodeExercise[],
+  isSolved: (exerciseId: string, offeringId?: string) => boolean
+): ChallengeListItem[] {
+  return exercises
+    .filter(
+      (exercise) => exercise.languageId === track.supportedLanguageIds?.[0]
+    )
+    .map((exercise) => {
+      const location = lessonIndex.get(exercise.lessonSlug);
+      return {
+        ...publicExercise(exercise),
+        trackId: track.id,
+        trackDisplayName: track.displayName,
+        offeringId: location?.offeringId,
+        moduleId: location?.moduleId ?? '',
+        lessonId: location?.lesson.id ?? exercise.lessonSlug,
+        lessonTitle: location?.lesson.title ?? exercise.title,
+        solved: isSolved(exercise.id, location?.offeringId),
+      };
+    });
+}
 
 @Injectable()
 export class AppService {
@@ -87,31 +185,23 @@ export class AppService {
   async getLesson(
     trackId: string,
     lessonId: string,
-    viewer: CatalogViewer = {}
+    viewer: CatalogViewer = {},
+    offeringId?: string,
+    moduleId?: string
   ) {
     const track = (await this.listPrograms()).find(
       (candidate) => candidate.id === trackId
     );
     if (!track) throw this.lessonNotFound(trackId, lessonId);
-    const offering = track.offerings.find((candidate) =>
-      candidate.modules
-        .flatMap((module) => module.lessons)
-        .some((candidateLesson) => candidateLesson.id === lessonId)
+    const location = await this.resolveReadableLesson(
+      track,
+      lessonId,
+      moduleId,
+      viewer,
+      offeringId
     );
-    if (!offering) throw this.lessonNotFound(trackId, lessonId);
-    const ownership =
-      offering.status === 'published'
-        ? undefined
-        : await this.repository.getOwnership(offering.id);
-    if (!isOfferingVisibleTo(offering, ownership, viewer)) {
-      // The same answer an unknown lesson gets. Telling an outsider that a
-      // course exists but is not theirs to read is itself a disclosure.
-      throw this.lessonNotFound(trackId, lessonId);
-    }
-    const lesson = offering.modules
-      .flatMap((module) => module.lessons)
-      .find((candidate) => candidate.id === lessonId);
-    if (!lesson) throw this.lessonNotFound(trackId, lessonId);
+    if (!location) throw this.lessonNotFound(trackId, lessonId);
+    const { offering, lesson } = location;
     // The track says which rendition to prefer, and the rendition says where
     // its words are. A course written inside the product carries them; the
     // four ported tracks point at a file that ships with the workspace.
@@ -125,6 +215,7 @@ export class AppService {
     const languageId = track.supportedLanguageIds?.[0];
     return {
       lesson,
+      offeringId: offering.id,
       content,
       // The work this lesson's author set. Separate from the exercises above,
       // which are code and belong to the ported tracks.
@@ -173,6 +264,58 @@ export class AppService {
     if (!safePath.startsWith(normalize(join(contentRoot, collection))))
       throw new Error('Invalid lesson source path');
     return await readFile(safePath, 'utf8');
+  }
+
+  /**
+   * Resolve a lesson only after applying visibility to every matching
+   * offering. Legacy URLs do not carry an offering id, so picking the first
+   * structural match and checking visibility afterwards can hide a published
+   * rendition behind an earlier private draft.
+   */
+  private async resolveReadableLesson(
+    track: ProgramTrack,
+    lessonId: string,
+    moduleId: string | undefined,
+    viewer: CatalogViewer,
+    requestedOfferingId?: string
+  ): Promise<
+    | {
+        offering: ProgramTrack['offerings'][number];
+        module: ProgramTrack['offerings'][number]['modules'][number];
+        lesson: ProgramTrack['offerings'][number]['modules'][number]['lessons'][number];
+      }
+    | undefined
+  > {
+    const candidates = track.offerings.filter(
+      (offering) =>
+        (!requestedOfferingId || offering.id === requestedOfferingId) &&
+        offering.modules.some(
+          (module) =>
+            (!moduleId || module.id === moduleId) &&
+            module.lessons.some((lesson) => lesson.id === lessonId)
+        )
+    );
+    for (const offering of candidates) {
+      const ownership =
+        offering.status === 'published'
+          ? undefined
+          : await this.repository.getOwnership(offering.id);
+      if (!isOfferingVisibleTo(offering, ownership, viewer)) continue;
+      const module = moduleId
+        ? offering.modules.find(
+            (candidate) =>
+              candidate.id === moduleId &&
+              candidate.lessons.some((lesson) => lesson.id === lessonId)
+          )
+        : offering.modules.find((candidate) =>
+            candidate.lessons.some((lesson) => lesson.id === lessonId)
+          );
+      const lesson = module?.lessons.find(
+        (candidate) => candidate.id === lessonId
+      );
+      if (module && lesson) return { offering, module, lesson };
+    }
+    return undefined;
   }
 
   /**
@@ -303,7 +446,13 @@ export class AppService {
     const isOwner = Boolean(
       viewer.profileId && ownership?.ownerProfileId === viewer.profileId
     );
-    const visibleOffering = isOwner
+    const canEdit = Boolean(
+      viewer.profileId &&
+        ownership &&
+        (ownership.ownerProfileId === viewer.profileId ||
+          ownership.coEditorProfileIds.includes(viewer.profileId))
+    );
+    const visibleOffering = canEdit
       ? offering
       : { ...offering, activities: offering.activities.map(publicActivity) };
 
@@ -344,69 +493,84 @@ export class AppService {
   }
 
   async getDashboard(profileId?: string) {
+    if (!profileId) return [];
     // The catalog, not the raw list. Without this an unpublished course would
     // appear on every learner's dashboard the moment somebody opened it.
     const programs = await this.listCatalog({ profileId });
-    const progress = profileId ? await this.getProgress(profileId) : [];
-    const completedByLesson = new Map(
-      progress.map((item) => [item.lessonId, item])
+    const [progress, enrolments] = await Promise.all([
+      this.getProgress(profileId),
+      this.listEnrolments(profileId),
+    ]);
+    const activeOfferingIds = new Set(
+      enrolments
+        .filter((enrolment) => enrolment.status === 'active')
+        .map((enrolment) => enrolment.offeringId)
     );
-    return programs.map((program) => {
-      const lessons = program.offerings
-        .flatMap((offering) => offering.modules)
-        .flatMap((module) => module.lessons);
-      const lessonIds = new Set(lessons.map((lesson) => lesson.id));
-      const programProgress = progress.filter((item) =>
-        lessonIds.has(item.lessonId)
-      );
-      // A parent lesson counts as done once every part of it is done, so a
-      // learner who worked through the detail lessons is not asked to tick
-      // the overview separately.
-      const completed = rollUpCompletedLessons(
-        lessons,
-        lessons
-          .filter((lesson) => completedByLesson.get(lesson.id)?.completed)
-          .map((lesson) => lesson.id)
-      );
-      const completedLessons = completed.size;
-      const completedExerciseIds = programProgress.flatMap(
-        (item) => item.completedExerciseIds
-      );
-      // A track with no language has no code exercises. This used to index
-      // supportedLanguageIds directly, which throws on a track that has none.
-      // strictNullChecks is off in this workspace, so nothing warned about it.
-      const trackLanguageId = program.supportedLanguageIds?.[0];
-      const exercises = trackLanguageId
-        ? tutorialExercises.filter(
-            (exercise) => exercise.languageId === trackLanguageId
-          )
-        : [];
-      const completedExercises = exercises.filter((exercise) =>
-        completedExerciseIds.includes(exercise.id)
-      ).length;
-      const points = programProgress.reduce(
-        (total, item) => total + item.points,
-        0
-      );
-      return {
-        program,
-        totals: {
-          lessons: lessons.length,
-          exercises: exercises.length,
-          points: exercises.reduce(
-            (total, exercise) => total + exercise.points,
+    return programs.flatMap((program) =>
+      program.offerings
+        .filter((offering) => activeOfferingIds.has(offering.id))
+        .map((offering) => {
+          const lessons = offering.modules.flatMap((module) => module.lessons);
+          const lessonIds = new Set(lessons.map((lesson) => lesson.id));
+          const programProgress = progress.filter(
+            (item) =>
+              lessonIds.has(item.lessonId) && item.offeringId === offering.id
+          );
+          // A parent lesson counts as done once every part of it is done, so a
+          // learner who worked through the detail lessons is not asked to tick
+          // the overview separately.
+          const completed = rollUpCompletedLessons(
+            lessons,
+            lessons
+              .filter((lesson) =>
+                programProgress.some(
+                  (item) => item.lessonId === lesson.id && item.completed
+                )
+              )
+              .map((lesson) => lesson.id)
+          );
+          const completedLessons = completed.size;
+          const completedExerciseIds = programProgress.flatMap(
+            (item) => item.completedExerciseIds
+          );
+          // A track with no language has no code exercises. This used to index
+          // supportedLanguageIds directly, which throws on a track that has none.
+          // strictNullChecks is off in this workspace, so nothing warned about it.
+          const trackLanguageId = program.supportedLanguageIds?.[0];
+          const exercises = trackLanguageId
+            ? tutorialExercises.filter(
+                (exercise) => exercise.languageId === trackLanguageId
+              )
+            : [];
+          const completedExercises = exercises.filter((exercise) =>
+            completedExerciseIds.includes(exercise.id)
+          ).length;
+          const points = programProgress.reduce(
+            (total, item) => total + item.points,
             0
-          ),
-        },
-        progress: {
-          completedLessons,
-          completedExercises,
-          points,
-          nextLessonId:
-            lessons.find((lesson) => !completed.has(lesson.id))?.id ?? null,
-        },
-      };
-    });
+          );
+          return {
+            offeringId: offering.id,
+            offering,
+            program: { ...program, offerings: [offering] },
+            totals: {
+              lessons: lessons.length,
+              exercises: exercises.length,
+              points: exercises.reduce(
+                (total, exercise) => total + exercise.points,
+                0
+              ),
+            },
+            progress: {
+              completedLessons,
+              completedExercises,
+              points,
+              nextLessonId:
+                lessons.find((lesson) => !completed.has(lesson.id))?.id ?? null,
+            },
+          };
+        })
+    );
   }
 
   /**
@@ -415,8 +579,8 @@ export class AppService {
    * `earned` is what the server watched the learner do, and only the two
    * callers that grade work supply it: submitting an exercise and answering
    * an activity. A learner marking a lesson read supplies nothing, and the
-   * points and solved exercises already on the record are carried forward
-   * untouched.
+   * points and solved exercises already on the record are preserved by the
+   * repository's atomic upsert.
    *
    * This used to take the whole record from the caller and write it verbatim,
    * so anyone could send themselves any score.
@@ -424,25 +588,48 @@ export class AppService {
   async saveProgress(
     profileId: string,
     userId: string,
-    progress: { lessonId: string; completed: boolean },
+    progress: { lessonId: string; completed: boolean; offeringId?: string },
     earned?: { completedExerciseIds: string[]; points: number }
   ): Promise<LessonProgress> {
-    const offeringId = await this.findOfferingIdForLesson(progress.lessonId);
-    const enrolment = await this.requireActiveEnrolment(
+    const location = await this.resolveEnrolledLesson(
       profileId,
       progress.lessonId,
-      offeringId
+      progress.offeringId
     );
-    const previous = (await this.getProgress(profileId)).find(
-      (item) => item.lessonId === progress.lessonId
+    if (earned) {
+      const previous = (await this.getProgress(profileId)).find(
+        (item) =>
+          item.lessonId === progress.lessonId &&
+          item.offeringId === location.offering.id
+      );
+      const newlyCompleted = earned.completedExerciseIds.find(
+        (id) => !previous?.completedExerciseIds.includes(id)
+      );
+      if (newlyCompleted) {
+        return await this.repository.recordSolvedExercise(
+          profileId,
+          userId,
+          location.enrolment.id,
+          progress.lessonId,
+          {
+            id: newlyCompleted,
+            points: Math.max(0, earned.points - (previous?.points ?? 0)),
+          }
+        );
+      }
+    }
+    return await this.repository.saveProgress(
+      profileId,
+      userId,
+      location.enrolment.id,
+      {
+        lessonId: progress.lessonId,
+        offeringId: location.offering.id,
+        completed: progress.completed,
+        completedExerciseIds: [],
+        points: 0,
+      }
     );
-    return await this.repository.saveProgress(profileId, userId, enrolment.id, {
-      lessonId: progress.lessonId,
-      completed: progress.completed,
-      completedExerciseIds:
-        earned?.completedExerciseIds ?? previous?.completedExerciseIds ?? [],
-      points: earned?.points ?? previous?.points ?? 0,
-    });
   }
 
   /**
@@ -469,17 +656,79 @@ export class AppService {
     return enrolment;
   }
 
-  private async findOfferingIdForLesson(lessonId: string): Promise<string> {
+  /**
+   * Resolve a mutation target using the supplied offering when present.
+   * Without it, only published offerings with an active enrolment are
+   * candidates; this makes legacy clients safe when lesson ids collide.
+   */
+  private async resolveEnrolledLesson(
+    profileId: string,
+    lessonIdOrSlug: string,
+    requestedOfferingId?: string,
+    languageId?: string
+  ): Promise<{
+    track: ProgramTrack;
+    offering: ProgramTrack['offerings'][number];
+    module: ProgramTrack['offerings'][number]['modules'][number];
+    lesson: ProgramTrack['offerings'][number]['modules'][number]['lessons'][number];
+    enrolment: Enrolment;
+  }> {
     const tracks = await this.listPrograms();
+    const candidates: Array<{
+      track: ProgramTrack;
+      offering: ProgramTrack['offerings'][number];
+      module: ProgramTrack['offerings'][number]['modules'][number];
+      lesson: ProgramTrack['offerings'][number]['modules'][number]['lessons'][number];
+    }> = [];
     for (const track of tracks) {
+      if (languageId && !track.supportedLanguageIds?.includes(languageId)) {
+        continue;
+      }
       for (const offering of track.offerings) {
-        const lessons = offering.modules.flatMap((module) => module.lessons);
-        if (lessons.some((lesson) => lesson.id === lessonId)) {
-          return offering.id;
+        if (requestedOfferingId && offering.id !== requestedOfferingId) {
+          continue;
+        }
+        for (const module of offering.modules) {
+          const lesson = module.lessons.find(
+            (candidate) =>
+              (candidate.id === lessonIdOrSlug ||
+                candidate.slug === lessonIdOrSlug) &&
+              (!languageId || lessonHasVariant(candidate, languageId))
+          );
+          if (lesson) candidates.push({ track, offering, module, lesson });
         }
       }
     }
-    throw new Error(`Lesson ${lessonId} is not attached to any offering`);
+
+    const published = candidates.filter(
+      (candidate) => candidate.offering.status === 'published'
+    );
+    if (requestedOfferingId && published.length === 0) {
+      throw this.lessonNotFound(candidates[0]?.track.id ?? '', lessonIdOrSlug);
+    }
+
+    for (const candidate of published) {
+      const enrolment = await this.repository.getEnrolment(
+        profileId,
+        candidate.offering.id
+      );
+      if (enrolment?.status === 'active') {
+        return { ...candidate, enrolment };
+      }
+    }
+
+    const visibleCandidate = published[0];
+    if (visibleCandidate) {
+      return {
+        ...visibleCandidate,
+        enrolment: await this.requireActiveEnrolment(
+          profileId,
+          lessonIdOrSlug,
+          visibleCandidate.offering.id
+        ),
+      };
+    }
+    throw this.lessonNotFound(candidates[0]?.track.id ?? '', lessonIdOrSlug);
   }
 
   async enrol(profileId: string, offeringId: string): Promise<Enrolment> {
@@ -488,9 +737,12 @@ export class AppService {
     const offering = (await this.listPrograms())
       .flatMap((track) => track.offerings)
       .find((candidate) => candidate.id === offeringId);
-    if (!offering) throw new Error(`Unknown offering: ${offeringId}`);
-    if (offering.status !== 'published') {
-      throw new Error(`Offering ${offeringId} is not published`);
+    if (!offering || offering.status !== 'published') {
+      // An unknown course and a course that is not available to ordinary
+      // learners must cross the service boundary as the same structured
+      // not-found response. A plain Error becomes a 500 and leaks which
+      // branch was taken.
+      throw this.offeringNotFound(offeringId);
     }
     return await this.repository.enrol(profileId, offeringId);
   }
@@ -503,11 +755,7 @@ export class AppService {
     return await this.repository.listEnrolments(profileId);
   }
 
-  async runCode(activityId: string, code: string) {
-    const exercise = tutorialExercises.find(
-      (candidate) => candidate.id === activityId
-    );
-    if (!exercise) throw new Error(`Unknown exercise: ${activityId}`);
+  private async runCodeInRunner(request: RunnerRequest): Promise<RunnerResult> {
     const response = await fetch(
       `${
         process.env.LEARNING_RUNNER_URL ?? 'http://learning-runner:3025'
@@ -515,27 +763,109 @@ export class AppService {
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          languageId: exercise.languageId,
-          code,
-          // The exercise's own modules, so an import in a plain run resolves
-          // to the same thing it will on submission.
-          supportingFiles: exercise.supportingFiles,
-        }),
+        body: JSON.stringify(request),
       }
     );
-    const result = (await response.json()) as {
-      success: boolean;
-      output: string;
-      errors: string[];
-      timedOut: boolean;
-    };
+    return (await response.json()) as RunnerResult;
+  }
+
+  private async findAuthoredCodeActivity(
+    activityId: string,
+    requestedOfferingId?: string
+  ): Promise<AuthoredCodeLocation | undefined> {
+    for (const track of await this.listPrograms()) {
+      for (const offering of track.offerings) {
+        if (requestedOfferingId && offering.id !== requestedOfferingId) {
+          continue;
+        }
+        const activity = offering.activities.find(
+          (candidate): candidate is CodeRunActivity =>
+            candidate.id === activityId && candidate.type === 'code.run'
+        );
+        if (activity) return { offering, activity };
+      }
+    }
+    return undefined;
+  }
+
+  private async runCodeInRunnerForActivity(
+    activity: CodeRunActivity,
+    code: string,
+    includeVerifier: boolean
+  ): Promise<RunnerResult> {
+    return await this.runCodeInRunner({
+      languageId: activity.languageId ?? 'typescript',
+      code,
+      ...(includeVerifier
+        ? {
+            expectedOutput: activity.expectedOutput,
+            verifier: activity.verifier,
+          }
+        : {}),
+      supportingFiles: activity.supportingFiles,
+    });
+  }
+
+  async runCode(
+    activityId: string,
+    code: string,
+    profileId?: string,
+    offeringId?: string
+  ) {
+    const authored = await this.findAuthoredCodeActivity(
+      activityId,
+      offeringId
+    );
+    if (authored) {
+      if (!profileId) {
+        throw new RpcException({
+          code: NOT_ENROLLED,
+          offeringId: authored.offering.id,
+          lessonId: authored.activity.lessonId ?? '',
+        } satisfies NotEnrolledPayload);
+      }
+      const location = await this.resolveEnrolledActivity(
+        profileId,
+        activityId,
+        offeringId
+      );
+      if (location.activity.type !== 'code.run') {
+        throw new RpcException({
+          code: ACTIVITY_NOT_FOUND,
+          activityId,
+        } satisfies ActivityNotFoundPayload);
+      }
+      return await this.runCodeInRunnerForActivity(
+        location.activity,
+        code,
+        false
+      );
+    }
+
+    const exercise = tutorialExercises.find(
+      (candidate) => candidate.id === activityId
+    );
+    if (!exercise) throw new Error(`Unknown exercise: ${activityId}`);
+    const result = await this.runCodeInRunner({
+      languageId: exercise.languageId,
+      code,
+      // A plain run must not send verifier code or accidentally turn a normal
+      // Go program into a test. Test-only exercises have no hidden verifier,
+      // so their explicit mode is safe and necessary here.
+      verifier: {
+        executionMode: exercise.verifier.testCode
+          ? 'run'
+          : exercise.verifier.executionMode,
+      },
+      supportingFiles: exercise.supportingFiles,
+    });
     return {
       ...result,
       testsPassed:
         result.success &&
-        (!exercise.expectedOutput ||
-          result.output.trim() === exercise.expectedOutput.trim()),
+        (result.testsPassed ??
+          (!exercise.expectedOutput ||
+            result.output.trim() === exercise.expectedOutput.trim())),
     };
   }
 
@@ -543,55 +873,36 @@ export class AppService {
     profileId: string,
     userId: string,
     activityId: string,
-    code: string
+    code: string,
+    offeringId?: string
   ) {
     const exercise = tutorialExercises.find(
       (candidate) => candidate.id === activityId
     );
     if (!exercise) throw new Error(`Unknown exercise: ${activityId}`);
-    const response = await fetch(
-      `${
-        process.env.LEARNING_RUNNER_URL ?? 'http://learning-runner:3025'
-      }/runs`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          languageId: exercise.languageId,
-          code,
-          verifier: exercise.verifier,
-          expectedOutput: exercise.expectedOutput,
-          supportingFiles: exercise.supportingFiles,
-        }),
-      }
+    const location = await this.resolveEnrolledLesson(
+      profileId,
+      exercise.lessonSlug,
+      offeringId,
+      exercise.languageId
     );
-    const result = (await response.json()) as {
-      success: boolean;
-      output: string;
-      errors: string[];
-      timedOut: boolean;
-      testsPassed?: boolean;
-    };
+    const result = await this.runCodeInRunner({
+      languageId: exercise.languageId,
+      code,
+      verifier: exercise.verifier,
+      expectedOutput: exercise.expectedOutput,
+      supportingFiles: exercise.supportingFiles,
+    });
     const passed = Boolean(
       result.success &&
         (result.testsPassed ??
           (!exercise.expectedOutput ||
             result.output.trim() === exercise.expectedOutput.trim()))
     );
-    const tracks = await this.listPrograms();
-    const lesson = tracks
-      .flatMap((track) => track.offerings)
-      .flatMap((offering) => offering.modules)
-      .flatMap((module) => module.lessons)
-      .find(
-        (item) =>
-          item.slug === exercise.lessonSlug &&
-          lessonHasVariant(item, exercise.languageId)
-      );
-    if (!lesson)
-      throw new Error(`Exercise ${activityId} is not attached to a lesson`);
     const previous = (await this.getProgress(profileId)).find(
-      (item) => item.lessonId === lesson.id
+      (item) =>
+        item.lessonId === location.lesson.id &&
+        item.offeringId === location.offering.id
     );
     const alreadyComplete =
       previous?.completedExerciseIds.includes(activityId) ?? false;
@@ -606,8 +917,9 @@ export class AppService {
         progress:
           previous ??
           (await this.saveProgress(profileId, userId, {
-            lessonId: lesson.id,
+            lessonId: location.lesson.id,
             completed: false,
+            offeringId: location.offering.id,
           })),
       };
     }
@@ -615,16 +927,11 @@ export class AppService {
     // The new total is computed by the database, not here. Two exercises in
     // the same lesson solved at once would otherwise both read the same
     // points and the later write would discard the earlier award.
-    const enrolment = await this.requireActiveEnrolment(
-      profileId,
-      lesson.id,
-      await this.findOfferingIdForLesson(lesson.id)
-    );
     const progress = await this.repository.recordSolvedExercise(
       profileId,
       userId,
-      enrolment.id,
-      lesson.id,
+      location.enrolment.id,
+      location.lesson.id,
       { id: activityId, points: exercise.points }
     );
 
@@ -633,6 +940,115 @@ export class AppService {
       passed,
       awardedPoints: alreadyComplete ? 0 : exercise.points,
       progress,
+    };
+  }
+
+  async listChallenges(params: {
+    trackId?: string;
+    profileId?: string;
+    viewer?: CatalogViewer;
+  }) {
+    const tracks = await this.listCatalog(
+      params.viewer ?? { profileId: params.profileId }
+    );
+    const progress = params.profileId
+      ? await this.getProgress(params.profileId)
+      : [];
+    const isSolvedInOffering = (exerciseId: string, offeringId?: string) =>
+      progress.some(
+        (item) =>
+          item.completedExerciseIds.includes(exerciseId) &&
+          item.offeringId === offeringId
+      );
+    const activeEnrolments = params.profileId
+      ? (await this.listEnrolments(params.profileId)).filter(
+          (e) => e.status === 'active'
+        )
+      : [];
+
+    if (params.trackId) {
+      const track = tracks.find((t) => t.id === params.trackId);
+      if (!track) {
+        return { challenges: [], enrolledCount: 0, trackDisplayName: '' };
+      }
+      const trackOfferingIds = new Set(
+        track.offerings.map((offering) => offering.id)
+      );
+      const enrolledCount = activeEnrolments.filter((enrolment) =>
+        trackOfferingIds.has(enrolment.offeringId)
+      ).length;
+      const languageId = track.supportedLanguageIds?.[0];
+      if (!languageId) {
+        return {
+          challenges: [],
+          enrolledCount,
+          trackDisplayName: track.displayName,
+        };
+      }
+
+      const trackOfferings = [...track.offerings].sort(
+        (left, right) =>
+          Number(!activeEnrolments.some((e) => e.offeringId === left.id)) -
+          Number(!activeEnrolments.some((e) => e.offeringId === right.id))
+      );
+      const lessonInfo = indexChallengeLessons(trackOfferings);
+      const challenges = mapChallenges(
+        track,
+        lessonInfo,
+        tutorialExercises,
+        isSolvedInOffering
+      );
+
+      return {
+        challenges,
+        enrolledCount,
+        trackDisplayName: track.displayName,
+      };
+    }
+
+    if (activeEnrolments.length === 0) {
+      return {
+        challenges: [],
+        enrolledCount: 0,
+        trackDisplayName: '',
+      };
+    }
+
+    const enrolledOfferingIds = new Set(
+      activeEnrolments.map((e) => e.offeringId)
+    );
+    const enrolledTracks = tracks.filter((track) =>
+      track.offerings.some((offering) => enrolledOfferingIds.has(offering.id))
+    );
+
+    const challenges: ChallengeListItem[] = [];
+    for (const track of enrolledTracks) {
+      const languageId = track.supportedLanguageIds?.[0];
+      if (!languageId) continue;
+      const enrolledOfferingIdsForTrack = new Set(
+        track.offerings
+          .filter((offering) => enrolledOfferingIds.has(offering.id))
+          .map((offering) => offering.id)
+      );
+      const trackOfferings = [...track.offerings].sort(
+        (left, right) =>
+          Number(!enrolledOfferingIdsForTrack.has(left.id)) -
+          Number(!enrolledOfferingIdsForTrack.has(right.id))
+      );
+      const lessonBySlug = indexChallengeLessons(trackOfferings);
+      const trackChallenges = mapChallenges(
+        track,
+        lessonBySlug,
+        tutorialExercises,
+        isSolvedInOffering
+      );
+      challenges.push(...trackChallenges);
+    }
+
+    return {
+      challenges,
+      enrolledCount: activeEnrolments.length,
+      trackDisplayName: 'All Enrolled Courses',
     };
   }
 
@@ -647,39 +1063,87 @@ export class AppService {
    * is unreachable must not lose a learner's work, so the attempt is stored
    * and left for a person.
    */
-  async answerActivity(
+  private async resolveEnrolledActivity(
     profileId: string,
-    userId: string,
     activityId: string,
-    submission: unknown
-  ) {
-    const tracks = await this.listPrograms();
-    const offering = tracks
-      .flatMap((track) => track.offerings)
-      .find((candidate) =>
-        candidate.activities.some((activity) => activity.id === activityId)
-      );
-    const activity = offering?.activities.find(
-      (candidate) => candidate.id === activityId
+    requestedOfferingId?: string
+  ): Promise<{
+    offering: ProgramTrack['offerings'][number];
+    activity: Activity;
+    enrolment: Enrolment;
+  }> {
+    const candidates: Array<{
+      offering: ProgramTrack['offerings'][number];
+      activity: Activity;
+    }> = [];
+    for (const track of await this.listPrograms()) {
+      for (const offering of track.offerings) {
+        if (requestedOfferingId && offering.id !== requestedOfferingId) {
+          continue;
+        }
+        const activity = offering.activities.find(
+          (candidate) => candidate.id === activityId
+        );
+        if (activity) candidates.push({ offering, activity });
+      }
+    }
+    const published = candidates.filter(
+      (candidate) => candidate.offering.status === 'published'
     );
-    if (!offering || !activity) {
+    if (requestedOfferingId && published.length === 0) {
       throw new RpcException({
         code: ACTIVITY_NOT_FOUND,
         activityId,
       } satisfies ActivityNotFoundPayload);
     }
-
-    // The same rule as submitting an exercise: taking a course is a decision,
-    // and work is only recorded against somebody who has made it.
-    const enrolment = await this.repository.getEnrolment(
-      profileId,
-      offering.id
-    );
-    if (!enrolment || enrolment.status !== 'active') {
+    for (const candidate of published) {
+      const enrolment = await this.repository.getEnrolment(
+        profileId,
+        candidate.offering.id
+      );
+      if (enrolment?.status === 'active') {
+        return { ...candidate, enrolment };
+      }
+    }
+    const visibleCandidate = published[0];
+    if (!visibleCandidate) {
       throw new RpcException({
-        code: NOT_ENROLLED,
-        offeringId: offering.id,
-      } satisfies NotEnrolledPayload);
+        code: ACTIVITY_NOT_FOUND,
+        activityId,
+      } satisfies ActivityNotFoundPayload);
+    }
+    return {
+      ...visibleCandidate,
+      enrolment: await this.requireActiveEnrolment(
+        profileId,
+        '',
+        visibleCandidate.offering.id
+      ),
+    };
+  }
+
+  async answerActivity(
+    profileId: string,
+    userId: string,
+    activityId: string,
+    submission: unknown,
+    requestedOfferingId?: string
+  ) {
+    const location = await this.resolveEnrolledActivity(
+      profileId,
+      activityId,
+      requestedOfferingId
+    );
+    const { offering, activity } = location;
+
+    if (activity.type === 'code.run') {
+      return await this.answerCodeActivity(
+        profileId,
+        userId,
+        offering,
+        activity,
+        submission
+      );
     }
 
     const outcome = await this.markAnswer(activity, submission);
@@ -714,7 +1178,8 @@ export class AppService {
           userId,
           activity.lessonId,
           activityId,
-          outcome
+          outcome,
+          offering.id
         )
       : undefined;
 
@@ -728,6 +1193,83 @@ export class AppService {
         'Your answer has been recorded. This one is marked by a person.',
       criteria: outcome?.criteria,
       evaluationId: evaluation?.id,
+      progress,
+    };
+  }
+
+  private async answerCodeActivity(
+    profileId: string,
+    userId: string,
+    offering: ProgramTrack['offerings'][number],
+    activity: CodeRunActivity,
+    submission: unknown
+  ) {
+    const code = typeof submission === 'string' ? submission : '';
+    const result = await this.runCodeInRunnerForActivity(activity, code, true);
+    const passed = Boolean(
+      result.success &&
+        (result.testsPassed ??
+          (!activity.expectedOutput ||
+            result.output.trim() === activity.expectedOutput.trim()))
+    );
+    const outcome: GradeOutcome = {
+      score: passed ? 1 : 0,
+      maxScore: 1,
+      feedback: passed
+        ? 'Passed. Your code matched the author’s verifier.'
+        : 'Not passed yet. Review the output and diagnostics, then try again.',
+      criteria: [],
+    };
+    const previous = activity.lessonId
+      ? (await this.getProgress(profileId)).find(
+          (item) =>
+            item.lessonId === activity.lessonId &&
+            item.offeringId === offering.id
+        )
+      : undefined;
+    const alreadyComplete =
+      previous?.completedExerciseIds.includes(activity.id) ?? false;
+    const attempt = await this.submitAttempt({
+      userId,
+      offeringId: offering.id,
+      activityId: activity.id,
+      activityType: activity.type,
+      submission: code,
+      isAsync: false,
+    });
+    const evaluation = await this.recordEvaluation({
+      attemptId: attempt.id,
+      mode: 'sync',
+      grader: 'auto',
+      score: outcome.score,
+      maxScore: outcome.maxScore,
+      feedback: outcome.feedback,
+      humanOverride: false,
+    });
+    const progress = activity.lessonId
+      ? await this.recordActivityProgress(
+          profileId,
+          userId,
+          activity.lessonId,
+          activity.id,
+          outcome,
+          offering.id
+        )
+      : undefined;
+
+    return {
+      attemptId: attempt.id,
+      evaluationId: evaluation.id,
+      graded: true,
+      score: outcome.score,
+      maxScore: outcome.maxScore,
+      feedback: outcome.feedback,
+      criteria: outcome.criteria,
+      output: result.output,
+      errors: result.errors,
+      passed,
+      testsPassed: result.testsPassed ?? passed,
+      awardedPoints: passed && !alreadyComplete ? outcome.score : 0,
       progress,
     };
   }
@@ -764,19 +1306,24 @@ export class AppService {
     userId: string,
     lessonId: string,
     activityId: string,
-    outcome: GradeOutcome | undefined
+    outcome: GradeOutcome | undefined,
+    offeringId?: string
   ): Promise<LessonProgress | undefined> {
     if (!outcome) return undefined;
     const passed = outcome.maxScore > 0 && outcome.score >= outcome.maxScore;
     const previous = (await this.getProgress(profileId)).find(
-      (item) => item.lessonId === lessonId
+      (item) => item.lessonId === lessonId && item.offeringId === offeringId
     );
     const already =
       previous?.completedExerciseIds.includes(activityId) ?? false;
     return await this.saveProgress(
       profileId,
       userId,
-      { lessonId, completed: previous?.completed ?? false },
+      {
+        lessonId,
+        completed: previous?.completed ?? false,
+        offeringId,
+      },
       {
         completedExerciseIds: passed
           ? [
@@ -847,8 +1394,18 @@ export class AppService {
     return this.repository.updateOfferingContent(offeringId, patch);
   }
 
-  async deleteOffering(offeringId: string): Promise<void> {
+  async deleteOffering(
+    offeringId: string
+  ): Promise<{ deleted: true; offeringId: string }> {
+    const exists = (await this.listPrograms()).some((track) =>
+      track.offerings.some((offering) => offering.id === offeringId)
+    );
+    if (!exists) throw this.offeringNotFound(offeringId);
+    if (!(await this.repository.getOwnership(offeringId))) {
+      throw this.offeringNotFound(offeringId);
+    }
     await this.repository.deleteOffering(offeringId);
+    return { deleted: true, offeringId };
   }
 
   async getOfferingOwnership(
@@ -861,6 +1418,14 @@ export class AppService {
     offeringId: string,
     coEditorProfileIds: string[]
   ): Promise<OfferingOwnership> {
-    return this.repository.setCoEditors(offeringId, coEditorProfileIds);
+    const normalized = normalizeCoEditorProfileIds(coEditorProfileIds);
+    if (!normalized.success) {
+      throw new RpcException({
+        statusCode: 400,
+        message:
+          'coEditorProfileIds must be an array of at most 50 profile UUIDs.',
+      });
+    }
+    return this.repository.setCoEditors(offeringId, normalized.data);
   }
 }
