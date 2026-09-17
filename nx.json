@@ -1,14 +1,9 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "useDaemonProcess": false,
-  "workspaceLayout": {
-    "appsDir": "apps",
-    "libsDir": "libs"
-  },
+  "workspaceLayout": { "appsDir": "apps", "libsDir": "libs" },
   "defaultProject": "authentication",
-  "nxCloud": {
-    "accessToken": null
-  },
+  "nxCloud": { "accessToken": null },
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
@@ -27,9 +22,7 @@
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "targetDefaults": {
-    "build": {
-      "dependsOn": ["^build"]
-    },
+    "build": { "dependsOn": ["^build"] },
     "@angular-devkit/build-angular:application": {
       "cache": true,
       "dependsOn": ["^build"],
@@ -56,12 +49,7 @@
         "passWithNoTests": true,
         "coverageReporters": ["json-summary", "lcov", "text"]
       },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "codeCoverage": true
-        }
-      }
+      "configurations": { "ci": { "ci": true, "codeCoverage": true } }
     },
     "build-storybook": {
       "cache": true,
@@ -91,9 +79,7 @@
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
     },
-    "server": {
-      "cache": true
-    },
+    "server": { "cache": true },
     "@angular/build:application": {
       "cache": true,
       "dependsOn": ["^build"],
@@ -126,24 +112,11 @@
     }
   },
   "plugins": [
-    {
-      "plugin": "@nx/playwright/plugin",
-      "options": {
-        "targetName": "e2e"
-      }
-    },
-    {
-      "plugin": "@nx/eslint/plugin",
-      "options": {
-        "targetName": "lint"
-      }
-    },
+    { "plugin": "@nx/playwright/plugin", "options": { "targetName": "e2e" } },
+    { "plugin": "@nx/eslint/plugin", "options": { "targetName": "lint" } },
     {
       "plugin": "@nx-tools/nx-container",
-      "options": {
-        "defaultEngine": "docker",
-        "defaultRegistry": "docker.io"
-      }
+      "options": { "defaultEngine": "docker", "defaultRegistry": "docker.io" }
     },
     {
       "plugin": "@nx/webpack/plugin",
@@ -163,64 +136,25 @@
       "style": "scss",
       "unitTestRunner": "jest"
     },
-    "@nx/angular:library": {
-      "linter": "eslint",
-      "unitTestRunner": "jest"
-    },
-    "@nx/angular:component": {
-      "style": "scss",
-      "type": "component"
-    },
-    "@schematics/angular:component": {
-      "type": "component"
-    },
-    "@nx/angular:directive": {
-      "type": "directive"
-    },
-    "@schematics/angular:directive": {
-      "type": "directive"
-    },
-    "@nx/angular:service": {
-      "type": "service"
-    },
-    "@schematics/angular:service": {
-      "type": "service"
-    },
-    "@nx/angular:scam": {
-      "type": "component"
-    },
-    "@nx/angular:scam-directive": {
-      "type": "directive"
-    },
-    "@nx/angular:guard": {
-      "typeSeparator": "."
-    },
-    "@schematics/angular:guard": {
-      "typeSeparator": "."
-    },
-    "@nx/angular:interceptor": {
-      "typeSeparator": "."
-    },
-    "@schematics/angular:interceptor": {
-      "typeSeparator": "."
-    },
-    "@nx/angular:module": {
-      "typeSeparator": "."
-    },
-    "@schematics/angular:module": {
-      "typeSeparator": "."
-    },
-    "@nx/angular:pipe": {
-      "typeSeparator": "."
-    },
-    "@schematics/angular:pipe": {
-      "typeSeparator": "."
-    },
-    "@nx/angular:resolver": {
-      "typeSeparator": "."
-    },
-    "@schematics/angular:resolver": {
-      "typeSeparator": "."
-    }
-  }
+    "@nx/angular:library": { "linter": "eslint", "unitTestRunner": "jest" },
+    "@nx/angular:component": { "style": "scss", "type": "component" },
+    "@schematics/angular:component": { "type": "component" },
+    "@nx/angular:directive": { "type": "directive" },
+    "@schematics/angular:directive": { "type": "directive" },
+    "@nx/angular:service": { "type": "service" },
+    "@schematics/angular:service": { "type": "service" },
+    "@nx/angular:scam": { "type": "component" },
+    "@nx/angular:scam-directive": { "type": "directive" },
+    "@nx/angular:guard": { "typeSeparator": "." },
+    "@schematics/angular:guard": { "typeSeparator": "." },
+    "@nx/angular:interceptor": { "typeSeparator": "." },
+    "@schematics/angular:interceptor": { "typeSeparator": "." },
+    "@nx/angular:module": { "typeSeparator": "." },
+    "@schematics/angular:module": { "typeSeparator": "." },
+    "@nx/angular:pipe": { "typeSeparator": "." },
+    "@schematics/angular:pipe": { "typeSeparator": "." },
+    "@nx/angular:resolver": { "typeSeparator": "." },
+    "@schematics/angular:resolver": { "typeSeparator": "." }
+  },
+  "nxCloudId": "6aa03e1525a10c6aaf246f6d"
 }
