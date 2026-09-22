@@ -5,7 +5,13 @@ import {
   normalizeGatewayComposition,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
-import { createOrchestratorProviders } from './app.module';
+import {
+  ORCHESTRATOR_DEPENDENCY_DEFS,
+  REQUIRED_ORCHESTRATOR_SERVICE_IDS,
+  createOrchestratorProviders,
+  isRequiredOrchestratorDependency,
+  resolveOrchestratorDefinitions,
+} from './app.module';
 
 const ALL = ['profile', 'chat-collector', 'telos-docs-service', 'prompt-proxy'];
 
@@ -83,5 +89,40 @@ describe('orchestrator downstream providers (O24b)', () => {
         ServiceTokens.CHAT_COLLECTOR_SERVICE,
       ])
     );
+  });
+
+  it('marks only prompt-proxy optional (O22/R2)', () => {
+    expect(REQUIRED_ORCHESTRATOR_SERVICE_IDS).toEqual(
+      expect.arrayContaining([
+        'profile',
+        'chat-collector',
+        'telos-docs-service',
+      ])
+    );
+    expect(REQUIRED_ORCHESTRATOR_SERVICE_IDS).not.toContain('prompt-proxy');
+    expect(isRequiredOrchestratorDependency('profile')).toBe(true);
+    expect(isRequiredOrchestratorDependency('prompt-proxy')).toBe(false);
+    expect(ORCHESTRATOR_DEPENDENCY_DEFS['prompt_proxy'].required).toBe(false);
+  });
+
+  it('reports unknown dependencies-map keys instead of ignoring them', () => {
+    const { defs, unknownKeys } = resolveOrchestratorDefinitions({
+      profile: { host: 'profile', port: 3002 },
+      proflie: { host: 'profile', port: 3002 },
+    });
+
+    expect(unknownKeys).toEqual(['proflie']);
+    expect(defs).toHaveLength(4);
+  });
+
+  it('accepts the shipped config.yaml dependencies map with no unknowns', () => {
+    const { unknownKeys } = resolveOrchestratorDefinitions({
+      profile: {},
+      chat_collector: {},
+      prompt_proxy: {},
+      telos_docs_service: {},
+    });
+
+    expect(unknownKeys).toEqual([]);
   });
 });

@@ -11,11 +11,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, START, END } from '@langchain/langgraph';
 import { Annotation } from '@langchain/langgraph';
 import { BaseMessage } from '@langchain/core/messages';
-import {
-  ChatMessage,
-  ProfileDto,
-  PersonaTelosDto,
-} from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 import { ContextStorageService } from './context-storage.service';
 import { LangChainService } from './langchain.service';
 import { LangChainAgentService } from './langchain-agent.service';

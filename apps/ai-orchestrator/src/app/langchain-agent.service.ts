@@ -20,7 +20,8 @@ import { WorkflowControlService } from './workflow-control.service';
 import { StreamingEvent, StreamingEventType } from './streaming-events';
 import { SystemPromptBuilder } from './system-prompt-builder.service';
 import { ToolFactory } from './tool-factory.service';
-import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 
 export interface AgentExecutionResult {
   output: string;

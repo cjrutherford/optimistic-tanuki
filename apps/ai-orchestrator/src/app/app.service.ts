@@ -1,18 +1,15 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import {
-  ChatCommands,
-  PersonaTelosCommands,
-  ProfileCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { PersonaTelosCommands } from '@optimistic-tanuki/telos-contracts';
+import { ProfileCommands } from '@optimistic-tanuki/profile-contracts';
 import { firstValueFrom } from 'rxjs';
 import {
   ChatConversation,
   ChatMessage,
-  PersonaTelosDto,
-  ProfileDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 import { LangChainService } from './langchain.service';
 import { LangGraphService } from './langgraph.service';
 import { LangChainAgentService } from './langchain-agent.service';

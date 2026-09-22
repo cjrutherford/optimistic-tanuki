@@ -10,7 +10,8 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from '@langchain/core/prompts';
-import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 
 @Injectable()
 export class PromptTemplateService {

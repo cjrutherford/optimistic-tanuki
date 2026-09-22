@@ -107,4 +107,29 @@ describe('AppController', () => {
       );
     });
   });
+
+  describe('healthCheck', () => {
+    it('returns status plus per-dependency states', () => {
+      const reply = appController.healthCheck() as {
+        status: string;
+        dependencies: Record<string, string>;
+      };
+
+      expect(Object.keys(reply.dependencies).sort()).toEqual(
+        [
+          'chat-collector',
+          'profile',
+          'prompt-proxy',
+          'telos-docs-service',
+        ].sort()
+      );
+      for (const state of Object.values(reply.dependencies)) {
+        expect(['enabled', 'disabled']).toContain(state);
+      }
+      const degraded = Object.values(reply.dependencies).some(
+        (state) => state === 'disabled'
+      );
+      expect(reply.status).toBe(degraded ? 'degraded' : 'healthy');
+    });
+  });
 });
