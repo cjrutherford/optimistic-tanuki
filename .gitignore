@@ -115,6 +115,7 @@ project-pilot-results.json
 
 # ui-playground Storybook: generated docs pages, compodoc output
 apps/ui-playground/generated/
+apps/ui-playground/public/generated/
 
 # Ephemeral browser/runtime audit output
 /.runtime-artifacts/

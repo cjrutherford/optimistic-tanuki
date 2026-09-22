@@ -1284,6 +1284,42 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  billing:
+    container_name: ot_billing
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/billing:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '${BILLING_PORT:-3019}:3019'
+    environment:
+      - NODE_ENV=development
+      - BILLING_PORT=3019
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
   finance:
     container_name: ot_finance
     user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
