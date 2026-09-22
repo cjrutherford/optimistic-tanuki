@@ -8,10 +8,12 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
   Req,
   Res,
   BadRequestException,
 } from '@nestjs/common';
+import { AiOrchestrationReadinessInterceptor } from '../../interceptors/ai-orchestration-readiness.interceptor';
 import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -95,7 +97,7 @@ export class ProjectPlanningController {
    */
   @ApiOperation({ summary: 'A model-written summary of one project' })
   @RequirePermissions('project-planning.project.read')
-  @ModelBound()
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   @Get('projects/:id/summary')
   async summariseProject(@User() user: UserDetails, @Param('id') id: string) {
     const project = await firstValueFrom(
@@ -239,6 +241,7 @@ export class ProjectPlanningController {
   @RequirePermissions('project-planning.project.update')
   @ModelBound()
   @Post('projects/:id/ai-proposals')
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   async proposeAiChanges(@User() user: UserDetails, @Param('id') id: string) {
     const project = await firstValueFrom(
       this.projectPlanningService.send(
@@ -305,6 +308,7 @@ export class ProjectPlanningController {
   @RequirePermissions('project-planning.project.update')
   @ModelBound()
   @Post('projects/:id/ai-act')
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   async actOnProject(
     @Param('id') id: string,
     @Body()
@@ -398,6 +402,7 @@ export class ProjectPlanningController {
   @RequirePermissions('project-planning.project.update')
   @ModelBound()
   @Post('projects/:id/ai-act/stream')
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   async actOnProjectStreaming(
     @Param('id') id: string,
     @Body()

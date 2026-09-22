@@ -12,7 +12,7 @@ import {
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChatCommands, CommonCommands } from '@optimistic-tanuki/constants';
-import { ChatMessage } from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
 
 @Controller()
 export class AppController {

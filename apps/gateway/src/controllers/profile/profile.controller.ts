@@ -37,8 +37,8 @@ import {
   UpdateProfileDto,
   UpdateTimelineDto,
   ProfileDto,
-  PersonaTelosDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/profile-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { firstValueFrom, map } from 'rxjs';
