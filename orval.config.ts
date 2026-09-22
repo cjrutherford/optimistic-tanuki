@@ -6,6 +6,9 @@ import { defineConfig } from 'orval';
  * lib would violate the visibility:publishable boundary rule).
  * Regenerate: `pnpm run get-openapi && pnpm exec nx run
  * billing-sdk:generate`. Output is committed; CI fails on drift.
+ * Orval emits unformatted output, so run prettier over the generated dirs
+ * afterwards (CI does the same before its drift diff; format:check requires
+ * the committed files to be prettier-clean).
  */
 export default defineConfig({
   billing: {

@@ -1,5 +1,5 @@
 {
   "dependencies": ["tslib"],
-  "peerDependencies": ["@angular/core", "@nestjs/common"],
+  "peerDependencies": ["@angular/common", "@angular/core", "@nestjs/common"],
   "optionalDependencies": []
 }

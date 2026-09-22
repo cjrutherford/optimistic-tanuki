@@ -16,6 +16,11 @@ async function main() {
   // build needs no secrets, only a configured environment shape. The app
   // registry path mirrors the dev-compose mount (default-registry.json).
   process.env.OAUTH_STATE_SECRET ??= 'openapi-export-placeholder';
+  // The document build only needs DI wiring, not a live OAuth state store.
+  // Default to the process-local store so the export works without Redis
+  // (CI runners and fresh checkouts have no REDIS_HOST).
+  process.env.NODE_ENV ??= 'test';
+  process.env.OAUTH_STATE_STORE ??= 'local';
   process.env.APP_REGISTRY_PATH ??= resolve(
     __dirname,
     '../../libs/app-registry/src/lib/default-registry.json'

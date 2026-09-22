@@ -60,6 +60,62 @@
       "root": "libs/leads/contracts",
       "mirrorDirectory": "packages/leads-contracts",
       "phase": "wave-1"
+    },
+    {
+      "project": "store-contracts",
+      "packageName": "@optimistic-tanuki/store-contracts",
+      "root": "libs/store/contracts",
+      "mirrorDirectory": "packages/store-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "payments-contracts",
+      "packageName": "@optimistic-tanuki/payments-contracts",
+      "root": "libs/payments/contracts",
+      "mirrorDirectory": "packages/payments-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "blogging-contracts",
+      "packageName": "@optimistic-tanuki/blogging-contracts",
+      "root": "libs/blogging/contracts",
+      "mirrorDirectory": "packages/blogging-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "finance-contracts",
+      "packageName": "@optimistic-tanuki/finance-contracts",
+      "root": "libs/finance/contracts",
+      "mirrorDirectory": "packages/finance-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "profile-contracts",
+      "packageName": "@optimistic-tanuki/profile-contracts",
+      "root": "libs/profile/contracts",
+      "mirrorDirectory": "packages/profile-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "social-contracts",
+      "packageName": "@optimistic-tanuki/social-contracts",
+      "root": "libs/social/contracts",
+      "mirrorDirectory": "packages/social-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "chat-contracts",
+      "packageName": "@optimistic-tanuki/chat-contracts",
+      "root": "libs/chat/contracts",
+      "mirrorDirectory": "packages/chat-contracts",
+      "phase": "wave-1"
+    },
+    {
+      "project": "learning-contracts",
+      "packageName": "@optimistic-tanuki/learning-contracts",
+      "root": "libs/learning/contracts",
+      "mirrorDirectory": "packages/learning-contracts",
+      "phase": "wave-1"
     }
   ],
   "deferred": [

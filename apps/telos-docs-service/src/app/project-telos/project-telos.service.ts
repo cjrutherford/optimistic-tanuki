@@ -70,7 +70,7 @@ export class ProjectTelosService {
   async update(
     id: string,
     data: UpdateProjectTelosDto
-  ): Promise<ProjectTelos | null> {
+  ): Promise<ProjectTelosDto | null> {
     await this.projectRepository.update(id, data);
     return await this.findOne(id);
   }
