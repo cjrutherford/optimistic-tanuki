@@ -101,7 +101,7 @@ test.describe('Store Client E2E Tests', () => {
 
   test('should submit a donation successfully', async ({ page }) => {
     // Mock successful donation API response
-    await page.route('**/api/store/donations', (route) => {
+    await page.route('**/api/payments/donations', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
