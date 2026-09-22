@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { FinanceWorkspace } from '../models';
+import { FinanceWorkspace } from '@optimistic-tanuki/finance-data-access';
 
 export interface FinanceHostWorkspaceConfig {
   label: string;

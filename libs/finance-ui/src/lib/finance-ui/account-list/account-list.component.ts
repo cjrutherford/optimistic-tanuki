@@ -2,14 +2,14 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import {
   Account,
   BankConnection,
   CreateAccount,
   FinanceWorkspace,
-} from '../models';
-import { isAbortLikeHttpError } from '../services/http-error.utils';
+} from '@optimistic-tanuki/finance-data-access';
+import { isAbortLikeHttpError } from '@optimistic-tanuki/finance-data-access';
 import {
   AgGridUiComponent,
   ColDef,

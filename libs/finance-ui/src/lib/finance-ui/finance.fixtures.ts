@@ -10,7 +10,7 @@ import type {
   InventoryItem,
   RecurringItem,
   Transaction,
-} from './models';
+} from '@optimistic-tanuki/finance-data-access';
 
 /** Sample finance data for Storybook stories. */
 const at = (d: number) => new Date(Date.UTC(2026, 8, d, 15));

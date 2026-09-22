@@ -3,7 +3,7 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DashboardComponent } from './dashboard.component';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 describe('DashboardComponent', () => {

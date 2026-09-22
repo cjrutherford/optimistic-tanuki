@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import { FINANCE_HOST_CONFIG } from '../finance.routes';
 import {
   Budget,
@@ -12,8 +12,8 @@ import {
   InventoryItem,
   RecurringItem,
   Transaction,
-} from '../models';
-import { isAbortLikeHttpError } from '../services/http-error.utils';
+} from '@optimistic-tanuki/finance-data-access';
+import { isAbortLikeHttpError } from '@optimistic-tanuki/finance-data-access';
 
 @Component({
   selector: 'ot-finance-dashboard',

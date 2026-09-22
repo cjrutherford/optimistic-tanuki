@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { TransactionListComponent } from './transaction-list.component';
-import { FinanceService } from '../services/finance.service';
-import type { Transaction } from '../models';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import type { Transaction } from '@optimistic-tanuki/finance-data-access';
 
 /**
  * Built through runInInjectionContext rather than createComponent: these

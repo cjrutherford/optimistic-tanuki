@@ -5,7 +5,7 @@ import {
   provideRouter,
 } from '@angular/router';
 import { SetupChecklistComponent } from './setup-checklist.component';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 
 describe('SetupChecklistComponent', () => {
   it('does not show budget setup tasks for the net-worth workspace', async () => {

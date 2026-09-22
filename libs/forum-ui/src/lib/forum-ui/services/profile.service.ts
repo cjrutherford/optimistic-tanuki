@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './auth-state.service';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 
 export interface UserProfile {
   id: string;
@@ -17,9 +18,9 @@ export interface UserProfile {
   providedIn: 'root',
 })
 export class ProfileService {
-  private readonly baseUrl = '/api/profile';
+  private readonly profiles = inject(OptomisitcTanukiAPIService);
 
-  constructor(private http: HttpClient, private authState: AuthStateService) {}
+  constructor(private authState: AuthStateService) {}
 
   getCurrentUserProfile(): UserProfile | null {
     const user = this.authState.getCurrentUser();
@@ -38,18 +39,18 @@ export class ProfileService {
     };
   }
 
-  async getUserProfile(userId: string): Promise<UserProfile> {
-    return this.http
-      .get<UserProfile>(`${this.baseUrl}/users/${userId}`)
-      .toPromise() as Promise<UserProfile>;
-  }
+  // NOTE: getUserProfile (GET /api/profile/users/:id) was removed — the
+  // route never existed and nothing called it.
 
   async updateProfile(
     profileId: string,
     updates: Partial<UserProfile>
   ): Promise<UserProfile> {
-    return this.http
-      .put<UserProfile>(`${this.baseUrl}/${profileId}`, updates)
-      .toPromise() as Promise<UserProfile>;
+    return firstValueFrom(
+      this.profiles.profileControllerUpdateProfile<UserProfile>(
+        profileId,
+        updates
+      )
+    );
   }
 }

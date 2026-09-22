@@ -15,8 +15,11 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
-import { FinanceOnboardingState, FinanceWorkspace } from '../models';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import {
+  FinanceOnboardingState,
+  FinanceWorkspace,
+} from '@optimistic-tanuki/finance-data-access';
 import { Subscription, filter } from 'rxjs';
 import { FINANCE_HOST_CONFIG } from '../finance.routes';
 

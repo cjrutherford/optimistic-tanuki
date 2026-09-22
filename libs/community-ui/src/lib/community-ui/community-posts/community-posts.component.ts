@@ -17,7 +17,10 @@ import {
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommunityService } from '../services/community.service';
 import { CommunityDto } from '../models';
-import { HttpClient } from '@angular/common/http';
+import {
+  OptomisitcTanukiAPIService as SocialAPIService,
+  VoteDto,
+} from '@optimistic-tanuki/social-data-access';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -40,7 +43,7 @@ export class CommunityPostsComponent extends Variantable {
   private readonly communityService = inject(CommunityService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
+  private readonly social = inject(SocialAPIService);
 
   override theme: 'light' | 'dark' = 'light';
   override background = 'var(--background, #ffffff)';
@@ -258,7 +261,7 @@ export class CommunityPostsComponent extends Variantable {
     for (const post of posts) {
       try {
         const reactions = await firstValueFrom(
-          this.http.get<any[]>(`/api/social/reactions/post/${post.id}`)
+          this.social.socialControllerGetReactionsByPost(post.id)
         );
         this.reactionCounts.update((counts) => ({
           ...counts,
@@ -277,7 +280,7 @@ export class CommunityPostsComponent extends Variantable {
       if (this.currentProfileId) {
         try {
           const userReaction = await firstValueFrom(
-            this.http.get<any>(`/api/social/reaction/post/${post.id}/user`)
+            this.social.socialControllerGetUserReaction(post.id)
           );
           if (userReaction) {
             this.userReactions.update((reactions) => ({
@@ -291,7 +294,11 @@ export class CommunityPostsComponent extends Variantable {
 
         try {
           const votes = await firstValueFrom(
-            this.http.get<any[]>(`/api/social/vote/${post.id}`)
+            // findVotes (array) — the old GET vote/:id returns a single
+            // VoteDto, so counts never accumulated.
+            this.social.socialControllerFindVotes<VoteDto[]>({
+              postId: post.id,
+            })
           );
           this.voteCounts.update((counts) => ({
             ...counts,
@@ -395,9 +402,9 @@ export class CommunityPostsComponent extends Variantable {
     }
 
     firstValueFrom(
-      this.http.post(`/api/social/vote`, {
+      this.social.socialControllerVote({
         postId: event.postId,
-        value: event.value,
+        value: event.value as -1 | 0 | 1,
         profileId: this.currentProfileId,
       })
     )
@@ -428,9 +435,9 @@ export class CommunityPostsComponent extends Variantable {
     }
 
     firstValueFrom(
-      this.http.post(`/api/social/reaction`, {
+      this.social.socialControllerReaction({
         postId: event.postId,
-        value: event.value,
+        value: event.value as 1 | 2 | 3 | 4 | 5 | 6,
         profileId: this.currentProfileId,
       })
     )
@@ -503,7 +510,7 @@ export class CommunityPostsComponent extends Variantable {
     }
 
     firstValueFrom(
-      this.http.post('/api/social/comment', {
+      this.social.socialControllerComment({
         postId: event.postId,
         content: event.content,
         profileId: event.profileId,

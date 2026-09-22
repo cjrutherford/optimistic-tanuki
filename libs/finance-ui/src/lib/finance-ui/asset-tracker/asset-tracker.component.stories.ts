@@ -5,7 +5,7 @@ import {
   type StoryObj,
 } from '@storybook/angular';
 import { StoryFinanceService } from '../finance.fixtures';
-import { FinanceService } from '../services';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import { AssetTrackerComponent } from './asset-tracker.component';
 
 const meta: Meta<AssetTrackerComponent> = {

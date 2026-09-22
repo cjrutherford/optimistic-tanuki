@@ -7,7 +7,7 @@ import {
 } from '@angular/router';
 import { Subject } from 'rxjs';
 import { FinanceShellComponent } from './finance-shell.component';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import { FINANCE_HOST_CONFIG } from '../finance.routes';
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
