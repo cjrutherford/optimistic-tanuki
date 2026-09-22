@@ -206,7 +206,8 @@ export class RegisterComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'local-hub'
+        'local-hub',
+        true
       );
 
       if (result.success) {
