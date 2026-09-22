@@ -33,6 +33,7 @@ import {
   IconComponent,
 } from '@optimistic-tanuki/common-ui';
 import { PostComponent, PostDto } from '@optimistic-tanuki/social-ui';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
 import {
   API_BASE_URL,
@@ -90,6 +91,7 @@ export class CityComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private classifiedService = inject(ClassifiedService);
   private http = inject(HttpClient);
+  private profiles = inject(ProfileAPIService);
   private apiBaseUrl = inject(API_BASE_URL);
 
   city = signal<City | null>(null);
@@ -708,7 +710,9 @@ export class CityComponent implements OnInit, OnDestroy {
 
     try {
       const profiles = await firstValueFrom(
-        this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+        this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+          ids: profileIds,
+        })
       );
       const profileMap = new Map(
         profiles.map((profile) => [profile.id, profile])

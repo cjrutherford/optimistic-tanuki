@@ -22,6 +22,7 @@ import {
 } from '../chat.service';
 import { PresenceService, UserPresence } from '../presence.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -146,6 +147,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   private chatService = inject(ChatService);
   private presenceService = inject(PresenceService);
   private http = inject(HttpClient);
+  private profiles = inject(OptomisitcTanukiAPIService);
   private router = inject(Router);
   private socketChatService = inject(SocketChatService);
 
@@ -270,7 +272,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       if (participantIds.length > 0) {
         const [profilesResponse, presencesResponse] = await Promise.all([
           firstValueFrom(
-            this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+            this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
               ids: participantIds,
             })
           ),
