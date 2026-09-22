@@ -1,0 +1,56 @@
+export const BlogCommands = {
+  CREATE: 'blog.create',
+  UPDATE: 'blog.update',
+  DELETE: 'blog.delete',
+  FIND: 'blog.find',
+  FIND_ALL: 'blog.findAll',
+  GENERATE_SITEMAP: 'blog.generateSitemap',
+};
+
+export const BlogCatalogCommands = {
+  CREATE: 'blogCatalog.create',
+  FIND_ALL: 'blogCatalog.findAll',
+};
+
+export const ContactCommands = {
+  CREATE: 'contact.create',
+  UPDATE: 'contact.update',
+  DELETE: 'contact.delete',
+  FIND: 'contact.find',
+  FIND_ALL: 'contact.findAll',
+};
+
+export const EventCommands = {
+  CREATE: 'event.create',
+  UPDATE: 'event.update',
+  DELETE: 'event.delete',
+  FIND: 'event.find',
+  FIND_ALL: 'event.findAll',
+};
+
+export const PostCommands = {
+  CREATE: 'post.create',
+  UPDATE: 'post.update',
+  DELETE: 'post.delete',
+  FIND: 'post.find',
+  FIND_ALL: 'post.findAll',
+  /** @deprecated Catalog-only public compatibility contract. */
+  FIND_PUBLISHED: 'post.findPublished',
+  FIND_PUBLISHED_SCOPED: 'post.findPublishedScoped',
+  FIND_DRAFTS_BY_AUTHOR: 'post.findDraftsByAuthor',
+  PUBLISH: 'post.publish',
+  GENERATE_RSS: 'post.generateRss',
+  GENERATE_SEO: 'post.generateSeo',
+  SEARCH: 'post.search',
+};
+
+export const BlogComponentCommands = {
+  CREATE: 'blog-component.create',
+  UPDATE: 'blog-component.update',
+  DELETE: 'blog-component.delete',
+  FIND: 'blog-component.find',
+  FIND_ALL: 'blog-component.findAll',
+  FIND_BY_POST: 'blog-component.findByPost',
+  FIND_BY_QUERY: 'blog-component.findByQuery',
+  DELETE_BY_POST: 'blog-component.deleteByPost',
+};

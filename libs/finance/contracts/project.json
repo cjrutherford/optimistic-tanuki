@@ -1,0 +1,35 @@
+{
+  "name": "finance-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/finance/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:finance",
+    "platform:shared",
+    "visibility:publishable"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/finance/contracts",
+        "main": "libs/finance/contracts/src/index.ts",
+        "tsConfig": "libs/finance/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/finance/contracts/package.json",
+          "libs/finance/contracts/README.md"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/finance/contracts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

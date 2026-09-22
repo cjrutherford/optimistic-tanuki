@@ -1,0 +1,35 @@
+{
+  "name": "blogging-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/blogging/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:blogging",
+    "platform:shared",
+    "visibility:publishable"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/blogging/contracts",
+        "main": "libs/blogging/contracts/src/index.ts",
+        "tsConfig": "libs/blogging/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/blogging/contracts/package.json",
+          "libs/blogging/contracts/README.md"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/blogging/contracts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

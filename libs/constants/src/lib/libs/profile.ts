@@ -1,36 +1,9 @@
-export const ProfileCommands = {
-  Create: 'Create:Profile',
-  Update: 'Update:Profile',
-  Delete: 'Delete:Profile',
-  Get: 'Get:Profile',
-  GetAll: 'GetAll:Profile',
-  Search: 'Search:Profile',
-  GetPhoto: 'Get:ProfilePhoto',
-  GetCover: 'Get:ProfileCover',
-  SetBlogRole: 'Set:BlogRole',
-  GetBlogRole: 'Get:BlogRole',
-};
-
-export const ProjectCommands = {
-  Create: 'Create:Project',
-  Update: 'Update:Project',
-  Delete: 'Delete:Project',
-  Get: 'Get:Project',
-  GetAll: 'GetAll:Project',
-};
-
-export const GoalCommands = {
-  Create: 'Create:Goal',
-  Update: 'Update:Goal',
-  Delete: 'Delete:Goal',
-  Get: 'Get:Goal',
-  GetAll: 'GetAll:Goal',
-};
-
-export const TimelineCommands = {
-  Create: 'Create:Timeline',
-  Update: 'Update:Timeline',
-  Delete: 'Delete:Timeline',
-  Get: 'Get:Timeline',
-  GetAll: 'GetAll:Timeline',
-};
+// Canonical home is `@optimistic-tanuki/profile-contracts` (promoted per O3 —
+// single source, no shape duplication). This file re-exports the original
+// names for back-compat; new code imports from `profile-contracts`.
+export {
+  ProfileCommands,
+  ProjectCommands,
+  GoalCommands,
+  TimelineCommands,
+} from '@optimistic-tanuki/profile-contracts';

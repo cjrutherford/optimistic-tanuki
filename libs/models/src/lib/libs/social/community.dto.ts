@@ -217,7 +217,7 @@ export class CreateCommunityDto {
   @IsString()
   logoAssetId?: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: Boolean })
   @IsBoolean()
   createChatRoom = true;
 

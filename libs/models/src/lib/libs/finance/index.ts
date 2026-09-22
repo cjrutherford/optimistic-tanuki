@@ -1,24 +1,4 @@
-export * from './account.dto';
-export * from './create-account.dto';
-export * from './update-account.dto';
-export * from './finance-workspace.type';
-export * from './finance-summary.dto';
-export * from './finance-onboarding.dto';
-export * from './finance-work-queue.dto';
-export * from './transaction.dto';
-export * from './create-transaction.dto';
-export * from './update-transaction.dto';
-export * from './recurring-item.dto';
-export * from './create-recurring-item.dto';
-export * from './update-recurring-item.dto';
-export * from './inventory-item.dto';
-export * from './create-inventory-item.dto';
-export * from './update-inventory-item.dto';
-export * from './budget.dto';
-export * from './create-budget.dto';
-export * from './update-budget.dto';
-export * from './finance-tenant.dto';
-export * from './bank-connection.dto';
-export * from './linked-bank-account.dto';
-export * from './financial-invoice.dto';
-export * from './financial-checkout-session.dto';
+// Canonical home is `@optimistic-tanuki/finance-contracts` (promoted per the
+// bounded-context plan — single source, no shape duplication). This barrel
+// re-exports for back-compat; new code imports from `finance-contracts`.
+export * from '@optimistic-tanuki/finance-contracts';

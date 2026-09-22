@@ -1,4 +1,5 @@
 export * from './lib/billing-account';
+export * from './lib/billing-commands';
 export * from './lib/billing-plan';
 export * from './lib/billing-price';
 export * from './lib/billing-scope';
