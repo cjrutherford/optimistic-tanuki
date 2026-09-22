@@ -16,6 +16,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import {
   LearningCommands,
@@ -73,6 +74,7 @@ const GRADING_THROTTLE = {
 };
 
 @Controller('learning')
+@ApiTags('learning')
 export class LearningController {
   constructor(
     @Inject(ServiceTokens.LEARNING_SERVICE)
@@ -106,6 +108,7 @@ export class LearningController {
 
   @Public()
   @UseGuards(AuthGuard)
+  @ApiQuery({ name: 'trackId', required: false })
   @Get('challenges')
   async listChallenges(
     @Req() req: { user?: { userId?: string; profileId?: string } },
@@ -178,6 +181,8 @@ export class LearningController {
   @Public()
   @UseGuards(AuthGuard)
   @Get('programs/:trackId/lessons/:lessonId')
+  @ApiQuery({ name: 'offeringId', required: false })
+  @ApiQuery({ name: 'moduleId', required: false })
   async getLesson(
     @Param('trackId') trackId: string,
     @Param('lessonId') lessonId: string,
@@ -364,6 +369,17 @@ export class LearningController {
    */
   @UseGuards(AuthGuard)
   @Put('me/progress')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        lessonId: { type: 'string' },
+        completed: { type: 'boolean' },
+        offeringId: { type: 'string' },
+      },
+      required: ['lessonId'],
+    },
+  })
   async saveMyProgress(
     @Req() req: { user: { userId: string } },
     @Body()
@@ -401,6 +417,17 @@ export class LearningController {
   @UseGuards(AuthGuard, IdentityThrottlerGuard)
   @Throttle(RUN_THROTTLE)
   @Post('runs')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        activityId: { type: 'string' },
+        code: { type: 'string' },
+        offeringId: { type: 'string' },
+      },
+      required: ['activityId', 'code'],
+    },
+  })
   async runCode(
     @Body() body: { activityId: string; code: string; offeringId?: string },
     @Req() req: { user: { userId: string } }
@@ -427,6 +454,16 @@ export class LearningController {
   @UseGuards(AuthGuard, IdentityThrottlerGuard)
   @Throttle(RUN_THROTTLE)
   @Post('exercises/:activityId/submit')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string' },
+        offeringId: { type: 'string' },
+      },
+      required: ['code'],
+    },
+  })
   async submitExercise(
     @Param('activityId') activityId: string,
     @Body() body: { code: string; offeringId?: string },
@@ -490,6 +527,16 @@ export class LearningController {
   @UseGuards(IdentityThrottlerGuard)
   @Throttle(GRADING_THROTTLE)
   @Post('activities/:activityId/answer')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        submission: {},
+        offeringId: { type: 'string' },
+      },
+      required: ['submission'],
+    },
+  })
   async answerActivity(
     @Param('activityId') activityId: string,
     @Body() body: { submission: unknown; offeringId?: string },
@@ -516,6 +563,13 @@ export class LearningController {
 
   @UseGuards(AuthGuard)
   @Post('enrolments')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { offeringId: { type: 'string' } },
+      required: ['offeringId'],
+    },
+  })
   async enrol(
     @Body() body: { offeringId: string },
     @Req() req: { user: { userId: string } }
@@ -633,6 +687,17 @@ export class LearningController {
 
   @UseGuards(AuthGuard)
   @Post('offerings')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        displayName: { type: 'string' },
+        subjectId: { type: 'string' },
+        description: { type: 'string' },
+      },
+      required: ['displayName', 'subjectId'],
+    },
+  })
   async createOffering(
     @Body() body: DraftOfferingInput,
     @Req() req: { user: { userId: string; profileId?: string } }
@@ -660,6 +725,19 @@ export class LearningController {
 
   @UseGuards(AuthGuard)
   @Put('offerings/:offeringId')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        displayName: { type: 'string' },
+        description: { type: 'string' },
+        audience: { type: 'string', nullable: true },
+        outcome: { type: 'string', nullable: true },
+        modules: { type: 'array', items: {} },
+        activities: { type: 'array', items: {} },
+      },
+    },
+  })
   async updateOffering(
     @Param('offeringId') offeringId: string,
     // Modules and activities are the course itself. They are validated
@@ -733,6 +811,13 @@ export class LearningController {
    */
   @UseGuards(AuthGuard)
   @Put('offerings/:offeringId/status')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { status: { type: 'string', enum: ['draft', 'published'] } },
+      required: ['status'],
+    },
+  })
   async setOfferingStatus(
     @Param('offeringId') offeringId: string,
     @Body() body: { status: unknown },

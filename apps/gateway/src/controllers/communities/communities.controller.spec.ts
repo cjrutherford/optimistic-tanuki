@@ -39,9 +39,6 @@ describe('Gateway CommunitiesController metadata', () => {
   }
 
   it('protects shared community mutations with explicit permissions', () => {
-    expectMutationGuarded('createCommunity', 'community.create');
-    expectMutationGuarded('updateCommunity', 'community.update');
-    expectMutationGuarded('deleteCommunity', 'community.delete');
     expectMutationGuarded('inviteMember', 'community.invite');
     expectMutationGuarded('updateMemberRole', 'community.manage');
     expectMutationGuarded('removeMember', 'community.member.remove');
@@ -185,50 +182,6 @@ describe('CommunitiesController manager authority', () => {
     expect(socialClient.send).toHaveBeenLastCalledWith(
       { cmd: CommunityCommands.REVOKE_MANAGER },
       { communityId: 'community-1' }
-    );
-  });
-});
-
-describe('CommunitiesController workspace ownership', () => {
-  it('assigns the community owner role from the community product scope into its child workspace scope', async () => {
-    const socialClient = {} as ClientProxy;
-    const workspaceClient = {
-      send: jest.fn((command: string) => {
-        if (command === WorkspaceCommands.REGISTER) {
-          return of({ workspaceId: '00000000-0000-4000-8000-000000000001' });
-        }
-        return of({
-          workspaceId: '00000000-0000-4000-8000-000000000001',
-          status: 'active',
-        });
-      }),
-    } as unknown as jest.Mocked<ClientProxy>;
-    const permissionsClient = {
-      send: jest.fn((pattern: { cmd: string }) => {
-        if (pattern.cmd === AppScopeCommands.GetByName) {
-          return of({ id: 'child-scope-1' });
-        }
-        if (pattern.cmd === RoleCommands.GetByName) {
-          return of({ id: 'community-owner-role' });
-        }
-        return of({ id: 'assignment-1' });
-      }),
-    } as unknown as jest.Mocked<ClientProxy>;
-    const controller = new CommunitiesController(
-      socialClient,
-      permissionsClient,
-      workspaceClient
-    );
-
-    await (controller as any).provisionCommunityWorkspace(
-      { id: 'community-1', slug: 'north-star', name: 'North Star' },
-      { userId: 'user-1', profileId: 'profile-1' },
-      'client-interface'
-    );
-
-    expect(permissionsClient.send).toHaveBeenCalledWith(
-      { cmd: RoleCommands.GetByName },
-      { name: 'community_owner', appScope: 'community' }
     );
   });
 });

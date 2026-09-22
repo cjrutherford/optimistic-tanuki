@@ -21,6 +21,8 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import {
   CommunityCommands,
@@ -51,6 +53,7 @@ import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
 import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
+import { CommunityWorkspaceProvisioner } from '../../../app/community-provisioning/community-workspace-provisioner.service';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -68,7 +71,8 @@ export class CommunityController {
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatClient: ClientProxy,
     @Inject(ServiceTokens.WORKSPACE_SERVICE)
-    private readonly workspaceClient: ClientProxy
+    private readonly workspaceClient: ClientProxy,
+    private readonly communityProvisioner: CommunityWorkspaceProvisioner
   ) {}
 
   @Post()
@@ -128,7 +132,7 @@ export class CommunityController {
     try {
       const chatRoom = await firstValueFrom(
         this.chatClient.send(
-          { cmd: 'CREATE_COMMUNITY_CHAT' },
+          { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
           {
             communityId: community.id,
             ownerId: user.profileId,
@@ -154,66 +158,15 @@ export class CommunityController {
     return community;
   }
 
-  private async provisionCommunityWorkspace(
+  // Workspace provisioning lives in CommunityWorkspaceProvisioner (G2a shared
+  // saga core) — this controller delegates to it, then applies its own
+  // route-specific `community_manager` assignment at the call site.
+  private provisionCommunityWorkspace(
     community: CommunityDto,
     user: UserDetails,
     appScope: string
   ): Promise<void> {
-    const workspace = await firstValueFrom(
-      this.workspaceClient.send(WorkspaceCommands.REGISTER, {
-        kind: 'community',
-        slug: community.slug || community.id,
-        displayName: community.name,
-        appScope,
-        ownerUserId: user.userId,
-        ownerProfileId: user.profileId,
-        source: { service: 'social', sourceId: community.id },
-      })
-    );
-    const activated = await firstValueFrom(
-      this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
-        workspaceId: workspace.workspaceId,
-        appScope,
-        source: { service: 'social', sourceId: community.id },
-      })
-    );
-    const name = workspaceScopeName(activated.workspaceId);
-    let scope = await firstValueFrom(
-      this.permissionsClient.send({ cmd: AppScopeCommands.GetByName }, { name })
-    );
-    if (!scope) {
-      scope = await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: AppScopeCommands.Create },
-          {
-            name,
-            description: 'Community workspace permission scope',
-            active: true,
-          }
-        )
-      );
-    }
-    const ownerRole = await firstValueFrom(
-      this.permissionsClient.send(
-        { cmd: RoleCommands.GetByName },
-        { name: 'community_owner', appScope: 'community' }
-      )
-    );
-    if (!scope?.id || !ownerRole?.id) {
-      throw new Error(
-        'Community workspace owner permissions are not configured'
-      );
-    }
-    await firstValueFrom(
-      this.permissionsClient.send(
-        { cmd: RoleCommands.Assign },
-        {
-          roleId: ownerRole.id,
-          profileId: user.profileId,
-          appScopeId: scope.id,
-        }
-      )
-    );
+    return this.communityProvisioner.provision(community, user, appScope);
   }
 
   @Get('top-active')
@@ -290,6 +243,7 @@ export class CommunityController {
     description: 'The communities have been successfully retrieved.',
     type: [CommunityDto],
   })
+  @ApiQuery({ name: 'name', required: false })
   async listCommunities(
     @Query('name') name?: string,
     @AppScope() appScope?: string
@@ -479,6 +433,13 @@ export class CommunityController {
     status: 201,
     description: 'Successfully sent invite.',
     type: CommunityInviteDto,
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { inviteeUserId: { type: 'string' } },
+      required: ['inviteeUserId'],
+    },
   })
   async inviteUser(
     @Param('id') id: string,
@@ -769,6 +730,13 @@ export class CommunityController {
     status: 201,
     description: 'Successfully appointed the manager.',
   })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { profileId: { type: 'string' } },
+      required: ['profileId'],
+    },
+  })
   async appointManager(
     @Param('id') communityId: string,
     @Body() body: { profileId: string },
@@ -968,6 +936,16 @@ export class CommunityController {
   @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Create or repair a community chat room' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        ownerId: { type: 'string' },
+        name: { type: 'string' },
+      },
+      required: ['ownerId'],
+    },
+  })
   async ensureChatRoom(
     @Param('id') communityId: string,
     @Body() body: { ownerId: string; name?: string }
@@ -997,7 +975,7 @@ export class CommunityController {
 
     const chatRoom = await firstValueFrom(
       this.chatClient.send(
-        { cmd: 'CREATE_COMMUNITY_CHAT' },
+        { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
         {
           communityId,
           ownerId: body.ownerId,
@@ -1131,5 +1109,100 @@ export class CommunityController {
         `Failed to unassign ${this.localHubCommunityPosterRole} for community ${communityId}: ${error}`
       );
     }
+  }
+  // O14 locality-compat reads (migrated from `/api/communities/*` so that
+  // family can cut over): same commands, same guard posture
+  // (@UseGuards(AuthGuard) overriding the stricter class default, @Public
+  // where the source was public). Removed only when local-hub migrates —
+  // see O14.
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get(':id/sub-communities')
+  @ApiOperation({ summary: 'Get sub-communities of a locality community' })
+  async getSubCommunities(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_SUB_COMMUNITIES },
+        { parentId: id }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get(':id/membership')
+  @ApiOperation({ summary: 'Check if authenticated user is a member' })
+  async checkMembership(@Param('id') id: string, @User() user: UserDetails) {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'IS_COMMUNITY_MEMBER' },
+        { communityId: id, userId: user.userId }
+      )
+    );
+  }
+
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get(':id/manager')
+  @ApiOperation({ summary: 'Get elected manager for a community' })
+  async getCommunityManager(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_MANAGER },
+        { communityId: id }
+      )
+    ).catch(() => null);
+  }
+
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get(':id/election')
+  @ApiOperation({ summary: 'Get active election for a community' })
+  async getCommunityElection(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.GET_ELECTION },
+        { communityId: id }
+      )
+    ).catch(() => null);
+  }
+
+  @UseGuards(AuthGuard, WorkspaceContextGuard)
+  @Post(':id/election/nominate')
+  @ApiOperation({ summary: 'Nominate for community manager' })
+  async nominateForElection(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Body() body?: { nomineeId?: string; nomineeProfileId?: string }
+  ) {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.NOMINATE },
+        { communityId: id, userId: user.userId, profileId: user.profileId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, WorkspaceContextGuard)
+  @Post(':id/election/vote')
+  @ApiOperation({ summary: 'Vote for a candidate' })
+  async voteInElection(
+    @Param('id') id: string,
+    // Accepts both spellings: local-hub sends `candidateUserId`, older
+    // callers send `candidateId`. The service keys off the resolved value.
+    @Body() body: { candidateId?: string; candidateUserId?: string },
+    @User() user: UserDetails
+  ) {
+    const candidateId = body.candidateId ?? body.candidateUserId;
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.VOTE },
+        {
+          communityId: id,
+          voterId: user.userId,
+          voterProfileId: user.profileId,
+          candidateId,
+        }
+      )
+    );
   }
 }

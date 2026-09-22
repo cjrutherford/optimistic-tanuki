@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags } from '@nestjs/swagger';
 import {
   BlogCatalogCommands,
   BlogCommands,
@@ -41,6 +42,7 @@ import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 import type { PublishedAppConfiguration } from '@optimistic-tanuki/app-config-models';
 
 @UseGuards(AuthGuard, PermissionsGuard)
+@ApiTags('blog')
 @Controller('blog')
 export class BlogController {
   constructor(

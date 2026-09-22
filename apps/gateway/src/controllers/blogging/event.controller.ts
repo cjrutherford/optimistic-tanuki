@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags } from '@nestjs/swagger';
 import {
   BlogEventCommands as EventCommands,
   ServiceTokens,
@@ -26,7 +27,8 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { AuthGuard } from '../../auth/auth.guard';
 
-@Controller('event')
+@ApiTags('blog-events')
+@Controller('blog-events')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class EventController {
   constructor(

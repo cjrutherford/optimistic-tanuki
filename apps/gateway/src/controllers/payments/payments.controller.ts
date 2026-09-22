@@ -21,11 +21,15 @@ import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom, defaultIfEmpty } from 'rxjs';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentCommands } from '@optimistic-tanuki/constants';
+import { BusinessContentCommands } from '@optimistic-tanuki/social-contracts';
+import { RecordDonationDto } from '@optimistic-tanuki/payments-contracts';
+import { DisabledClientProxy } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -103,7 +107,37 @@ export interface CreatePayoutRequestDto {
 @Controller('payments')
 export class PaymentsController {
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
+  private readonly socialClient: ReturnType<typeof ClientProxyFactory.create>;
   private readonly logger = new Logger(PaymentsController.name);
+
+  /**
+   * O13 fan-out helper: list endpoints must tolerate single-object and empty
+   * service returns (pinned by existing handler specs) — normalize first,
+   * then overlay social content by back-reference.
+   */
+  private overlayContent(
+    rows: unknown,
+    contents: unknown
+  ): Array<Record<string, unknown>> {
+    const list = Array.isArray(rows) ? rows : rows ? [rows] : [];
+    const contentList = (Array.isArray(contents) ? contents : []) as Array<
+      Record<string, unknown>
+    >;
+    const byPaymentsId = new Map(
+      contentList.map((content) => [
+        content['paymentsBusinessPageId'] ?? content['paymentsSponsorshipId'],
+        content,
+      ])
+    );
+    return (list as Array<Record<string, unknown>>).map((row) => {
+      const content = byPaymentsId.get(row['id']);
+      if (!content) {
+        return row;
+      }
+      const { id: _contentId, ...contentFields } = content;
+      return { ...row, ...contentFields };
+    });
+  }
 
   private resolveMonthYear(month?: string, year?: string) {
     const now = new Date();
@@ -132,6 +166,23 @@ export class PaymentsController {
         port: serviceConfig.port,
       },
     });
+    // O13 fan-out reads social content via the same ad-hoc pattern as the
+    // payments client above (this controller predates provider tokens;
+    // converting both is follow-up work). Social misses fall back to
+    // payments-only rows so pre-dual-write data keeps serving. A missing
+    // social config degrades to a disabled proxy instead of crashing
+    // construction (existing specs only mock the payments config).
+    const socialConfig =
+      this.configService.get<TcpServiceConfig>('services.social');
+    this.socialClient = socialConfig
+      ? ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: socialConfig.host,
+            port: socialConfig.port,
+          },
+        })
+      : new DisabledClientProxy('social');
   }
 
   private async sendOfferCommand<T>(
@@ -241,6 +292,29 @@ export class PaymentsController {
       this.logger.error('Failed to get donations:', error);
       return [];
     }
+  }
+
+  // O14 cutover target for store-client donations (decided): direct record
+  // preserving anonymous gifts (no identity required). Distinct from
+  // checkout, which mints a provider session for identified donors.
+  @Post('donations')
+  @Public()
+  @ApiOperation({ summary: 'Record a donation directly' })
+  async recordDonation(@Body() dto: RecordDonationDto) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.RECORD_DONATION },
+        {
+          userId: dto.userId,
+          profileId: dto.profileId,
+          amount: dto.amount,
+          currency: dto.currency ?? 'USD',
+          isRecurring: dto.isRecurring ?? false,
+          message: dto.message,
+          anonymous: dto.anonymous ?? !dto.userId,
+        }
+      )
+    );
   }
 
   @Post('donations/checkout')
@@ -369,11 +443,19 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Dispute a payment' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { reason: { type: 'string' } },
+      required: ['reason'],
+    },
+  })
   async disputePayment(
     @User() user: UserDetails,
     @Param('paymentId') paymentId: string,
-    @Body('reason') reason: string
+    @Body() body: { reason: string }
   ) {
+    const reason = body?.reason;
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.DISPUTE_PAYMENT },
@@ -424,7 +506,10 @@ export class PaymentsController {
     @Body() dto: CreateBusinessPageDto,
     @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
+    // O13 dual-write (decided): payments row first, then the social content
+    // mirror with the back-reference. A social failure degrades to
+    // payments-only reads (the fan-out fallback) rather than failing checkout.
+    const result = (await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_BUSINESS_CHECKOUT },
         {
@@ -434,23 +519,64 @@ export class PaymentsController {
           appScope,
         }
       )
-    );
+    )) as { checkoutUrl: string; businessPageId: string };
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.PAGE_CREATE },
+          {
+            communityId: dto.communityId,
+            ownerId: user.userId,
+            tier: dto.tier,
+            paymentsBusinessPageId: result.businessPageId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Social business-page mirror failed for community ${dto.communityId}: ${
+          (error as Error)?.message ?? error
+        }`
+      );
+    }
+    return result;
   }
 
   @Get('business/:communityId')
   @Public()
   @ApiOperation({ summary: 'Get business page for community' })
   async getBusinessPage(@Param('communityId') communityId: string) {
-    return await firstValueFrom(
-      this.paymentsClient
-        .send(
-          { cmd: PaymentCommands.GET_BUSINESS_PAGE },
-          {
-            communityId,
-          }
+    // O13 fan-out (decided): social content overlaid on the payments money
+    // row; payments-only when no social row exists yet (pre-dual-write).
+    const [content, page] = await Promise.all([
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.PAGE_GET },
+          { communityId }
         )
-        .pipe(defaultIfEmpty(null))
-    );
+      ).catch(() => null),
+      firstValueFrom(
+        this.paymentsClient
+          .send(
+            { cmd: PaymentCommands.GET_BUSINESS_PAGE },
+            {
+              communityId,
+            }
+          )
+          .pipe(defaultIfEmpty(null))
+      ),
+    ]);
+    if (!content) {
+      return page;
+    }
+    if (!page) {
+      return content;
+    }
+    const { id: _contentId, ...contentFields } = content as Record<
+      string,
+      unknown
+    >;
+    return { ...(page as Record<string, unknown>), ...contentFields };
   }
 
   @Get('business/city/:cityId')
@@ -461,15 +587,28 @@ export class PaymentsController {
     @Query('communityIds') communityIds?: string
   ) {
     const ids = communityIds ? communityIds.split(',') : [];
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_BUSINESS_PAGES_BY_CITY },
-        {
-          cityId,
-          communityIds: ids,
-        }
-      )
-    );
+    const [pages, contents] = await Promise.all([
+      firstValueFrom(
+        this.paymentsClient.send(
+          { cmd: PaymentCommands.GET_BUSINESS_PAGES_BY_CITY },
+          {
+            cityId,
+            communityIds: ids,
+          }
+        )
+      ) as Promise<Array<Record<string, unknown>>>,
+      ids.length > 0
+        ? firstValueFrom(
+            this.socialClient.send(
+              { cmd: BusinessContentCommands.PAGES_BY_COMMUNITIES },
+              { communityIds: ids }
+            )
+          ).catch(() => [])
+        : Promise.resolve([]),
+    ]);
+    // O13 fan-out: overlay social content where a row references the payments
+    // row id; unmatched payments rows pass through unchanged.
+    return this.overlayContent(pages, contents);
   }
 
   @Patch('business/:communityId')
@@ -481,7 +620,10 @@ export class PaymentsController {
     @Param('communityId') communityId: string,
     @Body() dto: UpdateBusinessPageDto
   ) {
-    return await firstValueFrom(
+    // O13 dual-write (decided): payments first (owner-scoped, authoritative),
+    // then the social mirror best-effort. A missing social row is not an
+    // error (pre-dual-write pages have none until O14 backfill).
+    const result = await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.UPDATE_BUSINESS_PAGE },
         {
@@ -491,6 +633,25 @@ export class PaymentsController {
         }
       )
     );
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.PAGE_UPDATE },
+          {
+            communityId,
+            ownerId: user.userId,
+            data: { ...(dto as Record<string, unknown>) },
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Social business-page mirror update failed for community ${communityId}: ${
+          (error as Error)?.message ?? error
+        }`
+      );
+    }
+    return result;
   }
 
   @Delete('business/:communityId/subscription')
@@ -521,7 +682,10 @@ export class PaymentsController {
     @Body() dto: CreateSponsorshipDto,
     @AppScope() appScope: string
   ) {
-    return await firstValueFrom(
+    // O13 dual-write (decided): payments row first, then the social content
+    // mirror with the back-reference. Best-effort on the mirror (warn, don't
+    // fail checkout) — fan-out falls back to payments-only rows.
+    const result = (await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_SPONSORSHIP_CHECKOUT },
         {
@@ -532,21 +696,53 @@ export class PaymentsController {
           appScope,
         }
       )
-    );
+    )) as { checkoutUrl: string; sponsorshipId: string };
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.SPONSORSHIP_CREATE },
+          {
+            communityId: dto.communityId,
+            userId: user.userId,
+            type: dto.type,
+            adContent: dto.adContent,
+            paymentsSponsorshipId: result.sponsorshipId,
+          }
+        )
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Social sponsorship mirror failed for community ${dto.communityId}: ${
+          (error as Error)?.message ?? error
+        }`
+      );
+    }
+    return result;
   }
 
   @Get('sponsorship/:communityId/active')
   @Public()
   @ApiOperation({ summary: 'Get active sponsorships for community' })
   async getActiveSponsorships(@Param('communityId') communityId: string) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS },
-        {
-          communityId,
-        }
-      )
-    );
+    // O13 fan-out (decided): overlay social content where a row references
+    // the payments row id; unmatched payments rows pass through unchanged.
+    const [sponsorships, contents] = await Promise.all([
+      firstValueFrom(
+        this.paymentsClient.send(
+          { cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS },
+          {
+            communityId,
+          }
+        )
+      ) as Promise<Array<Record<string, unknown>>>,
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.SPONSORSHIP_ACTIVE },
+          { communityId }
+        )
+      ).catch(() => []),
+    ]);
+    return this.overlayContent(sponsorships, contents);
   }
 
   @Get('sponsorship/user')
@@ -554,14 +750,24 @@ export class PaymentsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user sponsorships' })
   async getUserSponsorships(@User() user: UserDetails) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_USER_SPONSORSHIPS },
-        {
-          userId: user.userId,
-        }
-      )
-    );
+    // O13 fan-out (decided): same overlay rule as getActiveSponsorships.
+    const [sponsorships, contents] = await Promise.all([
+      firstValueFrom(
+        this.paymentsClient.send(
+          { cmd: PaymentCommands.GET_USER_SPONSORSHIPS },
+          {
+            userId: user.userId,
+          }
+        )
+      ) as Promise<Array<Record<string, unknown>>>,
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.SPONSORSHIP_USER },
+          { userId: user.userId }
+        )
+      ).catch(() => []),
+    ]);
+    return this.overlayContent(sponsorships, contents);
   }
 
   @Get('transactions')
@@ -815,18 +1021,47 @@ export class PaymentsController {
     @Param('businessPageId') businessPageId: string,
     @Body() dto: Record<string, unknown>
   ) {
-    return await firstValueFrom(
+    // O13 dual-write (decided): payments theme first, then the social mirror
+    // keyed by the payments page id (no community context on this route, so
+    // no page lookup — the mirror carries the payments id as its key).
+    const theme = (await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_BUSINESS_THEME },
         { userId: user.userId, businessPageId, ...dto }
       )
-    );
+    )) as { id: string };
+    try {
+      await firstValueFrom(
+        this.socialClient.send(
+          { cmd: BusinessContentCommands.THEME_CREATE },
+          { businessPageId, ...(dto as Record<string, unknown>) }
+        )
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Social theme mirror failed for page ${businessPageId}: ${
+          (error as Error)?.message ?? error
+        }`
+      );
+    }
+    return theme;
   }
 
   @Get('business/:businessPageId/theme')
   @Public()
   @ApiOperation({ summary: 'Get business page theme' })
   async getBusinessTheme(@Param('businessPageId') businessPageId: string) {
+    // O13 fan-out (decided): social mirror wins when present (dual-written
+    // on create); otherwise the payments row, unchanged.
+    const content = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: BusinessContentCommands.THEME_GET },
+        { businessPageId }
+      )
+    ).catch(() => null);
+    if (content) {
+      return content;
+    }
     return await firstValueFrom(
       this.paymentsClient
         .send({ cmd: PaymentCommands.GET_BUSINESS_THEME }, { businessPageId })

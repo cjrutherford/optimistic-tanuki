@@ -12,7 +12,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiExtraModels,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import {
   AIOrchestrationCommands,
   PersonaTelosCommands,
@@ -94,6 +101,18 @@ export class ProfileController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @Post()
+  @ApiExtraModels(CreateProfileDto)
+  @ApiBody({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(CreateProfileDto) },
+        {
+          type: 'object',
+          properties: { appId: { type: 'string' } },
+        },
+      ],
+    },
+  })
   async createProfile(
     @Body() createProfileDto: CreateProfileDto & { appId?: string },
     @AppScope() appScope: string
@@ -420,6 +439,13 @@ export class ProfileController {
   })
   @ApiResponse({ status: 404, description: 'Profiles not found.' })
   @Post('by-ids')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { ids: { type: 'array', items: { type: 'string' } } },
+      required: ['ids'],
+    },
+  })
   async getProfilesByIds(
     @Body() body: { ids: string[] },
     @AppScope() appScope: string

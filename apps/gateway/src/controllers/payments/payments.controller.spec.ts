@@ -174,11 +174,9 @@ describe('PaymentsController classified payment identity forwarding', () => {
     const { controller, paymentsClient } = buildController();
     paymentsClient.send.mockReturnValue(of({ success: true }));
 
-    await (controller as any).disputePayment(
-      user,
-      'payment-1',
-      'not as described'
-    );
+    await (controller as any).disputePayment(user, 'payment-1', {
+      reason: 'not as described',
+    });
 
     expect(paymentsClient.send).toHaveBeenCalledWith(
       { cmd: PaymentCommands.DISPUTE_PAYMENT },

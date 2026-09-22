@@ -269,7 +269,7 @@ describe('SocialController', () => {
       content: 'Test Content',
       userIds: [mockUser.id],
     };
-    await socialController.searchPosts(searchCriteria);
+    await socialController.searchPosts({ criteria: searchCriteria });
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.FIND_MANY },
       {
@@ -285,7 +285,7 @@ describe('SocialController', () => {
     };
     const req = { user: { profileId: mockUser.profileId } } as any;
 
-    await socialController.searchPosts(searchCriteria, undefined, req);
+    await socialController.searchPosts({ criteria: searchCriteria }, req);
 
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.FIND_MANY },
@@ -304,7 +304,7 @@ describe('SocialController', () => {
       profileId: 'author-1',
     };
 
-    await socialController.searchPosts(searchCriteria, undefined, {} as any);
+    await socialController.searchPosts({ criteria: searchCriteria }, {} as any);
 
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.FIND_MANY },

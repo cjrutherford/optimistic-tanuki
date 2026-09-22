@@ -27,7 +27,7 @@ describe('Gateway StoreController metadata', () => {
     const storeService = {
       send: jest.fn(() => of([])),
     } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
 
     await controller.findAllProducts('catalog-1');
 
@@ -42,7 +42,7 @@ describe('Gateway StoreController metadata', () => {
 
   it('passes an optional public catalog filter to the Store service', async () => {
     const storeService = { send: jest.fn(() => of([])) } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
 
     await controller.findAllProducts('catalog-1');
 
@@ -53,9 +53,12 @@ describe('Gateway StoreController metadata', () => {
   });
 
   it('rejects an unscoped public product list', async () => {
-    const controller = new StoreController({
-      send: jest.fn(() => of([])),
-    } as any);
+    const controller = new StoreController(
+      {
+        send: jest.fn(() => of([])),
+      } as any,
+      {} as any
+    );
 
     await expect(controller.findAllProducts()).rejects.toThrow(
       'A catalog is required for public product reads'
@@ -64,7 +67,7 @@ describe('Gateway StoreController metadata', () => {
 
   it('sends owner product lists with the resolved workspace owner', async () => {
     const storeService = { send: jest.fn(() => of([])) } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
     const request = {
       workspaceContext: {
         workspace: {
@@ -89,7 +92,7 @@ describe('Gateway StoreController metadata', () => {
 
   it('sends catalog list requests with resolved workspace identity', async () => {
     const storeService = { send: jest.fn(() => of([])) } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
     const request = {
       workspaceContext: {
         workspace: {
@@ -116,7 +119,7 @@ describe('Gateway StoreController metadata', () => {
     const storeService = {
       send: jest.fn(() => of({ id: 'catalog-id' })),
     } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
     const request = {
       workspaceContext: {
         workspace: {
@@ -140,7 +143,7 @@ describe('Gateway StoreController metadata', () => {
 
   it('rejects a product catalog that is outside the resolved workspace', async () => {
     const storeService = { send: jest.fn(() => of([])) } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
     const request = {
       workspaceContext: {
         workspace: {
@@ -186,7 +189,7 @@ describe('Gateway StoreController metadata', () => {
     const storeService = {
       send: jest.fn(() => of({ id: 'product-id' })),
     } as any;
-    const controller = new StoreController(storeService);
+    const controller = new StoreController(storeService, {} as any);
     const request = {
       workspaceContext: {
         workspace: {
@@ -240,6 +243,88 @@ describe('Gateway StoreController metadata', () => {
           workspaceId: 'workspace-id',
         }),
       })
+    );
+  });
+});
+
+describe('Gateway StoreController subscription dual-write (E7)', () => {
+  const storeService = {
+    send: jest.fn((pattern: any) => {
+      if (pattern?.cmd === 'findOneSubscription') {
+        return of({ id: 'ent-1', billingSubscriptionId: 'sub-1' });
+      }
+      return of({ id: 'ent-1' });
+    }),
+  } as any;
+  const billingService = {
+    send: jest.fn((pattern: any) => {
+      if (pattern?.cmd === 'billing.subscriptionCreateFromProduct') {
+        return of({ id: 'sub-1' });
+      }
+      return of({ id: 'sub-1', status: 'canceled' });
+    }),
+  } as any;
+  let controller: StoreController;
+
+  beforeEach(() => {
+    storeService.send.mockClear();
+    billingService.send.mockClear();
+    controller = new StoreController(storeService, billingService);
+  });
+
+  it('creates the billing subscription first, then the mirror with the reference', async () => {
+    await controller.createSubscription(
+      { userId: 'user-1', productId: 'product-1', interval: 'monthly' } as any,
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'store'
+    );
+
+    expect(billingService.send).toHaveBeenCalledWith(
+      { cmd: 'billing.subscriptionCreateFromProduct' },
+      {
+        tenantId: 'user-1',
+        appScope: 'store',
+        accountId: 'user-1',
+        productId: 'product-1',
+        interval: 'monthly',
+      }
+    );
+    expect(storeService.send).toHaveBeenCalledWith(
+      expect.objectContaining({ cmd: 'createSubscription' }),
+      expect.objectContaining({ billingSubscriptionId: 'sub-1' })
+    );
+    expect(billingService.send.mock.invocationCallOrder[0]).toBeLessThan(
+      storeService.send.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('cancels billing first via the mirror reference, then mirrors the state', async () => {
+    await controller.cancelSubscription('ent-1');
+
+    expect(billingService.send).toHaveBeenCalledWith(
+      { cmd: 'billing.subscriptionCancel' },
+      { id: 'sub-1' }
+    );
+    expect(storeService.send).toHaveBeenCalledWith(
+      expect.objectContaining({ cmd: 'cancelSubscription' }),
+      'ent-1'
+    );
+  });
+
+  it('skips the billing hop for legacy rows without a reference', async () => {
+    storeService.send.mockImplementation((pattern: any) => {
+      if (pattern?.cmd === 'findOneSubscription') {
+        return of({ id: 'ent-legacy', billingSubscriptionId: null });
+      }
+      return of({ id: 'ent-legacy' });
+    });
+
+    await controller.cancelSubscription('ent-legacy');
+
+    expect(billingService.send).not.toHaveBeenCalled();
+    expect(storeService.send).toHaveBeenCalledWith(
+      expect.objectContaining({ cmd: 'cancelSubscription' }),
+      'ent-legacy'
     );
   });
 });

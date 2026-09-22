@@ -82,7 +82,9 @@ describe('Gateway FinanceController handlers', () => {
     {
       name: 'createAccount merges the body with the caller scope',
       call: (c) =>
-        c.createAccount(user, appScope, tenantId, { name: 'Checking' }),
+        c.createAccount(user, appScope, tenantId, {
+          name: 'Checking',
+        } as never),
       cmd: AccountCommands.CREATE,
       payload: { name: 'Checking', ...SCOPE },
     },
@@ -130,7 +132,7 @@ describe('Gateway FinanceController handlers', () => {
     {
       name: 'createTransaction merges the body with the caller scope',
       call: (c) =>
-        c.createTransaction(user, appScope, tenantId, { amount: 25 }),
+        c.createTransaction(user, appScope, tenantId, { amount: 25 } as never),
       cmd: TransactionCommands.CREATE,
       payload: { amount: 25, ...SCOPE },
     },
@@ -243,7 +245,9 @@ describe('Gateway FinanceController handlers', () => {
     {
       name: 'createInventoryItem merges the body with the caller scope',
       call: (c) =>
-        c.createInventoryItem(user, appScope, tenantId, { name: 'Laptop' }),
+        c.createInventoryItem(user, appScope, tenantId, {
+          name: 'Laptop',
+        } as never),
       cmd: InventoryItemCommands.CREATE,
       payload: { name: 'Laptop', ...SCOPE },
     },
@@ -284,7 +288,8 @@ describe('Gateway FinanceController handlers', () => {
     // ── Budgets and summaries ───────────────────────────────────────────────
     {
       name: 'createBudget merges the body with the caller scope',
-      call: (c) => c.createBudget(user, appScope, tenantId, { limit: 500 }),
+      call: (c) =>
+        c.createBudget(user, appScope, tenantId, { limit: 500 } as never),
       cmd: BudgetCommands.CREATE,
       payload: { limit: 500, ...SCOPE },
     },
@@ -360,7 +365,9 @@ describe('Gateway FinanceController handlers', () => {
     {
       name: 'createRecurringItem merges the body with the caller scope',
       call: (c) =>
-        c.createRecurringItem(user, appScope, tenantId, { name: 'Rent' }),
+        c.createRecurringItem(user, appScope, tenantId, {
+          name: 'Rent',
+        } as never),
       cmd: RecurringItemCommands.CREATE,
       payload: { name: 'Rent', ...SCOPE },
     },
@@ -597,7 +604,7 @@ describe('Gateway FinanceController handlers', () => {
       call: (c) =>
         c.createFinCommanderGoal(user, 'plan-1', appScope, tenantId, {
           name: 'Emergency fund',
-        }),
+        } as never),
       cmd: FinCommanderGoalCommands.CREATE,
       payload: { name: 'Emergency fund', planId: 'plan-1', ...SCOPE },
     },
@@ -671,7 +678,7 @@ describe('Gateway FinanceController handlers', () => {
       call: (c) =>
         c.createFinCommanderScenario(user, 'plan-1', appScope, tenantId, {
           name: 'Downturn',
-        }),
+        } as never),
       cmd: FinCommanderScenarioCommands.CREATE,
       payload: { name: 'Downturn', planId: 'plan-1', ...SCOPE },
     },

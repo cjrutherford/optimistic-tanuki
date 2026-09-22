@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiTags } from '@nestjs/swagger';
 import {
   BlogComponentCommands,
   ServiceTokens,
@@ -28,6 +29,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 
+@ApiTags('blog-components')
 @Controller('blog-components')
 export class BlogComponentController {
   constructor(

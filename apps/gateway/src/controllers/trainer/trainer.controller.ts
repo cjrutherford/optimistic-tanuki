@@ -64,7 +64,9 @@ type BusinessLeadIntakeDto = {
   profileId?: string;
 };
 
-@Controller(['trainer', 'business'])
+// Canonical mount is `/api/business/*` (decided O7: all live callers use it
+// via business-data-access).
+@Controller('business')
 export class TrainerController {
   constructor(
     @Inject(ServiceTokens.STORE_SERVICE)

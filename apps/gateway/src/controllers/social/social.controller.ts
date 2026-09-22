@@ -44,7 +44,14 @@ import {
   VoteDto,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiExtraModels,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
@@ -360,6 +367,16 @@ export class SocialController {
     description: 'Votes have been successfully retrieved.',
   })
   @Post('vote/find')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        postId: { type: 'string' },
+        userId: { type: 'string' },
+        profileId: { type: 'string' },
+      },
+    },
+  })
   async findVotes(
     @User() user: UserDetails,
     @Body() body: { postId?: string; userId?: string; profileId?: string }
@@ -414,11 +431,23 @@ export class SocialController {
   // viewer-scoped visibility filter applied by the social service.
   @Public()
   @Post('post/find')
+  @ApiExtraModels(SearchPostDto, SearchPostOptions)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        criteria: { $ref: getSchemaPath(SearchPostDto) },
+        opts: { $ref: getSchemaPath(SearchPostOptions) },
+      },
+      required: ['criteria'],
+    },
+  })
   async searchPosts(
-    @Body('criteria') searchCriteria: SearchPostDto,
-    @Body('opts') opts?: SearchPostOptions,
+    @Body() body: { criteria: SearchPostDto; opts?: SearchPostOptions },
     @Req() req?: { user?: { profileId?: string } }
   ): Promise<PostDto[]> {
+    const searchCriteria = body?.criteria;
+    const opts = body?.opts;
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.FIND_MANY },

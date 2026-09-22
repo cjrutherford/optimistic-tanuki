@@ -81,7 +81,7 @@ import {
   UpdateFinancialInvoiceDto,
 } from '@optimistic-tanuki/models';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiQuery, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { FinanceTenantId } from '../../decorators/finance-tenant-id.decorator';
@@ -191,7 +191,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() accountDto: Record<string, unknown>
+    @Body() accountDto: CreateAccountDto
   ) {
     this.logger.log(`Creating account for user: ${user.userId}`);
     const payload = {
@@ -236,6 +236,7 @@ export class FinanceController {
     description: 'The accounts have been successfully retrieved.',
     type: [AccountDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('accounts')
   @RequirePermissions('finance.account.read')
   async getAllAccounts(
@@ -323,7 +324,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() transactionDto: Record<string, unknown>
+    @Body() transactionDto: CreateTransactionDto
   ) {
     this.logger.log(`Creating transaction for user: ${user.userId}`);
     const payload = {
@@ -368,6 +369,7 @@ export class FinanceController {
     description: 'The transactions have been successfully retrieved.',
     type: [TransactionDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('account/:accountId/transactions')
   @RequirePermissions('finance.transaction.read')
   async getTransactionsByAccount(
@@ -396,6 +398,7 @@ export class FinanceController {
     description: 'The transactions have been successfully retrieved.',
     type: [TransactionDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('transactions')
   @RequirePermissions('finance.transaction.read')
   async getAllTransactions(
@@ -628,7 +631,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() inventoryItemDto: Record<string, unknown>
+    @Body() inventoryItemDto: CreateInventoryItemDto
   ) {
     this.logger.log(`Creating inventory item for user: ${user.userId}`);
     const payload = {
@@ -673,6 +676,7 @@ export class FinanceController {
     description: 'The inventory items have been successfully retrieved.',
     type: [InventoryItemDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('inventory-items')
   @RequirePermissions('finance.inventory.read')
   async getAllInventoryItems(
@@ -760,7 +764,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() budgetDto: Record<string, unknown>
+    @Body() budgetDto: CreateBudgetDto
   ) {
     this.logger.log(`Creating budget for user: ${user.userId}`);
     const payload = {
@@ -805,6 +809,7 @@ export class FinanceController {
     description: 'The budgets have been successfully retrieved.',
     type: [BudgetDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('budgets')
   @RequirePermissions('finance.budget.read')
   async getAllBudgets(
@@ -980,7 +985,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() recurringItemDto: Record<string, unknown>
+    @Body() recurringItemDto: CreateRecurringItemDto
   ): Promise<RecurringItemDto> {
     const payload = {
       ...(recurringItemDto as Partial<CreateRecurringItemDto>),
@@ -998,6 +1003,7 @@ export class FinanceController {
     description: 'The recurring items have been successfully retrieved.',
     type: [RecurringItemDto],
   })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('recurring-items')
   @RequirePermissions('finance.recurring.read')
   async getAllRecurringItems(
@@ -1115,6 +1121,7 @@ export class FinanceController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('financial invoice')
   @ApiOperation({ summary: 'List business invoices' })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('invoices')
   @RequirePermissions('finance.invoice.read')
   async listInvoices(
@@ -1253,6 +1260,7 @@ export class FinanceController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('financial checkout')
   @ApiOperation({ summary: 'List checkout and deposit sessions' })
+  @ApiQuery({ name: 'workspace', required: false })
   @Get('checkout-sessions')
   @RequirePermissions('finance.checkout.read')
   async listCheckoutSessions(
@@ -1531,7 +1539,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() planDto: Record<string, unknown>
+    @Body() planDto: CreateFinCommanderPlanDto
   ) {
     const payload = {
       ...(planDto as Partial<CreateFinCommanderPlanDto>),
@@ -1675,7 +1683,7 @@ export class FinanceController {
     @Param('planId') planId: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() goalDto: Record<string, unknown>
+    @Body() goalDto: CreateFinCommanderGoalDto
   ) {
     const payload = {
       ...(goalDto as Partial<CreateFinCommanderGoalDto>),
@@ -1857,7 +1865,7 @@ export class FinanceController {
     @Param('planId') planId: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() scenarioDto: Record<string, unknown>
+    @Body() scenarioDto: CreateFinCommanderScenarioDto
   ) {
     const payload = {
       ...(scenarioDto as Partial<CreateFinCommanderScenarioDto>),

@@ -18,7 +18,9 @@ import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -29,6 +31,7 @@ import {
   AppScopeCommands,
   WorkspaceCommands,
 } from '@optimistic-tanuki/constants';
+import { CommunityWorkspaceProvisioner } from '../../app/community-provisioning/community-workspace-provisioner.service';
 import {
   AssignRoleDto,
   CommunityMembershipStatus,
@@ -69,6 +72,7 @@ export class CommunitiesController {
   @Get()
   @ApiOperation({ summary: 'List all locality-based communities' })
   @ApiResponse({ status: 200, description: 'Array of locality communities.' })
+  @ApiQuery({ name: 'localityType', required: false })
   async listCommunities(
     @AppScope() appScope: string,
     @Query('localityType') localityType?: string
@@ -88,68 +92,6 @@ export class CommunitiesController {
     }
   }
 
-  private async provisionCommunityWorkspace(
-    community: { id: string; slug?: string; name: string },
-    user: UserDetails,
-    appScope: string
-  ): Promise<void> {
-    const workspace = await firstValueFrom(
-      this.workspaceClient.send(WorkspaceCommands.REGISTER, {
-        kind: 'community',
-        slug: community.slug || community.id,
-        displayName: community.name,
-        appScope,
-        ownerUserId: user.userId,
-        ownerProfileId: user.profileId,
-        source: { service: 'social', sourceId: community.id },
-      })
-    );
-    const active = await firstValueFrom(
-      this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
-        workspaceId: workspace.workspaceId,
-        appScope,
-        source: { service: 'social', sourceId: community.id },
-      })
-    );
-    const name = workspaceScopeName(active.workspaceId);
-    let scope = await firstValueFrom(
-      this.permissionsClient.send({ cmd: AppScopeCommands.GetByName }, { name })
-    );
-    if (!scope)
-      scope = await firstValueFrom(
-        this.permissionsClient.send(
-          { cmd: AppScopeCommands.Create },
-          {
-            name,
-            description: 'Community workspace permission scope',
-            active: true,
-          }
-        )
-      );
-    const role = await firstValueFrom(
-      this.permissionsClient.send(
-        { cmd: RoleCommands.GetByName },
-        { name: 'community_owner', appScope: 'community' }
-      )
-    );
-    if (!scope?.id || !role?.id)
-      throw new Error(
-        'Community workspace owner permissions are not configured'
-      );
-    await firstValueFrom(
-      this.permissionsClient.send(
-        { cmd: RoleCommands.Assign },
-        { roleId: role.id, profileId: user.profileId, appScopeId: scope.id }
-      )
-    );
-  }
-
-  // Public so the route never 401s for an anonymous caller (it just returns
-  // no communities), but the class-level AuthGuard still runs to OPTIONALLY
-  // attach a signature-verified `request.user`. We read the userId from that
-  // guard-verified context — never from the `@User()` decorator, which
-  // decodes the token WITHOUT verifying its signature and would let a forged
-  // userId return another user's private community memberships.
   @Public()
   @Get('my')
   @ApiOperation({ summary: 'Get communities for current user' })
@@ -171,159 +113,6 @@ export class CommunitiesController {
     }
   }
 
-  @Post()
-  @UseGuards(AuthGuard, PermissionsGuard)
-  @RequirePermissions('community.create')
-  @ApiOperation({ summary: 'Create a new community' })
-  @ApiResponse({ status: 201, description: 'Community created.' })
-  async createCommunity(
-    @Body() createCommunityDto: CreateCommunityDto,
-    @User() user: UserDetails,
-    @AppScope() appScope: string
-  ) {
-    try {
-      // The social handler takes profileId and appScope as top-level payload
-      // fields — `createCommunity(data.dto, data.userId, data.profileId,
-      // data.appScope)` — and CreateCommunityDto declares none of ownerId,
-      // ownerProfileId or appScope. Folding them into the dto meant nothing
-      // read them: the service received `profileId === undefined` and wrote a
-      // null ownerProfileId, which the not-null constraint rejected, while
-      // appScope silently fell back to its 'social' default. JOIN below
-      // already uses the correct shape.
-      this.logger.debug(
-        `Creating community with userId=${user.userId}, profileId=${user.profileId}, appScope=${appScope}`
-      );
-      const community = await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.CREATE },
-          {
-            dto: createCommunityDto,
-            userId: user.userId,
-            profileId: user.profileId,
-            appScope,
-          }
-        )
-      );
-      await this.provisionCommunityWorkspace(community, user, appScope);
-      return community;
-    } catch (error) {
-      this.logger.error('Failed to create community:', error);
-      throw error;
-    }
-  }
-
-  @Public()
-  @Get('slug/:slug')
-  @ApiOperation({ summary: 'Get a locality community by slug' })
-  @ApiResponse({ status: 200, description: 'Community.' })
-  async findCommunity(@Param('slug') slug: string) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.FIND_BY_SLUG },
-          { slug }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Failed to find community %s:', slug, error);
-      return null;
-    }
-  }
-
-  @Public()
-  @Get(':id')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get a community by ID' })
-  @ApiResponse({ status: 200, description: 'Community.' })
-  async getCommunity(@Param('id') id: string) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send({ cmd: CommunityCommands.FIND }, { id })
-      );
-    } catch (error) {
-      this.logger.error('Failed to get community %s:', id, error);
-      return null;
-    }
-  }
-
-  @Put(':id')
-  @WorkspaceContext({
-    kind: 'community',
-    source: 'params',
-    path: 'id',
-    sourceService: 'social',
-    strict: true,
-  })
-  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
-  @RequirePermissions('community.update')
-  @ApiOperation({ summary: 'Update a community' })
-  @ApiResponse({ status: 200, description: 'Community updated.' })
-  async updateCommunity(
-    @Param('id') id: string,
-    @Body() updateCommunityDto: UpdateCommunityDto,
-    @User() user: UserDetails
-  ) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.UPDATE },
-          {
-            id,
-            dto: updateCommunityDto,
-            userId: user.userId,
-          }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Failed to update community %s:', id, error);
-      throw error;
-    }
-  }
-
-  @Delete(':id')
-  @WorkspaceContext({
-    kind: 'community',
-    source: 'params',
-    path: 'id',
-    sourceService: 'social',
-    strict: true,
-  })
-  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
-  @RequirePermissions('community.delete')
-  @ApiOperation({ summary: 'Delete a community' })
-  @ApiResponse({ status: 200, description: 'Community deleted.' })
-  async deleteCommunity(@Param('id') id: string, @User() user: UserDetails) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.DELETE },
-          { id, userId: user.userId }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Failed to delete community %s:', id, error);
-      throw error;
-    }
-  }
-
-  @Get(':id/members')
-  @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Get community members' })
-  @ApiResponse({ status: 200, description: 'Array of community members.' })
-  async getMembers(@Param('id') id: string) {
-    try {
-      return await firstValueFrom(
-        this.socialClient.send(
-          { cmd: CommunityCommands.GET_MEMBERS },
-          { communityId: id }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Failed to get members for community %s:', id, error);
-      return [];
-    }
-  }
-
   @Put(':id/members/:memberId/role')
   @WorkspaceContext({
     kind: 'community',
@@ -336,6 +125,13 @@ export class CommunitiesController {
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Update member role' })
   @ApiResponse({ status: 200, description: 'Member role updated.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { role: { type: 'string' } },
+      required: ['role'],
+    },
+  })
   async updateMemberRole(
     @Param('id') id: string,
     @Param('memberId') memberId: string,
@@ -408,6 +204,13 @@ export class CommunitiesController {
   @RequirePermissions('community.invite')
   @ApiOperation({ summary: 'Invite user to community' })
   @ApiResponse({ status: 201, description: 'User invited.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { inviteeUserId: { type: 'string' } },
+      required: ['inviteeUserId'],
+    },
+  })
   async inviteMember(
     @Param('id') id: string,
     @Body() body: { inviteeUserId: string },
@@ -476,32 +279,6 @@ export class CommunitiesController {
         { communityId: id }
       )
     ).catch(() => null);
-  }
-
-  @Post(':id/join')
-  @ApiOperation({ summary: 'Join a community' })
-  @ApiResponse({ status: 201, description: 'Successfully joined.' })
-  async joinCommunity(
-    @Param('id') id: string,
-    @User() user: UserDetails,
-    @AppScope() appScope: string
-  ) {
-    const member = await firstValueFrom(
-      this.socialClient.send(
-        { cmd: CommunityCommands.JOIN },
-        {
-          dto: { communityId: id },
-          userId: user.userId,
-          profileId: user.profileId,
-        }
-      )
-    );
-
-    if (member?.status === CommunityMembershipStatus.APPROVED) {
-      await this.assignCommunityPostingRole(user.profileId, id, appScope);
-    }
-
-    return member;
   }
 
   @Delete(':id/membership')
@@ -620,6 +397,13 @@ export class CommunitiesController {
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Close the election and declare winner' })
   @ApiResponse({ status: 200, description: 'Election closed.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { electionId: { type: 'string' } },
+      required: ['electionId'],
+    },
+  })
   closeElection(@Param('id') id: string, @Body() body: { electionId: string }) {
     return firstValueFrom(
       this.socialClient.send(
@@ -641,6 +425,16 @@ export class CommunitiesController {
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Appoint a community manager' })
   @ApiResponse({ status: 201, description: 'Manager appointed.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string' },
+        profileId: { type: 'string' },
+      },
+      required: ['userId', 'profileId'],
+    },
+  })
   async appointManager(
     @Param('id') id: string,
     @Body() body: { userId: string; profileId: string },

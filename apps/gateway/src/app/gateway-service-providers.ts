@@ -8,7 +8,11 @@ import {
 } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { TcpServiceConfig } from '../config';
-import { GatewayComposition, isServiceEnabled } from './gateway-composition';
+import {
+  DisabledClientProxy,
+  GatewayComposition,
+  isServiceEnabled,
+} from '@optimistic-tanuki/constants';
 import {
   McpServerModule,
   ProjectPlanningMcpToolsModule,
@@ -21,38 +25,9 @@ type GatewayServiceProviderDefinition = {
   configKey: string;
 };
 
-export class DisabledClientProxy extends ClientProxy {
-  constructor(private readonly serviceId: string) {
-    super();
-  }
-
-  connect(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  close(): void {}
-
-  unwrap<T>(): T {
-    return undefined as T;
-  }
-
-  protected publish(
-    _packet: any,
-    callback: (packet: { err: Error; isDisposed: boolean }) => void
-  ): () => void {
-    callback({
-      err: new Error(`Gateway service "${this.serviceId}" is disabled`),
-      isDisposed: true,
-    });
-    return () => undefined;
-  }
-
-  protected dispatchEvent(): Promise<never> {
-    return Promise.reject(
-      new Error(`Gateway service "${this.serviceId}" is disabled`)
-    );
-  }
-}
+// Re-exported for back-compat (specs import it from here); canonical home is
+// `@optimistic-tanuki/constants` (service-composition, O24).
+export { DisabledClientProxy };
 
 const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
   {
@@ -159,6 +134,16 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     token: ServiceTokens.LEARNING_SERVICE,
     serviceId: 'learning-service',
     configKey: 'learning_service',
+  },
+  {
+    token: ServiceTokens.BILLING_SERVICE,
+    serviceId: 'billing',
+    configKey: 'billing',
+  },
+  {
+    token: ServiceTokens.PAYMENTS_SERVICE,
+    serviceId: 'payments',
+    configKey: 'payments',
   },
 ];
 

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Inject,
+  Param,
   Post,
   HttpException,
   HttpStatus,
@@ -130,6 +131,9 @@ export class OAuthController {
   async startOAuth(
     @Req() request: Request,
     @Res() response: Response,
+    // Declared for OpenAPI (orval validates path params); runtime reads
+    // request.params directly — do not remove.
+    @Param('provider') _provider: string,
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined,
@@ -159,6 +163,9 @@ export class OAuthController {
   async startOAuthLink(
     @Req() request: Request & { user?: { userId?: string } },
     @Res() response: Response,
+    // Declared for OpenAPI (orval validates path params); runtime reads
+    // request.params directly — do not remove.
+    @Param('provider') _provider: string,
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined
@@ -192,6 +199,9 @@ export class OAuthController {
   async createOAuthLink(
     @Req() request: Request & { user?: { userId?: string } },
     @Res({ passthrough: true }) response: Response,
+    // Declared for OpenAPI (orval validates path params); runtime reads
+    // request.params directly — do not remove.
+    @Param('provider') _provider: string,
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined
@@ -335,7 +345,10 @@ export class OAuthController {
   })
   async oauthRedirectCallback(
     @Req() request: Request,
-    @Res() response: Response
+    @Res() response: Response,
+    // Declared for OpenAPI (orval validates path params); runtime reads
+    // request.params directly — do not remove.
+    @Param('provider') _provider: string
   ) {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
