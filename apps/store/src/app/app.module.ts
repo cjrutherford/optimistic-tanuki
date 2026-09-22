@@ -7,7 +7,6 @@ import { DataSource } from 'typeorm';
 import loadConfig from '../config';
 import { ProductEntity } from '../products/entities/product.entity';
 import { SubscriptionEntity } from '../subscriptions/entities/subscription.entity';
-import { DonationEntity } from '../donations/entities/donation.entity';
 import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
@@ -27,8 +26,6 @@ import { ProductsController } from '../products/products.controller';
 import { ProductsService } from '../products/products.service';
 import { SubscriptionsController } from '../subscriptions/subscriptions.controller';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
-import { DonationsController } from '../donations/donations.controller';
-import { DonationsService } from '../donations/donations.service';
 import { OrdersController } from '../orders/orders.controller';
 import { OrdersService } from '../orders/orders.service';
 import { AppointmentsController } from '../appointments/appointments.controller';
@@ -59,7 +56,6 @@ import loadDatabase from './loadDatabase';
     AppController,
     ProductsController,
     SubscriptionsController,
-    DonationsController,
     OrdersController,
     AppointmentsController,
     AvailabilitiesController,
@@ -72,7 +68,6 @@ import loadDatabase from './loadDatabase';
     AppService,
     ProductsService,
     SubscriptionsService,
-    DonationsService,
     OrdersService,
     AppointmentsService,
     AvailabilitiesService,
@@ -93,11 +88,6 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(SubscriptionEntity),
       useFactory: (ds: DataSource) => ds.getRepository(SubscriptionEntity),
-      inject: ['STORE_CONNECTION'],
-    },
-    {
-      provide: getRepositoryToken(DonationEntity),
-      useFactory: (ds: DataSource) => ds.getRepository(DonationEntity),
       inject: ['STORE_CONNECTION'],
     },
     {

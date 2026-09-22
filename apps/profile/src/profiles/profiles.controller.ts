@@ -61,7 +61,10 @@ export class ProfilesController {
 
   @MessagePattern({ cmd: ProfileCommands.Update })
   async updateProfile(@Payload() data: UpdateProfileDto) {
-    return await this.profileService.update(data.id, data);
+    // id travels in the TCP payload (gateway sends { id, ...dto }); the
+    // contracts type keeps it optional because gateway bodies omit it.
+    const id = data.id as string;
+    return await this.profileService.update(id, { ...data, id });
   }
 
   @MessagePattern({ cmd: ProfileCommands.SetBlogRole })

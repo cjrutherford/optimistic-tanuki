@@ -15,7 +15,7 @@ export type TransactionType =
   | 'payout';
 export type TransactionDirection = 'incoming' | 'outgoing';
 
-@Entity('transactions')
+@Entity('payment_events')
 @Index(['userId'])
 @Index(['createdAt'])
 export class Transaction {
@@ -48,6 +48,11 @@ export class Transaction {
 
   @Column({ type: 'uuid', nullable: true })
   referenceId: string;
+
+  // E3: reference to the finance ledger row posted for this event.
+  // Written when finance acknowledges the posting; null until then.
+  @Column({ type: 'uuid', nullable: true })
+  financeTransactionId: string | null;
 
   @Column({ type: 'varchar', default: 'completed' })
   status: 'pending' | 'completed' | 'failed' | 'refunded';

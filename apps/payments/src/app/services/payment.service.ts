@@ -188,6 +188,34 @@ export class PaymentService {
     });
   }
 
+  /**
+   * E2 dual-write target: inserts the canonical donation row directly (no
+   * provider session, unlike checkout). The gateway creates this row first
+   * and stores the returned id as the store row's `paymentDonationId`.
+   */
+  async recordDonation(input: {
+    userId?: string;
+    profileId?: string;
+    amount: number;
+    currency?: string;
+    isRecurring?: boolean;
+    message?: string;
+    anonymous?: boolean;
+  }) {
+    const donation = this.donationRepository.create({
+      userId: input.userId,
+      profileId: input.profileId,
+      amount: input.amount,
+      isRecurring: input.isRecurring ?? false,
+      status: 'pending',
+      currency: input.currency ?? 'USD',
+      message: input.message,
+      anonymous: input.anonymous ?? !input.userId,
+    });
+
+    return this.donationRepository.save(donation);
+  }
+
   async cancelSubscription(userId: string, subscriptionId: string) {
     const donation = await this.donationRepository.findOne({
       where: { lemonSqueezySubscriptionId: subscriptionId, userId },

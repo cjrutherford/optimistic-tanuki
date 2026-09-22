@@ -1,10 +1,13 @@
 import {
+  InvoiceLine,
+  InvoicePreview,
   UsageBlockGrant,
   UsageEvent,
 } from '@optimistic-tanuki/billing-contracts';
 
 export const USAGE_EVENT_REPOSITORY = Symbol('USAGE_EVENT_REPOSITORY');
 export const USAGE_BLOCK_REPOSITORY = Symbol('USAGE_BLOCK_REPOSITORY');
+export const INVOICE_REPOSITORY = Symbol('INVOICE_REPOSITORY');
 
 export interface UsageEventRepository {
   findByEventKey(
@@ -34,4 +37,21 @@ export interface UsageBlockRepository {
     meterId: string;
     at: Date;
   }): Promise<UsageBlockGrant[]>;
+}
+
+export interface MintedInvoice {
+  id: string;
+}
+
+export interface InvoiceRepository {
+  mint(input: {
+    tenantId: string;
+    appScope: string;
+    accountId?: string;
+    currency: string;
+    subtotalCents: number;
+    lines: InvoiceLine[];
+    appointmentId?: string;
+    orderId?: string;
+  }): Promise<MintedInvoice>;
 }

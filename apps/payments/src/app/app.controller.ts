@@ -90,6 +90,20 @@ export class AppController {
     return this.paymentService.getUserDonations(data.userId);
   }
 
+  @MessagePattern({ cmd: PaymentCommands.RECORD_DONATION })
+  async recordDonation(
+    @Payload()
+    data: {
+      userId?: string;
+      profileId?: string;
+      amount: number;
+      currency?: string;
+      isRecurring?: boolean;
+    }
+  ) {
+    return this.paymentService.recordDonation(data);
+  }
+
   @MessagePattern({ cmd: PaymentCommands.CANCEL_SUBSCRIPTION })
   async cancelRecurringDonation(
     @Payload() data: { userId: string; subscriptionId: string }

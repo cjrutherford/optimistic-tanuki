@@ -98,4 +98,16 @@ export class Transaction {
     default: BankTransactionReviewStatus.NEEDS_REVIEW,
   })
   reviewStatus: BankTransactionReviewStatus;
+
+  // E3: posting provenance for ledger rows written from sibling domains
+  // (payments/store/billing). Bank-synced rows keep using sourceType/
+  // sourceProvider/externalTransactionId; domain postings use these.
+  @Column({ type: 'varchar', nullable: true })
+  source: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  sourceId: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  providerMeta: Record<string, unknown> | null;
 }

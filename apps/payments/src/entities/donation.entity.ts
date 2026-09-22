@@ -37,6 +37,12 @@ export class Donation {
   @Column({ type: 'varchar', nullable: true })
   currency: string;
 
+  @Column({ type: 'text', nullable: true })
+  message: string;
+
+  @Column({ type: 'boolean', default: false })
+  anonymous: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

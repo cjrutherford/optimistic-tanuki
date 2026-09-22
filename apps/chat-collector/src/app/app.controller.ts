@@ -43,7 +43,7 @@ export class AppController {
     return await this.appService.getConversation(data.conversationId);
   }
 
-  @MessagePattern({ cmd: 'CREATE_COMMUNITY_CHAT' })
+  @MessagePattern({ cmd: ChatCommands.CREATE_COMMUNITY_CHAT })
   async createCommunityChat(
     @Payload() data: { communityId: string; ownerId: string; name?: string }
   ) {

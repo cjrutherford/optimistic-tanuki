@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Like } from 'typeorm';
 import { AppController } from './app.controller';
+import { BusinessContentService } from './services/business-content.service';
 import { AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import FollowService from './services/follow.service';
@@ -281,6 +282,20 @@ describe('AppController', () => {
         {
           provide: ServiceTokens.PROFILE_SERVICE,
           useValue: { send: jest.fn() },
+        },
+        {
+          provide: BusinessContentService,
+          useValue: {
+            getBusinessPage: jest.fn(),
+            getBusinessPagesByCommunityIds: jest.fn(),
+            createBusinessPage: jest.fn(),
+            updateBusinessPage: jest.fn(),
+            getBusinessTheme: jest.fn(),
+            createBusinessTheme: jest.fn(),
+            getActiveSponsorships: jest.fn(),
+            getUserSponsorships: jest.fn(),
+            createSponsorship: jest.fn(),
+          },
         },
       ],
     }).compile();
