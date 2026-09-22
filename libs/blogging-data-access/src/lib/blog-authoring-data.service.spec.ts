@@ -146,7 +146,9 @@ describe('BlogAuthoringDataService', () => {
       )
       .subscribe();
 
-    const request = httpMock.expectOne('/api/post?workspaceSlug=north-star');
+    const request = httpMock.expectOne(
+      '/api/blog-posts?workspaceSlug=north-star'
+    );
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     expect(request.request.headers.get('X-ot-workspace-id')).toBe(
@@ -193,7 +195,7 @@ describe('BlogAuthoringDataService', () => {
       .subscribe();
 
     const request = httpMock.expectOne(
-      '/api/post/post-1/publish?workspaceSlug=north-star'
+      '/api/blog-posts/post-1/publish?workspaceSlug=north-star'
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');

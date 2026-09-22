@@ -3,7 +3,7 @@ import {
   FinanceService,
   FinanceWorkspace,
   FinanceWorkspaceSummary,
-} from '@optimistic-tanuki/finance-ui';
+} from '@optimistic-tanuki/finance-data-access';
 import {
   FinCommanderGoal,
   FinCommanderFundingDirective,

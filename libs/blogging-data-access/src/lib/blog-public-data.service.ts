@@ -1,7 +1,7 @@
-import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import type { PublishedBlogPostDto } from '@optimistic-tanuki/models';
+import { OptomisitcTanukiAPIService } from '../generated/blogging';
 import { BLOGGING_API_BASE_URL } from './blog-authoring-data.service';
 
 /** Anonymous published Blog response; deliberately excludes all ownership fields. */
@@ -10,8 +10,8 @@ export type PublicBlogPost = PublishedBlogPostDto;
 @Injectable({ providedIn: 'root' })
 export class BlogPublicDataService {
   constructor(
-    @Inject(BLOGGING_API_BASE_URL) private readonly apiUrl: string,
-    private readonly http: HttpClient
+    @Inject(BLOGGING_API_BASE_URL) _apiBaseUrl: string,
+    private readonly blogging: OptomisitcTanukiAPIService
   ) {}
 
   /**
@@ -20,12 +20,8 @@ export class BlogPublicDataService {
    */
   getPublishedPosts(domain: string): Observable<PublicBlogPost[]> {
     const normalizedDomain = this.validateDomain(domain);
-    return this.http
-      .get<unknown[]>(
-        `${this.apiUrl}/blog/by-domain/${encodeURIComponent(
-          normalizedDomain
-        )}/posts`
-      )
+    return this.blogging
+      .blogControllerFindPublishedPostsByDomain<unknown[]>(normalizedDomain)
       .pipe(
         map((posts) =>
           posts.map((post) => {

@@ -22,6 +22,13 @@
         "tsConfig": "libs/store-data-access/tsconfig.lib.json",
         "assets": []
       }
+    },
+    "generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "orval --config orval.config.ts --project store",
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }

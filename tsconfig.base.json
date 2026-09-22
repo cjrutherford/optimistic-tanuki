@@ -49,6 +49,9 @@
       ],
       "@optimistic-tanuki/billing-domain": ["libs/billing/domain/src/index.ts"],
       "@optimistic-tanuki/billing-sdk": ["libs/billing-sdk/src/index.ts"],
+      "@optimistic-tanuki/blogging-contracts": [
+        "libs/blogging/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/blogging-data-access": [
         "libs/blogging-data-access/src/index.ts"
       ],
@@ -69,7 +72,11 @@
         "libs/business-public-ui/src/index.ts"
       ],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
+      "@optimistic-tanuki/chat-contracts": ["libs/chat/contracts/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
+      "@optimistic-tanuki/chat-ui-data-access": [
+        "libs/chat-ui-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/classified-ui": ["libs/classified-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui/*": ["libs/common-ui/src/lib/common-ui/*"],
@@ -90,6 +97,12 @@
       ],
       "@optimistic-tanuki/fin-commander-imports": [
         "libs/fin-commander-imports/src/index.ts"
+      ],
+      "@optimistic-tanuki/finance-contracts": [
+        "libs/finance/contracts/src/index.ts"
+      ],
+      "@optimistic-tanuki/finance-data-access": [
+        "libs/finance/data-access/src/index.ts"
       ],
       "@optimistic-tanuki/finance-ui": ["libs/finance-ui/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
@@ -112,10 +125,16 @@
         "libs/leads/feature-topics/src/index.ts"
       ],
       "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
+      "@optimistic-tanuki/learning-contracts": [
+        "libs/learning/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/learning-domain": [
         "libs/learning-domain/src/index.ts"
       ],
       "@optimistic-tanuki/learning-ui": ["libs/learning-ui/src/index.ts"],
+      "@optimistic-tanuki/learning-ui-data-access": [
+        "libs/learning-ui-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],
       "@optimistic-tanuki/message-ui/*": ["libs/message-ui/src/lib/*"],
@@ -137,26 +156,44 @@
       "@optimistic-tanuki/payment-fees": [
         "libs/constants/src/lib/libs/payment-fees.ts"
       ],
+      "@optimistic-tanuki/payments-contracts": [
+        "libs/payments/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/payments-domain": [
         "libs/payments/domain/src/index.ts"
       ],
       "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
+      "@optimistic-tanuki/payments-ui-data-access": [
+        "libs/payments-ui-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
       "@optimistic-tanuki/permissions-domain": [
         "libs/permissions/domain/src/index.ts"
       ],
       "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],
+      "@optimistic-tanuki/profile-contracts": [
+        "libs/profile/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
+      "@optimistic-tanuki/profile-ui-data-access": [
+        "libs/profile-ui-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],
       "@optimistic-tanuki/prompt-generation": [
         "libs/prompt-generation/src/index.ts"
       ],
       "@optimistic-tanuki/search-ui": ["libs/search-ui/src/index.ts"],
+      "@optimistic-tanuki/social-contracts": [
+        "libs/social/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/social-data-access": [
         "libs/social-data-access/src/index.ts"
       ],
       "@optimistic-tanuki/social-ui": ["libs/social-ui/src/index.ts"],
       "@optimistic-tanuki/storage": ["libs/storage/src/index.ts"],
+      "@optimistic-tanuki/store-contracts": [
+        "libs/store/contracts/src/index.ts"
+      ],
       "@optimistic-tanuki/store-data-access": [
         "libs/store-data-access/src/index.ts"
       ],

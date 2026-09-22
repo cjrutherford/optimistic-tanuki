@@ -1,7 +1,7 @@
 import {
   FinanceWorkspace,
   FinanceWorkspaceSummary,
-} from '@optimistic-tanuki/finance-ui';
+} from '@optimistic-tanuki/finance-data-access';
 
 export interface FinCommanderPlan {
   id: string;

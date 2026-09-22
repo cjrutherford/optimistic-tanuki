@@ -1,0 +1,9 @@
+{
+  "name": "@optimistic-tanuki/profile-ui-data-access",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts"
+}
