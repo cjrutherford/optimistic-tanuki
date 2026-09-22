@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { FactoryProvider, Logger, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { WellnessController } from './wellness.controller';
@@ -9,8 +9,20 @@ import { PersonaVoiceService } from './persona-voice.service';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { loadConfig } from './config';
-import { ServiceTokens, WellnessCommands } from '@optimistic-tanuki/constants';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  DisabledClientProxy,
+  GatewayComposition,
+  ServiceTokens,
+  WellnessCommands,
+  isServiceEnabled,
+  loadGatewayCompositionFromFile,
+  normalizeGatewayComposition,
+} from '@optimistic-tanuki/constants';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ToolsService } from './tools.service';
 import { MCPToolExecutor } from './mcp-tool-executor';
@@ -37,6 +49,99 @@ import { IntentAnalyzer } from './intent/intent-analyzer.service';
 import { DataTracker } from './data/data-tracker.service';
 import { ConversationService } from './conversation/conversation.service';
 import { RedisCheckpointer } from './conversation/redis-checkpointer';
+
+// O24b: downstream set mirrors the gateway's composition vocabulary so the
+// O23 coherence check holds. `prompt-proxy` is wired but optional (unused at
+// runtime); the other three are required. Reads the same
+// GATEWAY_COMPOSITION_PATH file where deployments share storage; otherwise
+// every declared dependency is enabled.
+export const ORCHESTRATOR_SERVICE_IDS = [
+  'profile',
+  'chat-collector',
+  'telos-docs-service',
+  'prompt-proxy',
+] as const;
+
+const orchestratorComposition = normalizeGatewayComposition(
+  loadGatewayCompositionFromFile(process.env.GATEWAY_COMPOSITION_PATH),
+  [...ORCHESTRATOR_SERVICE_IDS]
+);
+
+const orchestratorLog = new Logger('OrchestratorComposition');
+for (const serviceId of ORCHESTRATOR_SERVICE_IDS) {
+  orchestratorLog.log(
+    `downstream "${serviceId}": ${
+      isServiceEnabled(orchestratorComposition, serviceId)
+        ? 'enabled'
+        : 'disabled'
+    }`
+  );
+}
+
+type OrchestratorDependency = {
+  token: string;
+  serviceId: (typeof ORCHESTRATOR_SERVICE_IDS)[number];
+  configKey: string;
+};
+
+const orchestratorDependencies: OrchestratorDependency[] = [
+  {
+    token: ServiceTokens.PROMPT_PROXY,
+    serviceId: 'prompt-proxy',
+    configKey: 'prompt_proxy',
+  },
+  {
+    token: ServiceTokens.TELOS_DOCS_SERVICE,
+    serviceId: 'telos-docs-service',
+    configKey: 'telos_docs_service',
+  },
+  {
+    token: ServiceTokens.PROFILE_SERVICE,
+    serviceId: 'profile',
+    configKey: 'profile',
+  },
+  {
+    token: ServiceTokens.CHAT_COLLECTOR_SERVICE,
+    serviceId: 'chat-collector',
+    configKey: 'chat_collector',
+  },
+];
+
+// O24b providers below are built from `orchestratorDependencies` — a single
+// factory maps composition state + config presence to either a TCP client or
+// a shared DisabledClientProxy (never a boot-time throw).
+export const createOrchestratorProviders = (
+  composition: GatewayComposition
+): FactoryProvider[] =>
+  orchestratorDependencies.map((definition) => ({
+    provide: definition.token,
+    useFactory: (config: ConfigService): ClientProxy => {
+      if (!isServiceEnabled(composition, definition.serviceId)) {
+        // DisabledClientProxy extends ClientProxy but carries different
+        // generic parameters; the cast satisfies the provider contract.
+        return new DisabledClientProxy(
+          definition.serviceId
+        ) as unknown as ClientProxy;
+      }
+      const options = config.get<{
+        host: string;
+        port: number;
+      }>(`dependencies.${definition.configKey}`);
+      if (!options) {
+        return new DisabledClientProxy(
+          definition.serviceId
+        ) as unknown as ClientProxy;
+      }
+      return ClientProxyFactory.create({
+        transport: Transport.TCP,
+        options: {
+          port: options.port,
+          host: options.host,
+        },
+      });
+    },
+    inject: [ConfigService],
+  }));
 
 @Module({
   imports: [
@@ -84,74 +189,7 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
       },
       inject: [ConfigService],
     },
-    {
-      provide: ServiceTokens.PROMPT_PROXY,
-      useFactory: (config: ConfigService) => {
-        const options = config.get('dependencies.prompt_proxy');
-        if (!options) {
-          throw new Error('Prompt Proxy configuration not found');
-        }
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            port: options.port,
-            host: options.host,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.TELOS_DOCS_SERVICE,
-      useFactory: (config: ConfigService) => {
-        const options = config.get('dependencies.telos_docs_service');
-        if (!options) {
-          throw new Error('Telos Docs Service configuration not found');
-        }
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            port: options.port,
-            host: options.host,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.PROFILE_SERVICE,
-      useFactory: (config: ConfigService) => {
-        const options = config.get('dependencies.profile');
-        if (!options) {
-          throw new Error('Profile Service configuration not found');
-        }
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            port: options.port,
-            host: options.host,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
-      useFactory: (config: ConfigService) => {
-        const options = config.get('dependencies.chat_collector');
-        if (!options) {
-          throw new Error('Chat Collector configuration not found');
-        }
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            port: options.port,
-            host: options.host,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
+    ...createOrchestratorProviders(orchestratorComposition),
   ],
 })
 export class AppModule {}

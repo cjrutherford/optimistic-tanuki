@@ -10,6 +10,7 @@ import { firstValueFrom, forkJoin, map, switchMap } from 'rxjs';
 
 import { AuthStateService } from '../auth-state.service';
 import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
 
 @Injectable({
@@ -36,7 +37,8 @@ export class ProfileService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authState: AuthStateService
+    private readonly authState: AuthStateService,
+    private readonly profiles: OptomisitcTanukiAPIService
   ) {}
 
   /**
@@ -51,7 +53,7 @@ export class ProfileService {
 
     try {
       const profile = await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${id}`)
+        this.profiles.profileControllerGetProfileById<ProfileDto>(id)
       );
       this.profileCache.set(id, { profile, timestamp: Date.now() });
       return profile;
@@ -86,7 +88,7 @@ export class ProfileService {
     if (missingIds.length > 0) {
       try {
         const fetchedProfiles = await firstValueFrom(
-          this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+          this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
             ids: missingIds,
           })
         );
@@ -196,7 +198,7 @@ export class ProfileService {
 
   async getAllProfiles() {
     const profiles = await firstValueFrom(
-      this.http.get<ProfileDto[]>('/api/profile')
+      this.profiles.profileControllerGetAllProfiles<ProfileDto[]>()
     );
     this.allProfiles.set(profiles);
     // Filter profiles for current user that are either global or for this app scope
@@ -213,7 +215,7 @@ export class ProfileService {
 
   async getProfileById(id: string) {
     const profile = await firstValueFrom(
-      this.http.get<ProfileDto>(`/api/profile/${id}`)
+      this.profiles.profileControllerGetProfileById<ProfileDto>(id)
     );
     this.currentUserProfile.set(profile);
     if (this.hasStorage()) {
@@ -291,9 +293,10 @@ export class ProfileService {
       profile.userId = tokenValue.userId;
     }
     const resp: any = await firstValueFrom(
-      this.http.post('/api/profile', {
+      // appScope travels via the scope decorator, not the body (the gateway
+      // strips unknown props); appId selects AI-orchestrator initialization.
+      this.profiles.profileControllerCreateProfile({
         ...profile,
-        appScope: 'forgeofwill',
         appId: 'forgeofwill',
       })
     );
@@ -347,7 +350,7 @@ export class ProfileService {
       newProfile.profilePic = profilePicUrl || newProfile.profilePic;
       newProfile.coverPic = coverPicUrl || newProfile.coverPic;
       await firstValueFrom(
-        this.http.put<ProfileDto>(`/api/profile/${newProfile.id}`, {
+        this.profiles.profileControllerUpdateProfile(newProfile.id, {
           profilePic: newProfile.profilePic,
           coverPic: newProfile.coverPic,
         })
@@ -404,7 +407,7 @@ export class ProfileService {
     if (profile.profilePic && !profile.profilePic.startsWith('/api/asset/')) {
       // Get the original profile to compare the current asset
       const originalProfile = await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${id}`)
+        this.profiles.profileControllerGetProfileById<ProfileDto>(id)
       );
       const originalAssetUrl = originalProfile.profilePic;
 
@@ -437,7 +440,7 @@ export class ProfileService {
     }
     if (profile.coverPic && !profile.coverPic.startsWith('/api/asset/')) {
       const originalProfile = await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${id}`)
+        this.profiles.profileControllerGetProfileById<ProfileDto>(id)
       );
       const originalAssetUrl = originalProfile.coverPic;
 
@@ -466,7 +469,7 @@ export class ProfileService {
       profile.coverPic = `/api/asset/${coverAsset.id}`;
     }
     const updatedProfile = await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
+      this.profiles.profileControllerUpdateProfile<ProfileDto>(id, profile)
     );
     this.currentUserProfiles.update((profiles) =>
       profiles.map((p) => (p.id === id ? updatedProfile : p))
@@ -486,7 +489,8 @@ export class ProfileService {
   }
 
   async deleteProfile(id: string) {
-    await firstValueFrom(this.http.delete<void>(`/api/profiles/${id}`));
+    // Canonical delete: DELETE /api/profiles/:id never existed (plural typo).
+    await firstValueFrom(this.profiles.profileControllerDeleteProfile(id));
     this.currentUserProfiles.update((profiles) =>
       profiles.filter((p) => p.id !== id)
     );
@@ -534,6 +538,6 @@ export class ProfileService {
   }
 
   getDisplayProfile(id: string) {
-    return this.http.get<ProfileDto>(`/api/profile/${id}`);
+    return this.profiles.profileControllerGetProfileById<ProfileDto>(id);
   }
 }

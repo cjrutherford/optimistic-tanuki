@@ -22,7 +22,7 @@ describe('ContactComponent', () => {
 
   beforeEach(async () => {
     mockContactService = {
-      postContact: jest.fn(() => of({})),
+      postContact: jest.fn(() => of(undefined)),
     };
 
     await TestBed.configureTestingModule({

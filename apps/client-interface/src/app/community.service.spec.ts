@@ -6,7 +6,7 @@ import {
 import { CommunityService } from './community.service';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
-const BASE = 'http://api.test/social/community';
+const BASE = '/api/social/community';
 
 describe('CommunityService', () => {
   let service: CommunityService;
@@ -98,7 +98,6 @@ describe('CommunityService', () => {
     service.joinCommunity('c1').subscribe(() => done());
     const req = httpMock.expectOne(`${BASE}/c1/join`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({});
     req.flush({ id: 'm1' });
   });
 

@@ -78,7 +78,7 @@ describe('ProfileService behaviour', () => {
       const profile = profileFixture();
       const pending = service.getProfileById('profile-1');
 
-      const request = http.expectOne('/api/profile/profile-1');
+      const request = http.expectOne('/api/profile/by-id/profile-1');
       expect(request.request.method).toBe('GET');
       request.flush(profile);
 

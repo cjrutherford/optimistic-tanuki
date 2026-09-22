@@ -4,6 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { catchError, shareReplay, timeout } from 'rxjs/operators';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/learning-ui-data-access';
 
 export type OfferingTextPatch = string | null;
 
@@ -233,6 +234,7 @@ const emptyLesson: LessonResponse = {
 @Injectable({ providedIn: 'root' })
 export class LearningDataService {
   private readonly http = inject(HttpClient);
+  private readonly learning = inject(OptomisitcTanukiAPIService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly apiBaseUrl =
     inject(API_BASE_URL, { optional: true }) ?? '/api';
@@ -264,6 +266,11 @@ export class LearningDataService {
    * Runs on the server now: `programs` is a `@Public()` gateway route, so no
    * session needs to be forwarded. See `publicRead` for the empty-state and
    * timeout behaviour this relies on.
+   *
+   * NOTE (O17): catalog() and subjects() stay on publicRead instead of the
+   * generated client — the generated Angular service only speaks relative
+   * URLs, while SSR needs the absolute gateway address. These two strings
+   * are the documented exception to the no-hand-strings rule.
    */
   catalog(): Observable<CatalogTrack[]> {
     return this.publicRead<CatalogTrack[]>('/learning/programs');
@@ -272,21 +279,22 @@ export class LearningDataService {
   /** The courses this author owns or co-edits, drafts included. */
   myCourses(): Observable<MyCourse[]> {
     return this.isBrowser
-      ? this.http.get<MyCourse[]>('/api/learning/me/courses')
+      ? this.learning.learningControllerGetMyCourses<MyCourse[]>()
       : EMPTY;
   }
 
   authorStatus(): Observable<{ isCourseDesigner: boolean }> {
     return this.isBrowser
-      ? this.http.get<{ isCourseDesigner: boolean }>('/api/learning/me/author')
+      ? this.learning.learningControllerGetAuthorStatus<{
+          isCourseDesigner: boolean;
+        }>()
       : EMPTY;
   }
 
   optInAsAuthor(): Observable<{ isCourseDesigner: boolean }> {
-    return this.http.post<{ isCourseDesigner: boolean }>(
-      '/api/learning/me/author/opt-in',
-      {}
-    );
+    return this.learning.learningControllerOptInAsAuthor<{
+      isCourseDesigner: boolean;
+    }>();
   }
 
   createCourse(input: {
@@ -294,10 +302,9 @@ export class LearningDataService {
     subjectId: string;
     description?: string;
   }): Observable<{ track: { id: string } }> {
-    return this.http.post<{ track: { id: string } }>(
-      '/api/learning/offerings',
-      input
-    );
+    return this.learning.learningControllerCreateOffering<{
+      track: { id: string };
+    }>(input);
   }
 
   saveCourse(
@@ -311,16 +318,20 @@ export class LearningDataService {
       activities?: unknown[];
     }
   ): Observable<unknown> {
-    return this.http.put(`/api/learning/offerings/${offeringId}`, patch);
+    return this.learning.learningControllerUpdateOffering<unknown>(
+      offeringId,
+      patch
+    );
   }
 
   setCourseStatus(
     offeringId: string,
     status: 'draft' | 'published'
   ): Observable<unknown> {
-    return this.http.put(`/api/learning/offerings/${offeringId}/status`, {
-      status,
-    });
+    return this.learning.learningControllerSetOfferingStatus<unknown>(
+      offeringId,
+      { status }
+    );
   }
 
   /**
@@ -333,13 +344,13 @@ export class LearningDataService {
 
   offering(offeringId: string): Observable<OfferingDetail | null> {
     return this.isBrowser
-      ? this.http.get<OfferingDetail>(`/api/learning/offerings/${offeringId}`)
+      ? this.learning.learningControllerGetOffering<OfferingDetail>(offeringId)
       : EMPTY;
   }
 
   dashboard(): Observable<DashboardEntry[]> {
     return this.isBrowser
-      ? this.http.get<DashboardEntry[]>('/api/learning/dashboard')
+      ? this.learning.learningControllerGetDashboard<DashboardEntry[]>()
       : of<DashboardEntry[]>([]);
   }
 
@@ -351,9 +362,8 @@ export class LearningDataService {
         trackDisplayName: '',
       });
     }
-    const query = trackId ? `?trackId=${encodeURIComponent(trackId)}` : '';
-    return this.http.get<ChallengesResponse>(
-      `/api/learning/challenges${query}`
+    return this.learning.learningControllerListChallenges<ChallengesResponse>(
+      trackId === undefined ? {} : { trackId }
     );
   }
 
@@ -363,14 +373,14 @@ export class LearningDataService {
     offeringId?: string,
     moduleId?: string
   ): Observable<LessonResponse> {
-    const params = [
-      offeringId ? `offeringId=${encodeURIComponent(offeringId)}` : undefined,
-      moduleId ? `moduleId=${encodeURIComponent(moduleId)}` : undefined,
-    ].filter((value): value is string => value !== undefined);
-    const query = params.length ? `?${params.join('&')}` : '';
     return this.isBrowser
-      ? this.http.get<LessonResponse>(
-          `/api/learning/programs/${trackId}/lessons/${lessonId}${query}`
+      ? this.learning.learningControllerGetLesson<LessonResponse>(
+          trackId,
+          lessonId,
+          {
+            ...(offeringId === undefined ? {} : { offeringId }),
+            ...(moduleId === undefined ? {} : { moduleId }),
+          }
         )
       : of(emptyLesson);
   }
@@ -381,10 +391,12 @@ export class LearningDataService {
    */
   myProgress(): Observable<LessonProgress[]> {
     if (!this.isBrowser) return of<LessonProgress[]>([]);
-    return this.http.get<LessonProgress[]>('/api/learning/me/progress').pipe(
-      catchError(() => of<LessonProgress[]>([])),
-      shareReplay({ bufferSize: 1, refCount: true })
-    );
+    return this.learning
+      .learningControllerGetMyProgress<LessonProgress[]>()
+      .pipe(
+        catchError(() => of<LessonProgress[]>([])),
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
   }
 
   /**
@@ -396,8 +408,8 @@ export class LearningDataService {
     code: string,
     offeringId?: string
   ): Observable<RunResult> {
-    return this.http
-      .post<RunResult>('/api/learning/runs', {
+    return this.learning
+      .learningControllerRunCode<RunResult>({
         activityId,
         code,
         ...(offeringId ? { offeringId } : {}),
@@ -427,8 +439,8 @@ export class LearningDataService {
     code: string,
     offeringId?: string
   ): Observable<SubmitResult> {
-    return this.http
-      .post<SubmitResult>(`/api/learning/exercises/${activityId}/submit`, {
+    return this.learning
+      .learningControllerSubmitExercise<SubmitResult>(activityId, {
         code,
         ...(offeringId ? { offeringId } : {}),
       })
@@ -462,8 +474,8 @@ export class LearningDataService {
   ): Observable<LessonProgress> {
     // Only these two facts. What the lesson is worth is the server's to
     // decide, from work it watched happen.
-    return this.http
-      .put<LessonProgress>('/api/learning/me/progress', {
+    return this.learning
+      .learningControllerSaveMyProgress<LessonProgress>({
         lessonId,
         completed,
         ...(offeringId ? { offeringId } : {}),
@@ -493,8 +505,8 @@ export class LearningDataService {
     submission: unknown,
     offeringId?: string
   ): Observable<AnswerResult> {
-    return this.http
-      .post<AnswerResult>(`/api/learning/activities/${activityId}/answer`, {
+    return this.learning
+      .learningControllerAnswerActivity<AnswerResult>(activityId, {
         submission,
         ...(offeringId ? { offeringId } : {}),
       })
@@ -514,7 +526,7 @@ export class LearningDataService {
 
   /** Enrols the signed-in learner in an offering. */
   enrol(offeringId: string): Observable<{ offeringId: string }> {
-    return this.http.post<{ offeringId: string }>('/api/learning/enrolments', {
+    return this.learning.learningControllerEnrol<{ offeringId: string }>({
       offeringId,
     });
   }

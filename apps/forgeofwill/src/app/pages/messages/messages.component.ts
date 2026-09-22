@@ -11,6 +11,7 @@ import {
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/chat-ui-data-access';
 import { AuthStateService } from '../../auth-state.service';
 
 @Component({
@@ -122,6 +123,7 @@ import { AuthStateService } from '../../auth-state.service';
 export class MessagesComponent implements OnInit, OnDestroy {
   private authStateService = inject(AuthStateService);
   private http = inject(HttpClient);
+  private chat = inject(OptomisitcTanukiAPIService);
   private router = inject(Router);
   private socketChatService = inject(SocketChatService);
 
@@ -314,7 +316,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   private async getMessages(conversationId: string): Promise<any[]> {
     return firstValueFrom(
-      this.http.get<any[]>(`/api/chat/messages/${conversationId}`)
+      this.chat.chatControllerGetMessages(conversationId)
     ) as Promise<any[]>;
   }
 }

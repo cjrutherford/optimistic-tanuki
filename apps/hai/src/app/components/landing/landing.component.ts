@@ -1,6 +1,6 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { BadgeComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {
@@ -38,7 +38,7 @@ import { PartnerSectionComponent } from './partner-section.component';
 export class LandingComponent {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly appDirectory = inject(HaiAppDirectoryService);
-  private readonly http = inject(HttpClient);
+  private readonly blogging = inject(OptomisitcTanukiAPIService);
 
   readonly ecosystem$ = this.appDirectory.getResolvedApps('hai');
   submittingContact = false;
@@ -152,8 +152,8 @@ export class LandingComponent {
     this.submittingContact = true;
     this.contactStatus = null;
 
-    this.http
-      .post('/api/contact', {
+    this.blogging
+      .contactControllerCreateContact({
         ...event,
         appScope: 'hai',
         sourcePage: '/#contact',

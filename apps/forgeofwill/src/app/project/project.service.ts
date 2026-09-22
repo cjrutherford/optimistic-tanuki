@@ -13,6 +13,8 @@ import {
 } from '@optimistic-tanuki/project-ui';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, NgZone, inject } from '@angular/core';
+import { map } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/chat-ui-data-access';
 import { ProfileService } from '../profile/profile.service';
 
 /** What the caller sees while the assistant works, then what it produced. */
@@ -87,7 +89,8 @@ export class ProjectService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly profileService: ProfileService
+    private readonly profileService: ProfileService,
+    private readonly chat: OptomisitcTanukiAPIService
   ) {}
 
   createProject(data: CreateProject) {
@@ -369,17 +372,35 @@ export class ProjectService {
    * the chat service, which is the one that knows who is in it.
    */
   getConversationMessages(conversationId: string) {
-    return this.http.get<ProjectMessage[]>(
-      `/api/chat/messages/${conversationId}`
+    return this.chat.chatControllerGetMessages(conversationId).pipe(
+      map((messages): ProjectMessage[] =>
+        messages.map((message) => ({
+          id: message.id ?? '',
+          senderId: message.senderId,
+          content: message.content,
+          createdAt: message.createdAt,
+        }))
+      )
     );
   }
 
   sendConversationMessage(conversationId: string, content: string) {
-    return this.http.post<ProjectMessage>('/api/chat/messages', {
-      conversationId,
-      content,
-      recipientIds: [],
-    });
+    return this.chat
+      .chatControllerSendMessage({
+        conversationId,
+        content,
+        recipientIds: [],
+      })
+      .pipe(
+        map(
+          (message): ProjectMessage => ({
+            id: message.id ?? '',
+            senderId: message.senderId,
+            content: message.content,
+            createdAt: message.createdAt,
+          })
+        )
+      );
   }
 
   /** The conversation belonging to a project, made if it is not there yet. */

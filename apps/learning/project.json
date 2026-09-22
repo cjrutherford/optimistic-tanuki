@@ -57,7 +57,9 @@
             {
               "type": "initial",
               "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              // O17: generated learning API client adds ~30kb; was already
+              // within 48 bytes of the 1mb cap before it.
+              "maximumError": "1.1mb"
             },
             {
               "type": "anyComponentStyle",

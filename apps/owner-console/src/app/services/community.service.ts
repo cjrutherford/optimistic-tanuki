@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   CommunityDto,
@@ -10,6 +9,7 @@ import {
   LocalityType,
   InviteToCommunityDto,
 } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/social-data-access';
 
 export interface CommunityManagerRecord {
   userId: string;
@@ -30,41 +30,54 @@ export interface CommunityMembershipAuditRecord {
   providedIn: 'root',
 })
 export class CommunityService {
-  private readonly API_URL = '/api/communities';
-  private readonly SOCIAL_API_URL = '/api/social/community';
-
-  constructor(private http: HttpClient) {}
+  private readonly social = inject(OptomisitcTanukiAPIService);
 
   getCommunities(): Observable<CommunityDto[]> {
-    return this.http.get<CommunityDto[]>(`${this.API_URL}`);
+    return this.social.communitiesControllerListCommunities<CommunityDto[]>({});
   }
 
+  // Canonical read: GET /api/communities/:id never existed (404). Same
+  // backend via /api/social/community/:id.
   getCommunity(id: string): Observable<CommunityDto> {
-    return this.http.get<CommunityDto>(`${this.API_URL}/${id}`);
+    return this.social.communityControllerGetCommunity<CommunityDto>(id);
   }
 
   getMyCommunities(): Observable<CommunityDto[]> {
-    return this.http.get<CommunityDto[]>(`${this.API_URL}/my`);
+    return this.social.communitiesControllerGetMyCommunities<CommunityDto[]>();
   }
 
+  // Canonical write: POST /api/communities never existed (404). Same
+  // backend via /api/social/community.
   createCommunity(community: CreateCommunityDto): Observable<CommunityDto> {
-    return this.http.post<CommunityDto>(`${this.API_URL}`, community);
+    const { parentId, ...rest } = community;
+    return this.social.communityControllerCreateCommunity<CommunityDto>({
+      ...rest,
+      parentId: parentId ?? undefined,
+      createChatRoom: true,
+    } as Parameters<typeof this.social.communityControllerCreateCommunity>[0]);
   }
 
   updateCommunity(
     id: string,
     community: UpdateCommunityDto
   ): Observable<CommunityDto> {
-    return this.http.put<CommunityDto>(`${this.API_URL}/${id}`, community);
+    return this.social.communityControllerUpdateCommunity<CommunityDto>(
+      id,
+      community as Parameters<
+        typeof this.social.communityControllerUpdateCommunity
+      >[1]
+    );
   }
 
   deleteCommunity(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${id}`);
+    return this.social.communityControllerDeleteCommunity<void>(id);
   }
 
+  // Canonical read: no members list under /api/communities (404). Same
+  // backend via /api/social/community/:id/members.
   getCommunityMembers(communityId: string): Observable<CommunityMemberDto[]> {
-    return this.http.get<CommunityMemberDto[]>(
-      `${this.API_URL}/${communityId}/members`
+    return this.social.communityControllerGetMembers<CommunityMemberDto[]>(
+      communityId
     );
   }
 
@@ -73,15 +86,17 @@ export class CommunityService {
     memberId: string,
     role: CommunityMemberRole
   ): Observable<CommunityMemberDto> {
-    return this.http.put<CommunityMemberDto>(
-      `${this.API_URL}/${communityId}/members/${memberId}/role`,
+    return this.social.communitiesControllerUpdateMemberRole<CommunityMemberDto>(
+      communityId,
+      memberId,
       { role }
     );
   }
 
   removeMember(communityId: string, memberId: string): Observable<void> {
-    return this.http.delete<void>(
-      `${this.API_URL}/${communityId}/members/${memberId}`
+    return this.social.communitiesControllerRemoveMember<void>(
+      communityId,
+      memberId
     );
   }
 
@@ -89,18 +104,17 @@ export class CommunityService {
     communityId: string,
     memberId: string
   ): Observable<CommunityMembershipAuditRecord[]> {
-    return this.http.get<CommunityMembershipAuditRecord[]>(
-      `${this.SOCIAL_API_URL}/members/${memberId}/audit`
-    );
+    return this.social.communityControllerGetMembershipAudit<
+      CommunityMembershipAuditRecord[]
+    >(memberId);
   }
 
   suspendMember(
     communityId: string,
     memberId: string
   ): Observable<CommunityMemberDto> {
-    return this.http.post<CommunityMemberDto>(
-      `${this.SOCIAL_API_URL}/members/${memberId}/suspend`,
-      {}
+    return this.social.communityControllerSuspendMember<CommunityMemberDto>(
+      memberId
     );
   }
 
@@ -108,15 +122,14 @@ export class CommunityService {
     communityId: string,
     memberId: string
   ): Observable<CommunityMemberDto> {
-    return this.http.post<CommunityMemberDto>(
-      `${this.SOCIAL_API_URL}/members/${memberId}/reactivate`,
-      {}
+    return this.social.communityControllerReactivateMember<CommunityMemberDto>(
+      memberId
     );
   }
 
   inviteMember(invite: InviteToCommunityDto): Observable<CommunityMemberDto> {
-    return this.http.post<CommunityMemberDto>(
-      `${this.API_URL}/${invite.communityId}/members/invite`,
+    return this.social.communitiesControllerInviteMember<CommunityMemberDto>(
+      invite.communityId,
       { inviteeUserId: invite.inviteeUserId }
     );
   }
@@ -124,8 +137,8 @@ export class CommunityService {
   getCommunityManager(
     communityId: string
   ): Observable<CommunityManagerRecord | null> {
-    return this.http.get<CommunityManagerRecord | null>(
-      `${this.API_URL}/${communityId}/manager`
+    return this.social.communitiesControllerGetCommunityManager<CommunityManagerRecord | null>(
+      communityId
     );
   }
 
@@ -133,18 +146,20 @@ export class CommunityService {
     communityId: string,
     manager: { userId: string; profileId: string }
   ): Observable<CommunityManagerRecord> {
-    return this.http.post<CommunityManagerRecord>(
-      `${this.API_URL}/${communityId}/manager`,
+    return this.social.communitiesControllerAppointManager<CommunityManagerRecord>(
+      communityId,
       manager
     );
   }
 
   revokeManager(communityId: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${communityId}/manager`);
+    return this.social.communitiesControllerRevokeManager<void>(communityId);
   }
 
   getCities(): Observable<CommunityDto[]> {
-    return this.http.get<CommunityDto[]>(`${this.API_URL}?localityType=city`);
+    return this.social.communitiesControllerListCommunities<CommunityDto[]>({
+      localityType: 'city',
+    });
   }
 
   getCity(id: string): Observable<CommunityDto> {

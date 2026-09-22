@@ -144,10 +144,12 @@ describe('StoreService', () => {
         expect(response).toBeTruthy();
       });
 
-      const req = httpMock.expectOne('/api/store/donations');
+      const req = httpMock.expectOne('/api/payments/donations');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({
-        ...donationRequest,
+        amount: 50,
+        message: 'Test donation',
+        anonymous: false,
         currency: 'USD',
       });
       req.flush({ success: true });
@@ -165,7 +167,7 @@ describe('StoreService', () => {
         expect(response).toBeTruthy();
       });
 
-      const req = httpMock.expectOne('/api/store/donations');
+      const req = httpMock.expectOne('/api/payments/donations');
       expect(req.request.method).toBe('POST');
       expect(req.request.body.currency).toBe('EUR');
       req.flush({ success: true });

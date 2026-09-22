@@ -145,7 +145,7 @@ describe('permissions, scopes, users and business site services', () => {
 
     it('reads a single profile', () => {
       service.getProfile('u1').subscribe();
-      const req = httpMock.expectOne('/api/profile/u1');
+      const req = httpMock.expectOne('/api/profile/by-id/u1');
       expect(req.request.method).toBe('GET');
       req.flush({ id: 'u1' });
     });

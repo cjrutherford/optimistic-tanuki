@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { HttpHeaders, HttpParams } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/chat-ui-data-access';
 
 export interface ChatConversation {
   id: string;
@@ -31,6 +31,7 @@ export interface CreateDirectChatDto {
 
 export interface CreateCommunityChatDto {
   communityId: string;
+  ownerId: string;
   name?: string;
 }
 
@@ -38,27 +39,48 @@ export interface CreateCommunityChatDto {
   providedIn: 'root',
 })
 export class ChatService {
-  private baseUrl: string;
-  private readonly http = inject(HttpClient);
-
-  constructor() {
-    this.baseUrl = '/api/chat';
-  }
+  private readonly chat = inject(OptomisitcTanukiAPIService);
 
   getConversations(profileId: string): Promise<ChatConversation[]> {
-    return firstValueFrom(
-      this.http.get<ChatConversation[]>(
-        `${this.baseUrl}/conversations/find?profileId=${profileId}`
-      )
-    ) as Promise<ChatConversation[]>;
+    // The route reads the reader from the session; profileId stays for
+    // call-site stability but no longer travels as a query param.
+    void profileId;
+    return firstValueFrom(this.chat.chatControllerGetConversations()).then(
+      (conversations) =>
+        conversations.map(
+          (conversation) =>
+            ({
+              id: conversation.id,
+              title: conversation.title,
+              type: conversation.type,
+              communityId: conversation.communityId,
+              ownerId: conversation.ownerId,
+              participants: conversation.participants,
+              isDeleted: conversation.isDeleted,
+              createdAt: conversation.createdAt,
+              updatedAt: conversation.updatedAt,
+            } as unknown as ChatConversation)
+        )
+    );
   }
 
   getConversation(conversationId: string): Promise<ChatConversation> {
     return firstValueFrom(
-      this.http.get<ChatConversation>(
-        `${this.baseUrl}/conversations/id/${conversationId}`
-      )
-    ) as Promise<ChatConversation>;
+      this.chat.chatControllerGetConversation(conversationId)
+    ).then(
+      (conversation) =>
+        ({
+          id: conversation.id ?? conversationId,
+          title: conversation.title,
+          type: conversation.type,
+          communityId: conversation.communityId,
+          ownerId: conversation.ownerId,
+          participants: conversation.participants,
+          isDeleted: conversation.isDeleted,
+          createdAt: conversation.createdAt,
+          updatedAt: conversation.updatedAt,
+        } as unknown as ChatConversation)
+    );
   }
 
   getMessages(conversationId: string): Promise<ChatMessage[]> {
@@ -69,14 +91,24 @@ export class ChatService {
     });
 
     return firstValueFrom(
-      this.http.get<ChatMessage[]>(
-        `${this.baseUrl}/messages/${conversationId}`,
-        {
-          params,
-          headers,
-        }
+      this.chat.chatControllerGetMessages(conversationId, { params, headers })
+    ).then((messages) =>
+      messages.map(
+        (message) =>
+          ({
+            id: message.id,
+            conversationId: message.conversationId,
+            senderId: message.senderId,
+            content: message.content,
+            type: message.type,
+            recipients:
+              (message as unknown as { recipients?: string[] }).recipients ??
+              message.recipientIds ??
+              [],
+            createdAt: message.createdAt,
+          } as unknown as ChatMessage)
       )
-    ) as Promise<ChatMessage[]>;
+    );
   }
 
   createDirectChat(dto: CreateDirectChatDto): Promise<ChatConversation> {
@@ -85,28 +117,40 @@ export class ChatService {
 
   getOrCreateDirectChat(recipientProfileId: string): Promise<ChatConversation> {
     return firstValueFrom(
-      this.http.post<ChatConversation>(
-        `${this.baseUrl}/conversations/direct/get-or-create`,
-        {
-          recipientProfileId,
-        }
-      )
-    ) as Promise<ChatConversation>;
+      this.chat.chatControllerGetOrCreateDirectChat({ recipientProfileId })
+    ).then(
+      (conversation) =>
+        ({
+          id: conversation.id,
+          title: conversation.title,
+          type: conversation.type,
+          communityId: conversation.communityId,
+          ownerId: conversation.ownerId,
+          participants: conversation.participants,
+          isDeleted: conversation.isDeleted,
+          createdAt: conversation.createdAt,
+          updatedAt: conversation.updatedAt,
+        } as unknown as ChatConversation)
+    );
   }
 
   createCommunityChat(dto: CreateCommunityChatDto): Promise<ChatConversation> {
     return firstValueFrom(
-      this.http.post<ChatConversation>(
-        `${this.baseUrl}/conversations/community`,
-        dto
-      )
-    ) as Promise<ChatConversation>;
-  }
-
-  deleteConversation(conversationId: string): Promise<void> {
-    return firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/conversations/${conversationId}`)
-    ) as Promise<void>;
+      this.chat.chatControllerCreateCommunityChat(dto)
+    ).then(
+      (conversation) =>
+        ({
+          id: conversation.id,
+          title: conversation.title,
+          type: conversation.type,
+          communityId: conversation.communityId,
+          ownerId: conversation.ownerId,
+          participants: conversation.participants,
+          isDeleted: conversation.isDeleted,
+          createdAt: conversation.createdAt,
+          updatedAt: conversation.updatedAt,
+        } as unknown as ChatConversation)
+    );
   }
 
   sendMessage(message: {
@@ -115,9 +159,24 @@ export class ChatService {
     senderId: string;
     recipientIds: string[];
   }): Promise<ChatMessage> {
-    return firstValueFrom(
-      this.http.post<ChatMessage>(`${this.baseUrl}/messages`, message)
-    ) as Promise<ChatMessage>;
+    // The gateway binds senderId from the session and overwrites any client
+    // value, so it no longer travels (previously rode along unused).
+    const { senderId: _senderId, ...body } = message;
+    return firstValueFrom(this.chat.chatControllerSendMessage(body)).then(
+      (sent) =>
+        ({
+          id: sent.id,
+          conversationId: sent.conversationId,
+          senderId: sent.senderId,
+          content: sent.content,
+          type: sent.type,
+          recipients:
+            (sent as unknown as { recipients?: string[] }).recipients ??
+            sent.recipientIds ??
+            [],
+          createdAt: sent.createdAt,
+        } as unknown as ChatMessage)
+    );
   }
 
   async startDirectChat(otherProfileId: string): Promise<ChatConversation> {

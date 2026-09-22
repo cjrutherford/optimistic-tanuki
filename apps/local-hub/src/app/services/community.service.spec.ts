@@ -181,7 +181,7 @@ describe('CommunityService', () => {
 
     const lookupPromise = service.getCitySlugForCommunity('starland-makers');
 
-    httpMock.expectOne('/api/communities/slug/starland-makers').flush({
+    httpMock.expectOne('/api/social/community/slug/starland-makers').flush({
       id: 'makers',
       name: 'Starland Makers',
       slug: 'starland-makers',
@@ -254,7 +254,7 @@ describe('CommunityService', () => {
     );
 
     const request = httpMock.expectOne(
-      '/api/communities/community-123/chat-room'
+      '/api/social/community/community-123/chat-room'
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
@@ -327,7 +327,7 @@ describe('CommunityService', () => {
       const promise = service.getSubCommunities('savannah');
 
       httpMock
-        .expectOne('/api/communities/savannah/sub-communities')
+        .expectOne('/api/social/community/savannah/sub-communities')
         .flush([makeCommunity({ id: 'makers', slug: 'starland-makers' })]);
 
       const subs = await promise;
@@ -338,7 +338,7 @@ describe('CommunityService', () => {
       const promise = service.getSubCommunities('savannah');
 
       httpMock
-        .expectOne('/api/communities/savannah/sub-communities')
+        .expectOne('/api/social/community/savannah/sub-communities')
         .flush(null);
 
       await expect(promise).resolves.toEqual([]);
@@ -351,7 +351,9 @@ describe('CommunityService', () => {
     it('joins a community with an empty body', async () => {
       const promise = service.joinCommunity('community-1');
 
-      const request = httpMock.expectOne('/api/communities/community-1/join');
+      const request = httpMock.expectOne(
+        '/api/social/community/community-1/join'
+      );
       expect(request.request.method).toBe('POST');
       expect(request.request.body).toEqual({});
       request.flush({ status: 'joined' });
@@ -359,13 +361,13 @@ describe('CommunityService', () => {
       await expect(promise).resolves.toEqual({ status: 'joined' });
     });
 
-    it('leaves a community by deleting the membership', async () => {
+    it('leaves a community via the canonical leave route', async () => {
       const promise = service.leaveCommunity('community-1');
 
       const request = httpMock.expectOne(
-        '/api/communities/community-1/membership'
+        '/api/social/community/community-1/leave'
       );
-      expect(request.request.method).toBe('DELETE');
+      expect(request.request.method).toBe('POST');
       request.flush(null);
 
       await expect(promise).resolves.toBeNull();
@@ -375,7 +377,7 @@ describe('CommunityService', () => {
       const promise = service.isMember('community-1');
 
       const request = httpMock.expectOne(
-        '/api/communities/community-1/membership'
+        '/api/social/community/community-1/membership'
       );
       expect(request.request.method).toBe('GET');
       request.flush(true);
@@ -430,7 +432,7 @@ describe('CommunityService', () => {
     it('fetches the elected community manager', async () => {
       const promise = service.getCommunityManager('community-1');
 
-      httpMock.expectOne('/api/communities/community-1/manager').flush({
+      httpMock.expectOne('/api/social/community/community-1/manager').flush({
         userId: 'u1',
         profileId: 'p1',
         name: 'Ada',
@@ -445,7 +447,7 @@ describe('CommunityService', () => {
       const promise = service.getCommunityManager('community-1');
 
       httpMock
-        .expectOne('/api/communities/community-1/manager')
+        .expectOne('/api/social/community/community-1/manager')
         .flush('boom', { status: 404, statusText: 'Not Found' });
 
       await expect(promise).resolves.toBeNull();
@@ -454,7 +456,7 @@ describe('CommunityService', () => {
     it('fetches the active election', async () => {
       const promise = service.getActiveElection('community-1');
 
-      httpMock.expectOne('/api/communities/community-1/election').flush({
+      httpMock.expectOne('/api/social/community/community-1/election').flush({
         id: 'e1',
         communityId: 'community-1',
         status: 'open',
@@ -470,7 +472,7 @@ describe('CommunityService', () => {
       const promise = service.getActiveElection('community-1');
 
       httpMock
-        .expectOne('/api/communities/community-1/election')
+        .expectOne('/api/social/community/community-1/election')
         .flush('boom', { status: 500, statusText: 'Server Error' });
 
       await expect(promise).resolves.toBeNull();
@@ -480,7 +482,7 @@ describe('CommunityService', () => {
       const promise = service.nominateForManager('community-1');
 
       const request = httpMock.expectOne(
-        '/api/communities/community-1/election/nominate'
+        '/api/social/community/community-1/election/nominate'
       );
       expect(request.request.body).toEqual({});
       request.flush({
@@ -498,7 +500,7 @@ describe('CommunityService', () => {
       const promise = service.nominateForManager('community-1', 'u2');
 
       const request = httpMock.expectOne(
-        '/api/communities/community-1/election/nominate'
+        '/api/social/community/community-1/election/nominate'
       );
       expect(request.request.body).toEqual({ nomineeId: 'u2' });
       request.flush({
@@ -516,7 +518,7 @@ describe('CommunityService', () => {
       const promise = service.voteForManager('community-1', 'u2');
 
       const request = httpMock.expectOne(
-        '/api/communities/community-1/election/vote'
+        '/api/social/community/community-1/election/vote'
       );
       expect(request.request.body).toEqual({ candidateUserId: 'u2' });
       request.flush({
@@ -562,7 +564,7 @@ describe('CommunityService', () => {
       const promise = service.getCityBySlug('savannah-ga');
 
       httpMock
-        .expectOne('/api/communities/slug/savannah-ga')
+        .expectOne('/api/social/community/slug/savannah-ga')
         .flush(makeCommunity());
       await tick();
 
@@ -586,7 +588,7 @@ describe('CommunityService', () => {
     it('returns undefined when the slug does not belong to a root locality', async () => {
       const promise = service.getCityBySlug('starland-makers');
 
-      httpMock.expectOne('/api/communities/slug/starland-makers').flush(
+      httpMock.expectOne('/api/social/community/slug/starland-makers').flush(
         makeCommunity({
           id: 'makers',
           slug: 'starland-makers',
@@ -602,7 +604,7 @@ describe('CommunityService', () => {
       const promise = service.getCityBySlug('savannah-ga');
 
       httpMock
-        .expectOne('/api/communities/slug/savannah-ga')
+        .expectOne('/api/social/community/slug/savannah-ga')
         .flush('boom', { status: 500, statusText: 'Server Error' });
 
       await expect(promise).resolves.toBeUndefined();
@@ -616,7 +618,7 @@ describe('CommunityService', () => {
       const promise = service.getCitySlugForCommunity('savannah-ga');
 
       httpMock
-        .expectOne('/api/communities/slug/savannah-ga')
+        .expectOne('/api/social/community/slug/savannah-ga')
         .flush(makeCommunity());
 
       await expect(promise).resolves.toBe('savannah-ga');
@@ -625,7 +627,7 @@ describe('CommunityService', () => {
     it('falls back to a root locality sharing the same city name', async () => {
       const promise = service.getCitySlugForCommunity('starland-makers');
 
-      httpMock.expectOne('/api/communities/slug/starland-makers').flush(
+      httpMock.expectOne('/api/social/community/slug/starland-makers').flush(
         makeCommunity({
           id: 'makers',
           slug: 'starland-makers',
@@ -643,7 +645,7 @@ describe('CommunityService', () => {
     it('returns null when no root locality can be resolved', async () => {
       const promise = service.getCitySlugForCommunity('starland-makers');
 
-      httpMock.expectOne('/api/communities/slug/starland-makers').flush(
+      httpMock.expectOne('/api/social/community/slug/starland-makers').flush(
         makeCommunity({
           id: 'makers',
           slug: 'starland-makers',
@@ -663,7 +665,7 @@ describe('CommunityService', () => {
       const promise = service.getCitySlugForCommunity('nope');
 
       httpMock
-        .expectOne('/api/communities/slug/nope')
+        .expectOne('/api/social/community/slug/nope')
         .flush('boom', { status: 404, statusText: 'Not Found' });
 
       await expect(promise).resolves.toBeNull();
@@ -673,18 +675,20 @@ describe('CommunityService', () => {
       const promise = service.getCommunitiesForCity('savannah-ga');
 
       httpMock
-        .expectOne('/api/communities/slug/savannah-ga')
+        .expectOne('/api/social/community/slug/savannah-ga')
         .flush(makeCommunity());
       await tick();
 
-      httpMock.expectOne('/api/communities/savannah/sub-communities').flush([
-        makeCommunity({
-          id: 'makers',
-          slug: 'starland-makers',
-          parentId: 'savannah',
-          localityType: 'neighborhood',
-        }),
-      ]);
+      httpMock
+        .expectOne('/api/social/community/savannah/sub-communities')
+        .flush([
+          makeCommunity({
+            id: 'makers',
+            slug: 'starland-makers',
+            parentId: 'savannah',
+            localityType: 'neighborhood',
+          }),
+        ]);
       await tick();
 
       httpMock.expectOne('/api/communities').flush([
@@ -719,7 +723,7 @@ describe('CommunityService', () => {
       const promise = service.getCommunitiesForCity('savannah-ga');
 
       httpMock
-        .expectOne('/api/communities/slug/savannah-ga')
+        .expectOne('/api/social/community/slug/savannah-ga')
         .flush('boom', { status: 500, statusText: 'Server Error' });
 
       await expect(promise).resolves.toEqual([]);
@@ -890,7 +894,7 @@ describe('CommunityService', () => {
     it('maps posts for a single community', async () => {
       const promise = service.getPostsForCommunity('starland-makers');
 
-      httpMock.expectOne('/api/communities/slug/starland-makers').flush(
+      httpMock.expectOne('/api/social/community/slug/starland-makers').flush(
         makeCommunity({
           id: 'makers',
           slug: 'starland-makers',
@@ -913,7 +917,7 @@ describe('CommunityService', () => {
       const promise = service.getPostsForCommunity('starland-makers');
 
       httpMock
-        .expectOne('/api/communities/slug/starland-makers')
+        .expectOne('/api/social/community/slug/starland-makers')
         .flush({ slug: 'starland-makers' });
 
       await expect(promise).resolves.toEqual([]);
@@ -923,7 +927,7 @@ describe('CommunityService', () => {
       const promise = service.getPostsForCommunity('starland-makers');
 
       httpMock
-        .expectOne('/api/communities/slug/starland-makers')
+        .expectOne('/api/social/community/slug/starland-makers')
         .flush('boom', { status: 500, statusText: 'Server Error' });
 
       await expect(promise).resolves.toEqual([]);

@@ -39,7 +39,7 @@ describe('CommunityService', () => {
 
   it('reads a single community', () => {
     service.getCommunity('c1').subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'c1' });
   });
@@ -54,16 +54,19 @@ describe('CommunityService', () => {
   it('creates a community', () => {
     const dto = { name: 'Neighbours' } as never;
     service.createCommunity(dto).subscribe();
-    const req = httpMock.expectOne('/api/communities');
+    const req = httpMock.expectOne('/api/social/community');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(dto);
+    expect(req.request.body).toEqual({
+      name: 'Neighbours',
+      createChatRoom: true,
+    });
     req.flush({ id: 'c2' });
   });
 
   it('updates a community', () => {
     const dto = { name: 'Renamed' } as never;
     service.updateCommunity('c1', dto).subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual(dto);
     req.flush({ id: 'c1' });
@@ -71,14 +74,14 @@ describe('CommunityService', () => {
 
   it('deletes a community', () => {
     service.deleteCommunity('c1').subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
 
   it('lists community members', () => {
     service.getCommunityMembers('c1').subscribe();
-    const req = httpMock.expectOne('/api/communities/c1/members');
+    const req = httpMock.expectOne('/api/social/community/c1/members');
     expect(req.request.method).toBe('GET');
     req.flush([]);
   });
@@ -147,32 +150,33 @@ describe('CommunityService', () => {
 
   it('reads a city through the community endpoint', () => {
     service.getCity('c1').subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'c1' });
   });
 
   it('creates a city with the CITY locality type forced on', () => {
     service.createCity({ name: 'Springfield' } as never).subscribe();
-    const req = httpMock.expectOne('/api/communities');
+    const req = httpMock.expectOne('/api/social/community');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
       name: 'Springfield',
       localityType: LocalityType.CITY,
+      createChatRoom: true,
     });
     req.flush({ id: 'c3' });
   });
 
   it('updates a city through the community endpoint', () => {
     service.updateCity('c1', { name: 'Shelbyville' } as never).subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('PUT');
     req.flush({ id: 'c1' });
   });
 
   it('deletes a city through the community endpoint', () => {
     service.deleteCity('c1').subscribe();
-    const req = httpMock.expectOne('/api/communities/c1');
+    const req = httpMock.expectOne('/api/social/community/c1');
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });

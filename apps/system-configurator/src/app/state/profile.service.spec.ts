@@ -112,7 +112,10 @@ describe('ProfileService', () => {
       name: 'New',
     } as never);
     const req = httpMock.expectOne('/api/profile');
-    expect(req.request.body.appScope).toBe('system-configurator');
+    // appScope travels via the scope decorator, not the body; appId selects
+    // AI-orchestrator initialization.
+    expect(req.request.body.appId).toBe('system-configurator');
+    expect(req.request.body.appScope).toBeUndefined();
     req.flush(profile({ id: 'created' }));
 
     const created = await promise;
