@@ -1251,6 +1251,12 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/telos/contracts:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   libs/theme-lib:
     dependencies:
       '@angular/common':
