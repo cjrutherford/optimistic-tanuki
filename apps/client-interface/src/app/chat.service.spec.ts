@@ -68,7 +68,6 @@ describe('ClientInterface ChatService', () => {
     expect(request.request.body).toEqual({
       conversationId: 'room-1',
       content: 'hello',
-      senderId: 'profile-1',
       recipientIds: ['profile-2'],
     });
 
@@ -111,9 +110,7 @@ describe('ClientInterface ChatService', () => {
   it('lists conversations for a profile', async () => {
     const promise = service.getConversations('profile-1');
 
-    const request = httpMock.expectOne(
-      '/api/chat/conversations/find?profileId=profile-1'
-    );
+    const request = httpMock.expectOne('/api/chat/conversations/find');
     expect(request.request.method).toBe('GET');
     request.flush([{ id: 'conversation-1' }]);
 
@@ -160,6 +157,7 @@ describe('ClientInterface ChatService', () => {
   it('creates a community chat', async () => {
     const promise = service.createCommunityChat({
       communityId: 'c1',
+      ownerId: 'profile-1',
       name: 'General',
     });
 
@@ -167,22 +165,11 @@ describe('ClientInterface ChatService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       communityId: 'c1',
+      ownerId: 'profile-1',
       name: 'General',
     });
     request.flush({ id: 'conversation-1' });
 
     await expect(promise).resolves.toEqual({ id: 'conversation-1' });
-  });
-
-  it('deletes a conversation', async () => {
-    const promise = service.deleteConversation('conversation-1');
-
-    const request = httpMock.expectOne(
-      '/api/chat/conversations/conversation-1'
-    );
-    expect(request.request.method).toBe('DELETE');
-    request.flush(null);
-
-    await expect(promise).resolves.toBeNull();
   });
 });

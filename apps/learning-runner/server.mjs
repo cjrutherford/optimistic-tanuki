@@ -184,7 +184,11 @@ function sandboxed(
           const fields = stat.slice(closingParen + 2).split(' ');
           if (fields[2] === String(child.pid)) count++;
         } catch (error) {
-          if (error?.code !== 'ENOENT') throw error;
+          // The process exited between readdir and read. Depending on the
+          // kernel this surfaces as ENOENT or ESRCH; either way it is gone
+          // and contributes nothing to the group size. Anything else is a
+          // real failure and still fails closed below.
+          if (error?.code !== 'ENOENT' && error?.code !== 'ESRCH') throw error;
         }
       }
       return count;

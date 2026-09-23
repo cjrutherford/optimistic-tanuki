@@ -70,7 +70,7 @@ export class ProfileTelosService {
   async update(
     id: string,
     data: UpdateProfileTelosDto
-  ): Promise<ProfileTelos | null> {
+  ): Promise<ProfileTelosDto | null> {
     await this.profileRepository.update(id, data);
     return await this.findOne(id);
   }

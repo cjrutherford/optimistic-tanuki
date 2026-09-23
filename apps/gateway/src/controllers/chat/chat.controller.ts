@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
@@ -18,6 +23,13 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { ProfileDto } from '@optimistic-tanuki/models';
+import {
+  ChatMessageDto,
+  ConversationDto,
+  CreateCommunityChatDto,
+  GetOrCreateDirectChatBodyDto,
+  SendMessageDto,
+} from '@optimistic-tanuki/chat-contracts';
 
 @ApiBearerAuth()
 @ApiTags('chat')
@@ -32,6 +44,8 @@ export class ChatController {
   ) {}
 
   @Get('conversations/find')
+  @ApiOperation({ summary: 'List conversations for the authenticated profile' })
+  @ApiResponse({ status: 200, type: [ConversationDto] })
   async getConversations(@User() user: UserDetails) {
     return this.forward(
       { cmd: ChatCommands.GET_CONVERSATIONS },
@@ -41,6 +55,8 @@ export class ChatController {
   }
 
   @Get('conversations/id/:conversationId')
+  @ApiOperation({ summary: 'Get one conversation by id' })
+  @ApiResponse({ status: 200, type: ConversationDto })
   async getConversation(
     @Param('conversationId') conversationId: string,
     @User() user: UserDetails
@@ -53,8 +69,10 @@ export class ChatController {
   }
 
   @Post('conversations/direct/get-or-create')
+  @ApiOperation({ summary: 'Get or create a direct conversation' })
+  @ApiResponse({ status: 201, type: ConversationDto })
   async getOrCreateDirectChat(
-    @Body() body: { recipientProfileId: string },
+    @Body() body: GetOrCreateDirectChatBodyDto,
     @User() user: UserDetails,
     @AppScope() appScope: string
   ) {
@@ -104,9 +122,9 @@ export class ChatController {
   }
 
   @Post('conversations/community')
-  async createCommunityChat(
-    @Body() body: { communityId: string; ownerId: string; name?: string }
-  ) {
+  @ApiOperation({ summary: 'Create a community conversation' })
+  @ApiResponse({ status: 201, type: ConversationDto })
+  async createCommunityChat(@Body() body: CreateCommunityChatDto) {
     return this.forward(
       { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
       body,
@@ -115,6 +133,8 @@ export class ChatController {
   }
 
   @Get('messages/:conversationId')
+  @ApiOperation({ summary: 'List messages in a conversation' })
+  @ApiResponse({ status: 200, type: [ChatMessageDto] })
   async getMessages(
     @Param('conversationId') conversationId: string,
     @User() user: UserDetails
@@ -129,13 +149,11 @@ export class ChatController {
   }
 
   @Post('messages')
+  @ApiOperation({ summary: 'Send a message (sender from session)' })
+  @ApiResponse({ status: 201, type: ChatMessageDto })
   async sendMessage(
     @Body()
-    body: {
-      conversationId: string;
-      content: string;
-      recipientIds: string[];
-    },
+    body: SendMessageDto,
     @User() user: UserDetails
   ) {
     return this.forward(

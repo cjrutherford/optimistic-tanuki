@@ -2,8 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
-import { FinancialInvoiceLine, FinanceWorkspace } from '../models';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import {
+  FinancialInvoiceLine,
+  FinanceWorkspace,
+} from '@optimistic-tanuki/finance-data-access';
 import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 @Component({

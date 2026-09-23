@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import {
   ContactCommands,
   LeadCommands,
@@ -50,6 +51,7 @@ type ContactLeadRoutingConfig = {
   appScopes?: Record<string, ContactLeadRoutingEntry>;
 };
 
+@ApiTags('contact')
 @Controller('contact')
 export class ContactController {
   constructor(
@@ -148,6 +150,9 @@ export class ContactController {
   @Get('leads')
   @UseGuards(AuthGuard, PermissionsGuard)
   @RequirePermissions('app-config.update')
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'source', required: false })
+  @ApiQuery({ name: 'appScope', required: false })
   async findAllLeads(
     @User() user: UserDetails,
     @Query('status') status?: string,

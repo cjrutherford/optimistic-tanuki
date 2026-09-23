@@ -66,7 +66,8 @@ export interface ConversationDataStore {
     messageCount: number;
   };
 }
-import { PersonaTelosDto, ProfileDto } from '@optimistic-tanuki/models';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 
 export interface ToolCall {
   id: string;

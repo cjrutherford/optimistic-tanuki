@@ -139,6 +139,7 @@ describe('FinCommanderPlanApiService', () => {
       const req = httpMock.expectOne(`${baseUrl}/plan/p1/goal`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({
+        planId: 'p1',
         name: 'Emergency fund',
         targetAmountCents: 100000,
         currentAmountCents: 5000,
@@ -259,6 +260,7 @@ describe('FinCommanderPlanApiService', () => {
       const promise = service.saveScenario(scope, scenario);
       const req = httpMock.expectOne(`${baseUrl}/plan/p1/scenario`);
       expect(req.request.body).toEqual({
+        planId: 'p1',
         name: 'Base case',
         summary: 'summary',
         assumptions: { rate: 0.05 },

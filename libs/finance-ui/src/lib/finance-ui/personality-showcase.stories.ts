@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { FinanceService } from './services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 
 const financeServiceStub = {
   getWorkspaceSummary: async () => ({

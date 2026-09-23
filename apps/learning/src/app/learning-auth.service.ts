@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { EMPTY, Observable, catchError, map, of, tap } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/learning-ui-data-access';
 
 export interface SignedInPerson {
   name: string;
@@ -17,6 +18,7 @@ export interface SignedInPerson {
 @Injectable({ providedIn: 'root' })
 export class LearningAuthService {
   private readonly http = inject(HttpClient);
+  private readonly learning = inject(OptomisitcTanukiAPIService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   login(email: string, password: string): Observable<unknown> {
@@ -89,7 +91,7 @@ export class LearningAuthService {
    */
   me(): Observable<SignedInPerson | null> {
     if (!this.isBrowser) return EMPTY;
-    return this.http.get<{ name?: string }>('/api/learning/me').pipe(
+    return this.learning.learningControllerGetMe<{ name?: string }>().pipe(
       map((profile) => (profile?.name ? { name: profile.name } : null)),
       catchError(() => of(null))
     );

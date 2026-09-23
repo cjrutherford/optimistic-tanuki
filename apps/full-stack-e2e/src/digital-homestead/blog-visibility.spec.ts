@@ -125,7 +125,7 @@ test.describe('Digital Homestead Blog Visibility', () => {
 
     // Create Published Post
     // Note: API might default to draft, so we might need to publish it or set isDraft=false
-    const pubPostResp = await request.post('/api/post', {
+    const pubPostResp = await request.post('/api/blog-posts', {
       headers: {
         Authorization: `Bearer ${effectiveToken}`,
         'x-ot-appscope': 'digital-homestead',
@@ -141,7 +141,7 @@ test.describe('Digital Homestead Blog Visibility', () => {
     expect(pubPostResp.ok()).toBeTruthy();
 
     // Create Draft Post
-    const draftPostResp = await request.post('/api/post', {
+    const draftPostResp = await request.post('/api/blog-posts', {
       headers: {
         Authorization: `Bearer ${effectiveToken}`,
         'x-ot-appscope': 'digital-homestead',

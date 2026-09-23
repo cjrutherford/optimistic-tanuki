@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
   Logger,
   Inject,
@@ -15,7 +16,13 @@ import {
 } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../../auth/auth.guard';
 import { firstValueFrom } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 export interface RecordViewDto {
   profileId: string;
@@ -49,6 +56,17 @@ export class ProfileAnalyticsController {
     status: 201,
     description: 'The profile view has been recorded.',
   })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        profileId: { type: 'string' },
+        viewerId: { type: 'string' },
+        source: { type: 'string' },
+      },
+      required: ['profileId', 'viewerId', 'source'],
+    },
+  })
   async recordView(@Body() recordViewDto: RecordViewDto) {
     return await firstValueFrom(
       this.socialClient.send(
@@ -81,9 +99,12 @@ export class ProfileAnalyticsController {
     status: 200,
     description: 'The recent viewers have been retrieved.',
   })
+  @ApiQuery({ name: 'limit', required: false })
   async getRecentViewers(
     @Param('profileId') profileId: string,
-    @Param('limit') limit?: number
+    // Query (not path): `limit` arrives as `?limit=` — previously misdeclared
+    // as a path param, so it never bound and always fell back to 10.
+    @Query('limit') limit?: number
   ) {
     return await firstValueFrom(
       this.socialClient.send(

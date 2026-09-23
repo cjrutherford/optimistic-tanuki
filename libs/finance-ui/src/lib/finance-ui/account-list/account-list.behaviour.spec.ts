@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AccountListComponent } from './account-list.component';
-import { FinanceService } from '../services/finance.service';
-import type { Account } from '../models';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import type { Account } from '@optimistic-tanuki/finance-data-access';
 
 type Formatter = (params: { value: unknown }) => string;
 

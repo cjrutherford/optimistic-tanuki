@@ -44,7 +44,7 @@ test.describe('Store Donations E2E', () => {
 
   test('should submit donation with mocked API', async ({ page }) => {
     // Mock the donation API
-    await page.route('**/api/store/donations', (route) => {
+    await page.route('**/api/payments/donations', (route) => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -84,7 +84,7 @@ test.describe('Store Donations E2E', () => {
 
   test('should handle donation API error', async ({ page }) => {
     // Mock API error
-    await page.route('**/api/store/donations', (route) => {
+    await page.route('**/api/payments/donations', (route) => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',

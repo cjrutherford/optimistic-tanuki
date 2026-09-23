@@ -5,7 +5,7 @@
  * to ensure the LLM can accurately call tools with correct parameters.
  */
 
-import { ProfileDto } from '@optimistic-tanuki/models';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 
 /**
  * Generate the core system prompt including user context and strict invariants

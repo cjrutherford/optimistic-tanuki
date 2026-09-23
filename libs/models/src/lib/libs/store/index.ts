@@ -1,5 +1,4 @@
-export * from './product.dto';
-export * from './catalog.dto';
-export * from './subscription.dto';
-export * from './donation.dto';
-export * from './order.dto';
+// Canonical home is `@optimistic-tanuki/store-contracts` (promoted per the
+// bounded-context plan — single source, no shape duplication). This barrel
+// re-exports for back-compat; new code imports from `store-contracts`.
+export * from '@optimistic-tanuki/store-contracts';

@@ -991,7 +991,7 @@ services:
       dockerfile: ./apps/learning-service/Dockerfile
     image: cjrutherford/optimistic_tanuki_learning-service:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${LEARNING_SERVICE_PORT:-3024}:3024'
+      - '${LEARNING_SERVICE_PORT:-3026}:3024'
     environment:
       # Shared credentials, so a production deployment picks up the real
       # POSTGRES_* values instead of the hardcoded local defaults this

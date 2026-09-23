@@ -16,17 +16,17 @@ import { ClientProxy } from '@nestjs/microservices';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import {
   PersonaTelosDto,
-  ProfileDto,
   ProfileTelosDto,
   ProjectTelosDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   PersonaTelosCommands,
-  ProfileCommands,
   ProfileTelosCommands,
   ProjectTelosCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+} from '@optimistic-tanuki/telos-contracts';
+import { ProfileCommands } from '@optimistic-tanuki/profile-contracts';
 import { firstValueFrom } from 'rxjs';
 
 export interface TelosContext {

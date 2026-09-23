@@ -1,10 +1,10 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import {
   CreateProfileDto,
   ProfileDto,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from './auth-state.service';
 
@@ -16,12 +16,12 @@ export class ProfileService {
   currentUserProfile = signal<ProfileDto | null>(null);
 
   private readonly appScope = 'business-configurator';
-  private readonly http = inject(HttpClient);
+  private readonly profiles = inject(OptomisitcTanukiAPIService);
   private readonly authState = inject(AuthStateService);
 
   async getAllProfiles(): Promise<void> {
     const profiles = await firstValueFrom(
-      this.http.get<ProfileDto[]>('/api/profile')
+      this.profiles.profileControllerGetAllProfiles<ProfileDto[]>()
     );
     const userId = this.authState.getDecodedTokenValue()?.userId;
     const scopedProfiles = profiles.filter(
@@ -80,18 +80,18 @@ export class ProfileService {
 
   async createProfile(profile: CreateProfileDto): Promise<ProfileDto> {
     const tokenValue = this.authState.getDecodedTokenValue();
+    // appScope travels via the scope decorator, not the body; appId selects
+    // AI-orchestrator initialization.
     const response = await firstValueFrom(
-      this.http.post<ProfileDto | { profile: ProfileDto; newToken?: string }>(
-        '/api/profile',
-        {
-          ...profile,
-          userId: tokenValue?.userId || profile.userId,
-          appScope: this.appScope,
-          appId: this.appScope,
-          profilePic: profile.profilePic || '',
-          coverPic: profile.coverPic || '',
-        }
-      )
+      this.profiles.profileControllerCreateProfile<
+        ProfileDto | { profile: ProfileDto; newToken?: string }
+      >({
+        ...profile,
+        userId: tokenValue?.userId || profile.userId,
+        appId: this.appScope,
+        profilePic: profile.profilePic || '',
+        coverPic: profile.coverPic || '',
+      })
     );
 
     const created = 'profile' in response ? response.profile : response;
@@ -107,7 +107,7 @@ export class ProfileService {
     profile: UpdateProfileDto
   ): Promise<ProfileDto> {
     const updated = await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
+      this.profiles.profileControllerUpdateProfile<ProfileDto>(id, profile)
     );
     const profiles = this.getCurrentUserProfiles().map((current) =>
       current.id === updated.id ? updated : current

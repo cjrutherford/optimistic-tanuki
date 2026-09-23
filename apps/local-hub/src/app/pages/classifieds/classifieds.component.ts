@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -41,6 +42,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   private assetService = inject(AssetService);
   private messageService = inject(MessageService);
   private http = inject(HttpClient);
+  private profiles = inject(ProfileAPIService);
   private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
@@ -245,7 +247,9 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
 
     try {
       const profiles = await firstValueFrom(
-        this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+        this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+          ids: profileIds,
+        })
       );
       const profileMap = new Map(
         profiles.map((profile) => [profile.id, profile])

@@ -14,12 +14,10 @@ import {
 } from '@langchain/core/messages';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import {
-  ChatMessage,
-  PersonaTelosDto,
-  ProfileDto,
-  ToolResult,
-} from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
+import { ToolResult } from '@optimistic-tanuki/models';
 import { MCPToolExecutor } from './mcp-tool-executor';
 import { ToolsService } from './tools.service';
 import { ConfigService } from '@nestjs/config';

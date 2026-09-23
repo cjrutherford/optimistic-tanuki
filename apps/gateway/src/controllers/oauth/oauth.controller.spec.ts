@@ -237,6 +237,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         response,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined
@@ -284,6 +285,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         response,
+        'google',
         'http://forgeofwill.localhost:8081/login',
         'forgeofwill',
         'forgeofwill.localhost'
@@ -318,6 +320,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         response,
+        'google',
         'http://localhost:8080/login',
         'client-interface',
         'localhost'
@@ -347,6 +350,7 @@ describe('OAuthController', () => {
         controller.startOAuth(
           request,
           { redirect: jest.fn(), cookie: jest.fn() } as any,
+          'google',
           'https://optimistic-tanuki.example/login',
           'owner-console',
           undefined
@@ -359,6 +363,7 @@ describe('OAuthController', () => {
         controller.startOAuth(
           request,
           { redirect: jest.fn(), cookie: jest.fn() } as any,
+          'google',
           'http://localhost:8081/login',
           'forgeofwill',
           undefined
@@ -383,6 +388,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         firstResponse,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined
@@ -392,6 +398,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         { ...request, cookies: { oauth_state_nonce: firstCookie } } as any,
         secondResponse,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined
@@ -419,6 +426,7 @@ describe('OAuthController', () => {
         controller.startOAuth(
           request,
           { redirect: jest.fn(), cookie: jest.fn() } as any,
+          'google',
           'https://optimistic-tanuki.example/login',
           'client-interface',
           undefined
@@ -444,6 +452,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         response,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined
@@ -472,6 +481,7 @@ describe('OAuthController', () => {
       await controller.startOAuth(
         request,
         response,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined
@@ -603,7 +613,8 @@ describe('OAuthController', () => {
           query: { code: 'provider-code', state: 'valid-state' },
           cookies: { oauth_state_nonce: '[]' },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(exchangeProviderCode).toHaveBeenCalledWith(
@@ -644,7 +655,8 @@ describe('OAuthController', () => {
           query: { code: 'provider-code', state: 'valid-state' },
           cookies: { oauth_state_nonce: '[]' },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(exchangeProviderCode).not.toHaveBeenCalled();
@@ -682,7 +694,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(authClient.send).not.toHaveBeenCalledWith(
@@ -736,7 +749,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(registerOAuthUser).not.toHaveBeenCalled();
@@ -802,7 +816,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'microsoft'
       );
 
       const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
@@ -856,7 +871,8 @@ describe('OAuthController', () => {
           query: { code: 'provider-code', state: 'state.signature' },
           cookies: {},
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(
@@ -1017,7 +1033,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(authClient.send).toHaveBeenCalledWith(
@@ -1081,7 +1098,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
       const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
       const callbackCode = callbackUrl.searchParams.get('callbackCode');
@@ -1150,7 +1168,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        replayResponse
+        replayResponse,
+        'google'
       );
       expect(replayResponse.status).toHaveBeenCalledWith(
         HttpStatus.BAD_REQUEST
@@ -1178,7 +1197,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
 
       expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
@@ -1272,7 +1292,8 @@ describe('OAuthController', () => {
             ]),
           },
         } as any,
-        response
+        response,
+        'google'
       );
 
       const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
@@ -1506,6 +1527,7 @@ describe('OAuthController', () => {
       await controller.startOAuthLink(
         { params: { provider: 'google' }, user: { userId: 'user-1' } } as any,
         response,
+        'google',
         'https://optimistic-tanuki.example/login',
         'client-interface',
         undefined

@@ -1,28 +1,30 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UsersService {
-  private readonly API_URL = '/api/profile';
-
-  constructor(private http: HttpClient) {}
+  private readonly profiles = inject(OptomisitcTanukiAPIService);
 
   getProfiles(): Observable<ProfileDto[]> {
-    return this.http.get<ProfileDto[]>(`${this.API_URL}`);
+    return this.profiles.profileControllerGetAllProfiles<ProfileDto[]>();
   }
 
   getProfile(id: string): Observable<ProfileDto> {
-    return this.http.get<ProfileDto>(`${this.API_URL}/${id}`);
+    // Canonical read (by-id adds telos back-fill); the legacy :id route stays.
+    return this.profiles.profileControllerGetProfileById<ProfileDto>(id);
   }
 
   updateProfile(
     id: string,
     profile: Partial<ProfileDto>
   ): Observable<ProfileDto> {
-    return this.http.put<ProfileDto>(`${this.API_URL}/${id}`, profile);
+    return this.profiles.profileControllerUpdateProfile<ProfileDto>(
+      id,
+      profile
+    );
   }
 }

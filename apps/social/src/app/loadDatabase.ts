@@ -23,8 +23,10 @@ import { UserPresence } from '../entities/user-presence.entity';
 import { ProfileView } from '../entities/profile-view.entity';
 import { ContentReport } from '../entities/content-report.entity';
 import { SearchHistory } from '../entities/search-history.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
 import { Event } from '../entities/event.entity';
+import { BusinessPageContent } from '../entities/business-page-content.entity';
+import { BusinessThemeContent } from '../entities/business-theme-content.entity';
+import { CommunitySponsorshipContent } from '../entities/community-sponsorship-content.entity';
 import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
@@ -53,8 +55,10 @@ const loadDatabase = (config: ConfigService) => {
     ProfileView,
     ContentReport,
     SearchHistory,
-    ChatMessage,
     Event,
+    BusinessPageContent,
+    BusinessThemeContent,
+    CommunitySponsorshipContent,
     Poll,
     PostShare,
   ];

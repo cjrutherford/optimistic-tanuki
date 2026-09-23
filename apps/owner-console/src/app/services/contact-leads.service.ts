@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   Lead,
   SendLeadResponseDto,
   UpdateLeadDto,
 } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 
 export interface LeadResponseResult {
   lead: Lead;
@@ -19,43 +19,38 @@ export interface LeadResponseResult {
   providedIn: 'root',
 })
 export class ContactLeadsService {
-  private readonly baseUrl = '/api/contact/leads';
-
-  constructor(private readonly http: HttpClient) {}
+  private readonly blogging = inject(OptomisitcTanukiAPIService);
 
   getLeads(filters?: {
     status?: string;
     source?: string;
     appScope?: string;
   }): Observable<Lead[]> {
-    let params = new HttpParams();
-    if (filters?.status) {
-      params = params.set('status', filters.status);
-    }
-    if (filters?.source) {
-      params = params.set('source', filters.source);
-    }
-    if (filters?.appScope) {
-      params = params.set('appScope', filters.appScope);
-    }
-    return this.http.get<Lead[]>(this.baseUrl, { params });
+    const { status, source, appScope } = filters || {};
+    return this.blogging.contactControllerFindAllLeads<Lead[]>({
+      ...(status ? { status } : {}),
+      ...(source ? { source } : {}),
+      ...(appScope ? { appScope } : {}),
+    });
   }
 
   getLead(id: string): Observable<Lead> {
-    return this.http.get<Lead>(`${this.baseUrl}/${id}`);
+    return this.blogging.contactControllerGetLead<Lead>(id);
   }
 
   updateLead(id: string, dto: UpdateLeadDto): Observable<Lead> {
-    return this.http.patch<Lead>(`${this.baseUrl}/${id}`, dto);
+    // Generated body types for these Record-bodied routes are free-form
+    // index signatures; spreading keeps the exact wire shape.
+    return this.blogging.contactControllerUpdateLead<Lead>(id, { ...dto });
   }
 
   respondToLead(
     id: string,
     dto: SendLeadResponseDto
   ): Observable<LeadResponseResult> {
-    return this.http.post<LeadResponseResult>(
-      `${this.baseUrl}/${id}/respond`,
-      dto
+    return this.blogging.contactControllerRespondToLead<LeadResponseResult>(
+      id,
+      { ...dto }
     );
   }
 }

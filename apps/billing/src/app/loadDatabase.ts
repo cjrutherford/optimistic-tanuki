@@ -1,6 +1,9 @@
 import { ConfigService } from '@nestjs/config';
 import {
   BillingAccountEntity,
+  BillingInvoiceEntity,
+  BillingSubscriptionEntity,
+  StoreProductPlanEntity,
   UsageBlockGrantEntity,
   UsageEventEntity,
 } from '@optimistic-tanuki/billing-data-access';
@@ -18,7 +21,14 @@ const loadDatabase = (
     username: database.username,
     password: database.password,
     database: database.database,
-    entities: [BillingAccountEntity, UsageEventEntity, UsageBlockGrantEntity],
+    entities: [
+      BillingAccountEntity,
+      UsageEventEntity,
+      UsageBlockGrantEntity,
+      BillingInvoiceEntity,
+      BillingSubscriptionEntity,
+      StoreProductPlanEntity,
+    ],
     synchronize: database.synchronize,
     logging: database.logging,
   };

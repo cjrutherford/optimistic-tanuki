@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { from, Observable } from 'rxjs';
-import { FinanceOnboardingState } from './models';
-import { FinanceService } from './services/finance.service';
+import { FinanceOnboardingState } from '@optimistic-tanuki/finance-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 
 @Injectable({
   providedIn: 'root',

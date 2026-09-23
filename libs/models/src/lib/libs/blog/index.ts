@@ -1,32 +1,4 @@
-export { BlogDto, CreateBlogDto, UpdateBlogDto, BlogQueryDto } from './blog';
-export {
-  BlogCatalogDto,
-  BlogCatalogScopeDto,
-  CreateBlogCatalogDto,
-} from './blog-catalog';
-export {
-  ContactDto,
-  CreateContactDto,
-  UpdateContactDto,
-  ContactQueryDto,
-} from './contact';
-export {
-  EventDto as BlogEventDto,
-  CreateEventDto as CreateBlogEventDto,
-  UpdateEventDto as UpdateBlogEventDto,
-  EventQueryDto as BlogEventQueryDto,
-} from './event';
-export {
-  PostDto as BlogPostDto,
-  CreateBlogPostDto as CreateBlogPostDto,
-  UpdateBlogPostDto as UpdateBlogPostDto,
-  PostQueryDto as BlogPostQueryDto,
-} from './post';
-export { type PublishedBlogPostDto, toPublishedBlogPost } from './post';
-export {
-  BlogComponentDto,
-  CreateBlogComponentDto,
-  UpdateBlogComponentDto,
-  BlogComponentQueryDto,
-} from './blog-component';
-export type { ComponentExtractionResult } from './blog-component';
+// Canonical home is `@optimistic-tanuki/blogging-contracts` (promoted per the
+// bounded-context plan — single source, no shape duplication). This barrel
+// re-exports for back-compat; new code imports from `blogging-contracts`.
+export * from '@optimistic-tanuki/blogging-contracts';

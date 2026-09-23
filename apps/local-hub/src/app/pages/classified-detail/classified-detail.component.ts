@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, firstValueFrom } from 'rxjs';
@@ -54,6 +55,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private paymentService = inject(PaymentService);
   private http = inject(HttpClient);
+  private profiles = inject(ProfileAPIService);
   private destroy$ = new Subject<void>();
 
   ad = signal<ClassifiedAdDto | null>(null);
@@ -533,7 +535,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     try {
       const profiles = await firstValueFrom(
-        this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+        this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
           ids: [ad.profileId],
         })
       );

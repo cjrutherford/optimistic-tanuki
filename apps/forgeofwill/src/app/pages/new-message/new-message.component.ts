@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/chat-ui-data-access';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { AuthStateService } from '../../auth-state.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
@@ -182,6 +184,8 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 export class NewMessageComponent implements OnInit {
   private authStateService = inject(AuthStateService);
   private http = inject(HttpClient);
+  private chat = inject(OptomisitcTanukiAPIService);
+  private profiles = inject(ProfileAPIService);
   private router = inject(Router);
 
   searchQuery = '';
@@ -210,7 +214,9 @@ export class NewMessageComponent implements OnInit {
     this.searchTimeout = setTimeout(async () => {
       try {
         const results = await firstValueFrom(
-          this.http.get<ProfileDto[]>('/api/profile', {
+          // `search` is forwarded but ignored server-side (the gateway reads
+          // no query params here); kept so the wire shape does not change.
+          this.profiles.profileControllerGetAllProfiles<ProfileDto[]>({
             params: { search: query },
           })
         );
@@ -234,8 +240,10 @@ export class NewMessageComponent implements OnInit {
 
     try {
       const conversation = await firstValueFrom(
-        this.http.post<any>('/api/chat/conversations/direct/get-or-create', {
-          participantIds: [currentProfileId, user.id],
+        // The gateway resolves participants itself from the recipient; the
+        // old participantIds body was never read (and is now rejected).
+        this.chat.chatControllerGetOrCreateDirectChat({
+          recipientProfileId: user.id,
         })
       );
       this.router.navigate(['/messages'], {

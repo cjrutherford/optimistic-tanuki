@@ -1,14 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  BillingInvoiceEntity,
   UsageBlockGrantEntity,
   UsageEventEntity,
 } from '@optimistic-tanuki/billing-data-access';
 import {
+  InvoiceLine,
   UsageBlockGrant,
   UsageEvent,
 } from '@optimistic-tanuki/billing-contracts';
 import { DataSource, IsNull, MoreThan, Raw, Repository } from 'typeorm';
 import {
+  InvoiceRepository,
+  MintedInvoice,
   UsageBlockRepository,
   UsageEventRepository,
 } from './billing.repositories';
@@ -103,5 +107,41 @@ export class TypeOrmUsageBlockRepository implements UsageBlockRepository {
         expiresAt: 'ASC',
       },
     });
+  }
+}
+
+@Injectable()
+export class TypeOrmInvoiceRepository implements InvoiceRepository {
+  private readonly invoices: Repository<BillingInvoiceEntity>;
+
+  constructor(@Inject('BILLING_CONNECTION') dataSource: DataSource) {
+    this.invoices = dataSource.getRepository(BillingInvoiceEntity);
+  }
+
+  async mint(input: {
+    tenantId: string;
+    appScope: string;
+    accountId?: string;
+    currency: string;
+    subtotalCents: number;
+    lines: InvoiceLine[];
+    appointmentId?: string;
+    orderId?: string;
+  }): Promise<MintedInvoice> {
+    const saved = await this.invoices.save(
+      this.invoices.create({
+        tenantId: input.tenantId,
+        appScope: input.appScope,
+        accountId: input.accountId ?? null,
+        status: 'draft',
+        currency: input.currency,
+        subtotalCents: input.subtotalCents,
+        lines: input.lines,
+        appointmentId: input.appointmentId ?? null,
+        orderId: input.orderId ?? null,
+      })
+    );
+
+    return { id: saved.id };
   }
 }

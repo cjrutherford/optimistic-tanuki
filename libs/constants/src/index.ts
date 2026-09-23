@@ -31,6 +31,16 @@ export {
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';
 export { ServiceTokens } from './lib/libs/service.tokens';
+export {
+  GatewayComposition,
+  GATEWAY_SERVICE_IDS,
+  ComposableEntry,
+  normalizeGatewayComposition,
+  loadGatewayCompositionFromFile,
+  isServiceEnabled,
+  filterEnabledEntries,
+  DisabledClientProxy,
+} from './lib/libs/service-composition';
 export { AssetCommands } from './lib/libs/asset';
 export {
   ProjectCommands,

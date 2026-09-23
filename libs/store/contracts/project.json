@@ -1,0 +1,35 @@
+{
+  "name": "store-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/store/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:store",
+    "platform:shared",
+    "visibility:publishable"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/store/contracts",
+        "main": "libs/store/contracts/src/index.ts",
+        "tsConfig": "libs/store/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/store/contracts/package.json",
+          "libs/store/contracts/README.md"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/store/contracts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

@@ -42,10 +42,8 @@ import { PrivacyService } from './services/privacy.service';
 import { UserBlock } from '../entities/user-block.entity';
 import { UserMute } from '../entities/user-mute.entity';
 import { ContentReport } from '../entities/content-report.entity';
-import { ChatMessage } from '../entities/chat-message.entity';
 import { UserPresence } from '../entities/user-presence.entity';
 import { PresenceService } from './services/presence.service';
-import { ChatMessageService } from './services/chat-message.service';
 import { Activity } from '../entities/activity.entity';
 import { SavedItem } from '../entities/saved-item.entity';
 import { ActivityService } from './services/activity.service';
@@ -57,6 +55,10 @@ import { PostShare } from '../entities/post-share.entity';
 import { PostShareService } from './services/post-share.service';
 import { Event } from '../entities/event.entity';
 import { EventService } from './services/event.service';
+import { BusinessPageContent } from '../entities/business-page-content.entity';
+import { BusinessThemeContent } from '../entities/business-theme-content.entity';
+import { CommunitySponsorshipContent } from '../entities/community-sponsorship-content.entity';
+import { BusinessContentService } from './services/business-content.service';
 
 @Module({
   imports: [
@@ -84,12 +86,12 @@ import { EventService } from './services/event.service';
     SearchService,
     PrivacyService,
     PresenceService,
-    ChatMessageService,
     ActivityService,
     ProfileAnalyticsService,
     PollService,
     PostShareService,
     EventService,
+    BusinessContentService,
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {
@@ -207,11 +209,6 @@ import { EventService } from './services/event.service';
       inject: ['SOCIAL_CONNECTION'],
     },
     {
-      provide: getRepositoryToken(ChatMessage),
-      useFactory: (ds: DataSource) => ds.getRepository(ChatMessage),
-      inject: ['SOCIAL_CONNECTION'],
-    },
-    {
       provide: getRepositoryToken(UserPresence),
       useFactory: (ds: DataSource) => ds.getRepository(UserPresence),
       inject: ['SOCIAL_CONNECTION'],
@@ -244,6 +241,22 @@ import { EventService } from './services/event.service';
     {
       provide: getRepositoryToken(Event),
       useFactory: (ds: DataSource) => ds.getRepository(Event),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(BusinessPageContent),
+      useFactory: (ds: DataSource) => ds.getRepository(BusinessPageContent),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(BusinessThemeContent),
+      useFactory: (ds: DataSource) => ds.getRepository(BusinessThemeContent),
+      inject: ['SOCIAL_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommunitySponsorshipContent),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(CommunitySponsorshipContent),
       inject: ['SOCIAL_CONNECTION'],
     },
   ],

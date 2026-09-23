@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { ProductEntity } from '../../products/entities/product.entity';
 
-@Entity('subscriptions')
+@Entity('product_entitlements')
 export class SubscriptionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -25,7 +25,12 @@ export class SubscriptionEntity {
   product: ProductEntity;
 
   @Column({ type: 'varchar', length: 50 })
-  status: string; // 'active', 'cancelled', 'expired'
+  status: string; // 'active', 'cancelled', 'expired' — read-only mirror of the canonical billing status
+
+  // E7: reference to the canonical billing subscription. Written by the
+  // gateway dual-write (billing create first); the table drops at O14.
+  @Column({ type: 'uuid', nullable: true })
+  billingSubscriptionId: string | null;
 
   @Column({ type: 'varchar', length: 50 })
   interval: string; // 'monthly', 'yearly'

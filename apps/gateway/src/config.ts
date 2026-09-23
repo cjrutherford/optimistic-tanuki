@@ -240,7 +240,8 @@ export type TcpServiceConfig = {
     | 'lead_tracker'
     | 'system_configurator'
     | 'videos'
-    | 'learning_service';
+    | 'learning_service'
+    | 'billing';
   transport: Transport;
   options: TcpClientOptions;
   host: string;
@@ -308,6 +309,7 @@ export type Config = {
     system_configurator: TcpServiceConfig;
     videos: TcpServiceConfig;
     learning_service: TcpServiceConfig;
+    billing: TcpServiceConfig;
   };
 };
 

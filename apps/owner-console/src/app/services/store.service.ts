@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/store-data-access';
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -91,38 +92,40 @@ export interface Subscription {
   providedIn: 'root',
 })
 export class StoreService {
-  private readonly API_URL = '/api/store';
-
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private store: OptomisitcTanukiAPIService
+  ) {}
 
   // Product management
   getProducts(catalogId?: string | null): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.API_URL}/products`, {
-      params: catalogId
-        ? new HttpParams().set('catalogId', catalogId)
-        : undefined,
+    return this.store.storeControllerFindAllProducts<Product[]>({
+      catalogId: catalogId ?? undefined,
     });
   }
 
   getMyCatalogs(workspaceSlug: string): Observable<StoreCatalog[]> {
-    return this.http.get<StoreCatalog[]>(`${this.API_URL}/catalogs/mine`, {
-      params: new HttpParams().set('workspaceSlug', workspaceSlug),
+    return this.store.storeControllerFindMyCatalogs<StoreCatalog[]>({
+      params: { workspaceSlug },
     });
   }
 
   getProduct(id: string): Observable<Product> {
-    return this.http.get<Product>(`${this.API_URL}/products/${id}`);
+    return this.store.storeControllerFindOneProduct<Product>(id, {});
   }
 
   createProduct(
     product: CreateProductDto,
     workspaceSlug?: string | null
   ): Observable<Product> {
-    return this.http.post<Product>(`${this.API_URL}/products`, product, {
-      params: workspaceSlug
-        ? new HttpParams().set('workspaceSlug', workspaceSlug)
-        : undefined,
-    });
+    // ui-models allows null catalogId; the wire contract wants it absent.
+    const { catalogId, ...rest } = product;
+    return this.store.storeControllerCreateProduct<Product>(
+      { ...rest, catalogId: catalogId ?? undefined },
+      {
+        params: workspaceSlug ? { workspaceSlug } : undefined,
+      }
+    );
   }
 
   updateProduct(
@@ -130,97 +133,130 @@ export class StoreService {
     product: UpdateProductDto,
     workspaceSlug?: string | null
   ): Observable<Product> {
-    return this.http.put<Product>(`${this.API_URL}/products/${id}`, product, {
-      params: workspaceSlug
-        ? new HttpParams().set('workspaceSlug', workspaceSlug)
-        : undefined,
-    });
+    const { catalogId, ...rest } = product;
+    return this.store.storeControllerUpdateProduct<Product>(
+      id,
+      { ...rest, catalogId: catalogId ?? undefined },
+      {
+        params: workspaceSlug ? { workspaceSlug } : undefined,
+      }
+    );
   }
 
   deleteProduct(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/products/${id}`);
+    return this.store.storeControllerRemoveProduct<void>(id);
   }
 
   // Order management
   getOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.API_URL}/orders`);
+    return this.store.storeControllerFindAllOrders<Order[]>();
   }
 
   getUserOrders(userId: string): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.API_URL}/orders/user/${userId}`);
+    return this.store.storeControllerFindUserOrders<Order[]>(userId);
   }
 
   getOrder(id: string): Observable<Order> {
-    return this.http.get<Order>(`${this.API_URL}/orders/${id}`);
+    return this.store.storeControllerFindOneOrder<Order>(id);
   }
 
   updateOrder(id: string, order: UpdateOrderDto): Observable<Order> {
-    return this.http.put<Order>(`${this.API_URL}/orders/${id}`, order);
+    return this.store.storeControllerUpdateOrder<Order>(id, order);
   }
 
-  // Donation management
+  // Donation management — O14: canonical payments list (GET /api/donations).
+  // Rows map onto the store Donation shape so overview displays are unchanged.
   getDonations(): Observable<Donation[]> {
-    return this.http.get<Donation[]>(`${this.API_URL}/donations`);
+    return this.http
+      .get<
+        Array<{
+          id: string;
+          userId?: string;
+          amount: number;
+          currency?: string;
+          message?: string;
+          anonymous?: boolean;
+          status: string;
+          createdAt: Date;
+        }>
+      >('/api/donations')
+      .pipe(
+        map((rows) =>
+          (rows ?? []).map((row) => ({
+            id: row.id,
+            userId: row.userId,
+            amountCents: Math.round(Number(row.amount ?? 0) * 100),
+            currency: row.currency ?? 'USD',
+            message: row.message,
+            anonymous: row.anonymous ?? !row.userId,
+            status: row.status,
+            createdAt: row.createdAt,
+          }))
+        )
+      );
   }
 
   // Subscription management
   getSubscriptions(): Observable<Subscription[]> {
-    return this.http.get<Subscription[]>(`${this.API_URL}/subscriptions`);
+    return this.store.storeControllerFindAllSubscriptions<Subscription[]>();
   }
 
   getUserSubscriptions(userId: string): Observable<Subscription[]> {
-    return this.http.get<Subscription[]>(
-      `${this.API_URL}/subscriptions/user/${userId}`
+    return this.store.storeControllerFindUserSubscriptions<Subscription[]>(
+      userId
     );
   }
 
   cancelSubscription(id: string): Observable<Subscription> {
-    return this.http.put<Subscription>(
-      `${this.API_URL}/subscriptions/${id}/cancel`,
-      {}
-    );
+    return this.store.storeControllerCancelSubscription<Subscription>(id);
   }
 
   // Appointment management
   getAppointments(): Observable<Appointment[]> {
-    return this.http.get<Appointment[]>(`${this.API_URL}/appointments`);
+    return this.store.storeControllerFindAllAppointments<Appointment[]>();
   }
 
   getUserAppointments(userId: string): Observable<Appointment[]> {
-    return this.http.get<Appointment[]>(
-      `${this.API_URL}/appointments/user/${userId}`
+    return this.store.storeControllerFindUserAppointments<Appointment[]>(
+      userId
     );
   }
 
   getAppointment(id: string): Observable<Appointment> {
-    return this.http.get<Appointment>(`${this.API_URL}/appointments/${id}`);
+    return this.store.storeControllerFindOneAppointment<Appointment>(id);
   }
 
   createAppointment(
     appointment: CreateAppointmentDto
   ): Observable<Appointment> {
-    return this.http.post<Appointment>(
-      `${this.API_URL}/appointments`,
-      appointment
-    );
+    // Domain DTOs carry Dates; the wire wants ISO strings (identical bytes
+    // to the old HttpClient JSON serialization). Non-Date values pass
+    // through so malformed payloads still fail server-side, as before.
+    return this.store.storeControllerCreateAppointment<Appointment>({
+      ...appointment,
+      startTime: toWireDate(appointment.startTime),
+      endTime: toWireDate(appointment.endTime),
+    });
   }
 
   updateAppointment(
     id: string,
     appointment: UpdateAppointmentDto
   ): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}`,
-      appointment
-    );
+    const { startTime, endTime, ...rest } = appointment;
+    return this.store.storeControllerUpdateAppointment<Appointment>(id, {
+      ...rest,
+      startTime: startTime === undefined ? undefined : toWireDate(startTime),
+      endTime: endTime === undefined ? undefined : toWireDate(endTime),
+    });
   }
 
   approveAppointment(
     id: string,
     approveDto: ApproveAppointmentDto
   ): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}/approve`,
+    return this.store.storeControllerApproveAppointment<Appointment>(
+      id,
       approveDto
     );
   }
@@ -229,53 +265,40 @@ export class StoreService {
     id: string,
     denyDto: DenyAppointmentDto
   ): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}/deny`,
-      denyDto
-    );
+    return this.store.storeControllerDenyAppointment<Appointment>(id, denyDto);
   }
 
   cancelAppointment(id: string): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}/cancel`,
-      {}
-    );
+    return this.store.storeControllerCancelAppointment<Appointment>(id);
   }
 
   completeAppointment(id: string): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}/complete`,
-      {}
-    );
+    return this.store.storeControllerCompleteAppointment<Appointment>(id);
   }
 
   generateInvoice(appointmentId: string): Observable<Invoice> {
-    return this.http.post<Invoice>(
-      `${this.API_URL}/appointments/${appointmentId}/invoice`,
-      {}
-    );
+    return this.store.storeControllerGenerateInvoice<Invoice>(appointmentId);
   }
 
   // Availability management
   getAvailabilities(): Observable<Availability[]> {
-    return this.http.get<Availability[]>(`${this.API_URL}/availabilities`);
+    return this.store.storeControllerFindAllAvailabilities<Availability[]>();
   }
 
   getOwnerAvailabilities(ownerId: string): Observable<Availability[]> {
-    return this.http.get<Availability[]>(
-      `${this.API_URL}/availabilities/owner/${ownerId}`
+    return this.store.storeControllerFindOwnerAvailabilities<Availability[]>(
+      ownerId
     );
   }
 
   getAvailability(id: string): Observable<Availability> {
-    return this.http.get<Availability>(`${this.API_URL}/availabilities/${id}`);
+    return this.store.storeControllerFindOneAvailability<Availability>(id);
   }
 
   createAvailability(
     availability: CreateAvailabilityDto
   ): Observable<Availability> {
-    return this.http.post<Availability>(
-      `${this.API_URL}/availabilities`,
+    return this.store.storeControllerCreateAvailability<Availability>(
       availability
     );
   }
@@ -284,42 +307,42 @@ export class StoreService {
     id: string,
     availability: UpdateAvailabilityDto
   ): Observable<Availability> {
-    return this.http.put<Availability>(
-      `${this.API_URL}/availabilities/${id}`,
+    return this.store.storeControllerUpdateAvailability<Availability>(
+      id,
       availability
     );
   }
 
   deleteAvailability(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/availabilities/${id}`);
+    return this.store.storeControllerRemoveAvailability<void>(id);
   }
 
   // Resource management
   getResources(): Observable<Resource[]> {
-    return this.http.get<Resource[]>(`${this.API_URL}/resources`);
+    return this.store.storeControllerFindAllResources<Resource[]>();
   }
 
   getResourcesByType(type: string): Observable<Resource[]> {
-    return this.http.get<Resource[]>(`${this.API_URL}/resources/type/${type}`);
+    return this.store.storeControllerFindResourcesByType<Resource[]>(type);
   }
 
   getResource(id: string): Observable<Resource> {
-    return this.http.get<Resource>(`${this.API_URL}/resources/${id}`);
+    return this.store.storeControllerFindOneResource<Resource>(id);
   }
 
   createResource(resource: CreateResourceDto): Observable<Resource> {
-    return this.http.post<Resource>(`${this.API_URL}/resources`, resource);
+    return this.store.storeControllerCreateResource<Resource>(resource);
   }
 
   updateResource(
     id: string,
     resource: UpdateResourceDto
   ): Observable<Resource> {
-    return this.http.put<Resource>(`${this.API_URL}/resources/${id}`, resource);
+    return this.store.storeControllerUpdateResource<Resource>(id, resource);
   }
 
   deleteResource(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/resources/${id}`);
+    return this.store.storeControllerRemoveResource<void>(id);
   }
 
   checkResourceAvailability(
@@ -327,9 +350,18 @@ export class StoreService {
     startTime: Date,
     endTime: Date
   ): Observable<boolean> {
-    return this.http.post<boolean>(
-      `${this.API_URL}/resources/${resourceId}/check-availability`,
-      { startTime, endTime }
+    return this.store.storeControllerCheckResourceAvailability<boolean>(
+      resourceId,
+      {
+        startTime: toWireDate(startTime),
+        endTime: toWireDate(endTime),
+      }
     );
   }
+}
+
+function toWireDate(value: Date): string;
+function toWireDate(value: undefined): undefined;
+function toWireDate(value: unknown): unknown {
+  return value instanceof Date ? value.toISOString() : value;
 }

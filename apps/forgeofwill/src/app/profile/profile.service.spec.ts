@@ -120,7 +120,7 @@ describe('ProfileService', () => {
 
     it('getProfileById should fetch and set', async () => {
       const promise = service.getProfileById('1');
-      const req = httpMock.expectOne('/api/profile/1');
+      const req = httpMock.expectOne('/api/profile/by-id/1');
       req.flush(mockProfile);
       await promise;
       expect(service.currentUserProfile()).toEqual(mockProfile);
@@ -146,8 +146,10 @@ describe('ProfileService', () => {
 
       // 1. Initial Profile POST
       const req1 = httpMock.expectOne('/api/profile');
-      expect(req1.request.body.appScope).toBe('forgeofwill');
+      // appScope travels via the scope decorator, not the body (the gateway
+      // strips unknown props); appId selects AI-orchestrator initialization.
       expect(req1.request.body.appId).toBe('forgeofwill');
+      expect(req1.request.body.appScope).toBeUndefined();
       req1.flush({ ...mockProfile, id: 'new-id', profileName: 'New' });
       await Promise.resolve();
       await Promise.resolve();
@@ -190,7 +192,7 @@ describe('ProfileService', () => {
 
       const promise = service.deleteProfile('1');
 
-      const req = httpMock.expectOne('/api/profiles/1');
+      const req = httpMock.expectOne('/api/profile/1');
       req.flush(null);
       await promise;
 
@@ -215,7 +217,7 @@ describe('ProfileService', () => {
       const promise = service.updateProfile('1', updateDto);
 
       // 1. Fetch original profile for pic logic
-      const reqGet1 = httpMock.expectOne('/api/profile/1');
+      const reqGet1 = httpMock.expectOne('/api/profile/by-id/1');
       reqGet1.flush(initialProfile);
       await Promise.resolve();
       await Promise.resolve();
@@ -233,7 +235,7 @@ describe('ProfileService', () => {
       await Promise.resolve();
 
       // 4. Fetch original profile for cover logic
-      const reqGet2 = httpMock.expectOne('/api/profile/1');
+      const reqGet2 = httpMock.expectOne('/api/profile/by-id/1');
       reqGet2.flush(initialProfile);
       await Promise.resolve();
       await Promise.resolve();
@@ -344,7 +346,7 @@ describe('ProfileService', () => {
 
     it('getDisplayProfile should call API', () => {
       service.getDisplayProfile('1').subscribe();
-      const req = httpMock.expectOne('/api/profile/1');
+      const req = httpMock.expectOne('/api/profile/by-id/1');
       expect(req.request.method).toBe('GET');
       req.flush(mockProfile);
     });

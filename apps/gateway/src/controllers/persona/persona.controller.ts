@@ -16,7 +16,7 @@ import {
 import {
   PersonaTelosDto,
   QueryPersonaTelsosDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/telos-contracts';
 import { AuthGuard } from '../../auth/auth.guard';
 import { firstValueFrom } from 'rxjs';
 

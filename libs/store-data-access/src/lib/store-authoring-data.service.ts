@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '../generated/store';
 
 export interface StoreCatalog {
   id: string;
@@ -43,10 +43,10 @@ export interface StoreAuthoringWorkspace {
 
 @Injectable({ providedIn: 'root' })
 export class StoreAuthoringDataService {
-  private readonly http = inject(HttpClient);
+  private readonly store = inject(OptomisitcTanukiAPIService);
 
   listCatalogs(workspace: StoreAuthoringWorkspace): Observable<StoreCatalog[]> {
-    return this.http.get<StoreCatalog[]>('/api/store/catalogs/mine', {
+    return this.store.storeControllerFindMyCatalogs<StoreCatalog[]>({
       params: this.workspaceParams(workspace),
       headers: this.workspaceHeaders(workspace),
     });
@@ -56,7 +56,7 @@ export class StoreAuthoringDataService {
     workspace: StoreAuthoringWorkspace,
     input: CreateStoreCatalogInput
   ): Observable<StoreCatalog> {
-    return this.http.post<StoreCatalog>('/api/store/catalogs', input, {
+    return this.store.storeControllerCreateCatalog<StoreCatalog>(input, {
       params: this.workspaceParams(workspace),
       headers: this.workspaceHeaders(workspace),
     });
@@ -70,27 +70,31 @@ export class StoreAuthoringDataService {
     if (!catalogId.trim()) {
       throw new Error('A catalogId is required for Store authoring');
     }
-    return this.http.get<StoreProduct[]>('/api/store/products', {
-      params: this.workspaceParams(workspace).set('catalogId', catalogId),
-      headers: this.workspaceHeaders(workspace),
-    });
+    return this.store.storeControllerFindAllProducts<StoreProduct[]>(
+      { catalogId },
+      {
+        params: { ...this.workspaceParams(workspace) },
+        headers: this.workspaceHeaders(workspace),
+      }
+    );
   }
 
   createProduct(
     workspace: StoreAuthoringWorkspace,
     input: CreateStoreProductInput
   ): Observable<StoreProduct> {
-    return this.http.post<StoreProduct>('/api/store/products', input, {
+    return this.store.storeControllerCreateProduct<StoreProduct>(input, {
       params: this.workspaceParams(workspace),
       headers: this.workspaceHeaders(workspace),
     });
   }
 
-  private workspaceParams(workspace: StoreAuthoringWorkspace): HttpParams {
-    return new HttpParams().set(
-      'workspaceSlug',
-      this.requireWorkspace(workspace)
-    );
+  private workspaceParams(
+    workspace: StoreAuthoringWorkspace
+  ): Record<string, string> {
+    // Plain record (not HttpParams): generated clients spread options into
+    // the request params, which drops HttpParams internals.
+    return { workspaceSlug: this.requireWorkspace(workspace) };
   }
 
   private workspaceHeaders(workspace: StoreAuthoringWorkspace) {

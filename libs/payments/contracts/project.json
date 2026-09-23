@@ -1,0 +1,35 @@
+{
+  "name": "payments-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/payments/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:payments",
+    "platform:shared",
+    "visibility:publishable"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/payments/contracts",
+        "main": "libs/payments/contracts/src/index.ts",
+        "tsConfig": "libs/payments/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/payments/contracts/package.json",
+          "libs/payments/contracts/README.md"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/payments/contracts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

@@ -8,8 +8,9 @@ import {
 import {
   ChatConversation,
   ChatMessage,
-  PersonaTelosDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { getOrchestratorDependencyStates } from './app.module';
 
 @Controller()
 export class AppController {
@@ -20,7 +21,14 @@ export class AppController {
 
   @MessagePattern({ cmd: CommonCommands.HealthCheck })
   healthCheck() {
-    return { status: 'healthy' };
+    const dependencies = getOrchestratorDependencyStates();
+    const degraded = Object.values(dependencies).some(
+      (state) => state === 'disabled'
+    );
+    return {
+      status: degraded ? 'degraded' : 'healthy',
+      dependencies,
+    };
   }
 
   @MessagePattern({ cmd: AIOrchestrationCommands.PROFILE_INITIALIZE })

@@ -90,6 +90,11 @@ export default [
             },
             {
               sourceTag: 'type:ui',
+              // NOTE (T5): `type:data-access` stays allowed here on purpose —
+              // UI consumes generated API clients (Track A codegen target).
+              // The rule is directional: data-access libs must never depend on
+              // `type:ui` (see fin-commander-data-access → finance-data-access
+              // promotion), and domain shapes must come from `type:contracts`.
               onlyDependOnLibsWithTags: [
                 'type:ui',
                 'type:data-access',

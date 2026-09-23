@@ -41,7 +41,8 @@ describe('Social CommunityController membership lifecycle', () => {
           .mockReturnValue(
             of({ workspaceId: '00000000-0000-4000-8000-000000000001' })
           ),
-      } as unknown as ClientProxy
+      } as unknown as ClientProxy,
+      { provision: jest.fn().mockResolvedValue(undefined) } as any
     );
   });
 

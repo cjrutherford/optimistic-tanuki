@@ -1,6 +1,6 @@
 import { of } from 'rxjs';
 import { OnboardingGateService } from './onboarding-gate.service';
-import { FinanceService } from './services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 
 describe('OnboardingGateService', () => {
   it('requires onboarding when finance setup is incomplete', (done) => {

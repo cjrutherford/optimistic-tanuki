@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { OptomisitcTanukiAPIService as PaymentsAPIService } from '@optimistic-tanuki/payments-ui-data-access';
+import { OptomisitcTanukiAPIService as StoreAPIService } from '@optimistic-tanuki/store-data-access';
 
 export interface Product {
   id: string;
@@ -95,47 +97,52 @@ export interface CreateAppointmentRequest {
   providedIn: 'root',
 })
 export class StoreService {
-  private readonly API_URL = '/api/store';
-
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private payments: PaymentsAPIService,
+    private store: StoreAPIService
+  ) {}
 
   // Product operations
   getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.API_URL}/products`);
+    return this.store.storeControllerFindAllProducts<Product[]>({});
   }
 
   getProduct(id: string): Observable<Product> {
-    return this.http.get<Product>(`${this.API_URL}/products/${id}`);
+    return this.store.storeControllerFindOneProduct<Product>(id, {});
   }
 
   // Order operations
   createOrder(order: Order): Observable<Order> {
-    return this.http.post<Order>(`${this.API_URL}/orders`, order);
+    return this.store.storeControllerCreateOrder<Order>(order);
   }
 
   getUserOrders(userId: string): Observable<Order[]> {
-    return this.http.get<Order[]>(`${this.API_URL}/orders/user/${userId}`);
+    return this.store.storeControllerFindUserOrders<Order[]>(userId);
   }
 
-  // Donation operations
+  // Donation operations — O14: canonical direct-record route
+  // (POST /api/payments/donations preserves anonymous gifts).
   createDonation(donation: CreateDonationRequest): Observable<any> {
-    return this.http.post(`${this.API_URL}/donations`, {
-      ...donation,
+    return this.payments.paymentsControllerRecordDonation({
+      amount: donation.amountCents / 100,
+      message: donation.message,
+      anonymous: donation.anonymous,
       currency: donation.currency || 'USD',
     });
   }
 
   // Resource operations
   getResources(): Observable<Resource[]> {
-    return this.http.get<Resource[]>(`${this.API_URL}/resources`);
+    return this.store.storeControllerFindAllResources<Resource[]>();
   }
 
   getResource(id: string): Observable<Resource> {
-    return this.http.get<Resource>(`${this.API_URL}/resources/${id}`);
+    return this.store.storeControllerFindOneResource<Resource>(id);
   }
 
   getResourcesByType(type: string): Observable<Resource[]> {
-    return this.http.get<Resource[]>(`${this.API_URL}/resources/type/${type}`);
+    return this.store.storeControllerFindResourcesByType<Resource[]>(type);
   }
 
   checkResourceAvailability(
@@ -143,9 +150,12 @@ export class StoreService {
     startTime: Date,
     endTime: Date
   ): Observable<boolean> {
-    return this.http.post<boolean>(
-      `${this.API_URL}/resources/${resourceId}/check-availability`,
-      { startTime, endTime }
+    return this.store.storeControllerCheckResourceAvailability<boolean>(
+      resourceId,
+      {
+        startTime: toWireDate(startTime),
+        endTime: toWireDate(endTime),
+      }
     );
   }
 
@@ -153,26 +163,30 @@ export class StoreService {
   createAppointment(
     appointment: CreateAppointmentRequest
   ): Observable<Appointment> {
-    return this.http.post<Appointment>(
-      `${this.API_URL}/appointments`,
-      appointment
-    );
+    return this.store.storeControllerCreateAppointment<Appointment>({
+      ...appointment,
+      startTime: toWireDate(appointment.startTime),
+      endTime: toWireDate(appointment.endTime),
+    });
   }
 
   getUserAppointments(userId: string): Observable<Appointment[]> {
-    return this.http.get<Appointment[]>(
-      `${this.API_URL}/appointments/user/${userId}`
+    return this.store.storeControllerFindUserAppointments<Appointment[]>(
+      userId
     );
   }
 
   getAppointment(id: string): Observable<Appointment> {
-    return this.http.get<Appointment>(`${this.API_URL}/appointments/${id}`);
+    return this.store.storeControllerFindOneAppointment<Appointment>(id);
   }
 
   cancelAppointment(id: string): Observable<Appointment> {
-    return this.http.put<Appointment>(
-      `${this.API_URL}/appointments/${id}/cancel`,
-      {}
-    );
+    return this.store.storeControllerCancelAppointment<Appointment>(id);
   }
+}
+
+function toWireDate(value: Date): string;
+function toWireDate(value: undefined): undefined;
+function toWireDate(value: unknown): unknown {
+  return value instanceof Date ? value.toISOString() : value;
 }

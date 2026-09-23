@@ -44,7 +44,7 @@ import {
   ChatService,
   ChatConversation as AppChatConversation,
 } from './chat.service';
-import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import {
   GlobalSearchComponent,
   SearchResult,
@@ -147,7 +147,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private chatService = inject(ChatService);
   private socketChatService = inject(SocketChatService);
-  private http = inject(HttpClient);
+  private profiles = inject(OptomisitcTanukiAPIService);
   private notificationService = inject(NotificationService);
 
   constructor(
@@ -411,7 +411,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async fetchProfile(profileId: string): Promise<ProfileDto | null> {
     try {
       return await firstValueFrom(
-        this.http.get<ProfileDto>(`/api/profile/${profileId}`)
+        this.profiles.profileControllerGetProfileById<ProfileDto>(profileId)
       );
     } catch {
       return null;
@@ -495,7 +495,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async fetchProfiles(profileIds: string[]): Promise<ProfileDto[]> {
     return firstValueFrom(
-      this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+      this.profiles.profileControllerGetProfilesByIds<ProfileDto[]>({
+        ids: profileIds,
+      })
     ) as Promise<ProfileDto[]>;
   }
 

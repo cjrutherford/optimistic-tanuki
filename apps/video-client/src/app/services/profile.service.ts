@@ -1,7 +1,7 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({
@@ -9,7 +9,7 @@ import { isPlatformBrowser } from '@angular/common';
 })
 export class ProfileService {
   private platformId = inject(PLATFORM_ID);
-  private readonly http = inject(HttpClient);
+  private readonly profiles = inject(OptomisitcTanukiAPIService);
   private currentProfileSubject = new BehaviorSubject<ProfileDto | null>(null);
   private profilesSubject = new BehaviorSubject<ProfileDto[]>([]);
 
@@ -18,19 +18,26 @@ export class ProfileService {
 
   async getAllProfiles(): Promise<ProfileDto[]> {
     const profiles = await firstValueFrom(
-      this.http.get<ProfileDto[]>('/api/profile')
+      this.profiles.profileControllerGetAllProfiles<ProfileDto[]>()
     );
     this.profilesSubject.next(profiles);
     return profiles;
   }
 
   async getProfileById(id: string): Promise<ProfileDto> {
-    return firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
+    // Canonical read (by-id adds telos back-fill); the legacy :id route stays.
+    return firstValueFrom(
+      this.profiles.profileControllerGetProfileById<ProfileDto>(id)
+    );
   }
 
   async createProfile(profile: Partial<ProfileDto>): Promise<ProfileDto> {
     const newProfile = await firstValueFrom(
-      this.http.post<ProfileDto>('/api/profile', profile)
+      this.profiles.profileControllerCreateProfile<ProfileDto>(
+        profile as Parameters<
+          typeof this.profiles.profileControllerCreateProfile
+        >[0]
+      )
     );
     const profiles = this.profilesSubject.value;
     this.profilesSubject.next([...profiles, newProfile]);
@@ -42,7 +49,7 @@ export class ProfileService {
     profile: Partial<ProfileDto>
   ): Promise<ProfileDto> {
     const updatedProfile = await firstValueFrom(
-      this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
+      this.profiles.profileControllerUpdateProfile<ProfileDto>(id, profile)
     );
     const profiles = this.profilesSubject.value.map((p) =>
       p.id === id ? updatedProfile : p

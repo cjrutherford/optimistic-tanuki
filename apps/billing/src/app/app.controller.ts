@@ -2,7 +2,11 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
   BatchRecordUsageDto,
+  BillingSubscription,
+  BillingSubscriptionRefDto,
   ConsumeUsageBlockDto,
+  CreateBillingSubscriptionDto,
+  CreateSubscriptionFromProductDto,
   GrantUsageBlockDto,
   InvoicePreviewInput,
   PeriodInvoicePreviewInput,
@@ -11,10 +15,14 @@ import {
 } from '@optimistic-tanuki/billing-contracts';
 import { BillingCommands } from '@optimistic-tanuki/constants';
 import { BillingService } from './services/billing.service';
+import { BillingSubscriptionsService } from './services/billing-subscriptions.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly billingService: BillingService) {}
+  constructor(
+    private readonly billingService: BillingService,
+    private readonly subscriptionsService: BillingSubscriptionsService
+  ) {}
 
   @MessagePattern({ cmd: BillingCommands.RECORD_USAGE })
   recordUsage(@Payload() payload: RecordUsageDto) {
@@ -45,10 +53,35 @@ export class AppController {
   previewInvoice(
     @Payload() payload: InvoicePreviewInput | PeriodInvoicePreviewInput
   ) {
+    // Union design metatype is Object, so the global ValidationPipe skips
+    // this param; BillingService asserts the shape explicitly (400-class
+    // guard) before the domain code dereferences `meter`.
     if ('periodStart' in payload) {
       return this.billingService.previewInvoiceForPeriod(payload);
     }
 
     return this.billingService.previewInvoice(payload);
+  }
+
+  @MessagePattern({ cmd: BillingCommands.SUBSCRIPTION_CREATE })
+  createSubscription(@Payload() payload: CreateBillingSubscriptionDto) {
+    return this.subscriptionsService.create(payload);
+  }
+
+  @MessagePattern({ cmd: BillingCommands.SUBSCRIPTION_CREATE_FROM_PRODUCT })
+  createSubscriptionFromProduct(
+    @Payload() payload: CreateSubscriptionFromProductDto
+  ) {
+    return this.subscriptionsService.createFromProduct(payload);
+  }
+
+  @MessagePattern({ cmd: BillingCommands.SUBSCRIPTION_CANCEL })
+  cancelSubscription(@Payload() payload: BillingSubscriptionRefDto) {
+    return this.subscriptionsService.cancel(payload.id);
+  }
+
+  @MessagePattern({ cmd: BillingCommands.SUBSCRIPTION_GET })
+  getSubscription(@Payload() payload: BillingSubscriptionRefDto) {
+    return this.subscriptionsService.get(payload.id);
   }
 }

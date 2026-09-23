@@ -23,6 +23,7 @@ import {
 import { CommunityService } from '../services/community.service';
 import { CreateCommunityDto, CommunityJoinPolicy } from '../models';
 import { HttpClient } from '@angular/common/http';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { firstValueFrom } from 'rxjs';
 import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
 
@@ -56,6 +57,7 @@ export class CreateCommunityComponent extends Variantable {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly http = inject(HttpClient);
+  private readonly profiles = inject(ProfileAPIService);
 
   loading = signal(false);
   uploading = signal(false);
@@ -242,7 +244,7 @@ export class CreateCommunityComponent extends Variantable {
 
   private async getCurrentProfileId(): Promise<string> {
     const profile = await firstValueFrom(
-      this.http.get<{ id: string }>('/api/profile/me')
+      this.profiles.profileControllerGetCurrentProfile<{ id: string }>()
     );
     return profile.id;
   }

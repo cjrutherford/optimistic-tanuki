@@ -81,7 +81,8 @@ export class LoginComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'system-configurator'
+        'system-configurator',
+        true
       );
 
       if (result.success) {

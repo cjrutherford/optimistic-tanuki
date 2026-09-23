@@ -197,7 +197,8 @@ export class LoginComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'local-hub'
+        'local-hub',
+        true
       );
 
       if (result.success) {

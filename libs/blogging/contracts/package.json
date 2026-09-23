@@ -1,0 +1,36 @@
+{
+  "name": "@optimistic-tanuki/blogging-contracts",
+  "version": "0.0.1",
+  "private": false,
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/your-public-packages-repo.git",
+    "directory": "packages/blogging-contracts"
+  },
+  "homepage": "https://github.com/your-org/your-public-packages-repo/tree/main/packages/blogging-contracts",
+  "bugs": {
+    "url": "https://github.com/your-org/your-public-packages-repo/issues"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

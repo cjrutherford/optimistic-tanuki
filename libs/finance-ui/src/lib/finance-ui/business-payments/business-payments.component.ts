@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
-import { FinanceWorkspace, Transaction } from '../models';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import {
+  FinanceWorkspace,
+  Transaction,
+} from '@optimistic-tanuki/finance-data-access';
 
 @Component({
   selector: 'ot-finance-business-payments',

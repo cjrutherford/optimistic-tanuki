@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '../generated/blogging';
 
 export const BLOGGING_API_BASE_URL = new InjectionToken<string>(
   'BLOGGING_API_BASE_URL',
@@ -44,25 +44,17 @@ const BLOG_AUTHORING_APP_SCOPES = new Set([
 /** HTTP boundary for workspace-owned Blog authoring. */
 @Injectable({ providedIn: 'root' })
 export class BlogAuthoringDataService {
-  private readonly apiUrl: string;
-
   constructor(
-    @Inject(BLOGGING_API_BASE_URL) apiBaseUrl: string,
-    private readonly http: HttpClient
-  ) {
-    this.apiUrl = apiBaseUrl;
-  }
+    @Inject(BLOGGING_API_BASE_URL) _apiBaseUrl: string,
+    private readonly blogging: OptomisitcTanukiAPIService
+  ) {}
 
   listCatalogs(
     workspace: BlogAuthoringWorkspace
   ): Observable<BlogAuthoringCatalog[]> {
     this.assertWorkspace(workspace);
-    return this.http.get<BlogAuthoringCatalog[]>(
-      `${this.apiUrl}/blog/catalogs/mine`,
-      {
-        params: this.workspaceParams(workspace),
-        headers: this.workspaceHeaders(workspace),
-      }
+    return this.blogging.blogControllerFindMyCatalogs<BlogAuthoringCatalog[]>(
+      this.requestOptions(workspace)
     );
   }
 
@@ -72,13 +64,9 @@ export class BlogAuthoringDataService {
     description?: string
   ): Observable<BlogAuthoringCatalog> {
     this.assertWorkspace(workspace);
-    return this.http.post<BlogAuthoringCatalog>(
-      `${this.apiUrl}/blog/catalogs`,
+    return this.blogging.blogControllerCreateCatalog<BlogAuthoringCatalog>(
       { name, ...(description ? { description } : {}) },
-      {
-        params: this.workspaceParams(workspace),
-        headers: this.workspaceHeaders(workspace),
-      }
+      this.requestOptions(workspace)
     );
   }
 
@@ -87,12 +75,9 @@ export class BlogAuthoringDataService {
     catalogId: string
   ): Observable<BlogAuthoringPost[]> {
     this.assertWorkspace(workspace);
-    return this.http.get<BlogAuthoringPost[]>(
-      `${this.apiUrl}/blog/catalogs/${encodeURIComponent(catalogId)}/posts`,
-      {
-        params: this.workspaceParams(workspace),
-        headers: this.workspaceHeaders(workspace),
-      }
+    return this.blogging.blogControllerFindCatalogPosts<BlogAuthoringPost[]>(
+      catalogId,
+      this.requestOptions(workspace)
     );
   }
 
@@ -101,13 +86,9 @@ export class BlogAuthoringDataService {
     post: CreateBlogAuthoringPost
   ): Observable<BlogAuthoringPost> {
     this.assertWorkspace(workspace);
-    return this.http.post<BlogAuthoringPost>(
-      `${this.apiUrl}/post`,
+    return this.blogging.postControllerCreatePost<BlogAuthoringPost>(
       { ...post, isDraft: post.isDraft ?? true },
-      {
-        params: this.workspaceParams(workspace),
-        headers: this.workspaceHeaders(workspace),
-      }
+      this.requestOptions(workspace)
     );
   }
 
@@ -116,28 +97,25 @@ export class BlogAuthoringDataService {
     postId: string
   ): Observable<BlogAuthoringPost> {
     this.assertWorkspace(workspace);
-    return this.http.post<BlogAuthoringPost>(
-      `${this.apiUrl}/post/${encodeURIComponent(postId)}/publish`,
-      {},
-      {
-        params: this.workspaceParams(workspace),
-        headers: this.workspaceHeaders(workspace),
-      }
+    return this.blogging.postControllerPublishPost<BlogAuthoringPost>(
+      postId,
+      this.requestOptions(workspace)
     );
   }
 
-  private workspaceParams(workspace: BlogAuthoringWorkspace): HttpParams {
-    return new HttpParams().set(
-      'workspaceSlug',
-      this.requireWorkspaceSlug(workspace)
-    );
-  }
-
-  private workspaceHeaders(workspace: BlogAuthoringWorkspace): HttpHeaders {
-    return new HttpHeaders({
-      'x-ot-appscope': this.requireAppScope(workspace),
-      'X-ot-workspace-id': workspace.workspaceId.trim(),
-    });
+  private requestOptions(workspace: BlogAuthoringWorkspace): {
+    params: Record<string, string>;
+    headers: Record<string, string>;
+  } {
+    // Plain records (not HttpParams): generated clients spread options into
+    // the request params, which drops HttpParams internals.
+    return {
+      params: { workspaceSlug: this.requireWorkspaceSlug(workspace) },
+      headers: {
+        'x-ot-appscope': this.requireAppScope(workspace),
+        'X-ot-workspace-id': workspace.workspaceId.trim(),
+      },
+    };
   }
 
   private assertWorkspace(workspace: BlogAuthoringWorkspace): void {

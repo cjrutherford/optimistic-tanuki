@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/app-config-data-access/src",
   "projectType": "library",
-  "tags": ["scope:shared", "type:data-access"],
+  "tags": ["scope:app-config", "type:data-access"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",

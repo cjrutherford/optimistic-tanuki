@@ -33,6 +33,7 @@ import {
   ServiceTokens,
   ProfileCommands,
 } from '@optimistic-tanuki/constants';
+import { BusinessContentCommands } from '@optimistic-tanuki/social-contracts';
 import {
   CreatePollDto,
   UpdatePollDto,
@@ -94,6 +95,7 @@ import { ProfileAnalyticsService } from './services/profile-analytics.service';
 import { PollService } from './services/poll.service';
 import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
+import { BusinessContentService } from './services/business-content.service';
 import { LinkService } from './services/link.service';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
@@ -130,7 +132,8 @@ export class AppController {
     private readonly eventService: EventService,
     private readonly linkService: LinkService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
-    private readonly profileClient: ClientProxy
+    private readonly profileClient: ClientProxy,
+    private readonly businessContentService: BusinessContentService
   ) {}
 
   private async buildPostVisibilityScope(
@@ -1836,5 +1839,100 @@ export class AppController {
   @MessagePattern({ cmd: ScheduledPostCommands.PUBLISH })
   async publishScheduledPost(@Payload('id') id: string) {
     return await this.postService.publishScheduledPost(id);
+  }
+
+  // Business content handlers (O13/E14 — social owns content reads)
+  @MessagePattern({ cmd: BusinessContentCommands.PAGE_GET })
+  async getBusinessPage(@Payload() data: { communityId: string }) {
+    return await this.businessContentService.getBusinessPage(data.communityId);
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.PAGE_CREATE })
+  async createBusinessPage(
+    @Payload()
+    data: {
+      communityId: string;
+      ownerId: string;
+      tier?: string;
+      paymentsBusinessPageId?: string;
+    }
+  ) {
+    return await this.businessContentService.createBusinessPage(data);
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.PAGE_UPDATE })
+  async updateBusinessPage(
+    @Payload()
+    data: {
+      communityId: string;
+      ownerId: string;
+      data: Record<string, unknown>;
+    }
+  ) {
+    return await this.businessContentService.updateBusinessPage(
+      data.communityId,
+      data.ownerId,
+      data.data
+    );
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.PAGES_BY_COMMUNITIES })
+  async getBusinessPagesByCommunities(
+    @Payload() data: { communityIds: string[] }
+  ) {
+    return await this.businessContentService.getBusinessPagesByCommunityIds(
+      data.communityIds ?? []
+    );
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.THEME_GET })
+  async getBusinessTheme(@Payload() data: { businessPageId: string }) {
+    return await this.businessContentService.getBusinessTheme(
+      data.businessPageId
+    );
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.THEME_CREATE })
+  async createBusinessTheme(
+    @Payload()
+    data: {
+      businessPageId: string;
+      personalityId?: string;
+      primaryColor?: string;
+      accentColor?: string;
+      backgroundColor?: string;
+      customCss?: string;
+      customFontFamily?: string;
+    }
+  ) {
+    return await this.businessContentService.createBusinessTheme(data);
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.SPONSORSHIP_ACTIVE })
+  async getActiveSponsorships(@Payload() data: { communityId: string }) {
+    return await this.businessContentService.getActiveSponsorships(
+      data.communityId
+    );
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.SPONSORSHIP_USER })
+  async getUserSponsorships(@Payload() data: { userId: string }) {
+    return await this.businessContentService.getUserSponsorships(data.userId);
+  }
+
+  @MessagePattern({ cmd: BusinessContentCommands.SPONSORSHIP_CREATE })
+  async createSponsorship(
+    @Payload()
+    data: {
+      communityId: string;
+      businessPageId?: string;
+      userId: string;
+      type: string;
+      adContent?: string;
+      months?: number;
+      paymentsSponsorshipId?: string;
+    }
+  ) {
+    return await this.businessContentService.createSponsorship(data);
   }
 }

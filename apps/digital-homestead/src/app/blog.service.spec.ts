@@ -57,7 +57,7 @@ describe('BlogService', () => {
         expect(post).toEqual(mockBlogPost);
       });
 
-      const req = httpMock.expectOne('/api/post');
+      const req = httpMock.expectOne('/api/blog-posts');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(newPost);
       req.flush(mockBlogPost);
@@ -72,7 +72,7 @@ describe('BlogService', () => {
         expect(result).toEqual(posts);
       });
 
-      const req = httpMock.expectOne('/api/post/find');
+      const req = httpMock.expectOne('/api/blog-posts/find');
       expect(req.request.method).toBe('POST');
       req.flush(posts);
     });
@@ -82,7 +82,7 @@ describe('BlogService', () => {
 
       service.getAllPosts(query).subscribe();
 
-      const req = httpMock.expectOne('/api/post/find');
+      const req = httpMock.expectOne('/api/blog-posts/find');
       expect(req.request.body).toEqual(query);
       req.flush([]);
     });
@@ -96,7 +96,7 @@ describe('BlogService', () => {
         expect(result).toEqual(posts);
       });
 
-      const req = httpMock.expectOne('/api/post/published');
+      const req = httpMock.expectOne('/api/blog-posts/published');
       expect(req.request.method).toBe('GET');
       req.flush(posts);
     });
@@ -111,7 +111,7 @@ describe('BlogService', () => {
         expect(result).toEqual(drafts);
       });
 
-      const req = httpMock.expectOne(`/api/post/drafts/${authorId}`);
+      const req = httpMock.expectOne(`/api/blog-posts/drafts/${authorId}`);
       expect(req.request.method).toBe('GET');
       req.flush(drafts);
     });
@@ -125,7 +125,7 @@ describe('BlogService', () => {
         expect(result).toEqual(mockBlogPost);
       });
 
-      const req = httpMock.expectOne(`/api/post/${postId}`);
+      const req = httpMock.expectOne(`/api/blog-posts/${postId}`);
       expect(req.request.method).toBe('GET');
       req.flush(mockBlogPost);
     });
@@ -143,7 +143,7 @@ describe('BlogService', () => {
         expect(result).toEqual(mockBlogPost);
       });
 
-      const req = httpMock.expectOne(`/api/post/${postId}`);
+      const req = httpMock.expectOne(`/api/blog-posts/${postId}`);
       expect(req.request.method).toBe('PATCH');
       expect(req.request.body).toEqual(updateData);
       req.flush(mockBlogPost);
@@ -158,7 +158,7 @@ describe('BlogService', () => {
         expect(result).toEqual(mockBlogPost);
       });
 
-      const req = httpMock.expectOne(`/api/post/${postId}/publish`);
+      const req = httpMock.expectOne(`/api/blog-posts/${postId}/publish`);
       expect(req.request.method).toBe('POST');
       req.flush(mockBlogPost);
     });
@@ -176,7 +176,7 @@ describe('BlogService', () => {
         expect(result).toEqual(mockBlogPost);
       });
 
-      const req = httpMock.expectOne('/api/post');
+      const req = httpMock.expectOne('/api/blog-posts');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({ ...draftData, isDraft: true });
       req.flush(mockBlogPost);
@@ -189,7 +189,7 @@ describe('BlogService', () => {
 
       service.deletePost(postId).subscribe();
 
-      const req = httpMock.expectOne(`/api/post/${postId}`);
+      const req = httpMock.expectOne(`/api/blog-posts/${postId}`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -204,7 +204,7 @@ describe('BlogService', () => {
         expect(result).toEqual(results);
       });
 
-      const req = httpMock.expectOne(`/api/post/search?q=${searchTerm}`);
+      const req = httpMock.expectOne(`/api/blog-posts/search?q=${searchTerm}`);
       expect(req.request.method).toBe('GET');
       req.flush(results);
     });
@@ -216,7 +216,7 @@ describe('BlogService', () => {
         expect(result).toEqual([]);
       });
 
-      const req = httpMock.expectOne(`/api/post/search?q=`);
+      const req = httpMock.expectOne(`/api/blog-posts/search?q=`);
       req.flush([]);
     });
   });
@@ -224,14 +224,14 @@ describe('BlogService', () => {
   describe('getRssFeedUrl', () => {
     it('should return RSS feed URL without base URL', () => {
       const url = service.getRssFeedUrl();
-      expect(url).toBe('/api/post/rss/feed.xml');
+      expect(url).toBe('/api/blog-posts/rss/feed.xml');
     });
 
     it('should return RSS feed URL with base URL', () => {
       const baseUrl = 'https://blog.example.com';
       const url = service.getRssFeedUrl(baseUrl);
       expect(url).toBe(
-        `/api/post/rss/feed.xml?baseUrl=${encodeURIComponent(baseUrl)}`
+        `/api/blog-posts/rss/feed.xml?baseUrl=${encodeURIComponent(baseUrl)}`
       );
     });
   });
@@ -250,7 +250,7 @@ describe('BlogService', () => {
         expect(result).toEqual(seoData);
       });
 
-      const req = httpMock.expectOne(`/api/post/${postId}/seo`);
+      const req = httpMock.expectOne(`/api/blog-posts/${postId}/seo`);
       expect(req.request.method).toBe('GET');
       req.flush(seoData);
     });
@@ -263,7 +263,7 @@ describe('BlogService', () => {
 
       const req = httpMock.expectOne((request) => {
         return (
-          request.url === `/api/post/${postId}/seo` &&
+          request.url === `/api/blog-posts/${postId}/seo` &&
           request.params.get('baseUrl') === baseUrl
         );
       });

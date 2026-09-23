@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -10,74 +10,89 @@ import {
   CreateBlogComponentDto,
   UpdateBlogComponentDto,
 } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 
 @Injectable({
   providedIn: 'root',
 })
 export class BlogService {
-  private readonly http = inject(HttpClient);
+  private readonly blogging = inject(OptomisitcTanukiAPIService);
 
   createPost(data: CreateBlogPostDto): Observable<BlogPostDto> {
     console.log(data);
-    return this.http.post<BlogPostDto>('/api/post', data);
+    return this.blogging.postControllerCreatePost<BlogPostDto>(data);
   }
 
   getAllPosts(query?: BlogPostQueryDto): Observable<BlogPostDto[]> {
-    return this.http.post<BlogPostDto[]>('/api/post/find', query || {});
+    const { createdAt, updatedAt, ...rest } = query || {};
+    const wireRange = (range: [Date, Date] | undefined): string[] | undefined =>
+      range === undefined
+        ? undefined
+        : range.map((d) => (d instanceof Date ? d.toISOString() : String(d)));
+    return this.blogging.postControllerFindAllPosts<BlogPostDto[]>({
+      ...rest,
+      createdAt: wireRange(createdAt),
+      updatedAt: wireRange(updatedAt),
+    });
   }
 
   /**
    * Get only published posts (for public display)
    */
   getPublishedPosts(): Observable<BlogPostDto[]> {
-    return this.http.get<BlogPostDto[]>('/api/post/published');
+    return this.blogging.postControllerGetPublishedPosts<BlogPostDto[]>();
   }
 
   /**
    * Get drafts for a specific author
    */
   getDraftsByAuthor(authorId: string): Observable<BlogPostDto[]> {
-    return this.http.get<BlogPostDto[]>(`/api/post/drafts/${authorId}`);
+    return this.blogging.postControllerGetDraftsByAuthor<BlogPostDto[]>(
+      authorId
+    );
   }
 
   getPost(id: string): Observable<BlogPostDto> {
-    return this.http.get<BlogPostDto>(`/api/post/${id}`);
+    return this.blogging.postControllerGetPost<BlogPostDto>(id);
   }
 
   /**
    * Update an existing blog post
    */
   updatePost(id: string, data: UpdateBlogPostDto): Observable<BlogPostDto> {
-    return this.http.patch<BlogPostDto>(`/api/post/${id}`, data);
+    return this.blogging.postControllerUpdatePost<BlogPostDto>(id, data);
   }
 
   /**
    * Publish a draft post
    */
   publishPost(id: string): Observable<BlogPostDto> {
-    return this.http.post<BlogPostDto>(`/api/post/${id}/publish`, {});
+    return this.blogging.postControllerPublishPost<BlogPostDto>(id);
   }
 
   /**
    * Save post as draft
    */
   saveDraft(data: CreateBlogPostDto): Observable<BlogPostDto> {
-    return this.http.post<BlogPostDto>('/api/post', { ...data, isDraft: true });
+    return this.blogging.postControllerCreatePost<BlogPostDto>({
+      ...data,
+      isDraft: true,
+    });
   }
 
   /**
    * Delete a blog post
    */
   deletePost(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/post/${id}`);
+    return this.blogging.postControllerDeletePost<void>(id);
   }
 
   /**
    * Search posts by title or content
    */
   searchPosts(searchTerm: string): Observable<BlogPostDto[]> {
-    return this.http.get<BlogPostDto[]>(`/api/post/search`, {
-      params: { q: searchTerm as string },
+    return this.blogging.postControllerSearchPosts<BlogPostDto[]>({
+      q: searchTerm,
     });
   }
 
@@ -85,7 +100,7 @@ export class BlogService {
    * Get RSS feed URL
    */
   getRssFeedUrl(baseUrl?: string): string {
-    const url = '/api/post/rss/feed.xml';
+    const url = '/api/blog-posts/rss/feed.xml';
     return baseUrl ? `${url}?baseUrl=${encodeURIComponent(baseUrl)}` : url;
   }
 
@@ -96,12 +111,11 @@ export class BlogService {
     postId: string,
     baseUrl?: string
   ): Observable<{ title: string; description: string; keywords: string[] }> {
-    const params = new HttpParams(baseUrl ? { fromObject: { baseUrl } } : {});
-    return this.http.get<{
+    return this.blogging.postControllerGetPostSeoMetadata<{
       title: string;
       description: string;
       keywords: string[];
-    }>(`/api/post/${postId}/seo`, { params });
+    }>(postId, baseUrl === undefined ? {} : { baseUrl });
   }
 
   /**
@@ -116,7 +130,7 @@ export class BlogService {
    * Publish a draft
    */
   publishDraft(id: string): Observable<BlogPostDto> {
-    return this.http.post<BlogPostDto>(`/api/post/${id}/publish`, {});
+    return this.blogging.postControllerPublishPost<BlogPostDto>(id);
   }
 
   // ========== Blog Component Methods ==========
@@ -125,9 +139,9 @@ export class BlogService {
    * Get components for a blog post
    */
   getComponentsForPost(postId: string): Observable<BlogComponentDto[]> {
-    return this.http.get<BlogComponentDto[]>(
-      `/api/blog-components/post/${postId}`
-    );
+    return this.blogging.blogComponentControllerGetBlogComponents<
+      BlogComponentDto[]
+    >(postId);
   }
 
   /**
@@ -136,7 +150,9 @@ export class BlogService {
   createComponent(
     component: CreateBlogComponentDto
   ): Observable<BlogComponentDto> {
-    return this.http.post<BlogComponentDto>('/api/blog-components', component);
+    return this.blogging.blogComponentControllerCreateBlogComponent<BlogComponentDto>(
+      component
+    );
   }
 
   /**
@@ -146,8 +162,8 @@ export class BlogService {
     id: string,
     component: UpdateBlogComponentDto
   ): Observable<BlogComponentDto> {
-    return this.http.put<BlogComponentDto>(
-      `/api/blog-components/${id}`,
+    return this.blogging.blogComponentControllerUpdateBlogComponent<BlogComponentDto>(
+      id,
       component
     );
   }
@@ -156,13 +172,15 @@ export class BlogService {
    * Delete a blog component
    */
   deleteComponent(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/blog-components/${id}`);
+    return this.blogging.blogComponentControllerDeleteBlogComponent<void>(id);
   }
 
   /**
    * Delete all components for a post
    */
   deleteComponentsByPost(postId: string): Observable<void> {
-    return this.http.delete<void>(`/api/blog-components/post/${postId}`);
+    return this.blogging.blogComponentControllerDeleteComponentsByPost<void>(
+      postId
+    );
   }
 }

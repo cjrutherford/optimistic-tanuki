@@ -27,6 +27,24 @@ const payload = buildBatchRecordUsagePayload([
 console.log(payload.events.length);
 ```
 
+## Generated client (Track A pilot, O15)
+
+`src/generated/billing.ts` is orval output from the gateway OpenAPI document
+(`dist/openapi.json`, `billing` tag only) — do not edit by hand. Regenerate:
+
+```bash
+pnpm run get-openapi
+pnpm exec nx run billing-sdk:generate
+```
+
+The package re-exports the generated `OptomisitcTanukiAPIService` (Angular
+`HttpClient` client for `POST /api/billing/usage/record`,
+`POST /api/billing/usage/batch`, `POST /api/billing/invoices/preview`) so it
+is the single `/api/billing/*` caller. The `build*Payload` builders above are
+kept as thin domain helpers; `billing-sdk-generated-parity.spec.ts` pins
+builder output against the generated parameter types (including the
+`Date`→ISO-string wire boundary). Angular is a peer dependency.
+
 ## Runtime
 
 This package is intended for browser or Node.js consumers. It keeps transport details outside the package and depends on `@optimistic-tanuki/billing-contracts` for shared payload types.

@@ -1,0 +1,35 @@
+{
+  "name": "learning-contracts",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/learning/contracts/src",
+  "projectType": "library",
+  "tags": [
+    "type:contracts",
+    "scope:learning",
+    "platform:shared",
+    "visibility:publishable"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/learning/contracts",
+        "main": "libs/learning/contracts/src/index.ts",
+        "tsConfig": "libs/learning/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/learning/contracts/package.json",
+          "libs/learning/contracts/README.md"
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/learning/contracts/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

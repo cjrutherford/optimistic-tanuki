@@ -117,11 +117,10 @@ function injectJsonPut(
 }
 
 describe('TrainerController', () => {
-  it('registers both trainer and business route prefixes', () => {
-    expect(Reflect.getMetadata(PATH_METADATA, TrainerController)).toEqual([
-      'trainer',
-      'business',
-    ]);
+  it('mounts only the canonical business prefix (trainer shim removed at O14)', () => {
+    expect(Reflect.getMetadata(PATH_METADATA, TrainerController)).toEqual(
+      'business'
+    );
   });
 
   it('derives public business offers without trainer-facing copy', async () => {

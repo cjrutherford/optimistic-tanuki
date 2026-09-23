@@ -115,6 +115,11 @@ services:
     transport: TCP
     host: ot_learning_service
     port: 3024
+  billing:
+    name: billing
+    transport: TCP
+    host: billing
+    port: 3019
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

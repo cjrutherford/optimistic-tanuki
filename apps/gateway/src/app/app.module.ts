@@ -58,6 +58,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
+import { BillingController } from '../controllers/billing/billing.controller';
 import { OAuthController } from '../controllers/oauth/oauth.controller';
 import {
   LocalOAuthStateStore,
@@ -98,43 +99,22 @@ import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry-backen
 import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
 import {
   ComposableEntry,
+  GATEWAY_SERVICE_IDS,
   filterEnabledEntries,
   loadGatewayCompositionFromFile,
   normalizeGatewayComposition,
-} from './gateway-composition';
+} from '@optimistic-tanuki/constants';
 import {
   createMcpToolImports,
   createGatewayServiceProviders,
 } from './gateway-service-providers';
 import { WorkspaceResolverService } from './workspace-context/workspace-resolver.service';
+import { CommunityWorkspaceProvisioner } from './community-provisioning/community-workspace-provisioner.service';
 import { WorkspaceClaimController } from '../controllers/workspace/workspace-claim.controller';
 import { WorkspaceDiscoveryController } from '../controllers/workspace/workspace-discovery.controller';
 import { WorkspaceContextGuard } from '../guards/workspace-context.guard';
 
-const gatewayServices = [
-  'authentication',
-  'profile',
-  'social',
-  'assets',
-  'project-planning',
-  'chat-collector',
-  'telos-docs-service',
-  'ai-orchestration',
-  'blogging',
-  'permissions',
-  'store',
-  'workspace',
-  'app-configurator',
-  'forum',
-  'finance',
-  'wellness',
-  'classifieds',
-  'payments',
-  'lead-tracker',
-  'system-configurator-api',
-  'videos',
-  'learning-service',
-] as const;
+const gatewayServices = GATEWAY_SERVICE_IDS;
 
 const gatewayComposition = normalizeGatewayComposition(
   loadGatewayCompositionFromFile(process.env.GATEWAY_COMPOSITION_PATH),
@@ -235,6 +215,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'finance',
         requiredServices: ['finance'],
         value: FinanceController,
+      },
+      {
+        id: 'billing',
+        requiredServices: ['billing'],
+        value: BillingController,
       },
       { id: 'videos', requiredServices: ['videos'], value: VideosController },
       {
@@ -414,6 +399,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,
     WorkspaceResolverService,
+    CommunityWorkspaceProvisioner,
     WorkspaceContextGuard,
     {
       provide: SECURITY_TELEMETRY_SERVICE,

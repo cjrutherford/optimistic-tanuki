@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import {
   FinancialCheckoutSession,
   FinancialInvoice,
   FinanceWorkspace,
-} from '../models';
+} from '@optimistic-tanuki/finance-data-access';
 
 @Component({
   selector: 'ot-finance-checkout-sessions',

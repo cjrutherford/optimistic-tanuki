@@ -12,7 +12,7 @@ import {
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChatCommands, CommonCommands } from '@optimistic-tanuki/constants';
-import { ChatMessage } from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
 
 @Controller()
 export class AppController {
@@ -43,7 +43,7 @@ export class AppController {
     return await this.appService.getConversation(data.conversationId);
   }
 
-  @MessagePattern({ cmd: 'CREATE_COMMUNITY_CHAT' })
+  @MessagePattern({ cmd: ChatCommands.CREATE_COMMUNITY_CHAT })
   async createCommunityChat(
     @Payload() data: { communityId: string; ownerId: string; name?: string }
   ) {

@@ -7,6 +7,17 @@ describe('marketing generator config', () => {
   });
 
   it('defaults to prompt-proxy ollama settings from config', async () => {
+    // Hermetic defaults: a machine .env (e.g. OLLAMA_HOST=<tailscale-ip>)
+    // must not leak into the default assertion.
+    for (const key of [
+      'OLLAMA_HOST',
+      'OLLAMA_PORT',
+      'OLLAMA_MODEL',
+      'OLLAMA_TEMPERATURE',
+      'OLLAMA_TIMEOUT_MS',
+    ]) {
+      delete process.env[key];
+    }
     const module = await import('./config');
     const config = module.loadConfig();
 

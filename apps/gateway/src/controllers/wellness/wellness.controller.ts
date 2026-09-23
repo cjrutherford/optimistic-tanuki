@@ -13,7 +13,9 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { AiOrchestrationReadinessInterceptor } from '../../interceptors/ai-orchestration-readiness.interceptor';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
@@ -44,6 +46,7 @@ export class WellnessController {
 
   @Post('ai/prompt')
   @LongRunning()
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   @ApiOperation({ summary: 'Generate an AI wellness prompt' })
   @ApiResponse({ status: 200, description: 'AI prompt generated successfully' })
   async generateAiPrompt(
@@ -73,6 +76,7 @@ export class WellnessController {
 
   @Post('ai/context')
   @LongRunning()
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   @ApiOperation({ summary: 'Get wellness context description' })
   @ApiResponse({ status: 200, description: 'Context description returned' })
   async getWellnessContext(@Body() data: { contextType: string }) {

@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 
 export interface BlogCatalog {
   id: string;
@@ -13,11 +13,11 @@ export interface BlogCatalog {
 
 @Injectable({ providedIn: 'root' })
 export class BlogCatalogService {
-  constructor(private readonly http: HttpClient) {}
+  private readonly blogging = inject(OptomisitcTanukiAPIService);
 
   getMyCatalogs(workspaceSlug: string): Observable<BlogCatalog[]> {
-    return this.http.get<BlogCatalog[]>('/api/blog/catalogs/mine', {
-      params: new HttpParams().set('workspaceSlug', workspaceSlug),
+    return this.blogging.blogControllerFindMyCatalogs<BlogCatalog[]>({
+      params: { workspaceSlug },
     });
   }
 }

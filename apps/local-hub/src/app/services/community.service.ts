@@ -187,14 +187,14 @@ export class CommunityService {
 
   getCommunityBySlug(slug: string): Promise<LocalCommunity> {
     return firstValueFrom(
-      this.http.get<LocalCommunity>(`${this.baseUrl}/slug/${slug}`)
+      this.http.get<LocalCommunity>(`${this.socialBaseUrl}/slug/${slug}`)
     ).then(this.normalizeCommunity);
   }
 
   getSubCommunities(parentId: string): Promise<LocalCommunity[]> {
     return firstValueFrom(
       this.http.get<LocalCommunity[]>(
-        `${this.baseUrl}/${parentId}/sub-communities`
+        `${this.socialBaseUrl}/${parentId}/sub-communities`
       )
     ).then((communities) => {
       if (!Array.isArray(communities)) {
@@ -211,7 +211,7 @@ export class CommunityService {
   joinCommunity(communityId: string): Promise<{ status?: string }> {
     return firstValueFrom(
       this.http.post<{ status?: string }>(
-        `${this.baseUrl}/${communityId}/join`,
+        `${this.socialBaseUrl}/${communityId}/join`,
         {}
       )
     );
@@ -219,7 +219,7 @@ export class CommunityService {
 
   leaveCommunity(communityId: string): Promise<void> {
     return firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/${communityId}/membership`)
+      this.http.post<void>(`${this.socialBaseUrl}/${communityId}/leave`, {})
     );
   }
 
@@ -230,7 +230,7 @@ export class CommunityService {
   ): Promise<{ id: string }> {
     return firstValueFrom(
       this.http.post<{ id: string }>(
-        `${this.baseUrl}/${communityId}/chat-room`,
+        `${this.socialBaseUrl}/${communityId}/chat-room`,
         {
           ownerId,
           name,
@@ -266,7 +266,7 @@ export class CommunityService {
 
   isMember(communityId: string): Promise<boolean> {
     return firstValueFrom(
-      this.http.get<boolean>(`${this.baseUrl}/${communityId}/membership`)
+      this.http.get<boolean>(`${this.socialBaseUrl}/${communityId}/membership`)
     );
   }
 
@@ -304,7 +304,7 @@ export class CommunityService {
     try {
       return await firstValueFrom(
         this.http.get<CommunityManager | null>(
-          `${this.baseUrl}/${communityId}/manager`
+          `${this.socialBaseUrl}/${communityId}/manager`
         )
       );
     } catch {
@@ -322,7 +322,7 @@ export class CommunityService {
     try {
       return await firstValueFrom(
         this.http.get<CommunityElection | null>(
-          `${this.baseUrl}/${communityId}/election`
+          `${this.socialBaseUrl}/${communityId}/election`
         )
       );
     } catch {
@@ -340,7 +340,7 @@ export class CommunityService {
   ): Promise<ElectionCandidate> {
     return firstValueFrom(
       this.http.post<ElectionCandidate>(
-        `${this.baseUrl}/${communityId}/election/nominate`,
+        `${this.socialBaseUrl}/${communityId}/election/nominate`,
         nomineeId ? { nomineeId } : {}
       )
     );
@@ -355,7 +355,7 @@ export class CommunityService {
   ): Promise<CommunityElection> {
     return firstValueFrom(
       this.http.post<CommunityElection>(
-        `${this.baseUrl}/${communityId}/election/vote`,
+        `${this.socialBaseUrl}/${communityId}/election/vote`,
         { candidateUserId }
       )
     );

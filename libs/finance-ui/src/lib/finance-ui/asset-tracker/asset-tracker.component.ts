@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CreateInventoryItem, InventoryItem } from '../models';
-import { FinanceService } from '../services/finance.service';
-import { isAbortLikeHttpError } from '../services/http-error.utils';
+import {
+  CreateInventoryItem,
+  InventoryItem,
+} from '@optimistic-tanuki/finance-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import { isAbortLikeHttpError } from '@optimistic-tanuki/finance-data-access';
 
 @Component({
   selector: 'ot-asset-tracker',

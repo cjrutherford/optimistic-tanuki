@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { BlogPostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   BlogPostQueryDto,
@@ -40,7 +41,8 @@ type BlogWorkspaceScope = {
 };
 
 @UseGuards(AuthGuard, PermissionsGuard)
-@Controller('post')
+@ApiTags('blog-posts')
+@Controller('blog-posts')
 export class PostController {
   constructor(
     @Inject(ServiceTokens.BLOG_SERVICE)
@@ -155,6 +157,7 @@ export class PostController {
   /**
    * Get all published posts (public access)
    */
+  @ApiQuery({ name: 'catalogId', required: false })
   @Get('/published')
   @Public()
   async getPublishedPosts(@Query('catalogId') catalogId?: string) {
@@ -467,6 +470,7 @@ export class PostController {
   /**
    * Get SEO metadata for a post
    */
+  @ApiQuery({ name: 'baseUrl', required: false })
   @Get('/:id/seo')
   @Public()
   async getPostSeoMetadata(

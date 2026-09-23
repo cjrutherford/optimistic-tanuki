@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { FinCommanderPlanStore } from './fin-commander-plan-store.service';
-import { FinanceService } from '@optimistic-tanuki/finance-ui';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 import { FinCommanderPlanApiService } from './fin-commander-plan-api.service';
 
 describe('FinCommanderPlanStore', () => {

@@ -144,13 +144,34 @@ describe('StoreService', () => {
   });
 
   describe('donations and subscriptions', () => {
-    it('lists donations', () => {
-      const { req } = expectCall(
-        () => service.getDonations().subscribe(),
-        'GET',
-        '/api/store/donations'
-      );
-      req.flush([]);
+    it('lists donations from the canonical payments list with store shaping', (done) => {
+      service.getDonations().subscribe((donations) => {
+        expect(donations).toEqual([
+          expect.objectContaining({
+            id: 'd1',
+            amountCents: 2500,
+            currency: 'USD',
+            message: 'Go',
+            anonymous: false,
+            status: 'completed',
+          }),
+        ]);
+        done();
+      });
+      const req = httpMock.expectOne('/api/donations');
+      expect(req.request.method).toBe('GET');
+      req.flush([
+        {
+          id: 'd1',
+          userId: 'u1',
+          amount: 25,
+          currency: 'USD',
+          message: 'Go',
+          anonymous: false,
+          status: 'completed',
+          createdAt: '2026-09-20T00:00:00.000Z',
+        },
+      ]);
     });
 
     it('lists subscriptions', () => {
@@ -171,12 +192,11 @@ describe('StoreService', () => {
       req.flush([]);
     });
 
-    it('cancels a subscription with an empty body', () => {
+    it('cancels a subscription without an HTTP body (TCP payload unchanged)', () => {
       const { req } = expectCall(
         () => service.cancelSubscription('s1').subscribe(),
         'PUT',
-        '/api/store/subscriptions/s1/cancel',
-        {}
+        '/api/store/subscriptions/s1/cancel'
       );
       req.flush({ id: 's1' });
     });
@@ -254,22 +274,20 @@ describe('StoreService', () => {
       req.flush({ id: 'a1' });
     });
 
-    it('cancels an appointment with an empty body', () => {
+    it('cancels an appointment without an HTTP body (TCP payload unchanged)', () => {
       const { req } = expectCall(
         () => service.cancelAppointment('a1').subscribe(),
         'PUT',
-        '/api/store/appointments/a1/cancel',
-        {}
+        '/api/store/appointments/a1/cancel'
       );
       req.flush({ id: 'a1' });
     });
 
-    it('completes an appointment with an empty body', () => {
+    it('completes an appointment without an HTTP body (TCP payload unchanged)', () => {
       const { req } = expectCall(
         () => service.completeAppointment('a1').subscribe(),
         'PUT',
-        '/api/store/appointments/a1/complete',
-        {}
+        '/api/store/appointments/a1/complete'
       );
       req.flush({ id: 'a1' });
     });
@@ -278,8 +296,7 @@ describe('StoreService', () => {
       const { req } = expectCall(
         () => service.generateInvoice('a1').subscribe(),
         'POST',
-        '/api/store/appointments/a1/invoice',
-        {}
+        '/api/store/appointments/a1/invoice'
       );
       req.flush({ id: 'inv-1' });
     });
@@ -417,7 +434,10 @@ describe('StoreService', () => {
         '/api/store/resources/r1/check-availability'
       );
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ startTime, endTime });
+      expect(req.request.body).toEqual({
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+      });
       req.flush(true);
       expect(result).toBe(true);
     });

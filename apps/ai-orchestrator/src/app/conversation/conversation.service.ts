@@ -7,11 +7,9 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import {
-  PersonaTelosDto,
-  ProfileDto,
-  ChatMessage,
-} from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 import { ModelManager, ModelType } from '../models/model-manager.service';
 import { ToolRegistry } from '../tools/tool-registry.service';
 import { IntentAnalyzer } from '../intent/intent-analyzer.service';

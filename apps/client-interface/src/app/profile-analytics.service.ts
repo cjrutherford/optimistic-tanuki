@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 
 export interface ProfileViewStats {
   totalViews: number;
@@ -18,16 +18,16 @@ export interface ProfileViewer {
 
 @Injectable({ providedIn: 'root' })
 export class ProfileAnalyticsService {
-  private baseUrl = '/api/profile-analytics';
+  private readonly analytics = inject(OptomisitcTanukiAPIService);
 
-  constructor(private http: HttpClient) {}
+  constructor() {}
 
   recordView(
     profileId: string,
     viewerId: string,
     source: string
   ): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/view`, {
+    return this.analytics.profileAnalyticsControllerRecordView<void>({
       profileId,
       viewerId,
       source,
@@ -35,8 +35,8 @@ export class ProfileAnalyticsService {
   }
 
   getViewStats(profileId: string): Observable<ProfileViewStats> {
-    return this.http.get<ProfileViewStats>(
-      `${this.baseUrl}/${profileId}/stats`
+    return this.analytics.profileAnalyticsControllerGetViewStats<ProfileViewStats>(
+      profileId
     );
   }
 
@@ -44,8 +44,8 @@ export class ProfileAnalyticsService {
     profileId: string,
     limit: number = 10
   ): Observable<ProfileViewer[]> {
-    return this.http.get<ProfileViewer[]>(
-      `${this.baseUrl}/${profileId}/viewers?limit=${limit}`
-    );
+    return this.analytics.profileAnalyticsControllerGetRecentViewers<
+      ProfileViewer[]
+    >(profileId, { limit });
   }
 }

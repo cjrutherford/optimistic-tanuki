@@ -7,7 +7,8 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
+import { buildSwaggerDocument } from './swagger-document';
 import { json, urlencoded } from 'express';
 import cookieParser from 'cookie-parser';
 import {
@@ -46,22 +47,7 @@ async function bootstrap() {
   );
 
   // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Optomisitc Tanuki API')
-    .setDescription(
-      "I got caught by an angry panda once, he said life's too short to be stuck working for someone else's dreams. I wonder if he ever got back home."
-    )
-    .setVersion('1.0')
-    .addTag('authentication')
-    .addTag('social')
-    .addTag('timeline')
-    .addTag('post')
-    .addTag('timer')
-    .addTag('attachment')
-    .addTag('comment')
-    .addTag('vote')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
+  const document = buildSwaggerDocument(app);
   SwaggerModule.setup('api-docs', app, document);
 
   const port = process.env.PORT || 3000;

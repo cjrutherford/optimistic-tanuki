@@ -1,8 +1,6 @@
-import { Injectable, Inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
-  API_BASE_URL,
   CommunityDto,
   CreateCommunityDto,
   UpdateCommunityDto,
@@ -10,115 +8,117 @@ import {
   CommunityMemberDto,
   CommunityInviteDto,
 } from '@optimistic-tanuki/ui-models';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/social-data-access';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CommunityService {
-  private baseUrl: string;
-
-  constructor(
-    @Inject(API_BASE_URL) private apiBaseUrl: string,
-    private http: HttpClient
-  ) {
-    this.baseUrl = `${this.apiBaseUrl}/social/community`;
-  }
+  private readonly social = inject(OptomisitcTanukiAPIService);
 
   createCommunity(dto: CreateCommunityDto): Observable<CommunityDto> {
-    return this.http.post<CommunityDto>(this.baseUrl, dto);
+    return this.social.communityControllerCreateCommunity<CommunityDto>(
+      dto as Parameters<
+        typeof this.social.communityControllerCreateCommunity
+      >[0]
+    );
   }
 
   getCommunity(id: string): Observable<CommunityDto> {
-    return this.http.get<CommunityDto>(`${this.baseUrl}/${id}`);
+    return this.social.communityControllerGetCommunity<CommunityDto>(id);
   }
 
   searchCommunities(criteria: SearchCommunityDto): Observable<CommunityDto[]> {
-    return this.http.post<CommunityDto[]>(`${this.baseUrl}/search`, criteria);
+    return this.social.communityControllerSearchCommunities<CommunityDto[]>(
+      criteria as Parameters<
+        typeof this.social.communityControllerSearchCommunities
+      >[0]
+    );
   }
 
   listCommunities(name?: string): Observable<CommunityDto[]> {
-    const url = name
-      ? `${this.baseUrl}?name=${encodeURIComponent(name)}`
-      : this.baseUrl;
-    return this.http.get<CommunityDto[]>(url);
+    return this.social.communityControllerListCommunities<CommunityDto[]>(
+      name === undefined ? {} : { name }
+    );
   }
 
   updateCommunity(
     id: string,
     dto: UpdateCommunityDto
   ): Observable<CommunityDto> {
-    return this.http.put<CommunityDto>(`${this.baseUrl}/${id}`, dto);
+    return this.social.communityControllerUpdateCommunity<CommunityDto>(
+      id,
+      dto as Parameters<
+        typeof this.social.communityControllerUpdateCommunity
+      >[1]
+    );
   }
 
   deleteCommunity(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.social.communityControllerDeleteCommunity<void>(id);
   }
 
   joinCommunity(id: string): Observable<CommunityMemberDto> {
-    return this.http.post<CommunityMemberDto>(`${this.baseUrl}/${id}/join`, {});
+    return this.social.communityControllerJoinCommunity<CommunityMemberDto>(id);
   }
 
   leaveCommunity(id: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/${id}/leave`, {});
+    return this.social.communityControllerLeaveCommunity<void>(id);
   }
 
   getMembers(id: string): Observable<CommunityMemberDto[]> {
-    return this.http.get<CommunityMemberDto[]>(`${this.baseUrl}/${id}/members`);
+    return this.social.communityControllerGetMembers<CommunityMemberDto[]>(id);
   }
 
   getUserCommunities(): Observable<CommunityDto[]> {
-    return this.http.get<CommunityDto[]>(`${this.baseUrl}/user/communities`);
+    return this.social.communityControllerGetUserCommunities<CommunityDto[]>();
   }
 
   inviteUser(
     communityId: string,
     inviteeUserId: string
   ): Observable<CommunityInviteDto> {
-    return this.http.post<CommunityInviteDto>(
-      `${this.baseUrl}/${communityId}/invite`,
+    return this.social.communityControllerInviteUser<CommunityInviteDto>(
+      communityId,
       { inviteeUserId }
     );
   }
 
   getPendingInvites(communityId: string): Observable<CommunityInviteDto[]> {
-    return this.http.get<CommunityInviteDto[]>(
-      `${this.baseUrl}/${communityId}/invites`
-    );
+    return this.social.communityControllerGetPendingInvites<
+      CommunityInviteDto[]
+    >(communityId);
   }
 
   getPendingJoinRequests(
     communityId: string
   ): Observable<CommunityMemberDto[]> {
-    return this.http.get<CommunityMemberDto[]>(
-      `${this.baseUrl}/${communityId}/join-requests`
-    );
+    return this.social.communityControllerGetPendingJoinRequests<
+      CommunityMemberDto[]
+    >(communityId);
   }
 
   approveMember(memberId: string): Observable<CommunityMemberDto> {
-    return this.http.post<CommunityMemberDto>(
-      `${this.baseUrl}/members/${memberId}/approve`,
-      {}
+    return this.social.communityControllerApproveMember<CommunityMemberDto>(
+      memberId
     );
   }
 
   rejectMember(memberId: string): Observable<void> {
-    return this.http.post<void>(
-      `${this.baseUrl}/members/${memberId}/reject`,
-      {}
-    );
+    return this.social.communityControllerRejectMember<void>(memberId);
   }
 
   removeMember(memberId: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/members/${memberId}`);
+    return this.social.communityControllerRemoveMember<void>(memberId);
   }
 
   cancelInvite(inviteId: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/invites/${inviteId}`);
+    return this.social.communityControllerCancelInvite<void>(inviteId);
   }
 
   getUserCommunitiesByProfileId(profileId: string): Observable<CommunityDto[]> {
-    return this.http.get<CommunityDto[]>(
-      `${this.baseUrl}/profile/${profileId}/communities`
-    );
+    return this.social.communityControllerGetCommunitiesByProfileId<
+      CommunityDto[]
+    >(profileId);
   }
 }

@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { ProductEntity } from '../products/entities/product.entity';
 import { SubscriptionEntity } from '../subscriptions/entities/subscription.entity';
-import { DonationEntity } from '../donations/entities/donation.entity';
 import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
@@ -38,7 +37,6 @@ const database = process.env.POSTGRES_DB || configDatabase || configName;
 const entities = [
   ProductEntity,
   SubscriptionEntity,
-  DonationEntity,
   OrderEntity,
   OrderItemEntity,
   AppointmentEntity,

@@ -72,7 +72,7 @@ test.describe('Store Integration Tests - Backend to Frontend', () => {
     if ((await donateButton.isVisible()) && (await donateButton.isEnabled())) {
       // Listen for API call
       const responsePromise = page.waitForResponse(
-        (response) => response.url().includes('/api/store/donations'),
+        (response) => response.url().includes('/api/payments/donations'),
         { timeout: 10000 }
       );
 

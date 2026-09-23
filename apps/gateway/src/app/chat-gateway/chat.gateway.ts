@@ -1,4 +1,9 @@
-import { Inject, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Logger,
+  UnauthorizedException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
@@ -10,17 +15,18 @@ import {
 import {
   ChatCommands,
   ServiceTokens,
-  PersonaTelosCommands,
   AIOrchestrationCommands,
-  ProfileCommands,
 } from '@optimistic-tanuki/constants';
+import { PersonaTelosCommands } from '@optimistic-tanuki/telos-contracts';
+import { ProfileCommands } from '@optimistic-tanuki/profile-contracts';
 import {
   ChatConversation,
   ChatMessage,
-  PersonaTelosDto,
-  ProfileDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/chat-contracts';
+import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
+import { ProfileDto } from '@optimistic-tanuki/profile-contracts';
 import { firstValueFrom } from 'rxjs';
+import { AiOrchestrationReadinessInterceptor } from '../../interceptors/ai-orchestration-readiness.interceptor';
 import { Server, Socket } from 'socket.io';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
@@ -61,6 +67,7 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('new_persona_chat')
+  @UseInterceptors(AiOrchestrationReadinessInterceptor)
   async handleNewPersonaChat(
     @MessageBody()
     payload: { profileId: string; personaId: string; appId: string },
@@ -168,7 +175,13 @@ export class ChatGateway {
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
-    const recipientIds = payload.recipientId;
+    // O26: canonical `recipientIds`; legacy singular `recipientId` still
+    // accepted from older clients.
+    const recipientIds =
+      payload.recipientIds ??
+      (payload as unknown as { recipientId?: string[] }).recipientId ??
+      [];
+    payload.recipientIds = recipientIds;
     this.updateConnectedSockets(senderId, client, 'connect');
     this.l.log(`Sender ID: ${senderId} connected.`);
 
@@ -289,28 +302,10 @@ export class ChatGateway {
             }
           );
 
-          // Stop polling after AI completes
+          // Stop polling after AI completes. No final emit here: the tail
+          // fan-out below re-reads every participant (same id set) and
+          // emits, so a second read would duplicate it (O25b).
           clearInterval(pollInterval);
-
-          // Do one final emit to ensure all messages are sent
-          allParticipantIds.forEach(async (participantId) => {
-            const participantSocket = this.connectedClients.find(
-              (c) => c.id === participantId
-            );
-
-            if (participantSocket) {
-              const conversations = await firstValueFrom(
-                this.chatCollectorClient.send(
-                  { cmd: ChatCommands.GET_CONVERSATIONS },
-                  { profileId: participantId }
-                )
-              );
-              participantSocket.client.emit(
-                'conversations',
-                conversations || []
-              );
-            }
-          });
 
           this.l.log('AI message processing complete.');
         })

@@ -16,7 +16,7 @@ import {
   MessageType,
 } from './entities';
 import { Any, ArrayContains, Repository, IsNull } from 'typeorm';
-import { ChatMessage } from '@optimistic-tanuki/models';
+import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
 
 @Injectable()
 export class AppService {
@@ -29,6 +29,12 @@ export class AppService {
   ) {}
 
   async postMessage(data: ChatMessage): Promise<Conversation> {
+    // O26: canonical `recipientIds`; legacy singular `recipientId` still
+    // accepted from older senders.
+    const recipientIds =
+      data.recipientIds ??
+      (data as unknown as { recipientId?: string[] }).recipientId ??
+      [];
     let conversation: Conversation | null = null;
     if (data.conversationId && data.conversationId !== '') {
       try {
@@ -44,7 +50,7 @@ export class AppService {
       conversation = this.conversationRepository.create({
         id: data.conversationId || uuidv4(),
         title: data.recipientName.join(', '),
-        participants: [data.senderId, ...data.recipientId],
+        participants: [data.senderId, ...recipientIds],
         messages: [],
         updatedAt: new Date(),
       });
@@ -54,7 +60,7 @@ export class AppService {
     const newMessage: Partial<Message> = {
       ...(data.id ? { id: data.id } : {}),
       senderId: data.senderId,
-      recipients: data.recipientId,
+      recipients: recipientIds,
       content: data.content,
       type: MessageType[data.type.toUpperCase() as keyof typeof MessageType],
       conversation,

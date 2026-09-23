@@ -92,7 +92,8 @@ export class LoginComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'leads-app'
+        'leads-app',
+        true
       );
 
       if (result.success) {

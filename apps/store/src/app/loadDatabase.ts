@@ -2,7 +2,6 @@ import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { ProductEntity } from '../products/entities/product.entity';
 import { SubscriptionEntity } from '../subscriptions/entities/subscription.entity';
-import { DonationEntity } from '../donations/entities/donation.entity';
 import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
@@ -21,7 +20,6 @@ const loadDatabase = (config: ConfigService) => {
   const entities = [
     ProductEntity,
     SubscriptionEntity,
-    DonationEntity,
     OrderEntity,
     OrderItemEntity,
     AppointmentEntity,

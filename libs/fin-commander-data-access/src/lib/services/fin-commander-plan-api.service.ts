@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/finance-data-access';
 import {
   FinCommanderGoal,
   FinCommanderPlan,
@@ -25,15 +25,14 @@ import { FinCommanderScope } from '../models/fin-commander-scope.model';
   providedIn: 'root',
 })
 export class FinCommanderPlanApiService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/finance/fin-commander';
+  private readonly finance = inject(OptomisitcTanukiAPIService);
 
   async listPlans(scope: FinCommanderScope): Promise<FinCommanderPlan[]> {
     if (!scope) {
       return [];
     }
     return firstValueFrom(
-      this.http.get<FinCommanderPlan[]>(`${this.baseUrl}/plans`)
+      this.finance.financeControllerListFinCommanderPlans<FinCommanderPlan[]>()
     );
   }
 
@@ -44,12 +43,15 @@ export class FinCommanderPlanApiService {
     if (!scope) {
       throw new Error('An active tenant scope is required to create a plan');
     }
+    // Identity scope (userId/profileId/tenantId/appScope) is overlaid
+    // server-side; the cast preserves the pass-through for the client
+    // fields, as before.
     return firstValueFrom(
-      this.http.post<FinCommanderPlan>(`${this.baseUrl}/plan`, {
+      this.finance.financeControllerCreateFinCommanderPlan<FinCommanderPlan>({
         name: plan.name,
         description: plan.description,
         defaultWorkspace: plan.defaultWorkspace,
-      })
+      } as unknown as Parameters<typeof this.finance.financeControllerCreateFinCommanderPlan>[0])
     );
   }
 
@@ -61,7 +63,9 @@ export class FinCommanderPlanApiService {
       return [];
     }
     return firstValueFrom(
-      this.http.get<FinCommanderGoal[]>(`${this.baseUrl}/plan/${planId}/goals`)
+      this.finance.financeControllerListFinCommanderGoals<FinCommanderGoal[]>(
+        planId
+      )
     );
   }
 
@@ -71,8 +75,8 @@ export class FinCommanderPlanApiService {
   ): Promise<FinCommanderCashFlowProjection | null> {
     if (!scope || !planId) return null;
     return firstValueFrom(
-      this.http.get<FinCommanderCashFlowProjection>(
-        `${this.baseUrl}/plan/${planId}/projection`
+      this.finance.financeControllerGetFinCommanderCashFlowProjection<FinCommanderCashFlowProjection>(
+        planId
       )
     );
   }
@@ -85,16 +89,21 @@ export class FinCommanderPlanApiService {
       throw new Error('An active tenant scope is required to save a goal');
     }
     return firstValueFrom(
-      this.http.post<FinCommanderGoal>(
-        `${this.baseUrl}/plan/${goal.planId}/goal`,
+      this.finance.financeControllerCreateFinCommanderGoal<FinCommanderGoal>(
+        goal.planId,
         {
+          // planId travels in the body as well as the URL: the gateway
+          // validates the body DTO strictly (planId required).
+          planId: goal.planId,
           name: goal.name,
           targetAmountCents: goal.targetAmountCents,
           currentAmountCents: goal.currentAmountCents,
           dueDate: goal.dueDate,
           strategy: goal.strategy,
-          fundingAccountId: goal.fundingAccountId,
-        }
+          fundingAccountId: goal.fundingAccountId ?? undefined,
+        } as unknown as Parameters<
+          typeof this.finance.financeControllerCreateFinCommanderGoal
+        >[1]
       )
     );
   }
@@ -104,7 +113,7 @@ export class FinCommanderPlanApiService {
       return;
     }
     await firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/goal/${goalId}`)
+      this.finance.financeControllerDeleteFinCommanderGoal<void>(goalId)
     );
   }
 
@@ -114,8 +123,8 @@ export class FinCommanderPlanApiService {
   ): Promise<FinCommanderFundingDirectivePreview | null> {
     if (!scope || !goalId) return null;
     return firstValueFrom(
-      this.http.get<FinCommanderFundingDirectivePreview>(
-        `${this.baseUrl}/goal/${goalId}/funding-directive`
+      this.finance.financeControllerPreviewFinCommanderFundingDirective<FinCommanderFundingDirectivePreview>(
+        goalId
       )
     );
   }
@@ -126,9 +135,8 @@ export class FinCommanderPlanApiService {
   ): Promise<FinCommanderFundingDirective> {
     if (!scope) throw new Error('An active tenant scope is required');
     return firstValueFrom(
-      this.http.post<FinCommanderFundingDirective>(
-        `${this.baseUrl}/goal/${goalId}/funding-directive/approve`,
-        {}
+      this.finance.financeControllerApproveFinCommanderFundingDirective<FinCommanderFundingDirective>(
+        goalId
       )
     );
   }
@@ -139,9 +147,8 @@ export class FinCommanderPlanApiService {
   ): Promise<FinCommanderFundingDirective> {
     if (!scope) throw new Error('An active tenant scope is required');
     return firstValueFrom(
-      this.http.post<FinCommanderFundingDirective>(
-        `${this.baseUrl}/goal/${goalId}/funding-directive/cancel`,
-        {}
+      this.finance.financeControllerCancelFinCommanderFundingDirective<FinCommanderFundingDirective>(
+        goalId
       )
     );
   }
@@ -154,9 +161,9 @@ export class FinCommanderPlanApiService {
       return [];
     }
     return firstValueFrom(
-      this.http.get<FinCommanderScenario[]>(
-        `${this.baseUrl}/plan/${planId}/scenarios`
-      )
+      this.finance.financeControllerListFinCommanderScenarios<
+        FinCommanderScenario[]
+      >(planId)
     );
   }
 
@@ -168,13 +175,17 @@ export class FinCommanderPlanApiService {
       throw new Error('An active tenant scope is required to save a scenario');
     }
     return firstValueFrom(
-      this.http.post<FinCommanderScenario>(
-        `${this.baseUrl}/plan/${scenario.planId}/scenario`,
+      this.finance.financeControllerCreateFinCommanderScenario<FinCommanderScenario>(
+        scenario.planId,
         {
+          // planId travels in the body as well as the URL (see saveGoal).
+          planId: scenario.planId,
           name: scenario.name,
           summary: scenario.summary,
           assumptions: scenario.assumptions,
-        }
+        } as unknown as Parameters<
+          typeof this.finance.financeControllerCreateFinCommanderScenario
+        >[1]
       )
     );
   }
@@ -187,7 +198,7 @@ export class FinCommanderPlanApiService {
       return;
     }
     await firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/scenario/${scenarioId}`)
+      this.finance.financeControllerDeleteFinCommanderScenario<void>(scenarioId)
     );
   }
 }

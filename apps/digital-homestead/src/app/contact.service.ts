@@ -1,11 +1,11 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ContactService {
-  constructor(private readonly http: HttpClient) {}
+  private readonly blogging = inject(OptomisitcTanukiAPIService);
 
   postContact(data: {
     name: string;
@@ -14,7 +14,7 @@ export class ContactService {
     subject: string;
   }) {
     if (data.subject === '') data.subject = 'General Inquiry';
-    return this.http.post('/api/contact', {
+    return this.blogging.contactControllerCreateContact({
       ...data,
       subject: `[Digital Homestead] ${data.subject}`,
       appScope: 'digital-homestead',

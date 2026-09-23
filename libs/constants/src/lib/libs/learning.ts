@@ -1,28 +1,4 @@
-export const LearningCommands = {
-  ListPrograms: 'learning.programs.list',
-  ListCatalog: 'learning.catalog.list',
-  ListSubjects: 'learning.subjects.list',
-  SubmitAttempt: 'learning.attempts.submit',
-  RecordEvaluation: 'learning.evaluations.record',
-  GetAttempt: 'learning.attempts.get',
-  GetCreditLedger: 'learning.credits.list',
-  GetLesson: 'learning.lessons.get',
-  GetOffering: 'learning.offerings.get',
-  GetProgress: 'learning.progress.get',
-  SaveLessonProgress: 'learning.progress.save',
-  RunCode: 'learning.code.run',
-  GetDashboard: 'learning.dashboard.get',
-  SubmitExercise: 'learning.exercises.submit',
-  AnswerActivity: 'learning.activities.answer',
-  Enrol: 'learning.enrolments.create',
-  Withdraw: 'learning.enrolments.withdraw',
-  ListMyEnrolments: 'learning.enrolments.list',
-  ListChallenges: 'learning.challenges.list',
-  ListMyOfferings: 'learning.offerings.mine.list',
-  CreateOffering: 'learning.offerings.create',
-  UpdateOffering: 'learning.offerings.update',
-  DeleteOffering: 'learning.offerings.delete',
-  GetOfferingOwnership: 'learning.offerings.ownership.get',
-  SetCoEditors: 'learning.offerings.co-editors.set',
-  SetOfferingStatus: 'learning.offerings.status.set',
-};
+// Canonical home is `@optimistic-tanuki/learning-contracts` (promoted per O3
+// — single source, no shape duplication). This file re-exports for
+// back-compat; new code imports from `learning-contracts`.
+export { LearningCommands } from '@optimistic-tanuki/learning-contracts';

@@ -151,7 +151,8 @@ export class RegisterComponent {
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
-      'video-client'
+      'video-client',
+      true
     );
 
     if (result.success) {

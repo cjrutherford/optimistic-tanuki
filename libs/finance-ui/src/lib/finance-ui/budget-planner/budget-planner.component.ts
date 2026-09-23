@@ -7,9 +7,13 @@ import {
   ColDef,
   GridOptions,
 } from '@optimistic-tanuki/ag-grid-ui';
-import { Budget, CreateBudget, FinanceWorkspace } from '../models';
-import { FinanceService } from '../services/finance.service';
-import { isAbortLikeHttpError } from '../services/http-error.utils';
+import {
+  Budget,
+  CreateBudget,
+  FinanceWorkspace,
+} from '@optimistic-tanuki/finance-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import { isAbortLikeHttpError } from '@optimistic-tanuki/finance-data-access';
 import { FinanceWorkspaceScreenComponent } from '../finance-workspace-screen/finance-workspace-screen.component';
 
 @Component({

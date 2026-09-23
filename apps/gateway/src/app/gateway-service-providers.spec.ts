@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
-import { normalizeGatewayComposition } from './gateway-composition';
+import { normalizeGatewayComposition } from '@optimistic-tanuki/constants';
 import {
   createMcpToolImports,
   createGatewayServiceProviders,
@@ -82,6 +82,108 @@ describe('gateway service providers', () => {
     // safely assert it was pointed at the configured host/port.
     expect(proxy.host).toBe('authentication');
     expect(proxy.port).toBe(3001);
+  });
+
+  it('creates a billing TCP proxy pointed at the configured host and port', () => {
+    const composition = normalizeGatewayComposition(
+      {
+        enabledServices: ['billing'],
+      },
+      ['billing', 'store']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const billingProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.BILLING_SERVICE
+    );
+    const configService = {
+      get: jest.fn().mockReturnValue({
+        host: 'billing',
+        port: 3019,
+      }),
+    } as unknown as ConfigService;
+
+    const proxy = billingProvider!.useFactory!(configService) as unknown as {
+      host: string;
+      port: number;
+    };
+
+    // The TCP client is lazy (no socket opened until connect()), so we can
+    // safely assert it was pointed at the configured host/port.
+    expect(proxy).not.toBeInstanceOf(DisabledClientProxy);
+    expect(proxy.host).toBe('billing');
+    expect(proxy.port).toBe(3019);
+  });
+
+  it('returns a disabled billing proxy when billing is outside the composition', async () => {
+    const composition = normalizeGatewayComposition(
+      {
+        enabledServices: ['authentication'],
+      },
+      ['authentication', 'billing']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const billingProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.BILLING_SERVICE
+    );
+
+    const proxy = billingProvider!.useFactory!(
+      {} as ConfigService
+    ) as DisabledClientProxy;
+
+    expect(proxy).toBeInstanceOf(DisabledClientProxy);
+    await expect(
+      firstValueFrom(proxy.send({ cmd: 'noop' }, {}))
+    ).rejects.toThrow('Gateway service "billing" is disabled');
+  });
+
+  it('creates a payments TCP proxy pointed at the configured host and port', () => {
+    const composition = normalizeGatewayComposition(
+      {
+        enabledServices: ['payments'],
+      },
+      ['payments', 'store']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const paymentsProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.PAYMENTS_SERVICE
+    );
+    const configService = {
+      get: jest.fn().mockReturnValue({
+        host: 'payments',
+        port: 3004,
+      }),
+    } as unknown as ConfigService;
+
+    const proxy = paymentsProvider!.useFactory!(configService) as unknown as {
+      host: string;
+      port: number;
+    };
+
+    expect(proxy).not.toBeInstanceOf(DisabledClientProxy);
+    expect(proxy.host).toBe('payments');
+    expect(proxy.port).toBe(3004);
+  });
+
+  it('returns a disabled payments proxy when payments is outside the composition', async () => {
+    const composition = normalizeGatewayComposition(
+      {
+        enabledServices: ['authentication'],
+      },
+      ['authentication', 'payments']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const paymentsProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.PAYMENTS_SERVICE
+    );
+
+    const proxy = paymentsProvider!.useFactory!(
+      {} as ConfigService
+    ) as DisabledClientProxy;
+
+    expect(proxy).toBeInstanceOf(DisabledClientProxy);
+    await expect(
+      firstValueFrom(proxy.send({ cmd: 'noop' }, {}))
+    ).rejects.toThrow('Gateway service "payments" is disabled');
   });
 
   it('registers only project-planning MCP tools when only project-planning is enabled', () => {

@@ -6,9 +6,9 @@ import {
   CreateRecurringItem,
   FinanceWorkspace,
   RecurringItem,
-} from '../models';
-import { FinanceService } from '../services/finance.service';
-import { isAbortLikeHttpError } from '../services/http-error.utils';
+} from '@optimistic-tanuki/finance-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
+import { isAbortLikeHttpError } from '@optimistic-tanuki/finance-data-access';
 
 @Component({
   selector: 'ot-recurring-list',

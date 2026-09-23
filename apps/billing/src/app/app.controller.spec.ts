@@ -2,7 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InvoicePreviewService } from '@optimistic-tanuki/billing-domain';
 import { AppController } from './app.controller';
 import { BillingService } from './services/billing.service';
+import { BillingSubscriptionsService } from './services/billing-subscriptions.service';
 import {
+  INVOICE_REPOSITORY,
   USAGE_BLOCK_REPOSITORY,
   USAGE_EVENT_REPOSITORY,
 } from './services/billing.repositories';
@@ -21,6 +23,11 @@ describe('AppController', () => {
       controllers: [AppController],
       providers: [
         BillingService,
+        BillingSubscriptionsService,
+        {
+          provide: 'BILLING_CONNECTION',
+          useValue: { getRepository: () => ({}) },
+        },
         InvoicePreviewService,
         UsageMeteringService,
         UsageBlocksService,
@@ -32,14 +39,18 @@ describe('AppController', () => {
           provide: USAGE_BLOCK_REPOSITORY,
           useClass: InMemoryUsageBlockRepository,
         },
+        {
+          provide: INVOICE_REPOSITORY,
+          useValue: { mint: async () => ({ id: 'inv-test' }) },
+        },
       ],
     }).compile();
 
     controller = module.get<AppController>(AppController);
   });
 
-  it('previews invoices through the billing service', () => {
-    expect(
+  it('previews invoices through the billing service', async () => {
+    await expect(
       controller.previewInvoice({
         tenantId: 'tenant-1',
         appScope: 'local-hub',
@@ -55,7 +66,7 @@ describe('AppController', () => {
         usageQuantity: 12,
         usageBlockBalance: 0,
       })
-    ).toMatchObject({
+    ).resolves.toMatchObject({
       tenantId: 'tenant-1',
       appScope: 'local-hub',
       subtotalCents: 1020,

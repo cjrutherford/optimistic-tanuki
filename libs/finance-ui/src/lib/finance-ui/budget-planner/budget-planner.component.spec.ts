@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { BudgetPlannerComponent } from './budget-planner.component';
-import { FinanceService } from '../services/finance.service';
+import { FinanceService } from '@optimistic-tanuki/finance-data-access';
 
 describe('BudgetPlannerComponent', () => {
   beforeEach(async () => {

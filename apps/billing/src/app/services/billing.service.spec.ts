@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { InvoicePreviewService } from '@optimistic-tanuki/billing-domain';
 import {
   InMemoryUsageBlockRepository,
@@ -21,7 +22,8 @@ describe('BillingService', () => {
     service = new BillingService(
       new InvoicePreviewService(),
       usageMeteringService,
-      usageBlocksService
+      usageBlocksService,
+      { mint: jest.fn(async () => ({ id: 'inv-1' })) } as never
     );
   });
 
@@ -78,5 +80,50 @@ describe('BillingService', () => {
         { kind: 'overage', quantity: 2, amountCents: 20 },
       ],
     });
+  });
+
+  it('mints a draft invoice row on preview and returns its id (E5)', async () => {
+    const mint = jest.fn(async () => ({ id: 'inv-9' }));
+    const minting = new BillingService(
+      new InvoicePreviewService(),
+      new UsageMeteringService(new InMemoryUsageEventRepository()),
+      new UsageBlocksService(new InMemoryUsageBlockRepository()),
+      { mint } as never
+    );
+
+    const preview = await minting.previewInvoice({
+      tenantId: 'tenant-1',
+      appScope: 'local-hub',
+      currency: 'USD',
+      subscriptionPriceCents: 1000,
+      meter: {
+        id: 'api-calls',
+        name: 'API calls',
+        unit: 'call',
+        includedQuantity: 10,
+        overageUnitPriceCents: 10,
+      },
+      usageQuantity: 5,
+      usageBlockBalance: 0,
+    });
+
+    expect(preview.id).toBe('inv-9');
+    expect(mint).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        appScope: 'local-hub',
+        currency: 'USD',
+        subtotalCents: 1000,
+      })
+    );
+  });
+
+  it('rejects malformed preview payloads with 400 instead of a TypeError', async () => {
+    await expect(
+      service.previewInvoice({ currency: 'USD' } as never)
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.previewInvoiceForPeriod({ currency: 'USD' } as never)
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
