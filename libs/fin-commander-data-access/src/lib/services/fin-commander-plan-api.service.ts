@@ -92,6 +92,9 @@ export class FinCommanderPlanApiService {
       this.finance.financeControllerCreateFinCommanderGoal<FinCommanderGoal>(
         goal.planId,
         {
+          // planId travels in the body as well as the URL: the gateway
+          // validates the body DTO strictly (planId required).
+          planId: goal.planId,
           name: goal.name,
           targetAmountCents: goal.targetAmountCents,
           currentAmountCents: goal.currentAmountCents,
@@ -175,6 +178,8 @@ export class FinCommanderPlanApiService {
       this.finance.financeControllerCreateFinCommanderScenario<FinCommanderScenario>(
         scenario.planId,
         {
+          // planId travels in the body as well as the URL (see saveGoal).
+          planId: scenario.planId,
           name: scenario.name,
           summary: scenario.summary,
           assumptions: scenario.assumptions,
