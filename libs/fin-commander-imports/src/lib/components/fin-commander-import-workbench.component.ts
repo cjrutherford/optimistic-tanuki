@@ -349,6 +349,10 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
           payeeOrVendor: transaction.payeeOrVendor,
           transactionDate: new Date(transaction.postedOn),
           workspace: this.workspace,
+          // Imports are one-off statements, never recurring schedules.
+          // The gateway validates CreateTransactionDto strictly (isRecurring
+          // required) since O17.
+          isRecurring: false,
         });
         committed += 1;
       }
