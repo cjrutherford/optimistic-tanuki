@@ -70,7 +70,9 @@ describe('Workspace governance fixture', () => {
     owner: Identity,
     tenant: string
   ): Promise<string> {
-    const response = await authenticated(owner).post('/communities', {
+    // Canonical create path (O17 social migration): community creation moved
+    // from POST /communities to POST /social/community.
+    const response = await authenticated(owner).post('/social/community', {
       name: `G19 ${tenant} ${suffix}`,
       slug: `g19-${tenant.toLowerCase()}-${suffix}`,
       description: 'Isolated G19 governance fixture community',
@@ -98,7 +100,7 @@ describe('Workspace governance fixture', () => {
 
     for (const identity of [activeMember, moderator]) {
       const joined = await authenticated(identity).post(
-        `/communities/${ownerACommunityId}/join`
+        `/social/community/${ownerACommunityId}/join`
       );
       expect(joined.status).toBe(201);
     }

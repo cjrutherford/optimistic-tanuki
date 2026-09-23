@@ -83,16 +83,37 @@ export class FinanceService {
   }
 
   async updateAccount(id: string, account: UpdateAccount): Promise<Account> {
-    // The old client pruned undefined fields; JSON serialization drops them
-    // identically, so the DTO travels as-is apart from wire dates.
-    const { lastReviewedAt, ...rest } = account;
+    // Pick exactly the DTO-allowed fields: callers pass full Account objects
+    // (id, currency, timestamps) which the gateway's forbidNonWhitelisted
+    // pipe rejects with 400. This restores the pre-generated-client pick
+    // list; JSON serialization drops undefined fields identically.
+    const {
+      name,
+      type,
+      balance,
+      description,
+      isActive,
+      workspace,
+      lastReviewedAt,
+      providerConnectionId,
+      providerAccountId,
+      institutionName,
+    } = account;
     return firstValueFrom(
       this.finance.financeControllerUpdateAccount<Account>(id, {
-        ...rest,
+        name,
+        type,
+        balance,
+        description,
+        isActive,
+        workspace,
         lastReviewedAt:
           lastReviewedAt === undefined
             ? undefined
             : this.wireDate(lastReviewedAt),
+        providerConnectionId,
+        providerAccountId,
+        institutionName,
       })
     );
   }
@@ -150,14 +171,47 @@ export class FinanceService {
     id: string,
     transaction: UpdateTransaction
   ): Promise<Transaction> {
-    const { transactionDate, ...rest } = transaction;
+    // Same explicit pick as updateAccount: full Transaction objects carry
+    // server-managed fields the gateway rejects.
+    const {
+      amount,
+      type,
+      accountId,
+      description,
+      category,
+      transactionDate,
+      reference,
+      isRecurring,
+      workspace,
+      payeeOrVendor,
+      transferType,
+      sourceType,
+      sourceProvider,
+      externalTransactionId,
+      pending,
+      reviewStatus,
+    } = transaction;
     return firstValueFrom(
       this.finance.financeControllerUpdateTransaction<Transaction>(id, {
-        ...rest,
+        amount,
+        type,
+        accountId,
+        description,
+        category,
         transactionDate:
           transactionDate === undefined
             ? undefined
             : this.wireDate(transactionDate),
+        reference,
+        isRecurring,
+        workspace,
+        payeeOrVendor,
+        transferType,
+        sourceType,
+        sourceProvider,
+        externalTransactionId,
+        pending,
+        reviewStatus,
       })
     );
   }
@@ -244,8 +298,29 @@ export class FinanceService {
     id: string,
     item: UpdateInventoryItem
   ): Promise<InventoryItem> {
+    const {
+      name,
+      description,
+      quantity,
+      unitValue,
+      category,
+      isActive,
+      sku,
+      location,
+      workspace,
+    } = item;
     return firstValueFrom(
-      this.finance.financeControllerUpdateInventoryItem<InventoryItem>(id, item)
+      this.finance.financeControllerUpdateInventoryItem<InventoryItem>(id, {
+        name,
+        description,
+        quantity,
+        unitValue,
+        category,
+        isActive,
+        sku,
+        location,
+        workspace,
+      })
     );
   }
 
@@ -305,8 +380,25 @@ export class FinanceService {
   }
 
   async updateBudget(id: string, budget: UpdateBudget): Promise<Budget> {
+    const {
+      name,
+      category,
+      limit,
+      period,
+      isActive,
+      alertOnExceed,
+      workspace,
+    } = budget;
     return firstValueFrom(
-      this.finance.financeControllerUpdateBudget<Budget>(id, budget)
+      this.finance.financeControllerUpdateBudget<Budget>(id, {
+        name,
+        category,
+        limit,
+        period,
+        isActive,
+        alertOnExceed,
+        workspace,
+      })
     );
   }
 
@@ -370,12 +462,35 @@ export class FinanceService {
     id: string,
     item: UpdateRecurringItem
   ): Promise<RecurringItem> {
-    const { nextDueDate, ...rest } = item;
+    const {
+      name,
+      amount,
+      type,
+      category,
+      cadence,
+      nextDueDate,
+      status,
+      payeeOrVendor,
+      notes,
+      accountId,
+      isActive,
+      workspace,
+    } = item;
     return firstValueFrom(
       this.finance.financeControllerUpdateRecurringItem<RecurringItem>(id, {
-        ...rest,
+        name,
+        amount,
+        type,
+        category,
+        cadence,
         nextDueDate:
           nextDueDate === undefined ? undefined : this.wireDate(nextDueDate),
+        status,
+        payeeOrVendor,
+        notes,
+        accountId,
+        isActive,
+        workspace,
       })
     );
   }
