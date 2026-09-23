@@ -332,14 +332,14 @@ export class FinanceService {
 
   // Budget methods
   async createBudget(budget: CreateBudget): Promise<Budget> {
-    // `spent` is server-required but UI-optional: the cast preserves the
-    // pass-through so a missing value fails server-side, as before (no
-    // fabrication).
+    // A new budget has no transactions yet, so UI-omitted spent starts at 0.
+    // (The gateway validates CreateBudgetDto strictly since O17; passing
+    // undefined through fails server-side.)
     const { startDate, endDate, spent, alertOnExceed, ...rest } = budget;
     return firstValueFrom(
       this.finance.financeControllerCreateBudget<Budget>({
         ...rest,
-        spent: spent as number,
+        spent: spent ?? 0,
         alertOnExceed: alertOnExceed as boolean,
         startDate: this.wireDate(startDate),
         endDate: this.wireDate(endDate),
