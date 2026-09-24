@@ -108,16 +108,7 @@ export interface OfflineSyncItem {
   synced: boolean;
 }
 
-export interface BrandProfile {
-  id: string;
-  businessName: string;
-  tradeCategory: string;
-  phone: string;
-  email: string;
-  serviceArea: string;
-  fixedDeposit: number;
-  taxRate: number;
-  googleReviewUrl: string;
-  isDemoMode: boolean;
-  isStandalone: boolean;
-}
+export type {
+  BrandProfile,
+  WhiteboxBrandProfile,
+} from '@optimistic-tanuki/whitebox-brand-config';

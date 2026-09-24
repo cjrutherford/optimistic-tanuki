@@ -13,7 +13,7 @@ import {
   FieldFlowApiService,
   SERVICE_PACKAGES,
 } from '../../services/field-flow-api.service';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 @Component({
   selector: 'flow-estimate',

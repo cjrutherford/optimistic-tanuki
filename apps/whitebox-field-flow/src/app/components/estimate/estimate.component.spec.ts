@@ -4,7 +4,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { EstimateComponent } from './estimate.component';
 import { FieldFlowApiService } from '../../services/field-flow-api.service';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 describe('EstimateComponent', () => {
   let component: EstimateComponent;

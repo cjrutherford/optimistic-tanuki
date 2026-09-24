@@ -5,7 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { JobDispatchStatus, JobRecord } from '../../models/field-flow.models';
 import { FieldFlowApiService } from '../../services/field-flow-api.service';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 @Component({
   selector: 'flow-status',

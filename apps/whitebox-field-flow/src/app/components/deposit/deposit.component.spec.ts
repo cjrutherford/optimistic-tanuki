@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http/testing';
 import { DepositComponent } from './deposit.component';
 import { FieldFlowApiService } from '../../services/field-flow-api.service';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 describe('DepositComponent', () => {
   let component: DepositComponent;

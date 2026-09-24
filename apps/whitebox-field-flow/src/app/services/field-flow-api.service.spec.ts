@@ -8,7 +8,8 @@ import {
   FieldFlowApiService,
   SERVICE_PACKAGES,
 } from './field-flow-api.service';
-import { BrandConfigService } from './brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
+import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
 import { EstimateParameters } from '../models/field-flow.models';
 
 describe('FieldFlowApiService', () => {
@@ -20,6 +21,7 @@ describe('FieldFlowApiService', () => {
       providers: [
         FieldFlowApiService,
         BrandConfigService,
+        BusinessApiService,
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -81,7 +83,7 @@ describe('FieldFlowApiService', () => {
     req.flush({ estimateId: 'est_123' });
   });
 
-  it('creates booking dispatch to gateway /api/v1/flow/bookings', () => {
+  it('creates booking dispatch through BusinessApiService /api/business/bookings', () => {
     service
       .createBooking({
         fullName: 'Marcus Bennett',
@@ -95,9 +97,9 @@ describe('FieldFlowApiService', () => {
         expect(res.bookingId).toBe('FLW-5555');
       });
 
-    const req = httpMock.expectOne('/api/v1/flow/bookings');
+    const req = httpMock.expectOne('/api/business/bookings');
     expect(req.request.method).toBe('POST');
-    req.flush({ bookingId: 'FLW-5555' });
+    req.flush({ id: 'FLW-5555' });
   });
 
   it('processes deposit and returns automated SMS confirmation', () => {

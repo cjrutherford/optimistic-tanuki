@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
 
 @Component({

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import {
   BrandConfigService,
   DEMO_BRAND_PROFILES,
-} from '../../services/brand-config.service';
+} from '@optimistic-tanuki/whitebox-brand-config';
 import { BrandProfile } from '../../models/field-flow.models';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
 

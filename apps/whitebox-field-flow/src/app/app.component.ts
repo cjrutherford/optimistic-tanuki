@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { HeaderComponent } from './components/header/header.component';
-import { BrandConfigService } from './services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 @Component({
   imports: [RouterModule, HeaderComponent],

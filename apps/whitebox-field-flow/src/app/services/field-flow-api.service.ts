@@ -11,7 +11,11 @@ import {
   ServicePackage,
   ServicePackageTier,
 } from '../models/field-flow.models';
-import { BrandConfigService } from './brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
+import {
+  BusinessApiService,
+  CreateBusinessBookingRequest,
+} from '@optimistic-tanuki/business-data-access';
 import { FieldFlowSyncService } from './field-flow-sync.service';
 
 export const SERVICE_PACKAGES: Record<ServicePackageTier, ServicePackage> = {
@@ -67,6 +71,7 @@ export class FieldFlowApiService {
   private readonly http = inject(HttpClient);
   private readonly brandConfig = inject(BrandConfigService);
   private readonly syncService = inject(FieldFlowSyncService);
+  private readonly businessApi = inject(BusinessApiService);
 
   // Active session flow state
   readonly activeEstimate = signal<EstimateCalculation | null>(null);
@@ -149,33 +154,52 @@ export class FieldFlowApiService {
   }
 
   /**
-   * POST /api/v1/flow/bookings
-   * Connects through API Gateway to lead-tracker
+   * Connects to BusinessApiService to persist booking with Gateway / Lead Tracker.
+   * Enqueues into IndexedDB offline queue if offline or service is unreachable.
    */
   createBooking(
     details: CustomerBookingDetails
   ): Observable<{ bookingId: string }> {
     this.activeBooking.set(details);
 
-    const payload = {
-      brandId: this.brandConfig.currentBrand().id,
-      estimate: this.activeEstimate(),
-      bookingDetails: details,
-      createdAt: new Date().toISOString(),
+    const brand = this.brandConfig.currentBrand();
+    const estimate = this.activeEstimate();
+    const selectedDateStr =
+      details.selectedDate || new Date().toISOString().split('T')[0];
+    const startTime = new Date(`${selectedDateStr}T09:00:00`);
+    const endTime = new Date(`${selectedDateStr}T11:00:00`);
+
+    const bookingPayload: CreateBusinessBookingRequest = {
+      siteSlug: brand.id,
+      title: `${estimate?.packageDetails.name || 'Field Service'} - ${
+        details.fullName
+      }`,
+      description: `${details.streetAddress} | ${brand.tradeCategory} | Window: ${details.selectedWindow}`,
+      startTime,
+      endTime,
+      isFreeConsultation: false,
+      notes: `Phone: ${details.mobilePhone} | Gate: ${
+        details.gateCode || 'None'
+      } | Notes: ${details.serviceNotes || 'None'}`,
     };
 
-    return this.http
-      .post<{ bookingId: string }>('/api/v1/flow/bookings', payload)
-      .pipe(
-        catchError(() => {
-          const fallbackId = `FLW-${Math.floor(1000 + Math.random() * 9000)}`;
-          void this.syncService.enqueueOfflineAction('booking', {
-            ...payload,
-            bookingId: fallbackId,
-          });
-          return of({ bookingId: fallbackId });
-        })
-      );
+    return this.businessApi.createBooking(bookingPayload).pipe(
+      map((appointment) => ({
+        bookingId:
+          appointment?.id || `FLW-${Math.floor(1000 + Math.random() * 9000)}`,
+      })),
+      catchError(() => {
+        const fallbackId = `FLW-${Math.floor(1000 + Math.random() * 9000)}`;
+        void this.syncService.enqueueOfflineAction('booking', {
+          brandId: brand.id,
+          estimate,
+          bookingDetails: details,
+          bookingId: fallbackId,
+          createdAt: new Date().toISOString(),
+        });
+        return of({ bookingId: fallbackId });
+      })
+    );
   }
 
   /**

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { DemoComponent } from './demo.component';
-import { BrandConfigService } from '../../services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
 
 describe('DemoComponent', () => {

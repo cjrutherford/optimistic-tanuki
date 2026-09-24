@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrandConfigService } from './services/brand-config.service';
+import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 describe('AppComponent', () => {
   let brandConfig: BrandConfigService;
