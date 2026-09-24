@@ -1,0 +1,192 @@
+<section class="status-shell">
+  <div class="status-container" *ngIf="job">
+    <header class="status-header">
+      <div class="header-badge-row">
+        <span class="tracking-pill">{{ job.trackingNumber }}</span>
+        <span class="status-pill" [attr.data-status]="job.status">
+          {{
+            job.status === 'in_progress'
+              ? 'Work in progress'
+              : job.status === 'en_route'
+              ? 'En route'
+              : job.status
+          }}
+        </span>
+      </div>
+      <h1>Job status tracker</h1>
+      <p class="lede">
+        Real-time dispatch tracking for your scheduled service appointment.
+      </p>
+    </header>
+
+    <!-- Dispatch Progress Stepper -->
+    <div class="stepper-card">
+      <ol class="status-steps" aria-label="Job progress timeline">
+        <li
+          *ngFor="let step of statusSteps; let i = index"
+          class="step-item"
+          [class.completed]="isStepActive(step.key)"
+          [class.current]="job.status === step.key"
+        >
+          <div class="step-marker-container">
+            <div class="step-marker">
+              <span *ngIf="isStepActive(step.key) && job.status !== step.key"
+                >✓</span
+              >
+              <span *ngIf="job.status === step.key">{{ i + 1 }}</span>
+              <span *ngIf="!isStepActive(step.key)">{{ i + 1 }}</span>
+            </div>
+            <div *ngIf="i < statusSteps.length - 1" class="step-line"></div>
+          </div>
+          <div class="step-info">
+            <strong class="step-title">{{ step.label }}</strong>
+            <p class="step-desc">{{ step.description }}</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Completed Job: Google Review Prompt -->
+    <div *ngIf="job.status === 'completed'" class="review-prompt-card">
+      <div class="review-content">
+        <h2>Service completed</h2>
+        <p>
+          Your technician has concluded on-site service. Please take thirty
+          seconds to share your feedback with our local team.
+        </p>
+        <a
+          [href]="job.googleReviewUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="google-review-btn touch-target"
+        >
+          Leave a Google review
+        </a>
+      </div>
+    </div>
+
+    <!-- Appointment & Job Details Card -->
+    <div class="details-grid">
+      <div class="details-card">
+        <h2>Service details</h2>
+        <dl class="details-list">
+          <div class="detail-row">
+            <dt>Client name</dt>
+            <dd>{{ job.customerName }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Service address</dt>
+            <dd>{{ job.streetAddress }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Package</dt>
+            <dd>{{ job.servicePackageName }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Arrival window</dt>
+            <dd>{{ job.arrivalWindow }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Total charge</dt>
+            <dd>${{ job.totalPrice | number : '1.2-2' }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Deposit paid</dt>
+            <dd class="paid-amount">
+              ${{ job.depositPaid | number : '1.2-2' }}
+            </dd>
+          </div>
+          <div class="detail-row">
+            <dt>Remaining balance</dt>
+            <dd class="balance-amount">
+              ${{ job.balanceRemaining | number : '1.2-2' }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Technician Notes / Field Crew Console -->
+      <div class="technician-card">
+        <div class="technician-header">
+          <h2>Technician log</h2>
+          <button
+            type="button"
+            class="toggle-console-btn"
+            (click)="toggleTechnicianConsole()"
+          >
+            {{
+              showTechnicianConsole
+                ? 'Hide technician controls'
+                : 'Technician controls'
+            }}
+          </button>
+        </div>
+
+        <div *ngIf="job.technicianNotes" class="logged-notes">
+          <p class="notes-body">{{ job.technicianNotes }}</p>
+        </div>
+        <p *ngIf="!job.technicianNotes" class="no-notes">
+          No technician notes logged yet.
+        </p>
+
+        <!-- Simulated Technician Controls (for field demo / testing) -->
+        <div *ngIf="showTechnicianConsole" class="technician-console">
+          <label for="tech-notes" class="console-label">
+            Log completion notes (offline resilient)
+          </label>
+          <textarea
+            id="tech-notes"
+            rows="3"
+            [(ngModel)]="technicianInputNotes"
+            placeholder="Document service notes or surface condition before leaving site"
+          ></textarea>
+          <button
+            type="button"
+            class="btn-secondary touch-target"
+            (click)="saveTechnicianNotes()"
+          >
+            Save technician notes
+          </button>
+
+          <div class="status-override-row">
+            <span class="override-label">Advance status:</span>
+            <div class="override-buttons">
+              <button
+                type="button"
+                class="override-btn"
+                [class.active]="job.status === 'scheduled'"
+                (click)="updateJobStatus('scheduled')"
+              >
+                Scheduled
+              </button>
+              <button
+                type="button"
+                class="override-btn"
+                [class.active]="job.status === 'en_route'"
+                (click)="updateJobStatus('en_route')"
+              >
+                En route
+              </button>
+              <button
+                type="button"
+                class="override-btn"
+                [class.active]="job.status === 'in_progress'"
+                (click)="updateJobStatus('in_progress')"
+              >
+                In progress
+              </button>
+              <button
+                type="button"
+                class="override-btn"
+                [class.active]="job.status === 'completed'"
+                (click)="updateJobStatus('completed')"
+              >
+                Completed
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

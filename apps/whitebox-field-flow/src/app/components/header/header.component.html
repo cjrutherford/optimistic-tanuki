@@ -1,0 +1,125 @@
+<header class="app-header">
+  <div class="header-container">
+    <div class="brand-zone">
+      <a routerLink="/estimate" class="brand-title-link" (click)="closeMenu()">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">{{ brandConfig.getAppTitle() }}</span>
+      </a>
+      <span class="trade-pill">{{
+        brandConfig.currentBrand().tradeCategory
+      }}</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Sync and network status -->
+      <button
+        type="button"
+        class="sync-indicator"
+        [class.offline]="!syncService.isOnline()"
+        [class.syncing]="syncService.isSyncing()"
+        (click)="triggerSync()"
+        [attr.aria-label]="
+          syncService.isOnline()
+            ? 'Connected to local shop network. Click to sync.'
+            : 'Offline mode active. Data is cached locally.'
+        "
+      >
+        <span class="status-dot"></span>
+        <span class="status-text">
+          {{ syncService.isOnline() ? 'LAN Connected' : 'Offline Mode' }}
+        </span>
+        <span
+          *ngIf="syncService.pendingSyncCount() > 0"
+          class="pending-pill"
+          title="Items waiting to sync"
+        >
+          {{ syncService.pendingSyncCount() }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="menu-toggle touch-target"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="isMenuOpen"
+        aria-label="Toggle navigation menu"
+      >
+        <span class="menu-bar"></span>
+        <span class="menu-bar"></span>
+        <span class="menu-bar"></span>
+      </button>
+
+      <nav class="desktop-nav" aria-label="Main navigation">
+        <a routerLink="/estimate" routerLinkActive="active" class="nav-link"
+          >Estimate</a
+        >
+        <a routerLink="/book" routerLinkActive="active" class="nav-link"
+          >Schedule</a
+        >
+        <a routerLink="/deposit" routerLinkActive="active" class="nav-link"
+          >Deposit</a
+        >
+        <a
+          routerLink="/status/demo-job"
+          routerLinkActive="active"
+          class="nav-link"
+          >Tracker</a
+        >
+        <a
+          routerLink="/demo"
+          routerLinkActive="active"
+          class="nav-link demo-pill"
+          >Demo Portal</a
+        >
+      </nav>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer -->
+  <nav
+    class="mobile-nav"
+    [class.open]="isMenuOpen"
+    aria-label="Mobile navigation"
+  >
+    <a
+      routerLink="/estimate"
+      routerLinkActive="active"
+      class="mobile-nav-link"
+      (click)="closeMenu()"
+    >
+      Estimate quote
+    </a>
+    <a
+      routerLink="/book"
+      routerLinkActive="active"
+      class="mobile-nav-link"
+      (click)="closeMenu()"
+    >
+      Schedule arrival
+    </a>
+    <a
+      routerLink="/deposit"
+      routerLinkActive="active"
+      class="mobile-nav-link"
+      (click)="closeMenu()"
+    >
+      Pay deposit
+    </a>
+    <a
+      routerLink="/status/demo-job"
+      routerLinkActive="active"
+      class="mobile-nav-link"
+      (click)="closeMenu()"
+    >
+      Track job status
+    </a>
+    <a
+      routerLink="/demo"
+      routerLinkActive="active"
+      class="mobile-nav-link demo-highlight"
+      (click)="closeMenu()"
+    >
+      Switch trade demo
+    </a>
+  </nav>
+</header>

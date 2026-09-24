@@ -1,0 +1,107 @@
+<section class="demo-shell">
+  <div class="demo-container">
+    <header class="section-header">
+      <p class="eyebrow">Interactive demonstration</p>
+      <h1>Trade service profile configuration</h1>
+      <p class="lede">
+        Field Flow adapts instantly to your trade specialty, pricing rules, and
+        branding. Select a regional trade profile below to experience the
+        customer booking workflow or simulate on-premises server deployment.
+      </p>
+    </header>
+
+    <!-- Trade Profile Switcher Cards -->
+    <div class="profiles-grid">
+      <div
+        *ngFor="let profile of profiles"
+        class="profile-card"
+        [class.active]="brandConfig.currentBrand().id === profile.id"
+      >
+        <div class="profile-header">
+          <span class="trade-category">{{ profile.tradeCategory }}</span>
+          <span
+            *ngIf="brandConfig.currentBrand().id === profile.id"
+            class="active-tag"
+          >
+            Active brand
+          </span>
+        </div>
+
+        <h2 class="business-title">{{ profile.businessName }}</h2>
+
+        <dl class="profile-meta">
+          <div class="meta-row">
+            <dt>Service area</dt>
+            <dd>{{ profile.serviceArea }}</dd>
+          </div>
+          <div class="meta-row">
+            <dt>Dispatch telephone</dt>
+            <dd>{{ profile.phone }}</dd>
+          </div>
+          <div class="meta-row">
+            <dt>Standard deposit</dt>
+            <dd>${{ profile.fixedDeposit | number : '1.2-2' }}</dd>
+          </div>
+        </dl>
+
+        <button
+          type="button"
+          class="switch-btn touch-target"
+          [disabled]="brandConfig.currentBrand().id === profile.id"
+          (click)="selectProfile(profile.id)"
+        >
+          {{
+            brandConfig.currentBrand().id === profile.id
+              ? 'Selected profile'
+              : 'Switch to ' + profile.businessName
+          }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Deployment Mode Explanation & Actions -->
+    <div class="deployment-section">
+      <div class="deployment-card">
+        <h2>Deployment architectures</h2>
+        <div class="deployment-grid">
+          <div class="mode-box">
+            <h3>Multi-tenant cloud hosted</h3>
+            <p>
+              Hosted in the cloud for multi-crew operators. Provides instant
+              client quoting, online Stripe deposits, and automated Twilio SMS
+              notifications without local hardware installation.
+            </p>
+            <span class="status-indicator live">Cloud active</span>
+          </div>
+
+          <div class="mode-box">
+            <h3>On-premises Tier 1 Mini-PC server</h3>
+            <p>
+              Runs locally on an Intel N100 appliance in your shop. Service
+              crews continue logging job notes and inspection photos during
+              cellular dropouts, automatically syncing when returning to the
+              shop Wi-Fi.
+            </p>
+            <button
+              type="button"
+              class="standalone-btn touch-target"
+              (click)="enableStandalone()"
+            >
+              Simulate on-premises mode
+            </button>
+          </div>
+        </div>
+
+        <div class="demo-cta-row">
+          <button
+            type="button"
+            class="btn-primary touch-target"
+            (click)="startWorkflow()"
+          >
+            Launch customer estimate workflow
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

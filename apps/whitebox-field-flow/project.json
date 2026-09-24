@@ -1,0 +1,98 @@
+{
+  "name": "whitebox-field-flow",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "flow",
+  "sourceRoot": "apps/whitebox-field-flow/src",
+  "tags": ["type:app"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/whitebox-field-flow",
+        "browser": "apps/whitebox-field-flow/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/whitebox-field-flow/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/whitebox-field-flow/public"
+          }
+        ],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/whitebox-field-flow/src/styles.scss"
+        ],
+        "server": "apps/whitebox-field-flow/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/whitebox-field-flow/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "whitebox-field-flow:build:production"
+        },
+        "development": {
+          "buildTarget": "whitebox-field-flow:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "whitebox-field-flow:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/whitebox-field-flow/jest.config.ts",
+        "tsConfig": "apps/whitebox-field-flow/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "whitebox-field-flow:build",
+        "staticFilePath": "dist/apps/whitebox-field-flow/browser",
+        "spa": true
+      }
+    }
+  }
+}

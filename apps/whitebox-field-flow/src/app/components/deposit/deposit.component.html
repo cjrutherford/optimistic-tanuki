@@ -1,0 +1,206 @@
+<section class="deposit-shell">
+  <div class="deposit-container">
+    <header class="section-header">
+      <p class="eyebrow">Secure payment</p>
+      <h1>Confirm your booking deposit</h1>
+      <p class="lede">
+        Pay a secure deposit to reserve your arrival window. The deposit is
+        credited against your final job balance upon service completion.
+      </p>
+    </header>
+
+    <!-- Error Alert -->
+    <div *ngIf="formError" class="alert-banner" role="alert">
+      {{ formError }}
+    </div>
+
+    <!-- Success Confirmation View -->
+    <div *ngIf="paymentSuccess && paymentResult" class="success-card">
+      <div class="success-badge">Booking confirmed</div>
+      <h2 class="success-title">Deposit payment completed</h2>
+      <p class="success-sub">
+        Receipt #{{ paymentResult.receiptNumber }} for ${{
+          paymentResult.amount | number : '1.2-2'
+        }}
+        has been processed.
+      </p>
+
+      <div class="sms-notification-box" role="status">
+        <span class="sms-icon">SMS</span>
+        <div class="sms-details">
+          <strong>Automated dispatch SMS sent</strong>
+          <p>
+            Confirmation and real-time technician tracking sent to
+            {{ paymentResult.smsNotificationRecipient }}.
+          </p>
+        </div>
+      </div>
+
+      <div class="confirmation-actions">
+        <button
+          type="button"
+          class="btn-primary touch-target"
+          (click)="trackJob()"
+        >
+          Track job status
+        </button>
+      </div>
+    </div>
+
+    <!-- Stripe Elements Checkout Container -->
+    <div *ngIf="!paymentSuccess" class="checkout-layout">
+      <form (ngSubmit)="processPayment()" class="stripe-elements-container">
+        <div class="elements-header">
+          <span class="stripe-badge">Stripe secure checkout</span>
+          <span class="encrypted-badge">256-bit SSL encrypted</span>
+        </div>
+
+        <div class="form-group">
+          <label for="cardholder-name" class="form-label"> Name on card </label>
+          <input
+            id="cardholder-name"
+            type="text"
+            [(ngModel)]="cardholderName"
+            name="cardholderName"
+            placeholder="e.g. John Miller"
+            class="touch-target"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="card-number" class="form-label">Card number</label>
+          <div class="input-card-wrapper">
+            <input
+              id="card-number"
+              type="text"
+              [(ngModel)]="cardNumber"
+              name="cardNumber"
+              placeholder="4242 •••• •••• 4242"
+              class="touch-target card-number-input"
+              maxlength="19"
+              required
+            />
+            <span class="card-brand-pill">VISA / MC</span>
+          </div>
+        </div>
+
+        <div class="fields-row">
+          <div class="form-group">
+            <label for="expiry-date" class="form-label">Expiration</label>
+            <input
+              id="expiry-date"
+              type="text"
+              [(ngModel)]="expiryDate"
+              name="expiryDate"
+              placeholder="MM / YY"
+              class="touch-target"
+              maxlength="5"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="cvc-code" class="form-label">CVC</label>
+            <input
+              id="cvc-code"
+              type="password"
+              [(ngModel)]="cvc"
+              name="cvc"
+              placeholder="123"
+              class="touch-target"
+              maxlength="4"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="postal-code" class="form-label">Postal code</label>
+            <input
+              id="postal-code"
+              type="text"
+              [(ngModel)]="postalCode"
+              name="postalCode"
+              placeholder="31401"
+              class="touch-target"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-primary touch-target submit-pay-btn"
+          [disabled]="isProcessing"
+        >
+          <span *ngIf="!isProcessing">
+            Pay ${{ depositAmount | number : '1.2-2' }} deposit
+          </span>
+          <span *ngIf="isProcessing">Authorizing payment...</span>
+        </button>
+
+        <p class="terms-caption">
+          By confirming payment, you authorize a ${{
+            depositAmount | number : '1.2-2'
+          }}
+          deposit charge to hold your scheduled appointment window.
+        </p>
+      </form>
+
+      <!-- Deposit Breakdown Sidebar -->
+      <aside class="deposit-summary-sidebar" aria-label="Deposit summary">
+        <h2 class="sidebar-heading">Payment summary</h2>
+        <div class="sidebar-rows">
+          <div class="sidebar-line">
+            <span>Service</span>
+            <strong>
+              {{
+                apiService.activeEstimate()?.packageDetails?.name ||
+                  'Field Flow Service'
+              }}
+            </strong>
+          </div>
+          <div class="sidebar-line">
+            <span>Arrival window</span>
+            <span>
+              {{
+                apiService.activeBooking()?.selectedWindow ||
+                  '8:00 AM - 10:00 AM'
+              }}
+            </span>
+          </div>
+          <div class="sidebar-line">
+            <span>Estimated total</span>
+            <span>
+              ${{
+                apiService.activeEstimate()?.total || 245 | number : '1.2-2'
+              }}
+            </span>
+          </div>
+          <div class="sidebar-line due-now-row">
+            <span>Due now</span>
+            <strong class="due-now-amount">
+              ${{ depositAmount | number : '1.2-2' }}
+            </strong>
+          </div>
+          <div class="sidebar-line">
+            <span>Balance due at completion</span>
+            <span>
+              ${{
+                (apiService.activeEstimate()?.total || 245) - depositAmount
+                  | number : '1.2-2'
+              }}
+            </span>
+          </div>
+        </div>
+
+        <div class="trust-guarantee">
+          <strong>South Georgia direct service guarantee</strong>
+          <p>
+            No hidden service fees. Technicians arrive within the confirmed
+            two-hour window equipped for immediate job execution.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>

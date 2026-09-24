@@ -198,6 +198,13 @@ export const PRODUCT_THEME_DEFAULTS: Record<string, ProductThemeDefaults> = {
     mode: 'auto',
     primaryColor: '#0d7a66',
   },
+
+  // Field Flow trade and field service mobile-first application.
+  'whitebox-field-flow': {
+    personalityId: 'bold',
+    mode: 'dark',
+    primaryColor: '#f59e0b',
+  },
 };
 
 /**

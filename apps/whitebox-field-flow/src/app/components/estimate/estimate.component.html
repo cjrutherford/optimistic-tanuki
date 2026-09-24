@@ -1,0 +1,203 @@
+<section class="estimate-shell">
+  <div class="estimate-container">
+    <header class="section-header">
+      <p class="eyebrow">Instant service estimate</p>
+      <h1>Configure your trade service quote</h1>
+      <p class="lede">
+        Select your required service tier and parameters below for live pricing,
+        tax calculation, and guaranteed arrival windows.
+      </p>
+    </header>
+
+    <div class="estimator-layout">
+      <!-- Parameters Column -->
+      <div class="parameters-card">
+        <!-- 1. Service Tier Selector -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">1. Select service package</legend>
+          <div class="tier-buttons">
+            <button
+              *ngFor="let tier of packageTiers"
+              type="button"
+              class="tier-card-btn touch-target"
+              [class.active]="selectedPackage === tier"
+              (click)="onPackageSelect(tier)"
+            >
+              <div class="tier-header">
+                <span class="tier-name">{{ packages[tier].name }}</span>
+                <span class="tier-base-price"
+                  >${{ packages[tier].basePrice }}</span
+                >
+              </div>
+              <p class="tier-desc">{{ packages[tier].description }}</p>
+              <span class="tier-duration">
+                Approx. {{ packages[tier].durationHours }} hours
+              </span>
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 2. Vehicle or Property Size -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">2. Property or vehicle size</legend>
+          <div class="selector-row">
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'compact'"
+              (click)="onSizeSelect('compact')"
+            >
+              Compact / Small
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'midsize'"
+              (click)="onSizeSelect('midsize')"
+            >
+              Midsize / Standard (+25%)
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'large'"
+              (click)="onSizeSelect('large')"
+            >
+              Large / SUV (+50%)
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'commercial'"
+              (click)="onSizeSelect('commercial')"
+            >
+              Commercial (+100%)
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 3. Surface Condition -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">3. Surface condition</legend>
+          <div class="selector-row">
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'light'"
+              (click)="onConditionSelect('light')"
+            >
+              Light / Clean (+$0)
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'moderate'"
+              (click)="onConditionSelect('moderate')"
+            >
+              Moderate (+$35)
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'heavy'"
+              (click)="onConditionSelect('heavy')"
+            >
+              Heavy soil (+$75)
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'severe'"
+              (click)="onConditionSelect('severe')"
+            >
+              Severe / Oxidation (+$140)
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 4. Area / Square Footage (optional) -->
+        <div class="parameter-group">
+          <label for="sqft-input" class="group-title">
+            4. Area or perimeter size (square feet)
+          </label>
+          <div class="input-row">
+            <input
+              id="sqft-input"
+              type="number"
+              min="100"
+              max="10000"
+              step="50"
+              [(ngModel)]="squareFootage"
+              (ngModelChange)="onSqftChange()"
+              class="touch-target"
+              placeholder="e.g. 800"
+            />
+            <span class="input-helper">
+              Standard base covers 500 sq ft. $0.20 per additional sq ft.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Calculation & Summary Card -->
+      <aside class="summary-card" aria-label="Quote summary">
+        <h2 class="summary-heading">Quote calculation</h2>
+        <div class="package-recap">
+          <span class="selected-package-badge">
+            {{ calculation.packageDetails.name }}
+          </span>
+          <p class="package-recap-desc">
+            {{ calculation.packageDetails.description }}
+          </p>
+        </div>
+
+        <ul class="features-checklist">
+          <li *ngFor="let feat of calculation.packageDetails.features">
+            {{ feat }}
+          </li>
+        </ul>
+
+        <div class="pricing-breakdown">
+          <div class="breakdown-row">
+            <span>Subtotal</span>
+            <span class="amount"
+              >${{ calculation.subtotal | number : '1.2-2' }}</span
+            >
+          </div>
+          <div class="breakdown-row">
+            <span>Estimated local tax ({{ calculation.taxRate * 100 }}%)</span>
+            <span class="amount"
+              >${{ calculation.taxAmount | number : '1.2-2' }}</span
+            >
+          </div>
+          <div class="breakdown-row total-row">
+            <strong>Estimated total</strong>
+            <strong class="total-amount">
+              ${{ calculation.total | number : '1.2-2' }}
+            </strong>
+          </div>
+          <div class="breakdown-row deposit-row">
+            <span>Required booking deposit</span>
+            <span class="deposit-amount">
+              ${{ calculation.depositAmount | number : '1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="card-footer-action">
+          <button
+            type="button"
+            class="btn-primary touch-target"
+            (click)="proceedToBooking()"
+          >
+            Continue to scheduling
+          </button>
+          <p class="guarantee-text">
+            Deposit applied directly to final invoice. Full refund for
+            cancellations with 24-hour notice.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
