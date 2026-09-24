@@ -65,6 +65,30 @@ describe('createProtectedRouteGate', () => {
     expect(requiresSessionValidation('/projects/archive')).toBe(true);
     expect(requiresSessionValidation('/projects-archive')).toBe(false);
   });
+
+  it('never gates the client-only OAuth callback behind a session check', async () => {
+    // The callback shell redeems its one-time grant in the browser; a server
+    // validation here would spend a gateway RPC per login and bounce an
+    // in-flight login back to /login before redemption completes.
+    expect(requiresSessionValidation('/oauth/callback')).toBe(false);
+    expect(requiresSessionValidation('/oauth/callback/google')).toBe(false);
+
+    const next = jest.fn();
+    const res = response();
+    const validateSession = jest.fn();
+    await createProtectedRouteGate({ validateSession })(
+      request(
+        '/oauth/callback/google',
+        '/oauth/callback/google?callbackCode=x'
+      ),
+      res,
+      next
+    );
+
+    expect(validateSession).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledWith();
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
 });
 
 describe('Forge server route policy', () => {

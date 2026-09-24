@@ -145,11 +145,30 @@ export class OAuthService {
         resolve(result);
       };
       const recoverCookieSession = (): void => {
+        // Bounded recovery: one immediate probe plus interval retries. An
+        // unbounded poll turns a lost postMessage / failed redeem into a
+        // permanent 1 req/s hammer on the session endpoint per abandoned
+        // login attempt.
+        const maxRecoveryAttempts = 15;
+        let recoveryAttempts = 0;
         const checkSession = async (): Promise<void> => {
           if (settled) {
             if (sessionRecoveryPoll) clearInterval(sessionRecoveryPoll);
             return;
           }
+          // Pre-check synchronously so a burst of already-queued interval
+          // ticks cannot fire extra probes after the budget is spent.
+          if (recoveryAttempts >= maxRecoveryAttempts) {
+            finish(
+              {
+                success: false,
+                error: 'OAuth session could not be restored',
+              },
+              false
+            );
+            return;
+          }
+          recoveryAttempts += 1;
           try {
             await firstValueFrom(
               this.http.get(`${this.apiBaseUrl}/authentication/session`, {
@@ -160,6 +179,15 @@ export class OAuthService {
           } catch {
             // The callback may still be redeeming its one-time grant. Keep
             // this recovery check scoped to this active popup attempt.
+            if (recoveryAttempts >= maxRecoveryAttempts) {
+              finish(
+                {
+                  success: false,
+                  error: 'OAuth session could not be restored',
+                },
+                false
+              );
+            }
           }
         };
 

@@ -10,6 +10,14 @@ describe('business-site OAuth popup security headers', () => {
     );
   });
 
+  it('preserves the browser origin when proxying OAuth API calls', () => {
+    const server = readFileSync(resolve(__dirname, 'server.ts'), 'utf8');
+
+    expect(server).toContain(
+      '!shouldPreserveClientOrigin(req.originalUrl || req.url'
+    );
+  });
+
   it('starts runtime monitoring only for the main server module', () => {
     const server = readFileSync(resolve(__dirname, 'server.ts'), 'utf8');
 

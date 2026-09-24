@@ -121,6 +121,23 @@ describe('AuthStateService', () => {
       httpMock.verify();
     });
 
+    it('coalesces concurrent restoreSession calls into a single session probe', async () => {
+      const service = configure('browser');
+
+      // Guards + login/landing race the constructor probe after hydration.
+      // All concurrent callers must share the single in-flight request.
+      const first = service.restoreSession();
+      const second = service.restoreSession();
+
+      const req = httpMock.expectOne(SESSION_URL);
+      req.flush({ data: USER });
+
+      await expect(first).resolves.toBe(true);
+      await expect(second).resolves.toBe(true);
+      expect(service.isAuthenticated).toBe(true);
+      httpMock.verify();
+    });
+
     it('defaults a missing profileId to an empty string in setSession', async () => {
       const service = configure('browser');
       httpMock.expectOne(SESSION_URL).flush({ data: USER });

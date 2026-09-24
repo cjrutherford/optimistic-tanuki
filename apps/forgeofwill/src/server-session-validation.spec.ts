@@ -50,6 +50,46 @@ describe('createGatewaySessionValidator', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('shares one gateway request across concurrent validations of the same session', async () => {
+    let resolveFetch!: (value: { ok: boolean }) => void;
+    fetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      })
+    );
+    const validateShared = createGatewaySessionValidator({
+      gatewayUrl,
+      fetch: fetchMock,
+    });
+
+    const first = validateShared({ cookies: { ot_session: 'shared-token' } });
+    const second = validateShared({ cookies: { ot_session: 'shared-token' } });
+    resolveFetch({ ok: true });
+    await expect(first).resolves.toBe(true);
+    await expect(second).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a recent negative result from cache instead of re-hitting the gateway', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 401 });
+    const validateCached = createGatewaySessionValidator({
+      gatewayUrl,
+      fetch: fetchMock,
+      negativeTtlMs: 10_000,
+    });
+
+    await expect(
+      validateCached({ cookies: { ot_session: 'expired-token' } })
+    ).resolves.toBe(false);
+    await expect(
+      validateCached({ cookies: { ot_session: 'expired-token' } })
+    ).resolves.toBe(false);
+
+    // One redirect loop re-requesting the same protected document must not
+    // fan out into repeated gateway validations.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('fails closed when the gateway session check errors', async () => {
     fetchMock.mockRejectedValue(new Error('gateway unavailable'));
 

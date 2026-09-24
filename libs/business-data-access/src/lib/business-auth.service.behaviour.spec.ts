@@ -361,6 +361,30 @@ describe('BusinessAuthService session lifecycle', () => {
       expect(service.user()).toBeNull();
     });
 
+    it('coalesces concurrent restoreSession calls into a single session probe', () => {
+      sessionStorage.setItem(SESSION_KIND_KEY, 'owner');
+      createService();
+      const first: boolean[] = [];
+      const second: boolean[] = [];
+
+      service.restoreSession().subscribe((value) => first.push(value));
+      service.restoreSession().subscribe((value) => second.push(value));
+
+      // APP_INITIALIZER + guards/components racing after hydration must
+      // share one gateway request, not fan out into N validations.
+      httpMock.expectOne('/api/authentication/session').flush({
+        data: {
+          userId: 'owner-1',
+          profileId: 'profile-1',
+          email: 'owner@example.com',
+          name: 'Jordan Owner',
+        },
+      });
+
+      expect(first).toEqual([true]);
+      expect(second).toEqual([true]);
+    });
+
     it('drops both sessions and the session-kind marker when the cookie session is rejected', () => {
       createService();
       establishOwnerSession();

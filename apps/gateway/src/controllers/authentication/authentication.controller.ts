@@ -112,6 +112,19 @@ const REGISTER_THROTTLE = {
     ttl: AUTH_THROTTLE_TTL,
   },
 };
+// Session reads are the hottest auth route (SSR validation + client restore
+// on every navigation) and a session loop's main amplifier. The limit is
+// deliberately multiplex-tolerant: the gateway sees SSR hosts and proxies,
+// not browsers, so many users share one peer IP. This bounds extreme storms
+// without throttling normal multi-user traffic. Loop elimination lives in
+// the clients (coalesced restores, bounded OAuth recovery, SSR negative
+// cache); this is the backstop.
+const SESSION_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_SESSION_LIMIT', 300),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
 
 @ApiTags('authentication')
 @Controller('authentication')
@@ -286,6 +299,7 @@ export class AuthenticationController {
   }
 
   @Get('session')
+  @Throttle(SESSION_THROTTLE)
   @UseGuards(AuthGuard)
   currentSession(@User() user: UserDetails) {
     return {

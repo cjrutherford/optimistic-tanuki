@@ -630,6 +630,10 @@ services:
       # independent accounts from one browser source, so raise only this
       # isolated-stack override rather than weakening deployed throttles.
       THROTTLE_LOGIN_LIMIT: 100
+      # Session probes fire per navigation (SSR validation + client restore),
+      # so the isolated stack lifts this backstop while E2E drives hundreds
+      # of navigations from shared runner IPs.
+      THROTTLE_SESSION_LIMIT: 100000
       JWT_SECRET: e2e-test-jwt-secret
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
       # These must match the origin the suites actually drive. Every UI target

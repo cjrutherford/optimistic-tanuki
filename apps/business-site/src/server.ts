@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isEvaluatorGuideEnabled } from './server-evaluator-guide';
+import { shouldPreserveClientOrigin } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
@@ -102,7 +103,12 @@ app.use(
       proxyReq: (proxyReq, req) => {
         fixRequestBody(proxyReq, req);
         proxyReq.setHeader('host', gatewayHost);
-        if (req.headers.origin) {
+        // OAuth endpoints validate Origin against the grant's app origin;
+        // rewriting it to the gateway origin 401s every redeem.
+        if (
+          req.headers.origin &&
+          !shouldPreserveClientOrigin(req.originalUrl || req.url || '')
+        ) {
           proxyReq.setHeader('origin', gatewayOrigin);
         }
       },
