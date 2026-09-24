@@ -944,6 +944,7 @@ services:
     environment:
       - NODE_ENV=development
       - THROTTLE_LOGIN_LIMIT=100
+      - THROTTLE_SESSION_LIMIT=100000
       - OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}
       - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
       - DEV_ALLOW_ALL_BROWSER_ORIGINS=true

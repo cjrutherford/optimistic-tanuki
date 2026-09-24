@@ -33,6 +33,8 @@ export class AuthStateService {
   isAuthenticated$: Observable<boolean>;
   decodedToken$: Observable<UserData | null>;
   currentProfile$: Observable<ProfileDto | null>;
+  private sessionRestoreGeneration = 0;
+  private inflightRestore: Promise<boolean> | undefined;
 
   private authService = inject(AuthenticationService);
   private http = inject(HttpClient);
@@ -83,11 +85,30 @@ export class AuthStateService {
     return response;
   }
 
-  async restoreSession(): Promise<boolean> {
+  restoreSession(): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId)) {
-      return false;
+      return Promise.resolve(false);
+    }
+    // Coalesce concurrent probes (guards + login/landing racing after
+    // hydration) into a single gateway request so one navigation cannot
+    // fan out into N session validations.
+    if (this.inflightRestore) {
+      return this.inflightRestore;
     }
 
+    const restoreGeneration = ++this.sessionRestoreGeneration;
+    const pending = this.executeRestore(restoreGeneration);
+    this.inflightRestore = pending;
+    const clearInflight = () => {
+      if (this.inflightRestore === pending) {
+        this.inflightRestore = undefined;
+      }
+    };
+    pending.then(clearInflight, clearInflight);
+    return pending;
+  }
+
+  private async executeRestore(restoreGeneration: number): Promise<boolean> {
     try {
       const response = await firstValueFrom(
         this.http.get<{ data: UserData }>(
@@ -95,9 +116,15 @@ export class AuthStateService {
           { withCredentials: true }
         )
       );
+      if (restoreGeneration !== this.sessionRestoreGeneration) {
+        return this._isAuthenticated;
+      }
       this.setSession(response.data);
       return true;
     } catch {
+      if (restoreGeneration !== this.sessionRestoreGeneration) {
+        return this._isAuthenticated;
+      }
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(false);
       this.decodedTokenSubject.next(null);
@@ -123,6 +150,8 @@ export class AuthStateService {
       console.log('setToken called on non-browser platform');
       return;
     }
+    ++this.sessionRestoreGeneration;
+    this.inflightRestore = undefined;
     localStorage.removeItem(this.tokenKey);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
@@ -134,6 +163,8 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    ++this.sessionRestoreGeneration;
+    this.inflightRestore = undefined;
 
     const token = this.getToken();
 

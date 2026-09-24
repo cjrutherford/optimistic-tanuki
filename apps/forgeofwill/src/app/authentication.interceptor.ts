@@ -18,7 +18,15 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(clonedRequest).pipe(
     catchError((error) => {
-      if (error.status === 401) {
+      // Cookie-session probes are expected to 401 before sign-in and while
+      // an OAuth callback is still redeeming. AuthState handles those; a
+      // global logout+redirect here turns one probe into a logout POST plus
+      // a navigation that re-probes, feeding the session loop.
+      const url = req.url || '';
+      const isSessionProbe =
+        url.includes('/authentication/session') ||
+        url.includes('/oauth/callback/redeem');
+      if (error.status === 401 && !isSessionProbe) {
         authStateService.logout();
         router.navigate(['/login']);
       }

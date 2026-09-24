@@ -93,6 +93,22 @@ describe('authenticationInterceptor', () => {
     tick();
   }));
 
+  it('should not log out on a 401 from the session probe itself', fakeAsync(() => {
+    jest.spyOn(authStateService, 'getToken').mockReturnValue(null);
+
+    httpClient.get('/api/authentication/session').subscribe({
+      error: (error) => {
+        expect(error.status).toBe(401);
+        expect(authStateService.logout).not.toHaveBeenCalled();
+        expect(router.navigate).not.toHaveBeenCalled();
+      },
+    });
+
+    const testReq = httpMock.expectOne('/api/authentication/session');
+    testReq.error(new ErrorEvent('Unauthorized'), { status: 401 });
+    tick();
+  }));
+
   it('should rethrow other errors', fakeAsync(() => {
     jest.spyOn(authStateService, 'getToken').mockReturnValue('test-token');
 

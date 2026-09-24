@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isEvaluatorGuideEnabled } from './server-evaluator-guide';
+import { shouldPreserveClientOrigin } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
@@ -102,7 +103,18 @@ app.use(
       proxyReq: (proxyReq, req) => {
         fixRequestBody(proxyReq, req);
         proxyReq.setHeader('host', gatewayHost);
-        if (req.headers.origin) {
+        // OAuth endpoints validate Origin against the grant's app origin;
+        // rewriting it to the gateway origin 401s every redeem. The hook's
+        // request is typed as http.IncomingMessage (no originalUrl), so read
+        // the Express original URL defensively and fall back to req.url.
+        const originalUrl = (req as { originalUrl?: unknown }).originalUrl;
+        const rawUrl =
+          typeof originalUrl === 'string'
+            ? originalUrl
+            : typeof req.url === 'string'
+            ? req.url
+            : '';
+        if (req.headers.origin && !shouldPreserveClientOrigin(rawUrl)) {
           proxyReq.setHeader('origin', gatewayOrigin);
         }
       },

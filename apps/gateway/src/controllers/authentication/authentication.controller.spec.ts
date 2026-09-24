@@ -1156,6 +1156,15 @@ describe('AuthenticationController', () => {
         5,
       ],
       ['registerUser', AuthenticationController.prototype.registerUser, 100],
+      // The session endpoint is the hottest auth route (SSR validation +
+      // client restore on every navigation) and the loop's main amplifier.
+      // It gets a generous multiplex-tolerant limit, not the strict
+      // credential limits above.
+      [
+        'currentSession',
+        AuthenticationController.prototype.currentSession,
+        300,
+      ],
     ];
 
     it.each(protectedHandlers)(

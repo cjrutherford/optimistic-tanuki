@@ -15,6 +15,8 @@ import {
   map,
   of,
   switchMap,
+  shareReplay,
+  finalize,
 } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { RegisterRequest } from '@optimistic-tanuki/models';
@@ -70,6 +72,7 @@ export class BusinessAuthService {
   );
 
   private sessionRestoreVersion = 0;
+  private inflightRestore$: Observable<boolean> | undefined;
 
   readonly clientUser = this._clientUser.asReadonly();
   readonly isClientAuthenticated = computed(() => !!this._clientUser());
@@ -307,10 +310,16 @@ export class BusinessAuthService {
       this.transition({ type: 'sign-out' });
       return of(false);
     }
+    // Coalesce concurrent restores (APP_INITIALIZER + guards/components
+    // racing after hydration) into a single gateway probe so one page load
+    // cannot fan out into N session validations.
+    if (this.inflightRestore$) {
+      return this.inflightRestore$;
+    }
 
     const restoreVersion = ++this.sessionRestoreVersion;
     this.transition({ type: 'restore-start' });
-    return this.sessionUser('').pipe(
+    const pending$ = this.sessionUser('').pipe(
       tap((user) => {
         if (restoreVersion !== this.sessionRestoreVersion) return;
         if (kind === 'owner') {
@@ -331,8 +340,16 @@ export class BusinessAuthService {
               : 'expiry',
         });
         return of(false);
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
+      finalize(() => {
+        if (this.inflightRestore$ === pending$) {
+          this.inflightRestore$ = undefined;
+        }
       })
     );
+    this.inflightRestore$ = pending$;
+    return pending$;
   }
 
   logout(): void {
@@ -429,6 +446,7 @@ export class BusinessAuthService {
 
   private invalidatePendingRestore(): void {
     this.sessionRestoreVersion += 1;
+    this.inflightRestore$ = undefined;
   }
 
   private loadUser(): BusinessAuthUser | null {

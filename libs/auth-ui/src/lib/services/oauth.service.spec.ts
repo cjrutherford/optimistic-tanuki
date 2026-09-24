@@ -256,6 +256,53 @@ describe('OAuthService', () => {
     expect(http.get).toHaveBeenCalledTimes(11);
   });
 
+  it('gives up recovering the cookie session after a bounded number of probes', async () => {
+    jest.useFakeTimers();
+    const popup = { closed: true, close: jest.fn() } as unknown as Window;
+    jest.spyOn(window, 'open').mockReturnValue(popup);
+
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        OAuthService,
+        { provide: 'API_BASE_URL', useValue: '/api' },
+      ],
+    }).compileComponents();
+    const service = TestBed.inject(OAuthService);
+    const http = TestBed.inject(HttpClient);
+    jest
+      .spyOn(http, 'get')
+      .mockReturnValue(throwError(() => new Error('Session is not ready yet')));
+    service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+    const login = service.initiateOAuthLogin(
+      'google',
+      'client-interface',
+      true
+    );
+    let result: unknown;
+    void login.then((value) => {
+      result = value;
+    });
+
+    // Far beyond the recovery window: polling must stop and the attempt
+    // must settle instead of hammering the session endpoint forever.
+    jest.advanceTimersByTime(60_000);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(result).toEqual({
+      success: false,
+      error: 'OAuth session could not be restored',
+    });
+    expect(http.get).toHaveBeenCalledTimes(15);
+
+    const callsAfterSettle = jest.mocked(http.get).mock.calls.length;
+    jest.advanceTimersByTime(30_000);
+    await Promise.resolve();
+    expect(jest.mocked(http.get).mock.calls.length).toBe(callsAfterSettle);
+  });
+
   it('keeps the legacy registration call shape on the hardened OAuth flow', async () => {
     const popup = { closed: false, close: jest.fn() } as unknown as Window;
     jest.spyOn(window, 'open').mockReturnValue(popup);
