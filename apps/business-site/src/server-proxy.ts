@@ -10,5 +10,12 @@ const CLIENT_ORIGIN_PATH_PREFIX = '/api/oauth/';
  */
 export function shouldPreserveClientOrigin(originalUrl: string): boolean {
   const path = originalUrl.split('?')[0];
-  return path === '/api/oauth' || path.startsWith(CLIENT_ORIGIN_PATH_PREFIX);
+  // The proxy middleware may see the mount-stripped path (/oauth/...) rather
+  // than the full original URL (/api/oauth/...); accept both spellings.
+  return (
+    path === '/api/oauth' ||
+    path.startsWith(CLIENT_ORIGIN_PATH_PREFIX) ||
+    path === '/oauth' ||
+    path.startsWith('/oauth/')
+  );
 }

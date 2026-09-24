@@ -17,6 +17,12 @@ describe('shouldPreserveClientOrigin', () => {
     expect(shouldPreserveClientOrigin('/api/oauth')).toBe(true);
   });
 
+  it('also matches mount-stripped OAuth paths seen inside the proxy hook', () => {
+    expect(shouldPreserveClientOrigin('/oauth/callback/redeem')).toBe(true);
+    expect(shouldPreserveClientOrigin('/oauth')).toBe(true);
+    expect(shouldPreserveClientOrigin('/oauth/start/google')).toBe(true);
+  });
+
   it('keeps the existing gateway-origin rewrite for non-OAuth API paths', () => {
     expect(shouldPreserveClientOrigin('/api/authentication/session')).toBe(
       false

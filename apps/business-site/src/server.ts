@@ -104,11 +104,17 @@ app.use(
         fixRequestBody(proxyReq, req);
         proxyReq.setHeader('host', gatewayHost);
         // OAuth endpoints validate Origin against the grant's app origin;
-        // rewriting it to the gateway origin 401s every redeem.
-        if (
-          req.headers.origin &&
-          !shouldPreserveClientOrigin(req.originalUrl || req.url || '')
-        ) {
+        // rewriting it to the gateway origin 401s every redeem. The hook's
+        // request is typed as http.IncomingMessage (no originalUrl), so read
+        // the Express original URL defensively and fall back to req.url.
+        const originalUrl = (req as { originalUrl?: unknown }).originalUrl;
+        const rawUrl =
+          typeof originalUrl === 'string'
+            ? originalUrl
+            : typeof req.url === 'string'
+            ? req.url
+            : '';
+        if (req.headers.origin && !shouldPreserveClientOrigin(rawUrl)) {
           proxyReq.setHeader('origin', gatewayOrigin);
         }
       },
