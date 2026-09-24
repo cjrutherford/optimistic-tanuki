@@ -20,7 +20,6 @@ export interface SolutionVertical {
   whiteBoxApps: {
     name: string;
     path: string;
-    slice: string;
     demoRoute: string;
     features: string[];
   }[];
@@ -54,7 +53,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
       {
         name: 'Field Flow',
         path: 'apps/whitebox-field-flow',
-        slice: 'Slice 04',
         demoRoute: '/field-flow/demo',
         features: [
           'Offline-first mobile job dispatch and crew time tracking',
@@ -100,7 +98,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
       {
         name: 'Practice Vault',
         path: 'apps/whitebox-practice-vault',
-        slice: 'Slice 05',
         demoRoute: '/practice-vault/demo',
         features: [
           'Encrypted client tax document intake portal',
@@ -146,7 +143,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
       {
         name: 'Practice Vault Wire Shield',
         path: 'apps/whitebox-practice-vault Wire Shield',
-        slice: 'Slice 05',
         demoRoute: '/wire-shield/demo',
         features: [
           'Two-factor verified closing wire instructions',
@@ -189,7 +185,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
       {
         name: 'Project Nexus',
         path: 'apps/whitebox-project-nexus',
-        slice: 'Slice 06',
         demoRoute: '/project-nexus/demo',
         features: [
           'Submittal tracking and plan revision change management',
@@ -200,7 +195,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
       {
         name: 'Civic Core',
         path: 'apps/whitebox-civic-core',
-        slice: 'Slice 07',
         demoRoute: '/civic-core/demo',
         features: [
           'Building permit application intake and department review routing',

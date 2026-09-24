@@ -56,7 +56,6 @@ describe('SolutionsMatrixComponent', () => {
     );
     expect(text).toContain('Field Flow');
     expect(text).toContain('apps/whitebox-field-flow');
-    expect(text).toContain('Slice 04');
     expect(text).toContain('Invoice Ninja v5');
     expect(text).toContain('Vikunja');
     expect(text).toContain('N8N');
@@ -80,7 +79,6 @@ describe('SolutionsMatrixComponent', () => {
     );
     expect(text).toContain('Practice Vault');
     expect(text).toContain('apps/whitebox-practice-vault');
-    expect(text).toContain('Slice 05');
     expect(text).toContain('Paperless-ngx');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('Vaultwarden');
@@ -105,7 +103,6 @@ describe('SolutionsMatrixComponent', () => {
     );
     expect(text).toContain('Practice Vault Wire Shield');
     expect(text).toContain('apps/whitebox-practice-vault Wire Shield');
-    expect(text).toContain('Slice 05');
     expect(text).toContain('Stalwart Mail Server');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('$2,850 setup');
@@ -129,10 +126,8 @@ describe('SolutionsMatrixComponent', () => {
     );
     expect(text).toContain('Project Nexus');
     expect(text).toContain('apps/whitebox-project-nexus');
-    expect(text).toContain('Slice 06');
     expect(text).toContain('Civic Core');
     expect(text).toContain('apps/whitebox-civic-core');
-    expect(text).toContain('Slice 07');
     expect(text).toContain('Nextcloud Enterprise');
     expect(text).toContain('Planka');
     expect(text).toContain('Stirling-PDF');
@@ -144,6 +139,15 @@ describe('SolutionsMatrixComponent', () => {
     const button = panel.querySelector('a.action-btn');
     expect(button.textContent.trim()).toBe('Configure Tier 3 Appliance');
     expect(button.getAttribute('href')).toContain('preset=tier3');
+  });
+
+  it('never uses the internal term slice anywhere in the UI', () => {
+    for (const v of component.verticals) {
+      component.onTabChange(v.id);
+      fixture.detectChanges();
+      const element = fixture.nativeElement as HTMLElement;
+      expect(element.textContent?.toLowerCase()).not.toContain('slice');
+    }
   });
 
   it('contains zero em dashes and maintains sentence case headings', () => {
