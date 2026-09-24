@@ -69,11 +69,11 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders a project-start CTA and the Turnkey Appliances path', () => {
+  it('renders a project-start CTA and the Turn-key Appliances path', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain('Schedule Free Audit');
-    expect(text).toContain('View Turnkey Appliances');
+    expect(text).toContain('View Turn-key Appliances');
   });
 
   it('renders the operational guarantee banner', () => {

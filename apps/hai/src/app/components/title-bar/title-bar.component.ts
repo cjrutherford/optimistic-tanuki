@@ -19,7 +19,7 @@ export class TitleBarComponent {
   readonly menuOpen = signal(false);
   readonly navItems: NavItem[] = [
     { label: 'Home', action: () => this.jump('#') },
-    { label: 'Turnkey Appliances', action: () => this.jump('#appliances') },
+    { label: 'Turn-key Appliances', action: () => this.jump('#appliances') },
     { label: 'Software Stacks', action: () => this.jump('#stacks') },
     { label: 'Cost Comparison', action: () => this.jump('#comparison') },
     { label: 'Contact', action: () => this.jump('#contact') },
@@ -27,7 +27,7 @@ export class TitleBarComponent {
 
   readonly navLinks = [
     { label: 'Home', href: '#' },
-    { label: 'Turnkey Appliances', href: '#appliances' },
+    { label: 'Turn-key Appliances', href: '#appliances' },
     { label: 'Software Stacks', href: '#stacks' },
     { label: 'Cost Comparison', href: '#comparison' },
     { label: 'Contact', href: '#contact' },

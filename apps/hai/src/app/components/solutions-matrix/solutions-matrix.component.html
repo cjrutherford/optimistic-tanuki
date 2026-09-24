@@ -1,8 +1,8 @@
 <section class="solutions-matrix-shell anchor-target" id="stacks">
   <div class="matrix-header">
     <div class="header-content">
-      <p class="eyebrow">Industry solutions matrix</p>
-      <h2>Turnkey industry stacks</h2>
+      <p class="eyebrow">Industry solutions</p>
+      <h2>Turn-key industry stacks</h2>
       <p class="lede">
         We pair dedicated on-premises hardware with custom software and vetted
         open-source tools for key regional businesses in South Georgia.
@@ -43,15 +43,19 @@
                 <p class="hardware-desc">{{ vertical.hardwareDetails }}</p>
               </div>
 
-              <div class="grid-card whitebox-card">
-                <h4 class="card-heading">Dedicated white-box software</h4>
+              <div class="grid-card software-card">
+                <h4 class="card-heading">Dedicated client applications</h4>
                 <div *ngFor="let app of vertical.whiteBoxApps" class="app-item">
                   <div class="app-title-row">
                     <strong class="app-name">{{ app.name }}</strong>
+                    <span class="customization-badge"
+                      >Whitebox product tailored to your brand</span
+                    >
                   </div>
-                  <div class="codebase-ref">
-                    <code class="code-path">{{ app.path }}</code>
-                    <span class="demo-route">Route {{ app.demoRoute }}</span>
+                  <div class="demo-route-container">
+                    <span class="demo-route"
+                      >Interactive demo: {{ app.demoRoute }}</span
+                    >
                   </div>
                   <ul class="feature-list">
                     <li *ngFor="let feature of app.features">{{ feature }}</li>

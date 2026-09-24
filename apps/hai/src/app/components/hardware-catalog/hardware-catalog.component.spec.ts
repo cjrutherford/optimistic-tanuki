@@ -131,6 +131,6 @@ describe('HardwareCatalogComponent', () => {
     expect(element.textContent).not.toContain('&mdash;');
 
     const h2 = element.querySelector('h2');
-    expect(h2?.textContent?.trim()).toBe('Turnkey hardware appliances');
+    expect(h2?.textContent?.trim()).toBe('Turn-key hardware appliances');
   });
 });

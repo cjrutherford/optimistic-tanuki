@@ -187,7 +187,8 @@ h2 {
   }
 }
 
-/* White-Box column */
+/* Dedicated software column */
+.software-card,
 .whitebox-card {
   .app-item {
     display: flex;
@@ -206,6 +207,7 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -215,24 +217,26 @@ h2 {
     color: var(--foreground);
   }
 
-  .codebase-ref {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 0.76rem;
+  .customization-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
-  .code-path {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.2rem 0.45rem;
-    border-radius: 4px;
-    color: color-mix(in srgb, var(--foreground) 75%, transparent);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+  .demo-route-container {
+    display: flex;
+    align-items: center;
+    font-size: 0.78rem;
   }
 
   .demo-route {
-    color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
+    color: color-mix(in srgb, var(--foreground) 65%, var(--primary));
     font-weight: 500;
   }
 

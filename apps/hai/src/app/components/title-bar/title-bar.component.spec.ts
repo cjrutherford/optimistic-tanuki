@@ -22,7 +22,7 @@ describe('TitleBarComponent', () => {
 
     expect(labels).toEqual([
       'Home',
-      'Turnkey Appliances',
+      'Turn-key Appliances',
       'Software Stacks',
       'Cost Comparison',
       'Contact',
@@ -35,7 +35,7 @@ describe('TitleBarComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('HOPEFUL ASPIRATIONS INDUSTRIES');
     expect(compiled.textContent).toContain('Home');
-    expect(compiled.textContent).toContain('Turnkey Appliances');
+    expect(compiled.textContent).toContain('Turn-key Appliances');
     expect(compiled.textContent).toContain('Software Stacks');
     expect(compiled.textContent).toContain('Cost Comparison');
     expect(compiled.textContent).toContain('Contact');

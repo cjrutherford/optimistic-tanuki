@@ -55,7 +55,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 1 Compact Mini-PC (Beelink N100) + CyberPower UPS'
     );
     expect(text).toContain('Field Flow');
-    expect(text).toContain('apps/whitebox-field-flow');
+    expect(text).toContain('Whitebox product tailored to your brand');
     expect(text).toContain('Invoice Ninja v5');
     expect(text).toContain('Vikunja');
     expect(text).toContain('N8N');
@@ -78,7 +78,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 2 Workstation Tower (Dell T150) + APC Smart-UPS + GL.iNet cellular router'
     );
     expect(text).toContain('Practice Vault');
-    expect(text).toContain('apps/whitebox-practice-vault');
+    expect(text).toContain('Whitebox product tailored to your brand');
     expect(text).toContain('Paperless-ngx');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('Vaultwarden');
@@ -102,7 +102,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 2 Workstation Tower (Dell T150) + APC Smart-UPS'
     );
     expect(text).toContain('Practice Vault Wire Shield');
-    expect(text).toContain('apps/whitebox-practice-vault Wire Shield');
+    expect(text).toContain('Whitebox product tailored to your brand');
     expect(text).toContain('Stalwart Mail Server');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('$2,850 setup');
@@ -125,9 +125,8 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 3 Enterprise 2U Rackmount (Supermicro EPYC / RTX 4060 Ti) + CyberPower Online UPS'
     );
     expect(text).toContain('Project Nexus');
-    expect(text).toContain('apps/whitebox-project-nexus');
     expect(text).toContain('Civic Core');
-    expect(text).toContain('apps/whitebox-civic-core');
+    expect(text).toContain('Whitebox product tailored to your brand');
     expect(text).toContain('Nextcloud Enterprise');
     expect(text).toContain('Planka');
     expect(text).toContain('Stirling-PDF');
@@ -150,12 +149,33 @@ describe('SolutionsMatrixComponent', () => {
     }
   });
 
-  it('contains zero em dashes and maintains sentence case headings', () => {
+  it('omits matrix from industry solutions heading and eyebrow', () => {
+    const eyebrow = fixture.nativeElement.querySelector('.eyebrow');
+    expect(eyebrow?.textContent?.trim()).toBe('Industry solutions');
+    expect(eyebrow?.textContent?.toLowerCase()).not.toContain('matrix');
+  });
+
+  it('omits whitebox from app product titles while noting brand tailoring', () => {
+    const appNames = fixture.nativeElement.querySelectorAll('.app-name');
+    appNames.forEach((el: HTMLElement) => {
+      expect(el.textContent?.toLowerCase()).not.toContain('whitebox');
+    });
+    const cardHeading = fixture.nativeElement.querySelector(
+      '.software-card .card-heading'
+    );
+    expect(cardHeading?.textContent?.toLowerCase()).not.toContain('white-box');
+    expect(cardHeading?.textContent?.toLowerCase()).not.toContain('whitebox');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Whitebox product tailored to your brand'
+    );
+  });
+
+  it('contains zero em dashes, maintains sentence case headings, and writes turn-key with hyphen', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.textContent).not.toContain('\u2014');
     expect(element.textContent).not.toContain('&mdash;');
 
     const h2 = element.querySelector('h2');
-    expect(h2?.textContent?.trim()).toBe('Turnkey industry stacks');
+    expect(h2?.textContent?.trim()).toBe('Turn-key industry stacks');
   });
 });
