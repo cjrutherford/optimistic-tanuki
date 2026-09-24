@@ -1,0 +1,393 @@
+:host {
+  display: block;
+}
+
+.solutions-matrix-shell {
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
+}
+
+.matrix-header {
+  margin-bottom: clamp(1.8rem, 3vw, 2.5rem);
+}
+
+.eyebrow {
+  margin: 0 0 0.8rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  line-height: 1.05;
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+}
+
+.lede {
+  max-width: 60ch;
+  font: 400 1.05rem/1.7
+    var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  margin: 0;
+}
+
+.matrix-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab container custom styling */
+:host ::ng-deep otui-tabs .tabs-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 40%, transparent);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+:host ::ng-deep otui-tabs .tab-item {
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+
+  &:hover:not(.active) {
+    background: rgba(45, 212, 191, 0.08);
+    border-color: rgba(45, 212, 191, 0.3);
+    color: var(--foreground);
+  }
+
+  &.active {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 0 16px rgba(45, 212, 191, 0.18);
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+:host ::ng-deep otui-tabs .tabs-content {
+  padding: 0;
+}
+
+.vertical-panel {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.panel-header {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 40%, transparent);
+  padding-bottom: 1.25rem;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.vertical-title {
+  margin: 0;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+  color: var(--foreground);
+}
+
+.vertical-summary {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  max-width: 72ch;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.grid-card {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-heading {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 65%, var(--primary));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-color) 30%, transparent);
+  padding-bottom: 0.5rem;
+}
+
+/* Hardware column */
+.hardware-card {
+  .hardware-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.35;
+    display: inline-block;
+    margin-bottom: 0.85rem;
+  }
+
+  .hardware-desc {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: color-mix(in srgb, var(--foreground) 75%, transparent);
+    margin: 0;
+  }
+}
+
+/* White-Box column */
+.whitebox-card {
+  .app-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    &:not(:last-child) {
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px dashed
+        color-mix(in srgb, var(--border-color) 35%, transparent);
+    }
+  }
+
+  .app-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .app-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  .slice-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(45, 212, 191, 0.12);
+    border: 1px solid rgba(45, 212, 191, 0.28);
+    color: #2dd4bf;
+  }
+
+  .codebase-ref {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.76rem;
+  }
+
+  .code-path {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    color: color-mix(in srgb, var(--foreground) 75%, transparent);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .demo-route {
+    color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
+    font-weight: 500;
+  }
+
+  .feature-list {
+    margin: 0.25rem 0 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--foreground) 80%, transparent);
+
+    li::marker {
+      color: var(--primary);
+    }
+  }
+}
+
+/* FOSS column */
+.foss-card {
+  .foss-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .foss-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--border-color) 25%, transparent);
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+
+  .tool-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+
+  .tool-role {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  }
+}
+
+/* Panel footer */
+.panel-footer {
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  padding-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.investment-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.investment-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.investment-figures {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.upfront-cost {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--foreground);
+}
+
+.monthly-cost {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.project-cost {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+}
+
+.action-container {
+  min-width: 240px;
+}
+
+@media (max-width: 640px) {
+  .action-container {
+    width: 100%;
+  }
+
+  .panel-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #041012;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(45, 212, 191, 0.3);
+    opacity: 0.95;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

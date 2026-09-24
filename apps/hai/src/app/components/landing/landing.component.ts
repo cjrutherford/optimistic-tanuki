@@ -15,6 +15,7 @@ import { ContactSectionComponent } from './contact-section.component';
 import { EngagementSectionComponent } from './engagement-section.component';
 import { PartnerSectionComponent } from './partner-section.component';
 import { HardwareCatalogComponent } from '../hardware-catalog/hardware-catalog.component';
+import { SolutionsMatrixComponent } from '../solutions-matrix/solutions-matrix.component';
 
 @Component({
   selector: 'hai-landing',
@@ -27,6 +28,7 @@ import { HardwareCatalogComponent } from '../hardware-catalog/hardware-catalog.c
     TopographicDriftComponent,
     ServicesSectionComponent,
     HardwareCatalogComponent,
+    SolutionsMatrixComponent,
     ManifestoSectionComponent,
     PersonalCloudSectionComponent,
     EcosystemSectionComponent,

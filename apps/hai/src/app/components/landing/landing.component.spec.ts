@@ -228,6 +228,7 @@ describe('LandingComponent', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
     const targets = [
       '#appliances',
+      '#stacks',
       '#services',
       '#approach',
       '#infrastructure',
@@ -241,6 +242,7 @@ describe('LandingComponent', () => {
       true
     );
     expect(nativeElement.querySelector('hai-hardware-catalog')).not.toBeNull();
+    expect(nativeElement.querySelector('hai-solutions-matrix')).not.toBeNull();
     expect(
       nativeElement.querySelector('#services otui-card')?.getAttribute('tone')
     ).toBe('brand');
