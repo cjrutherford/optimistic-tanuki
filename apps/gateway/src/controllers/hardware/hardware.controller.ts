@@ -73,4 +73,14 @@ export class HardwareController {
       )
     );
   }
+
+  @Get('tiers')
+  async getTiers() {
+    return await firstValueFrom(
+      this.systemConfiguratorService.send(
+        { cmd: HardwareCommands.GET_TIERS },
+        {}
+      )
+    );
+  }
 }

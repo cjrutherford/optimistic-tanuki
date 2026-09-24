@@ -227,6 +227,7 @@ describe('LandingComponent', () => {
   it('preserves canonical section targets and migrated surface attributes', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
     const targets = [
+      '#appliances',
       '#services',
       '#approach',
       '#infrastructure',
@@ -239,6 +240,7 @@ describe('LandingComponent', () => {
     expect(targets.every((target) => nativeElement.querySelector(target))).toBe(
       true
     );
+    expect(nativeElement.querySelector('hai-hardware-catalog')).not.toBeNull();
     expect(
       nativeElement.querySelector('#services otui-card')?.getAttribute('tone')
     ).toBe('brand');

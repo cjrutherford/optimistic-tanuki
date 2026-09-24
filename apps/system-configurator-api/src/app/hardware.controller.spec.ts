@@ -27,6 +27,7 @@ describe('System Configurator HardwareController', () => {
             getOrder: jest.fn().mockReturnValue({ id: 'hai-order-1' }),
             saveConfiguration: jest.fn().mockReturnValue({ id: 'cfg-1' }),
             getConfiguration: jest.fn().mockReturnValue({ id: 'cfg-1' }),
+            getTiers: jest.fn().mockReturnValue([]),
           },
         },
       ],
@@ -82,11 +83,13 @@ describe('System Configurator HardwareController', () => {
       customerEmail: 'alex@hai.example',
     });
     controller.getConfiguration({ configurationId: 'cfg-1' });
+    controller.getTiers();
 
     expect(service.getChassis).toHaveBeenCalled();
     expect(service.getChassisById).toHaveBeenCalledWith('xs-cloud');
     expect(service.getCompatibleComponents).toHaveBeenCalledWith('xs-cloud');
     expect(service.getOrder).toHaveBeenCalledWith('hai-order-1');
+    expect(service.getTiers).toHaveBeenCalled();
   });
 
   it('exposes the shared hardware command contract', () => {

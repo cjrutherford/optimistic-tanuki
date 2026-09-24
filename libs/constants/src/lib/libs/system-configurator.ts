@@ -8,4 +8,5 @@ export const HardwareCommands = {
   GET_ORDER: 'system-configurator.hardware.getOrder',
   SAVE_CONFIGURATION: 'system-configurator.hardware.saveConfiguration',
   GET_CONFIGURATION: 'system-configurator.hardware.getConfiguration',
+  GET_TIERS: 'system-configurator.hardware.getTiers',
 } as const;

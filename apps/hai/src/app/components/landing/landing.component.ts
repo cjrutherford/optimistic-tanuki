@@ -14,6 +14,7 @@ import { EcosystemSectionComponent } from './ecosystem-section.component';
 import { ContactSectionComponent } from './contact-section.component';
 import { EngagementSectionComponent } from './engagement-section.component';
 import { PartnerSectionComponent } from './partner-section.component';
+import { HardwareCatalogComponent } from '../hardware-catalog/hardware-catalog.component';
 
 @Component({
   selector: 'hai-landing',
@@ -25,6 +26,7 @@ import { PartnerSectionComponent } from './partner-section.component';
     PulseRingsComponent,
     TopographicDriftComponent,
     ServicesSectionComponent,
+    HardwareCatalogComponent,
     ManifestoSectionComponent,
     PersonalCloudSectionComponent,
     EcosystemSectionComponent,

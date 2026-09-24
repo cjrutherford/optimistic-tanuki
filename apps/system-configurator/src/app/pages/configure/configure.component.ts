@@ -578,20 +578,140 @@ export class ConfigureComponent implements OnInit {
 
   private ensureDefaults(compatible: CompatibleComponents): void {
     const current = this.draft();
+    const preset = this.route.snapshot.queryParamMap
+      ? this.route.snapshot.queryParamMap.get('preset')
+      : null;
+
+    let cpuId = current.cpuId;
+    let ramId = current.ramId;
+    let storageIds = current.storageIds;
+    let gpuId = current.gpuId;
+
+    if (!cpuId && compatible.cpu.length > 0) {
+      if (preset === 'tier1') {
+        const found =
+          compatible.cpu.find(
+            (c) =>
+              c.name.toLowerCase().includes('n100') ||
+              c.name.toLowerCase().includes('intel')
+          ) || compatible.cpu[0];
+        cpuId = found.id;
+      } else if (preset === 'tier2') {
+        const found =
+          compatible.cpu.find(
+            (c) =>
+              c.name.toLowerCase().includes('ryzen') ||
+              c.name.toLowerCase().includes('i5') ||
+              c.name.toLowerCase().includes('7600') ||
+              c.name.toLowerCase().includes('7700')
+          ) || compatible.cpu[0];
+        cpuId = found.id;
+      } else if (preset === 'tier3') {
+        const found =
+          compatible.cpu.find(
+            (c) =>
+              c.name.toLowerCase().includes('epyc') ||
+              c.name.toLowerCase().includes('7900') ||
+              c.name.toLowerCase().includes('ryzen 9')
+          ) || compatible.cpu[compatible.cpu.length - 1];
+        cpuId = found.id;
+      } else {
+        cpuId = compatible.cpu[0].id;
+      }
+    }
+
+    if (!ramId && compatible.ram.length > 0) {
+      if (preset === 'tier1') {
+        const found =
+          compatible.ram.find((r) => r.name.includes('16GB')) ||
+          compatible.ram[0];
+        ramId = found.id;
+      } else if (preset === 'tier2') {
+        const found =
+          compatible.ram.find(
+            (r) => r.name.includes('32GB') || r.name.includes('64GB')
+          ) || compatible.ram[0];
+        ramId = found.id;
+      } else if (preset === 'tier3') {
+        const found =
+          compatible.ram.find(
+            (r) => r.name.includes('64GB') || r.name.includes('128GB')
+          ) || compatible.ram[compatible.ram.length - 1];
+        ramId = found.id;
+      } else {
+        ramId = compatible.ram[0].id;
+      }
+    }
+
+    if (storageIds.length === 0 && compatible.storage.length > 0) {
+      if (preset === 'tier1') {
+        const primary =
+          compatible.storage.find(
+            (s) =>
+              s.name.includes('512GB') ||
+              s.name.toLowerCase().includes('compact') ||
+              s.name.toLowerCase().includes('nvme')
+          ) || compatible.storage[0];
+        storageIds = [primary.id];
+      } else if (preset === 'tier2') {
+        const nvme = compatible.storage.find((s) =>
+          s.name.toLowerCase().includes('nvme')
+        );
+        const hdd = compatible.storage.find(
+          (s) =>
+            s.name.toLowerCase().includes('hdd') ||
+            s.name.toLowerCase().includes('sata') ||
+            s.name.toLowerCase().includes('archive')
+        );
+        if (nvme && hdd && nvme.id !== hdd.id) {
+          storageIds = [nvme.id, hdd.id];
+        } else {
+          storageIds = [compatible.storage[0].id];
+        }
+      } else if (preset === 'tier3') {
+        const nvme = compatible.storage.find((s) =>
+          s.name.toLowerCase().includes('nvme')
+        );
+        const hdd = compatible.storage.find(
+          (s) =>
+            s.name.toLowerCase().includes('hdd') ||
+            s.name.toLowerCase().includes('archive') ||
+            s.name.toLowerCase().includes('sata')
+        );
+        if (nvme && hdd && nvme.id !== hdd.id) {
+          storageIds = [nvme.id, hdd.id];
+        } else {
+          storageIds = [compatible.storage[0].id];
+        }
+      } else {
+        storageIds = [compatible.storage[0].id];
+      }
+    }
+
+    if (!gpuId && compatible.gpu.length > 0) {
+      if (preset === 'tier3') {
+        const discreteGpu =
+          compatible.gpu.find(
+            (g) =>
+              g.name.toLowerCase().includes('4060') ||
+              g.name.toLowerCase().includes('rtx') ||
+              g.name.toLowerCase().includes('nvidia')
+          ) || compatible.gpu.find((g) => g.sellingPrice > 0);
+        gpuId = discreteGpu?.id || compatible.gpu[0]?.id || '';
+      } else {
+        gpuId =
+          current.gpuId &&
+          compatible.gpu.some((item) => item.id === current.gpuId)
+            ? current.gpuId
+            : '';
+      }
+    }
+
     this.configuratorState.patchDraft({
-      cpuId: current.cpuId || compatible.cpu[0]?.id || '',
-      ramId: current.ramId || compatible.ram[0]?.id || '',
-      storageIds:
-        current.storageIds.length > 0
-          ? current.storageIds
-          : compatible.storage[0]
-          ? [compatible.storage[0].id]
-          : [],
-      gpuId:
-        current.gpuId &&
-        compatible.gpu.some((item) => item.id === current.gpuId)
-          ? current.gpuId
-          : '',
+      cpuId,
+      ramId,
+      storageIds,
+      gpuId,
     });
   }
 

@@ -51,4 +51,9 @@ export class HardwareController {
   getConfiguration(@Payload() payload: { configurationId: string }) {
     return this.hardwareService.getConfiguration(payload.configurationId);
   }
+
+  @MessagePattern({ cmd: HardwareCommands.GET_TIERS })
+  getTiers() {
+    return this.hardwareService.getTiers();
+  }
 }

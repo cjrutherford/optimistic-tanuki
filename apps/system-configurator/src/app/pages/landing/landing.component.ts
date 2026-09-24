@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Chassis, HardwareService } from '../../services/hardware.service';
 import { ConfiguratorStateService } from '../../state/configurator-state.service';
 
@@ -454,6 +454,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
 export class LandingComponent implements OnInit {
   private readonly hardwareService = inject(HardwareService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly configuratorState = inject(ConfiguratorStateService);
 
   readonly chassisList = signal<Chassis[]>([]);
@@ -463,9 +464,18 @@ export class LandingComponent implements OnInit {
   ngOnInit(): void {
     this.hardwareService.getChassis().subscribe({
       next: (chassis) => {
-        this.chassisList.set(chassis.filter((item) => item.isActive));
+        const active = chassis.filter((item) => item.isActive);
+        this.chassisList.set(active);
         this.errorMessage.set('');
         this.loading.set(false);
+
+        const preset = this.route.snapshot.queryParamMap.get('preset');
+        if (preset) {
+          const target = this.findChassisByPreset(active, preset);
+          if (target) {
+            this.selectChassis(target, preset);
+          }
+        }
       },
       error: (error) => {
         console.error('Failed to load chassis', error);
@@ -477,11 +487,38 @@ export class LandingComponent implements OnInit {
     });
   }
 
+  private findChassisByPreset(
+    list: Chassis[],
+    preset: string
+  ): Chassis | undefined {
+    const normalized = preset.toLowerCase();
+    if (normalized === 'tier1') {
+      return (
+        list.find((c) => c.id === 's-cloud') || list.find((c) => c.type === 'S')
+      );
+    }
+    if (normalized === 'tier2') {
+      return (
+        list.find((c) => c.id === 'm-cloud') ||
+        list.find((c) => c.id === 'l-cloud') ||
+        list.find((c) => c.type === 'M')
+      );
+    }
+    if (normalized === 'tier3') {
+      return (
+        list.find((c) => c.id === 'l-nas') ||
+        list.find((c) => c.id === 'l-cloud') ||
+        list.find((c) => c.type === 'L')
+      );
+    }
+    return list.find((c) => c.id === preset);
+  }
+
   jumpToSystems(): void {
     document.getElementById('systems')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  selectChassis(chassis: Chassis): void {
+  selectChassis(chassis: Chassis, preset?: string): void {
     this.configuratorState.setDraft({
       chassisId: chassis.id,
       chassisType: chassis.type,
@@ -492,6 +529,12 @@ export class LandingComponent implements OnInit {
       gpuId: '',
     });
     this.configuratorState.setPriceBreakdown(null);
-    this.router.navigate(['/configure', chassis.id]);
+    if (preset) {
+      this.router.navigate(['/configure', chassis.id], {
+        queryParams: { preset },
+      });
+    } else {
+      this.router.navigate(['/configure', chassis.id]);
+    }
   }
 }
