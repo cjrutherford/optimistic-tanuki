@@ -69,11 +69,19 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders a project-start CTA and the HAI Computer path', () => {
+  it('renders a project-start CTA and the Turnkey Appliances path', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Start a Project');
-    expect(text).toContain('See the services');
+    expect(text).toContain('Schedule Free Audit');
+    expect(text).toContain('View Turnkey Appliances');
+  });
+
+  it('renders the operational guarantee banner', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain(
+      '48-Hour Rapid Onboarding. Local On-Site Support in Savannah and South Georgia.'
+    );
   });
 
   it('renders semantic hash anchors with canonical hero CTA variants', () => {
@@ -92,7 +100,7 @@ describe('LandingComponent', () => {
     expect(buttons[0].getAttribute('data-size')).toBe('lg');
     expect(buttons[0].classList).toContain('primary');
     expect(buttons[0].classList).toContain('use-gradient');
-    expect(buttons[1].getAttribute('href')).toBe('#services');
+    expect(buttons[1].getAttribute('href')).toBe('#appliances');
     expect(buttons[1].getAttribute('data-tone')).toBe('brand');
     expect(buttons[1].getAttribute('data-emphasis')).toBe('outline');
     expect(buttons[1].getAttribute('data-size')).toBe('lg');
@@ -107,7 +115,7 @@ describe('LandingComponent', () => {
     );
     expect(card?.querySelector('.card')?.getAttribute('data-size')).toBe('md');
     expect(badge).not.toBeNull();
-    expect(badge?.textContent).toContain('Built For');
+    expect(badge?.textContent).toContain('Built for');
     expect(badge?.querySelector('.badge')?.getAttribute('data-tone')).toBe(
       'brand'
     );
@@ -157,9 +165,11 @@ describe('LandingComponent', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain(
-      'Digital sovereignty for the work that runs your business.'
+      'Software you own. Servers that stay in your office.'
     );
-    expect(text).toContain('Savannah, Georgia');
+    expect(text).toContain(
+      'We build custom web software, deploy open-source business tools, and install on-premises server appliances for South Georgia businesses. Stop paying monthly rent on your data.'
+    );
     expect(text).toContain('Custom Portals & Workflow Automation');
     expect(text).toContain('Independent Infrastructure');
     expect(text).toContain('Tailored Software');

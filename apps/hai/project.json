@@ -60,12 +60,18 @@
     "serve": {
       "continuous": true,
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "liveReload": false,
+        "hmr": false
+      },
       "configurations": {
         "production": {
           "buildTarget": "hai:build:production"
         },
         "development": {
-          "buildTarget": "hai:build:development"
+          "buildTarget": "hai:build:development",
+          "liveReload": false,
+          "hmr": false
         }
       },
       "defaultConfiguration": "development"
