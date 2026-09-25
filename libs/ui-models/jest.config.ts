@@ -12,6 +12,10 @@ export default {
       },
     ],
   },
+  moduleNameMapper: {
+    '@optimistic-tanuki/profile-ui-data-access':
+      '<rootDir>/../../libs/profile-ui-data-access/src/index.ts',
+  },
   transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
   snapshotSerializers: [
     'jest-preset-angular/build/serializers/no-ng-attributes',

@@ -169,7 +169,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   styles: [
     `
       .offer-list {
-        background: var(--bg-primary, #fff);
+        background: var(--surface);
         border-radius: 8px;
         overflow: hidden;
       }
@@ -179,7 +179,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         justify-content: space-between;
         align-items: center;
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color, #e5e7eb);
+        border-bottom: 1px solid var(--border);
       }
 
       .header h3 {
@@ -189,8 +189,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .count {
-        background: var(--primary-color, #3b82f6);
-        color: white;
+        background: var(--primary);
+        color: var(--on-primary, white);
         padding: 0.125rem 0.5rem;
         border-radius: 9999px;
         font-size: 0.75rem;
@@ -201,12 +201,12 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       .empty {
         padding: 2rem;
         text-align: center;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .offer-card {
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color, #e5e7eb);
+        border-bottom: 1px solid var(--border);
         transition: background 0.2s;
       }
 
@@ -215,7 +215,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .offer-card:hover {
-        background: var(--bg-hover, #f9fafb);
+        background: var(--hover-bg);
       }
 
       .offer-header {
@@ -239,35 +239,35 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .status-badge[data-status='pending'] {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--warning-bg);
+        color: var(--warning);
       }
 
       .status-badge[data-status='countered'] {
-        background: #dbeafe;
-        color: #1e40af;
+        background: var(--info-bg);
+        color: var(--info);
       }
 
       .status-badge[data-status='accepted'] {
-        background: #d1fae5;
-        color: #065f46;
+        background: var(--success-bg);
+        color: var(--success);
       }
 
       .status-badge[data-status='rejected'],
       .status-badge[data-status='withdrawn'],
       .status-badge[data-status='expired'] {
-        background: #f3f4f6;
-        color: #6b7280;
+        background: var(--surface-variant);
+        color: var(--foreground-muted);
       }
 
       .offer-details .message {
         font-style: italic;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
         margin: 0.5rem 0;
       }
 
       .counter-offer {
-        background: #dbeafe;
+        background: var(--info-bg);
         padding: 0.75rem;
         border-radius: 6px;
         margin: 0.5rem 0;
@@ -283,7 +283,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         display: flex;
         gap: 1rem;
         font-size: 0.75rem;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
         margin: 0.5rem 0 0;
       }
 
@@ -304,33 +304,33 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .btn-accept {
-        background: #10b981;
-        border-color: #10b981;
-        color: white;
+        background: var(--success);
+        border-color: var(--success);
+        color: var(--on-success, white);
       }
 
       .btn-accept:hover:not(:disabled) {
-        background: #059669;
+        background: color-mix(in srgb, var(--success) 85%, var(--foreground));
       }
 
       .btn-reject {
-        background: white;
-        border-color: #d1d5db;
-        color: #374151;
+        background: var(--surface);
+        border-color: var(--border);
+        color: var(--foreground);
       }
 
       .btn-reject:hover:not(:disabled) {
-        background: #f3f4f6;
+        background: var(--surface-variant);
       }
 
       .btn-counter {
-        background: #3b82f6;
-        border-color: #3b82f6;
-        color: white;
+        background: var(--info);
+        border-color: var(--info);
+        color: var(--on-info, white);
       }
 
       .btn-counter:hover:not(:disabled) {
-        background: #2563eb;
+        background: color-mix(in srgb, var(--info) 85%, var(--foreground));
       }
 
       button:disabled {
@@ -344,7 +344,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .payment-info a {
-        color: var(--primary-color, #3b82f6);
+        color: var(--primary);
         cursor: pointer;
         text-decoration: underline;
       }
@@ -365,7 +365,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .modal-content {
-        background: var(--bg-primary, #fff);
+        background: var(--surface);
         border-radius: 12px;
         width: 100%;
         max-width: 400px;
@@ -376,7 +376,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color, #e5e7eb);
+        border-bottom: 1px solid var(--border);
       }
 
       .modal-header h3 {
@@ -424,29 +424,29 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       textarea {
         width: 100%;
         padding: 0.5rem;
-        border: 1px solid var(--border-color, #d1d5db);
+        border: 1px solid var(--border);
         border-radius: 6px;
       }
 
       .fee-notice {
         margin: 0.5rem 0 0;
         font-size: 0.8125rem;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .modal-footer {
         display: flex;
         gap: 0.75rem;
         padding: 1rem 1.5rem;
-        border-top: 1px solid var(--border-color, #e5e7eb);
+        border-top: 1px solid var(--border);
         justify-content: flex-end;
       }
 
       .btn-secondary {
         padding: 0.5rem 1rem;
         border-radius: 6px;
-        border: 1px solid #d1d5db;
-        background: white;
+        border: 1px solid var(--border);
+        background: var(--surface);
         cursor: pointer;
       }
 
@@ -454,8 +454,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         padding: 0.5rem 1rem;
         border-radius: 6px;
         border: none;
-        background: var(--primary-color, #3b82f6);
-        color: white;
+        background: var(--primary);
+        color: var(--on-primary, white);
         cursor: pointer;
       }
     `,

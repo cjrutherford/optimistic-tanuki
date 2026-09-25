@@ -426,12 +426,16 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .earning-card.available {
-        border-color: #10b981;
-        background: linear-gradient(to bottom right, var(--surface), #10b98110);
+        border-color: var(--success);
+        background: linear-gradient(
+          to bottom right,
+          var(--surface),
+          var(--success-bg)
+        );
       }
 
       .earning-card.available .earning-value {
-        color: #10b981;
+        color: var(--success);
       }
 
       .earning-label {
@@ -487,7 +491,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         text-align: center;
         font-size: 1.125rem;
         font-weight: 600;
-        color: #10b981;
+        color: var(--success);
         margin-bottom: 1rem;
       }
 
@@ -570,8 +574,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .btn-accept {
-        background: #10b981;
-        color: white;
+        background: var(--success);
+        color: var(--on-success, white);
       }
       .btn-reject {
         background: var(--surface-variant);
@@ -579,7 +583,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
       .btn-counter {
         background: var(--primary);
-        color: white;
+        color: var(--on-primary, white);
       }
       .btn-primary {
         background: var(--primary);
@@ -625,16 +629,16 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .status-active {
-        background: #d1fae5;
-        color: #065f46;
+        background: var(--success-bg);
+        color: var(--success);
       }
       .status-sold {
-        background: #dbeafe;
-        color: #1e40af;
+        background: var(--info-bg);
+        color: var(--info);
       }
       .status-pending {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--warning-bg);
+        color: var(--warning);
       }
 
       .btn-link {
@@ -651,7 +655,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       }
 
       .btn-link.danger {
-        color: #c81e1e;
+        color: var(--error);
       }
 
       .row-actions {

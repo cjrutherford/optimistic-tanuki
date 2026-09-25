@@ -6,6 +6,7 @@ const PROTECTED_ROUTES = [
   '/seller-dashboard',
   '/messages',
   '/messages/new',
+  '/profile',
 ];
 
 const MEMBER_ROUTES = [

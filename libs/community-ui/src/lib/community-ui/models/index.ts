@@ -14,6 +14,7 @@ import {
   CommunityMemberRole,
   CommunityJoinPolicy,
   CommunityFeedOptions,
+  CommunityInviteDto,
 } from '@optimistic-tanuki/ui-models';
 
 export {
@@ -32,6 +33,7 @@ export {
   CommunityMemberRole,
   CommunityJoinPolicy,
   CommunityFeedOptions,
+  CommunityInviteDto,
 };
 
 export interface CommunityWithActivity extends CommunityDto {

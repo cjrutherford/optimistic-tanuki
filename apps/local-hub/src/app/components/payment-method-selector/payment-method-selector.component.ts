@@ -208,7 +208,7 @@ export interface PaymentRequest {
         justify-content: space-between;
         align-items: center;
         padding: 20px 24px;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border);
       }
 
       .modal-header h3 {
@@ -221,7 +221,7 @@ export interface PaymentRequest {
         border: none;
         font-size: 1.5rem;
         cursor: pointer;
-        color: #666;
+        color: var(--foreground-muted);
       }
 
       .modal-body {
@@ -229,7 +229,7 @@ export interface PaymentRequest {
       }
 
       .item-summary {
-        background: #f9f9f9;
+        background: var(--surface-variant);
         padding: 16px;
         border-radius: 8px;
         margin-bottom: 24px;
@@ -242,14 +242,14 @@ export interface PaymentRequest {
       .item-summary .price {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #2d3436;
+        color: var(--foreground);
         margin: 0;
       }
 
       .payment-methods h5 {
         margin: 0 0 16px;
         font-size: 0.875rem;
-        color: #666;
+        color: var(--foreground-muted);
       }
 
       .method-cards {
@@ -263,21 +263,21 @@ export interface PaymentRequest {
         align-items: center;
         gap: 16px;
         padding: 16px;
-        border: 2px solid #eee;
+        border: 2px solid var(--border);
         border-radius: 12px;
-        background: white;
+        background: var(--surface);
         cursor: pointer;
         transition: all 0.2s;
         text-align: left;
       }
 
       .method-card:hover {
-        border-color: #6b8e6b;
+        border-color: var(--primary);
       }
 
       .method-card.selected {
-        border-color: #6b8e6b;
-        background: #f8faf8;
+        border-color: var(--primary);
+        background: var(--hover-bg);
       }
 
       .method-card .icon {
@@ -291,7 +291,7 @@ export interface PaymentRequest {
 
       .method-card .desc {
         font-size: 0.75rem;
-        color: #999;
+        color: var(--foreground-muted);
       }
 
       .out-of-platform-info {
@@ -299,7 +299,7 @@ export interface PaymentRequest {
       }
 
       .info-box {
-        background: #fff8e6;
+        background: var(--warning-bg);
         padding: 16px;
         border-radius: 8px;
       }
@@ -335,7 +335,7 @@ export interface PaymentRequest {
         display: block;
         margin-bottom: 8px;
         font-size: 0.875rem;
-        color: #666;
+        color: var(--foreground-muted);
       }
 
       .proof-preview {
@@ -365,14 +365,14 @@ export interface PaymentRequest {
         justify-content: flex-end;
         gap: 12px;
         padding: 16px 24px;
-        border-top: 1px solid #eee;
+        border-top: 1px solid var(--border);
       }
 
       .btn-secondary {
         padding: 12px 24px;
-        border: 2px solid #ddd;
+        border: 2px solid var(--border);
         border-radius: 8px;
-        background: white;
+        background: var(--surface);
         font-weight: 600;
         cursor: pointer;
       }
@@ -381,8 +381,8 @@ export interface PaymentRequest {
         padding: 12px 24px;
         border: none;
         border-radius: 8px;
-        background: #6b8e6b;
-        color: white;
+        background: var(--primary);
+        color: var(--on-primary, white);
         font-weight: 600;
         cursor: pointer;
       }
@@ -401,8 +401,8 @@ export interface PaymentRequest {
         width: 64px;
         height: 64px;
         border-radius: 50%;
-        background: #27ae60;
-        color: white;
+        background: var(--success);
+        color: var(--on-success, white);
         font-size: 2rem;
         display: flex;
         align-items: center;

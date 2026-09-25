@@ -59,25 +59,10 @@ import { AuthStateService } from '../../services/auth-state.service';
   `,
   styles: [
     `
-      // .auth-shell {
-      //   min-height: 100vh;
-      //   display: grid;
-      //   grid-template-columns: minmax(0, 30rem) minmax(20rem, 34rem);
-      //   gap: 2.5rem;
-      //   align-items: center;
-      //   justify-content: center;
-      //   padding: 2rem 1rem 3rem;
-      //   background: radial-gradient(
-      //       circle at top right,
-      //       rgba(47, 123, 255, 0.14),
-      //       transparent 24rem
-      //     ),
-      //     linear-gradient(180deg, #f7fbff 0%, #edf6f2 100%);
-      // }
       .auth-story {
         display: grid;
         gap: 1rem;
-        color: #163142;
+        color: var(--foreground);
       }
       .eyebrow {
         margin: 0;
@@ -85,7 +70,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: #1d7a63;
+        color: var(--primary);
       }
       h1 {
         margin: 0;
@@ -112,7 +97,7 @@ import { AuthStateService } from '../../services/auth-state.service';
       .story-card img {
         width: 100%;
         border-radius: 1rem;
-        background: #fff;
+        background: var(--surface);
       }
       .story-card div {
         display: grid;
@@ -130,7 +115,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         gap: 0.9rem;
       }
       .error-message {
-        color: var(--error, #d32f2f);
+        color: var(--error);
         text-align: center;
         margin: 0;
       }
@@ -139,18 +124,13 @@ import { AuthStateService } from '../../services/auth-state.service';
         margin: 0;
         font-size: 0.9rem;
         a {
-          color: var(--primary, #3f51b5);
+          color: var(--primary);
           font-weight: 600;
           text-decoration: none;
           &:hover {
             text-decoration: underline;
           }
         }
-      }
-      @media (max-width: 960px) {
-        // .auth-shell {
-        //   grid-template-columns: 1fr;
-        // }
       }
     `,
   ],

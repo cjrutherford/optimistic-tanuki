@@ -106,7 +106,15 @@ describe('Express route protection policy', () => {
       ])
     );
     for (const path of guardedPaths) {
-      expect(requiresSessionValidation(path)).toBe(true);
+      try {
+        console.log(requiresSessionValidation(path));
+        expect(requiresSessionValidation(path)).toBe(true);
+      } catch (error) {
+        console.log(
+          path + ' is guarded but not covered by requiresSessionValidation'
+        );
+        throw error;
+      }
     }
   });
 });

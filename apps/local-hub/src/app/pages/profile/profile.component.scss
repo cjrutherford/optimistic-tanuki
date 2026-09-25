@@ -96,7 +96,7 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, white);
   margin-bottom: 8px;
 }
 

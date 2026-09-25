@@ -115,7 +115,7 @@ import { ChatService } from '../../services/chat.service';
       }
 
       .error {
-        color: #dc3545;
+        color: var(--error);
       }
     `,
   ],

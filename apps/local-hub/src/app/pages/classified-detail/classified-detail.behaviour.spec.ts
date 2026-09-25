@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NgZone } from '@angular/core';
 import {
   ActivatedRoute,
   Router,
@@ -232,6 +233,12 @@ describe('ClassifiedDetailComponent behaviour', () => {
     lookupFails = false
   ): Promise<void> {
     await fixture.whenStable();
+    console.log(
+      'DIAG settle after whenStable1: loading=',
+      component.loading(),
+      'ad=',
+      component.ad()?.id
+    );
     for (const request of http.match(PROFILE_LOOKUP_URL)) {
       if (lookupFails) {
         request.error(new ProgressEvent('network error'));
@@ -239,14 +246,49 @@ describe('ClassifiedDetailComponent behaviour', () => {
         request.flush(profiles);
       }
     }
+    console.log(
+      'DIAG settle after flush: loading=',
+      component.loading(),
+      'ad=',
+      component.ad()?.id
+    );
+    const ngZone = TestBed.inject(NgZone);
+    console.log(
+      'DIAG zone state before whenStable2: pendingMicro=',
+      ngZone.hasPendingMicrotasks,
+      'pendingMacro=',
+      ngZone.hasPendingMacrotasks,
+      'isStable=',
+      ngZone.isStable,
+      'inAngularZone=',
+      NgZone.isInAngularZone()
+    );
     await fixture.whenStable();
+    console.log(
+      'DIAG settle after whenStable2: loading=',
+      component.loading(),
+      'ad=',
+      component.ad()?.id
+    );
   }
 
   /** Boots the component and drains the initial load. */
   async function boot(profiles: Partial<ProfileDto>[] = []): Promise<void> {
     fixture.detectChanges();
     await settleLoad(profiles);
+    console.log(
+      'DIAG boot before final detectChanges: loading=',
+      component.loading(),
+      'ad=',
+      component.ad()?.id
+    );
     fixture.detectChanges();
+    console.log(
+      'DIAG boot after final detectChanges: loading=',
+      component.loading(),
+      'ad=',
+      component.ad()?.id
+    );
   }
 
   describe('initial load', () => {
@@ -975,6 +1017,26 @@ describe('ClassifiedDetailComponent behaviour', () => {
     it('renders a seller link when the ad has a seller id', async () => {
       await boot();
 
+      console.log('DIAG ad:', JSON.stringify(component.ad()));
+      console.log('DIAG sellerProfileId:', component.sellerProfileId());
+      console.log(
+        'DIAG loading:',
+        component.loading(),
+        'error:',
+        component.error()
+      );
+      console.log('DIAG HTML:', fixture.nativeElement.innerHTML.slice(0, 3000));
+      fixture.detectChanges();
+      console.log(
+        'DIAG after extra detectChanges, link present:',
+        fixture.nativeElement.querySelector('.seller-link') !== null
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+      console.log(
+        'DIAG after whenStable+detectChanges, link present:',
+        fixture.nativeElement.querySelector('.seller-link') !== null
+      );
       const link = fixture.nativeElement.querySelector('.seller-link');
       expect(link).not.toBeNull();
       expect(link.textContent).toContain('Community member');

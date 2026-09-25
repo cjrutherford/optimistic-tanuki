@@ -16,14 +16,29 @@ describe('CreateCommunityComponent upload contract', () => {
   let httpMock: HttpTestingController;
   let communityService: { create: jest.Mock };
 
-  const startSelect = (
+  const startSelect = async (
     handler: (event: Event) => Promise<void>,
     name: string
   ) => {
     const file = new File(['image-bytes'], name, { type: 'image/png' });
-    return handler.call(component, {
+
+    await handler.call(component, {
       target: { files: [file], value: '' },
     } as unknown as Event);
+
+    // onLogoSelect/onBannerSelect start the upload without awaiting it.
+    // Allow uploadImage() to resume after getCurrentProfileId().
+    await Promise.resolve();
+  };
+
+  const settleUpload = async () => {
+    // HttpTestingController.flush/error resolves the HttpClient observable,
+    // which then propagates through firstValueFrom -> uploadImage -> then/finally.
+    // These promises are detached from the component event handler, so
+    // fixture.whenStable() alone does not reliably observe them.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
   };
 
   beforeEach(async () => {
@@ -71,14 +86,14 @@ describe('CreateCommunityComponent upload contract', () => {
     expect(spinnerVisible()).toBe(true);
 
     logoReq.flush({ id: 'logo-1' });
-    await fixture.whenStable();
+    await settleUpload();
     expect(component.logoUploading()).toBe(false);
     expect(component.logoAssetId()).toBe('logo-1');
     expect(spinnerVisible()).toBe(false);
 
     await startSelect(component.onBannerSelect, 'banner.png');
     httpMock.expectOne('/api/asset').flush({ id: 'banner-1' });
-    await fixture.whenStable();
+    await settleUpload();
 
     await component.onSubmit();
     expect(communityService.create).toHaveBeenCalledTimes(1);
@@ -98,7 +113,7 @@ describe('CreateCommunityComponent upload contract', () => {
   it('does not re-upload on retry/resubmit', async () => {
     await startSelect(component.onLogoSelect, 'logo.png');
     httpMock.expectOne('/api/asset').flush({ id: 'logo-1' });
-    await fixture.whenStable();
+    await settleUpload();
 
     await component.onSubmit();
     await component.onSubmit();
@@ -115,7 +130,7 @@ describe('CreateCommunityComponent upload contract', () => {
     expect(communityService.create).not.toHaveBeenCalled();
 
     logoReq.flush({ id: 'logo-1' });
-    await fixture.whenStable();
+    await settleUpload();
     await component.onSubmit();
     expect(communityService.create).toHaveBeenCalledTimes(1);
   });
@@ -126,7 +141,7 @@ describe('CreateCommunityComponent upload contract', () => {
     expect(component.logoUploading()).toBe(true);
 
     logoReq.error(new ProgressEvent('error'), { status: 500 });
-    await fixture.whenStable();
+    await settleUpload();
 
     expect(component.logoUploading()).toBe(false);
     expect(spinnerVisible()).toBe(false);
@@ -144,7 +159,7 @@ describe('CreateCommunityComponent upload contract', () => {
     expect(component.logoUploading()).toBe(false);
 
     logoReq.flush({ id: 'logo-late' });
-    await fixture.whenStable();
+    await settleUpload();
 
     expect(component.logoPreview()).toBeNull();
     expect(component.logoAssetId()).toBeNull();

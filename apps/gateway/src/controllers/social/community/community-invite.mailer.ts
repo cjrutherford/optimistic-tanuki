@@ -4,7 +4,7 @@ import {
   renderDomainEmailTemplate,
 } from '@optimistic-tanuki/email';
 
-import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { GATEWAY_APP_REGISTRY } from '../../registry/registry.controller';
 import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 
 /**
