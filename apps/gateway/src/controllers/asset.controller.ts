@@ -102,8 +102,12 @@ export class AssetController {
       );
 
       if (!mediaUrl || !mediaToken) {
-        throw new BadGatewayException(
-          'Internal media streaming is unavailable'
+        throw new HttpException(
+          {
+            message: 'Internal media streaming is unavailable',
+            code: 'media-unconfigured',
+          },
+          502
         );
       }
 
@@ -140,7 +144,7 @@ export class AssetController {
 
       Readable.fromWeb(upstream.body as never).pipe(res);
     } catch (error) {
-      if (error instanceof BadGatewayException) {
+      if (error instanceof HttpException) {
         throw error;
       }
       throw new BadGatewayException(

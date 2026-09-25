@@ -17,6 +17,16 @@ x-gateway-client-env: &gateway_client_env
   GATEWAY_WS_URL: ${GATEWAY_WS_URL:-http://gateway:3300}
   SOCKET_URL: ${SOCKET_URL:-}
   SOCKET_PATH: ${SOCKET_PATH:-/socket.io}
+  # Explicit SSR host allow-list (comma-separated, supports `*.example.com`).
+  # Empty falls back to `*_UI_BASE_URL` hosts + localhost/127.0.0.1.
+  # Derive production values from the deploy app-registry `uiBaseUrl` hosts.
+  SSR_ALLOWED_HOSTS: ${SSR_ALLOWED_HOSTS:-}
+  # Trust reverse-proxy `x-forwarded-*` headers (default true; set false to opt out).
+  SSR_TRUST_PROXY: ${SSR_TRUST_PROXY:-true}
+  # Per-app public base URLs; the SSR helper derives allowed hosts from any
+  # `*_UI_BASE_URL` value when `SSR_ALLOWED_HOSTS` is empty.
+  CLIENT_INTERFACE_UI_BASE_URL: ${CLIENT_INTERFACE_UI_BASE_URL:-}
+  OWNER_CONSOLE_UI_BASE_URL: ${OWNER_CONSOLE_UI_BASE_URL:-}
 
 services:
   postgres:

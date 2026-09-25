@@ -961,4 +961,38 @@ describe('ClassifiedDetailComponent behaviour', () => {
       expect(classifiedServiceMock.findById).not.toHaveBeenCalled();
     });
   });
+
+  describe('seller profile navigation', () => {
+    it('navigates to the seller profile page', async () => {
+      await boot();
+      expect(component.sellerProfileId()).toBe('seller-1');
+
+      component.viewSellerProfile();
+
+      expect(navigateSpy).toHaveBeenCalledWith(['/profile', 'seller-1']);
+    });
+
+    it('renders a seller link when the ad has a seller id', async () => {
+      await boot();
+
+      const link = fixture.nativeElement.querySelector('.seller-link');
+      expect(link).not.toBeNull();
+      expect(link.textContent).toContain('Community member');
+    });
+
+    it('renders no seller link and navigates nowhere without a seller id', async () => {
+      classifiedServiceMock.findById.mockResolvedValue(
+        makeAd({ profileId: null as never, userId: null as never })
+      );
+      await boot();
+
+      expect(component.sellerProfileId()).toBeNull();
+      expect(fixture.nativeElement.querySelector('.seller-link')).toBeNull();
+      component.viewSellerProfile();
+      expect(navigateSpy).not.toHaveBeenCalledWith(
+        ['/profile', expect.anything()],
+        expect.anything()
+      );
+    });
+  });
 });

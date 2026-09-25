@@ -979,6 +979,33 @@ export class AppController {
     return await this.communityService.invite(data.dto, data.inviterId);
   }
 
+  @MessagePattern({ cmd: CommunityCommands.INVITE_BY_EMAIL })
+  async inviteToCommunityByEmail(
+    @Payload()
+    data: {
+      dto: { communityId: string; email: string; inviteeUserId?: string };
+      inviterId: string;
+    }
+  ) {
+    return await this.communityService.inviteByEmail(data.dto, data.inviterId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.ACCEPT_INVITE_BY_TOKEN })
+  async acceptCommunityInviteByToken(
+    @Payload() data: { token: string; userId: string; profileId: string }
+  ) {
+    return await this.communityService.acceptInviteByToken(
+      data.token,
+      data.userId,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_INVITE_BY_TOKEN })
+  async findCommunityInviteByToken(@Payload() data: { token: string }) {
+    return await this.communityService.findInvitePreview(data.token);
+  }
+
   @MessagePattern({ cmd: CommunityCommands.CANCEL_INVITE })
   async cancelInvite(@Payload() data: { inviteId: string; userId: string }) {
     await this.communityService.cancelInvite(data.inviteId, data.userId);

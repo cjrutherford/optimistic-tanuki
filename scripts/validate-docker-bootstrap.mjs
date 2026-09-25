@@ -340,6 +340,38 @@ assert.doesNotMatch(
   /app-configurator-seed/,
   'app-configurator seeding must be operator-run, not a Compose service'
 );
+assert.match(
+  composeYaml,
+  /x-gateway-client-env:[\s\S]*?SSR_ALLOWED_HOSTS:/,
+  'the shared SSR client env anchor must pass SSR_ALLOWED_HOSTS to SSR apps'
+);
+assert.match(
+  composeYaml,
+  /x-gateway-client-env:[\s\S]*?SSR_TRUST_PROXY:/,
+  'the shared SSR client env anchor must pass SSR_TRUST_PROXY to SSR apps'
+);
+assert.match(
+  composeYaml,
+  /^  gateway:[\s\S]*?ASSETS_INTERNAL_MEDIA_TOKEN:/m,
+  'gateway must receive the shared ASSETS_INTERNAL_MEDIA_TOKEN'
+);
+assert.match(
+  composeYaml,
+  /^  assets:[\s\S]*?ASSETS_INTERNAL_MEDIA_TOKEN:/m,
+  'assets must share the same ASSETS_INTERNAL_MEDIA_TOKEN as gateway'
+);
+const envSample = readFileSync(new URL('.env.sample', root), 'utf8');
+for (const name of [
+  'SSR_ALLOWED_HOSTS',
+  'SSR_TRUST_PROXY',
+  'ASSETS_INTERNAL_MEDIA_TOKEN',
+]) {
+  assert.match(
+    envSample,
+    new RegExp(`^${name}=`, 'm'),
+    `.env.sample must document ${name}`
+  );
+}
 
 assert.equal(
   packageJson.scripts['db:setup'],

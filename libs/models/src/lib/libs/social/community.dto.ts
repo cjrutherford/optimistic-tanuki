@@ -6,6 +6,8 @@ import {
   IsBoolean,
   IsArray,
   IsEnum,
+  IsEmail,
+  IsNotEmpty,
   MaxLength,
   IsDateString,
   IsNumber,
@@ -470,6 +472,44 @@ export class InviteToCommunityDto {
   inviteeUserId!: string;
 }
 
+export class InviteCommunityByEmailDto {
+  @ApiProperty()
+  @IsUUID()
+  communityId!: string;
+
+  @ApiProperty()
+  @IsEmail()
+  @MaxLength(320)
+  email!: string;
+}
+
+export class AcceptCommunityInviteByTokenDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  token!: string;
+}
+
+export class CommunityInvitePreviewDto {
+  @ApiProperty()
+  @IsUUID()
+  communityId!: string;
+
+  @ApiProperty()
+  @IsString()
+  communityName!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  communitySlug?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: string | null;
+}
+
 export class CommunityInviteDto {
   @ApiProperty()
   @IsUUID()
@@ -483,9 +523,15 @@ export class CommunityInviteDto {
   @IsString()
   inviterId!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
-  inviteeId!: string;
+  inviteeId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  inviteeEmail?: string | null;
 
   @ApiProperty({ enum: CommunityMembershipStatus })
   @IsEnum(CommunityMembershipStatus)
@@ -494,6 +540,11 @@ export class CommunityInviteDto {
   @ApiProperty()
   @IsDateString()
   createdAt!: Date;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  expiresAt?: Date | string | null;
 }
 
 export class CommunityFeedOptions {
