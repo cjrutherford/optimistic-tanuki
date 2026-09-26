@@ -14,6 +14,18 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./components/auth/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./components/auth/register.component').then(
+        (m) => m.RegisterComponent
+      ),
+  },
+  {
     path: 'book',
     loadComponent: () =>
       import('./components/book/book.component').then((m) => m.BookComponent),
@@ -31,16 +43,6 @@ export const appRoutes: Route[] = [
       import('./components/status/status.component').then(
         (m) => m.StatusComponent
       ),
-  },
-  {
-    path: 'demo',
-    loadComponent: () =>
-      import('./components/demo/demo.component').then((m) => m.DemoComponent),
-  },
-  {
-    path: 'field-flow/demo',
-    loadComponent: () =>
-      import('./components/demo/demo.component').then((m) => m.DemoComponent),
   },
   {
     path: '**',

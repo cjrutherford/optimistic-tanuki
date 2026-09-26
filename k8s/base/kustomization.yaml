@@ -19,6 +19,7 @@ resources:
   - services/project-planning.yaml
   - services/classifieds.yaml
   - services/finance.yaml
+  - services/compliance-audit.yaml
   - services/payments.yaml
   - services/lead-tracker.yaml
   - services/store.yaml

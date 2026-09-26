@@ -140,6 +140,9 @@ importers:
       '@rekog/mcp-nest':
         specifier: ^1.9.11
         version: 1.9.11(66e18e7e104b9ccbcc1111c4a858b2f4)
+      '@stripe/stripe-js':
+        specifier: ^9.17.0
+        version: 9.17.0
       '@tiptap/core':
         specifier: ^3.31.2
         version: 3.31.3(@tiptap/pm@3.31.3)
@@ -801,6 +804,8 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/business-security: {}
+
   libs/business-ui:
     dependencies:
       '@angular/common':
@@ -934,6 +939,12 @@ importers:
       '@angular/core':
         specifier: ^20.3.30
         version: 20.3.30(@angular/compiler@20.3.30)(rxjs@7.8.2)(zone.js@0.15.1)
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  libs/document-text:
+    dependencies:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -6369,6 +6380,10 @@ packages:
     resolution: {integrity: sha512-K2NPgyY8FoyRurijB6LKZmRUwb7fSZ2GbA8Hg1l18x2fSno467eRCm2IH/mmj5UpHTOQoaMIUXjRTY3XyNPdCQ==}
     peerDependencies:
       storybook: ^9.0.0-alpha.2
+
+  '@stripe/stripe-js@9.17.0':
+    resolution: {integrity: sha512-uidL4OJum5kivsOAQnVfQmYLJ2zdgirtmT0zWgskASZ4TPXxpXQ0MNrzW4NsXB90uEqmPHpSEtciLFbF1QQvNA==}
+    engines: {node: '>=12.16'}
 
   '@swc-node/core@1.15.0':
     resolution: {integrity: sha512-WAerrrl087WgenB92XG4Th2t0NQFfMNLYSe0sW2cEMMqM/LQmP4rozsDJl0vuzTrbewjpKQryxFXI+aYig/dBg==}
@@ -21970,6 +21985,8 @@ snapshots:
       '@vitest/expect': 2.0.5
       '@vitest/spy': 2.0.5
       storybook: 9.1.20(@testing-library/dom@10.4.0)(prettier@2.8.8)(vite@7.3.6(@types/node@20.19.43)(jiti@2.7.0)(less@4.9.0)(sass-embedded@1.100.0)(sass@1.90.0)(terser@5.48.0)(yaml@2.9.0))
+
+  '@stripe/stripe-js@9.17.0': {}
 
   '@swc-node/core@1.15.0(@swc/core@1.16.2(@swc/helpers@0.5.23))(@swc/types@0.1.28)':
     dependencies:

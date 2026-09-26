@@ -55,7 +55,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 1 Compact Mini-PC (Beelink N100) + CyberPower UPS'
     );
     expect(text).toContain('Field Flow');
-    expect(text).toContain('Whitebox product tailored to your brand');
+    expect(text).toContain('Branded application tailored to your business');
     expect(text).toContain('Invoice Ninja v5');
     expect(text).toContain('Vikunja');
     expect(text).toContain('N8N');
@@ -78,7 +78,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 2 Workstation Tower (Dell T150) + APC Smart-UPS + GL.iNet cellular router'
     );
     expect(text).toContain('Practice Vault');
-    expect(text).toContain('Whitebox product tailored to your brand');
+    expect(text).toContain('Branded application tailored to your business');
     expect(text).toContain('Paperless-ngx');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('Vaultwarden');
@@ -102,7 +102,7 @@ describe('SolutionsMatrixComponent', () => {
       'Tier 2 Workstation Tower (Dell T150) + APC Smart-UPS'
     );
     expect(text).toContain('Practice Vault Wire Shield');
-    expect(text).toContain('Whitebox product tailored to your brand');
+    expect(text).toContain('Branded application tailored to your business');
     expect(text).toContain('Stalwart Mail Server');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('$2,850 setup');
@@ -126,7 +126,7 @@ describe('SolutionsMatrixComponent', () => {
     );
     expect(text).toContain('Project Nexus');
     expect(text).toContain('Civic Core');
-    expect(text).toContain('Whitebox product tailored to your brand');
+    expect(text).toContain('Branded application tailored to your business');
     expect(text).toContain('Nextcloud Enterprise');
     expect(text).toContain('Planka');
     expect(text).toContain('Stirling-PDF');
@@ -166,7 +166,7 @@ describe('SolutionsMatrixComponent', () => {
     expect(cardHeading?.textContent?.toLowerCase()).not.toContain('white-box');
     expect(cardHeading?.textContent?.toLowerCase()).not.toContain('whitebox');
     expect(fixture.nativeElement.textContent).toContain(
-      'Whitebox product tailored to your brand'
+      'Branded application tailored to your business'
     );
   });
 

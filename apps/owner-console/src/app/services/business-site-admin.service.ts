@@ -37,4 +37,20 @@ export class BusinessSiteAdminService {
       }
     );
   }
+
+  updateSiteConfig(
+    configId: string | null,
+    config: Record<string, unknown>,
+    workspaceSlug?: string | null
+  ): Observable<unknown> {
+    return this.http.put(
+      '/api/business/site-config',
+      { configId, config },
+      {
+        params: workspaceSlug
+          ? new HttpParams().set('slug', workspaceSlug)
+          : undefined,
+      }
+    );
+  }
 }

@@ -12,6 +12,8 @@ export { FinancialCheckoutSession } from './financial-checkout-session.entity';
 export { FinCommanderPlanEntity } from './fin-commander-plan.entity';
 export { FinCommanderGoalEntity } from './fin-commander-goal.entity';
 export { FinCommanderFundingDirectiveEntity } from './fin-commander-funding-directive.entity';
+export { VaultEscrowEntity } from './vault-escrow.entity';
+export { VaultTokenEntity } from './vault-token.entity';
 export {
   FinCommanderScenarioEntity,
   FinCommanderScenarioAssumptionRecord,

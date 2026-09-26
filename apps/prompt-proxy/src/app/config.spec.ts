@@ -17,6 +17,6 @@ describe('resolveOllamaEndpoint', () => {
   });
 
   it('uses the safe deployment default when configuration is incomplete', () => {
-    expect(resolveOllamaEndpoint({}, {})).toBe('http://100.89.87.124:11434');
+    expect(resolveOllamaEndpoint({}, {})).toBe('http://127.0.0.1:11434');
   });
 });

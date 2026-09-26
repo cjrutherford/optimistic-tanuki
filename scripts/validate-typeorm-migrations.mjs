@@ -12,6 +12,7 @@ const migrationDirectories = [
   'apps/blogging/migrations',
   'apps/chat-collector/migrations',
   'apps/classifieds/migrations',
+  'apps/compliance-audit/migrations',
   'apps/finance/src/migrations',
   'apps/forum/migrations',
   'apps/lead-tracker/migrations',

@@ -391,6 +391,8 @@ services:
       GATEWAY_REQUEST_TIMEOUT_MS: ${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
       ASSETS_INTERNAL_MEDIA_URL: ${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
       ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
+      SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
+      SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
       JWT_SECRET: ${JWT_SECRET:-}
       OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
@@ -463,6 +465,8 @@ services:
       forum:
         condition: service_started
       finance:
+        condition: service_started
+      compliance-audit:
         condition: service_started
       wellness:
         condition: service_started
@@ -596,11 +600,32 @@ services:
       - '${FINANCE_PORT:-3016}:3016'
     environment:
       <<: *service_db_env
+      SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
+      SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  compliance-audit:
+    container_name: ot_compliance_audit
+    build:
+      context: .
+      dockerfile: ./apps/compliance-audit/Dockerfile
+    image: cjrutherford/optimistic_tanuki_compliance-audit:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${COMPLIANCE_AUDIT_PORT:-3025}:3025'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_compliance_audit
+      LISTEN_PORT: 3025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    # Command will be inherited from Dockerfile's CMD
 
   # tasks:
   #   container_name: ot_tasks
@@ -663,7 +688,7 @@ services:
       - '${PROMPT_PROXY_PORT:-3009}:3009'
     environment:
       <<: *service_db_env
-      OLLAMA_HOST: ${OLLAMA_HOST:-100.89.87.124}
+      OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml

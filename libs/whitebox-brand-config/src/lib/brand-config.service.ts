@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import {
   SHARED_WHITEBOX_PROFILES,
   WhiteboxBrandProfile,
@@ -15,12 +15,19 @@ export class WhiteboxBrandConfigService {
   readonly availableProfiles = signal<WhiteboxBrandProfile[]>(
     SHARED_WHITEBOX_PROFILES
   );
+  readonly resolutionState = signal<'unresolved' | 'resolved'>('unresolved');
+  readonly resolvedBrand = computed(() =>
+    this.resolutionState() === 'resolved' ? this.currentBrand() : null
+  );
 
   /**
    * Returns title for UI headers and customer views, never containing internal terminology.
    */
   getAppTitle(appSuffix = 'Field Flow'): string {
-    const brand = this.currentBrand();
+    const brand = this.resolvedBrand();
+    if (!brand) {
+      return appSuffix;
+    }
     if (!brand.businessName || brand.businessName === appSuffix) {
       return appSuffix;
     }
@@ -31,6 +38,38 @@ export class WhiteboxBrandConfigService {
     const found = this.availableProfiles().find((p) => p.id === profileId);
     if (found) {
       this.currentBrand.set(found);
+    }
+  }
+
+  resolveBrandProfile(profileId: string): boolean {
+    const found = this.availableProfiles().find((p) => p.id === profileId);
+    if (!found) {
+      this.resolutionState.set('unresolved');
+      return false;
+    }
+    this.currentBrand.set(found);
+    this.resolutionState.set('resolved');
+    return true;
+  }
+
+  getResolvedBrand(): WhiteboxBrandProfile | null {
+    return this.resolvedBrand();
+  }
+
+  clearResolvedBrand(): void {
+    this.resolutionState.set('unresolved');
+  }
+
+  getProfileById(profileId: string): WhiteboxBrandProfile | undefined {
+    return this.availableProfiles().find((p) => p.id === profileId);
+  }
+
+  updateProfile(updated: WhiteboxBrandProfile): void {
+    this.availableProfiles.update((profiles) =>
+      profiles.map((p) => (p.id === updated.id ? updated : p))
+    );
+    if (this.currentBrand().id === updated.id) {
+      this.currentBrand.set(updated);
     }
   }
 

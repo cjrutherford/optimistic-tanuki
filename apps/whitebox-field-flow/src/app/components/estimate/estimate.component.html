@@ -4,34 +4,57 @@
       <p class="eyebrow">Instant service estimate</p>
       <h1>Configure your trade service quote</h1>
       <p class="lede">
-        Select your required service tier and parameters below for live pricing,
-        tax calculation, and guaranteed arrival windows.
+        Select your required service tier and parameters below for a
+        server-calculated quote and confirmed arrival window.
       </p>
     </header>
 
+    <div
+      *ngIf="
+        tenantResolutionState === 'loading' ||
+        (tenantResolutionState === 'idle' && !isBrandResolved)
+      "
+      class="alert-banner"
+      role="status"
+    >
+      Loading service profile…
+    </div>
+
+    <div
+      *ngIf="tenantResolutionState === 'error'"
+      class="alert-banner"
+      role="alert"
+    >
+      {{ tenantResolutionError || 'Unable to resolve the service tenant.' }}
+    </div>
+
+    <div *ngIf="formError" class="alert-banner" role="alert">
+      {{ formError }}
+    </div>
+
     <div class="estimator-layout">
       <!-- Parameters Column -->
-      <div class="parameters-card">
+      <otui-card class="parameters-card">
         <!-- 1. Service Tier Selector -->
         <fieldset class="parameter-group">
           <legend class="group-title">1. Select service package</legend>
           <div class="tier-buttons">
             <button
-              *ngFor="let tier of packageTiers"
+              *ngFor="let service of availableServices"
               type="button"
               class="tier-card-btn touch-target"
-              [class.active]="selectedPackage === tier"
-              (click)="onPackageSelect(tier)"
+              [class.active]="selectedPackage === service.id"
+              (click)="onPackageSelect(service.id)"
             >
               <div class="tier-header">
-                <span class="tier-name">{{ packages[tier].name }}</span>
-                <span class="tier-base-price"
-                  >${{ packages[tier].basePrice }}</span
+                <span class="tier-name">{{ service.name }}</span>
+                <otui-badge [tone]="'brand'" [emphasis]="'soft'"
+                  >Service details</otui-badge
                 >
               </div>
-              <p class="tier-desc">{{ packages[tier].description }}</p>
+              <p class="tier-desc">{{ service.description }}</p>
               <span class="tier-duration">
-                Approx. {{ packages[tier].durationHours }} hours
+                Approx. {{ service.durationHours }} hours
               </span>
             </button>
           </div>
@@ -55,7 +78,7 @@
               [class.active]="selectedSize === 'midsize'"
               (click)="onSizeSelect('midsize')"
             >
-              Midsize / Standard (+25%)
+              Midsize / Standard
             </button>
             <button
               type="button"
@@ -63,7 +86,7 @@
               [class.active]="selectedSize === 'large'"
               (click)="onSizeSelect('large')"
             >
-              Large / SUV (+50%)
+              Large / SUV
             </button>
             <button
               type="button"
@@ -71,7 +94,7 @@
               [class.active]="selectedSize === 'commercial'"
               (click)="onSizeSelect('commercial')"
             >
-              Commercial (+100%)
+              Commercial
             </button>
           </div>
         </fieldset>
@@ -86,7 +109,7 @@
               [class.active]="selectedCondition === 'light'"
               (click)="onConditionSelect('light')"
             >
-              Light / Clean (+$0)
+              Light / Clean
             </button>
             <button
               type="button"
@@ -94,7 +117,7 @@
               [class.active]="selectedCondition === 'moderate'"
               (click)="onConditionSelect('moderate')"
             >
-              Moderate (+$35)
+              Moderate
             </button>
             <button
               type="button"
@@ -102,7 +125,7 @@
               [class.active]="selectedCondition === 'heavy'"
               (click)="onConditionSelect('heavy')"
             >
-              Heavy soil (+$75)
+              Heavy soil
             </button>
             <button
               type="button"
@@ -110,7 +133,7 @@
               [class.active]="selectedCondition === 'severe'"
               (click)="onConditionSelect('severe')"
             >
-              Severe / Oxidation (+$140)
+              Severe / Oxidation
             </button>
           </div>
         </fieldset>
@@ -133,19 +156,19 @@
               placeholder="e.g. 800"
             />
             <span class="input-helper">
-              Standard base covers 500 sq ft. $0.20 per additional sq ft.
+              Enter the measured area so the server can calculate the quote.
             </span>
           </div>
         </div>
-      </div>
+      </otui-card>
 
       <!-- Real-Time Calculation & Summary Card -->
-      <aside class="summary-card" aria-label="Quote summary">
+      <otui-card class="summary-card" aria-label="Quote summary">
         <h2 class="summary-heading">Quote calculation</h2>
         <div class="package-recap">
-          <span class="selected-package-badge">
+          <otui-badge [tone]="'brand'" [emphasis]="'solid'">
             {{ calculation.packageDetails.name }}
-          </span>
+          </otui-badge>
           <p class="package-recap-desc">
             {{ calculation.packageDetails.description }}
           </p>
@@ -157,47 +180,60 @@
           </li>
         </ul>
 
-        <div class="pricing-breakdown">
-          <div class="breakdown-row">
-            <span>Subtotal</span>
-            <span class="amount"
-              >${{ calculation.subtotal | number : '1.2-2' }}</span
-            >
+        <ng-container *ngIf="calculation.isAuthoritative; else pendingQuote">
+          <div class="pricing-breakdown">
+            <div class="breakdown-row">
+              <span>Subtotal</span>
+              <span class="amount"
+                >{{ calculation.currency }}
+                {{ calculation.subtotal | number : '1.2-2' }}</span
+              >
+            </div>
+            <div class="breakdown-row">
+              <span>Server-calculated tax</span>
+              <span class="amount"
+                >{{ calculation.currency }}
+                {{ calculation.taxAmount | number : '1.2-2' }}</span
+              >
+            </div>
+            <div class="breakdown-row total-row">
+              <strong>Server-authoritative total</strong>
+              <strong class="total-amount">
+                {{ calculation.currency }}
+                {{ calculation.total | number : '1.2-2' }}
+              </strong>
+            </div>
+            <div class="breakdown-row deposit-row">
+              <span>Required booking deposit</span>
+              <span class="deposit-amount">
+                {{ calculation.currency }}
+                {{ calculation.depositAmount | number : '1.2-2' }}
+              </span>
+            </div>
           </div>
-          <div class="breakdown-row">
-            <span>Estimated local tax ({{ calculation.taxRate * 100 }}%)</span>
-            <span class="amount"
-              >${{ calculation.taxAmount | number : '1.2-2' }}</span
-            >
-          </div>
-          <div class="breakdown-row total-row">
-            <strong>Estimated total</strong>
-            <strong class="total-amount">
-              ${{ calculation.total | number : '1.2-2' }}
-            </strong>
-          </div>
-          <div class="breakdown-row deposit-row">
-            <span>Required booking deposit</span>
-            <span class="deposit-amount">
-              ${{ calculation.depositAmount | number : '1.2-2' }}
-            </span>
-          </div>
-        </div>
+        </ng-container>
+        <ng-template #pendingQuote>
+          <p class="pending-quote">
+            A server-authoritative quote will appear here after the request
+            succeeds.
+          </p>
+        </ng-template>
 
         <div class="card-footer-action">
-          <button
-            type="button"
-            class="btn-primary touch-target"
-            (click)="proceedToBooking()"
+          <otui-button
+            [tone]="'brand'"
+            [emphasis]="'solid'"
+            [disabled]="!isBrandResolved"
+            (action)="proceedToBooking()"
           >
             Continue to scheduling
-          </button>
+          </otui-button>
           <p class="guarantee-text">
             Deposit applied directly to final invoice. Full refund for
             cancellations with 24-hour notice.
           </p>
         </div>
-      </aside>
+      </otui-card>
     </div>
   </div>
 </section>

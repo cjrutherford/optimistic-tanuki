@@ -128,6 +128,7 @@
     "@ng-icons/heroicons": "^32.1.0",
     "@ng-icons/material-icons": "^32.1.0",
     "@rekog/mcp-nest": "^1.9.11",
+    "@stripe/stripe-js": "^9.17.0",
     "@tiptap/core": "^3.31.2",
     "@tiptap/extension-bubble-menu": "^3.31.2",
     "@tiptap/extension-color": "^3.31.2",

@@ -122,4 +122,32 @@ describe('AppController classified payment read handlers', () => {
       message: 'Interested',
     });
   });
+
+  it('delegates processFlowDeposit to FlowDepositService', async () => {
+    const mockFlowDepositService = {
+      processDeposit: jest.fn().mockResolvedValue({
+        success: true,
+        paymentIntentId: 'pi_test_123',
+      }),
+    };
+    const flowController = new AppController(
+      paymentService as never,
+      {} as never,
+      offerService as never,
+      mockFlowDepositService as never
+    );
+
+    const result = await flowController.processFlowDeposit({
+      tenantId: 'wirepro-electrical',
+      bookingId: 'booking-1',
+      idempotencyKey: 'deposit-key-1',
+    });
+
+    expect(result).toEqual({ success: true, paymentIntentId: 'pi_test_123' });
+    expect(mockFlowDepositService.processDeposit).toHaveBeenCalledWith({
+      tenantId: 'wirepro-electrical',
+      bookingId: 'booking-1',
+      idempotencyKey: 'deposit-key-1',
+    });
+  });
 });

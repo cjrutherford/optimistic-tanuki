@@ -44,13 +44,10 @@
 }
 
 .parameters-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: 1.75rem;
 }
 
 .parameter-group {
@@ -117,12 +114,6 @@
     color: #f8fafc;
   }
 
-  .tier-base-price {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #f59e0b;
-  }
-
   .tier-desc {
     font-size: 0.85rem;
     color: #cbd5e1;
@@ -177,6 +168,12 @@
   input {
     width: 100%;
     max-width: 240px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #f8fafc;
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-size: 1rem;
   }
 
   .input-helper {
@@ -187,13 +184,10 @@
 
 /* Summary Column */
 .summary-card {
-  background: #1e293b;
-  border: 2px solid #f59e0b;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1.75rem;
   height: fit-content;
   position: sticky;
   top: 90px;
@@ -209,18 +203,9 @@
 .package-recap {
   border-bottom: 1px solid #334155;
   padding-bottom: 1rem;
-
-  .selected-package-badge {
-    display: inline-block;
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    margin-bottom: 0.5rem;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 
   .package-recap-desc {
     font-size: 0.88rem;
@@ -303,23 +288,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
 
-.btn-primary {
-  background: #f59e0b;
-  color: #0f172a;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  padding: 0.85rem 1.5rem;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  min-height: 48px;
-
-  &:hover {
-    background: #d97706;
+  otui-button {
+    width: 100%;
   }
 }
 

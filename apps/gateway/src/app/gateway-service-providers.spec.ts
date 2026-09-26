@@ -7,6 +7,10 @@ import {
   createGatewayServiceProviders,
   DisabledClientProxy,
 } from './gateway-service-providers';
+import { McpServerModule } from './mcp/mcp-tools.module';
+import { ProjectPlanningMcpToolsModule } from './mcp/mcp-tools.module';
+import { TelosDocsMcpToolsModule } from './mcp/mcp-tools.module';
+import { VaultMcpToolsModule } from './mcp/vault-mcp-tools.module';
 
 describe('gateway service providers', () => {
   it('returns disabled proxies for services outside the composition', async () => {
@@ -186,7 +190,7 @@ describe('gateway service providers', () => {
     ).rejects.toThrow('Gateway service "payments" is disabled');
   });
 
-  it('registers only project-planning MCP tools when only project-planning is enabled', () => {
+  it('registers the project-planning and vault MCP tools when only project-planning is enabled', () => {
     const composition = normalizeGatewayComposition(
       {
         enabledServices: ['project-planning'],
@@ -195,12 +199,16 @@ describe('gateway service providers', () => {
     );
     const imports = createMcpToolImports(composition);
 
-    expect(imports).toHaveLength(2);
+    expect(imports).toEqual([
+      McpServerModule,
+      ProjectPlanningMcpToolsModule,
+      VaultMcpToolsModule,
+    ]);
     expect(imports.some((entry) => entry === undefined)).toBe(false);
     expect(imports.some((entry) => entry === Object)).toBe(false);
   });
 
-  it('registers only telos-docs MCP tools when only telos-docs-service is enabled', () => {
+  it('registers the telos-docs and vault MCP tools when only telos-docs-service is enabled', () => {
     const composition = normalizeGatewayComposition(
       {
         enabledServices: ['telos-docs-service'],
@@ -209,10 +217,19 @@ describe('gateway service providers', () => {
     );
     const imports = createMcpToolImports(composition);
 
-    expect(imports).toHaveLength(2);
+    expect(imports).toEqual([
+      McpServerModule,
+      TelosDocsMcpToolsModule,
+      VaultMcpToolsModule,
+    ]);
   });
 
-  it('does not register MCP tools when no backing service is enabled', () => {
+  it('keeps the vault tools registered when no other backing service is enabled', () => {
+    // The vault tools are the confidential copilot's only route to document
+    // text and to the local model, and the tenant binding they enforce is
+    // exactly the control that has to survive an unrelated service being
+    // degraded. Gating them here would turn a partial outage into a silent
+    // loss of the vault's enforcement.
     const composition = normalizeGatewayComposition(
       {
         enabledServices: ['authentication'],
@@ -220,6 +237,9 @@ describe('gateway service providers', () => {
       ['authentication', 'project-planning', 'telos-docs-service']
     );
 
-    expect(createMcpToolImports(composition)).toEqual([]);
+    expect(createMcpToolImports(composition)).toEqual([
+      McpServerModule,
+      VaultMcpToolsModule,
+    ]);
   });
 });

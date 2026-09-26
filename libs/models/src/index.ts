@@ -19,3 +19,5 @@ export * from './lib/libs/system-configurator';
 export * from './lib/libs/leads/contracts';
 export * from './lib/libs/leads';
 export * from './lib/libs/workspaces';
+export * from './lib/libs/flow';
+export * from './lib/libs/vault';

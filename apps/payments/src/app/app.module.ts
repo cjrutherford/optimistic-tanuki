@@ -26,6 +26,7 @@ import { OfferService } from './services/offer.service';
 import { LemonSqueezyAdapter } from '@optimistic-tanuki/payments-domain';
 import { PAYMENT_PROVIDER_ADAPTER } from './services/payment-provider.tokens';
 import { BillingReconciliationService } from './services/billing-reconciliation.service';
+import { FlowDepositService } from './services/flow-deposit.service';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { BillingReconciliationService } from './services/billing-reconciliation.
   controllers: [AppController],
   providers: [
     PaymentService,
+    FlowDepositService,
     {
       provide: PAYMENT_PROVIDER_ADAPTER,
       useFactory: (configService: ConfigService) => {
@@ -119,6 +121,18 @@ import { BillingReconciliationService } from './services/billing-reconciliation.
         });
       },
       inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.LEAD_SERVICE,
+      useFactory: () => {
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_LEAD_TRACKER_HOST || 'localhost',
+            port: parseInt(process.env.SERVICE_LEAD_TRACKER_PORT || '3020', 10),
+          },
+        });
+      },
     },
     BusinessThemeService,
     BillingReconciliationService,

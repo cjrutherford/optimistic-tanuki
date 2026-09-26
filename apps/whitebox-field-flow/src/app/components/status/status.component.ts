@@ -2,15 +2,27 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import {
+  CardComponent,
+  ButtonComponent,
+  BadgeComponent,
+} from '@optimistic-tanuki/common-ui';
+import { TextAreaComponent } from '@optimistic-tanuki/form-ui';
 import { JobDispatchStatus, JobRecord } from '../../models/field-flow.models';
 import { FieldFlowApiService } from '../../services/field-flow-api.service';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
-import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
 
 @Component({
   selector: 'flow-status',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    CardComponent,
+    ButtonComponent,
+    BadgeComponent,
+    TextAreaComponent,
+  ],
   templateUrl: './status.component.html',
   styleUrl: './status.component.scss',
 })
@@ -18,12 +30,13 @@ export class StatusComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly apiService = inject(FieldFlowApiService);
   readonly syncService = inject(FieldFlowSyncService);
-  readonly brandConfig = inject(BrandConfigService);
 
   jobId = '';
   job: JobRecord | null = null;
   technicianInputNotes = '';
   showTechnicianConsole = false;
+  isLoading = false;
+  loadError = '';
 
   readonly statusSteps: {
     key: JobDispatchStatus;
@@ -55,16 +68,32 @@ export class StatusComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.jobId = this.route.snapshot.paramMap.get('id') || 'demo-job';
+    this.jobId = this.route.snapshot.paramMap.get('id') || '';
     this.loadJob();
   }
 
   loadJob(): void {
-    this.apiService.getJobStatus(this.jobId).subscribe((jobData) => {
-      this.job = jobData;
-      if (this.job && this.job.technicianNotes) {
-        this.technicianInputNotes = this.job.technicianNotes;
-      }
+    this.job = null;
+    this.technicianInputNotes = '';
+    this.loadError = '';
+    this.isLoading = true;
+
+    if (!this.jobId) {
+      this.isLoading = false;
+      return;
+    }
+
+    this.apiService.getJobStatus(this.jobId).subscribe({
+      next: (jobData) => {
+        this.job = jobData;
+        this.technicianInputNotes = jobData.technicianNotes || '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.job = null;
+        this.loadError = 'Unable to load job status. Please try again.';
+        this.isLoading = false;
+      },
     });
   }
 
@@ -79,18 +108,6 @@ export class StatusComponent implements OnInit {
     const currentIndex = order.indexOf(this.job.status);
     const stepIndex = order.indexOf(step);
     return stepIndex <= currentIndex;
-  }
-
-  updateJobStatus(newStatus: JobDispatchStatus): void {
-    if (!this.job) return;
-    this.job.status = newStatus;
-    if (newStatus === 'completed') {
-      this.job.completedAt = new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    }
-    void this.syncService.cacheAppointment(this.job);
   }
 
   saveTechnicianNotes(): void {

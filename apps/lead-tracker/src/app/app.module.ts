@@ -48,6 +48,11 @@ import { DiscoveryPipelineService } from './discovery/pipeline.service';
 import { LeadQualificationService } from './lead-qualification.service';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
+import { FlowMessageController } from './flow-message.controller';
+import { FlowService } from './flow.service';
+import { FlowBooking } from './entities/flow-booking.entity';
+import { FlowBookingUpdate } from './entities/flow-booking-update.entity';
+import { FlowEstimate } from './entities/flow-estimate.entity';
 import loadConfig from '../config';
 
 @Module({
@@ -83,6 +88,9 @@ import loadConfig from '../config';
             LeadQualification,
             LeadApplicationRecord,
             LeadOnboardingProfileRecord,
+            FlowEstimate,
+            FlowBooking,
+            FlowBookingUpdate,
           ],
         };
       },
@@ -114,9 +122,10 @@ import loadConfig from '../config';
       },
     }),
   ],
-  controllers: [LeadsController],
+  controllers: [LeadsController, FlowMessageController],
   providers: [
     LeadsService,
+    FlowService,
     DiscoveryService,
     GoogleMapsLocationAutocompleteService,
     SearchAcquisitionService,
@@ -177,6 +186,21 @@ import loadConfig from '../config';
     {
       provide: getRepositoryToken(LeadApplicationRecord),
       useFactory: (ds: DataSource) => ds.getRepository(LeadApplicationRecord),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowEstimate),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowEstimate),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowBooking),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowBooking),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowBookingUpdate),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowBookingUpdate),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

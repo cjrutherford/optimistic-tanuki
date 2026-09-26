@@ -6,4 +6,6 @@ export * from './lib/theme-lib/theme-validation-harness.component';
 export {
   type TradeCraftTheme,
   tradeCraftTheme,
+  type SovereignVaultTheme,
+  sovereignVaultTheme,
 } from '@optimistic-tanuki/theme-models';

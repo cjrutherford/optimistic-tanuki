@@ -99,12 +99,19 @@ models:
     repeatPenalty: 1.1
     pullOnStartup: false
 ollama:
-  # shangrila on the tailnet. The IP rather than the MagicDNS name on purpose:
-  # this service runs in a container, and containers here do not resolve
-  # tailscale names. Checked both from inside a running container, where
-  # `shangrila` does not resolve and this address does. OLLAMA_HOST overrides
-  # it, which is the right lever if the address changes.
-  host: 100.89.87.124
+  # No host in source. This used to be a hardcoded tailnet address, which tied
+  # the deployment to one box and left the address itself untestable.
+  #
+  # OLLAMA_HOST names it. With no host configured, ModelManager and the other
+  # Ollama clients fall back to their existing default, http://prompt-proxy:11434,
+  # so the non-vault model configuration is unaffected either way.
+  #
+  # This is not the vault's model endpoint. The confidential path reaches the
+  # model through the gateway's vault_generate MCP tool, which resolves its own
+  # endpoint from VAULT_OLLAMA_BASE_URL and refuses anything not on this
+  # network. The vault model is qwen2.5-coder:14b and lives in the gateway's
+  # config; see apps/gateway/src/assets/config.yaml.
+  host: ''
   port: 11434
 redis:
   host: redis

@@ -184,3 +184,5 @@ export {
 } from './lib/libs/fin-commander';
 
 export { LearningCommands } from './lib/libs/learning';
+export * from './lib/libs/flow';
+export * from './lib/libs/vault';

@@ -1,9 +1,37 @@
 <section class="status-shell">
+  <div *ngIf="isLoading" class="status-state" role="status">
+    Loading job status…
+  </div>
+  <div *ngIf="loadError" class="status-state status-error" role="alert">
+    {{ loadError }}
+  </div>
+  <div
+    *ngIf="!isLoading && !loadError && !job"
+    class="status-state"
+    role="status"
+  >
+    No job status found.
+  </div>
+
   <div class="status-container" *ngIf="job">
     <header class="status-header">
       <div class="header-badge-row">
-        <span class="tracking-pill">{{ job.trackingNumber }}</span>
-        <span class="status-pill" [attr.data-status]="job.status">
+        <otui-badge
+          *ngIf="job.trackingNumber"
+          [tone]="'brand'"
+          [emphasis]="'soft'"
+          >{{ job.trackingNumber }}</otui-badge
+        >
+        <otui-badge
+          [tone]="
+            job.status === 'completed'
+              ? 'success'
+              : job.status === 'in_progress'
+              ? 'brand'
+              : 'warning'
+          "
+          [emphasis]="'solid'"
+        >
           {{
             job.status === 'in_progress'
               ? 'Work in progress'
@@ -11,7 +39,7 @@
               ? 'En route'
               : job.status
           }}
-        </span>
+        </otui-badge>
       </div>
       <h1>Job status tracker</h1>
       <p class="lede">
@@ -20,7 +48,7 @@
     </header>
 
     <!-- Dispatch Progress Stepper -->
-    <div class="stepper-card">
+    <otui-card class="stepper-card">
       <ol class="status-steps" aria-label="Job progress timeline">
         <li
           *ngFor="let step of statusSteps; let i = index"
@@ -44,30 +72,37 @@
           </div>
         </li>
       </ol>
-    </div>
+    </otui-card>
 
     <!-- Completed Job: Google Review Prompt -->
-    <div *ngIf="job.status === 'completed'" class="review-prompt-card">
+    <otui-card
+      *ngIf="job.status === 'completed' && job.reviewPromptEligible === true"
+      class="review-prompt-card"
+    >
       <div class="review-content">
         <h2>Service completed</h2>
         <p>
           Your technician has concluded on-site service. Please take thirty
           seconds to share your feedback with our local team.
         </p>
-        <a
-          [href]="job.googleReviewUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="google-review-btn touch-target"
-        >
-          Leave a Google review
-        </a>
+        <div class="review-action">
+          <a
+            [href]="job.googleReviewUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="google-review-link"
+          >
+            <otui-button [tone]="'brand'" [emphasis]="'solid'">
+              Leave a Google review
+            </otui-button>
+          </a>
+        </div>
       </div>
-    </div>
+    </otui-card>
 
     <!-- Appointment & Job Details Card -->
     <div class="details-grid">
-      <div class="details-card">
+      <otui-card class="details-card">
         <h2>Service details</h2>
         <dl class="details-list">
           <div class="detail-row">
@@ -103,23 +138,23 @@
             </dd>
           </div>
         </dl>
-      </div>
+      </otui-card>
 
       <!-- Technician Notes / Field Crew Console -->
-      <div class="technician-card">
+      <otui-card class="technician-card">
         <div class="technician-header">
           <h2>Technician log</h2>
-          <button
-            type="button"
-            class="toggle-console-btn"
-            (click)="toggleTechnicianConsole()"
+          <otui-button
+            [tone]="'neutral'"
+            [emphasis]="'outline'"
+            (action)="toggleTechnicianConsole()"
           >
             {{
               showTechnicianConsole
                 ? 'Hide technician controls'
                 : 'Technician controls'
             }}
-          </button>
+          </otui-button>
         </div>
 
         <div *ngIf="job.technicianNotes" class="logged-notes">
@@ -131,62 +166,25 @@
 
         <!-- Simulated Technician Controls (for field demo / testing) -->
         <div *ngIf="showTechnicianConsole" class="technician-console">
-          <label for="tech-notes" class="console-label">
-            Log completion notes (offline resilient)
-          </label>
-          <textarea
-            id="tech-notes"
-            rows="3"
-            [(ngModel)]="technicianInputNotes"
+          <lib-text-area
+            label="Log completion notes (offline resilient)"
             placeholder="Document service notes or surface condition before leaving site"
-          ></textarea>
-          <button
-            type="button"
-            class="btn-secondary touch-target"
-            (click)="saveTechnicianNotes()"
-          >
-            Save technician notes
-          </button>
+            [rows]="3"
+            [(ngModel)]="technicianInputNotes"
+            name="technicianInputNotes"
+          ></lib-text-area>
 
-          <div class="status-override-row">
-            <span class="override-label">Advance status:</span>
-            <div class="override-buttons">
-              <button
-                type="button"
-                class="override-btn"
-                [class.active]="job.status === 'scheduled'"
-                (click)="updateJobStatus('scheduled')"
-              >
-                Scheduled
-              </button>
-              <button
-                type="button"
-                class="override-btn"
-                [class.active]="job.status === 'en_route'"
-                (click)="updateJobStatus('en_route')"
-              >
-                En route
-              </button>
-              <button
-                type="button"
-                class="override-btn"
-                [class.active]="job.status === 'in_progress'"
-                (click)="updateJobStatus('in_progress')"
-              >
-                In progress
-              </button>
-              <button
-                type="button"
-                class="override-btn"
-                [class.active]="job.status === 'completed'"
-                (click)="updateJobStatus('completed')"
-              >
-                Completed
-              </button>
-            </div>
+          <div class="save-notes-action">
+            <otui-button
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+              (action)="saveTechnicianNotes()"
+            >
+              Save technician notes
+            </otui-button>
           </div>
         </div>
-      </div>
+      </otui-card>
     </div>
   </div>
 </section>

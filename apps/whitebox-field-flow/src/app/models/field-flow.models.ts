@@ -1,11 +1,16 @@
-/**
- * Domain models for Field Flow trade and field service operations.
- */
+export type ServicePackageTier = string;
 
-export type ServicePackageTier = 'standard' | 'premium' | 'restoration';
+export type TenantResolutionState = 'idle' | 'loading' | 'resolved' | 'error';
+
+export interface ResolvedFlowTenant {
+  tenantId: string;
+  profileId: string;
+  matchedBy: string | null;
+  matchedValue: string | null;
+}
 
 export interface ServicePackage {
-  id: ServicePackageTier;
+  id: string;
   name: string;
   description: string;
   basePrice: number;
@@ -30,82 +35,122 @@ export interface EstimateParameters {
 }
 
 export interface EstimateCalculation {
+  estimateId?: string;
+  serviceId?: string;
+  serviceName?: string;
   subtotal: number;
   taxAmount: number;
   total: number;
   depositAmount: number;
+  depositRequired?: number;
   taxRate: number;
   packageDetails: ServicePackage;
+  currency?: string;
+  expiresAt?: string;
+  isAuthoritative?: boolean;
 }
 
 export interface ServiceArrivalWindow {
   id: string;
-  timeSlot: string; // e.g. "8:00 AM - 10:00 AM"
+  timeSlot: string;
   available: boolean;
 }
 
 export interface CustomerBookingDetails {
   fullName: string;
   mobilePhone: string;
+  emailAddress?: string;
   streetAddress: string;
   gateCode?: string;
   serviceNotes?: string;
   selectedDate: string;
   selectedWindow: string;
   uploadedPhotoUrls: string[];
+  photoUrls?: string[];
+  bookingId?: string;
+  trackingCode?: string;
+  status?: string;
 }
 
-export interface DepositPaymentRequest {
-  bookingId: string;
-  amount: number;
-  currency: string;
-  cardholderName: string;
-  cardNumberMasked: string;
-  expiration: string;
-  receiptEmail?: string;
+export type DepositPaymentRequest =
+  | {
+      bookingId: string;
+      trackingCode?: never;
+      idempotencyKey?: string;
+    }
+  | {
+      bookingId?: never;
+      trackingCode: string;
+      idempotencyKey?: string;
+    };
+
+export interface FlowAvailabilityQuery {
+  serviceId: string;
+  date: string;
+  size?: PropertyOrVehicleSize;
+  condition?: SurfaceCondition;
 }
 
 export interface DepositPaymentResponse {
-  paymentId: string;
-  status: 'succeeded' | 'requires_action' | 'failed';
-  bookingId: string;
-  receiptNumber: string;
-  smsNotificationSent: boolean;
-  smsNotificationRecipient: string;
+  paymentIntentId: string;
+  clientSecret?: string;
+  status: string;
   amount: number;
+  currency: string;
+  bookingId?: string;
+  trackingCode?: string;
+  smsConfirmation?: {
+    dispatched: boolean;
+    to?: string;
+    sid?: string;
+    message?: string;
+  };
 }
 
 export type JobDispatchStatus =
   | 'scheduled'
   | 'en_route'
   | 'in_progress'
-  | 'completed';
+  | 'completed'
+  | 'cancelled';
 
 export interface JobRecord {
   id: string;
-  trackingNumber: string;
-  customerName: string;
-  customerPhone: string;
-  streetAddress: string;
-  servicePackageName: string;
-  scheduledDate: string;
-  arrivalWindow: string;
-  totalPrice: number;
-  depositPaid: number;
-  balanceRemaining: number;
+  trackingNumber?: string;
+  customerName?: string;
+  customerPhone?: string;
+  streetAddress?: string;
+  servicePackageName?: string;
+  scheduledDate?: string;
+  arrivalWindow?: string;
+  totalPrice?: number;
+  depositPaid?: number;
+  balanceRemaining?: number;
   status: JobDispatchStatus;
   technicianNotes?: string;
   technicianPhotos?: string[];
   completedAt?: string;
   googleReviewUrl?: string;
+  reviewPromptEligible?: boolean;
 }
 
 export interface OfflineSyncItem {
   id: string;
-  type: 'booking' | 'estimate' | 'completion_note' | 'photo';
+  type:
+    | 'booking'
+    | 'estimate'
+    | 'completion_note'
+    | 'photo'
+    | 'payment'
+    | 'availability'
+    | 'status';
   payload: unknown;
   timestamp: number;
   synced: boolean;
+  idempotencyKey: string;
+  attempts: number;
+  lastError?: string;
+  failedPermanently?: boolean;
 }
 
 export type {

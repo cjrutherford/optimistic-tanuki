@@ -1,13 +1,45 @@
 import {
   DeleteObjectCommand,
+  GetBucketVersioningCommand,
   GetObjectCommand,
+  GetObjectLockConfigurationCommand,
+  ObjectLockEnabled,
+  ObjectLockLegalHoldStatus,
+  ObjectLockMode,
+  PutBucketVersioningCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 import { Readable } from 'stream';
+
+export type S3ObjectLockLegalHold = 'ON' | 'OFF';
+
+export interface ObjectLockSettings {
+  mode: ObjectLockMode;
+  retainUntilDate?: Date;
+  legalHold?: S3ObjectLockLegalHold;
+}
+
+export interface UploadObjectOptions {
+  metadata?: Record<string, string>;
+  objectLock?: ObjectLockSettings;
+}
+
+export interface ObjectLockReadiness {
+  bucketName: string;
+  versioningEnabled: boolean;
+  objectLockEnabled: boolean;
+  ready: boolean;
+  detail: string;
+}
 
 export interface S3ServiceOptions {
   endpoint: string;
@@ -15,6 +47,8 @@ export interface S3ServiceOptions {
   accessKeyId: string;
   secretAccessKey: string;
   bucketName: string;
+  objectLock?: ObjectLockSettings;
+  requireVersioningForObjectLock?: boolean;
 }
 
 export interface SignedUrlOptions {
@@ -29,23 +63,133 @@ export interface SignedUrlResult {
   expiresAt: Date;
 }
 
-export const defaultS3ServiceOptions: S3ServiceOptions = {
-  endpoint: 'http://localhost:9000', // Default MinIO endpoint
-  region: 'us-east-1', // Default region
-  accessKeyId: 'minioadmin', // Default MinIO access key
-  secretAccessKey: 'minioadmin', // Default MinIO secret key
-  bucketName: 'my-bucket', // Default bucket name
-};
+export const S3_ENV = {
+  endpoint: 'VAULT_STORAGE_S3_ENDPOINT',
+  region: 'VAULT_STORAGE_S3_REGION',
+  accessKeyId: 'VAULT_STORAGE_S3_ACCESS_KEY_ID',
+  secretAccessKey: 'VAULT_STORAGE_S3_SECRET_ACCESS_KEY',
+  bucketName: 'VAULT_STORAGE_S3_BUCKET',
+  objectLockMode: 'VAULT_STORAGE_OBJECT_LOCK_MODE',
+  objectLockRetainDays: 'VAULT_STORAGE_OBJECT_LOCK_RETAIN_DAYS',
+  objectLockLegalHold: 'VAULT_STORAGE_OBJECT_LOCK_LEGAL_HOLD',
+  requireVersioning: 'VAULT_STORAGE_OBJECT_LOCK_REQUIRE_VERSIONING',
+} as const;
+
+export const S3_LOCAL_DEV_ENDPOINT = 'http://localhost:9000';
+export const S3_DEFAULT_REGION = 'us-east-1';
+
+export function resolveObjectLockSettings(
+  env: NodeJS.ProcessEnv = process.env
+): ObjectLockSettings | undefined {
+  const mode = env[S3_ENV.objectLockMode]?.trim().toUpperCase();
+  if (!mode) {
+    return undefined;
+  }
+  if (
+    mode !== ObjectLockMode.COMPLIANCE &&
+    mode !== ObjectLockMode.GOVERNANCE
+  ) {
+    throw new ServiceUnavailableException(
+      `${S3_ENV.objectLockMode} must be ${ObjectLockMode.COMPLIANCE} or ${ObjectLockMode.GOVERNANCE}; got "${mode}".`
+    );
+  }
+
+  const legalHoldRaw = env[S3_ENV.objectLockLegalHold]?.trim().toUpperCase();
+  if (legalHoldRaw && legalHoldRaw !== 'ON' && legalHoldRaw !== 'OFF') {
+    throw new ServiceUnavailableException(
+      `${S3_ENV.objectLockLegalHold} must be ON or OFF; got "${legalHoldRaw}".`
+    );
+  }
+
+  const retainDaysRaw = env[S3_ENV.objectLockRetainDays]?.trim();
+  let retainUntilDate: Date | undefined;
+  if (retainDaysRaw) {
+    const retainDays = Number.parseInt(retainDaysRaw, 10);
+    if (!Number.isInteger(retainDays) || retainDays <= 0) {
+      throw new ServiceUnavailableException(
+        `${S3_ENV.objectLockRetainDays} must be a positive number of days; got "${retainDaysRaw}".`
+      );
+    }
+    retainUntilDate = new Date(Date.now() + retainDays * 24 * 60 * 60 * 1000);
+  }
+
+  return {
+    mode: mode as ObjectLockMode,
+    ...(retainUntilDate ? { retainUntilDate } : {}),
+    ...(legalHoldRaw
+      ? { legalHold: legalHoldRaw as S3ObjectLockLegalHold }
+      : {}),
+  };
+}
+
+export function resolveS3ServiceOptions(
+  env: NodeJS.ProcessEnv = process.env,
+  overrides: Partial<S3ServiceOptions> = {}
+): S3ServiceOptions {
+  const accessKeyId =
+    overrides.accessKeyId?.trim() || env[S3_ENV.accessKeyId]?.trim() || '';
+  const secretAccessKey =
+    overrides.secretAccessKey?.trim() ||
+    env[S3_ENV.secretAccessKey]?.trim() ||
+    '';
+  const bucketName =
+    overrides.bucketName?.trim() || env[S3_ENV.bucketName]?.trim() || '';
+
+  const missing: string[] = [];
+  if (!accessKeyId) {
+    missing.push(S3_ENV.accessKeyId);
+  }
+  if (!secretAccessKey) {
+    missing.push(S3_ENV.secretAccessKey);
+  }
+  if (!bucketName) {
+    missing.push(S3_ENV.bucketName);
+  }
+  if (missing.length > 0) {
+    throw new ServiceUnavailableException(
+      `S3-compatible storage is not configured: set ${missing.join(
+        ', '
+      )}. Credentials are never defaulted; the bucket may not be written without them.`
+    );
+  }
+
+  const objectLock = overrides.objectLock ?? resolveObjectLockSettings(env);
+  const requireVersioning =
+    overrides.requireVersioningForObjectLock ??
+    env[S3_ENV.requireVersioning] !== 'false';
+
+  return {
+    endpoint:
+      overrides.endpoint?.trim() ||
+      env[S3_ENV.endpoint]?.trim() ||
+      S3_LOCAL_DEV_ENDPOINT,
+    region:
+      overrides.region?.trim() ||
+      env[S3_ENV.region]?.trim() ||
+      S3_DEFAULT_REGION,
+    accessKeyId,
+    secretAccessKey,
+    bucketName,
+    ...(objectLock ? { objectLock } : {}),
+    requireVersioningForObjectLock: requireVersioning,
+  };
+}
 
 @Injectable()
 export class S3Service {
   private s3Client: S3Client;
   private bucketName: string;
+  private objectLockReadiness?: Promise<ObjectLockReadiness>;
 
   constructor(
     private readonly l: Logger,
     private readonly options: S3ServiceOptions
   ) {
+    if (!options.accessKeyId || !options.secretAccessKey) {
+      throw new ServiceUnavailableException(
+        'S3Service requires explicit accessKeyId and secretAccessKey; refusing to start with default credentials.'
+      );
+    }
     this.l.log(`S3Service initialized for bucket: ${options.bucketName}`);
     this.bucketName = options.bucketName;
     this.s3Client = new S3Client({
@@ -127,18 +271,63 @@ export class S3Service {
   async uploadObject(
     key: string,
     body: Buffer,
-    contentType?: string
+    contentType?: string,
+    options: UploadObjectOptions = {}
   ): Promise<void> {
+    const objectLock = this.resolveObjectLock(options.objectLock);
+    if (objectLock && this.options.requireVersioningForObjectLock !== false) {
+      const readiness = await this.getObjectLockReadiness();
+      if (!readiness.ready) {
+        throw new ServiceUnavailableException(readiness.detail);
+      }
+    }
+
     this.l.log(`S3Service: Uploading object to s3://${this.bucketName}/${key}`);
     const uploadParams = {
       Bucket: this.bucketName,
       Key: key,
       Body: body,
       ContentType: contentType,
+      ...(options.metadata ? { Metadata: options.metadata } : {}),
+      ...(objectLock
+        ? {
+            ObjectLockMode: objectLock.mode,
+            ObjectLockRetainUntilDate: objectLock.retainUntilDate,
+            ObjectLockLegalHoldStatus: objectLock.legalHold as
+              | ObjectLockLegalHoldStatus
+              | undefined,
+          }
+        : {}),
     };
     await this.s3Client.send(new PutObjectCommand(uploadParams));
     this.l.log(
-      `S3Service: Object uploaded successfully: s3://${this.bucketName}/${key}`
+      `S3Service: Object uploaded successfully: s3://${this.bucketName}/${key}${
+        objectLock ? ` (object lock ${objectLock.mode})` : ''
+      }`
+    );
+  }
+
+  async getObjectLockReadiness(): Promise<ObjectLockReadiness> {
+    if (!this.objectLockReadiness) {
+      this.objectLockReadiness = this.probeObjectLockReadiness();
+    }
+    return this.objectLockReadiness;
+  }
+
+  resetObjectLockReadinessCache(): void {
+    this.objectLockReadiness = undefined;
+  }
+
+  async enableBucketVersioning(): Promise<void> {
+    await this.s3Client.send(
+      new PutBucketVersioningCommand({
+        Bucket: this.bucketName,
+        VersioningConfiguration: { Status: 'Enabled' },
+      })
+    );
+    this.resetObjectLockReadinessCache();
+    this.l.log(
+      `S3Service: Enabled bucket versioning on s3://${this.bucketName}, which is a prerequisite for Object Lock`
     );
   }
 
@@ -212,5 +401,94 @@ export class S3Service {
       throw new Error(`Invalid S3 path format: ${s3Path}`);
     }
     return s3Path.replace(prefix, '');
+  }
+
+  private resolveObjectLock(
+    requested?: ObjectLockSettings
+  ): ObjectLockSettings | undefined {
+    const objectLock = requested ?? this.options.objectLock;
+    if (!objectLock) {
+      return undefined;
+    }
+
+    if (
+      objectLock.mode !== ObjectLockMode.COMPLIANCE &&
+      objectLock.mode !== ObjectLockMode.GOVERNANCE
+    ) {
+      throw new BadRequestException(
+        `Unsupported Object Lock mode "${String(objectLock.mode)}".`
+      );
+    }
+
+    if (
+      objectLock.legalHold &&
+      objectLock.legalHold !== 'ON' &&
+      objectLock.legalHold !== 'OFF'
+    ) {
+      throw new BadRequestException(
+        `Unsupported Object Lock legal hold status "${String(
+          objectLock.legalHold
+        )}".`
+      );
+    }
+
+    if (
+      objectLock.retainUntilDate &&
+      objectLock.retainUntilDate.getTime() <= Date.now()
+    ) {
+      throw new BadRequestException(
+        'Object Lock retain-until date must be in the future.'
+      );
+    }
+
+    return objectLock;
+  }
+
+  private async probeObjectLockReadiness(): Promise<ObjectLockReadiness> {
+    const bucket = this.bucketName;
+    const versioning = await this.s3Client.send(
+      new GetBucketVersioningCommand({ Bucket: bucket })
+    );
+    const versioningEnabled = versioning.Status === 'Enabled';
+
+    let objectLockEnabled = false;
+    try {
+      const lockConfiguration = await this.s3Client.send(
+        new GetObjectLockConfigurationCommand({ Bucket: bucket })
+      );
+      objectLockEnabled =
+        lockConfiguration.ObjectLockConfiguration?.ObjectLockEnabled ===
+        ObjectLockEnabled.Enabled;
+    } catch (error: any) {
+      this.l.warn(
+        `S3Service: Object Lock configuration probe failed for s3://${bucket}: ${error.message}`
+      );
+      return {
+        bucketName: bucket,
+        versioningEnabled,
+        objectLockEnabled: false,
+        ready: false,
+        detail: `Object Lock could not be confirmed on s3://${bucket}: ${error.message}. Object Lock is mandatory for vault retention, so the upload is denied.`,
+      };
+    }
+
+    const ready = versioningEnabled && objectLockEnabled;
+    const detail = ready
+      ? `s3://${bucket} has versioning and Object Lock enabled; retention headers will be honoured.`
+      : `s3://${bucket} is not Object Lock ready (versioning ${
+          versioningEnabled
+            ? 'enabled'
+            : `status "${String(versioning.Status)}"`
+        }, Object Lock ${
+          objectLockEnabled ? 'enabled' : 'not enabled'
+        }). S3 Object Lock requires bucket versioning to be enabled at bucket creation; the upload is denied.`;
+
+    return {
+      bucketName: bucket,
+      versioningEnabled,
+      objectLockEnabled,
+      ready,
+      detail,
+    };
   }
 }

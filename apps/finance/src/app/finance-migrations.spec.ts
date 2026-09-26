@@ -44,4 +44,68 @@ describe('finance migrations', () => {
     );
     expect(migration.FinCommanderFundingDirective1772200000000).toBeDefined();
   });
+
+  it('protects persisted escrow records with tenant RLS', async () => {
+    const migration = await import('../migrations/1790342843391-vault-escrow');
+    const queries: string[] = [];
+    await new migration.VaultEscrow1790342843391().up({
+      query: async (sql: string) => queries.push(sql),
+    } as any);
+
+    expect(
+      queries.some((sql) => sql.includes('CREATE TABLE "vault_escrows"'))
+    ).toBe(true);
+    expect(
+      queries.some(
+        (sql) =>
+          sql.includes('ENABLE ROW LEVEL SECURITY') &&
+          sql.includes('vault_escrows')
+      )
+    ).toBe(true);
+    expect(
+      queries.some(
+        (sql) =>
+          sql.includes('FORCE ROW LEVEL SECURITY') &&
+          sql.includes('vault_escrows')
+      )
+    ).toBe(true);
+    expect(
+      queries.some((sql) =>
+        sql.includes('CREATE POLICY "vault_escrows_tenant_isolation"')
+      )
+    ).toBe(true);
+  });
+
+  it('protects persisted OTP challenges with tenant RLS', async () => {
+    const migration = await import(
+      '../migrations/1790342980980-otp-challenges'
+    );
+    const queries: string[] = [];
+    await new migration.OtpChallenges1790342980980().up({
+      query: async (sql: string) => queries.push(sql),
+    } as any);
+
+    expect(
+      queries.some((sql) => sql.includes('CREATE TABLE "otp_challenges"'))
+    ).toBe(true);
+    expect(
+      queries.some(
+        (sql) =>
+          sql.includes('ENABLE ROW LEVEL SECURITY') &&
+          sql.includes('otp_challenges')
+      )
+    ).toBe(true);
+    expect(
+      queries.some(
+        (sql) =>
+          sql.includes('FORCE ROW LEVEL SECURITY') &&
+          sql.includes('otp_challenges')
+      )
+    ).toBe(true);
+    expect(
+      queries.some((sql) =>
+        sql.includes('CREATE POLICY "otp_challenges_tenant_isolation"')
+      )
+    ).toBe(true);
+  });
 });

@@ -1,9 +1,23 @@
-import { Controller, HttpException, Logger, Inject } from '@nestjs/common';
-import { PaymentCommands } from '@optimistic-tanuki/constants';
+import {
+  Controller,
+  HttpException,
+  Logger,
+  Inject,
+  Optional,
+} from '@nestjs/common';
+import {
+  PaymentCommands,
+  FLOW_PROCESS_DEPOSIT,
+} from '@optimistic-tanuki/constants';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { PaymentService } from './services/payment.service';
 import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
+import { FlowDepositService } from './services/flow-deposit.service';
+import {
+  DepositPaymentDto,
+  FlowTenantPayload,
+} from '@optimistic-tanuki/models';
 
 @Controller()
 export class AppController {
@@ -15,7 +29,10 @@ export class AppController {
     @Inject(BusinessThemeService)
     private readonly businessThemeService: BusinessThemeService,
     @Inject(OfferService)
-    private readonly offerService: OfferService
+    private readonly offerService: OfferService,
+    @Optional()
+    @Inject(FlowDepositService)
+    private readonly flowDepositService?: FlowDepositService
   ) {}
 
   private async relayOfferCommand<T>(
@@ -521,5 +538,20 @@ export class AppController {
   @MessagePattern({ cmd: PaymentCommands.SYNC_LEMON_SQUEEZY_PRODUCTS })
   async syncLemonSqueezyProducts(@Payload() data: { appScope?: string }) {
     return this.paymentService.syncLemonSqueezyProducts(data.appScope);
+  }
+
+  @MessagePattern('flow.process_deposit')
+  @MessagePattern({ cmd: 'flow.process_deposit' })
+  @MessagePattern(FLOW_PROCESS_DEPOSIT)
+  async processFlowDeposit(
+    @Payload() data: FlowTenantPayload<DepositPaymentDto>
+  ) {
+    if (!this.flowDepositService) {
+      throw new RpcException({
+        statusCode: 500,
+        message: 'FlowDepositService not initialized',
+      });
+    }
+    return this.flowDepositService.processDeposit(data);
   }
 }

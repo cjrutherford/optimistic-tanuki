@@ -54,13 +54,10 @@
 }
 
 .form-card {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1.75rem;
 }
 
 .form-group {
@@ -76,6 +73,17 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: #f8fafc;
+}
+
+#service-date {
+  width: 100%;
+  max-width: 260px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 1rem;
 }
 
 .fields-split {
@@ -221,13 +229,10 @@
 }
 
 .booking-summary-card {
-  background: #1e293b;
-  border: 2px solid #f59e0b;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1.75rem;
   height: fit-content;
   position: sticky;
   top: 90px;
@@ -266,29 +271,13 @@
     padding: 0.6rem 0.85rem;
     border-radius: 6px;
     color: #f8fafc;
-
-    .deposit-cost {
-      color: #06b6d4;
-      font-size: 1.15rem;
-    }
   }
 }
 
-.btn-primary {
-  background: #f59e0b;
-  color: #0f172a;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  padding: 0.85rem 1.5rem;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  min-height: 48px;
-
-  &:hover {
-    background: #d97706;
+.summary-action {
+  otui-button {
+    width: 100%;
+    display: block;
   }
 }
 

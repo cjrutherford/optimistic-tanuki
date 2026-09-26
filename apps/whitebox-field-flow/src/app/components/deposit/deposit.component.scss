@@ -53,15 +53,16 @@
   }
 }
 
+.stripe-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .stripe-elements-container {
-  background: #1e293b;
-  border: 2px solid #334155;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  padding: 1.75rem;
 }
 
 .elements-header {
@@ -72,57 +73,6 @@
   border-bottom: 1px solid #334155;
   flex-wrap: wrap;
   gap: 0.5rem;
-
-  .stripe-badge {
-    font-size: 0.85rem;
-    font-weight: 800;
-    color: #635bff;
-    background: rgba(99, 91, 255, 0.12);
-    border: 1px solid rgba(99, 91, 255, 0.35);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    letter-spacing: 0.02em;
-  }
-
-  .encrypted-badge {
-    font-size: 0.78rem;
-    color: #cbd5e1;
-  }
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.form-label {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.input-card-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-
-  .card-number-input {
-    width: 100%;
-    padding-right: 5rem;
-  }
-
-  .card-brand-pill {
-    position: absolute;
-    right: 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #cbd5e1;
-    background: #1e293b;
-    border: 1px solid #475569;
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-  }
 }
 
 .fields-row {
@@ -135,8 +85,13 @@
   }
 }
 
-.submit-pay-btn {
+.submit-action {
   margin-top: 0.5rem;
+
+  otui-button {
+    width: 100%;
+    display: block;
+  }
 }
 
 .terms-caption {
@@ -149,13 +104,10 @@
 
 /* Sidebar */
 .deposit-summary-sidebar {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1.75rem;
   height: fit-content;
 }
 
@@ -191,11 +143,6 @@
     padding: 0.6rem 0.85rem;
     border-radius: 6px;
     color: #f8fafc;
-
-    .due-now-amount {
-      color: #06b6d4;
-      font-size: 1.25rem;
-    }
   }
 }
 
@@ -220,10 +167,6 @@
 
 /* Success Card */
 .success-card {
-  background: #1e293b;
-  border: 2px solid #10b981;
-  border-radius: 12px;
-  padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -231,16 +174,7 @@
   margin: 0 auto;
   text-align: center;
   align-items: center;
-
-  .success-badge {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid #10b981;
-    padding: 0.3rem 0.85rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 800;
-  }
+  padding: 2.5rem 2rem;
 
   .success-title {
     font-size: 1.8rem;
@@ -295,27 +229,9 @@
 .confirmation-actions {
   width: 100%;
   margin-top: 0.5rem;
-}
 
-.btn-primary {
-  background: #f59e0b;
-  color: #0f172a;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  padding: 0.85rem 1.5rem;
-  width: 100%;
-  cursor: pointer;
-  transition: background 0.15s ease;
-  min-height: 48px;
-
-  &:hover {
-    background: #d97706;
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  otui-button {
+    width: 100%;
+    display: block;
   }
 }

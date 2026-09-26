@@ -15,139 +15,60 @@
     </div>
 
     <!-- Success Confirmation View -->
-    <div *ngIf="paymentSuccess && paymentResult" class="success-card">
-      <div class="success-badge">Booking confirmed</div>
-      <h2 class="success-title">Deposit payment completed</h2>
+    <otui-card *ngIf="paymentSuccess && paymentResult" class="success-card">
+      <otui-badge [tone]="'success'" [emphasis]="'solid'"
+        >Payment request created</otui-badge
+      >
+      <h2 class="success-title">Payment is being processed</h2>
       <p class="success-sub">
-        Receipt #{{ paymentResult.receiptNumber }} for ${{
-          paymentResult.amount | number : '1.2-2'
-        }}
-        has been processed.
+        Payment status: {{ paymentResult.status }}. Amount:
+        {{ paymentResult.amount | number : '1.2-2' }}
+        {{ paymentResult.currency }}.
       </p>
 
-      <div class="sms-notification-box" role="status">
-        <span class="sms-icon">SMS</span>
-        <div class="sms-details">
-          <strong>Automated dispatch SMS sent</strong>
-          <p>
-            Confirmation and real-time technician tracking sent to
-            {{ paymentResult.smsNotificationRecipient }}.
-          </p>
-        </div>
-      </div>
-
       <div class="confirmation-actions">
-        <button
-          type="button"
-          class="btn-primary touch-target"
-          (click)="trackJob()"
+        <otui-button
+          [tone]="'brand'"
+          [emphasis]="'solid'"
+          (action)="trackJob()"
         >
           Track job status
-        </button>
+        </otui-button>
       </div>
-    </div>
+    </otui-card>
 
-    <!-- Stripe Elements Checkout Container -->
     <div *ngIf="!paymentSuccess" class="checkout-layout">
-      <form (ngSubmit)="processPayment()" class="stripe-elements-container">
-        <div class="elements-header">
-          <span class="stripe-badge">Stripe secure checkout</span>
-          <span class="encrypted-badge">256-bit SSL encrypted</span>
-        </div>
-
-        <div class="form-group">
-          <label for="cardholder-name" class="form-label"> Name on card </label>
-          <input
-            id="cardholder-name"
-            type="text"
-            [(ngModel)]="cardholderName"
-            name="cardholderName"
-            placeholder="e.g. John Miller"
-            class="touch-target"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="card-number" class="form-label">Card number</label>
-          <div class="input-card-wrapper">
-            <input
-              id="card-number"
-              type="text"
-              [(ngModel)]="cardNumber"
-              name="cardNumber"
-              placeholder="4242 •••• •••• 4242"
-              class="touch-target card-number-input"
-              maxlength="19"
-              required
-            />
-            <span class="card-brand-pill">VISA / MC</span>
+      <otui-card class="stripe-card">
+        <div class="stripe-elements-container" role="status">
+          <div class="elements-header">
+            <otui-badge [tone]="'brand'" [emphasis]="'soft'"
+              >Secure checkout</otui-badge
+            >
+            <otui-badge [tone]="'neutral'" [emphasis]="'outline'"
+              >Provider-managed payment</otui-badge
+            >
+          </div>
+          <h2>Secure payment form unavailable</h2>
+          <p>
+            No card details are collected here. A payment intent can be
+            requested now, but card entry will be enabled when Stripe Elements
+            is connected.
+          </p>
+          <div class="submit-action">
+            <otui-button
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+              [disabled]="isProcessing || !apiService.activeBooking()"
+              [type]="'button'"
+              (action)="processPayment()"
+            >
+              {{ isProcessing ? 'Loading payment…' : 'Prepare secure payment' }}
+            </otui-button>
           </div>
         </div>
+      </otui-card>
 
-        <div class="fields-row">
-          <div class="form-group">
-            <label for="expiry-date" class="form-label">Expiration</label>
-            <input
-              id="expiry-date"
-              type="text"
-              [(ngModel)]="expiryDate"
-              name="expiryDate"
-              placeholder="MM / YY"
-              class="touch-target"
-              maxlength="5"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="cvc-code" class="form-label">CVC</label>
-            <input
-              id="cvc-code"
-              type="password"
-              [(ngModel)]="cvc"
-              name="cvc"
-              placeholder="123"
-              class="touch-target"
-              maxlength="4"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="postal-code" class="form-label">Postal code</label>
-            <input
-              id="postal-code"
-              type="text"
-              [(ngModel)]="postalCode"
-              name="postalCode"
-              placeholder="31401"
-              class="touch-target"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          class="btn-primary touch-target submit-pay-btn"
-          [disabled]="isProcessing"
-        >
-          <span *ngIf="!isProcessing">
-            Pay ${{ depositAmount | number : '1.2-2' }} deposit
-          </span>
-          <span *ngIf="isProcessing">Authorizing payment...</span>
-        </button>
-
-        <p class="terms-caption">
-          By confirming payment, you authorize a ${{
-            depositAmount | number : '1.2-2'
-          }}
-          deposit charge to hold your scheduled appointment window.
-        </p>
-      </form>
-
-      <!-- Deposit Breakdown Sidebar -->
-      <aside class="deposit-summary-sidebar" aria-label="Deposit summary">
+      <otui-card class="deposit-summary-sidebar" aria-label="Deposit summary">
         <h2 class="sidebar-heading">Payment summary</h2>
         <div class="sidebar-rows">
           <div class="sidebar-line">
@@ -155,7 +76,7 @@
             <strong>
               {{
                 apiService.activeEstimate()?.packageDetails?.name ||
-                  'Field Flow Service'
+                  'Service estimate unavailable'
               }}
             </strong>
           </div>
@@ -163,33 +84,53 @@
             <span>Arrival window</span>
             <span>
               {{
-                apiService.activeBooking()?.selectedWindow ||
-                  '8:00 AM - 10:00 AM'
+                apiService.activeBooking()?.selectedWindow || 'Not scheduled'
               }}
             </span>
           </div>
           <div class="sidebar-line">
             <span>Estimated total</span>
-            <span>
-              ${{
-                apiService.activeEstimate()?.total || 245 | number : '1.2-2'
-              }}
+            <span
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noEstimate
+              "
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{ apiService.activeEstimate()?.total | number : '1.2-2' }}
             </span>
+            <ng-template #noEstimate>Unavailable</ng-template>
           </div>
           <div class="sidebar-line due-now-row">
             <span>Due now</span>
-            <strong class="due-now-amount">
-              ${{ depositAmount | number : '1.2-2' }}
-            </strong>
+            <otui-badge
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noDeposit
+              "
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{ depositAmount | number : '1.2-2' }}
+            </otui-badge>
+            <ng-template #noDeposit>Unavailable</ng-template>
           </div>
           <div class="sidebar-line">
             <span>Balance due at completion</span>
-            <span>
-              ${{
-                (apiService.activeEstimate()?.total || 245) - depositAmount
+            <span
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noBalance
+              "
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{
+                (apiService.activeEstimate()?.total ?? 0) - depositAmount
                   | number : '1.2-2'
               }}
             </span>
+            <ng-template #noBalance>Unavailable</ng-template>
           </div>
         </div>
 
@@ -200,7 +141,7 @@
             two-hour window equipped for immediate job execution.
           </p>
         </div>
-      </aside>
+      </otui-card>
     </div>
   </div>
 </section>

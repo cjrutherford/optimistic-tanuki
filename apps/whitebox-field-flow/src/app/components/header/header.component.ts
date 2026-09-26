@@ -1,19 +1,20 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ChipComponent } from '@optimistic-tanuki/common-ui';
 import { BrandConfigService } from '@optimistic-tanuki/whitebox-brand-config';
-import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
+import { CustomerAuthService } from '../../services/customer-auth.service';
 
 @Component({
   selector: 'flow-header',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ChipComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
   readonly brandConfig = inject(BrandConfigService);
-  readonly syncService = inject(FieldFlowSyncService);
+  readonly auth = inject(CustomerAuthService);
 
   isMenuOpen = false;
 
@@ -25,7 +26,8 @@ export class HeaderComponent {
     this.isMenuOpen = false;
   }
 
-  triggerSync(): void {
-    void this.syncService.syncPendingData();
+  signOut(): void {
+    this.auth.logout().subscribe({ error: () => undefined });
+    this.closeMenu();
   }
 }

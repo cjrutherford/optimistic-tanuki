@@ -5,13 +5,27 @@ import {
   BrandConfigService,
   DEMO_BRAND_PROFILES,
 } from '@optimistic-tanuki/whitebox-brand-config';
+import {
+  CardComponent,
+  ButtonComponent,
+  BadgeComponent,
+  ChipComponent,
+  MetricTileComponent,
+} from '@optimistic-tanuki/common-ui';
 import { BrandProfile } from '../../models/field-flow.models';
 import { FieldFlowSyncService } from '../../services/field-flow-sync.service';
 
 @Component({
   selector: 'flow-demo',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    CardComponent,
+    ButtonComponent,
+    BadgeComponent,
+    ChipComponent,
+    MetricTileComponent,
+  ],
   templateUrl: './demo.component.html',
   styleUrl: './demo.component.scss',
 })
@@ -28,6 +42,10 @@ export class DemoComponent {
 
   enableStandalone(): void {
     this.brandConfig.enableStandaloneMode();
+  }
+
+  syncNow(): void {
+    void this.syncService.syncPendingData();
   }
 
   startWorkflow(): void {

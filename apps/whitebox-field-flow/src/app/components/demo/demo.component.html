@@ -1,33 +1,76 @@
-<section class="demo-shell">
-  <div class="demo-container">
+<section class="operations-shell">
+  <div class="operations-container">
     <header class="section-header">
-      <p class="eyebrow">Interactive demonstration</p>
-      <h1>Trade service profile configuration</h1>
+      <p class="eyebrow">Operations console</p>
+      <h1>Shop dispatch and contractor organization console</h1>
       <p class="lede">
-        Field Flow adapts instantly to your trade specialty, pricing rules, and
-        branding. Select a regional trade profile below to experience the
-        customer booking workflow or simulate on-premises server deployment.
+        Field Flow adapts to contractor trade specialties, pricing structures,
+        and regional operations. Manage trade profiles, verify Tier 1 Mini-PC
+        synchronization, and launch customer workflows.
       </p>
     </header>
 
+    <!-- Operational Metrics Tiles -->
+    <div class="metrics-grid">
+      <otui-metric-tile
+        label="Active contractor"
+        [value]="brandConfig.currentBrand().businessName"
+        [caption]="brandConfig.currentBrand().tradeCategory"
+      ></otui-metric-tile>
+
+      <otui-metric-tile
+        label="Deployment server"
+        [value]="
+          brandConfig.currentBrand().isStandalone
+            ? 'Tier 1 Mini-PC'
+            : 'Multi-tenant cloud'
+        "
+        [caption]="
+          brandConfig.currentBrand().isStandalone
+            ? 'On-premises shop LAN'
+            : 'Cloud hosted microservice'
+        "
+      ></otui-metric-tile>
+
+      <otui-metric-tile
+        label="Shop LAN connection"
+        [value]="syncService.isOnline() ? 'Connected' : 'Offline buffer'"
+        [caption]="
+          syncService.isOnline()
+            ? 'Shop LAN accessible'
+            : 'Queuing to local storage'
+        "
+        [deltaDirection]="syncService.isOnline() ? 'up' : 'down'"
+      ></otui-metric-tile>
+
+      <otui-metric-tile
+        label="Pending sync queue"
+        [value]="syncService.pendingSyncCount()"
+        caption="Records awaiting Mini-PC push"
+        [deltaDirection]="syncService.pendingSyncCount() === 0 ? 'flat' : 'up'"
+      ></otui-metric-tile>
+    </div>
+
     <!-- Trade Profile Switcher Cards -->
+    <h2 class="subheading">Contractor trade organizations</h2>
     <div class="profiles-grid">
-      <div
+      <otui-card
         *ngFor="let profile of profiles"
         class="profile-card"
         [class.active]="brandConfig.currentBrand().id === profile.id"
       >
         <div class="profile-header">
-          <span class="trade-category">{{ profile.tradeCategory }}</span>
-          <span
+          <otui-chip [tone]="'neutral'">{{ profile.tradeCategory }}</otui-chip>
+          <otui-badge
             *ngIf="brandConfig.currentBrand().id === profile.id"
-            class="active-tag"
+            [tone]="'brand'"
+            [emphasis]="'solid'"
           >
-            Active brand
-          </span>
+            Active organization
+          </otui-badge>
         </div>
 
-        <h2 class="business-title">{{ profile.businessName }}</h2>
+        <h3 class="business-title">{{ profile.businessName }}</h3>
 
         <dl class="profile-meta">
           <div class="meta-row">
@@ -44,64 +87,100 @@
           </div>
         </dl>
 
-        <button
-          type="button"
-          class="switch-btn touch-target"
-          [disabled]="brandConfig.currentBrand().id === profile.id"
-          (click)="selectProfile(profile.id)"
+        <div class="services-preview">
+          <p class="preview-label">Core trade offerings:</p>
+          <ul class="preview-list">
+            <li *ngFor="let s of profile.services">
+              {{ s.name }} (${{ s.basePrice }})
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-action">
+          <otui-button
+            [tone]="
+              brandConfig.currentBrand().id === profile.id ? 'neutral' : 'brand'
+            "
+            [emphasis]="
+              brandConfig.currentBrand().id === profile.id ? 'outline' : 'solid'
+            "
+            [disabled]="brandConfig.currentBrand().id === profile.id"
+            (action)="selectProfile(profile.id)"
+          >
+            {{
+              brandConfig.currentBrand().id === profile.id
+                ? 'Current active profile'
+                : 'Select ' + profile.businessName
+            }}
+          </otui-button>
+        </div>
+      </otui-card>
+    </div>
+
+    <!-- Deployment Architecture & Shop Sync Section -->
+    <otui-card class="deployment-card">
+      <div class="deployment-header">
+        <h2>Deployment topology and synchronization</h2>
+        <otui-badge
+          [tone]="
+            brandConfig.currentBrand().isStandalone ? 'warning' : 'success'
+          "
+          [emphasis]="'soft'"
         >
           {{
-            brandConfig.currentBrand().id === profile.id
-              ? 'Selected profile'
-              : 'Switch to ' + profile.businessName
+            brandConfig.currentBrand().isStandalone
+              ? 'On-premises appliance'
+              : 'Cloud hosted active'
           }}
-        </button>
+        </otui-badge>
       </div>
-    </div>
 
-    <!-- Deployment Mode Explanation & Actions -->
-    <div class="deployment-section">
-      <div class="deployment-card">
-        <h2>Deployment architectures</h2>
-        <div class="deployment-grid">
-          <div class="mode-box">
-            <h3>Multi-tenant cloud hosted</h3>
-            <p>
-              Hosted in the cloud for multi-crew operators. Provides instant
-              client quoting, online Stripe deposits, and automated Twilio SMS
-              notifications without local hardware installation.
-            </p>
-            <span class="status-indicator live">Cloud active</span>
-          </div>
+      <div class="deployment-grid">
+        <div class="mode-box">
+          <h3>Multi-tenant cloud hosted</h3>
+          <p>
+            Hosted centrally for multi-crew operators. Provides instant online
+            customer estimates, Stripe payment processing, and automated Twilio
+            dispatch confirmations.
+          </p>
+          <span class="status-indicator live">Cloud connected</span>
+        </div>
 
-          <div class="mode-box">
-            <h3>On-premises Tier 1 Mini-PC server</h3>
-            <p>
-              Runs locally on an Intel N100 appliance in your shop. Service
-              crews continue logging job notes and inspection photos during
-              cellular dropouts, automatically syncing when returning to the
-              shop Wi-Fi.
-            </p>
-            <button
-              type="button"
-              class="standalone-btn touch-target"
-              (click)="enableStandalone()"
+        <div class="mode-box">
+          <h3>On-premises Tier 1 Mini-PC server</h3>
+          <p>
+            Runs locally on an Intel N100 appliance in the shop. Technicians log
+            field notes and condition photos during cellular dropouts,
+            automatically synchronizing when returning to shop Wi-Fi.
+          </p>
+          <div class="mode-actions">
+            <otui-button
+              [tone]="'neutral'"
+              [emphasis]="'outline'"
+              (action)="enableStandalone()"
             >
-              Simulate on-premises mode
-            </button>
+              Configure Tier 1 Mini-PC
+            </otui-button>
+            <otui-button
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+              (action)="syncNow()"
+            >
+              Sync offline buffer now
+            </otui-button>
           </div>
         </div>
-
-        <div class="demo-cta-row">
-          <button
-            type="button"
-            class="btn-primary touch-target"
-            (click)="startWorkflow()"
-          >
-            Launch customer estimate workflow
-          </button>
-        </div>
       </div>
-    </div>
+
+      <div class="operations-cta-row">
+        <otui-button
+          [tone]="'brand'"
+          [emphasis]="'solid'"
+          (action)="startWorkflow()"
+        >
+          New customer estimate
+        </otui-button>
+      </div>
+    </otui-card>
   </div>
 </section>

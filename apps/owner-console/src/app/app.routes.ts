@@ -201,6 +201,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'tenants',
+        loadComponent: () =>
+          import(
+            './components/whitebox-tenant-management/whitebox-tenant-management.component'
+          ).then((m) => m.WhiteboxTenantManagementComponent),
+      },
+      {
         path: 'app-config',
         loadComponent: () =>
           import(

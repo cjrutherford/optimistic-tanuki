@@ -71,6 +71,9 @@
       "@optimistic-tanuki/business-public-ui": [
         "libs/business-public-ui/src/index.ts"
       ],
+      "@optimistic-tanuki/business-security": [
+        "libs/business-security/src/index.ts"
+      ],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
       "@optimistic-tanuki/chat-contracts": ["libs/chat/contracts/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
@@ -90,6 +93,7 @@
       ],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
+      "@optimistic-tanuki/document-text": ["libs/document-text/src/index.ts"],
       "@optimistic-tanuki/email": ["libs/email/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/fin-commander-data-access": [
