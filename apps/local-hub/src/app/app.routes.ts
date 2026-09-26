@@ -114,6 +114,21 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'profile',
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then(
+        (m) => m.ProfileComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'profile/:id',
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then(
+        (m) => m.ProfileComponent
+      ),
+  },
+  {
     path: 'seller-dashboard',
     loadComponent: () =>
       import('./pages/seller-dashboard/seller-dashboard.component').then(

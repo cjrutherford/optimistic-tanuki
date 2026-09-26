@@ -9,6 +9,7 @@ import {
 import { Router } from '@angular/router';
 
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { SpinnerComponent } from '@optimistic-tanuki/common-ui';
 import { Variantable, VariantOptions } from '@optimistic-tanuki/common-ui';
 import {
   ThemeColors,
@@ -36,6 +37,7 @@ import { CreateAssetDto } from '@optimistic-tanuki/ui-models';
     ReactiveFormsModule,
     CardComponent,
     ButtonComponent,
+    SpinnerComponent,
     TextInputComponent,
     TextAreaComponent,
     SelectComponent,
@@ -61,6 +63,8 @@ export class CreateCommunityComponent extends Variantable {
 
   loading = signal(false);
   uploading = signal(false);
+  logoUploading = signal(false);
+  bannerUploading = signal(false);
   error = signal<string | null>(null);
 
   bannerPreview = signal<string | null>(null);
@@ -69,6 +73,8 @@ export class CreateCommunityComponent extends Variantable {
   logoAssetId = signal<string | null>(null);
 
   private uploadPromises: Promise<string>[] = [];
+  private logoVersion = 0;
+  private bannerVersion = 0;
 
   variant!: string;
   backgroundFilter!: string;
@@ -127,6 +133,16 @@ export class CreateCommunityComponent extends Variantable {
       this.error.set('Please fill in all required fields');
       return;
     }
+    if (
+      this.loading() ||
+      this.uploading() ||
+      this.logoUploading() ||
+      this.bannerUploading()
+    ) {
+      // Uploads are still in flight; the submit button stays disabled until
+      // each pending upload settles. Guards non-button submits (e.g. Enter).
+      return;
+    }
 
     this.loading.set(true);
     this.error.set(null);
@@ -134,11 +150,28 @@ export class CreateCommunityComponent extends Variantable {
     try {
       if (this.uploadPromises.length > 0) {
         this.uploading.set(true);
-        await Promise.all(this.uploadPromises);
-        this.uploading.set(false);
+        try {
+          await Promise.all(this.uploadPromises);
+        } finally {
+          // Clear settled promises on success AND error paths so a retry
+          // never re-awaits (or re-fires) an already-settled upload.
+          this.uploadPromises = [];
+          this.uploading.set(false);
+        }
+      }
+
+      if (
+        (this.logoPreview() && !this.logoAssetId()) ||
+        (this.bannerPreview() && !this.bannerAssetId())
+      ) {
+        this.error.set(
+          'An image upload failed. Please re-select the image and try again.'
+        );
+        return;
       }
 
       const formValue = this.communityForm.value;
+      // Create sends asset IDs only — never file bytes or data URLs.
       const dto: CreateCommunityDto = {
         name: formValue.name,
         description: formValue.description || '',
@@ -175,36 +208,125 @@ export class CreateCommunityComponent extends Variantable {
 
   async onBannerSelect(event: Event) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
+    if (!input.files?.[0]) return;
+    const file = input.files[0];
+    const version = ++this.bannerVersion;
+    this.bannerUploading.set(true);
+    this.error.set(null);
+    try {
+      // Preview-only data URL; file bytes never travel on create.
       const dataUrl = await this.fileToDataUrl(file);
+      if (version !== this.bannerVersion) return;
       this.bannerPreview.set(dataUrl);
-
-      const uploadPromise = this.uploadImage(dataUrl, file.name).then(
-        (assetId) => {
-          this.bannerAssetId.set(assetId);
-          return assetId;
+      this.trackUpload(
+        dataUrl,
+        file.name,
+        (assetId) => this.bannerAssetId.set(assetId),
+        'banner',
+        () => version === this.bannerVersion,
+        (pending) => {
+          if (version === this.bannerVersion) {
+            this.bannerUploading.set(pending);
+          }
         }
       );
-      this.uploadPromises.push(uploadPromise);
+    } catch {
+      if (version === this.bannerVersion) {
+        this.bannerUploading.set(false);
+        this.error.set('Failed to read banner file. Please try again.');
+      }
+    } finally {
+      input.value = '';
     }
   }
 
   async onLogoSelect(event: Event) {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
+    if (!input.files?.[0]) return;
+    const file = input.files[0];
+    const version = ++this.logoVersion;
+    this.logoUploading.set(true);
+    this.error.set(null);
+    try {
+      // Preview-only data URL; file bytes never travel on create.
       const dataUrl = await this.fileToDataUrl(file);
+      if (version !== this.logoVersion) return;
       this.logoPreview.set(dataUrl);
-
-      const uploadPromise = this.uploadImage(dataUrl, file.name).then(
-        (assetId) => {
-          this.logoAssetId.set(assetId);
-          return assetId;
+      this.trackUpload(
+        dataUrl,
+        file.name,
+        (assetId) => this.logoAssetId.set(assetId),
+        'logo',
+        () => version === this.logoVersion,
+        (pending) => {
+          if (version === this.logoVersion) {
+            this.logoUploading.set(pending);
+          }
         }
       );
-      this.uploadPromises.push(uploadPromise);
+    } catch {
+      if (version === this.logoVersion) {
+        this.logoUploading.set(false);
+        this.error.set('Failed to read logo file. Please try again.');
+      }
+    } finally {
+      input.value = '';
     }
+  }
+
+  /**
+   * Upload once on select. The version guard ensures a remove/clear or a
+   * newer selection wins over a late-settling upload.
+   */
+  private trackUpload(
+    dataUrl: string,
+    fileName: string,
+    setAssetId: (assetId: string) => void,
+    slot: 'logo' | 'banner',
+    isCurrent: () => boolean,
+    setPending: (pending: boolean) => void
+  ): void {
+    const uploadPromise: Promise<string> = this.uploadImage(
+      dataUrl,
+      fileName
+    ).then(
+      (assetId) => {
+        if (isCurrent()) setAssetId(assetId);
+        return assetId;
+      },
+      (error) => {
+        if (isCurrent()) {
+          this.error.set(`Failed to upload ${slot}. Please try again.`);
+        }
+        throw error;
+      }
+    );
+    // Settle exactly once: drop from the retry set and clear pending state
+    // on both success and error paths.
+    const tracked = uploadPromise.finally(() => {
+      this.uploadPromises = this.uploadPromises.filter(
+        (pending) => pending !== uploadPromise
+      );
+      setPending(false);
+    });
+    // Avoid unhandled rejections when the user never submits; submit still
+    // observes the rejection through `uploadPromises`.
+    tracked.catch(() => undefined);
+    this.uploadPromises.push(uploadPromise);
+  }
+
+  clearLogo(): void {
+    this.logoVersion++;
+    this.logoPreview.set(null);
+    this.logoAssetId.set(null);
+    this.logoUploading.set(false);
+  }
+
+  clearBanner(): void {
+    this.bannerVersion++;
+    this.bannerPreview.set(null);
+    this.bannerAssetId.set(null);
+    this.bannerUploading.set(false);
   }
 
   private fileToDataUrl(file: File): Promise<string> {

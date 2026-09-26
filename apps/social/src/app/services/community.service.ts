@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Equal } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
+import { randomUUID } from 'node:crypto';
 import { Community } from '../../entities/community.entity';
 import {
   CommunityMember,
@@ -26,6 +27,18 @@ import {
   CommunityMembershipAuditEvent,
 } from './community-membership-lifecycle';
 import { CommunityMembershipAudit } from '../../entities/community-membership-audit.entity';
+
+/** Email invitations expire 7 days after creation; tokens are single-use. */
+export const COMMUNITY_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Claim tokens are returned only on creation. Every other read path strips
+ * them so invitation links can never leak through list/detail responses.
+ */
+function sanitizeInvite(invite: CommunityInvite): CommunityInvite {
+  const { token: _token, ...rest } = invite;
+  return rest as CommunityInvite;
+}
 
 /** Convert a community name to a URL-safe slug, e.g. "My Cool Community" → "my-cool-community" */
 function toSlug(name: string): string {
@@ -618,7 +631,7 @@ export class CommunityService {
       }
       existingInvite.status = CommunityMembershipStatus.PENDING;
       existingInvite.inviterId = inviterId;
-      return await this.inviteRepo.save(existingInvite);
+      return sanitizeInvite(await this.inviteRepo.save(existingInvite));
     }
 
     const invite = this.inviteRepo.create({
@@ -628,7 +641,164 @@ export class CommunityService {
       status: CommunityMembershipStatus.PENDING,
     });
 
+    return sanitizeInvite(await this.inviteRepo.save(invite));
+  }
+
+  /**
+   * Token-based invitation addressed to an email. When `inviteeUserId` is
+   * provided (the address belongs to an existing user) the invite is also
+   * visible in-app; otherwise it is claimable only via the emailed token.
+   * The token is returned only here so the caller can build the link.
+   */
+  async inviteByEmail(
+    dto: { communityId: string; email: string; inviteeUserId?: string },
+    inviterId: string
+  ): Promise<CommunityInvite> {
+    const community = await this.findOne(dto.communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    const inviterMember = await this.getMember(dto.communityId, inviterId);
+    if (
+      !inviterMember ||
+      ![
+        CommunityMemberRole.OWNER,
+        CommunityMemberRole.ADMIN,
+        CommunityMemberRole.MODERATOR,
+      ].includes(inviterMember.role)
+    ) {
+      throw new RpcException('Only admins can invite users');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new RpcException('Invalid email address');
+    }
+
+    if (dto.inviteeUserId) {
+      const existingMember = await this.getMember(
+        dto.communityId,
+        dto.inviteeUserId
+      );
+      if (existingMember) {
+        throw new RpcException('User is already a member');
+      }
+      const existingUserInvite = await this.inviteRepo.findOne({
+        where: { communityId: dto.communityId, inviteeId: dto.inviteeUserId },
+      });
+      if (
+        existingUserInvite &&
+        existingUserInvite.status === CommunityMembershipStatus.PENDING
+      ) {
+        throw new RpcException('Invite already pending');
+      }
+    }
+
+    const existingEmailInvite = await this.inviteRepo.findOne({
+      where: {
+        communityId: dto.communityId,
+        inviteeEmail: email,
+        status: CommunityMembershipStatus.PENDING,
+      },
+    });
+    if (existingEmailInvite) {
+      throw new RpcException('Invite already pending');
+    }
+
+    const invite = this.inviteRepo.create({
+      communityId: dto.communityId,
+      inviterId,
+      inviteeId: dto.inviteeUserId ?? null,
+      inviteeEmail: email,
+      token: randomUUID(),
+      status: CommunityMembershipStatus.PENDING,
+      expiresAt: new Date(Date.now() + COMMUNITY_INVITE_TTL_MS),
+    });
+
     return await this.inviteRepo.save(invite);
+  }
+
+  /**
+   * Claim an email invitation via its single-use token. Binds a previously
+   * anonymous invite to the claiming user and grants membership, mirroring
+   * the auto-approve behaviour of `join` for user invites. Idempotent for
+   * the same user.
+   */
+  async acceptInviteByToken(
+    token: string,
+    userId: string,
+    profileId: string
+  ): Promise<{ invite: CommunityInvite; community: Community }> {
+    const invite = await this.inviteRepo.findOne({ where: { token } });
+    if (!invite || invite.status !== CommunityMembershipStatus.PENDING) {
+      throw new RpcException('Invitation not found or already used');
+    }
+    if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+      throw new RpcException('Invitation has expired');
+    }
+    if (invite.inviteeId && invite.inviteeId !== userId) {
+      throw new RpcException('This invitation was addressed to someone else');
+    }
+
+    const community = await this.findOne(invite.communityId);
+    if (!community) {
+      throw new RpcException('Community not found');
+    }
+
+    invite.inviteeId = userId;
+    invite.status = CommunityMembershipStatus.APPROVED;
+    const saved = await this.inviteRepo.save(invite);
+
+    const existingMember = await this.getMember(invite.communityId, userId);
+    if (existingMember) {
+      if (existingMember.status !== CommunityMembershipStatus.APPROVED) {
+        existingMember.status = CommunityMembershipStatus.APPROVED;
+        await this.memberRepo.save(existingMember);
+        community.memberCount += 1;
+        await this.communityRepo.save(community);
+      }
+    } else {
+      const member = this.memberRepo.create({
+        communityId: invite.communityId,
+        userId,
+        profileId,
+        role: CommunityMemberRole.MEMBER,
+        status: CommunityMembershipStatus.APPROVED,
+      });
+      await this.memberRepo.save(member);
+      community.memberCount += 1;
+      await this.communityRepo.save(community);
+    }
+
+    const { token: _token, ...sanitized } = saved;
+    return { invite: sanitized as CommunityInvite, community };
+  }
+
+  /** Public preview of an invitation for the invitation landing page. */
+  async findInvitePreview(token: string): Promise<{
+    communityId: string;
+    communityName: string;
+    communitySlug: string | null;
+    expiresAt: string | null;
+  } | null> {
+    const invite = await this.inviteRepo.findOne({ where: { token } });
+    if (!invite || invite.status !== CommunityMembershipStatus.PENDING) {
+      return null;
+    }
+    if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+      return null;
+    }
+    const community = await this.findOne(invite.communityId);
+    if (!community) {
+      return null;
+    }
+    return {
+      communityId: community.id,
+      communityName: community.name,
+      communitySlug: community.slug ?? null,
+      expiresAt: invite.expiresAt ? invite.expiresAt.toISOString() : null,
+    };
   }
 
   async cancelInvite(inviteId: string, userId: string): Promise<void> {
@@ -660,7 +830,8 @@ export class CommunityService {
   }
 
   async findInvite(inviteId: string): Promise<CommunityInvite | null> {
-    return this.inviteRepo.findOne({ where: { id: inviteId } });
+    const invite = await this.inviteRepo.findOne({ where: { id: inviteId } });
+    return invite ? sanitizeInvite(invite) : null;
   }
 
   async getPendingInvites(
@@ -677,9 +848,11 @@ export class CommunityService {
       throw new RpcException('Only members can view invites');
     }
 
-    return await this.inviteRepo.find({
-      where: { communityId, status: CommunityMembershipStatus.PENDING },
-    });
+    return (
+      await this.inviteRepo.find({
+        where: { communityId, status: CommunityMembershipStatus.PENDING },
+      })
+    ).map(sanitizeInvite);
   }
 
   async getPendingJoinRequests(

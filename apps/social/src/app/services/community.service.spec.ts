@@ -642,4 +642,199 @@ describe('CommunityService', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('inviteByEmail', () => {
+    const adminMember = {
+      communityId: 'community-1',
+      userId: 'admin-1',
+      role: CommunityMemberRole.ADMIN,
+      status: CommunityMembershipStatus.APPROVED,
+    } as any;
+
+    beforeEach(() => {
+      communityRepo.findOne.mockResolvedValue({
+        id: 'community-1',
+        name: 'Test Community',
+      } as any);
+      memberRepo.findOne.mockImplementation(async (where: any) =>
+        where?.where?.userId === 'admin-1' ? adminMember : null
+      );
+      inviteRepo.findOne.mockResolvedValue(null);
+      inviteRepo.create.mockImplementation((dto: any) => dto as any);
+      inviteRepo.save.mockImplementation((invite: any) =>
+        Promise.resolve({ id: 'invite-1', ...invite })
+      );
+    });
+
+    it('creates a token invite with normalized email and expiry', async () => {
+      const result = await service.inviteByEmail(
+        { communityId: 'community-1', email: 'Guest@Example.com' },
+        'admin-1'
+      );
+
+      expect(result.token).toEqual(expect.any(String));
+      expect(result.inviteeEmail).toBe('guest@example.com');
+      expect(result.inviteeId).toBeNull();
+      expect(result.expiresAt).toBeInstanceOf(Date);
+      expect(inviteRepo.save).toHaveBeenCalled();
+    });
+
+    it('attaches a known user id when provided', async () => {
+      const result = await service.inviteByEmail(
+        {
+          communityId: 'community-1',
+          email: 'member@example.com',
+          inviteeUserId: 'user-2',
+        },
+        'admin-1'
+      );
+
+      expect(result.inviteeId).toBe('user-2');
+      expect(result.inviteeEmail).toBe('member@example.com');
+    });
+
+    it('rejects invalid emails and non-admin inviters', async () => {
+      await expect(
+        service.inviteByEmail(
+          { communityId: 'community-1', email: 'not-an-email' },
+          'admin-1'
+        )
+      ).rejects.toThrow(RpcException);
+
+      memberRepo.findOne.mockResolvedValue(null);
+      await expect(
+        service.inviteByEmail(
+          { communityId: 'community-1', email: 'guest@example.com' },
+          'random-1'
+        )
+      ).rejects.toThrow('Only admins can invite users');
+    });
+
+    it('rejects duplicate pending email invites', async () => {
+      inviteRepo.findOne.mockImplementation(async (where: any) =>
+        where?.where?.inviteeEmail ? ({ status: 'pending' } as any) : null
+      );
+
+      await expect(
+        service.inviteByEmail(
+          { communityId: 'community-1', email: 'guest@example.com' },
+          'admin-1'
+        )
+      ).rejects.toThrow('Invite already pending');
+    });
+  });
+
+  describe('acceptInviteByToken', () => {
+    const pendingInvite = (overrides: object = {}) => ({
+      id: 'invite-1',
+      communityId: 'community-1',
+      inviterId: 'admin-1',
+      inviteeId: null,
+      inviteeEmail: 'guest@example.com',
+      token: 'token-123',
+      status: CommunityMembershipStatus.PENDING,
+      expiresAt: new Date(Date.now() + 60_000),
+      ...overrides,
+    });
+
+    beforeEach(() => {
+      communityRepo.findOne.mockResolvedValue({
+        id: 'community-1',
+        name: 'Test Community',
+        memberCount: 1,
+      } as any);
+      communityRepo.save.mockImplementation((c) => Promise.resolve(c as any));
+      memberRepo.create.mockImplementation((dto: any) => dto as any);
+      memberRepo.save.mockImplementation((m) => Promise.resolve(m as any));
+      inviteRepo.save.mockImplementation((invite: any) =>
+        Promise.resolve({ ...invite })
+      );
+    });
+
+    it('binds an anonymous invite to the claiming user and grants membership', async () => {
+      inviteRepo.findOne.mockResolvedValue(pendingInvite() as any);
+      memberRepo.findOne.mockResolvedValue(null);
+
+      const { invite, community } = await service.acceptInviteByToken(
+        'token-123',
+        'user-9',
+        'profile-9'
+      );
+
+      expect(invite.inviteeId).toBe('user-9');
+      expect(invite.status).toBe(CommunityMembershipStatus.APPROVED);
+      expect(invite).not.toHaveProperty('token');
+      expect(memberRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          communityId: 'community-1',
+          userId: 'user-9',
+          status: CommunityMembershipStatus.APPROVED,
+        })
+      );
+      expect(community.memberCount).toBe(2);
+    });
+
+    it('rejects used, expired, and misaddressed tokens', async () => {
+      inviteRepo.findOne.mockResolvedValue(
+        pendingInvite({ status: CommunityMembershipStatus.APPROVED }) as any
+      );
+      await expect(
+        service.acceptInviteByToken('token-123', 'user-9', 'profile-9')
+      ).rejects.toThrow('already used');
+
+      inviteRepo.findOne.mockResolvedValue(
+        pendingInvite({ expiresAt: new Date(Date.now() - 1000) }) as any
+      );
+      await expect(
+        service.acceptInviteByToken('token-123', 'user-9', 'profile-9')
+      ).rejects.toThrow('expired');
+
+      inviteRepo.findOne.mockResolvedValue(
+        pendingInvite({ inviteeId: 'user-1' }) as any
+      );
+      await expect(
+        service.acceptInviteByToken('token-123', 'user-9', 'profile-9')
+      ).rejects.toThrow('someone else');
+    });
+  });
+
+  describe('findInvitePreview', () => {
+    it('returns the public preview without the token', async () => {
+      inviteRepo.findOne.mockResolvedValue({
+        communityId: 'community-1',
+        status: CommunityMembershipStatus.PENDING,
+        expiresAt: new Date(Date.now() + 60_000),
+      } as any);
+      communityRepo.findOne.mockResolvedValue({
+        id: 'community-1',
+        name: 'Test Community',
+        slug: 'test-community',
+      } as any);
+
+      const preview = await service.findInvitePreview('token-123');
+
+      expect(preview).toEqual(
+        expect.objectContaining({
+          communityId: 'community-1',
+          communityName: 'Test Community',
+          communitySlug: 'test-community',
+        })
+      );
+      expect(preview).not.toHaveProperty('token');
+    });
+
+    it('returns null for used or expired invitations', async () => {
+      inviteRepo.findOne.mockResolvedValue({
+        status: CommunityMembershipStatus.APPROVED,
+      } as any);
+      await expect(service.findInvitePreview('used')).resolves.toBeNull();
+
+      inviteRepo.findOne.mockResolvedValue({
+        communityId: 'community-1',
+        status: CommunityMembershipStatus.PENDING,
+        expiresAt: new Date(Date.now() - 1000),
+      } as any);
+      await expect(service.findInvitePreview('old')).resolves.toBeNull();
+    });
+  });
 });

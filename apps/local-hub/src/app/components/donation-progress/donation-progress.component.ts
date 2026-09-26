@@ -207,7 +207,11 @@ import { AuthStateService } from '../../services/auth-state.service';
       }
 
       .progress-bar.goal-reached {
-        background: linear-gradient(90deg, var(--success) 0%, #2ecc71 100%);
+        background: linear-gradient(
+          90deg,
+          var(--success) 0%,
+          color-mix(in srgb, var(--success) 80%, var(--background)) 100%
+        );
       }
 
       .progress-details {

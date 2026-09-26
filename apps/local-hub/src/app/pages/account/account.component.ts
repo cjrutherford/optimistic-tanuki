@@ -1,6 +1,9 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../../services/auth-state.service';
 import {
   CommunityService,
@@ -22,10 +25,13 @@ export class AccountComponent implements OnInit {
   private communityService = inject(CommunityService);
   private messageService = inject(MessageService);
   private themeService = inject(ThemeService);
+  private profiles = inject(ProfileAPIService);
   readonly router = inject(Router);
 
   myCommunities = signal<LocalCommunity[]>([]);
   loadingCommunities = signal(true);
+  currentProfile = signal<ProfileDto | null>(null);
+  loadingProfile = signal(true);
   leavingId = signal<string | null>(null);
   availablePersonalities = signal<Personality[]>([]);
   currentPersonalityId = signal<string>('bold');
@@ -33,6 +39,7 @@ export class AccountComponent implements OnInit {
   ngOnInit(): void {
     this.loadMyCommunities();
     this.loadPersonalities();
+    this.loadCurrentProfile();
   }
 
   private loadPersonalities(): void {
@@ -67,6 +74,27 @@ export class AccountComponent implements OnInit {
 
   navigateToCommunity(slug: string): void {
     this.router.navigate(['/c', slug]);
+  }
+
+  async loadCurrentProfile(): Promise<void> {
+    try {
+      const profile = await firstValueFrom(
+        this.profiles.profileControllerGetCurrentProfile<ProfileDto>()
+      );
+      this.currentProfile.set(profile);
+    } catch {
+      // non-fatal — profile section simply stays hidden
+      this.currentProfile.set(null);
+    } finally {
+      this.loadingProfile.set(false);
+    }
+  }
+
+  viewMyProfile(): void {
+    const profile = this.currentProfile();
+    if (profile) {
+      this.router.navigate(['/profile', profile.id]);
+    }
   }
 
   async leaveCommunity(community: LocalCommunity): Promise<void> {

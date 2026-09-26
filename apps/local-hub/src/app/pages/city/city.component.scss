@@ -172,7 +172,7 @@ app-donation-progress {
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.28);
-  color: white;
+  color: var(--on-primary, white);
   backdrop-filter: blur(14px);
 }
 

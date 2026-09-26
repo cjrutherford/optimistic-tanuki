@@ -15,7 +15,10 @@ describe('CommunityController locality-compat reads (O14)', () => {
       {} as any,
       {} as any,
       {} as any,
-      { provision: jest.fn() } as any
+      {} as any,
+      {} as any,
+      { provision: jest.fn() } as any,
+      { send: jest.fn() } as any
     );
   });
 

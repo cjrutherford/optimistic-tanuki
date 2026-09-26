@@ -14,6 +14,11 @@ import {
   getOwnerAuthorizationHeader,
 } from './admin-api-authorization';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
+import {
+  getOwnerConsoleEngineOptions,
+  getRequestUrl,
+  isOwnerConsoleProxyTrusted,
+} from './server-ssr';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -27,7 +32,13 @@ app.use((_request, response, next) => {
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
-const angularApp = new AngularNodeAppEngine();
+// Trust the reverse-proxy `x-forwarded-*` headers when enabled (default).
+// Keeps `req.protocol`/`req.get('host')` correct behind Nginx and silences
+// Angular SSR `trustProxyHeaders` warnings. Pair with `allowedHosts` below.
+app.set('trust proxy', isOwnerConsoleProxyTrusted());
+const angularApp = new AngularNodeAppEngine(
+  getOwnerConsoleEngineOptions() as never
+);
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
@@ -37,13 +48,6 @@ const adminApiUrl =
   'http://admin-api:8098';
 const ownerConsoleJwtSecret =
   process.env['OWNER_CONSOLE_JWT_SECRET'] || process.env['JWT_SECRET'];
-const getRequestUrl = (req: express.Request): string => {
-  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const protocol = forwardedProto || req.protocol;
-  const host = forwardedHost || req.get('host') || 'localhost';
-  return `${protocol}://${host}${req.originalUrl}`;
-};
 
 app.use(
   '/socket.io',

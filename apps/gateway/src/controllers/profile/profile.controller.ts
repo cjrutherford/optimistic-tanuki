@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
@@ -391,6 +392,28 @@ export class ProfileController {
     description: 'The profile has been successfully retrieved.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @UseGuards(AuthGuard)
+  @Get('search')
+  @ApiOperation({ summary: 'Search profiles by name for member lookup' })
+  async searchProfiles(
+    @Query('q') query: string,
+    @Query('limit') limit?: string
+  ) {
+    const take = Math.min(
+      Math.max(Number.parseInt(limit ?? '', 10) || 10, 1),
+      25
+    );
+    if (!query?.trim()) {
+      return [];
+    }
+    return firstValueFrom(
+      this.client.send(
+        { cmd: ProfileCommands.Search },
+        { query: query.trim(), limit: take }
+      )
+    );
+  }
+
   @Get(':id')
   async getProfileLegacy(
     @Param('id') id: string,

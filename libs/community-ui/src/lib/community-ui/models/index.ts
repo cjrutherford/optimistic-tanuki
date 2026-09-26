@@ -6,12 +6,15 @@ import {
   CommunityMemberDto,
   JoinCommunityDto,
   InviteToCommunityDto,
-  CommunityInviteDto,
+  InviteCommunityByEmailDto,
+  AcceptCommunityInviteByTokenDto,
+  CommunityInvitePreviewDto,
   CommunityTag,
   CommunityMembershipStatus,
   CommunityMemberRole,
   CommunityJoinPolicy,
   CommunityFeedOptions,
+  CommunityInviteDto,
 } from '@optimistic-tanuki/ui-models';
 
 export {
@@ -22,12 +25,15 @@ export {
   CommunityMemberDto,
   JoinCommunityDto,
   InviteToCommunityDto,
-  CommunityInviteDto,
+  InviteCommunityByEmailDto,
+  AcceptCommunityInviteByTokenDto,
+  CommunityInvitePreviewDto,
   CommunityTag,
   CommunityMembershipStatus,
   CommunityMemberRole,
   CommunityJoinPolicy,
   CommunityFeedOptions,
+  CommunityInviteDto,
 };
 
 export interface CommunityWithActivity extends CommunityDto {

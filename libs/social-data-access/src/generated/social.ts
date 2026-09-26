@@ -531,13 +531,33 @@ export const CommunityInviteDtoStatus = {
   revoked: 'revoked',
 } as const;
 
+export type CommunityInviteDtoExpiresAt = { [key: string]: unknown };
+
 export interface CommunityInviteDto {
   id: string;
   communityId: string;
   inviterId: string;
-  inviteeId: string;
+  inviteeId?: string;
+  inviteeEmail?: string;
   status: CommunityInviteDtoStatus;
   createdAt: string;
+  expiresAt?: CommunityInviteDtoExpiresAt;
+}
+
+export interface InviteCommunityByEmailDto {
+  communityId: string;
+  email: string;
+}
+
+export interface CommunityInvitePreviewDto {
+  communityId: string;
+  communityName: string;
+  communitySlug?: string;
+  expiresAt?: string;
+}
+
+export interface AcceptCommunityInviteByTokenDto {
+  token: string;
 }
 
 export interface UpdateFollowDto {
@@ -2642,6 +2662,160 @@ export class OptomisitcTanukiAPIService {
     return this.http.post<TData>(
       `/api/social/community/${id}/invite`,
       communityControllerInviteUserBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Invite someone to a community by email
+   */
+  communityControllerInviteByEmail<TData = CommunityInviteDto>(
+    id: string,
+    inviteCommunityByEmailDto: InviteCommunityByEmailDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  communityControllerInviteByEmail<TData = CommunityInviteDto>(
+    id: string,
+    inviteCommunityByEmailDto: InviteCommunityByEmailDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  communityControllerInviteByEmail<TData = CommunityInviteDto>(
+    id: string,
+    inviteCommunityByEmailDto: InviteCommunityByEmailDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  communityControllerInviteByEmail<TData = CommunityInviteDto>(
+    id: string,
+    inviteCommunityByEmailDto: InviteCommunityByEmailDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/social/community/${id}/invites/email`,
+        inviteCommunityByEmailDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/social/community/${id}/invites/email`,
+        inviteCommunityByEmailDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/social/community/${id}/invites/email`,
+      inviteCommunityByEmailDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Preview a community email invitation
+   */
+  communityControllerPreviewInviteByToken<TData = CommunityInvitePreviewDto>(
+    token: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  communityControllerPreviewInviteByToken<TData = CommunityInvitePreviewDto>(
+    token: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  communityControllerPreviewInviteByToken<TData = CommunityInvitePreviewDto>(
+    token: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  communityControllerPreviewInviteByToken<TData = CommunityInvitePreviewDto>(
+    token: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/social/community/invites/by-token/${token}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/social/community/invites/by-token/${token}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/social/community/invites/by-token/${token}`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Claim a community email invitation
+   */
+  communityControllerClaimInviteByToken<TData = void>(
+    acceptCommunityInviteByTokenDto: AcceptCommunityInviteByTokenDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  communityControllerClaimInviteByToken<TData = void>(
+    acceptCommunityInviteByTokenDto: AcceptCommunityInviteByTokenDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  communityControllerClaimInviteByToken<TData = void>(
+    acceptCommunityInviteByTokenDto: AcceptCommunityInviteByTokenDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  communityControllerClaimInviteByToken<TData = void>(
+    acceptCommunityInviteByTokenDto: AcceptCommunityInviteByTokenDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/social/community/invites/claim`,
+        acceptCommunityInviteByTokenDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/social/community/invites/claim`,
+        acceptCommunityInviteByTokenDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/social/community/invites/claim`,
+      acceptCommunityInviteByTokenDto,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),
         observe: 'body',

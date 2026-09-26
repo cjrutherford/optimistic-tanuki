@@ -25,6 +25,50 @@
   </header>
 
   <div class="account-inner">
+    <section class="profile-section">
+      <h2>Profile</h2>
+
+      @if (loadingProfile()) {
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading your profile…</p>
+      </div>
+      } @else if (currentProfile()) {
+      <div class="profile-card">
+        <div
+          class="profile-avatar"
+          [class.has-image]="!!currentProfile()!.profilePic"
+          aria-hidden="true"
+        >
+          @if (currentProfile()!.profilePic) {
+          <img
+            [src]="currentProfile()!.profilePic"
+            [alt]="currentProfile()!.profileName"
+            loading="lazy"
+          />
+          } @else {
+          <span>{{
+            (currentProfile()!.profileName || 'ME').slice(0, 2).toUpperCase()
+          }}</span>
+          }
+        </div>
+        <div class="profile-text">
+          <span class="profile-name">{{ currentProfile()!.profileName }}</span>
+          @if (currentProfile()!.bio) {
+          <span class="profile-bio">{{ currentProfile()!.bio }}</span>
+          }
+        </div>
+        <button class="btn btn-outline btn-sm" (click)="viewMyProfile()">
+          View Public Profile
+        </button>
+      </div>
+      } @else {
+      <div class="empty-state">
+        <p>We couldn't load your profile.</p>
+      </div>
+      }
+    </section>
+
     <section class="theme-section">
       <h2>Personality</h2>
       <p class="theme-description">

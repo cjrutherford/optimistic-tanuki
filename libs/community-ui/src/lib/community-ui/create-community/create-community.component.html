@@ -58,22 +58,44 @@
             @if (logoPreview()) {
             <div class="image-preview">
               <img [src]="logoPreview()" alt="Logo preview" />
+              @if (logoUploading()) {
+              <div
+                class="upload-spinner-overlay"
+                role="status"
+                aria-label="Uploading logo"
+              >
+                <otui-spinner />
+              </div>
+              }
               <button
                 type="button"
                 class="remove-btn"
-                (click)="logoPreview.set(null); logoAssetId.set(null)"
+                (click)="clearLogo()"
+                aria-label="Remove logo"
               >
                 ×
               </button>
             </div>
             } @else {
             <div class="upload-placeholder">
+              @if (logoUploading()) {
+              <div
+                class="upload-spinner"
+                role="status"
+                aria-label="Uploading logo"
+              >
+                <otui-spinner />
+                <span>Uploading…</span>
+              </div>
+              } @else {
               <span>Click to upload logo</span>
+              }
               <input
                 type="file"
                 accept="image/*"
                 (change)="onLogoSelect($event)"
                 class="file-input"
+                [disabled]="logoUploading()"
               />
             </div>
             }
@@ -87,22 +109,44 @@
             @if (bannerPreview()) {
             <div class="image-preview banner-preview">
               <img [src]="bannerPreview()" alt="Banner preview" />
+              @if (bannerUploading()) {
+              <div
+                class="upload-spinner-overlay"
+                role="status"
+                aria-label="Uploading banner"
+              >
+                <otui-spinner />
+              </div>
+              }
               <button
                 type="button"
                 class="remove-btn"
-                (click)="bannerPreview.set(null); bannerAssetId.set(null)"
+                (click)="clearBanner()"
+                aria-label="Remove banner"
               >
                 ×
               </button>
             </div>
             } @else {
             <div class="upload-placeholder banner-placeholder">
+              @if (bannerUploading()) {
+              <div
+                class="upload-spinner"
+                role="status"
+                aria-label="Uploading banner"
+              >
+                <otui-spinner />
+                <span>Uploading…</span>
+              </div>
+              } @else {
               <span>Click to upload banner</span>
+              }
               <input
                 type="file"
                 accept="image/*"
                 (change)="onBannerSelect($event)"
                 class="file-input"
+                [disabled]="bannerUploading()"
               />
             </div>
             }
@@ -124,12 +168,14 @@
         <otui-button
           variant="primary"
           type="submit"
-          [disabled]="loading() || uploading()"
+          [disabled]="
+            loading() || uploading() || logoUploading() || bannerUploading()
+          "
         >
           {{
             loading()
               ? 'Creating...'
-              : uploading()
+              : uploading() || logoUploading() || bannerUploading()
               ? 'Uploading images...'
               : 'Create Community'
           }}

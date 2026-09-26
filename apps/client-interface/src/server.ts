@@ -11,6 +11,11 @@ import {
   createSocketIoProxyOptions,
 } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
+import {
+  getClientInterfaceEngineOptions,
+  getRequestUrl,
+  isClientInterfaceProxyTrusted,
+} from './server-ssr';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -18,7 +23,13 @@ const indexHtml = join(serverDistFolder, 'index.server.html');
 
 const app = express();
 app.use(oauthCallbackReferrerPolicy);
-const commonEngine = new CommonEngine();
+// Trust the reverse-proxy `x-forwarded-*` headers when enabled (default).
+// Keeps `req.protocol`/`req.get('host')` correct behind Nginx and silences
+// Angular SSR `trustProxyHeaders` warnings. Pair with `allowedHosts` below.
+app.set('trust proxy', isClientInterfaceProxyTrusted());
+const commonEngine = new CommonEngine(
+  getClientInterfaceEngineOptions() as never
+);
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 startNodeRuntimeMonitoring({
@@ -35,14 +46,6 @@ const runtimeSocketEnvironment = JSON.stringify({
   SOCKET_URL: configuredSocketUrl.startsWith('/') ? '' : configuredSocketUrl,
   SOCKET_PATH: process.env['SOCKET_PATH'] || '/socket.io',
 }).replace(/</g, '\\u003c');
-
-const getRequestUrl = (req: express.Request): string => {
-  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
-  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
-  const protocol = forwardedProto || req.protocol;
-  const host = forwardedHost || req.get('host') || 'localhost';
-  return `${protocol}://${host}${req.originalUrl}`;
-};
 
 /**
  * Example Express Rest API endpoints can be defined here.

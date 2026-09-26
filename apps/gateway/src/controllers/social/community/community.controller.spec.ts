@@ -16,6 +16,9 @@ import { CommunityController } from './community.controller';
 describe('Social CommunityController membership lifecycle', () => {
   let socialClient: jest.Mocked<ClientProxy>;
   let permissionsClient: jest.Mocked<ClientProxy>;
+  let authClient: jest.Mocked<ClientProxy>;
+  let profileClient: jest.Mocked<ClientProxy>;
+  let inviteMailer: { send: jest.Mock };
   let controller: CommunityController;
 
   beforeEach(() => {
@@ -31,6 +34,13 @@ describe('Social CommunityController membership lifecycle', () => {
         )
       ),
     } as unknown as jest.Mocked<ClientProxy>;
+    authClient = {
+      send: jest.fn(),
+    } as unknown as jest.Mocked<ClientProxy>;
+    profileClient = {
+      send: jest.fn().mockReturnValue(of(null)),
+    } as unknown as jest.Mocked<ClientProxy>;
+    inviteMailer = { send: jest.fn().mockResolvedValue(undefined) };
     controller = new CommunityController(
       socialClient,
       permissionsClient,
@@ -42,7 +52,10 @@ describe('Social CommunityController membership lifecycle', () => {
             of({ workspaceId: '00000000-0000-4000-8000-000000000001' })
           ),
       } as unknown as ClientProxy,
-      { provision: jest.fn().mockResolvedValue(undefined) } as any
+      authClient,
+      profileClient,
+      { provision: jest.fn().mockResolvedValue(undefined) } as any,
+      inviteMailer as never
     );
   });
 
@@ -248,4 +261,135 @@ describe('Social CommunityController membership lifecycle', () => {
       });
     }
   );
+
+  describe('email invitations', () => {
+    const user = {
+      userId: 'admin-1',
+      profileId: 'profile-admin-1',
+    } as any;
+
+    beforeEach(() => {
+      authClient.send.mockReturnValue(
+        throwError(() => new Error('User not found'))
+      );
+      socialClient.send.mockImplementation((pattern: any) => {
+        if (pattern?.cmd === CommunityCommands.INVITE_BY_EMAIL) {
+          return of({
+            id: 'invite-1',
+            communityId: 'community-1',
+            inviterId: 'admin-1',
+            inviteeId: null,
+            inviteeEmail: 'guest@example.com',
+            status: 'pending',
+            token: 'secret-token',
+          });
+        }
+        if (pattern?.cmd === CommunityCommands.FIND) {
+          return of({
+            id: 'community-1',
+            name: 'Savannah Gardeners',
+            appScope: 'social',
+          });
+        }
+        return of(null);
+      });
+    });
+
+    it('creates a token invite, sends the courtesy mail, and strips the token', async () => {
+      const result = await controller.inviteByEmail(
+        'community-1',
+        user,
+        { communityId: 'community-1', email: ' Guest@Example.com ' } as any,
+        'social'
+      );
+
+      expect(socialClient.send).toHaveBeenCalledWith(
+        { cmd: CommunityCommands.INVITE_BY_EMAIL },
+        {
+          dto: {
+            communityId: 'community-1',
+            email: 'guest@example.com',
+            inviteeUserId: undefined,
+          },
+          inviterId: 'admin-1',
+        }
+      );
+      expect(inviteMailer.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'guest@example.com',
+          token: 'secret-token',
+          communityName: 'Savannah Gardeners',
+        })
+      );
+      expect(result).not.toHaveProperty('token');
+      expect(result).toEqual(
+        expect.objectContaining({ inviteeEmail: 'guest@example.com' })
+      );
+    });
+
+    it('attaches a known user id when the email resolves', async () => {
+      authClient.send.mockReturnValue(of('user-2'));
+
+      await controller.inviteByEmail(
+        'community-1',
+        user,
+        { communityId: 'community-1', email: 'member@example.com' } as any,
+        'social'
+      );
+
+      expect(socialClient.send).toHaveBeenCalledWith(
+        { cmd: CommunityCommands.INVITE_BY_EMAIL },
+        expect.objectContaining({
+          dto: expect.objectContaining({ inviteeUserId: 'user-2' }),
+        })
+      );
+    });
+
+    it('relies on the mailer never-throwing contract for the courtesy send', async () => {
+      // CommunityInviteMailer.send never rejects (covered by its own spec);
+      // the controller awaits it directly, exactly like ProjectInviteMailer.
+      inviteMailer.send.mockResolvedValueOnce(undefined);
+
+      const result = await controller.inviteByEmail(
+        'community-1',
+        user,
+        { communityId: 'community-1', email: 'guest@example.com' } as any,
+        'social'
+      );
+
+      expect(inviteMailer.send).toHaveBeenCalled();
+      expect(result).not.toHaveProperty('token');
+    });
+
+    it('returns a preview or 404 for invitation tokens', async () => {
+      socialClient.send.mockReturnValue(
+        of({ communityId: 'community-1', communityName: 'Savannah' })
+      );
+      await expect(controller.previewInviteByToken('tok')).resolves.toEqual(
+        expect.objectContaining({ communityId: 'community-1' })
+      );
+
+      socialClient.send.mockReturnValue(of(null));
+      await expect(controller.previewInviteByToken('bad')).rejects.toThrow(
+        'Invitation not found or expired'
+      );
+    });
+
+    it('claims an invitation into a community', async () => {
+      socialClient.send.mockReturnValue(
+        of({
+          invite: { id: 'invite-1' },
+          community: { id: 'community-1', slug: 'savannah' },
+        })
+      );
+
+      await expect(
+        controller.claimInviteByToken(user, { token: 'tok' })
+      ).resolves.toEqual({ id: 'community-1', slug: 'savannah' });
+      expect(socialClient.send).toHaveBeenCalledWith(
+        { cmd: CommunityCommands.ACCEPT_INVITE_BY_TOKEN },
+        { token: 'tok', userId: 'admin-1', profileId: 'profile-admin-1' }
+      );
+    });
+  });
 });

@@ -223,6 +223,10 @@
   border: 1px solid
     color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
 
+  &.clickable {
+    cursor: pointer;
+  }
+
   img {
     width: 100%;
     height: 100%;
@@ -245,6 +249,16 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--foreground-muted);
+}
+
+.seller-link {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover strong {
+    text-decoration: underline;
+  }
 }
 
 .ad-meta {

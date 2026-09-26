@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Inject,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -31,6 +32,8 @@ import {
   ChatCommands,
   AppScopeCommands,
   WorkspaceCommands,
+  AuthCommands,
+  ProfileCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CommunityDto,
@@ -40,6 +43,9 @@ import {
   CommunityMemberDto,
   JoinCommunityDto,
   InviteToCommunityDto,
+  InviteCommunityByEmailDto,
+  AcceptCommunityInviteByTokenDto,
+  CommunityInvitePreviewDto,
   CommunityInviteDto,
   AssignRoleDto,
   CommunityMembershipStatus,
@@ -54,6 +60,7 @@ import { RequirePermissions } from '../../../decorators/permissions.decorator';
 import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 import { CommunityWorkspaceProvisioner } from '../../../app/community-provisioning/community-workspace-provisioner.service';
+import { CommunityInviteMailer } from './community-invite.mailer';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -72,7 +79,12 @@ export class CommunityController {
     private readonly chatClient: ClientProxy,
     @Inject(ServiceTokens.WORKSPACE_SERVICE)
     private readonly workspaceClient: ClientProxy,
-    private readonly communityProvisioner: CommunityWorkspaceProvisioner
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private readonly authClient: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient: ClientProxy,
+    private readonly communityProvisioner: CommunityWorkspaceProvisioner,
+    private readonly inviteMailer: CommunityInviteMailer
   ) {}
 
   @Post()
@@ -455,6 +467,119 @@ export class CommunityController {
         }
       )
     );
+  }
+
+  @Post(':id/invites/email')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @RequirePermissions('community.invite')
+  @ApiOperation({ summary: 'Invite someone to a community by email' })
+  @ApiResponse({
+    status: 201,
+    description: 'Email invitation created and sent.',
+    type: CommunityInviteDto,
+  })
+  async inviteByEmail(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Body() dto: InviteCommunityByEmailDto,
+    @AppScope() appScope: string
+  ): Promise<CommunityInviteDto> {
+    const email = dto.email.trim().toLowerCase();
+    // Best effort: when the address belongs to an existing user, attach the
+    // user id so the invitation is also visible in-app. Unknown addresses
+    // stay pure token invites claimed via the emailed link.
+    let inviteeUserId: string | undefined;
+    try {
+      const resolved = await firstValueFrom(
+        this.authClient.send({ cmd: AuthCommands.UserIdFromEmail }, { email })
+      );
+      if (typeof resolved === 'string' && resolved) {
+        inviteeUserId = resolved;
+      }
+    } catch {
+      inviteeUserId = undefined;
+    }
+
+    const created = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.INVITE_BY_EMAIL },
+        {
+          dto: { communityId: id, email, inviteeUserId },
+          inviterId: user.userId,
+        }
+      )
+    );
+
+    const community = await firstValueFrom(
+      this.socialClient.send({ cmd: CommunityCommands.FIND }, { id })
+    ).catch(() => null);
+    const inviterProfile = await firstValueFrom(
+      this.profileClient.send(
+        { cmd: ProfileCommands.Get },
+        { id: user.profileId }
+      )
+    ).catch(() => null);
+
+    // Courtesy only: the committed invitation works with or without the mail.
+    await this.inviteMailer.send({
+      email,
+      token: created.token,
+      communityName: community?.name,
+      invitedByName: inviterProfile?.profileName,
+      appScope: community?.appScope ?? appScope,
+    });
+
+    const { token: _token, ...sanitized } = created;
+    return sanitized;
+  }
+
+  @Public()
+  @Get('invites/by-token/:token')
+  @ApiOperation({ summary: 'Preview a community email invitation' })
+  @ApiResponse({
+    status: 200,
+    description: 'The invitation preview.',
+    type: CommunityInvitePreviewDto,
+  })
+  async previewInviteByToken(
+    @Param('token') token: string
+  ): Promise<CommunityInvitePreviewDto> {
+    const preview = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND_INVITE_BY_TOKEN },
+        { token }
+      )
+    );
+    if (!preview) {
+      throw new NotFoundException('Invitation not found or expired');
+    }
+    return preview;
+  }
+
+  @Post('invites/claim')
+  @ApiOperation({ summary: 'Claim a community email invitation' })
+  @ApiResponse({
+    status: 201,
+    description: 'Invitation claimed; membership granted.',
+  })
+  async claimInviteByToken(
+    @User() user: UserDetails,
+    @Body() dto: AcceptCommunityInviteByTokenDto
+  ): Promise<CommunityDto> {
+    const { invite: _invite, community } = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommunityCommands.ACCEPT_INVITE_BY_TOKEN },
+        { token: dto.token, userId: user.userId, profileId: user.profileId }
+      )
+    );
+    return community;
   }
 
   @Get(':id/invites')

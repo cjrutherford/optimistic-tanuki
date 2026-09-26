@@ -122,6 +122,58 @@ export class LeaveCommunityDto {
   profileId!: string;
 }
 
+/** `CommunityCommands.INVITE_BY_EMAIL` — token invite addressed to an email. */
+export class InviteByEmailDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  communityId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  email!: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  inviteeUserId?: string;
+}
+
+/** `CommunityCommands.ACCEPT_INVITE_BY_TOKEN` — claim an email invitation. */
+export class AcceptInviteByTokenDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  token!: string;
+}
+
+/**
+ * `CommunityCommands.FIND_INVITE_BY_TOKEN` — public preview of an invitation
+ * (community name + expiry). Never carries the token or invitee identity.
+ */
+export class CommunityInvitePreviewDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  communityId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  communityName!: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  communitySlug?: string | null;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  expiresAt?: string | null;
+}
+
 /** `CommunityCommands.FIND` — fetch one community by id. */
 export class CommunityRefDto {
   @ApiProperty()

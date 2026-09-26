@@ -28,6 +28,7 @@ import { Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
 import { ProjectInviteMailer } from '../controllers/project-planning/project-invite.mailer';
+import { CommunityInviteMailer } from '../controllers/social/community/community-invite.mailer';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { SocialController } from '../controllers/social/social.controller';
 import { FollowController } from '../controllers/social/follow/follow.controller';
@@ -398,6 +399,9 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     // Sends the invitation email. Here rather than in project-planning, which
     // owns the invitation and knows nothing about which application it is for.
     ProjectInviteMailer,
+    // Same courtesy contract for community email invitations (token-based,
+    // owned by social, addressed from the gateway-held app registry).
+    CommunityInviteMailer,
     WorkspaceResolverService,
     CommunityWorkspaceProvisioner,
     WorkspaceContextGuard,

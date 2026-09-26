@@ -26,8 +26,20 @@ export class CommunityInvite {
   @Column()
   inviterId: string;
 
-  @Column()
-  inviteeId: string;
+  // Null for email invites to people without a known account; bound to the
+  // claiming user on accept.
+  @Column({ nullable: true })
+  inviteeId: string | null;
+
+  // Normalized (lower-cased) email the invitation was addressed to.
+  @Column({ nullable: true })
+  inviteeEmail: string | null;
+
+  // Unguessable single-use claim token for email invitations. Returned only
+  // on creation (so the gateway can build the invitation link) and never
+  // exposed by read paths.
+  @Column({ nullable: true, unique: true })
+  token: string | null;
 
   @Column({
     type: 'enum',
@@ -35,6 +47,9 @@ export class CommunityInvite {
     default: CommunityMembershipStatus.PENDING,
   })
   status: CommunityMembershipStatus;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  expiresAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

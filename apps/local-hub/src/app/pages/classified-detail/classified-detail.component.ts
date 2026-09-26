@@ -170,6 +170,17 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  sellerProfileId(): string | null {
+    return this.ad()?.profileId || this.ad()?.userId || null;
+  }
+
+  viewSellerProfile(): void {
+    const id = this.sellerProfileId();
+    if (id) {
+      this.router.navigate(['/profile', id]);
+    }
+  }
+
   /** Image upload callback passed to ClassifiedFormComponent */
   uploadImage = async (file: File): Promise<string> => {
     const profileId = this.authState.getActingProfileId();

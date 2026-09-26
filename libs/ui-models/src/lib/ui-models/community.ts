@@ -136,13 +136,31 @@ export interface InviteToCommunityDto {
   inviteeUserId: string;
 }
 
+export interface InviteCommunityByEmailDto {
+  communityId: string;
+  email: string;
+}
+
+export interface AcceptCommunityInviteByTokenDto {
+  token: string;
+}
+
+export interface CommunityInvitePreviewDto {
+  communityId: string;
+  communityName: string;
+  communitySlug?: string | null;
+  expiresAt?: string | null;
+}
+
 export interface CommunityInviteDto {
   id: string;
   communityId: string;
   inviterId: string;
-  inviteeId: string;
+  inviteeId: string | null;
+  inviteeEmail?: string | null;
   status: CommunityMembershipStatus;
   createdAt: Date;
+  expiresAt?: Date | string | null;
 }
 
 export interface CommunityFeedOptions {

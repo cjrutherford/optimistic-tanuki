@@ -71,6 +71,12 @@
           <div
             class="seller-avatar"
             [class.has-image]="!!ad()!.sellerProfilePic"
+            [class.clickable]="!!sellerProfileId()"
+            (click)="viewSellerProfile()"
+            (keydown.enter)="viewSellerProfile()"
+            (keydown.space)="viewSellerProfile()"
+            [attr.role]="sellerProfileId() ? 'link' : null"
+            [attr.tabindex]="sellerProfileId() ? 0 : null"
           >
             @if (ad()!.sellerProfilePic) {
             <img
@@ -85,7 +91,15 @@
           </div>
           <div class="seller-copy">
             <span class="seller-label">Seller</span>
+            @if (sellerProfileId()) {
+            <a class="seller-link" (click)="viewSellerProfile()"
+              ><strong>{{
+                ad()!.sellerProfileName || 'Community member'
+              }}</strong></a
+            >
+            } @else {
             <strong>{{ ad()!.sellerProfileName || 'Community member' }}</strong>
+            }
           </div>
         </div>
 

@@ -123,6 +123,11 @@ export type ProfileControllerCreateProfileBody = CreateProfileDto & {
   appId?: string;
 };
 
+export type ProfileControllerSearchProfilesParams = {
+  q: string;
+  limit: string;
+};
+
 export type ProfileControllerGetProfilesByIdsBody = {
   ids: string[];
 };
@@ -455,6 +460,50 @@ export class OptomisitcTanukiAPIService {
   /**
    * @summary Get a profile by ID (legacy)
    */
+  profileControllerSearchProfiles<TData = void>(
+    params: ProfileControllerSearchProfilesParams,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  profileControllerSearchProfiles<TData = void>(
+    params: ProfileControllerSearchProfilesParams,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  profileControllerSearchProfiles<TData = void>(
+    params: ProfileControllerSearchProfilesParams,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  profileControllerSearchProfiles<TData = void>(
+    params: ProfileControllerSearchProfilesParams,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    const filteredParams = filterParams(
+      { ...params, ...options?.params },
+      new Set<string>([])
+    );
+
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/profile/search`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+        params: filteredParams,
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/profile/search`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+        params: filteredParams,
+      });
+    }
+
+    return this.http.get<TData>(`/api/profile/search`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+      params: filteredParams,
+    });
+  }
+
   profileControllerGetProfileLegacy<TData = void>(
     id: string,
     options?: HttpClientBodyOptions

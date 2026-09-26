@@ -111,7 +111,7 @@ import {
       }
 
       .modal-content {
-        background: var(--bg-primary, #fff);
+        background: var(--surface);
         border-radius: 12px;
         width: 100%;
         max-width: 420px;
@@ -124,7 +124,7 @@ import {
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
-        border-bottom: 1px solid var(--border-color, #e5e7eb);
+        border-bottom: 1px solid var(--border);
       }
 
       .modal-header h3 {
@@ -140,7 +140,7 @@ import {
         cursor: pointer;
         padding: 0;
         line-height: 1;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .modal-body {
@@ -150,7 +150,7 @@ import {
       .listing-info,
       .asking-price {
         margin: 0 0 0.5rem;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .asking-price {
@@ -177,7 +177,7 @@ import {
       .currency {
         position: absolute;
         left: 0.75rem;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .input-wrapper input {
@@ -188,7 +188,7 @@ import {
       textarea {
         width: 100%;
         padding: 0.625rem 0.75rem;
-        border: 1px solid var(--border-color, #d1d5db);
+        border: 1px solid var(--border);
         border-radius: 6px;
         font-size: 1rem;
         transition: border-color 0.2s, box-shadow 0.2s;
@@ -197,19 +197,18 @@ import {
       input:focus,
       textarea:focus {
         outline: none;
-        border-color: var(--primary-color, #3b82f6);
-        box-shadow: 0 0 0 3px
-          var(--primary-color-alpha, rgba(59, 130, 246, 0.1));
+        border-color: var(--primary);
+        box-shadow: var(--ring-primary);
       }
 
       .fee-notice {
         margin: 0.5rem 0 0;
         font-size: 0.8125rem;
-        color: var(--text-secondary, #6b7280);
+        color: var(--foreground-muted);
       }
 
       .error {
-        color: var(--error-color, #ef4444);
+        color: var(--error);
         font-size: 0.875rem;
         margin: 0.5rem 0 0;
       }
@@ -218,7 +217,7 @@ import {
         display: flex;
         gap: 0.75rem;
         padding: 1rem 1.5rem;
-        border-top: 1px solid var(--border-color, #e5e7eb);
+        border-top: 1px solid var(--border);
         justify-content: flex-end;
       }
 
@@ -232,23 +231,23 @@ import {
       }
 
       .btn-secondary {
-        background: var(--bg-secondary, #f3f4f6);
-        border: 1px solid var(--border-color, #d1d5db);
-        color: var(--text-primary, #374151);
+        background: var(--surface-variant);
+        border: 1px solid var(--border);
+        color: var(--foreground);
       }
 
       .btn-secondary:hover:not(:disabled) {
-        background: var(--bg-hover, #e5e7eb);
+        background: var(--border);
       }
 
       .btn-primary {
-        background: var(--primary-color, #3b82f6);
-        border: 1px solid var(--primary-color, #3b82f6);
-        color: white;
+        background: var(--primary);
+        border: 1px solid var(--primary);
+        color: var(--on-primary, white);
       }
 
       .btn-primary:hover:not(:disabled) {
-        background: var(--primary-hover, #2563eb);
+        background: var(--primary-hover);
       }
 
       button:disabled {

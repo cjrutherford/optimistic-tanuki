@@ -170,6 +170,30 @@ describe('AssetController', () => {
     fetchSpy.mockRestore();
   });
 
+  it('returns a typed media-unconfigured diagnostic when the media token is missing', async () => {
+    const unconfigured = new AssetController(assetService, {
+      get: jest.fn((key: string) =>
+        key === 'ASSETS_INTERNAL_MEDIA_URL' ? 'http://assets:3006' : undefined
+      ),
+    } as any);
+    const mockRes = { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() };
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    await expect(
+      unconfigured.getAssetById('1', mockRes as any)
+    ).rejects.toEqual(
+      expect.objectContaining({
+        status: 502,
+        response: expect.objectContaining({
+          message: 'Internal media streaming is unavailable',
+          code: 'media-unconfigured',
+        }),
+      })
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   it('should list assets by profile and type', async () => {
     const assets = [{ id: 'asset-1', profileId: 'profile-1', type: 'image' }];
     assetService.send.mockReturnValue(of(assets));
