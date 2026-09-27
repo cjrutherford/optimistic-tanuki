@@ -8,4 +8,6 @@ export {
   tradeCraftTheme,
   type SovereignVaultTheme,
   sovereignVaultTheme,
+  type IndustrialNexusTheme,
+  industrialNexusTheme,
 } from '@optimistic-tanuki/theme-models';

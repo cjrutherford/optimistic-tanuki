@@ -37,6 +37,8 @@ import { AiChangeService } from './ai-change/ai-change.service';
 import { ProjectInvite } from './entities/project-invite.entity';
 import { ProjectInviteController } from './project-invite/project-invite.controller';
 import { ProjectInviteService } from './project-invite/project-invite.service';
+import { NexusController } from './nexus/nexus.controller';
+import { NexusService } from './nexus/nexus.service';
 import { AiChangeExecutor } from './ai-change/ai-change.executor';
 
 @Module({
@@ -62,6 +64,7 @@ import { AiChangeExecutor } from './ai-change/ai-change.executor';
     TaskNoteController,
     AnalyticsController,
     ProjectInviteController,
+    NexusController,
   ],
   providers: [
     ChangeService,
@@ -76,6 +79,7 @@ import { AiChangeExecutor } from './ai-change/ai-change.executor';
     AiChangeService,
     AiChangeExecutor,
     ProjectInviteService,
+    NexusService,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),

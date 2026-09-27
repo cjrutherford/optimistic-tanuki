@@ -93,6 +93,7 @@ import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { FlowController } from '../controllers/flow/flow.controller';
+import { NexusController } from '../controllers/nexus/nexus.controller';
 import { VaultController } from '../controllers/vault/vault.controller';
 import {
   InMemoryOtpChallengeStore,
@@ -334,6 +335,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'flow',
         requiredServices: ['lead-tracker', 'payments'],
         value: FlowController,
+      },
+      {
+        id: 'nexus',
+        requiredServices: ['project-planning'],
+        value: NexusController,
       },
       {
         id: 'vault',

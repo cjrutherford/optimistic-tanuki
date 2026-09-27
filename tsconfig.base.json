@@ -75,6 +75,7 @@
         "libs/business-security/src/index.ts"
       ],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
+      "@optimistic-tanuki/canvas-ui": ["libs/canvas-ui/src/index.ts"],
       "@optimistic-tanuki/chat-contracts": ["libs/chat/contracts/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui-data-access": [

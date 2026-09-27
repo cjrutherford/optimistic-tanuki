@@ -6,6 +6,7 @@ export * from './lib/local-storage';
 export * from './lib/file-validation.service';
 export * from './lib/virus-scan.service';
 export * from './lib/envelope-encryption.service';
+export * from './lib/photo-evidence.service';
 export * from './lib/storage-rekey.service';
 export * from './lib/tax-document-classifier.service';
 export * from './lib/zfs-storage.service';

@@ -12,6 +12,10 @@ import { TaskTimeEntry } from './entities/task-time-entry.entity';
 import { TaskNote } from './entities/task-note.entity';
 import { AiChange } from './entities/ai-change.entity';
 import { ProjectInvite } from './entities/project-invite.entity';
+import { NexusMilestone } from './entities/nexus-milestone.entity';
+import { NexusDrawing } from './entities/nexus-drawing.entity';
+import { NexusInspectionPhoto } from './entities/nexus-inspection-photo.entity';
+import { NexusChangeOrder } from './entities/nexus-change-order.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -43,6 +47,10 @@ const entities = [
   TaskNote,
   AiChange,
   ProjectInvite,
+  NexusMilestone,
+  NexusDrawing,
+  NexusInspectionPhoto,
+  NexusChangeOrder,
 ];
 
 console.log(
