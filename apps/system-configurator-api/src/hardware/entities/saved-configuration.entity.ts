@@ -23,9 +23,9 @@ export class SavedConfigurationEntity {
   @Column({ type: 'jsonb' })
   priceBreakdown!: Record<string, unknown>;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 }

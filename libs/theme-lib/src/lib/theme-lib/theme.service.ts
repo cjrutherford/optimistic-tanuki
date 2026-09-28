@@ -290,6 +290,7 @@ function generatePlayfulDropShadows(
 export class ThemeService {
   // App-level defaults from `provideThemeDefaults()`; a saved user theme wins.
   private readonly defaults = inject(THEME_DEFAULTS, { optional: true });
+  private appThemeVariables: Record<string, string> = {};
 
   // Compatibility state
   private _theme!: 'light' | 'dark';
@@ -488,6 +489,15 @@ export class ThemeService {
    */
   getTheme(): 'light' | 'dark' {
     return this._theme;
+  }
+
+  applyAppTheme(theme: { cssVariables: Record<string, string> }): void {
+    this.appThemeVariables = { ...theme.cssVariables };
+    this.applyAppThemeVariables();
+  }
+
+  getAppThemeVariables(): Record<string, string> {
+    return { ...this.appThemeVariables };
   }
 
   /**
@@ -1326,6 +1336,8 @@ export class ThemeService {
       root.style.setProperty(property, value);
     });
 
+    this.applyAppThemeVariables();
+
     // Apply fonts
     this.fontLoadingService.applyFontVariables(theme.personality);
 
@@ -1348,6 +1360,17 @@ export class ThemeService {
     Object.entries(compositionDataAttributes(composition)).forEach(
       ([attribute, value]) => root.setAttribute(attribute, value)
     );
+  }
+
+  private applyAppThemeVariables(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const root = document.documentElement;
+    Object.entries(this.appThemeVariables).forEach(([property, value]) => {
+      root.style.setProperty(property, value);
+    });
   }
 
   private applyBodyPersonalityClass(personalityId: string): void {

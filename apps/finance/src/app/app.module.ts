@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 import loadConfig from '../config';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import loadDatabase from './loadDatabase';
@@ -20,6 +22,7 @@ import { FinCommanderPlanEntity } from '../entities/fin-commander-plan.entity';
 import { FinCommanderGoalEntity } from '../entities/fin-commander-goal.entity';
 import { FinCommanderScenarioEntity } from '../entities/fin-commander-scenario.entity';
 import { FinCommanderFundingDirectiveEntity } from '../entities/fin-commander-funding-directive.entity';
+import { VaultEscrowEntity } from '../entities/vault-escrow.entity';
 import { DataSource } from 'typeorm';
 import { AccountService } from './services/account.service';
 import { TransactionService } from './services/transaction.service';
@@ -36,6 +39,16 @@ import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
 import { FinCommanderFundingDirectiveService } from './services/fin-commander-funding-directive.service';
+import { VaultEscrowService } from './services/vault-escrow.service';
+import { VaultTokenService } from './services/vault-token.service';
+import {
+  OTP_CHALLENGE_STORE,
+  OTP_SMS_DISPATCHER,
+  OtpChallengeEntity,
+  TimeLockedOtpService,
+  TwilioOtpSmsDispatcher,
+  TypeOrmOtpChallengeStore,
+} from '@optimistic-tanuki/business-security';
 
 @Module({
   imports: [
@@ -65,6 +78,35 @@ import { FinCommanderFundingDirectiveService } from './services/fin-commander-fu
     FinCommanderScenarioService,
     FinCommanderProjectionService,
     FinCommanderFundingDirectiveService,
+    {
+      provide: OTP_CHALLENGE_STORE,
+      useFactory: (ds: DataSource) => new TypeOrmOtpChallengeStore(ds),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: OTP_SMS_DISPATCHER,
+      useFactory: (config: ConfigService) => new TwilioOtpSmsDispatcher(config),
+      inject: [ConfigService],
+    },
+    TimeLockedOtpService,
+    VaultEscrowService,
+    VaultTokenService,
+    {
+      // The compliance-audit microservice owns the chained SHA-256 ledger, so
+      // escrow wire reveals land in the same per-tenant chain as vault uploads.
+      provide: ServiceTokens.COMPLIANCE_AUDIT_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_COMPLIANCE_AUDIT_HOST || 'localhost',
+            port: parseInt(
+              process.env.SERVICE_COMPLIANCE_AUDIT_PORT || '3025',
+              10
+            ),
+          },
+        }),
+    },
     {
       provide: getRepositoryToken(Account),
       useFactory: (ds: DataSource) => ds.getRepository(Account),
@@ -141,6 +183,16 @@ import { FinCommanderFundingDirectiveService } from './services/fin-commander-fu
       provide: getRepositoryToken(FinCommanderFundingDirectiveEntity),
       useFactory: (ds: DataSource) =>
         ds.getRepository(FinCommanderFundingDirectiveEntity),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(VaultEscrowEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(VaultEscrowEntity),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(OtpChallengeEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(OtpChallengeEntity),
       inject: ['FINANCE_CONNECTION'],
     },
   ],

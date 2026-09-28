@@ -52,7 +52,7 @@ import {
   validEvidenceIds,
 } from './project-scenarios';
 
-const HOST = process.env.OLLAMA_HOST || '100.89.87.124';
+const HOST = process.env.OLLAMA_HOST || '127.0.0.1';
 const PORT = Number(process.env.OLLAMA_PORT || 11434);
 const BASE = `http://${HOST}:${PORT}`;
 const WORKSPACE = process.env.NX_WORKSPACE_ROOT || process.cwd();

@@ -21,3 +21,5 @@ export * from './user-onboarding-profile.interface';
 export * from './lead-analysis.model';
 export * from './lead-qualification.model';
 export * from './lead-auth-context.interface';
+export * from './create-lead-request.interface';
+export * from './commit-hardware-proposal-request.interface';

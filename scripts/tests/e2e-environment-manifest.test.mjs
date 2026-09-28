@@ -8,7 +8,10 @@ import {
   resolveE2eServices,
   resolveE2eTarget,
 } from '../e2e-environment-manifest.mjs';
-import { validateE2eEnvironment } from '../validate-e2e-environment.mjs';
+import {
+  readNxGraph,
+  validateE2eEnvironment,
+} from '../validate-e2e-environment.mjs';
 
 test('the registry exposes the CI microservice and UI suites by kind', () => {
   assert.equal(listE2eTargets('microservice').length, 13);
@@ -371,6 +374,30 @@ function makeValidComposeConfig() {
   services.authentication.environment = { AUTH_AUTO_VERIFY_EMAILS: 'true' };
   return { services };
 }
+
+test('Nx graph reader allows project graphs larger than execFileSync default buffer', () => {
+  const graph = {
+    graph: {
+      nodes: {},
+      dependencies: {},
+      padding: 'x'.repeat(2 * 1024 * 1024),
+    },
+  };
+  let received;
+
+  const parsed = readNxGraph((command, args, options) => {
+    received = { command, args, options };
+    return JSON.stringify(graph);
+  });
+
+  assert.deepEqual(parsed, graph);
+  assert.equal(received.command, 'pnpm');
+  assert.deepEqual(received.args, ['exec', 'nx', 'graph', '--print']);
+  assert.ok(received.options.maxBuffer > 1024 * 1024);
+  assert.equal(received.options.encoding, 'utf8');
+  assert.equal(received.options.env.NX_DAEMON, 'false');
+  assert.equal(received.options.env.NX_ISOLATE_PLUGINS, 'false');
+});
 
 test('validator accepts a manifest that agrees with Nx and Compose metadata', () => {
   assert.deepEqual(

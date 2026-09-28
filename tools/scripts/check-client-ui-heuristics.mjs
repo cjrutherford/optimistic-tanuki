@@ -13,6 +13,11 @@ const root = process.cwd();
 const appsRoot = join(root, 'apps');
 const libsRoot = join(root, 'libs');
 const findings = [];
+// This Compodoc tree is ignored by the root .gitignore but remains present
+// locally after docs builds, so skip it explicitly while walking source.
+const generatedDocsDirectories = new Set([
+  'apps/ui-playground/public/generated/compodoc',
+]);
 
 const args = process.argv.slice(2);
 const failOnFindings = args.includes('--fail-on-findings');
@@ -48,6 +53,15 @@ function isFullyIgnoredDirectory(directory) {
   }
 }
 
+function isGeneratedDocsDirectory(directory) {
+  const normalized = relative(root, directory).split(sep).join('/');
+  return [...generatedDocsDirectories].some(
+    (generatedDirectory) =>
+      normalized === generatedDirectory ||
+      normalized.startsWith(`${generatedDirectory}/`)
+  );
+}
+
 function walk(directory) {
   const entries = readdirSync(directory, { withFileTypes: true });
   const files = [];
@@ -59,7 +73,10 @@ function walk(directory) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
         continue;
       }
-      if (isFullyIgnoredDirectory(fullPath)) {
+      if (
+        isFullyIgnoredDirectory(fullPath) ||
+        isGeneratedDocsDirectory(fullPath)
+      ) {
         continue;
       }
       files.push(...walk(fullPath));

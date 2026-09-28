@@ -1,0 +1,137 @@
+<section class="hardware-catalog-shell anchor-target" id="appliances">
+  <div class="catalog-header">
+    <div class="header-content">
+      <p class="eyebrow">Standardized infrastructure</p>
+      <h2>Turn-key hardware appliances</h2>
+      <p class="lede">
+        Standardized, pre-configured server appliances deployed on-premises in
+        your office. Choose between direct purchase or a monthly hardware lease.
+      </p>
+    </div>
+  </div>
+
+  <div class="tiers-grid" *ngIf="tiers$ | async as tiers">
+    <article
+      *ngFor="let tier of tiers"
+      class="tier-card"
+      [attr.data-tier]="tier.id"
+    >
+      <otui-card CardVariant="default" tone="brand" emphasis="soft" size="lg">
+        <div class="card-inner">
+          <div class="card-header">
+            <div class="badge-row">
+              <otui-badge tone="brand" emphasis="solid">
+                Tier {{ tier.tierNumber }} &bull; {{ tier.formFactor }}
+              </otui-badge>
+              <span
+                class="stock-status"
+                [class.in-stock]="tier.inStock"
+                [class.build-order]="!tier.inStock"
+              >
+                {{ tier.stockStatus }}
+              </span>
+            </div>
+
+            <h3 class="tier-title">{{ tier.name }}</h3>
+            <p class="target-users">Target: {{ tier.targetUsers }}</p>
+          </div>
+
+          <div class="spec-section">
+            <h4 class="spec-heading">Physical and electrical specifications</h4>
+            <dl class="specs-list">
+              <div class="spec-row">
+                <dt>Hardware</dt>
+                <dd>{{ tier.hardware }}</dd>
+              </div>
+              <div class="spec-row">
+                <dt>RAM</dt>
+                <dd>{{ tier.ram }}</dd>
+              </div>
+              <div class="spec-row">
+                <dt>Storage</dt>
+                <dd>{{ tier.storage }}</dd>
+              </div>
+              <div *ngIf="tier.aiAccelerator" class="spec-row">
+                <dt>AI accelerator</dt>
+                <dd>{{ tier.aiAccelerator }}</dd>
+              </div>
+              <div class="spec-row">
+                <dt>Network</dt>
+                <dd>{{ tier.network }}</dd>
+              </div>
+              <div class="spec-row">
+                <dt>Power and protection</dt>
+                <dd>{{ tier.powerAndProtection }}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="pricing-section">
+            <h4 class="pricing-heading">Commercial pricing</h4>
+            <div class="pricing-grid">
+              <div class="pricing-box purchase-box">
+                <span class="pricing-label">Outright purchase</span>
+                <div class="price-value">
+                  <span *ngIf="tier.id === 'tier1'">$705 package</span>
+                  <span *ngIf="tier.id === 'tier2'"
+                    >$2,850 to $3,200 setup</span
+                  >
+                  <span *ngIf="tier.id === 'tier3'"
+                    >$3,200 setup or $40,000 project build</span
+                  >
+                </div>
+                <div class="wholesale-detail">
+                  Wholesale cost: ${{ tier.wholesaleCost | number : '1.2-2' }}
+                  with 35% margin
+                </div>
+              </div>
+
+              <div class="pricing-box lease-box">
+                <span class="pricing-label">Monthly lease</span>
+                <div class="price-value">
+                  ${{ tier.leaseMonthlyRate }}/mo lease
+                </div>
+                <div class="lease-detail">
+                  <span *ngIf="tier.softwareMonthlyRate">
+                    + ${{ tier.softwareMonthlyRate }}/mo software
+                  </span>
+                  <span
+                    *ngIf="
+                      tier.retainerMonthlyRate && !tier.retainerMonthlyRateMax
+                    "
+                  >
+                    + ${{ tier.retainerMonthlyRate }}/mo retainer
+                  </span>
+                  <span
+                    *ngIf="
+                      tier.retainerMonthlyRate && tier.retainerMonthlyRateMax
+                    "
+                  >
+                    + ${{ tier.retainerMonthlyRate }} to ${{
+                      tier.retainerMonthlyRateMax
+                    }}/mo retainer
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <a
+              class="portal-btn"
+              [href]="
+                tier.portalUrl ||
+                'http://localhost:8091?preset=' + tier.configuratorPreset
+              "
+              [attr.data-preset]="tier.configuratorPreset"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Customize in Appliance Portal
+            </a>
+          </div>
+        </div>
+      </otui-card>
+    </article>
+  </div>
+</section>

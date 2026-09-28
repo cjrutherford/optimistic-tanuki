@@ -1,0 +1,190 @@
+<section class="status-shell">
+  <div *ngIf="isLoading" class="status-state" role="status">
+    Loading job status…
+  </div>
+  <div *ngIf="loadError" class="status-state status-error" role="alert">
+    {{ loadError }}
+  </div>
+  <div
+    *ngIf="!isLoading && !loadError && !job"
+    class="status-state"
+    role="status"
+  >
+    No job status found.
+  </div>
+
+  <div class="status-container" *ngIf="job">
+    <header class="status-header">
+      <div class="header-badge-row">
+        <otui-badge
+          *ngIf="job.trackingNumber"
+          [tone]="'brand'"
+          [emphasis]="'soft'"
+          >{{ job.trackingNumber }}</otui-badge
+        >
+        <otui-badge
+          [tone]="
+            job.status === 'completed'
+              ? 'success'
+              : job.status === 'in_progress'
+              ? 'brand'
+              : 'warning'
+          "
+          [emphasis]="'solid'"
+        >
+          {{
+            job.status === 'in_progress'
+              ? 'Work in progress'
+              : job.status === 'en_route'
+              ? 'En route'
+              : job.status
+          }}
+        </otui-badge>
+      </div>
+      <h1>Job status tracker</h1>
+      <p class="lede">
+        Real-time dispatch tracking for your scheduled service appointment.
+      </p>
+    </header>
+
+    <!-- Dispatch Progress Stepper -->
+    <otui-card class="stepper-card">
+      <ol class="status-steps" aria-label="Job progress timeline">
+        <li
+          *ngFor="let step of statusSteps; let i = index"
+          class="step-item"
+          [class.completed]="isStepActive(step.key)"
+          [class.current]="job.status === step.key"
+        >
+          <div class="step-marker-container">
+            <div class="step-marker">
+              <span *ngIf="isStepActive(step.key) && job.status !== step.key"
+                >✓</span
+              >
+              <span *ngIf="job.status === step.key">{{ i + 1 }}</span>
+              <span *ngIf="!isStepActive(step.key)">{{ i + 1 }}</span>
+            </div>
+            <div *ngIf="i < statusSteps.length - 1" class="step-line"></div>
+          </div>
+          <div class="step-info">
+            <strong class="step-title">{{ step.label }}</strong>
+            <p class="step-desc">{{ step.description }}</p>
+          </div>
+        </li>
+      </ol>
+    </otui-card>
+
+    <!-- Completed Job: Google Review Prompt -->
+    <otui-card
+      *ngIf="job.status === 'completed' && job.reviewPromptEligible === true"
+      class="review-prompt-card"
+    >
+      <div class="review-content">
+        <h2>Service completed</h2>
+        <p>
+          Your technician has concluded on-site service. Please take thirty
+          seconds to share your feedback with our local team.
+        </p>
+        <div class="review-action">
+          <a
+            [href]="job.googleReviewUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="google-review-link"
+          >
+            <otui-button [tone]="'brand'" [emphasis]="'solid'">
+              Leave a Google review
+            </otui-button>
+          </a>
+        </div>
+      </div>
+    </otui-card>
+
+    <!-- Appointment & Job Details Card -->
+    <div class="details-grid">
+      <otui-card class="details-card">
+        <h2>Service details</h2>
+        <dl class="details-list">
+          <div class="detail-row">
+            <dt>Client name</dt>
+            <dd>{{ job.customerName }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Service address</dt>
+            <dd>{{ job.streetAddress }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Package</dt>
+            <dd>{{ job.servicePackageName }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Arrival window</dt>
+            <dd>{{ job.arrivalWindow }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Total charge</dt>
+            <dd>${{ job.totalPrice | number : '1.2-2' }}</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Deposit paid</dt>
+            <dd class="paid-amount">
+              ${{ job.depositPaid | number : '1.2-2' }}
+            </dd>
+          </div>
+          <div class="detail-row">
+            <dt>Remaining balance</dt>
+            <dd class="balance-amount">
+              ${{ job.balanceRemaining | number : '1.2-2' }}
+            </dd>
+          </div>
+        </dl>
+      </otui-card>
+
+      <!-- Technician Notes / Field Crew Console -->
+      <otui-card class="technician-card">
+        <div class="technician-header">
+          <h2>Technician log</h2>
+          <otui-button
+            [tone]="'neutral'"
+            [emphasis]="'outline'"
+            (action)="toggleTechnicianConsole()"
+          >
+            {{
+              showTechnicianConsole
+                ? 'Hide technician controls'
+                : 'Technician controls'
+            }}
+          </otui-button>
+        </div>
+
+        <div *ngIf="job.technicianNotes" class="logged-notes">
+          <p class="notes-body">{{ job.technicianNotes }}</p>
+        </div>
+        <p *ngIf="!job.technicianNotes" class="no-notes">
+          No technician notes logged yet.
+        </p>
+
+        <!-- Simulated Technician Controls (for field demo / testing) -->
+        <div *ngIf="showTechnicianConsole" class="technician-console">
+          <lib-text-area
+            label="Log completion notes (offline resilient)"
+            placeholder="Document service notes or surface condition before leaving site"
+            [rows]="3"
+            [(ngModel)]="technicianInputNotes"
+            name="technicianInputNotes"
+          ></lib-text-area>
+
+          <div class="save-notes-action">
+            <otui-button
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+              (action)="saveTechnicianNotes()"
+            >
+              Save technician notes
+            </otui-button>
+          </div>
+        </div>
+      </otui-card>
+    </div>
+  </div>
+</section>

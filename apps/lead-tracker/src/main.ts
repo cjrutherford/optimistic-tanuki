@@ -1,12 +1,11 @@
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import loadConfig from './config';
 
 async function bootstrap() {
-  const configApp = await NestFactory.create(AppModule);
-  const config = configApp.get(ConfigService);
+  const config = loadConfig();
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
@@ -14,7 +13,7 @@ async function bootstrap() {
       transport: Transport.TCP,
       options: {
         host: '0.0.0.0',
-        port: Number(config.get('listenPort')) || 3020,
+        port: Number(config.listenPort) || 3020,
       },
     }
   );
@@ -22,7 +21,7 @@ async function bootstrap() {
   await app.listen().then(() => {
     Logger.log(
       'Lead Tracker microservice listening on port: ' +
-        (config.get('listenPort') || 3020)
+        (config.listenPort || 3020)
     );
   });
 }

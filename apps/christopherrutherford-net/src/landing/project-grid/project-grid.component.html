@@ -1,20 +1,21 @@
 <otui-tile class="section-heading-tile">
   <span class="section-kicker">Selected work</span>
   <otui-heading
-    [text]="
-      'A few of the customer-facing apps that show the range of work I take on'
-    "
+    [text]="'A broad set of apps that show the range of product work I take on'"
     [size]="'2em'"
   ></otui-heading>
   <p class="section-intro">
-    These are here as proof of work, but they are not all solving the same
-    problem. Some are workflow-heavy, some are product-heavy, and some are more
-    about structure, onboarding, or information clarity.
+    Explore customer products, focused workflows, and tools built for specific
+    audiences. Each project links to its source in the workspace.
   </p>
 </otui-tile>
-<div class="projectGrid">
+<div class="projectGrid" role="list" aria-label="Registered web apps">
   @for (project of (projects$ | async) ?? []; track project.id) {
-  <otui-card class="portfolio-card" [ngClass]="'tone-' + project.tone">
+  <otui-card
+    class="portfolio-card"
+    role="listitem"
+    [ngClass]="'tone-' + project.tone"
+  >
     <div class="portfolio-card-header">
       <div class="portfolio-mark">
         @if (project.logoSrc) {
@@ -28,9 +29,7 @@
         <h3>{{ project.name }}</h3>
         <p class="portfolio-tagline">{{ project.tagline }}</p>
       </div>
-      <span class="portfolio-state">{{
-        project.isPublic ? 'Live app available' : 'Repository only'
-      }}</span>
+      <span class="portfolio-state">Source in workspace</span>
     </div>
 
     <div class="portfolio-copy">
@@ -40,11 +39,12 @@
 
     <div class="portfolio-actions">
       @if (project.liveHref) {
-      <a class="portfolio-link primary" [href]="project.liveHref">Open app</a>
-      }
+      <a class="portfolio-link primary" [href]="project.liveHref">Visit site</a>
+      } @if (project.repoHref) {
       <a class="portfolio-link secondary" [href]="project.repoHref"
-        >View repository</a
+        >View source</a
       >
+      }
     </div>
   </otui-card>
   }

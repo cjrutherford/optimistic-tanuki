@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, NotImplementedException } from '@nestjs/common';
 import {
   AssetDto,
   AssetType,
@@ -9,6 +9,11 @@ import * as fs from 'fs/promises';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { LocalStorageAdapter } from './local-storage';
+import {
+  EnvelopeEncryptionService,
+  VAULT_STORAGE_KEK_ENV,
+} from './envelope-encryption.service';
+import { ZfsStorageService } from './zfs-storage.service';
 
 // uuid ships as ESM, which this project's jest transform does not parse, so it
 // has to be stubbed. Ids still increment so two assets remain distinguishable.
@@ -16,6 +21,8 @@ let uuidCounter = 0;
 jest.mock('uuid', () => ({
   v4: jest.fn(() => `uuid-${++uuidCounter}`),
 }));
+
+process.env[VAULT_STORAGE_KEK_ENV] = 'local-storage-spec-kek';
 
 /**
  * These run against a real temp directory rather than a mocked fs: the adapter
@@ -45,7 +52,16 @@ describe('LocalStorageAdapter', () => {
       warn: jest.fn(),
       error: jest.fn(),
     } as unknown as Logger;
-    adapter = new LocalStorageAdapter(logger, basePath);
+    adapter = new LocalStorageAdapter(
+      logger,
+      basePath,
+      new EnvelopeEncryptionService(),
+      undefined,
+      new ZfsStorageService(
+        () => Promise.reject(new Error('zfs: not found')),
+        {}
+      )
+    );
   });
 
   afterEach(() => {
@@ -56,7 +72,7 @@ describe('LocalStorageAdapter', () => {
     it('creates the base path when it does not exist yet', () => {
       const missing = path.join(basePath, 'nested', 'deeper');
 
-      new LocalStorageAdapter(logger, missing);
+      new LocalStorageAdapter(logger, missing, new EnvelopeEncryptionService());
 
       expect(existsSync(missing)).toBe(true);
     });
@@ -83,7 +99,11 @@ describe('LocalStorageAdapter', () => {
       const written = await fs.readFile(
         path.join(basePath, created.storagePath)
       );
-      expect(written.toString()).toBe('hello');
+      expect(written.subarray(0, 7).toString('utf8')).toBe('OTENV1:');
+      expect(written.includes(Buffer.from('hello'))).toBe(false);
+      await expect(adapter.read(created)).resolves.toBe(
+        `data:image/png;base64,${Buffer.from('hello').toString('base64')}`
+      );
     });
 
     it('writes a raw buffer payload', async () => {
@@ -97,7 +117,8 @@ describe('LocalStorageAdapter', () => {
       const written = await fs.readFile(
         path.join(basePath, created.storagePath)
       );
-      expect(written.toString()).toBe('binary');
+      expect(written.subarray(0, 7).toString('utf8')).toBe('OTENV1:');
+      expect(written.includes(Buffer.from('binary'))).toBe(false);
     });
 
     it('copies from a source path when one is given', async () => {
@@ -114,7 +135,11 @@ describe('LocalStorageAdapter', () => {
       const written = await fs.readFile(
         path.join(basePath, created.storagePath)
       );
-      expect(written.toString()).toBe('copied');
+      expect(written.subarray(0, 7).toString('utf8')).toBe('OTENV1:');
+      expect(written.includes(Buffer.from('copied'))).toBe(false);
+      await expect(adapter.read(created)).resolves.toBe(
+        `data:text/plain;base64,${Buffer.from('copied').toString('base64')}`
+      );
     });
 
     it('replaces whitespace in the name so the path stays predictable', async () => {
@@ -268,11 +293,10 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('retrieve', () => {
-    it('echoes the id back on a placeholder dto', async () => {
-      const result = await adapter.retrieve(asset({ id: 'asset-9' }));
-
-      expect(result.id).toBe('asset-9');
-      expect(result.storageStrategy).toBe(StorageStrategy.LOCAL_BLOCK_STORAGE);
+    it('fails closed instead of returning placeholder metadata', async () => {
+      await expect(adapter.retrieve(asset({ id: 'asset-9' }))).rejects.toThrow(
+        NotImplementedException
+      );
     });
   });
 });

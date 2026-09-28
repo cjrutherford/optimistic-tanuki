@@ -1,5 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { createHash } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, LessThanOrEqual, Not, Repository } from 'typeorm';
 import {
   EmailService,
   renderDomainEmailTemplate,
@@ -11,16 +21,17 @@ import {
   LeadTopic,
   LeadTopicLink,
 } from '@optimistic-tanuki/models/leads-entities';
-import { Repository } from 'typeorm';
 import {
   LeadQualificationSummary,
   DiscInterviewTurn,
   LeadAuthContext,
+  CommitHardwareProposalRequest,
   CreateLeadDto,
   CreateLeadFlagDto,
   CreateLeadTopicDto,
   DEFAULT_LEAD_DISCOVERY_SOURCES,
   LeadDiscoverySource,
+  LeadSource,
   LeadTopicDiscoveryIntent,
   UpdateLeadDto,
   UpdateLeadTopicDto,
@@ -31,10 +42,14 @@ import {
 } from '@optimistic-tanuki/models/leads-contracts';
 import type { AspirationalCompany } from '@optimistic-tanuki/leads-contracts';
 import { LeadQualificationService } from './lead-qualification.service';
+import { LeadNotificationOutbox } from './entities/lead-notification-outbox.entity';
+import { addBusinessHoursForLeadAcknowledgment } from './hai-lead-sla.util';
 
 @Injectable()
-export class LeadsService {
+export class LeadsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LeadsService.name);
+  private outboxTimer?: ReturnType<typeof setInterval>;
+  private outboxDrainInProgress = false;
 
   constructor(
     @InjectRepository(Lead)
@@ -48,20 +63,44 @@ export class LeadsService {
     @InjectRepository(LeadQualification)
     private readonly qualificationRepository: Repository<LeadQualification>,
     private readonly leadQualificationService: LeadQualificationService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    @Inject('LEAD_TRACKER_CONNECTION')
+    private readonly dataSource: DataSource
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    this.outboxTimer = setInterval(() => {
+      void this.drainNotificationOutbox();
+    }, 15_000);
+    this.outboxTimer.unref?.();
+    await this.drainNotificationOutbox();
+  }
+
+  onModuleDestroy(): void {
+    if (this.outboxTimer) {
+      clearInterval(this.outboxTimer);
+    }
+  }
 
   async findAll(filters?: {
     status?: string;
     source?: string;
     appScope?: string;
     profileId: string;
+    ownerConsoleAccess?: boolean;
   }): Promise<Array<Lead & { isFlagged: boolean }>> {
     const query = this.leadRepository.createQueryBuilder('lead');
     query.leftJoinAndSelect('lead.flags', 'flag');
-    query.andWhere('lead.profileId = :profileId', {
-      profileId: filters?.profileId,
-    });
+    if (filters?.ownerConsoleAccess && filters.appScope === 'hai') {
+      query.andWhere('lead.appScope = :appScope', { appScope: 'hai' });
+    } else {
+      query.andWhere('lead.profileId = :profileId', {
+        profileId: filters?.profileId,
+      });
+      query.andWhere('lead.appScope != :restrictedAppScope', {
+        restrictedAppScope: 'hai',
+      });
+    }
 
     if (filters?.status) {
       query.andWhere('lead.status = :status', { status: filters.status });
@@ -100,14 +139,17 @@ export class LeadsService {
 
   async findOne(
     id: string,
-    profileId: string
+    profileId: string,
+    ownerConsoleAccess = false
   ): Promise<(Lead & { isFlagged: boolean }) | null> {
     if (!this.isUuid(id)) {
       return null;
     }
 
     const lead = await this.leadRepository.findOne({
-      where: { id, profileId },
+      where: ownerConsoleAccess
+        ? { id, appScope: 'hai' }
+        : { id, profileId, appScope: Not('hai') },
       relations: { flags: true },
     });
 
@@ -121,14 +163,65 @@ export class LeadsService {
     };
   }
 
-  async create(dto: CreateLeadDto, context: LeadAuthContext): Promise<Lead> {
-    const lead = this.leadRepository.create({
-      ...dto,
-      appScope: context.appScope,
-      profileId: context.profileId,
-      userId: context.userId,
+  async create(
+    dto: CreateLeadDto,
+    context: LeadAuthContext,
+    ownerNotificationRecipients: string[] = []
+  ): Promise<Lead> {
+    const createdAt = new Date();
+    const acknowledgmentDueAt =
+      context.appScope === 'hai'
+        ? addBusinessHoursForLeadAcknowledgment(createdAt)
+        : null;
+    const recipients =
+      context.appScope === 'hai'
+        ? Array.from(
+            new Set(
+              (ownerNotificationRecipients || [])
+                .map((email) => email.trim().toLowerCase())
+                .filter(Boolean)
+            )
+          )
+        : [];
+    if (context.appScope === 'hai' && recipients.length === 0) {
+      this.logger.warn(
+        `HAI lead intake has no trusted owner notification recipients for profile ${context.profileId}`
+      );
+    }
+
+    const savedLead = await this.dataSource.transaction(async (manager) => {
+      const leadRepository = manager.getRepository(Lead);
+      const lead = leadRepository.create({
+        ...dto,
+        appScope: context.appScope,
+        profileId: context.profileId,
+        userId: context.userId,
+        dueAt: acknowledgmentDueAt,
+        firstPersonalResponseAt: null,
+      });
+      const saved = await leadRepository.save(lead);
+      const outboxRepository = manager.getRepository(LeadNotificationOutbox);
+      const intakeMessages = recipients.map((recipientEmail) =>
+        this.createNotification(saved, recipientEmail, 'intake', createdAt)
+      );
+      const breachMessages = acknowledgmentDueAt
+        ? recipients.map((recipientEmail) =>
+            this.createNotification(
+              saved,
+              recipientEmail,
+              'sla_breach',
+              acknowledgmentDueAt
+            )
+          )
+        : [];
+      if (intakeMessages.length || breachMessages.length) {
+        await outboxRepository.save([...intakeMessages, ...breachMessages]);
+      }
+      return saved;
     });
-    const savedLead = await this.leadRepository.save(lead);
+
+    // The lead and all notifications are committed before SMTP is contacted.
+    await this.drainNotificationOutbox();
     await this.leadQualificationService
       .analyzeAndSave(savedLead, null)
       .catch((error) =>
@@ -140,13 +233,153 @@ export class LeadsService {
     };
   }
 
+  async commitHardwareProposal(
+    request: CommitHardwareProposalRequest
+  ): Promise<Lead> {
+    const { context, proposal } =
+      request || ({} as CommitHardwareProposalRequest);
+    if (
+      context?.appScope !== 'owner-console' ||
+      context?.ownerConsoleAccess !== true ||
+      !context.userId?.trim() ||
+      !context.profileId?.trim()
+    ) {
+      throw new ForbiddenException('Verified owner context is required');
+    }
+    if (
+      !proposal?.quoteId?.trim() ||
+      !proposal.customerName?.trim() ||
+      !proposal.idempotencyKey?.trim() ||
+      !['tier1', 'tier2', 'tier3'].includes(proposal.tier) ||
+      !Number.isFinite(proposal.total) ||
+      proposal.total < 0 ||
+      !/^[A-Z]{3}$/.test(proposal.currency) ||
+      !proposal.terms ||
+      typeof proposal.terms !== 'object' ||
+      Array.isArray(proposal.terms)
+    ) {
+      throw new BadRequestException('Hardware proposal details are invalid');
+    }
+
+    const canonicalize = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(canonicalize);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, item]) => [key, canonicalize(item)])
+        );
+      }
+      return value;
+    };
+    const proposalHash = createHash('sha256')
+      .update(
+        JSON.stringify(
+          canonicalize({
+            ownerUserId: context.userId,
+            ownerProfileId: context.profileId,
+            ...proposal,
+          })
+        )
+      )
+      .digest('hex');
+
+    const assertSameProposal = (existing: Lead): Lead => {
+      if (
+        existing.proposalIdempotencyKey !== proposal.idempotencyKey ||
+        existing.commercialQuoteId !== proposal.quoteId ||
+        existing.commercialProposalHash !== proposalHash
+      ) {
+        throw new BadRequestException(
+          'Idempotency key was already used for another proposal'
+        );
+      }
+      return existing;
+    };
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        const leadRepository = manager.getRepository(Lead);
+        const existing = await leadRepository.findOne({
+          where: [
+            { proposalIdempotencyKey: proposal.idempotencyKey },
+            { commercialQuoteId: proposal.quoteId },
+          ],
+        });
+        if (existing) {
+          return assertSameProposal(existing);
+        }
+
+        const lead = leadRepository.create({
+          name: proposal.customerName.trim(),
+          email: proposal.customerEmail?.trim() || undefined,
+          phone: proposal.customerPhone?.trim() || undefined,
+          source: LeadSource.OTHER,
+          value: proposal.total,
+          notes: `Accepted ${proposal.tier} hardware proposal for quote ${proposal.quoteId}.`,
+          contactSubject: `Hardware proposal ${proposal.tier}`,
+          contactSourceLabel: 'HAI',
+          appScope: 'hai',
+          profileId: context.profileId,
+          userId: context.userId,
+          dueAt: null,
+          firstPersonalResponseAt: null,
+          commercialQuoteId: proposal.quoteId,
+          proposalIdempotencyKey: proposal.idempotencyKey,
+          commercialProposalHash: proposalHash,
+          hardwareTier: proposal.tier,
+          commercialCurrency: proposal.currency,
+          acceptedTerms: proposal.terms,
+        });
+        return leadRepository.save(lead);
+      });
+    } catch (error) {
+      if (!this.isUniqueViolation(error)) {
+        throw error;
+      }
+
+      // Another transaction can pass the pre-insert lookup before it commits.
+      // Reload from the base repository after that transaction wins its unique
+      // insert so identical client retries still return the created lead.
+      const existing = await this.leadRepository.findOne({
+        where: [
+          { proposalIdempotencyKey: proposal.idempotencyKey },
+          { commercialQuoteId: proposal.quoteId },
+        ],
+      });
+      if (!existing) {
+        throw error;
+      }
+      return assertSameProposal(existing);
+    }
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    const candidate = error as {
+      code?: unknown;
+      driverError?: { code?: unknown };
+    };
+    return (
+      candidate.code === '23505' || candidate.driverError?.code === '23505'
+    );
+  }
+
   async update(
     id: string,
     dto: UpdateLeadDto,
-    profileId: string
+    profileId: string,
+    ownerConsoleAccess = false
   ): Promise<(Lead & { isFlagged: boolean }) | null> {
-    await this.leadRepository.update({ id, profileId }, dto);
-    return this.findOne(id, profileId);
+    await this.leadRepository.update(
+      ownerConsoleAccess
+        ? { id, appScope: 'hai' }
+        : { id, profileId, appScope: Not('hai') },
+      dto
+    );
+    return this.findOne(id, profileId, ownerConsoleAccess);
   }
 
   async delete(id: string, profileId: string): Promise<{ deleted: number }> {
@@ -154,7 +387,19 @@ export class LeadsService {
     // with nothing completes its observable without emitting, and the
     // gateway's `firstValueFrom` then rejects with an EmptyError that surfaces
     // as a 500 on a delete that actually succeeded.
-    const result = await this.leadRepository.delete({ id, profileId });
+    const result = await this.dataSource.transaction(async (manager) => {
+      const deletion = await manager.getRepository(Lead).delete({
+        id,
+        profileId,
+        appScope: Not('hai'),
+      });
+      if (deletion.affected) {
+        await manager
+          .getRepository(LeadNotificationOutbox)
+          .update({ leadId: id, status: 'pending' }, { status: 'suppressed' });
+      }
+      return deletion;
+    });
     return { deleted: result.affected ?? 0 };
   }
 
@@ -166,7 +411,10 @@ export class LeadsService {
     lead: (Lead & { isFlagged: boolean }) | null;
     delivery: { success: boolean; error?: string };
   }> {
-    const lead = await this.findOne(id, context.profileId);
+    const ownerConsoleAccess =
+      context.ownerConsoleAccess === true &&
+      context.appScope === 'owner-console';
+    const lead = await this.findOne(id, context.profileId, ownerConsoleAccess);
     if (!lead) {
       return {
         lead: null,
@@ -174,7 +422,22 @@ export class LeadsService {
       };
     }
 
-    const toEmail = dto.toEmail?.trim() || lead.email?.trim();
+    if (
+      ownerConsoleAccess &&
+      dto.toEmail?.trim() &&
+      dto.toEmail.trim().toLowerCase() !== lead.email?.trim().toLowerCase()
+    ) {
+      return {
+        lead,
+        delivery: {
+          success: false,
+          error: 'HAI owner responses must be addressed to the lead email.',
+        },
+      };
+    }
+    const toEmail = ownerConsoleAccess
+      ? lead.email?.trim()
+      : dto.toEmail?.trim() || lead.email?.trim();
     if (!toEmail) {
       return {
         lead,
@@ -199,7 +462,8 @@ export class LeadsService {
       replyTo: process.env.SMTP_FROM,
     });
 
-    const responseTimestamp = new Date().toISOString();
+    const responseAt = new Date();
+    const responseTimestamp = responseAt.toISOString();
     const responseHeader = delivery.success
       ? `Operator response sent: ${responseTimestamp}`
       : `Operator response failed: ${responseTimestamp}`;
@@ -214,24 +478,192 @@ export class LeadsService {
       ...responseBody,
     ].join('\n');
 
-    await this.leadRepository.update(
-      { id, profileId: context.profileId },
-      {
-        notes: `${lead.notes || ''}${responseNote}`.trim(),
-        status: delivery.success
-          ? dto.status || LeadStatus.CONTACTED
-          : lead.status,
-        nextFollowUp: delivery.success
-          ? dto.nextFollowUp || lead.nextFollowUp
-          : lead.nextFollowUp,
-        lastRespondedAt: delivery.success ? new Date() : lead.lastRespondedAt,
-      }
-    );
+    const leadCriteria = ownerConsoleAccess
+      ? { id, appScope: 'hai' }
+      : { id, profileId: context.profileId, appScope: Not('hai') };
+    const responseUpdate = {
+      notes: `${lead.notes || ''}${responseNote}`.trim(),
+      status: delivery.success
+        ? dto.status || LeadStatus.CONTACTED
+        : lead.status,
+      nextFollowUp: delivery.success
+        ? dto.nextFollowUp || lead.nextFollowUp
+        : lead.nextFollowUp,
+      lastRespondedAt: delivery.success ? responseAt : lead.lastRespondedAt,
+      ...(delivery.success && ownerConsoleAccess
+        ? {
+            firstPersonalResponseAt: () =>
+              'COALESCE("firstPersonalResponseAt", CURRENT_TIMESTAMP)',
+          }
+        : {}),
+    };
+    if (delivery.success) {
+      await this.dataSource.transaction(async (manager) => {
+        await manager.getRepository(Lead).update(leadCriteria, responseUpdate);
+        const firstResponse = lead.firstPersonalResponseAt || responseAt;
+        if (
+          ownerConsoleAccess &&
+          lead.dueAt &&
+          firstResponse.getTime() <= lead.dueAt.getTime()
+        ) {
+          await manager
+            .getRepository(LeadNotificationOutbox)
+            .update(
+              { leadId: id, eventType: 'sla_breach', status: 'pending' },
+              { status: 'suppressed' }
+            );
+        }
+      });
+    } else {
+      await this.leadRepository.update(leadCriteria, responseUpdate);
+    }
 
     return {
-      lead: await this.findOne(id, context.profileId),
+      lead: await this.findOne(id, context.profileId, ownerConsoleAccess),
       delivery,
     };
+  }
+
+  private createNotification(
+    lead: Lead,
+    recipientEmail: string,
+    eventType: 'intake' | 'sla_breach',
+    nextAttemptAt: Date
+  ): LeadNotificationOutbox {
+    const isBreach = eventType === 'sla_breach';
+    const subject = isBreach
+      ? `HAI response SLA missed: ${lead.contactSubject || lead.name}`
+      : `New HAI inquiry: ${lead.contactSubject || lead.name}`;
+    const template = renderDomainEmailTemplate({
+      domain: process.env.SMTP_FROM || 'optimistic-tanuki.com',
+      appName: 'HAI Lead Intake',
+      heading: subject,
+      body: isBreach
+        ? [
+            `No personal response was recorded for ${lead.name} by the one business-hour acknowledgment deadline.`,
+            `Lead ID: ${lead.id}`,
+            `Contact: ${lead.email || 'No email supplied'}`,
+          ]
+        : [
+            `A new contact inquiry was received from ${lead.name}.`,
+            `Email: ${lead.email || 'No email supplied'}`,
+            lead.company ? `Company: ${lead.company}` : '',
+            `Subject: ${lead.contactSubject || 'General inquiry'}`,
+            lead.contactMessage || '',
+            `Lead ID: ${lead.id}`,
+          ].filter(Boolean),
+    });
+
+    return {
+      leadId: lead.id,
+      recipientEmail,
+      eventType,
+      subject,
+      text: template.text,
+      html: template.html,
+      status: 'pending',
+      attempts: 0,
+      nextAttemptAt,
+      lastError: null,
+      sentAt: null,
+    } as LeadNotificationOutbox;
+  }
+
+  private async drainNotificationOutbox(): Promise<void> {
+    if (this.outboxDrainInProgress) {
+      return;
+    }
+
+    this.outboxDrainInProgress = true;
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        const outboxRepository = manager.getRepository(LeadNotificationOutbox);
+        const dueNotifications = await outboxRepository.find({
+          where: {
+            status: 'pending',
+            nextAttemptAt: LessThanOrEqual(new Date()),
+          },
+          order: { nextAttemptAt: 'ASC', createdAt: 'ASC' },
+          take: 25,
+        });
+
+        for (const candidate of dueNotifications) {
+          // All dispatch and response paths lock the lead before the outbox
+          // row, then recheck status under lock to prevent duplicate sends.
+          const lead = await manager.getRepository(Lead).findOne({
+            where: { id: candidate.leadId },
+            lock: { mode: 'pessimistic_write' },
+          });
+          const notification = await outboxRepository.findOne({
+            where: { id: candidate.id, status: 'pending' },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (
+            !notification ||
+            notification.nextAttemptAt.getTime() > Date.now()
+          ) {
+            continue;
+          }
+          if (
+            notification.eventType === 'sla_breach' &&
+            (!lead ||
+              (lead.firstPersonalResponseAt &&
+                lead.dueAt &&
+                lead.firstPersonalResponseAt.getTime() <= lead.dueAt.getTime()))
+          ) {
+            notification.status = 'suppressed';
+            await outboxRepository.save(notification);
+            continue;
+          }
+
+          try {
+            const delivery = await this.emailService.sendEmail({
+              to: notification.recipientEmail,
+              subject: notification.subject,
+              text: notification.text,
+              html: notification.html,
+              replyTo: process.env.SMTP_FROM,
+            });
+            if (delivery.success) {
+              notification.status = 'sent';
+              notification.sentAt = new Date();
+              notification.lastError = null;
+            } else {
+              this.scheduleNotificationRetry(
+                notification,
+                delivery.error || 'Email delivery failed'
+              );
+            }
+          } catch (error) {
+            this.scheduleNotificationRetry(
+              notification,
+              error instanceof Error ? error.message : String(error)
+            );
+          }
+          await outboxRepository.save(notification);
+        }
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed to drain lead notification outbox',
+        error instanceof Error ? error.stack : String(error)
+      );
+    } finally {
+      this.outboxDrainInProgress = false;
+    }
+  }
+
+  private scheduleNotificationRetry(
+    notification: LeadNotificationOutbox,
+    error: string
+  ): void {
+    notification.attempts += 1;
+    notification.lastError = error;
+    const retryDelayMs = Math.min(
+      60 * 60 * 1000,
+      60 * 1000 * 2 ** Math.min(notification.attempts - 1, 6)
+    );
+    notification.nextAttemptAt = new Date(Date.now() + retryDelayMs);
   }
 
   async findAllTopics(profileId: string): Promise<LeadTopic[]> {

@@ -28,6 +28,10 @@ spec:
               value: 'postgres'
             - name: POSTGRES_PORT
               value: '5432'
+            - name: SERVICE_COMPLIANCE_AUDIT_HOST
+              value: 'compliance-audit'
+            - name: SERVICE_COMPLIANCE_AUDIT_PORT
+              value: '3025'
           envFrom:
             - secretRef:
                 name: optimistic-tanuki-secrets

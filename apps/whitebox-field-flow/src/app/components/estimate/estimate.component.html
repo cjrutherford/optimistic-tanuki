@@ -1,0 +1,239 @@
+<section class="estimate-shell">
+  <div class="estimate-container">
+    <header class="section-header">
+      <p class="eyebrow">Instant service estimate</p>
+      <h1>Configure your trade service quote</h1>
+      <p class="lede">
+        Select your required service tier and parameters below for a
+        server-calculated quote and confirmed arrival window.
+      </p>
+    </header>
+
+    <div
+      *ngIf="
+        tenantResolutionState === 'loading' ||
+        (tenantResolutionState === 'idle' && !isBrandResolved)
+      "
+      class="alert-banner"
+      role="status"
+    >
+      Loading service profile…
+    </div>
+
+    <div
+      *ngIf="tenantResolutionState === 'error'"
+      class="alert-banner"
+      role="alert"
+    >
+      {{ tenantResolutionError || 'Unable to resolve the service tenant.' }}
+    </div>
+
+    <div *ngIf="formError" class="alert-banner" role="alert">
+      {{ formError }}
+    </div>
+
+    <div class="estimator-layout">
+      <!-- Parameters Column -->
+      <otui-card class="parameters-card">
+        <!-- 1. Service Tier Selector -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">1. Select service package</legend>
+          <div class="tier-buttons">
+            <button
+              *ngFor="let service of availableServices"
+              type="button"
+              class="tier-card-btn touch-target"
+              [class.active]="selectedPackage === service.id"
+              (click)="onPackageSelect(service.id)"
+            >
+              <div class="tier-header">
+                <span class="tier-name">{{ service.name }}</span>
+                <otui-badge [tone]="'brand'" [emphasis]="'soft'"
+                  >Service details</otui-badge
+                >
+              </div>
+              <p class="tier-desc">{{ service.description }}</p>
+              <span class="tier-duration">
+                Approx. {{ service.durationHours }} hours
+              </span>
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 2. Vehicle or Property Size -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">2. Property or vehicle size</legend>
+          <div class="selector-row">
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'compact'"
+              (click)="onSizeSelect('compact')"
+            >
+              Compact / Small
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'midsize'"
+              (click)="onSizeSelect('midsize')"
+            >
+              Midsize / Standard
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'large'"
+              (click)="onSizeSelect('large')"
+            >
+              Large / SUV
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedSize === 'commercial'"
+              (click)="onSizeSelect('commercial')"
+            >
+              Commercial
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 3. Surface Condition -->
+        <fieldset class="parameter-group">
+          <legend class="group-title">3. Surface condition</legend>
+          <div class="selector-row">
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'light'"
+              (click)="onConditionSelect('light')"
+            >
+              Light / Clean
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'moderate'"
+              (click)="onConditionSelect('moderate')"
+            >
+              Moderate
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'heavy'"
+              (click)="onConditionSelect('heavy')"
+            >
+              Heavy soil
+            </button>
+            <button
+              type="button"
+              class="option-pill touch-target"
+              [class.active]="selectedCondition === 'severe'"
+              (click)="onConditionSelect('severe')"
+            >
+              Severe / Oxidation
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- 4. Area / Square Footage (optional) -->
+        <div class="parameter-group">
+          <label for="sqft-input" class="group-title">
+            4. Area or perimeter size (square feet)
+          </label>
+          <div class="input-row">
+            <input
+              id="sqft-input"
+              type="number"
+              min="100"
+              max="10000"
+              step="50"
+              [(ngModel)]="squareFootage"
+              (ngModelChange)="onSqftChange()"
+              class="touch-target"
+              placeholder="e.g. 800"
+            />
+            <span class="input-helper">
+              Enter the measured area so the server can calculate the quote.
+            </span>
+          </div>
+        </div>
+      </otui-card>
+
+      <!-- Real-Time Calculation & Summary Card -->
+      <otui-card class="summary-card" aria-label="Quote summary">
+        <h2 class="summary-heading">Quote calculation</h2>
+        <div class="package-recap">
+          <otui-badge [tone]="'brand'" [emphasis]="'solid'">
+            {{ calculation.packageDetails.name }}
+          </otui-badge>
+          <p class="package-recap-desc">
+            {{ calculation.packageDetails.description }}
+          </p>
+        </div>
+
+        <ul class="features-checklist">
+          <li *ngFor="let feat of calculation.packageDetails.features">
+            {{ feat }}
+          </li>
+        </ul>
+
+        <ng-container *ngIf="calculation.isAuthoritative; else pendingQuote">
+          <div class="pricing-breakdown">
+            <div class="breakdown-row">
+              <span>Subtotal</span>
+              <span class="amount"
+                >{{ calculation.currency }}
+                {{ calculation.subtotal | number : '1.2-2' }}</span
+              >
+            </div>
+            <div class="breakdown-row">
+              <span>Server-calculated tax</span>
+              <span class="amount"
+                >{{ calculation.currency }}
+                {{ calculation.taxAmount | number : '1.2-2' }}</span
+              >
+            </div>
+            <div class="breakdown-row total-row">
+              <strong>Server-authoritative total</strong>
+              <strong class="total-amount">
+                {{ calculation.currency }}
+                {{ calculation.total | number : '1.2-2' }}
+              </strong>
+            </div>
+            <div class="breakdown-row deposit-row">
+              <span>Required booking deposit</span>
+              <span class="deposit-amount">
+                {{ calculation.currency }}
+                {{ calculation.depositAmount | number : '1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #pendingQuote>
+          <p class="pending-quote">
+            A server-authoritative quote will appear here after the request
+            succeeds.
+          </p>
+        </ng-template>
+
+        <div class="card-footer-action">
+          <otui-button
+            [tone]="'brand'"
+            [emphasis]="'solid'"
+            [disabled]="!isBrandResolved"
+            (action)="proceedToBooking()"
+          >
+            Continue to scheduling
+          </otui-button>
+          <p class="guarantee-text">
+            Deposit applied directly to final invoice. Full refund for
+            cancellations with 24-hour notice.
+          </p>
+        </div>
+      </otui-card>
+    </div>
+  </div>
+</section>

@@ -49,6 +49,7 @@ import { IntentAnalyzer } from './intent/intent-analyzer.service';
 import { DataTracker } from './data/data-tracker.service';
 import { ConversationService } from './conversation/conversation.service';
 import { RedisCheckpointer } from './conversation/redis-checkpointer';
+import { VaultCopilotService } from './vault-copilot.service';
 
 // O24b: downstream set mirrors the gateway's composition vocabulary so the
 // O23 coherence check holds. `prompt-proxy` is wired but optional (unused at
@@ -255,6 +256,7 @@ export const createOrchestratorProviders = (
     DataTracker,
     ConversationService,
     RedisCheckpointer,
+    VaultCopilotService,
     // {
     //   provide: APP_GUARD,
     //   useClass: RateLimitGuard,

@@ -1,0 +1,65 @@
+.civic-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  z-index: 1100;
+  padding: 10px 16px;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.civic-skip-link:focus {
+  top: 12px;
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.civic-app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.civic-main-content {
+  flex: 1;
+}
+
+.civic-main-content:focus {
+  outline: none;
+}
+
+.civic-footer {
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  padding: 24px 0;
+  margin-top: 60px;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.footer-brand {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.footer-copy {
+  font-size: 0.85rem;
+  color: var(--foreground-muted);
+  margin: 4px 0 0 0;
+  max-width: 640px;
+}
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}

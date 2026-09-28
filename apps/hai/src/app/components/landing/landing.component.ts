@@ -14,6 +14,9 @@ import { EcosystemSectionComponent } from './ecosystem-section.component';
 import { ContactSectionComponent } from './contact-section.component';
 import { EngagementSectionComponent } from './engagement-section.component';
 import { PartnerSectionComponent } from './partner-section.component';
+import { HardwareCatalogComponent } from '../hardware-catalog/hardware-catalog.component';
+import { RoiCalculatorSectionComponent } from './roi-calculator-section.component';
+import { SolutionsMatrixComponent } from '../solutions-matrix/solutions-matrix.component';
 
 @Component({
   selector: 'hai-landing',
@@ -25,6 +28,9 @@ import { PartnerSectionComponent } from './partner-section.component';
     PulseRingsComponent,
     TopographicDriftComponent,
     ServicesSectionComponent,
+    HardwareCatalogComponent,
+    RoiCalculatorSectionComponent,
+    SolutionsMatrixComponent,
     ManifestoSectionComponent,
     PersonalCloudSectionComponent,
     EcosystemSectionComponent,
@@ -43,6 +49,17 @@ export class LandingComponent {
   readonly ecosystem$ = this.appDirectory.getResolvedApps('hai');
   submittingContact = false;
   contactStatus: string | null = null;
+  contactPrefill: string | null = null;
+
+  prefillContactWithComparison(message: string): void {
+    this.contactPrefill = message;
+    this.contactStatus = null;
+    if (isPlatformBrowser(this.platformId)) {
+      document
+        .getElementById('contact')
+        ?.scrollIntoView({ behavior: this.reducedMotion ? 'auto' : 'smooth' });
+    }
+  }
 
   readonly servicePillars = [
     {
@@ -162,7 +179,8 @@ export class LandingComponent {
       .subscribe({
         next: () => {
           this.submittingContact = false;
-          this.contactStatus = 'Message received. We will follow up shortly.';
+          this.contactStatus =
+            'Message received. A platform owner will personally acknowledge it within one business hour, Monday–Friday, 9 a.m.–5 p.m. Eastern.';
         },
         error: () => {
           this.submittingContact = false;

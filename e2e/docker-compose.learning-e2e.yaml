@@ -185,7 +185,7 @@ services:
       LEARNING_OLLAMA_URL: ${LEARNING_OLLAMA_URL:-http://shangrila:11434}
       LEARNING_GRADING_MODEL: ${LEARNING_GRADING_MODEL:-nemotron-3-nano:4b-q8_0}
     extra_hosts:
-      - 'shangrila:100.89.87.124'
+      - '${SHANGRILA_EXTRA_HOST:-shangrila:host-gateway}'
     depends_on:
       db:
         condition: service_healthy

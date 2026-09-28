@@ -1,0 +1,29 @@
+{
+  "name": "@optimistic-tanuki/canvas-ui",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Shared canvas-based UI elements for Optimistic Tanuki applications.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@angular/common": "^20.3.30",
+    "@angular/core": "^20.3.30"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

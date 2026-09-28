@@ -10,7 +10,7 @@ export declare type PromptProxyConfigType = {
   };
 };
 
-export const DEFAULT_OLLAMA_HOST = '100.89.87.124';
+export const DEFAULT_OLLAMA_HOST = '127.0.0.1';
 export const DEFAULT_OLLAMA_PORT = 11434;
 
 type OllamaConfig = Partial<PromptProxyConfigType['ollama']>;

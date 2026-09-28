@@ -32,6 +32,15 @@ describe('HardwareService', () => {
     expect(result).toEqual([{ id: 'c1' }]);
   });
 
+  it('getTiers fetches the public hardware tier catalog', () => {
+    let result: unknown;
+    service.getTiers().subscribe((tiers) => (result = tiers));
+    const req = httpMock.expectOne('/api/hardware/tiers');
+    expect(req.request.method).toBe('GET');
+    req.flush([{ id: 'tier1', name: 'Compact Edge Appliance' }]);
+    expect(result).toEqual([{ id: 'tier1', name: 'Compact Edge Appliance' }]);
+  });
+
   it('getChassisById fetches a single chassis', () => {
     let result: unknown;
     service.getChassisById('c1').subscribe((r) => (result = r));
@@ -109,5 +118,58 @@ describe('HardwareService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'order-1' });
     expect(result).toEqual({ id: 'order-1' });
+  });
+
+  it('searches and syncs Amazon Business offers with the owner scope', () => {
+    let result: unknown;
+    service
+      .searchAmazonBusinessOffers({
+        keywords: 'rack server',
+        shippingPostalCode: '10001',
+      })
+      .subscribe((offers) => (result = offers));
+    const req = httpMock.expectOne(
+      '/api/hardware/operator/supplier-offers/amazon/search'
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('X-ot-appscope')).toBe('owner-console');
+    expect(req.request.body).toEqual({
+      keywords: 'rack server',
+      shippingPostalCode: '10001',
+    });
+    req.flush([{ id: 'amazon-offer-1' }]);
+    expect(result).toEqual([{ id: 'amazon-offer-1' }]);
+  });
+
+  it('downloads deployment artifacts as a blob with the owner scope', () => {
+    let result: Blob | undefined;
+    service
+      .downloadClientDeploymentArtifacts('quote/42', {
+        organization: 'Example Customer',
+        contactName: 'Owner Person',
+        imageTag: '2026.09.28',
+        gatewayUrl: 'https://gateway.example.test',
+        gatewayWsUrl: 'wss://gateway.example.test',
+        socketUrl: 'https://gateway.example.test/socket.io',
+      })
+      .subscribe((archive) => (result = archive));
+    const req = httpMock.expectOne(
+      '/api/hardware/operator/quotes/quote%2F42/deployment-artifacts'
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('X-ot-appscope')).toBe('owner-console');
+    expect(req.request.responseType).toBe('blob');
+    expect(req.request.body).toEqual({
+      organization: 'Example Customer',
+      contactName: 'Owner Person',
+      imageTag: '2026.09.28',
+      gatewayUrl: 'https://gateway.example.test',
+      gatewayWsUrl: 'wss://gateway.example.test',
+      socketUrl: 'https://gateway.example.test/socket.io',
+    });
+    req.flush(new Blob(['archive']), {
+      headers: { 'Content-Type': 'application/gzip' },
+    });
+    expect(result).toBeInstanceOf(Blob);
   });
 });

@@ -1,7 +1,11 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { Chassis, HardwareService } from '../../services/hardware.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  Chassis,
+  HardwareService,
+  HardwareTier,
+} from '../../services/hardware.service';
 import { ConfiguratorStateService } from '../../state/configurator-state.service';
 
 @Component({
@@ -58,6 +62,87 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           </div>
         </div>
       </header>
+
+      <section class="commercial-section" aria-labelledby="tier-heading">
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">HAI system tiers</p>
+            <h2 id="tier-heading">Start with a proven build</h2>
+          </div>
+          <p class="section-copy">
+            Explore a tier, then configure the build around your workload. A HAI
+            owner checks verified distributor offers and confirms pricing in a
+            written quote valid for 30 days.
+          </p>
+        </div>
+
+        <div class="empty-state" *ngIf="tiersLoading()" role="status">
+          Loading HAI system tiers...
+        </div>
+        <div class="empty-state" *ngIf="tiersError()" role="alert">
+          {{ tiersError() }}
+        </div>
+        <div
+          class="empty-state"
+          *ngIf="!tiersLoading() && !tiersError() && tiers().length === 0"
+        >
+          No HAI system tiers are available right now.
+        </div>
+
+        <div class="tier-grid" *ngIf="!tiersLoading() && tiers().length > 0">
+          <article
+            class="tier-card"
+            *ngFor="let tier of tiers()"
+            [attr.data-tier]="tier.id"
+          >
+            <div class="tier-heading">
+              <span class="type-badge"
+                >Tier {{ tier.tierNumber }} · {{ tier.formFactor }}</span
+              >
+              <h3>{{ tier.name }}</h3>
+              <p>{{ tier.targetUsers }}</p>
+            </div>
+            <dl class="tier-specs">
+              <div>
+                <dt>Hardware</dt>
+                <dd>{{ tier.hardware }}</dd>
+              </div>
+              <div>
+                <dt>Memory</dt>
+                <dd>{{ tier.ram }}</dd>
+              </div>
+              <div>
+                <dt>Storage</dt>
+                <dd>{{ tier.storage }}</dd>
+              </div>
+              <div *ngIf="tier.aiAccelerator">
+                <dt>AI accelerator</dt>
+                <dd>{{ tier.aiAccelerator }}</dd>
+              </div>
+              <div>
+                <dt>Network</dt>
+                <dd>{{ tier.network }}</dd>
+              </div>
+              <div>
+                <dt>Power and protection</dt>
+                <dd>{{ tier.powerAndProtection }}</dd>
+              </div>
+            </dl>
+            <p class="quote-note">
+              Firm pricing is confirmed by a HAI owner in a written 30-day
+              quote.
+            </p>
+            <button
+              type="button"
+              class="tier-action"
+              [disabled]="!chassisForTier(tier)"
+              (click)="configureTier(tier)"
+            >
+              Explore this build
+            </button>
+          </article>
+        </div>
+      </section>
 
       <section class="preset-band">
         <article class="preset">
@@ -185,7 +270,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .hero-copy,
       .hero-panel,
       .preset,
-      .system-card {
+      .system-card,
+      .tier-card {
         border: 1px solid rgba(207, 250, 244, 0.08);
         background: linear-gradient(
             180deg,
@@ -224,7 +310,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         text-transform: uppercase;
         letter-spacing: 0.22em;
         font-size: 0.75rem;
-        color: #8be8db;
+        color: var(--config-accent-muted);
       }
 
       h1,
@@ -259,8 +345,12 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 0;
         border-radius: 999px;
         padding: 0.95rem 1.4rem;
-        background: linear-gradient(135deg, #79f0e0, #2dd4bf);
-        color: #041012;
+        background: linear-gradient(
+          135deg,
+          var(--config-accent-bright),
+          var(--config-brand-gradient-from)
+        );
+        color: var(--config-on-accent);
         font-weight: 700;
         cursor: pointer;
       }
@@ -275,7 +365,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 1px solid rgba(121, 240, 224, 0.14);
         border-radius: 999px;
         padding: 0.45rem 0.75rem;
-        color: #b3f7ee;
+        color: var(--config-accent-pale);
         background: rgba(121, 240, 224, 0.06);
         font-size: 0.85rem;
       }
@@ -341,6 +431,90 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         gap: 1.5rem;
       }
 
+      .commercial-section {
+        display: grid;
+        gap: 1.25rem;
+        margin: 0 0 2.5rem;
+        scroll-margin-top: 1.5rem;
+      }
+
+      .tier-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        align-items: stretch;
+      }
+
+      .tier-card {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        border-radius: 1.75rem;
+        padding: 1.4rem;
+      }
+
+      .tier-heading h3 {
+        font-size: clamp(1.55rem, 2.4vw, 2rem);
+        line-height: 1.05;
+        margin: 0.85rem 0 0.55rem;
+      }
+
+      .tier-heading p {
+        color: rgba(235, 255, 251, 0.74);
+        margin: 0;
+      }
+
+      .tier-specs {
+        display: grid;
+        gap: 0.9rem;
+        margin: 1.25rem 0;
+      }
+
+      .tier-specs dd {
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+      }
+
+      .quote-note {
+        margin: auto 0 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(235, 255, 251, 0.74);
+        line-height: 1.55;
+      }
+
+      .tier-action {
+        width: 100%;
+        border: 1px solid rgba(121, 240, 224, 0.28);
+        border-radius: 999px;
+        padding: 0.85rem 1.1rem;
+        background: rgba(45, 212, 191, 0.12);
+        color: var(--config-accent-pale);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .tier-action:hover:not(:disabled),
+      .tier-action:focus-visible {
+        background: linear-gradient(
+          135deg,
+          var(--config-accent-bright),
+          var(--config-brand-gradient-from)
+        );
+        color: var(--config-on-accent);
+      }
+
+      .tier-action:focus-visible {
+        outline: 3px solid var(--config-accent-outline);
+        outline-offset: 3px;
+      }
+
+      .tier-action:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
       .section-header {
         display: grid;
         grid-template-columns: minmax(0, 0.8fr) minmax(260px, 0.6fr);
@@ -387,7 +561,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       }
 
       .use-case {
-        color: #eefcf9;
+        color: var(--config-accent-outline);
       }
 
       .system-card h3 {
@@ -404,7 +578,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
 
       dd {
         margin: 0.3rem 0 0;
-        color: #eefcf9;
+        color: var(--config-accent-outline);
       }
 
       .card-footer {
@@ -415,7 +589,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       }
 
       .card-cta {
-        color: #79f0e0;
+        color: var(--config-accent-bright);
         font-weight: 700;
       }
 
@@ -429,7 +603,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       @media (max-width: 980px) {
         .hero,
         .section-header,
-        .preset-band {
+        .preset-band,
+        .tier-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -454,18 +629,47 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
 export class LandingComponent implements OnInit {
   private readonly hardwareService = inject(HardwareService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly configuratorState = inject(ConfiguratorStateService);
+  private readonly document = inject(DOCUMENT);
 
   readonly chassisList = signal<Chassis[]>([]);
   readonly loading = signal(true);
   readonly errorMessage = signal('');
+  readonly tiers = signal<HardwareTier[]>([]);
+  readonly tiersLoading = signal(true);
+  readonly tiersError = signal('');
 
   ngOnInit(): void {
+    this.hardwareService.getTiers().subscribe({
+      next: (tiers) => {
+        this.tiers.set(tiers);
+        this.tiersError.set('');
+        this.tiersLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load HAI tiers', error);
+        this.tiersError.set(
+          'HAI system tiers are unavailable right now. Please retry shortly.'
+        );
+        this.tiersLoading.set(false);
+      },
+    });
+
     this.hardwareService.getChassis().subscribe({
       next: (chassis) => {
-        this.chassisList.set(chassis.filter((item) => item.isActive));
+        const active = chassis.filter((item) => item.isActive);
+        this.chassisList.set(active);
         this.errorMessage.set('');
         this.loading.set(false);
+
+        const preset = this.route.snapshot.queryParamMap.get('preset');
+        if (preset) {
+          const target = this.findChassisByPreset(active, preset);
+          if (target) {
+            this.selectChassis(target, preset);
+          }
+        }
       },
       error: (error) => {
         console.error('Failed to load chassis', error);
@@ -477,11 +681,54 @@ export class LandingComponent implements OnInit {
     });
   }
 
-  jumpToSystems(): void {
-    document.getElementById('systems')?.scrollIntoView({ behavior: 'smooth' });
+  private findChassisByPreset(
+    list: Chassis[],
+    preset: string
+  ): Chassis | undefined {
+    const normalized = preset.toLowerCase();
+    if (normalized === 'tier1') {
+      return (
+        list.find((c) => c.id === 's-cloud') || list.find((c) => c.type === 'S')
+      );
+    }
+    if (normalized === 'tier2') {
+      return (
+        list.find((c) => c.id === 'm-cloud') ||
+        list.find((c) => c.id === 'l-cloud') ||
+        list.find((c) => c.type === 'M')
+      );
+    }
+    if (normalized === 'tier3') {
+      return (
+        list.find((c) => c.id === 'l-nas') ||
+        list.find((c) => c.id === 'l-cloud') ||
+        list.find((c) => c.type === 'L')
+      );
+    }
+    return list.find((c) => c.id === preset);
   }
 
-  selectChassis(chassis: Chassis): void {
+  jumpToSystems(): void {
+    this.document
+      .getElementById('systems')
+      ?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  chassisForTier(tier: HardwareTier): Chassis | undefined {
+    return this.findChassisByPreset(
+      this.chassisList(),
+      tier.configuratorPreset
+    );
+  }
+
+  configureTier(tier: HardwareTier): void {
+    const chassis = this.chassisForTier(tier);
+    if (chassis) {
+      this.selectChassis(chassis, tier.configuratorPreset);
+    }
+  }
+
+  selectChassis(chassis: Chassis, preset?: string): void {
     this.configuratorState.setDraft({
       chassisId: chassis.id,
       chassisType: chassis.type,
@@ -492,6 +739,12 @@ export class LandingComponent implements OnInit {
       gpuId: '',
     });
     this.configuratorState.setPriceBreakdown(null);
-    this.router.navigate(['/configure', chassis.id]);
+    if (preset) {
+      this.router.navigate(['/configure', chassis.id], {
+        queryParams: { preset },
+      });
+    } else {
+      this.router.navigate(['/configure', chassis.id]);
+    }
   }
 }

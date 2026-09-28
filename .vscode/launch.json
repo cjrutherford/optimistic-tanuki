@@ -411,6 +411,24 @@
     {
       "type": "node",
       "request": "launch",
+      "name": "Debug compliance-audit with Nx",
+      "runtimeExecutable": "pnpm exec",
+      "runtimeArgs": ["nx", "serve", "compliance-audit"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9247"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/compliance-audit/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
       "name": "Debug bug-report with Nx",
       "runtimeExecutable": "pnpm exec",
       "runtimeArgs": ["nx", "serve", "bug-report"],

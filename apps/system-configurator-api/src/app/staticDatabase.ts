@@ -4,6 +4,8 @@ import { CaseOptionEntity } from '../hardware/entities/case-option.entity';
 import { HardwarePartEntity } from '../hardware/entities/hardware-part.entity';
 import { HardwareOrderEntity } from '../hardware/entities/hardware-order.entity';
 import { SavedConfigurationEntity } from '../hardware/entities/saved-configuration.entity';
+import { SupplierOfferEntity } from '../hardware/entities/supplier-offer.entity';
+import { CommercialQuoteEntity } from '../hardware/entities/commercial-quote.entity';
 
 const host = process.env.POSTGRES_HOST || process.env.DB_HOST || 'db';
 const port = parseInt(
@@ -29,6 +31,8 @@ const staticSource = new DataSource({
     HardwarePartEntity,
     HardwareOrderEntity,
     SavedConfigurationEntity,
+    SupplierOfferEntity,
+    CommercialQuoteEntity,
   ],
   migrations: ['./src/migrations/*.ts'],
 });

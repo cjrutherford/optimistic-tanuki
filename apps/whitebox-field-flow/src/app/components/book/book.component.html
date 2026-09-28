@@ -1,0 +1,230 @@
+<section class="book-shell">
+  <div class="book-container">
+    <header class="section-header">
+      <p class="eyebrow">Service scheduling</p>
+      <h1>Select your arrival window</h1>
+      <p class="lede">
+        Our mobile service crew operates in two-hour arrival windows. Enter your
+        contact and job location details below.
+      </p>
+    </header>
+
+    <div *ngIf="formError" class="alert-banner" role="alert">
+      {{ formError }}
+    </div>
+
+    <form (ngSubmit)="submitBooking()" class="booking-layout">
+      <!-- Scheduling Fields -->
+      <otui-card class="form-card">
+        <!-- Date Selector -->
+        <div class="form-group">
+          <label for="service-date" class="form-label">Service date</label>
+          <input
+            id="service-date"
+            type="date"
+            [(ngModel)]="selectedDate"
+            (ngModelChange)="onDateChange()"
+            name="selectedDate"
+            class="touch-target"
+            required
+          />
+        </div>
+
+        <!-- 2-Hour Arrival Windows -->
+        <fieldset class="form-group arrival-windows-group">
+          <legend class="form-label">Available arrival windows</legend>
+          <div
+            *ngIf="isAvailabilityLoading"
+            class="availability-state"
+            role="status"
+          >
+            Loading availability…
+          </div>
+          <div
+            *ngIf="availabilityError"
+            class="availability-state"
+            role="alert"
+          >
+            {{ availabilityError }}
+          </div>
+          <div
+            *ngIf="
+              !isAvailabilityLoading && !availabilityError && availabilityEmpty
+            "
+            class="availability-state"
+            role="status"
+          >
+            No arrival windows are available for this date. Please choose
+            another date.
+          </div>
+          <div
+            *ngIf="
+              !isAvailabilityLoading && !availabilityError && !availabilityEmpty
+            "
+            class="windows-grid"
+          >
+            <button
+              *ngFor="let window of arrivalWindows"
+              type="button"
+              class="window-btn touch-target"
+              [class.active]="selectedWindow === window.timeSlot"
+              [disabled]="!window.available"
+              (click)="selectWindow(window)"
+            >
+              <span class="window-dot"></span>
+              <span class="window-time">{{ window.timeSlot }}</span>
+            </button>
+          </div>
+        </fieldset>
+
+        <!-- Customer Contact Details via form-ui -->
+        <div class="fields-split">
+          <lib-text-input
+            label="Full name"
+            placeholder="e.g. John Miller"
+            [(ngModel)]="fullName"
+            name="fullName"
+          ></lib-text-input>
+
+          <lib-text-input
+            label="Email address"
+            placeholder="client@example.com"
+            [(ngModel)]="emailAddress"
+            name="emailAddress"
+          ></lib-text-input>
+        </div>
+
+        <lib-text-input
+          label="Mobile phone (for SMS alerts)"
+          placeholder="(912) 555-0184"
+          [(ngModel)]="mobilePhone"
+          name="mobilePhone"
+        ></lib-text-input>
+
+        <lib-text-input
+          label="Service address"
+          placeholder="Street address, city, state, zip"
+          [(ngModel)]="streetAddress"
+          name="streetAddress"
+        ></lib-text-input>
+
+        <lib-text-input
+          label="Gate code or access instructions (optional)"
+          placeholder="Gate code, parking location, or lockbox details"
+          [(ngModel)]="gateCode"
+          name="gateCode"
+        ></lib-text-input>
+
+        <lib-text-area
+          label="Special instructions or service notes (optional)"
+          placeholder="Provide any specific areas requiring extra attention"
+          [rows]="3"
+          [(ngModel)]="serviceNotes"
+          name="serviceNotes"
+        ></lib-text-area>
+
+        <!-- Photo Upload -->
+        <div class="form-group photo-upload-group">
+          <label class="form-label">
+            Jobsite or vehicle condition photos (optional)
+          </label>
+          <div class="upload-dropzone">
+            <input
+              id="photo-upload"
+              type="file"
+              accept="image/*"
+              multiple
+              (change)="onFileSelected($event)"
+              class="file-input"
+            />
+            <label for="photo-upload" class="upload-label touch-target">
+              <span class="upload-action">Tap to take or choose photos</span>
+              <span class="upload-hint"
+                >Upload up to 5 photos for our technicians</span
+              >
+            </label>
+          </div>
+
+          <div *ngIf="uploadedPhotoUrls.length > 0" class="photo-preview-grid">
+            <div
+              *ngFor="let photo of uploadedPhotoUrls; let idx = index"
+              class="photo-thumb-wrapper"
+            >
+              <img
+                [src]="photo"
+                alt="Jobsite condition preview"
+                class="photo-thumb"
+              />
+              <button
+                type="button"
+                class="remove-photo-btn"
+                (click)="removePhoto(idx)"
+                aria-label="Remove photo"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      </otui-card>
+
+      <!-- Order Summary Card -->
+      <otui-card class="booking-summary-card" aria-label="Booking summary">
+        <h2 class="summary-heading">Booking summary</h2>
+        <ng-container *ngIf="apiService.activeEstimate() as est">
+          <div *ngIf="hasUsableEstimate" class="summary-contents">
+            <div class="summary-line">
+              <span class="label">Service package</span>
+              <strong class="value">{{ est.packageDetails.name }}</strong>
+            </div>
+            <div class="summary-line">
+              <span class="label">Scheduled date</span>
+              <span class="value">{{ selectedDate || 'Select a date' }}</span>
+            </div>
+            <div class="summary-line">
+              <span class="label">Arrival window</span>
+              <span class="value">{{ selectedWindow }}</span>
+            </div>
+            <div class="summary-line">
+              <span class="label">Estimated total</span>
+              <span class="value"
+                >{{ est.currency || 'USD' }}
+                {{ est.total | number : '1.2-2' }}</span
+              >
+            </div>
+            <div class="summary-line highlight-deposit">
+              <span>Required deposit</span>
+              <otui-badge [tone]="'brand'" [emphasis]="'solid'">
+                {{ est.currency || 'USD' }}
+                {{ est.depositAmount | number : '1.2-2' }}
+              </otui-badge>
+            </div>
+          </div>
+        </ng-container>
+        <p
+          *ngIf="!apiService.activeEstimate()?.isAuthoritative"
+          class="pending-quote"
+        >
+          A server-authoritative estimate is required before booking totals can
+          be shown.
+        </p>
+
+        <div class="summary-action">
+          <otui-button
+            [tone]="'brand'"
+            [emphasis]="'solid'"
+            [type]="'submit'"
+            [disabled]="isSubmitting || isAvailabilityLoading"
+          >
+            Proceed to deposit
+          </otui-button>
+        </div>
+
+        <p class="secure-note">
+          Credit card deposit is processed securely. Balance is payable upon
+          satisfactory completion of service.
+        </p>
+      </otui-card>
+    </form>
+  </div>
+</section>

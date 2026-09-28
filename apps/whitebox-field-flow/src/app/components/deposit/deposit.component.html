@@ -1,0 +1,147 @@
+<section class="deposit-shell">
+  <div class="deposit-container">
+    <header class="section-header">
+      <p class="eyebrow">Secure payment</p>
+      <h1>Confirm your booking deposit</h1>
+      <p class="lede">
+        Pay a secure deposit to reserve your arrival window. The deposit is
+        credited against your final job balance upon service completion.
+      </p>
+    </header>
+
+    <!-- Error Alert -->
+    <div *ngIf="formError" class="alert-banner" role="alert">
+      {{ formError }}
+    </div>
+
+    <!-- Success Confirmation View -->
+    <otui-card *ngIf="paymentSuccess && paymentResult" class="success-card">
+      <otui-badge [tone]="'success'" [emphasis]="'solid'"
+        >Payment request created</otui-badge
+      >
+      <h2 class="success-title">Payment is being processed</h2>
+      <p class="success-sub">
+        Payment status: {{ paymentResult.status }}. Amount:
+        {{ paymentResult.amount | number : '1.2-2' }}
+        {{ paymentResult.currency }}.
+      </p>
+
+      <div class="confirmation-actions">
+        <otui-button
+          [tone]="'brand'"
+          [emphasis]="'solid'"
+          (action)="trackJob()"
+        >
+          Track job status
+        </otui-button>
+      </div>
+    </otui-card>
+
+    <div *ngIf="!paymentSuccess" class="checkout-layout">
+      <otui-card class="stripe-card">
+        <div class="stripe-elements-container" role="status">
+          <div class="elements-header">
+            <otui-badge [tone]="'brand'" [emphasis]="'soft'"
+              >Secure checkout</otui-badge
+            >
+            <otui-badge [tone]="'neutral'" [emphasis]="'outline'"
+              >Provider-managed payment</otui-badge
+            >
+          </div>
+          <h2>Secure payment form unavailable</h2>
+          <p>
+            No card details are collected here. A payment intent can be
+            requested now, but card entry will be enabled when Stripe Elements
+            is connected.
+          </p>
+          <div class="submit-action">
+            <otui-button
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+              [disabled]="isProcessing || !apiService.activeBooking()"
+              [type]="'button'"
+              (action)="processPayment()"
+            >
+              {{ isProcessing ? 'Loading payment…' : 'Prepare secure payment' }}
+            </otui-button>
+          </div>
+        </div>
+      </otui-card>
+
+      <otui-card class="deposit-summary-sidebar" aria-label="Deposit summary">
+        <h2 class="sidebar-heading">Payment summary</h2>
+        <div class="sidebar-rows">
+          <div class="sidebar-line">
+            <span>Service</span>
+            <strong>
+              {{
+                apiService.activeEstimate()?.packageDetails?.name ||
+                  'Service estimate unavailable'
+              }}
+            </strong>
+          </div>
+          <div class="sidebar-line">
+            <span>Arrival window</span>
+            <span>
+              {{
+                apiService.activeBooking()?.selectedWindow || 'Not scheduled'
+              }}
+            </span>
+          </div>
+          <div class="sidebar-line">
+            <span>Estimated total</span>
+            <span
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noEstimate
+              "
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{ apiService.activeEstimate()?.total | number : '1.2-2' }}
+            </span>
+            <ng-template #noEstimate>Unavailable</ng-template>
+          </div>
+          <div class="sidebar-line due-now-row">
+            <span>Due now</span>
+            <otui-badge
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noDeposit
+              "
+              [tone]="'brand'"
+              [emphasis]="'solid'"
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{ depositAmount | number : '1.2-2' }}
+            </otui-badge>
+            <ng-template #noDeposit>Unavailable</ng-template>
+          </div>
+          <div class="sidebar-line">
+            <span>Balance due at completion</span>
+            <span
+              *ngIf="
+                apiService.activeEstimate()?.isAuthoritative;
+                else noBalance
+              "
+            >
+              {{ apiService.activeEstimate()?.currency }}
+              {{
+                (apiService.activeEstimate()?.total ?? 0) - depositAmount
+                  | number : '1.2-2'
+              }}
+            </span>
+            <ng-template #noBalance>Unavailable</ng-template>
+          </div>
+        </div>
+
+        <div class="trust-guarantee">
+          <strong>South Georgia direct service guarantee</strong>
+          <p>
+            No hidden service fees. Technicians arrive within the confirmed
+            two-hour window equipped for immediate job execution.
+          </p>
+        </div>
+      </otui-card>
+    </div>
+  </div>
+</section>

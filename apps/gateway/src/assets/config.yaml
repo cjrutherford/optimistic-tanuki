@@ -120,6 +120,41 @@ services:
     transport: TCP
     host: billing
     port: 3019
+  civic:
+    name: civic
+    transport: TCP
+    host: civic
+    port: 3026
+# The confidential vault's model path.
+#
+# `ollama.baseUrl` is deliberately empty in source. It used to be a hardcoded
+# tailnet address, which made the air gap a fact about one machine: change the
+# box and the boundary moved with it, and nothing in the code would have said so.
+# The endpoint now comes from VAULT_OLLAMA_BASE_URL, and when it is unset the
+# vault tools refuse the request rather than falling back to a default host.
+#
+# The air gap is enforced, not documented: on every call the endpoint has to
+# resolve to a loopback, private, link-local, or carrier-grade-NAT address, and
+# redirects are refused, so a prompt cannot be replayed to another host on the
+# way out. See apps/gateway/src/app/mcp/air-gap/local-endpoint.guard.ts.
+vault:
+  ollama:
+    # No host in source. Set VAULT_OLLAMA_BASE_URL to the on-premises Ollama
+    # endpoint, e.g. http://ollama:11434 or http://127.0.0.1:11434.
+    baseUrl: ''
+  model:
+    # The model the vault path uses. qwen2.5-coder:14b is what the slice
+    # specification names for transcript and tax schedule parsing; it is a
+    # default rather than a constant, and VAULT_OLLAMA_MODEL overrides it.
+    name: 'qwen2.5-coder:14b'
+    # How much the model may read, in tokens. The measured rule in this
+    # workspace is that usable prompt is roughly half of num_ctx, so a retrieved
+    # passage set larger than about 16k tokens will be truncated at the oldest
+    # end without saying so.
+    numCtx: 32768
+    temperature: 0.1
+    timeoutMs: 60000
+
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

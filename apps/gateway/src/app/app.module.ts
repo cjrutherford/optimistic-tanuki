@@ -42,6 +42,10 @@ import { BlogController } from '../controllers/blogging/blog.controller';
 import { BlogComponentController } from '../controllers/blogging/blog-component.controller';
 import { PermissionsController } from '../controllers/permissions/permissions.controller';
 import { PermissionsGuard } from '../guards/permissions.guard';
+import {
+  TenantContextGuard,
+  TenantResolverService,
+} from '../guards/tenant-context.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { PersonaController } from '../controllers/persona/persona.controller';
@@ -89,6 +93,19 @@ import { DonationsController } from '../controllers/donations/donations.controll
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
+import { FlowController } from '../controllers/flow/flow.controller';
+import { CivicController } from '../controllers/civic/civic.controller';
+import { NexusController } from '../controllers/nexus/nexus.controller';
+import { VaultController } from '../controllers/vault/vault.controller';
+import {
+  InMemoryOtpChallengeStore,
+  OTP_CHALLENGE_STORE,
+  OTP_SMS_DISPATCHER,
+  TENANT_HEADER_FALLBACK_CONFIG,
+  TimeLockedOtpService,
+  TRUSTED_PROXY_CONFIG,
+  TwilioOtpSmsDispatcher,
+} from '@optimistic-tanuki/business-security';
 import { LearningController } from '../controllers/learning/learning.controller';
 import { LearningProfileResolver } from '../controllers/learning/learning-profile.resolver';
 import { OfferingAuthorizationService } from '../controllers/learning/offering-authorization.service';
@@ -115,6 +132,8 @@ import { CommunityWorkspaceProvisioner } from './community-provisioning/communit
 import { WorkspaceClaimController } from '../controllers/workspace/workspace-claim.controller';
 import { WorkspaceDiscoveryController } from '../controllers/workspace/workspace-discovery.controller';
 import { WorkspaceContextGuard } from '../guards/workspace-context.guard';
+import { VaultTenantResolver } from '../security/vault-tenant-resolver.service';
+import { VaultTokenService } from '../security/vault-token.service';
 
 const gatewayServices = GATEWAY_SERVICE_IDS;
 
@@ -315,6 +334,26 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         requiredServices: ['store', 'lead-tracker', 'blogging'],
         value: TrainerController,
       },
+      {
+        id: 'flow',
+        requiredServices: ['lead-tracker', 'payments'],
+        value: FlowController,
+      },
+      {
+        id: 'nexus',
+        requiredServices: ['project-planning'],
+        value: NexusController,
+      },
+      {
+        id: 'civic',
+        requiredServices: ['civic'],
+        value: CivicController,
+      },
+      {
+        id: 'vault',
+        requiredServices: ['finance', 'ai-orchestration'],
+        value: VaultController,
+      },
       { id: 'registry', value: RegistryController },
     ] as Array<ValueComposableEntry<any>>,
     gatewayComposition
@@ -407,6 +446,8 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     WorkspaceResolverService,
     CommunityWorkspaceProvisioner,
     WorkspaceContextGuard,
+    VaultTenantResolver,
+    VaultTokenService,
     {
       provide: SECURITY_TELEMETRY_SERVICE,
       useFactory: () =>
@@ -438,6 +479,37 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     },
     AuthGuard,
     SocketSessionAuthService,
+    TenantResolverService,
+    TenantContextGuard,
+    {
+      provide: TENANT_HEADER_FALLBACK_CONFIG,
+      useValue: {
+        allowHeaderFallback: process.env.TENANT_HEADER_FALLBACK === 'true',
+      },
+    },
+    {
+      provide: TRUSTED_PROXY_CONFIG,
+      useValue: {
+        enabled: process.env.TRUSTED_PROXY_ENABLED === 'true',
+        trustedProxyAddresses: (process.env.TRUSTED_PROXY_ADDRESSES ?? '')
+          .split(',')
+          .map((address) => address.trim())
+          .filter(Boolean),
+        forwardedHostHeader:
+          process.env.TRUSTED_PROXY_FORWARDED_HOST_HEADER || 'x-forwarded-host',
+      },
+    },
+    {
+      provide: OTP_CHALLENGE_STORE,
+      useFactory: () => new InMemoryOtpChallengeStore(),
+    },
+    {
+      provide: OTP_SMS_DISPATCHER,
+      useFactory: (configService: ConfigService) =>
+        new TwilioOtpSmsDispatcher(configService),
+      inject: [ConfigService],
+    },
+    TimeLockedOtpService,
     PermissionsGuard,
     PermissionsProxyService,
     {
@@ -483,6 +555,23 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     RoleInitService,
     LearningProfileResolver,
     OfferingAuthorizationService,
+    {
+      // The compliance-audit microservice is the single source of truth for the
+      // chained SHA-256 audit ledger: the gateway appends vault uploads and
+      // finance appends escrow wire reveals into the same per-tenant chain.
+      provide: ServiceTokens.COMPLIANCE_AUDIT_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_COMPLIANCE_AUDIT_HOST || 'localhost',
+            port: parseInt(
+              process.env.SERVICE_COMPLIANCE_AUDIT_PORT || '3025',
+              10
+            ),
+          },
+        }),
+    },
     {
       provide: LoginAccountBootstrapService,
       useFactory: (

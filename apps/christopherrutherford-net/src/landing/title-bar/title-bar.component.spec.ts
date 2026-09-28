@@ -18,4 +18,24 @@ describe('TitleBarComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('uses the available tanuki brand mark', () => {
+    const logo = (fixture.nativeElement as HTMLElement).querySelector(
+      'otui-app-bar'
+    );
+
+    expect(logo?.getAttribute('logosrc')).toBe('assets/images/tanuki.png');
+  });
+
+  it('provides navigation to the Systems Lab section', () => {
+    const navigateTo = jest.spyOn(component, 'navigateTo');
+    const systemsLabLink = component.navItems.find(
+      ({ label }) => label === 'Systems Lab'
+    );
+
+    expect(systemsLabLink).toBeDefined();
+    systemsLabLink?.action?.();
+
+    expect(navigateTo).toHaveBeenCalledWith('#systems-lab');
+  });
 });

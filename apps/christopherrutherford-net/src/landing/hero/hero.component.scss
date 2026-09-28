@@ -54,6 +54,11 @@
   &:hover {
     transform: translateY(-2px);
   }
+
+  &:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
 }
 
 .hero-cta.primary {
@@ -175,5 +180,13 @@ lib-hero {
   .hero-actions,
   .hero-proof-strip {
     animation: none;
+  }
+
+  .hero-cta {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
   }
 }

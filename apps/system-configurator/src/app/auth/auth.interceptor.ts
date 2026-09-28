@@ -9,7 +9,11 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const clonedRequest = req.clone({
     setHeaders: {
-      'X-ot-appscope': 'system-configurator',
+      // Owner-only hardware endpoints require the caller's explicit
+      // Owner Console scope. All ordinary configurator requests keep their
+      // application scope.
+      'X-ot-appscope':
+        req.headers.get('X-ot-appscope') ?? 'system-configurator',
       'X-ot-session-mode': 'cookie',
     },
     withCredentials: true,

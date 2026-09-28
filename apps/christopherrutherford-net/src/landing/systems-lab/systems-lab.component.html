@@ -1,0 +1,99 @@
+<section id="systems-lab" aria-labelledby="systems-lab-title">
+  <header class="systems-lab-heading">
+    <p class="systems-lab-kicker">Inside the workspace</p>
+    <h2 id="systems-lab-title">Systems Lab</h2>
+    <p class="systems-lab-intro">
+      The repository connects customer-facing applications to shared platform
+      code, services, and delivery tooling. Each layer has a clear home in the
+      Nx workspace.
+    </p>
+  </header>
+
+  <ol class="systems-lab-layers">
+    <li>
+      <h3>Application experiences</h3>
+      <p>
+        Angular clients live in <code>apps/</code>. They bring together the
+        screens and workflows for each product.
+      </p>
+    </li>
+    <li>
+      <h3>Shared Angular libraries</h3>
+      <p>
+        Reusable components come from libraries such as <code>common-ui</code>.
+        Theme models and styles provide shared tokens, while model and contract
+        libraries define the data applications exchange.
+      </p>
+    </li>
+    <li>
+      <h3>Gateway and NestJS services</h3>
+      <p>
+        The Gateway handles HTTP, SSE, and WebSocket entry points. It routes
+        work to NestJS services, which communicate with one another over TCP
+        message patterns.
+      </p>
+    </li>
+    <li>
+      <h3>Data and security</h3>
+      <p>
+        Service-owned persistence sits alongside shared database, storage,
+        encryption, authentication, and permission libraries.
+      </p>
+    </li>
+    <li>
+      <h3>Nx and Docker delivery</h3>
+      <p>
+        Nx organizes projects and build tasks. Docker Compose supports local
+        stacks, and the repository also contains Kubernetes deployment
+        configuration.
+      </p>
+    </li>
+  </ol>
+
+  @if (catalog$ | async; as catalog) {
+  <section class="application-index" aria-labelledby="application-index-title">
+    <div class="application-index-heading">
+      <p class="systems-lab-kicker">Registered web apps</p>
+      <h3 id="application-index-title">Web apps in the registry</h3>
+      <p>
+        Browse {{ catalog.total }} registered web apps by their role in the
+        platform.
+      </p>
+    </div>
+
+    @for (group of catalog.groups; track group.id) {
+    <details
+      class="catalog-group"
+      [attr.aria-labelledby]="'catalog-' + group.id"
+    >
+      <summary [id]="'catalog-' + group.id">
+        <span>{{ groupLabels[group.id] }}</span
+        ><span class="catalog-count">{{ group.items.length }}</span>
+      </summary>
+      <ul class="catalog-list" [attr.aria-label]="groupLabels[group.id]">
+        @for (app of group.items; track app.id) {
+        <li>
+          <article class="catalog-card" [attr.data-app-id]="app.id">
+            <div class="catalog-card-copy">
+              <span class="catalog-card-kind">{{ groupRoles[group.id] }}</span>
+              <h4>{{ app.name }}</h4>
+              <p>{{ app.tagline }}</p>
+            </div>
+            @if (app.root) {
+            <a
+              class="catalog-repository"
+              [href]="repositoryRoot + app.root"
+              [attr.aria-label]="app.name + ' repository'"
+            >
+              Repository <span aria-hidden="true">↗</span>
+            </a>
+            }
+          </article>
+        </li>
+        }
+      </ul>
+    </details>
+    }
+  </section>
+  }
+</section>

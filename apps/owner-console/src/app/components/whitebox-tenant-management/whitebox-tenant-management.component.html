@@ -1,0 +1,302 @@
+<section class="tenant-page">
+  <header class="page-header">
+    <p class="eyebrow">Platform Administration</p>
+    <h1>Tenant management</h1>
+    <p class="lede">
+      Configure whitebox client tenants, hardware appliance tiers, and trade
+      service catalogs. Changes synchronize directly to backend site
+      configurations and client applications.
+    </p>
+  </header>
+
+  <!-- Vertical Filter Tabs -->
+  <nav class="vertical-tabs" aria-label="Vertical filter">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedVertical() === 'all'"
+      (click)="selectVertical('all')"
+    >
+      All verticals
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedVertical() === 'trade_field'"
+      (click)="selectVertical('trade_field')"
+    >
+      Trade and field
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedVertical() === 'cpa_tax'"
+      (click)="selectVertical('cpa_tax')"
+    >
+      CPA and tax
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedVertical() === 'legal_title'"
+      (click)="selectVertical('legal_title')"
+    >
+      Legal and title
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="selectedVertical() === 'builders_municipal'"
+      (click)="selectVertical('builders_municipal')"
+    >
+      Commercial builders
+    </button>
+  </nav>
+
+  <!-- Status Notification -->
+  <div *ngIf="statusMessage()" class="status-banner" role="status">
+    {{ statusMessage() }}
+  </div>
+
+  <div class="tenant-layout">
+    <!-- Left: Tenant List -->
+    <div class="tenant-list-panel">
+      <h2 class="panel-title">
+        Registered tenants ({{ filteredTenants().length }})
+      </h2>
+      <div class="tenant-cards">
+        <div
+          *ngFor="let tenant of filteredTenants()"
+          class="tenant-summary-card"
+          [class.selected]="selectedTenant()?.id === tenant.id"
+          (click)="selectTenant(tenant)"
+        >
+          <div class="card-top">
+            <span class="category-badge">{{ tenant.tradeCategory }}</span>
+            <span class="tier-badge">{{ tenant.hardwareTier }}</span>
+          </div>
+          <h3 class="tenant-name">{{ tenant.businessName }}</h3>
+          <p class="appliance-info">{{ tenant.applianceName }}</p>
+          <div class="card-details">
+            <span>Deposit: ${{ tenant.fixedDeposit }}</span>
+            <span>Services: {{ tenant.services?.length || 0 }}</span>
+          </div>
+          <div class="card-actions">
+            <button
+              type="button"
+              class="btn-sm btn-outline"
+              (click)="activateTenantBrand(tenant); $event.stopPropagation()"
+            >
+              Activate brand
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Tenant Configuration Editor -->
+    <div class="tenant-editor-panel" *ngIf="selectedTenant() as tenant">
+      <div class="editor-header">
+        <div>
+          <h2 class="panel-title">Configure {{ tenant.businessName }}</h2>
+          <p class="panel-sub">
+            Slug: <code>{{ tenant.id }}</code>
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="isSaving()"
+          (click)="saveTenant()"
+        >
+          {{ isSaving() ? 'Saving...' : 'Save tenant configuration' }}
+        </button>
+      </div>
+
+      <!-- Business Details Form -->
+      <fieldset class="form-section">
+        <legend class="section-legend">Business identity</legend>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="bizName">Business name</label>
+            <input
+              id="bizName"
+              type="text"
+              [(ngModel)]="tenant.businessName"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field">
+            <label for="tradeCat">Trade category</label>
+            <input
+              id="tradeCat"
+              type="text"
+              [(ngModel)]="tenant.tradeCategory"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <input
+              id="phone"
+              type="text"
+              [(ngModel)]="tenant.phone"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              [(ngModel)]="tenant.email"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field full-width">
+            <label for="serviceArea">Service area</label>
+            <input
+              id="serviceArea"
+              type="text"
+              [(ngModel)]="tenant.serviceArea"
+              class="form-control"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Financial & Appliance Terms -->
+      <fieldset class="form-section">
+        <legend class="section-legend">Commercial terms and hardware</legend>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="deposit">Booking deposit ($)</label>
+            <input
+              id="deposit"
+              type="number"
+              min="0"
+              step="25"
+              [(ngModel)]="tenant.fixedDeposit"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field">
+            <label for="taxRate">Local tax rate (e.g. 0.07)</label>
+            <input
+              id="taxRate"
+              type="number"
+              min="0"
+              max="0.25"
+              step="0.01"
+              [(ngModel)]="tenant.taxRate"
+              class="form-control"
+            />
+          </div>
+          <div class="form-field">
+            <label for="hwTier">Hardware appliance tier</label>
+            <select
+              id="hwTier"
+              [(ngModel)]="tenant.hardwareTier"
+              class="form-control"
+            >
+              <option value="tier1_mini">Tier 1 Mini-PC</option>
+              <option value="tier2_tower">Tier 2 Tower</option>
+              <option value="tier3_rackmount">Tier 3 Rackmount</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="applianceName">Appliance name</label>
+            <input
+              id="applianceName"
+              type="text"
+              [(ngModel)]="tenant.applianceName"
+              class="form-control"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Trade Service Catalog -->
+      <fieldset class="form-section">
+        <div class="section-header-row">
+          <legend class="section-legend">Trade service offerings</legend>
+          <button
+            type="button"
+            class="btn-sm btn-outline"
+            (click)="addService()"
+          >
+            Add service
+          </button>
+        </div>
+
+        <div class="services-editor-list">
+          <div
+            *ngFor="let service of tenant.services; let i = index"
+            class="service-item-card"
+          >
+            <div class="service-row-header">
+              <span class="service-index">Service #{{ i + 1 }}</span>
+              <button
+                type="button"
+                class="btn-remove"
+                (click)="removeService(service.id)"
+                title="Remove service"
+              >
+                Delete
+              </button>
+            </div>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Service name</label>
+                <input
+                  type="text"
+                  [(ngModel)]="service.name"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-field">
+                <label>Base price ($)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="10"
+                  [(ngModel)]="service.basePrice"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-field">
+                <label>Duration (hours)</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  [(ngModel)]="service.durationHours"
+                  class="form-control"
+                />
+              </div>
+              <div class="form-field full-width">
+                <label>Description</label>
+                <input
+                  type="text"
+                  [(ngModel)]="service.description"
+                  class="form-control"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="editor-footer">
+        <button
+          type="button"
+          class="btn-primary"
+          [disabled]="isSaving()"
+          (click)="saveTenant()"
+        >
+          {{ isSaving() ? 'Saving...' : 'Save tenant configuration' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</section>

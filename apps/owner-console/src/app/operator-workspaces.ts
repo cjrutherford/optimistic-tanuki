@@ -105,6 +105,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/registry',
         highlight: 'Registry control',
       },
+      {
+        title: 'Tenant Management',
+        description:
+          'Configure whitebox client tenants, hardware appliance tiers, and trade service catalogs.',
+        route: '/dashboard/tenants',
+        highlight: 'Tenant governance',
+      },
     ],
   },
   {

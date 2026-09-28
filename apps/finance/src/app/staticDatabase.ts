@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { OtpChallengeEntity } from '@optimistic-tanuki/business-security';
 import { Account } from '../entities/account.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { InventoryItem } from '../entities/inventory-item.entity';
@@ -10,6 +11,8 @@ import { BankConnection } from '../entities/bank-connection.entity';
 import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
 import { FinancialInvoice } from '../entities/financial-invoice.entity';
 import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
+import { VaultEscrowEntity } from '../entities/vault-escrow.entity';
+import { VaultTokenEntity } from '../entities/vault-token.entity';
 
 const config = {
   type: 'postgres' as const,
@@ -30,6 +33,9 @@ const config = {
     LinkedBankAccount,
     FinancialInvoice,
     FinancialCheckoutSession,
+    VaultEscrowEntity,
+    VaultTokenEntity,
+    OtpChallengeEntity,
   ],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,

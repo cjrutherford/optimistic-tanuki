@@ -10,6 +10,7 @@ The gateway is the platform entrypoint for HTTP, SSE, and WebSocket traffic. It 
 - request flow: [`../../docs/services/gateway/request-flow.md`](../../docs/services/gateway/request-flow.md)
 - composition diagram: [`../../docs/services/gateway/composition-diagram.md`](../../docs/services/gateway/composition-diagram.md)
 - realtime flow: [`../../docs/services/gateway/realtime-flow.md`](../../docs/services/gateway/realtime-flow.md)
+- vault copilot tools and the air gap: [`../../docs/services/gateway/vault-copilot-air-gap.md`](../../docs/services/gateway/vault-copilot-air-gap.md)
 
 ## Local Development
 
@@ -44,6 +45,9 @@ The gateway is central to both local and deployed flows:
 - `<SERVICE>_HOST` and `<SERVICE>_PORT`: per-service TCP overrides for downstream dependencies such as `AUTHENTICATION`, `PROFILE`, `SOCIAL`, `STORE`, and `VIDEOS`
 - `GOOGLE_*`, `GITHUB_*`, `MICROSOFT_*`, `FACEBOOK_*`: OAuth values surfaced to gateway-managed OAuth endpoints
 - `CLIENT_INTERFACE_DOMAIN` and `CI_*`: per-domain OAuth overrides for client-interface consumers
+- `VAULT_OLLAMA_BASE_URL`: the on-premises Ollama endpoint the Practice Vault copilot is allowed to reach. Required for that path; unset means the vault tools refuse rather than falling back to a default host. See [`docs/services/gateway/vault-copilot-air-gap.md`](../../docs/services/gateway/vault-copilot-air-gap.md)
+- `VAULT_OLLAMA_MODEL`, `VAULT_OLLAMA_NUM_CTX`, `VAULT_OLLAMA_TEMPERATURE`, `VAULT_OLLAMA_TIMEOUT_MS`: optional overrides for the vault model settings in `src/assets/config.yaml`, which default to `qwen2.5-coder:14b`
+- `SERVICE_COMPLIANCE_AUDIT_HOST` and `SERVICE_COMPLIANCE_AUDIT_PORT`: where the tenant-scoped vault document store lives
 
 ## Deployment Notes
 
