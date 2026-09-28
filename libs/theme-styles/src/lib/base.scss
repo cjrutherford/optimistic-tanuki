@@ -20,6 +20,11 @@
 // pseudo-elements are not allowed inside it.
 // ============================================================================
 
+@use 'personality/expression';
+
+// Personality motion keyframes, global so Angular doesn't scope their names.
+@include expression.motion-keyframes;
+
 :where(html) {
   color-scheme: light;
   accent-color: var(--primary);

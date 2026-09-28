@@ -56,10 +56,10 @@
   font-weight: 500;
   cursor: pointer;
   position: relative;
-  @include p.small-text(14px);
-  @include p.touch-target;
   @include p.label-type;
   @include p.personality-transition('color, background-color', 'fast');
+  @include p.small-text(14px);
+  @include p.touch-target;
 
   &:hover:not(.disabled):not(.active) {
     color: var(--tabs-active-color, var(--primary));

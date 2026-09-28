@@ -163,10 +163,10 @@
       background: var(--background);
       color: var(--foreground);
       cursor: pointer;
-      @include p.small-text(var(--font-size-sm, 0.875rem));
-      @include p.touch-target;
       @include p.personality-transition(all, 'fast');
       @include focus-visible-ring;
+      @include p.small-text(var(--font-size-sm, 0.875rem));
+      @include p.touch-target;
 
       &:hover:not(:disabled) {
         background: color-mix(in srgb, var(--primary) 5%, transparent);
@@ -399,13 +399,13 @@
       button {
         padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
         cursor: pointer;
-        @include p.small-text(var(--font-size-sm, 0.875rem));
-        @include p.touch-target;
         border: none;
         border-radius: var(--border-radius-sm, 4px);
         background-color: var(--primary);
         color: var(--primary-foreground, #fff);
         @include p.personality-transition(background-color, 'fast');
+        @include p.small-text(var(--font-size-sm, 0.875rem));
+        @include p.touch-target;
 
         &:hover {
           background-color: var(--secondary);

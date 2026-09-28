@@ -187,52 +187,58 @@
 // ---------------------------------------------------------------------------
 // Motion: entrances, interaction glow, focus ring, ambient
 // ---------------------------------------------------------------------------
-// Keyframes are defined once and read personality variables, so switching
+// Keyframes (`motion-keyframes`, emitted globally) read personality variables, so switching
 // personality changes the motion without new CSS. All motion is gated on
 // `prefers-reduced-motion: no-preference`; personalities that declare
 // `prefersReducedMotion` already resolve to fade-only / no ambient.
 // Limits: travel <= 8px, scale >= .97, entrance <= 700ms, glow alpha <= .35,
 // ambient period >= 4s.
 
-@keyframes personality-enter {
-  from {
-    opacity: var(--motion-enter-opacity, 1);
-    transform: var(--motion-enter-transform, none);
-    filter: var(--motion-enter-filter, none);
+/// The keyframes the motion mixins and `--ambient-*-animation` variables name.
+/// Emitted ONCE, globally, by `base.scss`: Angular scopes `@keyframes` inside
+/// component stylesheets, which would break names that arrive through CSS
+/// variables, and emitting them per component duplicates them ~90 times.
+@mixin motion-keyframes {
+  @keyframes personality-enter {
+    from {
+      opacity: var(--motion-enter-opacity, 1);
+      transform: var(--motion-enter-transform, none);
+      filter: var(--motion-enter-filter, none);
+    }
   }
-}
-@keyframes personality-breathe {
-  from {
-    filter: drop-shadow(0 0 0 transparent);
+  @keyframes personality-breathe {
+    from {
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    to {
+      filter: var(--ambient-glow, none);
+    }
   }
-  to {
-    filter: var(--ambient-glow, none);
+  @keyframes personality-pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--ambient-pulse-color, transparent);
+    }
+    75%,
+    100% {
+      box-shadow: 0 0 0 12px transparent;
+    }
   }
-}
-@keyframes personality-pulse {
-  0% {
-    box-shadow: 0 0 0 0 var(--ambient-pulse-color, transparent);
+  @keyframes personality-shimmer {
+    0%,
+    55% {
+      background-position: 150% 0;
+    }
+    100% {
+      background-position: -50% 0;
+    }
   }
-  75%,
-  100% {
-    box-shadow: 0 0 0 12px transparent;
-  }
-}
-@keyframes personality-shimmer {
-  0%,
-  55% {
-    background-position: 150% 0;
-  }
-  100% {
-    background-position: -50% 0;
-  }
-}
-@keyframes personality-drift {
-  from {
-    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
-  }
-  to {
-    background-position: var(--ambient-drift-to, 0 0), 0 0, 0 0, 0 0;
+  @keyframes personality-drift {
+    from {
+      background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+    }
+    to {
+      background-position: var(--ambient-drift-to, 0 0), 0 0, 0 0, 0 0;
+    }
   }
 }
 

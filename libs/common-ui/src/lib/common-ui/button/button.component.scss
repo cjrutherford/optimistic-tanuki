@@ -80,9 +80,9 @@ button {
       --personality-fill-primary,
       var(--button-gradient, var(--gradient-primary, var(--primary)))
     );
+    color: var(--on-primary, var(--primary-foreground, #fff));
     @include p.primary-fill(var(--variant-bg-source));
     @include p.primary-motion;
-    color: var(--on-primary, var(--primary-foreground, #fff));
   }
 
   // ---- Pill treatment (legacy `rounded`) ----
