@@ -18,3 +18,4 @@ export * from './blueprint-scan.component';
 export * from './flock-field.component';
 export * from './scene-registry';
 export * from './personality-scene.component';
+export * from './scene-personality.token';

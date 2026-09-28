@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { BehaviorSubject } from 'rxjs';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { provideScenePersonality } from './scene-personality.token';
 import { PersonalitySceneComponent } from './personality-scene.component';
 
 type Scenes = { id: string; motion?: { scenes?: string[] } };
@@ -16,7 +16,7 @@ describe('PersonalitySceneComponent', () => {
     });
     await TestBed.configureTestingModule({
       imports: [PersonalitySceneComponent],
-      providers: [{ provide: ThemeService, useValue: { personality$ } }],
+      providers: [provideScenePersonality(() => personality$)],
     }).compileComponents();
     fixture = TestBed.createComponent(PersonalitySceneComponent);
     fixture.detectChanges();

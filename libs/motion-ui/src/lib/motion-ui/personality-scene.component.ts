@@ -12,13 +12,13 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  SCENE_PERSONALITY,
+  type ScenePersonality,
+} from './scene-personality.token';
 import { SCENE_REGISTRY, isSceneKind, type SceneKind } from './scene-registry';
 
-/** The part of a personality this component reads (`motion.scenes`). */
-type SceneAware =
-  | { id?: string; motion?: { scenes?: readonly string[] } }
-  | undefined;
+type SceneAware = ScenePersonality | null | undefined;
 
 /**
  * Renders the motion-ui scene that suits the active personality.
@@ -77,7 +77,7 @@ export class PersonalitySceneComponent implements AfterViewInit {
     this.fallbackSignal.set(value);
   }
 
-  private readonly theme = inject(ThemeService, { optional: true });
+  private readonly personality$ = inject(SCENE_PERSONALITY, { optional: true });
   private readonly platformId = inject(PLATFORM_ID);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
@@ -119,11 +119,9 @@ export class PersonalitySceneComponent implements AfterViewInit {
   });
 
   constructor() {
-    this.theme?.personality$
-      .pipe(takeUntilDestroyed())
-      .subscribe((personality) =>
-        this.personality.set(personality as SceneAware)
-      );
+    this.personality$
+      ?.pipe(takeUntilDestroyed())
+      .subscribe((personality) => this.personality.set(personality));
   }
 
   ngAfterViewInit(): void {
