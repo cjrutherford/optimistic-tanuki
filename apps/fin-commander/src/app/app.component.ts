@@ -6,11 +6,17 @@ import { ProfileContext } from './profile.context';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TenantContextService } from './tenant-context.service';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
   selector: 'fc-root',
   standalone: true,
-  imports: [RouterOutlet, TitleBarComponent, HaiAboutTagComponent],
+  imports: [
+    RouterOutlet,
+    TitleBarComponent,
+    HaiAboutTagComponent,
+    BugReportUiComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

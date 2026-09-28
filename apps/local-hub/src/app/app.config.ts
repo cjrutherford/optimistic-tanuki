@@ -10,6 +10,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { authInterceptor } from './services/auth.interceptor';
+import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
 import {
@@ -30,7 +31,9 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideAnimationsAsync(),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(
+      withInterceptors([authInterceptor, bugReportTraceInterceptor])
+    ),
     {
       provide: API_BASE_URL,
       useValue: '/api',

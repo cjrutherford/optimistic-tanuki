@@ -32,6 +32,7 @@ import { filter } from 'rxjs';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
 const FORGE_AUTH_NAV_LINKS = [
@@ -76,6 +77,7 @@ const FORGE_AUTH_NAV_LINKS = [
     HaiAboutTagComponent,
     PulseRingsComponent,
     PersonalityBackdropComponent,
+    BugReportUiComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',

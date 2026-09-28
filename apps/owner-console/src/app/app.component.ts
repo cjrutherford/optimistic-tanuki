@@ -2,9 +2,10 @@ import { isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
-  imports: [RouterModule, SignalMeshComponent],
+  imports: [RouterModule, SignalMeshComponent, BugReportUiComponent],
   selector: 'app-root',
   template: `
     <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -24,6 +25,7 @@ import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
     <main id="main-content" class="app-content">
       <router-outlet></router-outlet>
     </main>
+    <lib-bug-report-ui />
   `,
   styleUrl: './app.component.scss',
 })

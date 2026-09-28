@@ -12,6 +12,7 @@ import {
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 
 import { AssetController } from '../controllers/asset.controller';
+import { BugReportProxyController } from '../controllers/bug-report-proxy.controller';
 import { PalettesController } from '../controllers/palettes.controller';
 import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
@@ -172,6 +173,7 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         requiredServices: ['assets', 'authentication', 'permissions'],
         value: AssetController,
       },
+      { id: 'bug-reports', value: BugReportProxyController },
       {
         id: 'project-planning',
         requiredServices: ['project-planning'],

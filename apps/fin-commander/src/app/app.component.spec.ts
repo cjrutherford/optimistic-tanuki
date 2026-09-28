@@ -1,5 +1,6 @@
 import { Component, Input, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
@@ -45,6 +46,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
+        provideHttpClient(),
         provideRouter([
           { path: 'onboarding', component: StubOnboardingRouteComponent },
           { path: 'plans', component: StubOnboardingRouteComponent },

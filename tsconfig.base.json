@@ -59,6 +59,7 @@
         "libs/blogging-feature/src/index.ts"
       ],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
+      "@optimistic-tanuki/bug-report-ui": ["libs/bug-report/src/index.ts"],
       "@optimistic-tanuki/business-data-access": [
         "libs/business-data-access/src/index.ts"
       ],

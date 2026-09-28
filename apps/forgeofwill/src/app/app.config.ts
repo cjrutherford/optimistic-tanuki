@@ -27,6 +27,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ProfileService } from './profile/profile.service';
 import { appRoutes } from './app.routes';
 import { authenticationInterceptor } from './authentication.interceptor';
+import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { provideRouter, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
@@ -36,7 +37,7 @@ export const appConfig: ApplicationConfig = {
     provideProductTheme('forgeofwill'),
     provideClientHydration(withEventReplay()),
     provideHttpClient(
-      withInterceptors([authenticationInterceptor]),
+      withInterceptors([authenticationInterceptor, bugReportTraceInterceptor]),
       withFetch()
     ),
     provideZoneChangeDetection({ eventCoalescing: true }),

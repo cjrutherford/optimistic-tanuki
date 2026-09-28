@@ -18,6 +18,7 @@ import {
   provideProductTheme,
 } from '@optimistic-tanuki/theme-lib';
 import { AuthInterceptor } from './http.interceptor';
+import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { financeAppScopeInterceptor } from './finance-appscope.interceptor';
 
 export const appConfig: ApplicationConfig = {
@@ -28,6 +29,7 @@ export const appConfig: ApplicationConfig = {
         AuthInterceptor,
         financeAppScopeInterceptor,
         errorInterceptor,
+        bugReportTraceInterceptor,
       ]),
       withFetch()
     ),

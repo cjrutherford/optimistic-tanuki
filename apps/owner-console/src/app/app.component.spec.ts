@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
@@ -8,7 +9,10 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, RouterModule.forRoot([])],
-      providers: [{ provide: PLATFORM_ID, useValue: 'browser' }],
+      providers: [
+        provideHttpClient(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+      ],
     }).compileComponents();
   });
 

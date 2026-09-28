@@ -53,6 +53,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 const AUTH_NAV_LINKS = [
   {
@@ -133,6 +134,7 @@ const AUTH_NAV_LINKS = [
     HaiAboutTagComponent,
     MessageComponent,
     MurmurationSceneComponent,
+    BugReportUiComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
