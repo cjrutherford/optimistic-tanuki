@@ -113,10 +113,7 @@
         background: color-mix(in srgb, var(--primary) 10%, transparent);
       }
 
-      &:focus-visible {
-        outline: 2px solid var(--primary);
-        outline-offset: -2px;
-      }
+      @include p.keyboard-focus-ring(var(--primary), -2px);
     }
 
     td {
@@ -380,6 +377,7 @@
           &:last-child {
             margin-bottom: 0;
           }
+          @include p.keyboard-focus-ring(var(--primary));
         }
       }
 
@@ -410,6 +408,7 @@
         &:hover {
           background-color: var(--secondary);
         }
+        @include p.keyboard-focus-ring(var(--primary));
       }
     }
 
@@ -422,6 +421,7 @@
       font-size: 0.9em;
       padding: 0;
       vertical-align: middle;
+      @include p.keyboard-focus-ring(var(--primary));
     }
   }
 }

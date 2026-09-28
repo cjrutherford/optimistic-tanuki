@@ -40,6 +40,12 @@ button {
     background var(--animation-duration-fast) var(--animation-easing)
   );
 
+  @include p.keyboard-focus-ring(
+    currentColor,
+    2px,
+    var(--personality-box-shadow, var(--shadow-md))
+  );
+
   // ---- Tone + emphasis (shared contract) ----
   @include variant.variant-surface;
 
