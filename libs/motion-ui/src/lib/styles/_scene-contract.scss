@@ -29,8 +29,10 @@
 @use 'personality' as p;
 
 /// A duration that follows the effective scene speed (input x personality tempo).
-@function duration($seconds) {
-  @return calc(#{$seconds} / max(var(--scene-speed, 1), 0.2));
+/// `$floor` caps how slow a scene can get; scenes that shipped with a
+/// different floor pass it to keep their output unchanged.
+@function duration($seconds, $floor: 0.2) {
+  @return calc(#{$seconds} / max(var(--scene-speed, 1), #{$floor}));
 }
 
 /// Host-level rules: pause while offscreen (set by <otui-personality-scene>

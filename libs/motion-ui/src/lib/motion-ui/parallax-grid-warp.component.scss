@@ -55,7 +55,7 @@
   inset: 22% 0 0;
   transform-origin: top center;
   transform: perspective(520px) rotateX(76deg);
-  animation: warp-plane-shift scene.duration(14s) linear infinite;
+  animation: warp-plane-shift scene.duration(14s, 0.25) linear infinite;
   background-image: linear-gradient(
       color-mix(in srgb, var(--secondary) 16%, transparent) 1px,
       transparent 1px
@@ -85,7 +85,7 @@
     );
   mix-blend-mode: var(--motion-blend);
   opacity: calc(0.26 + (var(--scene-intensity) * 0.14));
-  animation: warp-drift-slide scene.duration(9s) linear infinite;
+  animation: warp-drift-slide scene.duration(9s, 0.25) linear infinite;
 }
 
 .warp-beam {
