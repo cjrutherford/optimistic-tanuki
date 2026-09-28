@@ -13,13 +13,11 @@ describe('BugReportUiComponent', () => {
         {
           provide: BugReportService,
           useValue: {
-            report: jest
-              .fn()
-              .mockResolvedValue({
-                id: 'abc12345',
-                emailSent: true,
-                issueUrl: null,
-              }),
+            report: jest.fn().mockResolvedValue({
+              id: 'abc12345',
+              emailSent: true,
+              issueUrl: null,
+            }),
           },
         },
         {
