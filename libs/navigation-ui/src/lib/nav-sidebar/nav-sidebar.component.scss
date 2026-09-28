@@ -54,6 +54,7 @@ nav {
   text-align: left;
   @include p.personality-transition(all, 'fast');
   @include p.touch-target;
+  @include p.keyboard-focus-ring(var(--primary));
 }
 
 .nav-link.group {
