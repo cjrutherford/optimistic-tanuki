@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 // PersonalityBackdropComponent (Workstream C2). The host element itself IS
 // the backdrop layer — no wrapper needed for an empty-template component.
 :host {
@@ -8,16 +10,19 @@
   pointer-events: none;
   display: block;
 
-  background-image: var(--page-background-pattern, none);
   background-repeat: repeat;
   background-position: center;
-
   // Short fade-in so the pattern's arrival (client-side only — see the SSR
   // note in personality-backdrop.component.ts) reads as intentional rather
   // than a flash, rather than snapping in fully-opaque the instant the CSS
   // variable resolves.
   opacity: 0;
   animation: personality-backdrop-fade-in 480ms ease-out 80ms forwards;
+
+  // The personality's page pattern + motif + gradient backdrop (expression
+  // layer). Until a personality opts in, only `--page-background-pattern`
+  // paints, exactly as before.
+  @include p.page-atmosphere;
 }
 
 @keyframes personality-backdrop-fade-in {
@@ -41,7 +46,9 @@
 // low-opacity decorative texture, exactly the kind of noise these
 // preferences ask to remove. `--page-background-pattern` is a plain (not
 // `!important`) custom-property read, so simply not applying it here is
-// enough; nothing else paints this variable.
+// enough; nothing else paints this variable. This also drops the expression
+// layer's pattern and gradient (page-atmosphere keeps the motif here; the
+// backdrop has always been stricter).
 @media (prefers-contrast: more) {
   :host {
     background-image: none;
