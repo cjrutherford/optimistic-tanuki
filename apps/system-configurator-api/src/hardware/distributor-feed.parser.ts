@@ -271,6 +271,7 @@ function normalizeRecord(
   if (sourceUrl && !/^https?:\/\//i.test(sourceUrl)) {
     throw new Error(`url must use HTTP or HTTPS at feed row ${rowNumber}`);
   }
+  // eslint-disable-next-line no-control-regex -- Reject control characters in untrusted feed URLs.
   if (sourceUrl && /[\u0000-\u001f\u007f]/.test(sourceUrl)) {
     throw new Error(`url contains control characters at feed row ${rowNumber}`);
   }
@@ -318,6 +319,7 @@ function requiredText(
       `${name} exceeds ${maxLength} characters at feed row ${rowNumber}`
     );
   }
+  // eslint-disable-next-line no-control-regex -- Reject unsupported control characters in untrusted feed text.
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text)) {
     throw new Error(
       `${name} contains unsupported control characters at feed row ${rowNumber}`
@@ -343,6 +345,7 @@ function assertSafeSpreadsheetText(
   name: string,
   rowNumber: number
 ): void {
+  // eslint-disable-next-line no-control-regex -- Detect spreadsheet formula prefixes after control characters.
   if (/^[\s\u0000-\u001f]*[=+\-@]/.test(value)) {
     throw new Error(
       `${name} contains spreadsheet formula content at feed row ${rowNumber}`
