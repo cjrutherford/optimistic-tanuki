@@ -80,7 +80,8 @@ button {
       --personality-fill-primary,
       var(--button-gradient, var(--gradient-primary, var(--primary)))
     );
-    background: var(--variant-bg-source);
+    @include p.primary-fill(var(--variant-bg-source));
+    @include p.primary-motion;
     color: var(--on-primary, var(--primary-foreground, #fff));
   }
 
