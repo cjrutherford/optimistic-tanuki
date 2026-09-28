@@ -99,10 +99,17 @@
     background: var(--background);
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(
+    var(--primary),
+    2px,
+    (
+      var(--shadow-md),
+      var(
+        --personality-input-focus-style,
+        0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent)
+      )
+    )
+  );
 
   &:disabled {
     opacity: 0.5;

@@ -55,10 +55,22 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(
+    color-mix(in srgb, var(--primary) 50%, transparent),
+    2px,
+    (
+      var(
+        --shadow-sm,
+        inset 0 1px 2px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
+      var(
+        --shadow-lg,
+        0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
+      ),
+      var(--personality-input-focus-style, 0 0 0 0 transparent)
+    )
+  );
 
   &:disabled {
     opacity: 0.5;
