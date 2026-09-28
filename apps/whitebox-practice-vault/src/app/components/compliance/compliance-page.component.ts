@@ -293,14 +293,14 @@ import {
       .page-title {
         font-size: 2rem;
         font-weight: 800;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 10px 0;
         letter-spacing: -0.02em;
       }
       .page-lead {
         font-size: 1rem;
         line-height: 1.6;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin: 0 0 16px 0;
       }
       .statutory-callout {
@@ -311,7 +311,7 @@ import {
       .shield-badge {
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
         font-size: 0.75rem;
         font-weight: 600;
         padding: 3px 10px;
@@ -334,7 +334,7 @@ import {
         }
       }
       .stat-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
         padding: 20px;
@@ -342,7 +342,7 @@ import {
       .stat-label {
         display: block;
         font-size: 0.75rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         text-transform: uppercase;
         letter-spacing: 0.04em;
         margin-bottom: 8px;
@@ -350,7 +350,7 @@ import {
       .stat-value {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
         display: flex;
         align-items: center;
         gap: 8px;
@@ -358,26 +358,26 @@ import {
       }
       .stat-meta {
         font-size: 0.75rem;
-        color: #64748b;
+        color: var(--vault-text-subtle);
       }
       .indicator-dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #22c55e;
+        background: var(--success);
         display: inline-block;
       }
       .valid-chain {
-        color: #4ade80;
+        color: var(--vault-success-bright);
       }
       .highlight-cyan {
-        color: #38bdf8;
+        color: var(--accent);
       }
       .highlight-green {
-        color: #86efac;
+        color: var(--trust-badge-color);
       }
       .copilot-section {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(56, 189, 248, 0.25);
         border-radius: 12px;
         padding: 24px;
@@ -399,12 +399,12 @@ import {
         margin: 0;
         font-size: 1.15rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
       }
       .copilot-subtitle {
         margin: 2px 0 0 0;
         font-size: 0.8rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
       }
       .copilot-input-row {
         display: flex;
@@ -412,21 +412,21 @@ import {
       }
       .copilot-query-input {
         flex: 1;
-        background: #090d16;
+        background: var(--vault-background-deepest);
         border: 1px solid rgba(56, 189, 248, 0.3);
         border-radius: 6px;
         padding: 10px 16px;
-        color: #f8fafc;
+        color: var(--foreground);
         font-size: 0.95rem;
         outline: none;
       }
       .copilot-query-input:focus {
-        border-color: #38bdf8;
+        border-color: var(--accent);
         box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
       }
       .btn-query-copilot {
-        background: #0284c7;
-        color: #ffffff;
+        background: var(--vault-action-blue);
+        color: var(--primary-foreground);
         border: none;
         padding: 10px 20px;
         border-radius: 6px;
@@ -435,7 +435,7 @@ import {
         transition: background 0.15s ease;
       }
       .btn-query-copilot:hover:not(:disabled) {
-        background: #0369a1;
+        background: var(--vault-action-blue-hover);
       }
       .btn-query-copilot:disabled {
         opacity: 0.5;
@@ -445,7 +445,7 @@ import {
         margin-top: 16px;
         background: rgba(239, 68, 68, 0.15);
         border: 1px solid rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
         border-radius: 6px;
         padding: 12px 16px;
         font-size: 0.9rem;
@@ -453,7 +453,7 @@ import {
       .copilot-result-box {
         margin-top: 20px;
         background: rgba(15, 23, 42, 0.9);
-        border-left: 3px solid #38bdf8;
+        border-left: 3px solid var(--accent);
         border-radius: 4px;
         padding: 16px;
       }
@@ -464,7 +464,7 @@ import {
       }
       .model-badge {
         background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
+        color: var(--accent);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 0.75rem;
@@ -472,7 +472,7 @@ import {
       }
       .airgap-badge {
         background: rgba(34, 197, 94, 0.15);
-        color: #86efac;
+        color: var(--trust-badge-color);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 0.75rem;
@@ -480,17 +480,17 @@ import {
       }
       .airgap-unavailable {
         background: rgba(239, 68, 68, 0.15);
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
       }
       .result-answer {
         margin: 0 0 12px 0;
-        color: #e2e8f0;
+        color: var(--vault-border-light);
         font-size: 0.95rem;
         line-height: 1.6;
       }
       .result-citations {
         font-size: 0.8rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
       }
       .citations-title {
         display: block;
@@ -502,7 +502,7 @@ import {
         padding-left: 18px;
       }
       .ledger-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
         padding: 24px;
@@ -535,7 +535,7 @@ import {
       .btn-export {
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
         padding: 6px 14px;
         border-radius: 6px;
         cursor: pointer;
@@ -553,12 +553,12 @@ import {
         margin: 0;
         font-size: 1.2rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
       }
       .btn-refresh {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #cbd5e1;
+        color: var(--foreground-secondary);
         padding: 6px 14px;
         border-radius: 6px;
         cursor: pointer;
@@ -578,7 +578,7 @@ import {
       }
       .audit-table th {
         background: rgba(15, 23, 42, 0.8);
-        color: #94a3b8;
+        color: var(--foreground-muted);
         padding: 12px 14px;
         font-weight: 600;
         text-transform: uppercase;
@@ -589,15 +589,15 @@ import {
       .audit-table td {
         padding: 14px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        color: #cbd5e1;
+        color: var(--foreground-secondary);
       }
       .cell-time {
-        color: #94a3b8;
+        color: var(--foreground-muted);
         white-space: nowrap;
       }
       .action-pill {
         background: rgba(56, 189, 248, 0.12);
-        color: #38bdf8;
+        color: var(--accent);
         padding: 2px 8px;
         border-radius: 4px;
         font-size: 0.75rem;
@@ -605,15 +605,15 @@ import {
       }
       .cell-file {
         font-weight: 500;
-        color: #f1f5f9;
+        color: var(--background-secondary);
       }
       .cell-hash {
         font-family: monospace;
-        color: #94a3b8;
+        color: var(--foreground-muted);
       }
       .cell-chained {
         font-family: monospace;
-        color: #38bdf8;
+        color: var(--accent);
         font-weight: 600;
       }
       .status-pill {
@@ -624,16 +624,16 @@ import {
       }
       .status-clean {
         background: rgba(34, 197, 94, 0.15);
-        color: #86efac;
+        color: var(--trust-badge-color);
       }
       .status-alert {
         background: rgba(239, 68, 68, 0.15);
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
       }
       .cell-empty {
         text-align: center;
         padding: 32px 16px;
-        color: #64748b;
+        color: var(--vault-text-subtle);
       }
     `,
   ],

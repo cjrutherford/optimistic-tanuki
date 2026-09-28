@@ -355,8 +355,8 @@ import {
       :host {
         display: block;
         min-height: 100%;
-        background: #f4f8f7;
-        color: #163b3c;
+        background: var(--config-operator-background);
+        color: var(--config-operator-foreground);
       }
       .operator-shell {
         width: min(100% - 2rem, 920px);
@@ -374,7 +374,7 @@ import {
         margin-top: 0;
       }
       .eyebrow {
-        color: #168077;
+        color: var(--config-operator-accent);
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -385,21 +385,21 @@ import {
       .sourcing-form {
         margin: 1.25rem 0;
         padding: 1.25rem;
-        border: 1px solid #c8dcda;
+        border: 1px solid var(--config-operator-border);
         border-radius: 1rem;
         background: white;
       }
       .sourcing {
         display: grid;
         gap: 0.4rem;
-        border-left: 5px solid #d08b2c;
+        border-left: 5px solid var(--config-operator-sourcing);
       }
       .error {
-        color: #8b2525;
-        border-color: #d9a8a8;
+        color: var(--config-operator-error);
+        border-color: var(--config-operator-error-border);
       }
       .success {
-        color: #145b45;
+        color: var(--config-operator-success);
       }
       .offer-heading {
         display: flex;
@@ -418,9 +418,9 @@ import {
       }
       .offer-row {
         padding: 0.85rem;
-        border: 1px solid #c8dcda;
+        border: 1px solid var(--config-operator-border);
         border-radius: 0.65rem;
-        background: #fbfdfc;
+        background: var(--config-operator-surface);
       }
       .offer-choice {
         display: grid;
@@ -438,7 +438,7 @@ import {
         gap: 0.2rem;
       }
       .offer-choice small {
-        color: #456967;
+        color: var(--config-operator-muted);
         font-weight: 400;
       }
       .ineligible {
@@ -446,7 +446,7 @@ import {
       }
       .ineligible-reason {
         margin: 0.5rem 0 0 2rem;
-        color: #8b4e1d;
+        color: var(--config-operator-warning);
         font-size: 0.9rem;
       }
       .quantity {
@@ -459,9 +459,9 @@ import {
         padding: 0.45rem;
       }
       .secondary {
-        border: 1px solid #126b67;
+        border: 1px solid var(--config-operator-action);
         background: white;
-        color: #126b67;
+        color: var(--config-operator-action);
       }
       form {
         display: grid;
@@ -478,7 +478,7 @@ import {
         width: 100%;
         box-sizing: border-box;
         padding: 0.7rem;
-        border: 1px solid #9bb8b5;
+        border: 1px solid var(--config-operator-border-muted);
         border-radius: 0.5rem;
         font: inherit;
       }
@@ -486,7 +486,7 @@ import {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 0.85rem;
-        border: 1px solid #c8dcda;
+        border: 1px solid var(--config-operator-border);
         border-radius: 0.7rem;
         padding: 1rem;
       }
@@ -499,7 +499,7 @@ import {
         border: 0;
         border-radius: 2rem;
         padding: 0.75rem 1.15rem;
-        background: #126b67;
+        background: var(--config-operator-action);
         color: white;
         font: inherit;
         font-weight: 700;
@@ -516,12 +516,12 @@ import {
       }
       dl div {
         padding: 0.75rem;
-        background: #edf5f3;
+        background: var(--config-operator-surface-muted);
         border-radius: 0.5rem;
       }
       dt {
         font-size: 0.85rem;
-        color: #456967;
+        color: var(--config-operator-muted);
       }
       dd {
         margin: 0.25rem 0 0;

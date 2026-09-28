@@ -1,3 +1,18 @@
+:root {
+  --vault-background-deep: #0b1120;
+  --vault-background-deepest: #090d16;
+  --vault-text-subtle: #64748b;
+  --vault-accent-soft: #7dd3fc;
+  --vault-success-bright: #4ade80;
+  --vault-border-light: #e2e8f0;
+  --vault-info-surface: #e0f2fe;
+  --vault-danger-soft: #fca5a5;
+  --vault-danger-surface: #fecaca;
+  --vault-warning-bright: #fef08a;
+  --vault-action-blue: #0284c7;
+  --vault-action-blue-hover: #0369a1;
+}
+
 html,
 body {
   margin: 0;

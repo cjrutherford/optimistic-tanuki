@@ -310,7 +310,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         text-transform: uppercase;
         letter-spacing: 0.22em;
         font-size: 0.75rem;
-        color: #8be8db;
+        color: var(--config-accent-muted);
       }
 
       h1,
@@ -345,8 +345,12 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 0;
         border-radius: 999px;
         padding: 0.95rem 1.4rem;
-        background: linear-gradient(135deg, #79f0e0, #2dd4bf);
-        color: #041012;
+        background: linear-gradient(
+          135deg,
+          var(--config-accent-bright),
+          var(--config-brand-gradient-from)
+        );
+        color: var(--config-on-accent);
         font-weight: 700;
         cursor: pointer;
       }
@@ -361,7 +365,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 1px solid rgba(121, 240, 224, 0.14);
         border-radius: 999px;
         padding: 0.45rem 0.75rem;
-        color: #b3f7ee;
+        color: var(--config-accent-pale);
         background: rgba(121, 240, 224, 0.06);
         font-size: 0.85rem;
       }
@@ -485,7 +489,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border-radius: 999px;
         padding: 0.85rem 1.1rem;
         background: rgba(45, 212, 191, 0.12);
-        color: #b3f7ee;
+        color: var(--config-accent-pale);
         font: inherit;
         font-weight: 700;
         cursor: pointer;
@@ -493,12 +497,16 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
 
       .tier-action:hover:not(:disabled),
       .tier-action:focus-visible {
-        background: linear-gradient(135deg, #79f0e0, #2dd4bf);
-        color: #041012;
+        background: linear-gradient(
+          135deg,
+          var(--config-accent-bright),
+          var(--config-brand-gradient-from)
+        );
+        color: var(--config-on-accent);
       }
 
       .tier-action:focus-visible {
-        outline: 3px solid #eefcf9;
+        outline: 3px solid var(--config-accent-outline);
         outline-offset: 3px;
       }
 
@@ -553,7 +561,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       }
 
       .use-case {
-        color: #eefcf9;
+        color: var(--config-accent-outline);
       }
 
       .system-card h3 {
@@ -570,7 +578,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
 
       dd {
         margin: 0.3rem 0 0;
-        color: #eefcf9;
+        color: var(--config-accent-outline);
       }
 
       .card-footer {
@@ -581,7 +589,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       }
 
       .card-cta {
-        color: #79f0e0;
+        color: var(--config-accent-bright);
         font-weight: 700;
       }
 

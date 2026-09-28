@@ -268,7 +268,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .back-link {
         border: 0;
         background: transparent;
-        color: #97f5e7;
+        color: var(--config-accent-highlight);
         padding: 0;
         margin-bottom: 1.1rem;
       }
@@ -300,7 +300,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         text-transform: uppercase;
         letter-spacing: 0.18em;
         font-size: 0.74rem;
-        color: #92efe2;
+        color: var(--config-accent-soft);
       }
 
       .intro {
@@ -332,7 +332,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         text-transform: uppercase;
         letter-spacing: 0.16em;
         font-size: 0.68rem;
-        color: rgba(146, 239, 226, 0.72);
+        color: color-mix(in srgb, var(--config-accent-soft) 72%, transparent);
       }
 
       .configure-layout {
@@ -365,7 +365,11 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 1px solid rgba(255, 255, 255, 0.08);
         background: linear-gradient(
             135deg,
-            rgba(45, 212, 191, 0.07),
+            color-mix(
+              in srgb,
+              var(--config-brand-gradient-from) 7%,
+              transparent
+            ),
             transparent 55%
           ),
           rgba(255, 255, 255, 0.03);
@@ -379,8 +383,13 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .option-card:hover,
       .option-card.active {
         transform: translateY(-2px);
-        border-color: rgba(121, 240, 224, 0.28);
-        box-shadow: inset 0 0 0 1px rgba(121, 240, 224, 0.18);
+        border-color: color-mix(
+          in srgb,
+          var(--config-accent-bright) 28%,
+          transparent
+        );
+        box-shadow: inset 0 0 0 1px
+          color-mix(in srgb, var(--config-accent-bright) 18%, transparent);
       }
 
       .option-card strong,
@@ -396,7 +405,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .option-card em {
         margin-top: 0.35rem;
         font-style: normal;
-        color: #79f0e0;
+        color: var(--config-accent-bright);
         font-weight: 700;
       }
 
@@ -429,8 +438,12 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         border: 0;
         border-radius: 999px;
         padding: 1rem 1.2rem;
-        background: linear-gradient(135deg, #79f0e0, #2dd4bf);
-        color: #031011;
+        background: linear-gradient(
+          135deg,
+          var(--config-accent-bright),
+          var(--config-brand-gradient-from)
+        );
+        color: var(--config-brand-foreground);
         font-weight: 700;
       }
 

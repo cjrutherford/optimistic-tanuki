@@ -445,16 +445,16 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .hero,
       .panel,
       .filters {
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
             color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent),
             transparent 28%
           ),
-          color-mix(in srgb, var(--surface, #ffffff) 96%, transparent);
+          color-mix(in srgb, var(--surface) 96%, transparent);
         padding: 24px;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       .hero-kicker,
@@ -494,13 +494,9 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .queue-card,
       .analytics-row,
       .timeline-item {
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
         padding: 16px;
       }
 
@@ -561,13 +557,9 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
         gap: 10px;
         width: 100%;
         text-align: left;
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
         padding: 16px;
         margin-bottom: 12px;
         cursor: pointer;
@@ -590,7 +582,7 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       }
 
       .lead-card-message {
-        color: var(--foreground-secondary, #52606d);
+        color: var(--foreground-secondary, var(--muted));
       }
 
       .detail-grid {
@@ -603,12 +595,8 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
         gap: 8px;
         padding: 14px 16px;
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
-        border: 1px solid var(--border-color, #d6d6d6);
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
+        border: 1px solid var(--border-color);
       }
 
       .badge {
@@ -634,14 +622,10 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .template-btn,
       .queue-card {
         border-radius: 12px;
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         padding: 10px 12px;
         font: inherit;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 94%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 94%, var(--background));
       }
 
       textarea {

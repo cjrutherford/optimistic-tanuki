@@ -148,7 +148,7 @@ import { RouterModule } from '@angular/router';
         display: inline-block;
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
         font-size: 0.8rem;
         font-weight: 600;
         padding: 4px 14px;
@@ -160,14 +160,14 @@ import { RouterModule } from '@angular/router';
       .hero-title {
         font-size: 3rem;
         font-weight: 800;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 16px 0;
         letter-spacing: -0.03em;
       }
       .hero-lead {
         font-size: 1.15rem;
         line-height: 1.7;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin: 0 0 32px 0;
       }
       .hero-actions {
@@ -177,8 +177,8 @@ import { RouterModule } from '@angular/router';
         flex-wrap: wrap;
       }
       .btn-primary {
-        background: #0284c7;
-        color: #ffffff;
+        background: var(--vault-action-blue);
+        color: var(--primary-foreground);
         text-decoration: none;
         padding: 12px 24px;
         border-radius: 8px;
@@ -187,12 +187,12 @@ import { RouterModule } from '@angular/router';
         transition: background 0.15s ease;
       }
       .btn-primary:hover {
-        background: #0369a1;
+        background: var(--vault-action-blue-hover);
       }
       .btn-secondary {
         background: rgba(56, 189, 248, 0.15);
         border: 1px solid rgba(56, 189, 248, 0.3);
-        color: #e0f2fe;
+        color: var(--vault-info-surface);
         text-decoration: none;
         padding: 12px 24px;
         border-radius: 8px;
@@ -206,7 +206,7 @@ import { RouterModule } from '@angular/router';
       .btn-outline {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #cbd5e1;
+        color: var(--foreground-secondary);
         text-decoration: none;
         padding: 12px 24px;
         border-radius: 8px;
@@ -227,7 +227,7 @@ import { RouterModule } from '@angular/router';
         }
       }
       .module-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(56, 189, 248, 0.2);
         border-radius: 12px;
         padding: 32px 24px;
@@ -236,7 +236,7 @@ import { RouterModule } from '@angular/router';
         transition: all 0.2s ease;
       }
       .module-card:hover {
-        border-color: #38bdf8;
+        border-color: var(--accent);
         transform: translateY(-2px);
       }
       .module-icon {
@@ -252,13 +252,13 @@ import { RouterModule } from '@angular/router';
       .module-title {
         font-size: 1.25rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 12px 0;
       }
       .module-desc {
         font-size: 0.9rem;
         line-height: 1.6;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin: 0 0 20px 0;
         flex: 1;
       }
@@ -271,14 +271,14 @@ import { RouterModule } from '@angular/router';
       .module-mandates span {
         background: rgba(34, 197, 94, 0.1);
         border: 1px solid rgba(34, 197, 94, 0.3);
-        color: #86efac;
+        color: var(--trust-badge-color);
         font-size: 0.7rem;
         font-weight: 600;
         padding: 2px 8px;
         border-radius: 4px;
       }
       .card-link {
-        color: #38bdf8;
+        color: var(--accent);
         text-decoration: none;
         font-weight: 600;
         font-size: 0.9rem;

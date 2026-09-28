@@ -41,9 +41,9 @@ import { CivicApiService } from '../../services/civic-api.service';
   styles: [
     `
       .broadcast-banner {
-        background: #7f1d1d;
-        color: #ffffff;
-        border-bottom: 3px solid #fbbf24;
+        background: var(--civic-advisory-background);
+        color: var(--civic-advisory-foreground);
+        border-bottom: 3px solid var(--civic-advisory-emphasis);
       }
       .banner-inner {
         max-width: 1200px;
@@ -55,7 +55,7 @@ import { CivicApiService } from '../../services/civic-api.service';
         font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #fde68a;
+        color: var(--civic-advisory-kicker);
         margin-bottom: 4px;
       }
       .banner-list {
@@ -76,15 +76,15 @@ import { CivicApiService } from '../../services/civic-api.service';
         font-size: 0.72rem;
         font-weight: 800;
         text-transform: uppercase;
-        background: #fbbf24;
-        color: #451a03;
+        background: var(--civic-advisory-emphasis);
+        color: var(--civic-advisory-emphasis-foreground);
         border-radius: 4px;
         padding: 1px 8px;
         white-space: nowrap;
       }
       .severity-emergency {
-        background: #ffffff;
-        color: #7f1d1d;
+        background: var(--civic-advisory-foreground);
+        color: var(--civic-advisory-background);
       }
       .banner-headline {
         font-weight: 600;

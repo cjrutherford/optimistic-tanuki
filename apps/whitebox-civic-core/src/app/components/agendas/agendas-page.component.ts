@@ -164,7 +164,7 @@ import { CivicApiService } from '../../services/civic-api.service';
         opacity: 0.72;
       }
       .error-banner {
-        background: #fef2f2;
+        background: var(--civic-danger-surface);
         border: 2px solid var(--danger);
         color: var(--danger);
         border-radius: 6px;

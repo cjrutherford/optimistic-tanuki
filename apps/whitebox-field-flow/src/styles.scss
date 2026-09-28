@@ -16,6 +16,14 @@
   --flow-border-strong: #475569;
   --flow-success: #10b981;
   --flow-danger: #ef4444;
+  --flow-text-subtle: #64748b;
+  --flow-text-quiet: #94a3b8;
+  --flow-control-border: #e2e8f0;
+  --flow-danger-background: #fef2f2;
+  --flow-danger-foreground: #991b1b;
+  --flow-danger-soft: #fca5a5;
+  --flow-danger-bright: #f87171;
+  --flow-link: #0284c7;
 
   /* Theme system overrides matching TradeCraft spec */
   --background: var(--flow-base);
@@ -86,7 +94,7 @@ a {
 input,
 select,
 textarea {
-  background-color: #0f172a;
+  background-color: var(--flow-base);
   color: var(--flow-text);
   border: 1px solid var(--flow-border-strong);
   border-radius: 8px;

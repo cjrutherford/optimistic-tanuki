@@ -187,7 +187,7 @@ import {
         letter-spacing: 0.08em;
         font-size: 0.78rem;
         font-weight: 700;
-        color: var(--accent, #0ea5e9);
+        color: var(--accent, var(--primary));
         margin: 0 0 8px 0;
       }
       h2 {
@@ -195,7 +195,7 @@ import {
         margin: 0 0 10px 0;
       }
       .lede {
-        color: var(--foreground-muted, #475569);
+        color: var(--foreground-muted, var(--muted));
         max-width: 640px;
         margin: 0 0 24px 0;
         line-height: 1.6;
@@ -223,7 +223,7 @@ import {
         box-sizing: border-box;
         padding: 10px 12px;
         font-size: 1rem;
-        border: 2px solid var(--border-color, #94a3b8);
+        border: 2px solid var(--border-color);
         border-radius: 6px;
       }
       .acquisition-group {
@@ -239,9 +239,9 @@ import {
         font-size: 0.95rem;
       }
       .error-banner {
-        background: #fef2f2;
-        border: 2px solid #b91c1c;
-        color: #b91c1c;
+        background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+        border: 2px solid var(--danger);
+        color: var(--danger);
         border-radius: 6px;
         padding: 10px 14px;
         margin-bottom: 14px;
@@ -259,19 +259,19 @@ import {
         }
       }
       .result-card {
-        border: 1px solid var(--border-color, #94a3b8);
+        border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 14px;
       }
       .savings-positive {
-        border-color: #15803d;
+        border-color: var(--success);
         border-width: 2px;
       }
       .result-label {
         display: block;
         font-size: 0.75rem;
         text-transform: uppercase;
-        color: var(--foreground-muted, #475569);
+        color: var(--foreground-muted, var(--muted));
         margin-bottom: 4px;
       }
       .result-value {
@@ -281,7 +281,7 @@ import {
       .result-meta {
         display: block;
         font-size: 0.8rem;
-        color: var(--foreground-muted, #475569);
+        color: var(--foreground-muted, var(--muted));
         margin-top: 4px;
       }
       .yearly-table {
@@ -294,7 +294,7 @@ import {
       .yearly-table td {
         text-align: right;
         padding: 8px 10px;
-        border-bottom: 1px solid var(--border-color, #94a3b8);
+        border-bottom: 1px solid var(--border-color);
       }
       .yearly-table th:first-child,
       .yearly-table td:first-child {
@@ -313,14 +313,14 @@ import {
       }
       .assumptions-list {
         font-size: 0.85rem;
-        color: var(--foreground-muted, #475569);
+        color: var(--foreground-muted, var(--muted));
         margin: 0 0 16px 0;
         padding-left: 20px;
         line-height: 1.6;
       }
       .btn-email {
-        background: var(--primary, #1d4ed8);
-        color: #fff;
+        background: var(--primary);
+        color: var(--on-primary, var(--primary-foreground));
         border: none;
         border-radius: 6px;
         padding: 12px 20px;

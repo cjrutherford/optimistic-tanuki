@@ -138,14 +138,14 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
       .page-title {
         font-size: 2rem;
         font-weight: 800;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 10px 0;
         letter-spacing: -0.02em;
       }
       .page-lead {
         font-size: 1rem;
         line-height: 1.6;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin: 0 0 16px 0;
       }
       .statutory-callout {
@@ -156,14 +156,14 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
       .shield-badge {
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
         font-size: 0.75rem;
         font-weight: 600;
         padding: 3px 10px;
         border-radius: 4px;
       }
       .drop-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(56, 189, 248, 0.25);
         border-radius: 12px;
         padding: 32px;
@@ -180,20 +180,20 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
         display: block;
         font-size: 0.75rem;
         text-transform: uppercase;
-        color: #64748b;
+        color: var(--vault-text-subtle);
         letter-spacing: 0.05em;
         margin-bottom: 4px;
       }
       .meta-value {
         font-size: 0.95rem;
-        color: #e2e8f0;
+        color: var(--vault-border-light);
         font-weight: 600;
       }
       .error-banner {
         margin-top: 20px;
         background: rgba(239, 68, 68, 0.15);
         border: 1px solid rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
         border-radius: 6px;
         padding: 12px 16px;
         font-size: 0.9rem;
@@ -221,12 +221,12 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
         margin: 0;
         font-size: 1.15rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
       }
       .receipt-subtitle {
         margin: 2px 0 0 0;
         font-size: 0.8rem;
-        color: #86efac;
+        color: var(--trust-badge-color);
       }
       .receipt-grid {
         display: grid;
@@ -248,31 +248,31 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
       .item-label {
         display: block;
         font-size: 0.75rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin-bottom: 4px;
       }
       .item-value {
         font-size: 0.9rem;
-        color: #f1f5f9;
+        color: var(--background-secondary);
         font-weight: 500;
         word-break: break-all;
       }
       .status-clean {
-        color: #4ade80;
+        color: var(--vault-success-bright);
         font-weight: 700;
       }
       .hash-code {
         font-family: monospace;
         font-size: 0.8rem;
-        color: #38bdf8;
+        color: var(--accent);
       }
       .receipt-actions {
         display: flex;
         justify-content: flex-end;
       }
       .btn-view-ledger {
-        background: #0284c7;
-        color: #ffffff;
+        background: var(--vault-action-blue);
+        color: var(--primary-foreground);
         text-decoration: none;
         padding: 8px 18px;
         border-radius: 6px;
@@ -281,7 +281,7 @@ import { DocumentAuditResponseDto } from '@optimistic-tanuki/models';
         transition: background 0.15s ease;
       }
       .btn-view-ledger:hover {
-        background: #0369a1;
+        background: var(--vault-action-blue-hover);
       }
     `,
   ],

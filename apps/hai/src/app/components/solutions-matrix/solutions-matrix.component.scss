@@ -365,7 +365,7 @@ h2 {
   padding: 0.85rem 1.5rem;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #041012;
+  color: var(--on-primary, var(--primary-foreground));
   font-size: 0.95rem;
   font-weight: 700;
   text-decoration: none;

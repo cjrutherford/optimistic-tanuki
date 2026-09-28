@@ -1,6 +1,6 @@
 .book-shell {
   padding: 2.5rem 1.25rem 4rem;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -12,7 +12,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #f59e0b;
+    color: var(--flow-amber);
     margin: 0 0 0.5rem;
   }
 
@@ -21,12 +21,12 @@
     font-weight: 800;
     letter-spacing: -0.02em;
     margin: 0 0 0.75rem;
-    color: #f8fafc;
+    color: var(--flow-text);
   }
 
   .lede {
     font-size: 1.05rem;
-    color: #cbd5e1;
+    color: var(--flow-text-muted);
     margin: 0;
     max-width: 720px;
     line-height: 1.6;
@@ -35,8 +35,8 @@
 
 .alert-banner {
   background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
+  border: 1px solid var(--flow-danger);
+  color: var(--flow-danger-soft);
   padding: 0.85rem 1.25rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -72,15 +72,15 @@
 .form-label {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--flow-text);
 }
 
 #service-date {
   width: 100%;
   max-width: 260px;
-  background: #0f172a;
-  border: 1px solid #334155;
-  color: #f8fafc;
+  background: var(--flow-base);
+  border: 1px solid var(--flow-base-elevated);
+  color: var(--flow-text);
   padding: 0.75rem;
   border-radius: 6px;
   font-size: 1rem;
@@ -107,9 +107,9 @@
 }
 
 .window-btn {
-  background: #0f172a;
-  border: 2px solid #334155;
-  color: #f8fafc;
+  background: var(--flow-base);
+  border: 2px solid var(--flow-base-elevated);
+  color: var(--flow-text);
   border-radius: 8px;
   padding: 0.75rem 1rem;
   display: flex;
@@ -120,16 +120,16 @@
   min-height: 48px;
 
   &:hover {
-    border-color: #06b6d4;
+    border-color: var(--flow-cyan);
   }
 
   &.active {
-    border-color: #06b6d4;
+    border-color: var(--flow-cyan);
     background: rgba(6, 182, 212, 0.12);
 
     .window-dot {
-      background: #06b6d4;
-      box-shadow: 0 0 6px #06b6d4;
+      background: var(--flow-cyan);
+      box-shadow: 0 0 6px var(--flow-cyan);
     }
   }
 
@@ -137,7 +137,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #475569;
+    background: var(--flow-border-strong);
   }
 
   .window-time {
@@ -148,15 +148,15 @@
 
 .upload-dropzone {
   position: relative;
-  border: 2px dashed #475569;
+  border: 2px dashed var(--flow-border-strong);
   border-radius: 8px;
   padding: 1.25rem;
   text-align: center;
-  background: #0f172a;
+  background: var(--flow-base);
   cursor: pointer;
 
   &:hover {
-    border-color: #f59e0b;
+    border-color: var(--flow-amber);
   }
 
   .file-input {
@@ -178,13 +178,13 @@
 
   .upload-action {
     font-weight: 700;
-    color: #f59e0b;
+    color: var(--flow-amber);
     font-size: 0.95rem;
   }
 
   .upload-hint {
     font-size: 0.8rem;
-    color: #cbd5e1;
+    color: var(--flow-text-muted);
   }
 }
 
@@ -201,7 +201,7 @@
   height: 72px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #475569;
+  border: 1px solid var(--flow-border-strong);
 
   .photo-thumb {
     width: 100%;
@@ -217,7 +217,7 @@
     height: 22px;
     border-radius: 50%;
     background: rgba(15, 23, 42, 0.85);
-    color: #ef4444;
+    color: var(--flow-danger);
     border: none;
     font-size: 0.75rem;
     font-weight: 800;
@@ -241,7 +241,7 @@
 .summary-heading {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--flow-text);
   margin: 0;
 }
 
@@ -249,7 +249,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  border-top: 1px solid #334155;
+  border-top: 1px solid var(--flow-base-elevated);
   padding-top: 1rem;
 }
 
@@ -258,10 +258,10 @@
   justify-content: space-between;
   align-items: center;
   font-size: 0.92rem;
-  color: #cbd5e1;
+  color: var(--flow-text-muted);
 
   .value {
-    color: #f8fafc;
+    color: var(--flow-text);
     font-weight: 600;
   }
 
@@ -270,7 +270,7 @@
     border: 1px solid rgba(6, 182, 212, 0.3);
     padding: 0.6rem 0.85rem;
     border-radius: 6px;
-    color: #f8fafc;
+    color: var(--flow-text);
   }
 }
 
@@ -283,7 +283,7 @@
 
 .secure-note {
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--flow-text-quiet);
   margin: 0;
   text-align: center;
   line-height: 1.4;

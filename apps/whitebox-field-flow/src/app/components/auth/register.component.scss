@@ -11,21 +11,21 @@
 .auth-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--tc-text-primary, #1e293b);
+  color: var(--tc-text-primary, var(--flow-base-card));
   margin-bottom: 0.5rem;
 }
 
 .auth-subtitle {
   font-size: 0.9375rem;
-  color: var(--tc-text-secondary, #64748b);
+  color: var(--tc-text-secondary, var(--flow-text-subtle));
   line-height: 1.5;
 }
 
 .alert-banner {
   padding: 0.75rem 1rem;
-  background-color: #fef2f2;
-  border-left: 4px solid #ef4444;
-  color: #991b1b;
+  background-color: var(--flow-danger-background);
+  border-left: 4px solid var(--flow-danger);
+  color: var(--flow-danger-foreground);
   font-size: 0.875rem;
   border-radius: 4px;
   margin-bottom: 1.25rem;
@@ -46,7 +46,7 @@
 .field-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--tc-text-primary, #1e293b);
+  color: var(--tc-text-primary, var(--flow-base-card));
 }
 
 .auth-actions {
@@ -61,13 +61,13 @@
 .auth-footer {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--tc-border, #e2e8f0);
+  border-top: 1px solid var(--tc-border, var(--flow-control-border));
   font-size: 0.875rem;
-  color: var(--tc-text-secondary, #64748b);
+  color: var(--tc-text-secondary, var(--flow-text-subtle));
   text-align: center;
 
   .auth-link {
-    color: var(--tc-primary, #0284c7);
+    color: var(--tc-primary, var(--flow-link));
     font-weight: 600;
     text-decoration: underline;
     margin-left: 0.25rem;

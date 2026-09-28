@@ -90,15 +90,15 @@ h2 {
 }
 
 .stock-status.in-stock {
-  color: #2dd4bf;
-  background: rgba(45, 212, 191, 0.12);
-  border: 1px solid rgba(45, 212, 191, 0.28);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
 }
 
 .stock-status.build-order {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.28);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
 }
 
 .tier-title {
@@ -233,7 +233,7 @@ dd {
   padding: 0.85rem 1.25rem;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: #041012;
+  color: var(--on-primary, var(--primary-foreground));
   font-size: 0.92rem;
   font-weight: 700;
   text-decoration: none;

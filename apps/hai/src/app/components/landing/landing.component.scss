@@ -87,13 +87,13 @@
   padding: 0.75rem 1.25rem;
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style)
-    color-mix(in srgb, var(--primary, #0ea5e9) 30%, transparent);
+    color-mix(in srgb, var(--primary) 30%, transparent);
   background: color-mix(
     in srgb,
-    var(--surface, var(--background, #0f172a)) 90%,
-    var(--primary, #0ea5e9) 10%
+    var(--surface, var(--background)) 90%,
+    var(--primary) 10%
   );
-  box-shadow: 0 4px 18px -6px color-mix(in srgb, var(--primary, #0ea5e9) 25%, transparent);
+  box-shadow: 0 4px 18px -6px color-mix(in srgb, var(--primary) 25%, transparent);
 
   .banner-inner {
     display: flex;
@@ -108,8 +108,8 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--primary, #0ea5e9);
-    box-shadow: 0 0 8px var(--primary, #0ea5e9);
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
     flex-shrink: 0;
   }
 

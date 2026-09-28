@@ -1,5 +1,14 @@
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
+:root {
+  --civic-advisory-background: #7f1d1d;
+  --civic-advisory-foreground: #ffffff;
+  --civic-advisory-emphasis: #fbbf24;
+  --civic-advisory-emphasis-foreground: #451a03;
+  --civic-advisory-kicker: #fde68a;
+  --civic-danger-surface: #fef2f2;
+}
+
 *,
 *::before,
 *::after {

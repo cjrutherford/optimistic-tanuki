@@ -249,14 +249,14 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .page-title {
         font-size: 2rem;
         font-weight: 800;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 10px 0;
         letter-spacing: -0.02em;
       }
       .page-lead {
         font-size: 1rem;
         line-height: 1.6;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin: 0 0 16px 0;
       }
       .statutory-callout {
@@ -267,14 +267,14 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .shield-badge {
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.35);
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
         font-size: 0.75rem;
         font-weight: 600;
         padding: 3px 10px;
         border-radius: 4px;
       }
       .wire-locked-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(56, 189, 248, 0.25);
         border-radius: 12px;
         padding: 40px 32px;
@@ -299,17 +299,17 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .locked-title {
         font-size: 1.4rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
         margin: 0 0 12px 0;
       }
       .locked-desc {
         font-size: 0.95rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         line-height: 1.6;
         margin: 0;
       }
       .token-highlight {
-        color: #38bdf8;
+        color: var(--accent);
         font-family: monospace;
       }
       .manual-input-section {
@@ -326,7 +326,7 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         font-size: 0.8rem;
         font-weight: 600;
         text-transform: uppercase;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin-bottom: 8px;
       }
       .input-row {
@@ -337,11 +337,11 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .otp-input {
         flex: 1;
         min-width: 140px;
-        background: #090d16;
+        background: var(--vault-background-deepest);
         border: 1px solid rgba(56, 189, 248, 0.3);
         border-radius: 6px;
         padding: 10px 14px;
-        color: #38bdf8;
+        color: var(--accent);
         font-size: 1.25rem;
         font-weight: 700;
         letter-spacing: 0.1em;
@@ -349,12 +349,12 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         outline: none;
       }
       .otp-input:focus {
-        border-color: #38bdf8;
+        border-color: var(--accent);
         box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
       }
       .btn-decrypt {
-        background: #0284c7;
-        color: #ffffff;
+        background: var(--vault-action-blue);
+        color: var(--primary-foreground);
         border: none;
         padding: 10px 18px;
         border-radius: 6px;
@@ -363,7 +363,7 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         transition: background 0.15s ease;
       }
       .btn-decrypt:hover:not(:disabled) {
-        background: #0369a1;
+        background: var(--vault-action-blue-hover);
       }
       .btn-decrypt:disabled {
         opacity: 0.5;
@@ -371,7 +371,7 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       }
       .btn-open-modal {
         background: rgba(255, 255, 255, 0.08);
-        color: #cbd5e1;
+        color: var(--foreground-secondary);
         border: 1px solid rgba(255, 255, 255, 0.2);
         padding: 10px 14px;
         border-radius: 6px;
@@ -392,13 +392,13 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .sms-status {
         margin: 12px 0 0 0;
         font-size: 0.85rem;
-        color: #7dd3fc;
+        color: var(--vault-accent-soft);
       }
       .error-banner {
         margin-top: 20px;
         background: rgba(239, 68, 68, 0.15);
         border: 1px solid rgba(239, 68, 68, 0.3);
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
         border-radius: 6px;
         padding: 12px 16px;
         font-size: 0.9rem;
@@ -408,7 +408,7 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         margin-top: 24px;
         background: rgba(234, 179, 8, 0.12);
         border: 1px solid rgba(234, 179, 8, 0.4);
-        color: #fef08a;
+        color: var(--vault-warning-bright);
         border-radius: 8px;
         padding: 16px 20px;
         font-size: 0.9rem;
@@ -418,7 +418,7 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         margin-top: 12px;
         background: rgba(239, 68, 68, 0.12);
         border: 2px solid rgba(239, 68, 68, 0.55);
-        color: #fecaca;
+        color: var(--vault-danger-surface);
         border-radius: 8px;
         padding: 16px 20px;
         font-size: 0.9rem;
@@ -429,14 +429,14 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         display: block;
         font-size: 1rem;
         letter-spacing: 0.04em;
-        color: #fca5a5;
+        color: var(--vault-danger-soft);
         margin-bottom: 6px;
       }
       .callback-text {
         margin: 0;
       }
       .wire-revealed-card {
-        background: #0b1120;
+        background: var(--vault-background-deep);
         border: 1px solid rgba(34, 197, 94, 0.4);
         border-radius: 12px;
         padding: 32px;
@@ -458,12 +458,12 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
         margin: 0;
         font-size: 1.3rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: var(--foreground);
       }
       .revealed-subtitle {
         margin: 4px 0 0 0;
         font-size: 0.85rem;
-        color: #86efac;
+        color: var(--trust-badge-color);
       }
       .wire-grid {
         display: grid;
@@ -485,18 +485,18 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       .wire-label {
         display: block;
         font-size: 0.75rem;
-        color: #94a3b8;
+        color: var(--foreground-muted);
         margin-bottom: 6px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
       }
       .wire-value {
         font-size: 1.05rem;
-        color: #f8fafc;
+        color: var(--foreground);
         font-weight: 600;
       }
       .beneficiary-val {
-        color: #38bdf8;
+        color: var(--accent);
       }
       .code-val {
         font-family: monospace;
@@ -514,12 +514,12 @@ import { WireInstructionResponseDto } from '@optimistic-tanuki/models';
       }
       .compliance-note {
         font-size: 0.8rem;
-        color: #64748b;
+        color: var(--vault-text-subtle);
       }
       .btn-lock-again {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #cbd5e1;
+        color: var(--foreground-secondary);
         padding: 8px 16px;
         border-radius: 6px;
         font-size: 0.85rem;
