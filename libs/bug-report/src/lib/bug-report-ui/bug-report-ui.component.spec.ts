@@ -47,4 +47,12 @@ describe('BugReportUiComponent', () => {
     fixture.detectChanges();
     expect(comp.result()).toContain('received');
   });
+
+  it('defaults above the chat cluster and honors position overrides', () => {
+    const fab = fixture.nativeElement.querySelector('.bug-fab');
+    expect(fab.classList.contains('bug-pos-above-chat')).toBe(true);
+    fixture.componentRef.setInput('position', 'bottom-left');
+    fixture.detectChanges();
+    expect(fab.classList.contains('bug-pos-bottom-left')).toBe(true);
+  });
 });

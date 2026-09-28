@@ -96,6 +96,18 @@ Report emails contain an inline screenshot (`data:image/jpeg` attachment rendere
 
 With everything unset, the chain degrades gracefully: nonce issuance works, PII redaction runs, the email prints to the service console log, and GitHub creation is skipped with a warning. To exercise the full path locally, set the four required values (`BUG_REPORT_OWNER_EMAIL`, `BUG_REPORT_GITHUB_REPO`, `BUG_REPORT_GITHUB_TOKEN`, plus SMTP or a local capture relay) and restart the `bug-report` service.
 
+## Appearance and Positioning
+
+The report button inherits the active theme (`--background`, `--foreground`, `--primary`, `--accent`, `--muted`) and personality (shadows, motion, surface texture, focus ring) automatically — no per-app styling needed.
+
+By default it floats at `right: 24px, bottom: 84px`, stacked above the persistent bottom-right chat cluster so it never covers existing widgets. If an app's own layout collides with that corner, override per usage:
+
+```html
+<lib-bug-report-ui position="bottom-left" />
+```
+
+Available positions: `above-chat` (default), `bottom-right`, `bottom-left`, `top-right`, `top-left`. The dialog re-anchors to match.
+
 ## Verification
 
 Unit coverage (run before pushing):

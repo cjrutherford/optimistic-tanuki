@@ -1,8 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BugReportService } from '../bug-report.service';
 import { LogBufferService } from '../log-buffer.service';
+
+export type BugReportPosition =
+  | 'above-chat'
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-right'
+  | 'top-left';
 
 /**
  * Floating "Report a bug" button + minimal dialog.
@@ -13,9 +20,16 @@ import { LogBufferService } from '../log-buffer.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './bug-report-ui.component.html',
-  styleUrl: './bug-report-ui.component.css',
+  styleUrl: './bug-report-ui.component.scss',
 })
 export class BugReportUiComponent {
+  /**
+   * Corner placement. Defaults to `above-chat`: stacked above the persistent
+   * bottom-right chat cluster so the button never covers existing UI.
+   * Override per app if that corner collides with the app's own widgets.
+   */
+  readonly position = input<BugReportPosition>('above-chat');
+
   open = signal(false);
   description = signal('');
   sending = signal(false);
