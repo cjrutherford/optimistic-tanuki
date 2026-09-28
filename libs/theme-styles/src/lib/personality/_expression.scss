@@ -10,7 +10,7 @@
 // the component's CURRENT value. Pass today's values; where there is no safe
 // default the parameter is required, so a missing value is a compile error,
 // not a silent visual change. Adopting a mixin therefore changes no pixels
-// until a personality opts in. The one deliberate exception is `focus-ring`
+// until a personality opts in. The one deliberate exception is `keyboard-focus-ring`
 // (an accessibility fix that is visible by design, adopted in its own slice).
 //
 // Variable contract (resolveExtensionVariables; '' / absent => fallback):
@@ -254,15 +254,22 @@ $_enter: personality-enter var(--motion-enter-duration, 0ms)
   }
 }
 
-/// VISIBLE BY DESIGN (accessibility): a 2px keyboard focus ring that clears
-/// 3:1 against page and surface (--focus-ring-color; currentColor until
-/// opt-in), plus the personality glow. `$base-shadow` is the component's
-/// existing focus box-shadow; the glow is appended to it. Adopt in its own
-/// slice with a visual review; it is not an empty-diff change.
-@mixin focus-ring($base-shadow: none) {
+/// VISIBLE BY DESIGN (accessibility): a 2px keyboard focus ring on
+/// :focus-visible that clears 3:1 against page and surface (--focus-ring-color;
+/// `$color` until opt-in), plus the personality glow (--glow-focus).
+/// Named `keyboard-focus-ring` because `interaction`'s `focus-ring` is an
+/// unrelated input box-shadow. `$color`/`$offset` are the component's current
+/// ring (default currentColor / 2px). `$base-shadow` is the component's
+/// existing :focus-visible box-shadow, if any; the glow is appended to it.
+/// Place after the rule's plain declarations (nested rule => mixed-decls).
+@mixin keyboard-focus-ring(
+  $color: currentColor,
+  $offset: 2px,
+  $base-shadow: none
+) {
   &:focus-visible {
-    outline: 2px solid var(--focus-ring-color, currentColor);
-    outline-offset: 2px;
+    outline: 2px solid var(--focus-ring-color, #{$color});
+    outline-offset: $offset;
     @if $base-shadow != none {
       box-shadow: #{$base-shadow}, var(--glow-focus, 0 0 #0000);
     } @else {

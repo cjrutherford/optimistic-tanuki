@@ -7,5 +7,4 @@
 @forward 'surfaces';
 @forward 'interaction';
 @forward 'composition';
-// focus-ring is hidden until C0 resolves the clash with interaction's focus-ring.
-@forward 'expression' hide focus-ring;
+@forward 'expression';
