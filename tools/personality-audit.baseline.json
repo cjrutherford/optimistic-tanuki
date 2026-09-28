@@ -143,10 +143,9 @@
   },
   "libs/common-ui/src/lib/common-ui/card/card.component.scss": {
     "border-radius": 3,
-    "font-family": 3,
-    "font-size": 4,
-    "letter-spacing": 3,
-    "line-height": 1
+    "font-family": 2,
+    "font-size": 3,
+    "letter-spacing": 3
   },
   "libs/common-ui/src/lib/common-ui/chip/chip.component.scss": {
     "font-size": 3,
@@ -179,7 +178,7 @@
   },
   "libs/common-ui/src/lib/common-ui/modal/modal.component.scss": {
     "border-radius": 12,
-    "line-height": 3,
+    "line-height": 2,
     "font-size": 6,
     "font-family": 3,
     "letter-spacing": 1
@@ -187,8 +186,8 @@
   "libs/common-ui/src/lib/common-ui/notification/notification.component.scss": {
     "border-radius": 14,
     "box-shadow": 7,
-    "font-size": 17,
-    "line-height": 5,
+    "font-size": 16,
+    "line-height": 3,
     "font-family": 1
   },
   "libs/common-ui/src/lib/common-ui/pagination.component.scss": {
