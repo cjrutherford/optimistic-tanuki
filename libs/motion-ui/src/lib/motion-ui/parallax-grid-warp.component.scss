@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .parallax-grid-warp {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -46,15 +48,14 @@
     color-mix(in srgb, var(--secondary) 34%, transparent),
     transparent
   );
-  opacity: calc(0.26 + (var(--warp-intensity) * 0.22));
+  opacity: calc(0.26 + (var(--scene-intensity) * 0.22));
 }
 
 .warp-plane {
   inset: 22% 0 0;
   transform-origin: top center;
   transform: perspective(520px) rotateX(76deg);
-  animation: warp-plane-shift calc(14s / max(var(--warp-speed), 0.25)) linear
-    infinite;
+  animation: warp-plane-shift scene.duration(14s) linear infinite;
   background-image: linear-gradient(
       color-mix(in srgb, var(--secondary) 16%, transparent) 1px,
       transparent 1px
@@ -66,7 +67,7 @@
     );
   background-size: 3.1rem 3.1rem;
   mask-image: linear-gradient(to bottom, black 14%, transparent 92%);
-  opacity: calc(0.34 + (var(--warp-intensity) * 0.2));
+  opacity: calc(0.34 + (var(--scene-intensity) * 0.2));
 }
 
 .warp-drift {
@@ -83,9 +84,8 @@
       transparent
     );
   mix-blend-mode: var(--motion-blend);
-  opacity: calc(0.26 + (var(--warp-intensity) * 0.14));
-  animation: warp-drift-slide calc(9s / max(var(--warp-speed), 0.25)) linear
-    infinite;
+  opacity: calc(0.26 + (var(--scene-intensity) * 0.14));
+  animation: warp-drift-slide scene.duration(9s) linear infinite;
 }
 
 .warp-beam {
@@ -116,7 +116,7 @@
     transparent 68%
   );
   filter: blur(24px);
-  opacity: calc(0.5 + (var(--warp-intensity) * 0.14));
+  opacity: calc(0.5 + (var(--scene-intensity) * 0.14));
 }
 
 .parallax-grid-warp.is-fallback .warp-beam {

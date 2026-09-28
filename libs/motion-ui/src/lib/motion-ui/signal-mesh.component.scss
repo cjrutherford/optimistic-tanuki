@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .signal-mesh {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -46,7 +48,7 @@
 }
 
 .mesh-line {
-  opacity: calc(0.22 + (var(--mesh-intensity) * 0.22));
+  opacity: calc(0.22 + (var(--scene-intensity) * 0.22));
   background: color-mix(in srgb, var(--secondary) 34%, transparent);
   box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 10%, transparent);
 }
@@ -86,7 +88,7 @@
   height: 18rem;
   border-radius: var(--border-radius-full, 999px);
   filter: blur(36px);
-  opacity: calc(0.16 + (var(--mesh-intensity) * 0.12));
+  opacity: calc(0.16 + (var(--scene-intensity) * 0.12));
 }
 
 .mesh-glow-a {
@@ -103,7 +105,7 @@
 
 .signal-mesh.is-fallback .mesh-node {
   animation: none;
-  opacity: calc(0.58 + (var(--mesh-intensity) * 0.16));
+  opacity: calc(0.58 + (var(--scene-intensity) * 0.16));
 }
 
 @keyframes signal-node-pulse {

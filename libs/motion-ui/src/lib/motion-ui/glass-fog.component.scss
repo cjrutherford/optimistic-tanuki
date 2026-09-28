@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .glass-fog {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -47,7 +49,7 @@
       color-mix(in srgb, var(--motion-tint) 10%, transparent),
       transparent 24%
     );
-  opacity: calc(0.32 + (var(--fog-intensity) * 0.16));
+  opacity: calc(0.32 + (var(--scene-intensity) * 0.16));
 }
 
 .fog-blob {
@@ -59,7 +61,7 @@
     transparent 72%
   );
   filter: blur(18px);
-  opacity: calc(0.28 + (var(--fog-intensity) * 0.2));
+  opacity: calc(0.28 + (var(--scene-intensity) * 0.2));
   mix-blend-mode: var(--motion-blend);
   animation: fog-float ease-in-out infinite;
 }
@@ -74,7 +76,7 @@
     color-mix(in srgb, var(--motion-tint) 16%, transparent) 36%,
     transparent 58%
   );
-  opacity: calc(0.24 + (var(--fog-intensity) * 0.18));
+  opacity: calc(0.24 + (var(--scene-intensity) * 0.18));
   filter: blur(12px);
   transform: rotate(10deg);
   animation: fog-sheen-drift ease-in-out infinite;

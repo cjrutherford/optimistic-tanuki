@@ -1,0 +1,108 @@
+// Personality scene contract for motion-ui scenes.
+//
+// Scenes stay driven by their own inputs (`speed`, `intensity`), but the
+// ACTIVE PERSONALITY now scales them through two variables ThemeService emits
+// (resolveExtensionVariables → motion):
+//
+//   --scene-tempo   multiplier on speed     (instant .8, fast 1.15, normal 1,
+//                                             slow .8, deliberate .65; x.6 for
+//                                             prefersReducedMotion personalities)
+//   --scene-energy  multiplier on intensity (0.5–1.2, from atmosphere intensity
+//                                             and whether the personality has an
+//                                             ambient loop)
+//
+// Both default to 1, so a scene that adopts this contract renders exactly as
+// before until a personality opts in.
+//
+// Colour: scenes use only theme variables (--primary, --secondary,
+// --tertiary, --foreground, --background, --surface, --motion-tint). No
+// literal colours; `white`/`black` only as light/shade sources.
+//
+// Usage (component stylesheet, top level):
+//   @use '../styles/motion-theme';
+//   @use '../styles/scene-contract' as scene;
+//   @include motion-theme.motion-theme-tokens;
+//   @include scene.scene-contract-tokens;
+//   .my-scene { @include scene.scene-root; }
+//   .layer { animation: drift scene.duration(14s) linear infinite; }
+
+@use 'personality' as p;
+
+/// A duration that follows the effective scene speed (input x personality tempo).
+@function duration($seconds) {
+  @return calc(#{$seconds} / max(var(--scene-speed, 1), 0.2));
+}
+
+/// Host-level rules: pause while offscreen (set by <otui-personality-scene>
+/// or any ancestor with `.is-offscreen`), and stop under the OS setting.
+@mixin scene-contract-tokens {
+  :host {
+    display: block;
+  }
+
+  :host-context(.is-offscreen) *,
+  :host-context(.is-offscreen) *::before,
+  :host-context(.is-offscreen) *::after {
+    animation-play-state: paused !important;
+  }
+}
+
+/// The scene's root element: effective speed/intensity + the shared frame.
+/// Bind `[style.--scene-speed-input]` and `[style.--scene-intensity-input]`
+/// from the component inputs on the same element.
+@mixin scene-root($min-height: 16rem, $accent: var(--primary)) {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
+  position: relative;
+  min-height: $min-height;
+  overflow: hidden;
+  border-radius: var(--personality-card-radius, 20px);
+  border: var(--personality-border-width, 1px)
+    var(--personality-border-style, solid)
+    color-mix(in srgb, #{$accent} 26%, var(--border, transparent));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--background) 92%, #{$accent} 8%),
+    color-mix(in srgb, var(--surface, var(--background)) 94%, transparent)
+  );
+  @include p.shadow('lg');
+  isolation: isolate;
+
+  // Forced colours (Windows high contrast): scenes are decorative, so show
+  // only the system canvas rather than stray gradient/canvas artefacts.
+  @media (forced-colors: active) {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
+  }
+
+  // Static fallback: every scene keeps a composed still frame.
+  &.is-fallback *,
+  &.is-fallback *::before,
+  &.is-fallback *::after {
+    animation: none !important;
+  }
+}
+
+/// An intensity-scaled colour: `$percent` of `$color` at intensity 1.
+@function ink($color, $percent) {
+  @return color-mix(
+    in srgb,
+    #{$color} calc(var(--scene-intensity) * #{$percent}),
+    transparent
+  );
+}
+
+/// Like `ink`, but lifted toward --motion-tint (white in dark mode, the text
+/// colour in light) so line work keeps contrast on either canvas. Mid-tone
+/// brand colours on a near-black ground are otherwise too dim to register.
+@function lit($color, $percent, $lift: 30%) {
+  @return ink(
+    color-mix(in srgb, #{$color}, var(--motion-tint, currentColor) #{$lift}),
+    $percent
+  );
+}

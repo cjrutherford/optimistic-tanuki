@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .aurora-ribbon {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   --motion-primary: color-mix(in srgb, var(--primary) 88%, var(--motion-tint));
   --motion-secondary: color-mix(
     in srgb,
@@ -47,7 +49,7 @@
 }
 
 .aurora-backdrop {
-  opacity: calc(0.45 + (var(--aurora-intensity) * 0.3));
+  opacity: calc(0.45 + (var(--scene-intensity) * 0.3));
   background: radial-gradient(
       circle at 65% 30%,
       color-mix(in srgb, var(--secondary) 14%, transparent),
@@ -67,7 +69,7 @@
   width: calc(72% + (var(--layer-index) * 8%));
   height: calc(36% + (var(--layer-index) * 4%));
   border-radius: var(--border-radius-full, 999px);
-  opacity: calc(0.16 + (var(--aurora-intensity) * 0.12));
+  opacity: calc(0.16 + (var(--scene-intensity) * 0.12));
   filter: blur(calc(28px + (var(--layer-index) * 8px)));
   transform: rotate(calc(-10deg + (var(--layer-index) * 7deg)));
   transform-origin: center;
@@ -78,14 +80,13 @@
     color-mix(in srgb, var(--motion-primary) 32%, transparent)
   );
   mix-blend-mode: var(--motion-blend);
-  animation: aurora-drift calc(18s / max(var(--aurora-speed), 0.2)) ease-in-out
-    infinite alternate;
+  animation: aurora-drift scene.duration(18s) ease-in-out infinite alternate;
   animation-delay: calc(var(--layer-index) * -1.8s);
 }
 
 .aurora-ribbon.is-fallback .aurora-layer {
   animation: none;
-  opacity: calc(0.12 + (var(--aurora-intensity) * 0.08));
+  opacity: calc(0.12 + (var(--scene-intensity) * 0.08));
 }
 
 @keyframes aurora-drift {

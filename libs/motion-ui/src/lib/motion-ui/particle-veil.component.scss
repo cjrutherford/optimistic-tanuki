@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .particle-veil {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -69,7 +71,7 @@
 
 .particle-veil.is-fallback .particle {
   animation: none;
-  opacity: calc(0.18 + (var(--veil-intensity) * 0.14));
+  opacity: calc(0.18 + (var(--scene-intensity) * 0.14));
 }
 
 @keyframes particle-rise {
@@ -84,7 +86,7 @@
         0
       )
       scale(1.06);
-    opacity: calc(0.32 + (var(--veil-intensity) * 0.28));
+    opacity: calc(0.32 + (var(--scene-intensity) * 0.28));
   }
   100% {
     transform: translate3d(

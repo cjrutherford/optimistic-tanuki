@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .topographic-drift {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -72,7 +74,7 @@
     transparent 70%
   );
   filter: blur(20px);
-  opacity: calc(0.48 + (var(--topographic-intensity) * 0.16));
+  opacity: calc(0.48 + (var(--scene-intensity) * 0.16));
 }
 
 .topographic-drift.is-fallback .contour-band {
