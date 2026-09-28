@@ -34,6 +34,7 @@ export {
   hslToHex,
   hexToHsl,
   rgbToHex,
+  hexToRgb as personalityHexToRgb,
 } from './lib/personality-color';
 export type { Hsl } from './lib/personality-color';
 export * from './lib/rendered-distance';

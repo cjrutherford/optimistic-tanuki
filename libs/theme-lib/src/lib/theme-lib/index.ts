@@ -102,6 +102,7 @@ export {
 export * from './theme-storage';
 export * from './theme.interface';
 export * from './theme.service';
+export * from './personality-extensions.token';
 export * from './theme-defaults';
 export * from './themeable.interface';
 export * from './theme-variable.service';
