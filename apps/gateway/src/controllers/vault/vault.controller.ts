@@ -123,7 +123,7 @@ export class VaultController {
   @Public()
   @UseGuards(TenantContextGuard)
   @OptionalTenant()
-  @Post(['drop/:token', 'drop'])
+  @Post('drop/:token')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(AntivirusScanInterceptor)
   @ApiOperation({
@@ -270,10 +270,39 @@ export class VaultController {
     };
   }
 
+  /** Body-token variant, kept separate so OpenAPI does not declare a token
+   * path parameter on `/drop`. */
   @Public()
   @UseGuards(TenantContextGuard)
   @OptionalTenant()
-  @Post(['escrow-verify/:token', 'escrow-verify'])
+  @Post('drop')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(AntivirusScanInterceptor)
+  @ApiOperation({
+    summary:
+      'Upload confidential client document to Practice Vault with ClamAV scan and chained SHA-256 audit log',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Document audited and sealed',
+    type: DocumentAuditResponseDto,
+  })
+  async dropDocumentWithBodyToken(
+    @Body() dto: UploadDocumentDto,
+    @Req()
+    req: VaultRequest & {
+      file?: { originalname?: string; buffer?: Buffer };
+      antivirusStatus?: string;
+      ip?: string;
+    }
+  ): Promise<DocumentAuditResponseDto> {
+    return this.dropDocument('', dto, req);
+  }
+
+  @Public()
+  @UseGuards(TenantContextGuard)
+  @OptionalTenant()
+  @Post('escrow-verify/:token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
@@ -338,6 +367,29 @@ export class VaultController {
       VAULT_TOKEN_PURPOSES.ESCROW_WIRE
     );
     return wire;
+  }
+
+  /** Body-token variant, kept separate so OpenAPI does not declare a token
+   * path parameter on `/escrow-verify`. */
+  @Public()
+  @UseGuards(TenantContextGuard)
+  @OptionalTenant()
+  @Post('escrow-verify')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Verify 6-digit rolling TOTP and decrypt escrow wire instructions under ALTA Pillar 3',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Decrypted wire instructions',
+    type: WireInstructionResponseDto,
+  })
+  async verifyEscrowOtpWithBodyToken(
+    @Body() dto: WireVerificationRequestDto,
+    @Req() req: VaultRequest
+  ): Promise<WireInstructionResponseDto> {
+    return this.verifyEscrowOtp('', dto, req);
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)

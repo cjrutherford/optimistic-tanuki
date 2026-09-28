@@ -16,7 +16,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { Response } from 'express';
@@ -83,6 +83,7 @@ export class NexusController {
   }
 
   @Patch('projects/:id/milestones/:mId')
+  @ApiParam({ name: 'id', description: 'Project ID' })
   @ApiOperation({ summary: 'Update a construction milestone' })
   @ApiResponse({
     status: 200,
@@ -244,6 +245,8 @@ export class NexusController {
 
   @Post('projects/:id/change-orders/:coId/transition')
   @HttpCode(HttpStatus.OK)
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiParam({ name: 'coId', description: 'Change order ID' })
   @ApiOperation({ summary: 'Advance a change order through approval' })
   @ApiResponse({
     status: 200,
@@ -271,6 +274,8 @@ export class NexusController {
   }
 
   @Get('projects/:id/change-orders/:coId/document')
+  @ApiParam({ name: 'id', description: 'Project ID' })
+  @ApiParam({ name: 'coId', description: 'Change order ID' })
   @ApiOperation({ summary: 'Download the signed change order PDF' })
   @ApiResponse({ status: 200, description: 'Signed PDF summary' })
   async downloadChangeOrderDocument(
