@@ -7,6 +7,8 @@ import {
   personalityDistanceBreakdown,
 } from './personality-distinctiveness';
 
+// NOTE: this spec scores declared personality fields, not rendered output; see
+// libs/theme-lib rendered-distinctiveness.spec.ts for the rendered metric.
 /**
  * Distinctiveness regression guard (Workstream C1, raised in Phase 3/B1+B2,
  * re-seeded again in the 2026-07-18 personality-styles-refactor plan's
