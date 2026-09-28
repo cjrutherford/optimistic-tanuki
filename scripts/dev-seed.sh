@@ -991,7 +991,7 @@ seed_configurable_client_blog_post() {
     node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' \
       "$identity_catalog_id"
   )"
-  published_url="${HOST_GATEWAY_BASE_URL}/api/post/published?catalogId=${encoded_catalog_id}"
+  published_url="${HOST_GATEWAY_BASE_URL}/api/blog-posts/published?catalogId=${encoded_catalog_id}"
   published_response="$(curl -sS -w '\n%{http_code}' "$published_url")"
   published_status="$(printf '%s\n' "$published_response" | tail -n 1)"
   published_body="$(printf '%s\n' "$published_response" | sed '$d')"
@@ -1032,7 +1032,7 @@ NODE
     -H "x-ot-app-id: ${app_scope}" \
     -X POST \
     -d "$post_payload" \
-    "${HOST_GATEWAY_BASE_URL}/api/post?workspaceSlug=${encoded_workspace_slug}")"
+    "${HOST_GATEWAY_BASE_URL}/api/blog-posts?workspaceSlug=${encoded_workspace_slug}")"
   create_status="$(printf '%s\n' "$create_response" | tail -n 1)"
   create_body="$(printf '%s\n' "$create_response" | sed '$d')"
   if ! printf '%s' "$create_status" | grep -q '^2'; then
