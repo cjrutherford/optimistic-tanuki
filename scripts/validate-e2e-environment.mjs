@@ -7,6 +7,8 @@ import {
   resolveE2eServices,
 } from './e2e-environment-manifest.mjs';
 
+const NX_GRAPH_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+
 function hostPort(url) {
   return Number(new URL(url).port || (url.startsWith('https:') ? 443 : 80));
 }
@@ -142,10 +144,11 @@ export function validateE2eEnvironment({
   return errors;
 }
 
-function readNxGraph() {
+export function readNxGraph(execFile = execFileSync) {
   return JSON.parse(
-    execFileSync('pnpm', ['exec', 'nx', 'graph', '--print'], {
+    execFile('pnpm', ['exec', 'nx', 'graph', '--print'], {
       encoding: 'utf8',
+      maxBuffer: NX_GRAPH_MAX_BUFFER_BYTES,
       env: { ...process.env, NX_DAEMON: 'false', NX_ISOLATE_PLUGINS: 'false' },
     })
   );
