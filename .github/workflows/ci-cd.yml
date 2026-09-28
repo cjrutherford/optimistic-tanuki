@@ -391,6 +391,7 @@ jobs:
           elif [ "${{ matrix.target }}" = "test" ]; then
             pnpm exec nx affected -t test -c ci --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static
           elif [ "${{ matrix.target }}" = "lint" ]; then
+            node tools/personality-audit.mjs check tools/personality-audit.baseline.json
             pnpm exec nx affected -t lint --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static --exclude='*-e2e'
           else
             pnpm exec nx affected -t build --base="${{ env.NX_BASE }}" --head="${{ env.NX_HEAD }}" --parallel=3 --outputStyle=static

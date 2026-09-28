@@ -1,0 +1,1166 @@
+{
+  "libs/ag-grid-ui/src/lib/ag-grid-ui/ag-grid-ui.component.scss": {
+    "border-radius": 2,
+    "font-family": 2,
+    "font-size": 2,
+    "box-shadow": 1
+  },
+  "libs/auth-ui/src/lib/auth-ui/confirm-block/confirm-block.component.scss": {
+    "border-radius": 1
+  },
+  "libs/auth-ui/src/lib/auth-ui/login-block/login-block.component.scss": {
+    "border-radius": 3,
+    "font-size": 1
+  },
+  "libs/auth-ui/src/lib/auth-ui/oauth-buttons/oauth-buttons.component.scss": {
+    "font-size": 1
+  },
+  "libs/auth-ui/src/lib/auth-ui/register-block/register-block.component.scss": {
+    "border-radius": 3,
+    "font-size": 1
+  },
+  "libs/blogging-ui/src/lib/author-profile/author-profile.component.scss": {
+    "border-radius": 1
+  },
+  "libs/blogging-ui/src/lib/blog-compose/blog-compose.component.scss": {
+    "font-family": 1,
+    "border-radius": 6,
+    "box-shadow": 7,
+    "font-size": 1
+  },
+  "libs/blogging-ui/src/lib/blog-compose/components/rich-text-toolbar.component.scss": {
+    "border-radius": 3,
+    "font-size": 2,
+    "letter-spacing": 1,
+    "box-shadow": 1
+  },
+  "libs/blogging-ui/src/lib/blog-compose/extensions/angular-component-node.styles.scss": {
+    "border-radius": 3,
+    "font-size": 8
+  },
+  "libs/blogging-ui/src/lib/blog-post/card.component.scss": {
+    "font-family": 1,
+    "font-size": 2
+  },
+  "libs/blogging-ui/src/lib/contact-form/contact-form.component.scss": {
+    "border-radius": 2,
+    "font-size": 1,
+    "letter-spacing": 1
+  },
+  "libs/blogging-ui/src/lib/context-menu/context-menu.component.scss": {
+    "border-radius": 1
+  },
+  "libs/blogging-ui/src/lib/featured-posts/featured-posts.component.scss": {
+    "border-radius": 1
+  },
+  "libs/blogging-ui/src/lib/hero/hero.component.scss": {
+    "border-radius": 2,
+    "font-size": 1
+  },
+  "libs/blogging-ui/src/lib/newsletter-signup/newsletter-signup.component.scss": {
+    "border-radius": 1
+  },
+  "libs/blogging-ui/src/lib/tag-list/tag-list.component.scss": {
+    "border-radius": 1,
+    "font-size": 1
+  },
+  "libs/business-portal-ui/src/lib/business-site-editor-shell.scss": {
+    "border-radius": 7,
+    "letter-spacing": 1,
+    "font-size": 5,
+    "font-family": 1
+  },
+  "libs/business-ui/src/lib/business-ui/business-card.component.scss": {
+    "border-radius": 4,
+    "font-size": 4
+  },
+  "libs/business-ui/src/lib/business-ui/business-detail.component.scss": {
+    "border-radius": 2,
+    "font-size": 4
+  },
+  "libs/business-ui/src/lib/business-ui/business-list.component.scss": {
+    "font-size": 1
+  },
+  "libs/business-ui/src/lib/business-ui/create-business.component.scss": {
+    "font-size": 3
+  },
+  "libs/chat-ui/src/lib/chat-ui/chat-ui.component.scss": {
+    "border-radius": 3,
+    "font-size": 4,
+    "font-family": 1
+  },
+  "libs/chat-ui/src/lib/chat-ui/chat-window/chat-window.component.scss": {
+    "border-radius": 9,
+    "box-shadow": 7,
+    "font-family": 2,
+    "font-size": 5,
+    "letter-spacing": 1
+  },
+  "libs/chat-ui/src/lib/chat-ui/chat-window/message-list/message-list.component.scss": {
+    "border-radius": 9,
+    "font-size": 15,
+    "font-family": 2,
+    "letter-spacing": 3,
+    "line-height": 2
+  },
+  "libs/chat-ui/src/lib/chat-ui/chat-window/participants/participants.component.scss": {
+    "font-family": 2,
+    "font-size": 2,
+    "letter-spacing": 1,
+    "border-radius": 3
+  },
+  "libs/chat-ui/src/lib/chat-ui/compose-chat/compose-chat.component.scss": {
+    "border-radius": 2,
+    "font-size": 3,
+    "font-family": 1,
+    "line-height": 1
+  },
+  "libs/chat-ui/src/lib/chat-ui/contact-bubble/contact-bubble.component.scss": {
+    "border-radius": 3,
+    "font-size": 4
+  },
+  "libs/common-ui/src/lib/common-ui/accordion/accordion.component.scss": {
+    "border-radius": 3,
+    "font-family": 3,
+    "font-size": 6,
+    "letter-spacing": 2,
+    "line-height": 1
+  },
+  "libs/common-ui/src/lib/common-ui/badge.component.scss": {
+    "border-radius": 1,
+    "line-height": 1,
+    "font-size": 3
+  },
+  "libs/common-ui/src/lib/common-ui/breadcrumb/breadcrumb.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 3,
+    "font-size": 3
+  },
+  "libs/common-ui/src/lib/common-ui/button/button.component.scss": {
+    "font-family": 1,
+    "font-size": 3,
+    "border-radius": 2
+  },
+  "libs/common-ui/src/lib/common-ui/card/card.component.scss": {
+    "border-radius": 3,
+    "font-family": 3,
+    "font-size": 4,
+    "letter-spacing": 3,
+    "line-height": 1
+  },
+  "libs/common-ui/src/lib/common-ui/chip/chip.component.scss": {
+    "font-size": 3,
+    "border-radius": 1
+  },
+  "libs/common-ui/src/lib/common-ui/content-section/content-section.component.scss": {
+    "line-height": 1
+  },
+  "libs/common-ui/src/lib/common-ui/dropdown/dropdown.component.scss": {
+    "border-radius": 2,
+    "font-size": 1,
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/common-ui/glass-container.component.scss": {
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/common-ui/grid/grid.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/common-ui/list/list.component.scss": {
+    "font-family": 2,
+    "font-size": 6,
+    "border-radius": 2
+  },
+  "libs/common-ui/src/lib/common-ui/metric-tile/metric-tile.component.scss": {
+    "font-size": 3,
+    "letter-spacing": 1,
+    "line-height": 1
+  },
+  "libs/common-ui/src/lib/common-ui/modal/modal.component.scss": {
+    "border-radius": 12,
+    "line-height": 3,
+    "font-size": 6,
+    "font-family": 3,
+    "letter-spacing": 1
+  },
+  "libs/common-ui/src/lib/common-ui/notification/notification.component.scss": {
+    "border-radius": 14,
+    "box-shadow": 7,
+    "font-size": 17,
+    "line-height": 5,
+    "font-family": 1
+  },
+  "libs/common-ui/src/lib/common-ui/pagination.component.scss": {
+    "font-size": 4
+  },
+  "libs/common-ui/src/lib/common-ui/profile-block/profile-block.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 1,
+    "font-size": 2
+  },
+  "libs/common-ui/src/lib/common-ui/public-landing/public-landing.component.scss": {
+    "font-family": 2,
+    "font-size": 9,
+    "letter-spacing": 3,
+    "border-radius": 4,
+    "line-height": 5,
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/common-ui/section-heading/section-heading.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1,
+    "font-size": 3,
+    "letter-spacing": 1
+  },
+  "libs/common-ui/src/lib/common-ui/spinner/spinner.component.scss": {
+    "border-radius": 5
+  },
+  "libs/common-ui/src/lib/common-ui/states/state-message.component.scss": {
+    "border-radius": 1,
+    "font-size": 2,
+    "line-height": 1
+  },
+  "libs/common-ui/src/lib/common-ui/table/table.component.scss": {
+    "border-radius": 8,
+    "font-size": 10,
+    "font-family": 1,
+    "box-shadow": 3
+  },
+  "libs/common-ui/src/lib/common-ui/tabs/tabs.component.scss": {
+    "border-radius": 5,
+    "font-size": 2
+  },
+  "libs/common-ui/src/lib/common-ui/tile/tile.component.scss": {
+    "box-shadow": 2,
+    "font-size": 2,
+    "border-radius": 3
+  },
+  "libs/common-ui/src/lib/styles/glass-effect.scss": {
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/styles/mixins.scss": {
+    "box-shadow": 6,
+    "font-family": 2
+  },
+  "libs/common-ui/src/lib/styles/tooltip.scss": {
+    "border-radius": 1,
+    "font-size": 1,
+    "box-shadow": 1
+  },
+  "libs/community-ui/src/lib/community-ui/community-posts/community-posts.component.scss": {
+    "font-family": 3,
+    "font-size": 12,
+    "border-radius": 1
+  },
+  "libs/community-ui/src/lib/community-ui/create-community/create-community.component.scss": {
+    "font-family": 3,
+    "font-size": 11,
+    "line-height": 2
+  },
+  "libs/community-ui/src/lib/community-ui/find-communities/find-communities.component.scss": {
+    "font-family": 3,
+    "letter-spacing": 2,
+    "font-size": 22,
+    "line-height": 2,
+    "border-radius": 1
+  },
+  "libs/community-ui/src/lib/community-ui/manage-groups/manage-groups.component.scss": {
+    "font-family": 3,
+    "font-size": 12,
+    "line-height": 2,
+    "border-radius": 1
+  },
+  "libs/community-ui/src/lib/community-ui/manage-members/manage-members.component.scss": {
+    "font-family": 4,
+    "font-size": 10,
+    "line-height": 1,
+    "border-radius": 2
+  },
+  "libs/community-ui/src/lib/community-ui/shell/community-shell.component.scss": {
+    "font-family": 4,
+    "font-size": 19,
+    "line-height": 1,
+    "border-radius": 3
+  },
+  "libs/form-ui/src/lib/form-ui/checkbox/checkbox.component.scss": {
+    "border-radius": 6,
+    "box-shadow": 3,
+    "font-family": 3,
+    "font-size": 5,
+    "line-height": 1
+  },
+  "libs/form-ui/src/lib/form-ui/radio-button/radio-button.component.scss": {
+    "font-family": 3,
+    "font-size": 6,
+    "border-radius": 4,
+    "box-shadow": 4,
+    "line-height": 1
+  },
+  "libs/form-ui/src/lib/form-ui/select/select.component.scss": {
+    "font-family": 4,
+    "font-size": 6,
+    "border-radius": 5
+  },
+  "libs/form-ui/src/lib/form-ui/text-area/text-area.component.scss": {
+    "font-family": 4,
+    "font-size": 8,
+    "border-radius": 4,
+    "line-height": 1,
+    "box-shadow": 1
+  },
+  "libs/form-ui/src/lib/form-ui/text-input/text-input.component.scss": {
+    "font-family": 4,
+    "font-size": 6,
+    "border-radius": 3,
+    "box-shadow": 2
+  },
+  "libs/forum-ui/src/lib/forum-ui/compose-forum-post/compose-forum-post.component.scss": {
+    "font-family": 7,
+    "line-height": 1,
+    "box-shadow": 1,
+    "font-size": 1
+  },
+  "libs/forum-ui/src/lib/forum-ui/create-thread/create-thread.component.scss": {
+    "font-family": 2
+  },
+  "libs/forum-ui/src/lib/forum-ui/create-topic/create-topic.component.scss": {
+    "font-family": 2
+  },
+  "libs/forum-ui/src/lib/forum-ui/post/post.component.scss": {
+    "font-family": 1,
+    "line-height": 1
+  },
+  "libs/forum-ui/src/lib/forum-ui/poster-profile/poster-profile.component.scss": {
+    "font-family": 3,
+    "letter-spacing": 2
+  },
+  "libs/forum-ui/src/lib/forum-ui/shell/forum-shell.component.scss": {
+    "font-family": 12,
+    "line-height": 3
+  },
+  "libs/forum-ui/src/lib/forum-ui/tag-cloud/tag-cloud.component.scss": {
+    "font-family": 1
+  },
+  "libs/forum-ui/src/lib/forum-ui/thread/thread.component.scss": {
+    "font-family": 2,
+    "line-height": 1
+  },
+  "libs/forum-ui/src/lib/forum-ui/topic/topic.component.scss": {
+    "font-family": 2,
+    "line-height": 1
+  },
+  "libs/forum-ui/src/lib/forum-ui/topic-map/topic-map.component.scss": {
+    "font-family": 2
+  },
+  "libs/hai-ui/src/lib/hai-about-modal/hai-about-modal.component.scss": {
+    "border-radius": 8,
+    "box-shadow": 6,
+    "font-family": 3,
+    "font-size": 8,
+    "letter-spacing": 4,
+    "line-height": 5
+  },
+  "libs/hai-ui/src/lib/hai-about-tag/hai-about-tag.component.scss": {
+    "border-radius": 4,
+    "box-shadow": 4,
+    "font-family": 1,
+    "font-size": 4,
+    "letter-spacing": 3,
+    "line-height": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/aurora-ribbon.component.scss": {
+    "border-radius": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/glass-fog.component.scss": {
+    "border-radius": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/murmuration-scene.component.scss": {
+    "border-radius": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/parallax-grid-warp.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/particle-veil.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/pulse-rings.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/shimmer-beam.component.scss": {
+    "border-radius": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/signal-mesh.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/topographic-drift.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 1
+  },
+  "libs/navigation-ui/src/lib/nav-sidebar/nav-sidebar.component.scss": {
+    "letter-spacing": 1,
+    "font-size": 1,
+    "border-radius": 1
+  },
+  "libs/persona-ui/src/lib/components/persona-selection-menu.component.scss": {
+    "border-radius": 9,
+    "font-size": 9,
+    "line-height": 2,
+    "box-shadow": 2,
+    "letter-spacing": 2
+  },
+  "libs/profile-ui/src/lib/profile-ui/banner/banner.component.scss": {
+    "border-radius": 1,
+    "font-size": 1
+  },
+  "libs/profile-ui/src/lib/profile-ui/profile-photo/profile-photo.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/profile-ui/src/lib/profile-ui/profile-selector.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 2,
+    "font-size": 4,
+    "line-height": 2
+  },
+  "libs/profile-ui/src/lib/profile-ui/settings-shell.component.scss": {
+    "font-size": 1,
+    "letter-spacing": 1,
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/project-ui/src/lib/project-ui/ai-assistant-bubble/ai-assistant-bubble.component.scss": {
+    "border-radius": 6,
+    "box-shadow": 2,
+    "font-size": 7,
+    "font-family": 1
+  },
+  "libs/project-ui/src/lib/project-ui/ai-change-review/ai-change-review.component.scss": {
+    "font-family": 1,
+    "font-size": 14,
+    "border-radius": 7,
+    "letter-spacing": 1
+  },
+  "libs/project-ui/src/lib/project-ui/analytics-dashboard/analytics-dashboard.component.scss": {
+    "font-size": 6,
+    "border-radius": 1
+  },
+  "libs/project-ui/src/lib/project-ui/mind-map/mind-map.component.scss": {
+    "font-size": 8,
+    "border-radius": 3,
+    "line-height": 1
+  },
+  "libs/project-ui/src/lib/project-ui/project-conversation/project-conversation.component.scss": {
+    "font-size": 1,
+    "border-radius": 1
+  },
+  "libs/project-ui/src/lib/project-ui/project-invites/invite-form.component.scss": {
+    "font-size": 4,
+    "border-radius": 2
+  },
+  "libs/project-ui/src/lib/project-ui/project-invites/invite-list.component.scss": {
+    "font-size": 3,
+    "border-radius": 2
+  },
+  "libs/project-ui/src/lib/project-ui/project-members/project-members.component.scss": {
+    "font-size": 5,
+    "letter-spacing": 1,
+    "border-radius": 2
+  },
+  "libs/project-ui/src/lib/project-ui/project-overview/project-overview.component.scss": {
+    "font-size": 1
+  },
+  "libs/project-ui/src/lib/project-ui/project-summary/project-summary.component.scss": {
+    "font-size": 6,
+    "letter-spacing": 1,
+    "border-radius": 2,
+    "font-family": 1
+  },
+  "libs/project-ui/src/lib/project-ui/tag-selector/tag-selector.component.scss": {
+    "border-radius": 1,
+    "font-size": 1
+  },
+  "libs/project-ui/src/lib/project-ui/task-calendar/task-calendar.component.scss": {
+    "font-size": 1,
+    "border-radius": 4
+  },
+  "libs/project-ui/src/lib/project-ui/task-form/task-form.component.scss": {
+    "font-size": 1
+  },
+  "libs/project-ui/src/lib/project-ui/task-kanban/task-kanban.component.scss": {
+    "border-radius": 6,
+    "font-size": 7,
+    "line-height": 1,
+    "box-shadow": 1
+  },
+  "libs/project-ui/src/lib/project-ui/task-notes-panel/task-notes-panel.component.scss": {
+    "font-family": 1,
+    "font-size": 7,
+    "letter-spacing": 1,
+    "border-radius": 2
+  },
+  "libs/project-ui/src/lib/project-ui/task-time-panel/task-time-panel.component.scss": {
+    "font-family": 1,
+    "font-size": 3,
+    "letter-spacing": 1
+  },
+  "libs/project-ui/src/lib/project-ui/time-tracker/time-tracker.component.scss": {
+    "border-radius": 1,
+    "font-size": 2,
+    "font-family": 1
+  },
+  "libs/social-ui/src/lib/social-ui/attachment/attachment.component.scss": {
+    "font-family": 1,
+    "border-radius": 1
+  },
+  "libs/social-ui/src/lib/social-ui/comment/comment-list/comment-list.component.scss": {
+    "font-family": 1,
+    "font-size": 2,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "libs/social-ui/src/lib/social-ui/comment/comment.component.scss": {
+    "border-radius": 8,
+    "font-family": 5,
+    "font-size": 9,
+    "box-shadow": 1,
+    "line-height": 2
+  },
+  "libs/social-ui/src/lib/social-ui/compose/components/rich-text-toolbar.component.scss": {
+    "border-radius": 3,
+    "font-size": 2,
+    "letter-spacing": 1,
+    "font-family": 2,
+    "box-shadow": 1
+  },
+  "libs/social-ui/src/lib/social-ui/compose/compose.component.scss": {
+    "border-radius": 11,
+    "font-family": 7,
+    "font-size": 5,
+    "letter-spacing": 1,
+    "box-shadow": 4
+  },
+  "libs/social-ui/src/lib/social-ui/compose/extensions/angular-component-node.styles.scss": {
+    "border-radius": 3,
+    "font-size": 8
+  },
+  "libs/social-ui/src/lib/social-ui/link/link.component.scss": {
+    "font-family": 4,
+    "font-size": 2,
+    "box-shadow": 1,
+    "border-radius": 1
+  },
+  "libs/social-ui/src/lib/social-ui/post/post.component.scss": {
+    "font-family": 5,
+    "font-size": 9,
+    "border-radius": 8,
+    "line-height": 2,
+    "letter-spacing": 2,
+    "box-shadow": 1
+  },
+  "libs/social-ui/src/lib/social-ui/vote/reaction.component.scss": {
+    "border-radius": 6,
+    "font-family": 1,
+    "font-size": 9,
+    "line-height": 2,
+    "box-shadow": 1
+  },
+  "libs/social-ui/src/lib/social-ui/vote/vote.component.scss": {
+    "font-family": 1,
+    "border-radius": 3,
+    "font-size": 7,
+    "line-height": 1,
+    "box-shadow": 1
+  },
+  "libs/social-ui/src/lib/styles/mixins.scss": {
+    "font-family": 1,
+    "border-radius": 2,
+    "font-size": 1
+  },
+  "libs/store-ui/src/lib/donation/donation.component.scss": {
+    "border-radius": 6,
+    "font-size": 5,
+    "font-family": 1
+  },
+  "libs/store-ui/src/lib/product-card/product-card.component.scss": {
+    "border-radius": 2,
+    "font-size": 5,
+    "font-family": 1
+  },
+  "libs/store-ui/src/lib/product-list/product-list.component.scss": {
+    "font-size": 1
+  },
+  "libs/store-ui/src/lib/shopping-cart/shopping-cart.component.scss": {
+    "border-radius": 4,
+    "font-size": 4
+  },
+  "apps/business-configurator/src/app/app.component.scss": {
+    "border-radius": 2,
+    "letter-spacing": 1,
+    "font-size": 1
+  },
+  "apps/business-configurator/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/business-site/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/christopherrutherford-net/src/landing/about/about.component.scss": {
+    "line-height": 3,
+    "border-radius": 1
+  },
+  "apps/christopherrutherford-net/src/landing/contact/contact.component.scss": {
+    "font-size": 1,
+    "letter-spacing": 1,
+    "line-height": 1
+  },
+  "apps/christopherrutherford-net/src/landing/hero/hero.component.scss": {
+    "border-radius": 4,
+    "font-size": 4,
+    "letter-spacing": 1,
+    "box-shadow": 3,
+    "line-height": 1
+  },
+  "apps/christopherrutherford-net/src/landing/landing.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/christopherrutherford-net/src/landing/project-grid/project-grid.component.scss": {
+    "font-size": 5,
+    "letter-spacing": 4,
+    "line-height": 3,
+    "box-shadow": 2,
+    "border-radius": 3
+  },
+  "apps/christopherrutherford-net/src/landing/services-grid/services-grid.component.scss": {
+    "font-size": 1,
+    "letter-spacing": 1,
+    "line-height": 1
+  },
+  "apps/christopherrutherford-net/src/landing/title-bar/title-bar.component.scss": {
+    "font-size": 1,
+    "border-radius": 1
+  },
+  "apps/christopherrutherford-net/src/styles.scss": {
+    "font-family": 3,
+    "line-height": 1,
+    "font-size": 1
+  },
+  "apps/client-interface/src/app/app.component.scss": {
+    "border-radius": 4,
+    "box-shadow": 4,
+    "font-size": 4,
+    "letter-spacing": 1
+  },
+  "apps/client-interface/src/app/components/landing.component.scss": {
+    "font-family": 13,
+    "font-size": 21,
+    "letter-spacing": 7,
+    "border-radius": 13,
+    "box-shadow": 6,
+    "line-height": 8
+  },
+  "apps/client-interface/src/app/components/login.component.scss": {
+    "font-size": 3,
+    "letter-spacing": 2,
+    "line-height": 2,
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/client-interface/src/app/components/profile.component.scss": {
+    "font-size": 14,
+    "line-height": 2,
+    "letter-spacing": 3,
+    "border-radius": 5,
+    "box-shadow": 1
+  },
+  "apps/client-interface/src/app/components/register.component.scss": {
+    "font-size": 3,
+    "letter-spacing": 2,
+    "line-height": 2,
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/client-interface/src/app/components/settings.component.scss": {
+    "font-family": 1,
+    "font-size": 1
+  },
+  "apps/client-interface/src/app/components/social/feed.component.scss": {
+    "font-size": 2
+  },
+  "apps/client-interface/src/app/components/tasks/tasks.component.scss": {
+    "box-shadow": 1,
+    "border-radius": 1,
+    "font-size": 1
+  },
+  "apps/client-interface/src/app/components/toolbar.component.scss": {
+    "border-radius": 1,
+    "font-family": 1,
+    "font-size": 1,
+    "letter-spacing": 1
+  },
+  "apps/client-interface/src/app/components/user/user.component.scss": {
+    "box-shadow": 1,
+    "border-radius": 1
+  },
+  "apps/client-interface/src/styles.scss": {
+    "font-family": 1,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/client-interface/src/variables.scss": {
+    "box-shadow": 1,
+    "border-radius": 2
+  },
+  "apps/configurable-client/src/app/app.component.scss": {
+    "border-radius": 1
+  },
+  "apps/configurable-client/src/app/components/configurable-client-public-landing.component.scss": {
+    "border-radius": 10,
+    "letter-spacing": 4,
+    "box-shadow": 1,
+    "font-size": 6,
+    "line-height": 3,
+    "font-family": 1
+  },
+  "apps/configurable-client/src/app/components/owner-workspace-dashboard.component.scss": {
+    "font-family": 1,
+    "font-size": 8,
+    "letter-spacing": 5,
+    "border-radius": 4,
+    "box-shadow": 2,
+    "line-height": 2
+  },
+  "apps/configurable-client/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/d6/src/styles.scss": {
+    "font-family": 1,
+    "line-height": 1,
+    "border-radius": 4,
+    "font-size": 2,
+    "box-shadow": 2
+  },
+  "apps/developer-portal/src/app/app.component.scss": {
+    "letter-spacing": 1,
+    "font-size": 4,
+    "line-height": 5,
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "apps/digital-homestead/src/app/components/about/about.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 5,
+    "font-size": 5,
+    "line-height": 3
+  },
+  "apps/digital-homestead/src/app/components/benefits/benefits.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 4,
+    "font-size": 2,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/blog-page/blog-page.component.scss": {
+    "border-radius": 9,
+    "font-size": 10,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/blog-section/blog-section.component.scss": {
+    "border-radius": 3,
+    "font-size": 5,
+    "box-shadow": 3,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/community/community.component.scss": {
+    "border-radius": 5,
+    "box-shadow": 4,
+    "font-size": 4,
+    "font-family": 1,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/contact/contact.component.scss": {
+    "border-radius": 4,
+    "font-size": 4,
+    "box-shadow": 4,
+    "letter-spacing": 1,
+    "font-family": 1
+  },
+  "apps/digital-homestead/src/app/components/footer/footer.component.scss": {
+    "border-radius": 2,
+    "box-shadow": 1,
+    "font-size": 3,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/hero/hero.component.scss": {
+    "border-radius": 4,
+    "font-size": 5,
+    "letter-spacing": 2,
+    "box-shadow": 3,
+    "font-family": 1,
+    "line-height": 2
+  },
+  "apps/digital-homestead/src/app/components/main-page/main-page.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/digital-homestead/src/app/components/resources/resources.component.scss": {
+    "border-radius": 3,
+    "font-size": 3,
+    "box-shadow": 3,
+    "line-height": 1
+  },
+  "apps/digital-homestead/src/app/components/title-bar/title-bar.component.scss": {
+    "box-shadow": 3,
+    "border-radius": 4,
+    "font-size": 4
+  },
+  "apps/digital-homestead/src/styles.scss": {
+    "font-family": 5,
+    "line-height": 4,
+    "font-size": 9,
+    "border-radius": 7,
+    "box-shadow": 7,
+    "letter-spacing": 1
+  },
+  "apps/fin-commander/src/app/components/landing/landing.component.scss": {
+    "border-radius": 8,
+    "box-shadow": 5,
+    "letter-spacing": 4,
+    "font-size": 12,
+    "font-family": 5,
+    "line-height": 6
+  },
+  "apps/fin-commander/src/app/components/title-bar/title-bar.component.scss": {
+    "border-radius": 6,
+    "font-size": 8,
+    "letter-spacing": 2,
+    "font-family": 2,
+    "box-shadow": 1,
+    "line-height": 2
+  },
+  "apps/fin-commander/src/styles.scss": {
+    "font-family": 3,
+    "border-radius": 1,
+    "font-size": 2,
+    "box-shadow": 1,
+    "letter-spacing": 1
+  },
+  "apps/forgeofwill/src/app/app.component.scss": {
+    "border-radius": 2,
+    "font-size": 2,
+    "letter-spacing": 1
+  },
+  "apps/forgeofwill/src/app/pages/invitations/invitations.component.scss": {
+    "font-size": 1,
+    "border-radius": 2
+  },
+  "apps/forgeofwill/src/app/pages/landing/landing.component.scss": {
+    "font-family": 13,
+    "border-radius": 15,
+    "box-shadow": 13,
+    "font-size": 20,
+    "letter-spacing": 10,
+    "line-height": 5
+  },
+  "apps/forgeofwill/src/app/pages/projects/projects.component.scss": {
+    "font-family": 5,
+    "font-size": 5,
+    "border-radius": 1
+  },
+  "apps/forgeofwill/src/app/pages/settings/settings.component.scss": {
+    "font-size": 2
+  },
+  "apps/forgeofwill/src/styles.scss": {
+    "font-family": 3,
+    "line-height": 3,
+    "border-radius": 4,
+    "letter-spacing": 1,
+    "font-size": 3,
+    "box-shadow": 2
+  },
+  "apps/hai/src/app/components/landing/contact-section.component.scss": {
+    "letter-spacing": 1,
+    "font-size": 1,
+    "line-height": 1,
+    "font-family": 1
+  },
+  "apps/hai/src/app/components/landing/ecosystem-section.component.scss": {
+    "letter-spacing": 2,
+    "font-family": 1,
+    "font-size": 3,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/hai/src/app/components/landing/engagement-section.component.scss": {
+    "border-radius": 1,
+    "font-family": 1,
+    "font-size": 2,
+    "line-height": 3
+  },
+  "apps/hai/src/app/components/landing/landing.component.scss": {
+    "letter-spacing": 2,
+    "font-size": 4,
+    "line-height": 3,
+    "font-family": 3,
+    "box-shadow": 1
+  },
+  "apps/hai/src/app/components/landing/manifesto-section.component.scss": {
+    "letter-spacing": 1,
+    "font-size": 1,
+    "line-height": 1,
+    "font-family": 1,
+    "border-radius": 1
+  },
+  "apps/hai/src/app/components/landing/partner-section.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1,
+    "line-height": 2
+  },
+  "apps/hai/src/app/components/landing/personal-cloud-section.component.scss": {
+    "letter-spacing": 1,
+    "font-size": 1,
+    "line-height": 1,
+    "font-family": 1,
+    "border-radius": 1
+  },
+  "apps/hai/src/app/components/landing/services-section.component.scss": {
+    "letter-spacing": 1,
+    "font-family": 1,
+    "font-size": 3,
+    "line-height": 2,
+    "border-radius": 1
+  },
+  "apps/hai/src/app/components/title-bar/title-bar.component.scss": {
+    "font-family": 1
+  },
+  "apps/hai/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/leads-app/src/app/app.component.scss": {
+    "font-family": 1,
+    "font-size": 6,
+    "letter-spacing": 1,
+    "border-radius": 3
+  },
+  "apps/leads-app/src/app/dashboard.component.scss": {
+    "font-family": 3,
+    "font-size": 21,
+    "letter-spacing": 7,
+    "line-height": 6,
+    "border-radius": 6
+  },
+  "apps/leads-app/src/app/interview-wizard.component.scss": {
+    "font-size": 17,
+    "line-height": 3,
+    "box-shadow": 1,
+    "border-radius": 5,
+    "letter-spacing": 1
+  },
+  "apps/leads-app/src/app/leads.component.scss": {
+    "font-size": 23,
+    "font-family": 5,
+    "letter-spacing": 4,
+    "border-radius": 2
+  },
+  "apps/leads-app/src/app/onboarding-page.component.scss": {
+    "font-size": 3,
+    "letter-spacing": 1,
+    "line-height": 2
+  },
+  "apps/leads-app/src/app/topics.component.scss": {
+    "font-size": 51,
+    "font-family": 7,
+    "letter-spacing": 12,
+    "line-height": 11,
+    "box-shadow": 1,
+    "border-radius": 13
+  },
+  "apps/leads-app/src/styles.scss": {
+    "font-family": 4
+  },
+  "apps/learning/src/styles.scss": {
+    "font-family": 2
+  },
+  "apps/local-hub/src/app/components/map/map.component.scss": {
+    "border-radius": 17,
+    "box-shadow": 12,
+    "font-size": 5,
+    "font-family": 3,
+    "line-height": 1
+  },
+  "apps/local-hub/src/app/pages/account/account.component.scss": {
+    "border-radius": 6,
+    "font-family": 2,
+    "font-size": 11,
+    "letter-spacing": 1,
+    "line-height": 1
+  },
+  "apps/local-hub/src/app/pages/cities/cities.component.scss": {
+    "font-size": 16,
+    "line-height": 5,
+    "letter-spacing": 5,
+    "border-radius": 10,
+    "box-shadow": 5
+  },
+  "apps/local-hub/src/app/pages/city/city.component.scss": {
+    "border-radius": 25,
+    "font-family": 6,
+    "font-size": 32,
+    "letter-spacing": 6,
+    "line-height": 5,
+    "box-shadow": 2
+  },
+  "apps/local-hub/src/app/pages/classified-detail/classified-detail.component.scss": {
+    "font-size": 20,
+    "border-radius": 15,
+    "line-height": 2,
+    "letter-spacing": 1,
+    "font-family": 1
+  },
+  "apps/local-hub/src/app/pages/classifieds/classifieds.component.scss": {
+    "font-family": 2,
+    "font-size": 6,
+    "letter-spacing": 2,
+    "line-height": 2,
+    "border-radius": 4
+  },
+  "apps/local-hub/src/app/pages/communities/communities.component.scss": {
+    "font-family": 2,
+    "font-size": 16,
+    "letter-spacing": 2,
+    "border-radius": 8,
+    "box-shadow": 5,
+    "line-height": 2
+  },
+  "apps/local-hub/src/app/pages/community/community.component.scss": {
+    "border-radius": 22,
+    "font-family": 7,
+    "font-size": 30,
+    "letter-spacing": 6,
+    "line-height": 7,
+    "box-shadow": 2
+  },
+  "apps/local-hub/src/app/pages/landing/landing.component.scss": {
+    "font-size": 31,
+    "letter-spacing": 5,
+    "border-radius": 17,
+    "font-family": 8,
+    "line-height": 7,
+    "box-shadow": 7
+  },
+  "apps/local-hub/src/styles.scss": {
+    "font-family": 1,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/marketing-generator/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/owner-console/src/app/app.component.scss": {
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/owner-console/src/app/components/app-config-designer/app-config-designer.component.scss": {
+    "font-size": 11,
+    "letter-spacing": 2,
+    "border-radius": 20,
+    "box-shadow": 4
+  },
+  "apps/owner-console/src/app/components/app-config-designer/section-editors/section-editor.component.scss": {
+    "font-size": 7,
+    "border-radius": 4
+  },
+  "apps/owner-console/src/app/components/appointment-management.component.scss": {
+    "border-radius": 7,
+    "font-size": 3
+  },
+  "apps/owner-console/src/app/components/availability-management.component.scss": {
+    "border-radius": 6,
+    "font-size": 3
+  },
+  "apps/owner-console/src/app/components/dashboard.component.scss": {
+    "border-radius": 2,
+    "font-size": 2,
+    "letter-spacing": 1,
+    "box-shadow": 1
+  },
+  "apps/owner-console/src/app/components/order-management.component.scss": {
+    "border-radius": 6,
+    "font-size": 5,
+    "box-shadow": 2,
+    "line-height": 1
+  },
+  "apps/owner-console/src/app/components/product-management.component.scss": {
+    "border-radius": 5,
+    "font-size": 4,
+    "box-shadow": 1
+  },
+  "apps/owner-console/src/app/components/resource-management.component.scss": {
+    "border-radius": 6,
+    "font-size": 5,
+    "box-shadow": 1
+  },
+  "apps/owner-console/src/app/components/store-overview.component.scss": {
+    "border-radius": 12,
+    "font-size": 5,
+    "letter-spacing": 2,
+    "line-height": 1
+  },
+  "apps/owner-console/src/styles.scss": {
+    "border-radius": 1,
+    "font-size": 1,
+    "box-shadow": 1
+  },
+  "apps/setup-console/src/app/components/bootstrap-onboarding.component.scss": {
+    "border-radius": 11,
+    "font-size": 12,
+    "letter-spacing": 1,
+    "line-height": 1
+  },
+  "apps/setup-console/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/store-client/src/app/app.component.scss": {
+    "box-shadow": 1,
+    "font-size": 1,
+    "border-radius": 1
+  },
+  "apps/store-client/src/app/pages/bookings/bookings.component.scss": {
+    "border-radius": 13,
+    "font-size": 15,
+    "box-shadow": 4,
+    "line-height": 1,
+    "font-family": 1
+  },
+  "apps/store-client/src/app/pages/cart/cart.component.scss": {
+    "font-size": 1
+  },
+  "apps/store-client/src/app/pages/catalog/catalog.component.scss": {
+    "font-size": 3,
+    "border-radius": 1
+  },
+  "apps/store-client/src/app/pages/donations/donations.component.scss": {
+    "font-size": 2,
+    "border-radius": 1
+  },
+  "apps/system-configurator/src/app/app.component.scss": {
+    "border-radius": 2,
+    "letter-spacing": 1,
+    "font-size": 1
+  },
+  "apps/system-configurator/src/styles.scss": {
+    "font-family": 1
+  },
+  "apps/video-client/src/app/pages/catalog/catalog.component.scss": {
+    "font-size": 3,
+    "border-radius": 1
+  },
+  "apps/video-client/src/styles.scss": {
+    "font-family": 1,
+    "border-radius": 1
+  }
+}

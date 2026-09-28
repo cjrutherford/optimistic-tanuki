@@ -79,6 +79,7 @@
     "packages:publish": "node -e \"console.error('Public package publishing moved to the mirror repo.'); process.exit(1);\"",
     "catalog:check": "node scripts/validate-app-catalog.mjs",
     "check:no-personality-scss": "node tools/check-no-personality-scss.mjs",
+    "check:personality-audit": "node tools/personality-audit.mjs check tools/personality-audit.baseline.json",
     "docs:personalities": "node scripts/generate-personality-matrix.mjs --write"
   },
   "private": true,
