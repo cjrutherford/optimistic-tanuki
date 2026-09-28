@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Personality, PersonalityFonts } from '@optimistic-tanuki/theme-models';
-import { FontLoadingService } from './font-loading.service';
+import { FontLoadingService, googleFontWeights } from './font-loading.service';
 
 describe('FontLoadingService', () => {
   let service: FontLoadingService;
@@ -191,5 +191,11 @@ describe('FontLoadingService', () => {
     expect(service.getLoadedFonts().length).toBeGreaterThan(0);
     service.reset();
     expect(service.getLoadedFonts()).toEqual([]);
+  });
+});
+
+describe('googleFontWeights', () => {
+  it('joins unique weights ascending with semicolons, as css2 requires', () => {
+    expect(googleFontWeights([700, 400, 500, 400])).toBe('400;500;700');
   });
 });
