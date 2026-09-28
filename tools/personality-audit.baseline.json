@@ -426,7 +426,6 @@
   },
   "libs/navigation-ui/src/lib/nav-sidebar/nav-sidebar.component.scss": {
     "letter-spacing": 1,
-    "font-size": 1,
     "border-radius": 1
   },
   "libs/persona-ui/src/lib/components/persona-selection-menu.component.scss": {

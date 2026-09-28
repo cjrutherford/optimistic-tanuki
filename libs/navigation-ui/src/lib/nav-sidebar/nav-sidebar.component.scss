@@ -13,9 +13,9 @@ nav {
 .nav-heading {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.68rem;
   font-weight: 700;
   color: var(--muted-foreground, var(--muted, #64748b));
+  @include p.small-text(0.68rem);
 }
 
 .nav-tree {
@@ -53,6 +53,7 @@ nav {
   font: inherit;
   text-align: left;
   @include p.personality-transition(all, 'fast');
+  @include p.touch-target;
 }
 
 .nav-link.group {
