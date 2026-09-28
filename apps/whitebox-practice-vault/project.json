@@ -1,0 +1,98 @@
+{
+  "name": "whitebox-practice-vault",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "vault",
+  "sourceRoot": "apps/whitebox-practice-vault/src",
+  "tags": ["type:app"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/whitebox-practice-vault",
+        "browser": "apps/whitebox-practice-vault/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/whitebox-practice-vault/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/whitebox-practice-vault/public"
+          }
+        ],
+        "styles": [
+          "libs/theme-styles/src/lib/base.scss",
+          "apps/whitebox-practice-vault/src/styles.scss"
+        ],
+        "server": "apps/whitebox-practice-vault/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/whitebox-practice-vault/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "16kb",
+              "maximumError": "32kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "whitebox-practice-vault:build:production"
+        },
+        "development": {
+          "buildTarget": "whitebox-practice-vault:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "whitebox-practice-vault:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/whitebox-practice-vault/jest.config.ts",
+        "tsConfig": "apps/whitebox-practice-vault/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "whitebox-practice-vault:build",
+        "staticFilePath": "dist/apps/whitebox-practice-vault/browser",
+        "spa": true
+      }
+    }
+  }
+}

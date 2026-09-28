@@ -38,7 +38,7 @@ spec:
               value: 'http://seaweedfs:8888'
             - name: S3_BUCKET
               value: 'assets'
-            # Optional overrides; config.yaml supplies 100.89.87.124:11434
+            # Optional overrides; config.yaml supplies 127.0.0.1:11434
             # when these keys are absent from the deployment secret.
             - name: OLLAMA_HOST
               valueFrom:

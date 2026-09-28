@@ -104,6 +104,10 @@ spec:
               value: 'learning-service'
             - name: LEARNING_SERVICE_PORT
               value: '3024'
+            - name: SERVICE_COMPLIANCE_AUDIT_HOST
+              value: 'compliance-audit'
+            - name: SERVICE_COMPLIANCE_AUDIT_PORT
+              value: '3025'
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

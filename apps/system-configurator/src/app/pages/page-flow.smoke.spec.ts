@@ -149,6 +149,7 @@ describe('System configurator page smoke tests', () => {
   let router: { navigate: jest.Mock };
   let hardwareService: {
     getChassis: jest.Mock;
+    getTiers: jest.Mock;
     getChassisById: jest.Mock;
     getCompatibleComponents: jest.Mock;
     calculatePrice: jest.Mock;
@@ -161,6 +162,7 @@ describe('System configurator page smoke tests', () => {
     router = { navigate: jest.fn() };
     hardwareService = {
       getChassis: jest.fn().mockReturnValue(of([mockChassis])),
+      getTiers: jest.fn().mockReturnValue(of([])),
       getChassisById: jest.fn().mockReturnValue(of(mockChassis)),
       getCompatibleComponents: jest
         .fn()

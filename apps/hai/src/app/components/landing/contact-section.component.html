@@ -8,10 +8,16 @@
 >
   <p class="eyebrow">{{ contactLead.title }}</p>
   <h2>{{ contactLead.description }}</h2>
+  <p class="sla-notice" role="note">
+    A platform owner will personally acknowledge your message within one
+    business hour, counted Monday–Friday, 9 a.m.–5 p.m. Eastern. Service timing
+    depends on the work requested.
+  </p>
   <lib-contact-form
     [title]="'Start a project with HAI'"
     [buttonText]="submittingContact ? 'Sending…' : 'Send Message'"
     [subjects]="contactSubjects"
+    [initialMessage]="contactPrefill"
     (formSubmit)="formSubmit.emit($event)"
   ></lib-contact-form>
   @if (contactStatus) {

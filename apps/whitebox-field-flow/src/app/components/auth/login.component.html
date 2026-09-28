@@ -1,0 +1,59 @@
+<div class="auth-page">
+  <div class="auth-card-wrapper">
+    <otui-card>
+      <div class="auth-header">
+        <h1 class="auth-title">Customer sign in</h1>
+        <p class="auth-subtitle">
+          Sign in to view your bookings, estimates, and payment history with
+          {{ brandConfig.getResolvedBrand()?.businessName || 'this service' }}.
+        </p>
+      </div>
+
+      @if (errorMessage) {
+      <div class="alert-banner" role="alert">
+        {{ errorMessage }}
+      </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+        <div class="form-group">
+          <label for="login-email" class="field-label">Email address</label>
+          <lib-text-input
+            id="login-email"
+            formControlName="email"
+            type="text"
+            placeholder="client@example.com"
+          ></lib-text-input>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="field-label">Password</label>
+          <lib-text-input
+            id="login-password"
+            formControlName="password"
+            type="password"
+            placeholder="Enter your password"
+          ></lib-text-input>
+        </div>
+
+        <div class="auth-actions">
+          <otui-button
+            [variant]="'primary'"
+            [type]="'submit'"
+            [disabled]="isSubmitting"
+            class="submit-button"
+          >
+            {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
+          </otui-button>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        <p>
+          Don't have an account yet?
+          <a routerLink="/register" class="auth-link">Create an account</a>
+        </p>
+      </div>
+    </otui-card>
+  </div>
+</div>

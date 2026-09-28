@@ -68,8 +68,8 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
           <span class="label">Overdue follow-up</span>
           <strong>{{ overdueLeads().length }}</strong>
           <p>
-            {{ staleNewLeads().length }} new leads are beyond first-response
-            SLA.
+            {{ staleNewLeads().length }} HAI leads remain unanswered past the
+            personal acknowledgment deadline.
           </p>
         </article>
         <article class="stat-card">
@@ -204,7 +204,13 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
           </div>
 
           <div *ngIf="loading" class="empty">Loading leads…</div>
-          <div *ngIf="!loading && !filteredLeads().length" class="empty">
+          <div *ngIf="loadError" class="empty" role="alert">
+            {{ loadError }}
+          </div>
+          <div
+            *ngIf="!loading && !loadError && !filteredLeads().length"
+            class="empty"
+          >
             No contact leads matched the current filters.
           </div>
 
@@ -279,6 +285,16 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
             <div class="detail-block">
               <span class="label">SLA</span>
               <strong>{{ slaLabel(selectedLead) }}</strong>
+            </div>
+            <div class="detail-block" *ngIf="selectedLead.appScope === 'hai'">
+              <span class="label">Personal acknowledgment due</span>
+              <strong>{{ formatEastern(selectedLead.dueAt) }}</strong>
+            </div>
+            <div class="detail-block" *ngIf="selectedLead.appScope === 'hai'">
+              <span class="label">First personal acknowledgment</span>
+              <strong>{{
+                formatEastern(selectedLead.firstPersonalResponseAt)
+              }}</strong>
             </div>
             <div class="detail-block">
               <span class="label">Source</span>
@@ -429,16 +445,16 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .hero,
       .panel,
       .filters {
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
             color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent),
             transparent 28%
           ),
-          color-mix(in srgb, var(--surface, #ffffff) 96%, transparent);
+          color-mix(in srgb, var(--surface) 96%, transparent);
         padding: 24px;
-        color: var(--foreground, #111827);
+        color: var(--foreground);
       }
 
       .hero-kicker,
@@ -478,13 +494,9 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .queue-card,
       .analytics-row,
       .timeline-item {
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
         padding: 16px;
       }
 
@@ -545,13 +557,9 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
         gap: 10px;
         width: 100%;
         text-align: left;
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
         padding: 16px;
         margin-bottom: 12px;
         cursor: pointer;
@@ -574,7 +582,7 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       }
 
       .lead-card-message {
-        color: var(--foreground-secondary, #52606d);
+        color: var(--foreground-secondary, var(--muted));
       }
 
       .detail-grid {
@@ -587,12 +595,8 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
         gap: 8px;
         padding: 14px 16px;
         border-radius: 18px;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          var(--background, #f8fafc)
-        );
-        border: 1px solid var(--border-color, #d6d6d6);
+        background: color-mix(in srgb, var(--surface) 88%, var(--background));
+        border: 1px solid var(--border-color);
       }
 
       .badge {
@@ -618,14 +622,10 @@ const CRM_VIEW_STORAGE_KEY = 'owner-console.crm-workspace.view';
       .template-btn,
       .queue-card {
         border-radius: 12px;
-        border: 1px solid var(--border-color, #d6d6d6);
+        border: 1px solid var(--border-color);
         padding: 10px 12px;
         font: inherit;
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 94%,
-          var(--background, #f8fafc)
-        );
+        background: color-mix(in srgb, var(--surface) 94%, var(--background));
       }
 
       textarea {
@@ -674,6 +674,7 @@ export class ContactLeadsManagementComponent implements OnInit {
   appScopes: string[] = [];
   selectedLead: Lead | null = null;
   loading = false;
+  loadError: string | null = null;
   responseStatus: string | null = null;
   queueFilter: QueueFilter = 'all';
   activeViewPreset: CrmViewPreset = 'all';
@@ -720,6 +721,7 @@ export class ContactLeadsManagementComponent implements OnInit {
 
   loadLeads(): void {
     this.loading = true;
+    this.loadError = null;
     this.leadsService
       .getLeads({
         appScope: this.filters.appScope || undefined,
@@ -749,6 +751,8 @@ export class ContactLeadsManagementComponent implements OnInit {
         },
         error: () => {
           this.loading = false;
+          this.loadError =
+            'Contact leads could not be loaded. Please refresh to try again.';
         },
       });
   }
@@ -780,16 +784,12 @@ export class ContactLeadsManagementComponent implements OnInit {
   }
 
   staleNewLeads(): Lead[] {
-    return this.leads.filter((lead) => {
-      if (lead.status !== LeadStatus.NEW) {
-        return false;
-      }
-      const createdAt = this.asDate(lead.createdAt);
-      if (!createdAt) {
-        return false;
-      }
-      return this.daysSince(createdAt) >= 2;
-    });
+    return this.leads.filter(
+      (lead) =>
+        lead.appScope === 'hai' &&
+        !lead.firstPersonalResponseAt &&
+        this.isOverdue(lead)
+    );
   }
 
   assignedLeads(): Lead[] {
@@ -884,7 +884,11 @@ export class ContactLeadsManagementComponent implements OnInit {
       return;
     }
     this.leadsService
-      .updateLead(this.selectedLead.id, this.editModel)
+      .updateLead(
+        this.selectedLead.id,
+        this.editModel,
+        this.selectedLead.appScope
+      )
       .subscribe({
         next: (lead) => {
           this.selectedLead = lead;
@@ -899,7 +903,11 @@ export class ContactLeadsManagementComponent implements OnInit {
       return;
     }
     this.leadsService
-      .respondToLead(this.selectedLead.id, this.responseModel)
+      .respondToLead(
+        this.selectedLead.id,
+        this.responseModel,
+        this.selectedLead.appScope
+      )
       .subscribe({
         next: (result) => {
           this.selectedLead = result.lead;
@@ -1017,6 +1025,17 @@ export class ContactLeadsManagementComponent implements OnInit {
   }
 
   slaLabel(lead: Lead): string {
+    if (lead.appScope === 'hai') {
+      const dueAt = this.asDate(lead.dueAt);
+      const firstResponse = this.asDate(lead.firstPersonalResponseAt);
+      if (!dueAt) return 'Deadline unavailable';
+      if (firstResponse) {
+        return firstResponse.getTime() <= dueAt.getTime() ? 'Met' : 'Missed';
+      }
+      return Date.now() > dueAt.getTime()
+        ? 'Overdue'
+        : 'Awaiting acknowledgment';
+    }
     if (this.isOverdue(lead)) {
       return 'Overdue';
     }
@@ -1039,29 +1058,40 @@ export class ContactLeadsManagementComponent implements OnInit {
   }
 
   private isOverdue(lead: Lead): boolean {
+    if (lead.appScope === 'hai') {
+      const dueAt = this.asDate(lead.dueAt);
+      const firstResponse = this.asDate(lead.firstPersonalResponseAt);
+      return Boolean(
+        dueAt && (firstResponse || new Date()).getTime() > dueAt.getTime()
+      );
+    }
     const followUp = this.asDate(lead.nextFollowUp);
     if (followUp) {
       return followUp.getTime() < this.startOfToday().getTime();
-    }
-
-    if (lead.status === LeadStatus.NEW) {
-      const createdAt = this.asDate(lead.createdAt);
-      return createdAt ? this.daysSince(createdAt) >= 2 : false;
     }
 
     return false;
   }
 
   private startOfToday(): Date {
-    const now = new Date('2026-07-04T12:00:00.000Z');
+    const now = new Date();
     return new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
     );
   }
 
-  private daysSince(value: Date): number {
-    const diff = this.startOfToday().getTime() - value.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  formatEastern(value: string | Date | null | undefined): string {
+    const date = this.asDate(value);
+    if (!date) return 'Not recorded';
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/New_York',
+      timeZoneName: 'short',
+    }).format(date);
   }
 
   private asDate(value: string | Date | null | undefined): Date | null {

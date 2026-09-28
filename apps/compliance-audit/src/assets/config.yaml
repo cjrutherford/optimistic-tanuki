@@ -1,0 +1,7 @@
+listenPort: 3025
+database:
+  host: db
+  port: 5432
+  name: ot_compliance_audit
+  username: postgres
+  password: postgres

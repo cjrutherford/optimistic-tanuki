@@ -6,6 +6,7 @@ import { AboutComponent } from './about/about.component';
 import { ProjectGridComponent } from './project-grid/project-grid.component';
 import { ServicesGridComponent } from './services-grid/services-grid.component';
 import { ContactComponent } from './contact/contact.component';
+import { SystemsLabComponent } from './systems-lab/systems-lab.component';
 
 @Component({
   selector: 'app-landing',
@@ -14,6 +15,7 @@ import { ContactComponent } from './contact/contact.component';
     TitleBarComponent,
     AboutComponent,
     ProjectGridComponent,
+    SystemsLabComponent,
     ServicesGridComponent,
     ContactComponent,
   ],

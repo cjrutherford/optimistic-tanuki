@@ -1,11 +1,55 @@
-<otui-app-bar
-  appTitle="HAI"
-  [showThemeToggle]="true"
-  [useTile]="true"
-  menuIcon="☰"
-  (menuToggle)="toggleMenu()"
->
-</otui-app-bar>
+<header class="hai-header" role="banner">
+  <div class="header-container">
+    <a
+      href="#"
+      (click)="onNavClick($event, '#')"
+      class="brand-link"
+      aria-label="HOPEFUL ASPIRATIONS INDUSTRIES Home"
+    >
+      <img
+        src="assets/haidev-logo.png"
+        alt="HOPEFUL ASPIRATIONS INDUSTRIES"
+        class="brand-logo"
+        width="44"
+        height="47"
+      />
+      <span class="brand-title">HOPEFUL ASPIRATIONS INDUSTRIES</span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Main navigation">
+      @for (item of navLinks; track item.label) {
+      <a
+        [href]="item.href"
+        (click)="onNavClick($event, item.href)"
+        class="nav-link"
+      >
+        {{ item.label }}
+      </a>
+      }
+    </nav>
+
+    <div class="header-actions">
+      <a
+        href="#contact"
+        (click)="onNavClick($event, '#contact')"
+        class="header-cta-btn"
+      >
+        Schedule Free Audit
+      </a>
+
+      <lib-theme-toggle></lib-theme-toggle>
+
+      <button
+        type="button"
+        class="mobile-menu-btn"
+        (click)="toggleMenu()"
+        aria-label="Toggle navigation menu"
+      >
+        ☰
+      </button>
+    </div>
+  </div>
+</header>
 
 <otui-nav-sidebar
   [isOpen]="menuOpen()"

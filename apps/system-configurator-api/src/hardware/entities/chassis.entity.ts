@@ -38,9 +38,9 @@ export class ChassisEntity {
   @Column({ type: 'varchar', length: 32, default: 'research' })
   sourceType!: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 }

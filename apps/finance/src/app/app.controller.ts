@@ -20,8 +20,27 @@ import {
   UpdateFinCommanderGoalDto,
   CreateFinCommanderScenarioDto,
   UpdateFinCommanderScenarioDto,
+  VAULT_VERIFY_ESCROW_OTP,
+  VAULT_ISSUE_TOKEN,
+  VAULT_VALIDATE_TOKEN,
+  VAULT_CONSUME_TOKEN,
+  VAULT_REVOKE_TOKEN,
+  VAULT_REGISTER_ESCROW,
+  VAULT_REQUEST_WIRE_SMS_OTP,
+  VAULT_VERIFY_TWILIO_PROVIDER,
 } from '@optimistic-tanuki/constants';
 import {
+  WireVerificationRequestDto,
+  WireInstructionResponseDto,
+  VaultTokenCheckInput,
+  VaultTokenClaims,
+  VaultTokenIssueInput,
+  VaultTokenIssueResult,
+  RegisterEscrowInput,
+  EscrowEnrollmentResult,
+  WireSmsOtpRequest,
+  WireSmsOtpResult,
+  TwilioProviderStatus,
   BankConnectionCreateDto,
   BankConnectionExchangeDto,
   BankConnectionLinkTokenDto,
@@ -73,6 +92,8 @@ import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
 import { FinCommanderFundingDirectiveService } from './services/fin-commander-funding-directive.service';
+import { VaultEscrowService } from './services/vault-escrow.service';
+import { VaultTokenService } from './services/vault-token.service';
 
 @Controller()
 export class AppController {
@@ -90,7 +111,9 @@ export class AppController {
     private readonly finCommanderGoalService: FinCommanderGoalService,
     private readonly finCommanderScenarioService: FinCommanderScenarioService,
     private readonly finCommanderProjectionService: FinCommanderProjectionService,
-    private readonly finCommanderFundingDirectiveService: FinCommanderFundingDirectiveService
+    private readonly finCommanderFundingDirectiveService: FinCommanderFundingDirectiveService,
+    private readonly vaultEscrowService?: VaultEscrowService,
+    private readonly vaultTokenService?: VaultTokenService
   ) {}
 
   private extractFindManyOptions<T>(
@@ -901,5 +924,109 @@ export class AppController {
       payload.id,
       await this.resolveScope(payload as Record<string, unknown>)
     );
+  }
+
+  @MessagePattern(VAULT_VERIFY_ESCROW_OTP)
+  async verifyEscrowWireOtp(
+    @Payload() payload: WireVerificationRequestDto
+  ): Promise<WireInstructionResponseDto> {
+    if (!this.vaultEscrowService) {
+      throw new Error('VaultEscrowService is not configured');
+    }
+    return await this.vaultEscrowService.verifyAndRevealWire(payload);
+  }
+
+  @MessagePattern(VAULT_ISSUE_TOKEN)
+  async issueVaultToken(
+    @Payload() payload: VaultTokenIssueInput
+  ): Promise<VaultTokenIssueResult> {
+    if (!this.vaultTokenService) {
+      throw new Error('VaultTokenService is not configured');
+    }
+    const issuedBy =
+      typeof (payload as { issuedBy?: unknown })?.issuedBy === 'string'
+        ? (payload as { issuedBy: string }).issuedBy
+        : undefined;
+    const token = await this.vaultTokenService.issue({ ...payload, issuedBy });
+    const claims = await this.vaultTokenService.validate({ token });
+    return {
+      token,
+      jti: claims.jti,
+      tenantId: claims.tenantId,
+      documentId: claims.documentId,
+      purpose: claims.purpose,
+      expiresAt: new Date(claims.exp * 1000).toISOString(),
+    };
+  }
+
+  @MessagePattern(VAULT_VALIDATE_TOKEN)
+  async validateVaultToken(
+    @Payload() payload: VaultTokenCheckInput
+  ): Promise<VaultTokenClaims> {
+    if (!this.vaultTokenService) {
+      throw new Error('VaultTokenService is not configured');
+    }
+    return await this.vaultTokenService.validate(payload);
+  }
+
+  @MessagePattern(VAULT_CONSUME_TOKEN)
+  async consumeVaultToken(
+    @Payload() payload: VaultTokenCheckInput
+  ): Promise<VaultTokenClaims> {
+    if (!this.vaultTokenService) {
+      throw new Error('VaultTokenService is not configured');
+    }
+    return await this.vaultTokenService.consume(payload);
+  }
+
+  @MessagePattern(VAULT_REVOKE_TOKEN)
+  async revokeVaultToken(
+    @Payload() payload: { token: string }
+  ): Promise<VaultTokenClaims> {
+    if (!this.vaultTokenService) {
+      throw new Error('VaultTokenService is not configured');
+    }
+    return await this.vaultTokenService.revoke(payload?.token);
+  }
+
+  @MessagePattern(VAULT_REGISTER_ESCROW)
+  async registerVaultEscrow(
+    @Payload() payload: RegisterEscrowInput
+  ): Promise<EscrowEnrollmentResult> {
+    if (!this.vaultEscrowService) {
+      throw new Error('VaultEscrowService is not configured');
+    }
+    const enrolled = await this.vaultEscrowService.registerEscrowRecord(
+      (payload ?? {}) as RegisterEscrowInput
+    );
+    return {
+      token: enrolled.token,
+      enrollmentUri: enrolled.enrollmentUri,
+      enrollmentExpiresAt: enrolled.enrollmentExpiresAt.toISOString(),
+    };
+  }
+
+  @MessagePattern(VAULT_REQUEST_WIRE_SMS_OTP)
+  async requestWireSmsOtp(
+    @Payload() payload: WireSmsOtpRequest
+  ): Promise<WireSmsOtpResult> {
+    if (!this.vaultEscrowService) {
+      throw new Error('VaultEscrowService is not configured');
+    }
+    const issued = await this.vaultEscrowService.requestWireSmsOtp(
+      (payload ?? {}) as WireSmsOtpRequest
+    );
+    return {
+      expiresAt: issued.expiresAt.toISOString(),
+      messageId: issued.messageId,
+    };
+  }
+
+  @MessagePattern(VAULT_VERIFY_TWILIO_PROVIDER)
+  async verifyTwilioProvider(): Promise<TwilioProviderStatus> {
+    if (!this.vaultEscrowService) {
+      throw new Error('VaultEscrowService is not configured');
+    }
+    return await this.vaultEscrowService.verifyTwilioProvider();
   }
 }

@@ -32,4 +32,10 @@ describe('LeadCommands', () => {
   it('should have correct SEND_RESPONSE command', () => {
     expect(LeadCommands.SEND_RESPONSE).toBe('lead.sendResponse');
   });
+
+  it('should have correct COMMIT_HARDWARE_PROPOSAL command', () => {
+    expect(LeadCommands.COMMIT_HARDWARE_PROPOSAL).toBe(
+      'lead.commitHardwareProposal'
+    );
+  });
 });

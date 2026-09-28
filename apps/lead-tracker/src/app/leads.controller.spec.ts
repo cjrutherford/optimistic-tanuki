@@ -34,6 +34,7 @@ describe('LeadsController', () => {
       findAll: jest.fn(),
       findOne: jest.fn(),
       create: jest.fn(),
+      commitHardwareProposal: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
       getStats: jest.fn(),
@@ -143,8 +144,34 @@ describe('LeadsController', () => {
 
     expect(service.create).toHaveBeenCalledWith(
       { name: 'Lead', source: LeadSource.REFERRAL },
-      context
+      context,
+      undefined
     );
+  });
+
+  it('routes hardware proposal commits to the dedicated service operation', async () => {
+    const request = {
+      context: {
+        appScope: 'owner-console' as const,
+        ownerConsoleAccess: true as const,
+        userId: 'owner-user',
+        profileId: 'owner-profile',
+      },
+      proposal: {
+        quoteId: 'quote-1',
+        customerName: 'Customer',
+        tier: 'tier1' as const,
+        total: 8000,
+        currency: 'USD',
+        terms: { delivery: '4 weeks' },
+        idempotencyKey: 'commit-1',
+      },
+    };
+    service.commitHardwareProposal.mockResolvedValue({ id: 'lead-1' } as any);
+
+    await controller.commitHardwareProposal(request);
+
+    expect(service.commitHardwareProposal).toHaveBeenCalledWith(request);
   });
 
   it('creates topics and queues discovery within the same profile scope', async () => {

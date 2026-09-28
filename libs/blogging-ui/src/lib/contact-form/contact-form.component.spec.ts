@@ -19,6 +19,22 @@ describe('ContactFormComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('prefills the message when initialMessage is set', () => {
+    component.initialMessage = 'Please send me the comparison.';
+    fixture.detectChanges();
+
+    expect(component.contactForm.value.message).toBe(
+      'Please send me the comparison.'
+    );
+  });
+
+  it('ignores empty prefill messages', () => {
+    component.initialMessage = '';
+    fixture.detectChanges();
+
+    expect(component.contactForm.value.message).toBe('');
+  });
+
   it('associates the subject label with the select control', () => {
     component.subjects = [{ value: 'question', label: 'Question' }];
     component.subjectId = 'business-contact-subject';

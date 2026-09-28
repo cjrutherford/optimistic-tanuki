@@ -1,0 +1,72 @@
+.nexus-skip-link {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  z-index: 1100;
+  padding: 10px 16px;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--border-radius-sm, 4px);
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.nexus-skip-link:focus {
+  top: 12px;
+}
+
+.nexus-app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.nexus-main-content {
+  flex: 1;
+}
+
+.nexus-main-content:focus {
+  outline: none;
+}
+
+.nexus-footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 24px 0;
+  margin-top: 60px;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-left {
+  max-width: 600px;
+}
+
+.footer-brand {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.footer-copy {
+  font-size: 0.8rem;
+  color: var(--foreground-muted);
+  margin: 4px 0 0 0;
+}
+
+.lock-status {
+  font-size: 0.8rem;
+  color: var(--accent);
+}

@@ -297,4 +297,33 @@ describe('HardwareCatalogService', () => {
       NotFoundException
     );
   });
+
+  it('returns standardized appliance tiers with 35% margin calculations', async () => {
+    const tiers = await service.getTiers();
+
+    expect(tiers).toHaveLength(3);
+    expect(tiers.map((t) => t.id)).toEqual(['tier1', 'tier2', 'tier3']);
+
+    const tier1 = tiers[0];
+    expect(tier1.name).toBe('Compact Edge Appliance');
+    expect(tier1.targetUsers).toBe('10 to 50 users');
+    expect(tier1.marginRate).toBe(0.35);
+    expect(tier1.retailPrice).toBe(705);
+    expect(tier1.leaseMonthlyRate).toBe(99);
+    expect(tier1.inStock).toBe(true);
+
+    const tier2 = tiers[1];
+    expect(tier2.name).toBe('Workstation Tower Appliance');
+    expect(tier2.targetUsers).toBe('50 to 250 users');
+    expect(tier2.retailPrice).toBe(2850);
+    expect(tier2.leaseMonthlyRate).toBe(199);
+
+    const tier3 = tiers[2];
+    expect(tier3.name).toBe('Enterprise Rackmount Appliance');
+    expect(tier3.targetUsers).toBe(
+      '250+ users, municipalities, commercial builders'
+    );
+    expect(tier3.retailPrice).toBe(3200);
+    expect(tier3.leaseMonthlyRate).toBe(349);
+  });
 });

@@ -45,6 +45,7 @@ describe('LandingComponent', () => {
     expect(compiled.querySelector('#offer')).toBeTruthy();
     expect(compiled.querySelector('#work')).toBeTruthy();
     expect(compiled.querySelector('#capabilities')).toBeTruthy();
+    expect(compiled.querySelector('#systems-lab')).toBeTruthy();
     expect(compiled.querySelector('#contact')).toBeTruthy();
   });
 });

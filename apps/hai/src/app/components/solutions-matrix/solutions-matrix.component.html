@@ -1,0 +1,121 @@
+<section class="solutions-matrix-shell anchor-target" id="stacks">
+  <div class="matrix-header">
+    <div class="header-content">
+      <p class="eyebrow">Industry solutions</p>
+      <h2>Turn-key industry stacks</h2>
+      <p class="lede">
+        We pair dedicated on-premises hardware with custom software and vetted
+        open-source tools for key regional businesses in South Georgia.
+      </p>
+    </div>
+  </div>
+
+  <div class="matrix-container">
+    <otui-tabs
+      [tabs]="tabs"
+      [activeTab]="activeVerticalId()"
+      (tabChange)="onTabChange($event)"
+      class="matrix-tabs"
+    >
+      <div
+        class="vertical-panel"
+        *ngIf="activeVertical as vertical"
+        [attr.data-vertical]="vertical.id"
+      >
+        <otui-card CardVariant="default" tone="brand" emphasis="soft" size="lg">
+          <div class="panel-layout">
+            <header class="panel-header">
+              <div class="title-row">
+                <h3 class="vertical-title">{{ vertical.name }}</h3>
+                <otui-badge tone="brand" emphasis="solid">
+                  {{ vertical.targetIndustry }}
+                </otui-badge>
+              </div>
+              <p class="vertical-summary">{{ vertical.summary }}</p>
+            </header>
+
+            <div class="panel-grid">
+              <div class="grid-card hardware-card">
+                <h4 class="card-heading">Paired hardware appliance</h4>
+                <div class="tier-badge-container">
+                  <span class="hardware-name">{{ vertical.hardwareTier }}</span>
+                </div>
+                <p class="hardware-desc">{{ vertical.hardwareDetails }}</p>
+              </div>
+
+              <div class="grid-card software-card">
+                <h4 class="card-heading">Dedicated client applications</h4>
+                <div *ngFor="let app of vertical.whiteBoxApps" class="app-item">
+                  <div class="app-title-row">
+                    <strong class="app-name">{{ app.name }}</strong>
+                    <span class="customization-badge"
+                      >Branded application tailored to your business</span
+                    >
+                  </div>
+                  <div class="demo-route-container">
+                    <span class="demo-route"
+                      >Interactive demo: {{ app.demoRoute }}</span
+                    >
+                  </div>
+                  <ul class="feature-list">
+                    <li *ngFor="let feature of app.features">{{ feature }}</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="grid-card foss-card">
+                <h4 class="card-heading">Open-source software stack</h4>
+                <ul class="foss-list">
+                  <li *ngFor="let tool of vertical.fossStack" class="foss-item">
+                    <strong class="tool-name">{{ tool.name }}</strong>
+                    <span class="tool-role">{{ tool.role }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <footer class="panel-footer">
+              <div class="investment-summary">
+                <span class="investment-label">Commercial terms</span>
+                <div class="investment-figures">
+                  <span
+                    *ngIf="vertical.investment.upfront"
+                    class="upfront-cost"
+                  >
+                    {{ vertical.investment.upfront }}
+                  </span>
+                  <span class="monthly-cost">{{
+                    vertical.investment.monthly
+                  }}</span>
+                  <span
+                    *ngIf="vertical.investment.projectOption"
+                    class="project-cost"
+                  >
+                    or {{ vertical.investment.projectOption }}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                class="action-container"
+                *ngIf="
+                  getPortalUrl(vertical.configuratorPreset) | async as portalUrl
+                "
+              >
+                <a
+                  class="action-btn"
+                  [href]="portalUrl"
+                  [attr.data-preset]="vertical.configuratorPreset"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ vertical.actionLabel }}
+                </a>
+              </div>
+            </footer>
+          </div>
+        </otui-card>
+      </div>
+    </otui-tabs>
+  </div>
+</section>

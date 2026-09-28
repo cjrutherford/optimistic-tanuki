@@ -1,8 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
+import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { LandingComponent } from './landing.component';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
+import { RoiCalculatorSectionComponent } from './roi-calculator-section.component';
+import { DEFAULT_HARDWARE_TIERS } from '../../services/hardware-catalog.service';
 
 describe('LandingComponent', () => {
   let component: LandingComponent;
@@ -69,11 +73,19 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders a project-start CTA and the HAI Computer path', () => {
+  it('renders a project-start CTA and the Turn-key Appliances path', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Start a Project');
-    expect(text).toContain('See the services');
+    expect(text).toContain('Schedule Free Audit');
+    expect(text).toContain('View Turn-key Appliances');
+  });
+
+  it('renders the operational guarantee banner', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain(
+      '48-Hour Rapid Onboarding. Local On-Site Support in Savannah and South Georgia.'
+    );
   });
 
   it('renders semantic hash anchors with canonical hero CTA variants', () => {
@@ -92,7 +104,7 @@ describe('LandingComponent', () => {
     expect(buttons[0].getAttribute('data-size')).toBe('lg');
     expect(buttons[0].classList).toContain('primary');
     expect(buttons[0].classList).toContain('use-gradient');
-    expect(buttons[1].getAttribute('href')).toBe('#services');
+    expect(buttons[1].getAttribute('href')).toBe('#appliances');
     expect(buttons[1].getAttribute('data-tone')).toBe('brand');
     expect(buttons[1].getAttribute('data-emphasis')).toBe('outline');
     expect(buttons[1].getAttribute('data-size')).toBe('lg');
@@ -107,7 +119,7 @@ describe('LandingComponent', () => {
     );
     expect(card?.querySelector('.card')?.getAttribute('data-size')).toBe('md');
     expect(badge).not.toBeNull();
-    expect(badge?.textContent).toContain('Built For');
+    expect(badge?.textContent).toContain('Built for');
     expect(badge?.querySelector('.badge')?.getAttribute('data-tone')).toBe(
       'brand'
     );
@@ -122,6 +134,37 @@ describe('LandingComponent', () => {
     expect(text).toContain('Fin Commander');
     expect(text).toContain('Opportunity Compass');
     expect(component.ecosystem$).toBeDefined();
+  });
+
+  it('prefills the contact message from the calculator comparison action', () => {
+    const calculator = fixture.debugElement.query(
+      By.directive(RoiCalculatorSectionComponent)
+    );
+    const calculatorComponent =
+      calculator.componentInstance as RoiCalculatorSectionComponent;
+    calculatorComponent.tiers = DEFAULT_HARDWARE_TIERS;
+    calculatorComponent.recalculate();
+    fixture.detectChanges();
+    const contact = fixture.nativeElement.querySelector(
+      '#contact'
+    ) as HTMLElement;
+    contact.scrollIntoView = jest.fn();
+    const emailButton = calculator.nativeElement.querySelector(
+      '.btn-email'
+    ) as HTMLButtonElement;
+
+    emailButton.click();
+    fixture.detectChanges();
+
+    const contactForm = fixture.debugElement.query(
+      By.directive(ContactFormComponent)
+    ).componentInstance as ContactFormComponent;
+    expect(contactForm.contactForm.value.message).toContain(
+      'Please send me the five-year comparison'
+    );
+    expect(contactForm.contactForm.value.message).toContain(
+      'Five-year savings'
+    );
   });
 
   it('uses motion layers in the hero scene', () => {
@@ -157,9 +200,11 @@ describe('LandingComponent', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain(
-      'Digital sovereignty for the work that runs your business.'
+      'Software you own. Servers that stay in your office.'
     );
-    expect(text).toContain('Savannah, Georgia');
+    expect(text).toContain(
+      'We build custom web software, deploy open-source business tools, and install on-premises server appliances for South Georgia businesses. Stop paying monthly rent on your data.'
+    );
     expect(text).toContain('Custom Portals & Workflow Automation');
     expect(text).toContain('Independent Infrastructure');
     expect(text).toContain('Tailored Software');
@@ -217,6 +262,8 @@ describe('LandingComponent', () => {
   it('preserves canonical section targets and migrated surface attributes', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
     const targets = [
+      '#appliances',
+      '#stacks',
       '#services',
       '#approach',
       '#infrastructure',
@@ -229,6 +276,8 @@ describe('LandingComponent', () => {
     expect(targets.every((target) => nativeElement.querySelector(target))).toBe(
       true
     );
+    expect(nativeElement.querySelector('hai-hardware-catalog')).not.toBeNull();
+    expect(nativeElement.querySelector('hai-solutions-matrix')).not.toBeNull();
     expect(
       nativeElement.querySelector('#services otui-card')?.getAttribute('tone')
     ).toBe('brand');

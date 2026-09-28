@@ -3,7 +3,7 @@
   "apps": {
     "business-configurator": 0,
     "business-site": 0,
-    "christopherrutherford-net": 8,
+    "christopherrutherford-net": 0,
     "client-interface": 14,
     "configurable-client": 25,
     "d6": 77,
@@ -40,10 +40,10 @@
     "libs/video-ui": 7,
     "local-hub": 96,
     "marketing-generator": 131,
-    "owner-console": 730,
+    "owner-console": 714,
     "setup-console": 68,
     "store-client": 0,
-    "system-configurator": 29,
+    "system-configurator": 15,
     "video-client": 33
   }
 }

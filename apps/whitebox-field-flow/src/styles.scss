@@ -1,0 +1,115 @@
+/* Global styles for Field Flow */
+:root {
+  /* TradeCraft theme variables */
+  --flow-base: #0f172a;
+  --flow-base-card: #1e293b;
+  --flow-base-elevated: #334155;
+  --flow-amber: #f59e0b;
+  --flow-amber-hover: #d97706;
+  --flow-amber-dim: rgba(245, 158, 11, 0.15);
+  --flow-cyan: #06b6d4;
+  --flow-cyan-hover: #0891b2;
+  --flow-cyan-dim: rgba(6, 182, 212, 0.15);
+  --flow-text: #f8fafc;
+  --flow-text-muted: #cbd5e1;
+  --flow-border: #334155;
+  --flow-border-strong: #475569;
+  --flow-success: #10b981;
+  --flow-danger: #ef4444;
+  --flow-text-subtle: #64748b;
+  --flow-text-quiet: #94a3b8;
+  --flow-control-border: #e2e8f0;
+  --flow-danger-background: #fef2f2;
+  --flow-danger-foreground: #991b1b;
+  --flow-danger-soft: #fca5a5;
+  --flow-danger-bright: #f87171;
+  --flow-link: #0284c7;
+
+  /* Theme system overrides matching TradeCraft spec */
+  --background: var(--flow-base);
+  --background-secondary: var(--flow-base-card);
+  --foreground: var(--flow-text);
+  --foreground-muted: var(--flow-text-muted);
+  --primary: var(--flow-amber);
+  --primary-hover: var(--flow-amber-hover);
+  --primary-foreground: #0f172a;
+  --accent: var(--flow-cyan);
+  --accent-hover: var(--flow-cyan-hover);
+  --accent-foreground: #0f172a;
+  --border-color: var(--flow-border);
+
+  /* Touch target standard: minimum 48px */
+  --touch-target-min: 48px;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background-color: var(--flow-base);
+  color: var(--flow-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Minimum 48px touch targets for mobile accessibility */
+button,
+input[type='button'],
+input[type='submit'],
+input[type='reset'],
+.touch-target,
+.btn {
+  min-height: var(--touch-target-min);
+  touch-action: manipulation;
+}
+
+a {
+  color: var(--flow-cyan);
+  text-decoration: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+
+  &:hover {
+    color: var(--flow-amber);
+  }
+}
+
+/* High-contrast outdoor daylight focus states */
+:focus-visible {
+  outline: 3px solid var(--flow-amber);
+  outline-offset: 2px;
+}
+
+/* Common form control styling */
+input,
+select,
+textarea {
+  background-color: var(--flow-base);
+  color: var(--flow-text);
+  border: 1px solid var(--flow-border-strong);
+  border-radius: 8px;
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  min-height: var(--touch-target-min);
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: var(--flow-amber);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+  }
+
+  &::placeholder {
+    color: var(--flow-text-muted);
+  }
+}

@@ -9,13 +9,14 @@ import {
   LeadTopicLink,
 } from '@optimistic-tanuki/models/leads-entities';
 import {
+  CommitHardwareProposalRequest,
   DEFAULT_LEAD_DISCOVERY_SOURCES,
   LeadDiscoverySource,
   LeadFlagReason,
   LeadSource,
   LeadStatus,
 } from '@optimistic-tanuki/models/leads-contracts';
-import { Repository } from 'typeorm';
+import { Not, QueryFailedError, Repository } from 'typeorm';
 import { LeadQualificationService } from './lead-qualification.service';
 import { LeadsService } from './leads.service';
 
@@ -102,6 +103,10 @@ describe('LeadsService', () => {
   let mockRepository: any;
   let mockFlagRepository: any;
   let mockTopicRepository: any;
+  let transactionalLeadRepository: any;
+  let notificationOutboxRepository: any;
+  let dataSource: { transaction: jest.Mock };
+  let storedNotificationRows: any[];
 
   beforeEach(async () => {
     mockRepository = {
@@ -128,6 +133,69 @@ describe('LeadsService', () => {
       delete: jest.fn(),
       findOneBy: jest.fn(),
     };
+    transactionalLeadRepository = {
+      create: jest.fn((lead) => lead),
+      save: jest.fn(async (lead) => ({ ...lead, id: mockLead.id })),
+      update: jest.fn(),
+      findOne: jest.fn(async () => mockLead),
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    storedNotificationRows = [];
+    notificationOutboxRepository = {
+      save: jest.fn(async (notifications) => {
+        const rows = Array.isArray(notifications)
+          ? notifications
+          : [notifications];
+        for (const row of rows) {
+          const existing = storedNotificationRows.find(
+            (candidate) => candidate.id === row.id
+          );
+          if (existing) {
+            Object.assign(existing, row);
+          } else {
+            storedNotificationRows.push({
+              ...row,
+              id: `outbox-${storedNotificationRows.length + 1}`,
+            });
+          }
+        }
+        return notifications;
+      }),
+      find: jest.fn(async () =>
+        storedNotificationRows.filter(
+          (notification) =>
+            notification.status === 'pending' &&
+            notification.nextAttemptAt.getTime() <= Date.now()
+        )
+      ),
+      findOne: jest.fn(
+        async ({ where }) =>
+          storedNotificationRows.find(
+            (notification) =>
+              notification.id === where.id &&
+              notification.status === where.status
+          ) || null
+      ),
+      update: jest.fn(async (criteria, updates) => {
+        for (const row of storedNotificationRows) {
+          if (
+            Object.entries(criteria).every(([key, value]) => row[key] === value)
+          ) {
+            Object.assign(row, updates);
+          }
+        }
+      }),
+    };
+    const transactionManager = {
+      getRepository: jest.fn((entity) =>
+        entity === Lead
+          ? transactionalLeadRepository
+          : notificationOutboxRepository
+      ),
+    };
+    dataSource = {
+      transaction: jest.fn(async (callback) => callback(transactionManager)),
+    };
     const mockTopicLinkRepository = {
       find: jest.fn(),
     };
@@ -142,6 +210,7 @@ describe('LeadsService', () => {
     emailService = {
       sendEmail: jest.fn().mockResolvedValue({ success: true }),
     };
+    mockLeadQualificationService.analyzeAndSave.mockResolvedValue({} as any);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -173,6 +242,10 @@ describe('LeadsService', () => {
         {
           provide: EmailService,
           useValue: emailService,
+        },
+        {
+          provide: 'LEAD_TRACKER_CONNECTION',
+          useValue: dataSource,
         },
       ],
     }).compile();
@@ -207,6 +280,10 @@ describe('LeadsService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'lead.profileId = :profileId',
         { profileId: 'test-profile' }
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'lead.appScope != :restrictedAppScope',
+        { restrictedAppScope: 'hai' }
       );
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
         'lead.nextFollowUp',
@@ -266,7 +343,11 @@ describe('LeadsService', () => {
         isFlagged: true,
       });
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: mockLead.id, profileId: 'test-profile' },
+        where: {
+          id: mockLead.id,
+          profileId: 'test-profile',
+          appScope: Not('hai'),
+        },
         relations: { flags: true },
       });
     });
@@ -277,6 +358,17 @@ describe('LeadsService', () => {
       const result = await service.findOne('non-existent-id', 'test-profile');
 
       expect(result).toBeNull();
+    });
+
+    it('allows the verified owner-console path to read only HAI leads', async () => {
+      repository.findOne.mockResolvedValue(mockLead as any);
+
+      await service.findOne(mockLead.id, 'owner-profile', true);
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: mockLead.id, appScope: 'hai' },
+        relations: { flags: true },
+      });
     });
   });
 
@@ -289,15 +381,239 @@ describe('LeadsService', () => {
 
       const result = await service.create(createDto, authContext);
 
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(transactionalLeadRepository.create).toHaveBeenCalledWith(
         expect.objectContaining(createDto)
       );
-      expect(repository.save).toHaveBeenCalled();
+      expect(transactionalLeadRepository.save).toHaveBeenCalled();
       expect(leadQualificationService.analyzeAndSave).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'New Lead' }),
         null
       );
       expect(result.name).toBe('New Lead');
+    });
+
+    it('stores a HAI due time and deduplicated owner notifications with the lead', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-09-25T20:30:00.000Z'));
+      transactionalLeadRepository.save.mockImplementationOnce(async (lead) => ({
+        ...lead,
+        id: mockLead.id,
+      }));
+
+      await service.create(
+        { name: 'HAI Lead', source: LeadSource.OTHER },
+        { ...authContext, appScope: 'hai' },
+        ['Owner@Example.com', ' owner@example.com ']
+      );
+
+      expect(transactionalLeadRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dueAt: new Date('2026-09-28T13:30:00.000Z'),
+          firstPersonalResponseAt: null,
+        })
+      );
+      const savedRows = notificationOutboxRepository.save.mock.calls[0][0];
+      expect(savedRows).toHaveLength(2);
+      expect(savedRows.map((row) => row.eventType)).toEqual([
+        'intake',
+        'sla_breach',
+      ]);
+      expect(savedRows.map((row) => row.recipientEmail)).toEqual([
+        'owner@example.com',
+        'owner@example.com',
+      ]);
+      expect(emailService.sendEmail).toHaveBeenCalledTimes(1);
+      expect(
+        emailService.sendEmail.mock.invocationCallOrder[0]
+      ).toBeGreaterThan(
+        notificationOutboxRepository.save.mock.invocationCallOrder[0]
+      );
+      jest.useRealTimers();
+    });
+
+    it('retries a failed owner email from the durable outbox', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-09-25T16:00:00.000Z'));
+      emailService.sendEmail.mockResolvedValueOnce({
+        success: false,
+        error: 'SMTP unavailable',
+      });
+
+      await service.create(
+        { name: 'HAI Retry Lead', source: LeadSource.OTHER },
+        { ...authContext, appScope: 'hai' },
+        ['owner@example.com']
+      );
+
+      const intakeEvent = storedNotificationRows.find(
+        (row) => row.eventType === 'intake'
+      );
+      expect(intakeEvent).toEqual(
+        expect.objectContaining({
+          status: 'pending',
+          attempts: 1,
+          lastError: 'SMTP unavailable',
+        })
+      );
+      intakeEvent.nextAttemptAt = new Date(Date.now() - 1);
+      await (service as any).drainNotificationOutbox();
+
+      expect(intakeEvent.status).toBe('sent');
+      expect(intakeEvent.attempts).toBe(1);
+      expect(emailService.sendEmail).toHaveBeenCalledTimes(2);
+      jest.useRealTimers();
+    });
+
+    it('does not enqueue owner emails for non-HAI CREATE calls', async () => {
+      await service.create(
+        { name: 'Internal Lead', source: LeadSource.OTHER },
+        authContext,
+        ['owner@example.com']
+      );
+
+      expect(notificationOutboxRepository.save).not.toHaveBeenCalled();
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
+      expect(transactionalLeadRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ dueAt: null })
+      );
+    });
+  });
+
+  describe('commitHardwareProposal', () => {
+    const request: CommitHardwareProposalRequest = {
+      context: {
+        appScope: 'owner-console',
+        ownerConsoleAccess: true,
+        userId: 'owner-user',
+        profileId: 'owner-profile',
+      },
+      proposal: {
+        quoteId: 'quote-123',
+        customerName: 'Hardware Customer',
+        customerEmail: 'customer@example.com',
+        customerPhone: '555-0100',
+        tier: 'tier2' as const,
+        total: 12800,
+        currency: 'USD',
+        terms: { delivery: '4-6 weeks', warranty: '3 years' },
+        idempotencyKey: 'proposal-commit-1',
+      },
+    };
+
+    it('creates a HAI proposal lead without triggering intake notifications or discovery', async () => {
+      transactionalLeadRepository.findOne.mockResolvedValue(null);
+      const result = await service.commitHardwareProposal(request);
+
+      expect(transactionalLeadRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Hardware Customer',
+          email: 'customer@example.com',
+          phone: '555-0100',
+          appScope: 'hai',
+          userId: 'owner-user',
+          profileId: 'owner-profile',
+          value: 12800,
+          commercialQuoteId: 'quote-123',
+          proposalIdempotencyKey: 'proposal-commit-1',
+          hardwareTier: 'tier2',
+          acceptedTerms: request.proposal.terms,
+        })
+      );
+      expect(notificationOutboxRepository.save).not.toHaveBeenCalled();
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
+      expect(leadQualificationService.analyzeAndSave).not.toHaveBeenCalled();
+      expect(result.id).toBe(mockLead.id);
+    });
+
+    it('returns the existing lead for an identical idempotent retry', async () => {
+      transactionalLeadRepository.findOne.mockResolvedValue(null);
+      await service.commitHardwareProposal(request);
+      const existing = {
+        ...transactionalLeadRepository.save.mock.calls[0][0],
+        id: mockLead.id,
+      };
+      transactionalLeadRepository.findOne.mockResolvedValue(existing as any);
+      transactionalLeadRepository.save.mockClear();
+
+      const result = await service.commitHardwareProposal(request);
+
+      expect(result).toBe(existing);
+      expect(transactionalLeadRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('reloads and returns the matching lead when concurrent inserts hit the unique index', async () => {
+      const uniqueViolation = new QueryFailedError('INSERT INTO leads', [], {
+        code: '23505',
+      } as any);
+      transactionalLeadRepository.findOne.mockResolvedValueOnce(null);
+      transactionalLeadRepository.save.mockRejectedValueOnce(uniqueViolation);
+      const existing = {
+        ...mockLead,
+        commercialQuoteId: request.proposal.quoteId,
+        proposalIdempotencyKey: request.proposal.idempotencyKey,
+      } as Lead;
+      mockRepository.findOne.mockImplementationOnce(async () => {
+        existing.commercialProposalHash =
+          transactionalLeadRepository.save.mock.calls[0][0].commercialProposalHash;
+        return existing;
+      });
+
+      const result = await service.commitHardwareProposal(request);
+
+      expect(result).toBe(existing);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: [
+          { proposalIdempotencyKey: request.proposal.idempotencyKey },
+          { commercialQuoteId: request.proposal.quoteId },
+        ],
+      });
+      expect(transactionalLeadRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects a unique-index race when the committed proposal hash differs', async () => {
+      const uniqueViolation = new QueryFailedError('INSERT INTO leads', [], {
+        code: '23505',
+      } as any);
+      transactionalLeadRepository.findOne.mockResolvedValueOnce(null);
+      transactionalLeadRepository.save.mockRejectedValueOnce(uniqueViolation);
+      const existing = {
+        ...mockLead,
+        commercialQuoteId: request.proposal.quoteId,
+        proposalIdempotencyKey: request.proposal.idempotencyKey,
+        commercialProposalHash: 'different-payload-hash',
+      } as Lead;
+      mockRepository.findOne.mockResolvedValueOnce(existing);
+
+      await expect(service.commitHardwareProposal(request)).rejects.toThrow(
+        'Idempotency key was already used for another proposal'
+      );
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: [
+          { proposalIdempotencyKey: request.proposal.idempotencyKey },
+          { commercialQuoteId: request.proposal.quoteId },
+        ],
+      });
+    });
+
+    it('rejects reuse of an idempotency key with a different proposal payload', async () => {
+      transactionalLeadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        commercialQuoteId: 'quote-123',
+        proposalIdempotencyKey: 'proposal-commit-1',
+        commercialProposalHash: 'different-payload-hash',
+      } as any);
+
+      await expect(service.commitHardwareProposal(request)).rejects.toThrow(
+        'Idempotency key was already used for another proposal'
+      );
+      expect(transactionalLeadRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects caller-supplied owner access without a complete verified owner context', async () => {
+      await expect(
+        service.commitHardwareProposal({
+          ...request,
+          context: { ...request.context, userId: '' },
+        })
+      ).rejects.toThrow('Verified owner context is required');
     });
   });
 
@@ -317,7 +633,11 @@ describe('LeadsService', () => {
       );
 
       expect(repository.update).toHaveBeenCalledWith(
-        { id: mockLead.id, profileId: 'test-profile' },
+        {
+          id: mockLead.id,
+          profileId: 'test-profile',
+          appScope: Not('hai'),
+        },
         updateDto
       );
       expect(repository.findOne).toHaveBeenCalled();
@@ -334,6 +654,12 @@ describe('LeadsService', () => {
     };
 
     it('should persist sent status when delivery succeeds', async () => {
+      storedNotificationRows.push({
+        id: 'breach-1',
+        leadId: mockLead.id,
+        eventType: 'sla_breach',
+        status: 'pending',
+      });
       repository.findOne
         .mockResolvedValueOnce({ ...mockLead, flags: [] } as any)
         .mockResolvedValueOnce({
@@ -355,8 +681,12 @@ describe('LeadsService', () => {
           replyTo: process.env.SMTP_FROM,
         })
       );
-      expect(repository.update).toHaveBeenCalledWith(
-        { id: mockLead.id, profileId: authContext.profileId },
+      expect(transactionalLeadRepository.update).toHaveBeenCalledWith(
+        {
+          id: mockLead.id,
+          profileId: authContext.profileId,
+          appScope: Not('hai'),
+        },
         expect.objectContaining({
           status: LeadStatus.QUALIFIED,
           nextFollowUp: dto.nextFollowUp,
@@ -364,7 +694,46 @@ describe('LeadsService', () => {
           notes: expect.stringContaining('Operator response sent:'),
         })
       );
+      expect(
+        transactionalLeadRepository.update.mock.calls[0][1]
+          .firstPersonalResponseAt
+      ).toBeUndefined();
+      expect(notificationOutboxRepository.update).not.toHaveBeenCalled();
     });
+
+    it.each([
+      ['on time', new Date('2100-01-01T00:00:00.000Z'), true],
+      ['late', new Date('2000-01-01T00:00:00.000Z'), false],
+    ])(
+      'records an HAI owner reply %s and suppresses breach only when timely',
+      async (_label, dueAt, suppress) => {
+        const haiLead = { ...mockLead, appScope: 'hai', dueAt, flags: [] };
+        repository.findOne.mockResolvedValue(haiLead as any);
+        storedNotificationRows.push({
+          id: 'breach-1',
+          leadId: mockLead.id,
+          eventType: 'sla_breach',
+          status: 'pending',
+        });
+
+        await service.sendResponse(mockLead.id, dto, {
+          ...authContext,
+          appScope: 'owner-console',
+          ownerConsoleAccess: true,
+        });
+
+        const update = transactionalLeadRepository.update.mock.calls[0][1];
+        expect(update.firstPersonalResponseAt()).toBe(
+          'COALESCE("firstPersonalResponseAt", CURRENT_TIMESTAMP)'
+        );
+        expect(notificationOutboxRepository.update).toHaveBeenCalledTimes(
+          suppress ? 1 : 0
+        );
+        expect(storedNotificationRows[0].status).toBe(
+          suppress ? 'suppressed' : 'pending'
+        );
+      }
+    );
 
     it('should return an error when no recipient email is available', async () => {
       repository.findOne.mockResolvedValueOnce({
@@ -402,7 +771,11 @@ describe('LeadsService', () => {
       const result = await service.sendResponse(mockLead.id, dto, authContext);
 
       expect(repository.update).toHaveBeenCalledWith(
-        { id: mockLead.id, profileId: authContext.profileId },
+        {
+          id: mockLead.id,
+          profileId: authContext.profileId,
+          appScope: Not('hai'),
+        },
         expect.objectContaining({
           status: mockLead.status,
           nextFollowUp: mockLead.nextFollowUp,
@@ -676,14 +1049,17 @@ describe('LeadsService', () => {
 
   describe('delete', () => {
     it('should delete a lead', async () => {
-      repository.delete.mockResolvedValue({ affected: 1 } as any);
-
       await service.delete(mockLead.id, 'test-profile');
 
-      expect(repository.delete).toHaveBeenCalledWith({
+      expect(transactionalLeadRepository.delete).toHaveBeenCalledWith({
         id: mockLead.id,
         profileId: 'test-profile',
+        appScope: Not('hai'),
       });
+      expect(notificationOutboxRepository.update).toHaveBeenCalledWith(
+        { leadId: mockLead.id, status: 'pending' },
+        { status: 'suppressed' }
+      );
     });
 
     it('should delete a topic', async () => {

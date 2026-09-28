@@ -3,8 +3,11 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
 import { StorageAdapter } from './storage-adapter.interface';
 import { LocalStorageAdapter } from './local-storage';
 import { NetworkStorageAdapter } from './network-storage';
+import { EnvelopeEncryptionService } from './envelope-encryption.service';
+import { TaxDocumentClassifierService } from './tax-document-classifier.service';
+import { ZfsStorageService } from './zfs-storage.service';
 import {
-  defaultS3ServiceOptions,
+  resolveS3ServiceOptions,
   S3Service,
   S3ServiceOptions,
 } from './s3.service';
@@ -12,11 +15,23 @@ import { ConfigService } from '@nestjs/config';
 
 export interface StorageModuleOptions {
   enabledAdapters: ('local' | 'network')[];
-  s3Options?: S3ServiceOptions;
+  s3Options?: Partial<S3ServiceOptions>;
   localStoragePath?: string;
 }
 
 export const STORAGE_ADAPTERS = 'STORAGE_ADAPTERS';
+
+const VAULT_SERVICES: Provider[] = [
+  {
+    provide: EnvelopeEncryptionService,
+    useFactory: () => new EnvelopeEncryptionService(),
+  },
+  TaxDocumentClassifierService,
+  {
+    provide: ZfsStorageService,
+    useFactory: () => new ZfsStorageService(),
+  },
+];
 
 @Module({})
 export class StorageModule {
@@ -49,21 +64,25 @@ export class StorageModule {
         const sp = options.localStoragePath || './storage';
         adapterProvider = {
           provide: STORAGE_ADAPTERS,
-          useFactory: (logger) => new LocalStorageAdapter(logger, sp),
-          inject: [Logger],
+          useFactory: (
+            logger: Logger,
+            encryption: EnvelopeEncryptionService,
+            classifier: TaxDocumentClassifierService,
+            zfs: ZfsStorageService
+          ) => new LocalStorageAdapter(logger, sp, encryption, classifier, zfs),
+          inject: [
+            Logger,
+            EnvelopeEncryptionService,
+            TaxDocumentClassifierService,
+            ZfsStorageService,
+          ],
         };
         break;
       }
       case 'network': {
-        if (!options.s3Options) {
-          logger.error(
-            'Network adapter requires S3 options (or other network config).'
-          );
-          throw new Error(
-            'Network adapter requires S3 options (or other network config)'
-          );
-        }
-        const s3Options = { ...defaultS3ServiceOptions, ...options.s3Options };
+        const s3Options = resolveS3ServiceOptions(process.env, {
+          ...(options.s3Options ?? {}),
+        });
         extraProviders.push({
           provide: S3Service,
           useFactory: (logger: Logger) => new S3Service(logger, s3Options),
@@ -71,9 +90,24 @@ export class StorageModule {
         });
         adapterProvider = {
           provide: STORAGE_ADAPTERS,
-          useFactory: (logger, s3Service) =>
-            new NetworkStorageAdapter(logger, s3Service),
-          inject: [Logger, S3Service],
+          useFactory: (
+            logger: Logger,
+            s3Service: S3Service,
+            encryption: EnvelopeEncryptionService,
+            classifier: TaxDocumentClassifierService
+          ) =>
+            new NetworkStorageAdapter(
+              logger,
+              s3Service,
+              encryption,
+              classifier
+            ),
+          inject: [
+            Logger,
+            S3Service,
+            EnvelopeEncryptionService,
+            TaxDocumentClassifierService,
+          ],
         };
         break;
       }
@@ -89,8 +123,14 @@ export class StorageModule {
     return {
       module: StorageModule,
       imports: [LoggerModule],
-      providers: [adapterProvider, ...extraProviders],
-      exports: [STORAGE_ADAPTERS, ...extraProviders],
+      providers: [adapterProvider, ...VAULT_SERVICES, ...extraProviders],
+      exports: [
+        STORAGE_ADAPTERS,
+        EnvelopeEncryptionService,
+        TaxDocumentClassifierService,
+        ZfsStorageService,
+        ...extraProviders,
+      ],
     };
   }
 
@@ -102,6 +142,7 @@ export class StorageModule {
       module: StorageModule,
       imports: [LoggerModule],
       providers: [
+        ...VAULT_SERVICES,
         {
           provide: 'STORAGE_MODULE_OPTIONS',
           useFactory: options.useFactory,
@@ -109,7 +150,13 @@ export class StorageModule {
         },
         {
           provide: STORAGE_ADAPTERS,
-          useFactory: (logger: Logger, configService: ConfigService) => {
+          useFactory: (
+            logger: Logger,
+            configService: ConfigService,
+            encryption: EnvelopeEncryptionService,
+            classifier: TaxDocumentClassifierService,
+            zfs: ZfsStorageService
+          ) => {
             const moduleOptions = configService.get<StorageModuleOptions>(
               'storage-module-options'
             );
@@ -132,16 +179,28 @@ export class StorageModule {
                 logger.log(
                   `Setting up LocalStorageAdapter with path: ${localStoragePath}`
                 );
-                return new LocalStorageAdapter(logger, localStoragePath);
+                return new LocalStorageAdapter(
+                  logger,
+                  localStoragePath,
+                  encryption,
+                  classifier,
+                  zfs
+                );
               }
               case 'network': {
-                const s3Options =
-                  moduleOptions?.s3Options || defaultS3ServiceOptions;
+                const s3Options = resolveS3ServiceOptions(process.env, {
+                  ...(moduleOptions?.s3Options ?? {}),
+                });
                 logger.log(
                   `Setting up NetworkStorageAdapter with S3 endpoint: ${s3Options.endpoint}`
                 );
                 const s3Service = new S3Service(logger, s3Options);
-                return new NetworkStorageAdapter(logger, s3Service);
+                return new NetworkStorageAdapter(
+                  logger,
+                  s3Service,
+                  encryption,
+                  classifier
+                );
               }
               default:
                 logger.error(
@@ -152,10 +211,21 @@ export class StorageModule {
                 );
             }
           },
-          inject: [Logger, ConfigService],
+          inject: [
+            Logger,
+            ConfigService,
+            EnvelopeEncryptionService,
+            TaxDocumentClassifierService,
+            ZfsStorageService,
+          ],
         },
       ],
-      exports: [STORAGE_ADAPTERS],
+      exports: [
+        STORAGE_ADAPTERS,
+        EnvelopeEncryptionService,
+        TaxDocumentClassifierService,
+        ZfsStorageService,
+      ],
     };
   }
 }

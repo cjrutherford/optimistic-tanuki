@@ -18,6 +18,7 @@ import {
   ProjectPlanningMcpToolsModule,
   TelosDocsMcpToolsModule,
 } from './mcp/mcp-tools.module';
+import { VaultMcpToolsModule } from './mcp/vault-mcp-tools.module';
 
 type GatewayServiceProviderDefinition = {
   token: string;
@@ -141,6 +142,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     configKey: 'billing',
   },
   {
+    token: ServiceTokens.CIVIC_SERVICE,
+    serviceId: 'civic',
+    configKey: 'civic',
+  },
+  {
     token: ServiceTokens.PAYMENTS_SERVICE,
     serviceId: 'payments',
     configKey: 'payments',
@@ -158,8 +164,13 @@ export const createMcpToolImports = (
     'project-planning'
   );
   const enableTelosDocs = isServiceEnabled(composition, 'telos-docs-service');
+  // The vault tools are always registered. They are the only route the
+  // confidential copilot has to a model and to document text, and gating them
+  // on a downstream being up would mean the vault quietly losing its
+  // enforcement when an unrelated service is degraded.
+  const enableVault = true;
 
-  if (!enableProjectPlanning && !enableTelosDocs) {
+  if (!enableProjectPlanning && !enableTelosDocs && !enableVault) {
     return imports;
   }
 
@@ -170,6 +181,9 @@ export const createMcpToolImports = (
   }
   if (enableTelosDocs) {
     imports.push(TelosDocsMcpToolsModule);
+  }
+  if (enableVault) {
+    imports.push(VaultMcpToolsModule);
   }
 
   return imports;

@@ -1,0 +1,77 @@
+<div class="auth-page">
+  <div class="auth-card-wrapper">
+    <otui-card>
+      <div class="auth-header">
+        <h1 class="auth-title">Create customer account</h1>
+        <p class="auth-subtitle">
+          Register with
+          {{ brandConfig.getResolvedBrand()?.businessName || 'this service' }}
+          to manage field appointments and track service history.
+        </p>
+      </div>
+
+      @if (errorMessage) {
+      <div class="alert-banner" role="alert">
+        {{ errorMessage }}
+      </div>
+      } @if (statusMessage) {
+      <div class="alert-banner" role="status">
+        {{ statusMessage }}
+      </div>
+      }
+
+      <form
+        [formGroup]="registerForm"
+        (ngSubmit)="onSubmit()"
+        class="auth-form"
+      >
+        <div class="form-group">
+          <label for="register-name" class="field-label">Full name</label>
+          <lib-text-input
+            id="register-name"
+            formControlName="name"
+            placeholder="Jane Doe"
+          ></lib-text-input>
+        </div>
+
+        <div class="form-group">
+          <label for="register-email" class="field-label">Email address</label>
+          <lib-text-input
+            id="register-email"
+            formControlName="email"
+            type="text"
+            placeholder="jane@example.com"
+          ></lib-text-input>
+        </div>
+
+        <div class="form-group">
+          <label for="register-password" class="field-label">Password</label>
+          <lib-text-input
+            id="register-password"
+            formControlName="password"
+            type="password"
+            placeholder="Minimum 10 characters"
+          ></lib-text-input>
+        </div>
+
+        <div class="auth-actions">
+          <otui-button
+            [variant]="'primary'"
+            [type]="'submit'"
+            [disabled]="isSubmitting"
+            class="submit-button"
+          >
+            {{ isSubmitting ? 'Creating account...' : 'Create Account' }}
+          </otui-button>
+        </div>
+      </form>
+
+      <div class="auth-footer">
+        <p>
+          Already have an account?
+          <a routerLink="/login" class="auth-link">Sign in here</a>
+        </p>
+      </div>
+    </otui-card>
+  </div>
+</div>

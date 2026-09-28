@@ -40,18 +40,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
         if (storageStrategy === 'network') {
           const s3Config = configService.get<any>('s3');
-          logger.log(
-            `S3 endpoint: ${s3Config?.endpoint || 'http://localhost:9000'}`
-          );
-          logger.log(`S3 bucket: ${s3Config?.bucket || 'assets'}`);
+          logger.log(`S3 endpoint: ${s3Config?.endpoint || 'not configured'}`);
+          logger.log(`S3 bucket: ${s3Config?.bucket || 'not configured'}`);
+          if (!s3Config?.accessKey || !s3Config?.secretKey) {
+            logger.error(
+              'S3 storage strategy is selected but S3_ACCESS_KEY and S3_SECRET_KEY are not set; the storage module will refuse to start rather than use a default credential.'
+            );
+          }
           return {
             enabledAdapters: ['network'],
             s3Options: {
-              endpoint: s3Config?.endpoint || 'http://localhost:9000',
-              region: 'us-east-1',
-              accessKeyId: s3Config?.accessKey || 'seaweedfs',
-              secretAccessKey: s3Config?.secretKey || 'seaweedfs',
-              bucketName: s3Config?.bucket || 'assets',
+              endpoint: s3Config?.endpoint,
+              region: s3Config?.region || 'us-east-1',
+              accessKeyId: s3Config?.accessKey,
+              secretAccessKey: s3Config?.secretKey,
+              bucketName: s3Config?.bucket,
             },
           };
         }

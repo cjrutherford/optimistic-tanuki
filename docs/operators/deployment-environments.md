@@ -118,6 +118,13 @@ forwards it across the bridge network. Do not place credentials or the token in
 shell arguments or commit them. The command is idempotent: a later run reports
 the existing global owner and does not create another account.
 
+The bootstrap operation creates the authentication user and global profile,
+then initializes the `owner` role in the `global` scope and the
+`owner_console_owner` role in the `owner-console` scope. The permissions service
+must have completed its default-permission seed before running the CLI. Do not
+use the Authentication service's `/api/bootstrap/owner` endpoints for a
+deployment: that older controller keeps its owner state in process memory.
+
 ### Access Owner Console by Host IP
 
 When Owner Console is reached through the deployment host IP, configure one

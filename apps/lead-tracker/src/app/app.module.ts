@@ -48,7 +48,14 @@ import { DiscoveryPipelineService } from './discovery/pipeline.service';
 import { LeadQualificationService } from './lead-qualification.service';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
+import { FlowMessageController } from './flow-message.controller';
+import { FlowService } from './flow.service';
+import { FlowBooking } from './entities/flow-booking.entity';
+import { FlowBookingUpdate } from './entities/flow-booking-update.entity';
+import { FlowEstimate } from './entities/flow-estimate.entity';
+import { LeadNotificationOutbox } from './entities/lead-notification-outbox.entity';
 import loadConfig from '../config';
+import loadDatabase from './loadDatabase';
 
 @Module({
   imports: [
@@ -66,26 +73,7 @@ import loadConfig from '../config';
     }),
     DatabaseModule.register({
       name: 'lead_tracker',
-      factory: (config: ConfigService) => {
-        const database = config.get('database');
-        return {
-          type: 'postgres',
-          host: database.host,
-          port: database.port,
-          username: database.username,
-          password: database.password,
-          database: database.database || database.name,
-          entities: [
-            Lead,
-            LeadFlag,
-            LeadTopic,
-            LeadTopicLink,
-            LeadQualification,
-            LeadApplicationRecord,
-            LeadOnboardingProfileRecord,
-          ],
-        };
-      },
+      factory: loadDatabase,
     }),
     EmailModule.forRootAsync({
       inject: [ConfigService],
@@ -114,9 +102,10 @@ import loadConfig from '../config';
       },
     }),
   ],
-  controllers: [LeadsController],
+  controllers: [LeadsController, FlowMessageController],
   providers: [
     LeadsService,
+    FlowService,
     DiscoveryService,
     GoogleMapsLocationAutocompleteService,
     SearchAcquisitionService,
@@ -177,6 +166,27 @@ import loadConfig from '../config';
     {
       provide: getRepositoryToken(LeadApplicationRecord),
       useFactory: (ds: DataSource) => ds.getRepository(LeadApplicationRecord),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowEstimate),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowEstimate),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowBooking),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowBooking),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FlowBookingUpdate),
+      useFactory: (ds: DataSource) => ds.getRepository(FlowBookingUpdate),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(LeadNotificationOutbox),
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(LeadNotificationOutbox),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

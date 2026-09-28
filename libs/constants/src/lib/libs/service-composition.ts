@@ -41,6 +41,7 @@ export const GATEWAY_SERVICE_IDS = [
   'videos',
   'learning-service',
   'billing',
+  'civic',
 ] as const;
 export type ComposableEntry<T> = {
   id: string;

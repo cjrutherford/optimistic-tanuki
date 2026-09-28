@@ -6,10 +6,11 @@ import {
   ApplicationExportFormat,
   DiscInterviewTurn,
   LeadAuthContext,
+  CreateLeadRequest,
+  CommitHardwareProposalRequest,
   MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseRequest,
-  CreateLeadDto,
   CreateLeadFlagDto,
   CreateLeadTopicDto,
   LeadAnalysisDto,
@@ -62,21 +63,40 @@ export class LeadsController {
       source?: string;
       appScope?: string;
       profileId: string;
+      ownerConsoleAccess?: boolean;
     }
   ) {
     return this.leadsService.findAll(filters);
   }
 
   @MessagePattern({ cmd: LeadCommands.FIND_ONE })
-  async findOne(@Payload() data: { id: string; profileId: string }) {
-    return this.leadsService.findOne(data.id, data.profileId);
+  async findOne(
+    @Payload()
+    data: {
+      id: string;
+      profileId: string;
+      ownerConsoleAccess?: boolean;
+    }
+  ) {
+    return this.leadsService.findOne(
+      data.id,
+      data.profileId,
+      data.ownerConsoleAccess
+    );
   }
 
   @MessagePattern({ cmd: LeadCommands.CREATE })
-  async create(
-    @Payload() data: { dto: CreateLeadDto; context: LeadAuthContext }
-  ) {
-    return this.leadsService.create(data.dto, data.context);
+  async create(@Payload() data: CreateLeadRequest) {
+    return this.leadsService.create(
+      data.dto,
+      data.context,
+      data.ownerNotificationRecipients
+    );
+  }
+
+  @MessagePattern({ cmd: LeadCommands.COMMIT_HARDWARE_PROPOSAL })
+  async commitHardwareProposal(@Payload() data: CommitHardwareProposalRequest) {
+    return this.leadsService.commitHardwareProposal(data);
   }
 
   @MessagePattern({ cmd: LeadCommands.UPDATE })
@@ -86,9 +106,15 @@ export class LeadsController {
       id: string;
       dto: UpdateLeadDto;
       profileId: string;
+      ownerConsoleAccess?: boolean;
     }
   ) {
-    return this.leadsService.update(data.id, data.dto, data.profileId);
+    return this.leadsService.update(
+      data.id,
+      data.dto,
+      data.profileId,
+      data.ownerConsoleAccess
+    );
   }
 
   @MessagePattern({ cmd: LeadCommands.DELETE })

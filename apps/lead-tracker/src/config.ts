@@ -96,6 +96,7 @@ const loadConfig = () => {
 
   return {
     ...configData,
+    listenPort: toNumber(process.env.LISTEN_PORT, configData.listenPort),
     ollama: {
       host: process.env.OLLAMA_HOST || ollamaConfig?.host || 'prompt-proxy',
       port: toNumber(process.env.OLLAMA_PORT, ollamaConfig?.port ?? 11434),

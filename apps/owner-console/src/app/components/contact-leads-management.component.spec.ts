@@ -175,6 +175,34 @@ describe('ContactLeadsManagementComponent', () => {
     expect(text).toContain('Acme Co');
   });
 
+  it('uses the server HAI deadline and first personal response to classify acknowledgment', () => {
+    const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    const lead = {
+      ...component.leads[0],
+      appScope: 'hai',
+      dueAt: '2026-09-25T21:00:00.000Z',
+      firstPersonalResponseAt: null,
+    };
+    expect(component.slaLabel(lead)).toBe('Overdue');
+    expect(component.formatEastern(lead.dueAt)).toContain('EDT');
+    expect(
+      component.slaLabel({
+        ...lead,
+        firstPersonalResponseAt: '2026-09-25T20:55:00.000Z',
+      })
+    ).toBe('Met');
+    expect(
+      component.slaLabel({
+        ...lead,
+        firstPersonalResponseAt: '2026-09-25T21:05:00.000Z',
+      })
+    ).toBe('Missed');
+    component.leads = [lead];
+    expect(component.staleNewLeads()).toHaveLength(1);
+  });
+
   it('applies and persists CRM view presets', () => {
     const fixture = TestBed.createComponent(ContactLeadsManagementComponent);
     fixture.detectChanges();

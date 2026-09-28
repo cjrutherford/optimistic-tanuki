@@ -193,6 +193,11 @@ export type ContactControllerFindAllLeadsParams = {
   appScope?: string;
 };
 
+export type ContactControllerFindHaiOwnerLeadsParams = {
+  status: string;
+  source: string;
+};
+
 export type PostControllerGetPublishedPostsParams = {
   catalogId?: string;
 };
@@ -552,6 +557,190 @@ export class OptomisitcTanukiAPIService {
 
     return this.http.post<TData>(
       `/api/contact/leads/${id}/respond`,
+      sendLeadResponseDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  contactControllerFindHaiOwnerLeads<TData = void>(
+    params: ContactControllerFindHaiOwnerLeadsParams,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  contactControllerFindHaiOwnerLeads<TData = void>(
+    params: ContactControllerFindHaiOwnerLeadsParams,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  contactControllerFindHaiOwnerLeads<TData = void>(
+    params: ContactControllerFindHaiOwnerLeadsParams,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  contactControllerFindHaiOwnerLeads<TData = void>(
+    params: ContactControllerFindHaiOwnerLeadsParams,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    const filteredParams = filterParams(
+      { ...params, ...options?.params },
+      new Set<string>([])
+    );
+
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/contact/hai/leads`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+        params: filteredParams,
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/contact/hai/leads`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+        params: filteredParams,
+      });
+    }
+
+    return this.http.get<TData>(`/api/contact/hai/leads`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+      params: filteredParams,
+    });
+  }
+
+  contactControllerGetHaiOwnerLead<TData = void>(
+    id: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  contactControllerGetHaiOwnerLead<TData = void>(
+    id: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  contactControllerGetHaiOwnerLead<TData = void>(
+    id: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  contactControllerGetHaiOwnerLead<TData = void>(
+    id: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/contact/hai/leads/${id}`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/contact/hai/leads/${id}`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/contact/hai/leads/${id}`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
+  }
+
+  contactControllerUpdateHaiOwnerLead<TData = void>(
+    id: string,
+    updateLeadDto: UpdateLeadDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  contactControllerUpdateHaiOwnerLead<TData = void>(
+    id: string,
+    updateLeadDto: UpdateLeadDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  contactControllerUpdateHaiOwnerLead<TData = void>(
+    id: string,
+    updateLeadDto: UpdateLeadDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  contactControllerUpdateHaiOwnerLead<TData = void>(
+    id: string,
+    updateLeadDto: UpdateLeadDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.patch<TData>(
+        `/api/contact/hai/leads/${id}`,
+        updateLeadDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.patch<TData>(
+        `/api/contact/hai/leads/${id}`,
+        updateLeadDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.patch<TData>(
+      `/api/contact/hai/leads/${id}`,
+      updateLeadDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  contactControllerRespondToHaiOwnerLead<TData = void>(
+    id: string,
+    sendLeadResponseDto: SendLeadResponseDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  contactControllerRespondToHaiOwnerLead<TData = void>(
+    id: string,
+    sendLeadResponseDto: SendLeadResponseDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  contactControllerRespondToHaiOwnerLead<TData = void>(
+    id: string,
+    sendLeadResponseDto: SendLeadResponseDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  contactControllerRespondToHaiOwnerLead<TData = void>(
+    id: string,
+    sendLeadResponseDto: SendLeadResponseDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/contact/hai/leads/${id}/respond`,
+        sendLeadResponseDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/contact/hai/leads/${id}/respond`,
+        sendLeadResponseDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/contact/hai/leads/${id}/respond`,
       sendLeadResponseDto,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),

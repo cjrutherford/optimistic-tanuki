@@ -48,6 +48,8 @@ export interface Lead {
   contactMessage?: string;
   contactSourceLabel?: string;
   lastRespondedAt?: string | Date | null;
+  dueAt?: string | Date | null;
+  firstPersonalResponseAt?: string | Date | null;
   isFlagged?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;

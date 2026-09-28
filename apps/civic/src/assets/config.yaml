@@ -1,0 +1,15 @@
+listenPort: 3026
+agendaPollIntervalMs: 21600000
+agendaSources:
+  - id: savannah-city-council
+    indexUrl: https://agenda.savannahga.gov/publishing/ap-agendas.html
+    meetingBody: city-council
+  - id: mpc-planning-commission
+    indexUrl: https://www.thempc.org/Board/Tpc
+    meetingBody: planning-commission
+database:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_civic

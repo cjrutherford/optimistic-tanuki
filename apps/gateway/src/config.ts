@@ -82,6 +82,15 @@ const envValue = (key: string): string | undefined => {
   return value ? value : undefined;
 };
 
+const envNumber = (key: string): number | undefined => {
+  const value = envValue(key);
+  if (value === undefined) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 const configValue = (value: string | undefined): string | undefined => {
   if (!value?.trim() || isPlaceholderValue(value.trim())) {
     return undefined;
@@ -267,6 +276,16 @@ export type ContactLeadRoutingEntry = {
   sourceLabel?: string;
 };
 
+export type VaultModelConfig = {
+  ollama?: { baseUrl?: string };
+  model?: {
+    name?: string;
+    numCtx?: number;
+    temperature?: number;
+    timeoutMs?: number;
+  };
+};
+
 export type ContactLeadRoutingConfig = {
   defaultProfileId?: string;
   appScopes?: Record<string, ContactLeadRoutingEntry>;
@@ -285,6 +304,7 @@ export type Config = {
     cache?: PermissionsCacheConfig;
   };
   contactLeads?: ContactLeadRoutingConfig;
+  vault?: VaultModelConfig;
   services: {
     asset: TcpServiceConfig;
     authentication: TcpServiceConfig;
@@ -310,6 +330,7 @@ export type Config = {
     videos: TcpServiceConfig;
     learning_service: TcpServiceConfig;
     billing: TcpServiceConfig;
+    civic: TcpServiceConfig;
   };
 };
 
@@ -344,6 +365,30 @@ export const loadConfig = (): Config => {
   };
 
   config.oauth = mergeOAuthConfig(config.oauth);
+
+  // The vault's model endpoint is environment-supplied and has no host in
+  // source. It used to carry a hardcoded tailnet address, which made the air gap
+  // a property of one machine rather than a rule, and left the deployment
+  // pointed at a specific private address that no test could see.
+  //
+  // An unset or unresolved placeholder resolves to undefined rather than to the
+  // literal string, so the air gap refuses the request instead of dialling a
+  // hostname called "${VAULT_OLLAMA_BASE_URL}".
+  const vault = config.vault ?? {};
+  const baseUrl =
+    envValue('VAULT_OLLAMA_BASE_URL') ?? configValue(vault.ollama?.baseUrl);
+  config.vault = {
+    ...vault,
+    ollama: { ...(vault.ollama ?? {}), baseUrl },
+    model: {
+      ...(vault.model ?? {}),
+      name: envValue('VAULT_OLLAMA_MODEL') ?? vault.model?.name,
+      numCtx: envNumber('VAULT_OLLAMA_NUM_CTX') ?? vault.model?.numCtx,
+      temperature:
+        envNumber('VAULT_OLLAMA_TEMPERATURE') ?? vault.model?.temperature,
+      timeoutMs: envNumber('VAULT_OLLAMA_TIMEOUT_MS') ?? vault.model?.timeoutMs,
+    },
+  };
 
   const serviceKeys = Object.keys(config.services) as Array<
     keyof Config['services']

@@ -56,15 +56,15 @@ export class HardwarePartEntity {
   @Column({ type: 'text', nullable: true })
   sourceUrl!: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   lastSyncedAt!: Date | null;
 
   @Column({ type: 'varchar', length: 16, default: 'seeded' })
   syncStatus!: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 }

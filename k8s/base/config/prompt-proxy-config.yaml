@@ -1,4 +1,4 @@
 listenPort: 3009
 ollama:
-  apiUrl: 100.89.87.124
+  apiUrl: 127.0.0.1
   apiPort: 11434

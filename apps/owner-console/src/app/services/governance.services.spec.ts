@@ -145,6 +145,7 @@ describe('governance services', () => {
       expect(req.request.method).toBe('GET');
       expect(req.request.params.keys()).toEqual([]);
       req.flush([]);
+      httpMock.expectOne('/api/contact/hai/leads').flush([]);
     });
 
     it('only forwards the filters that are set', () => {
@@ -156,6 +157,7 @@ describe('governance services', () => {
       expect(req.request.params.has('source')).toBe(false);
       expect(req.request.params.has('appScope')).toBe(false);
       req.flush([]);
+      httpMock.expectOne('/api/contact/hai/leads?status=new').flush([]);
     });
 
     it('forwards every filter when all are set', () => {
@@ -176,6 +178,21 @@ describe('governance services', () => {
       const req = httpMock.expectOne('/api/contact/leads/l1');
       expect(req.request.method).toBe('GET');
       req.flush({ id: 'l1' });
+    });
+
+    it('routes HAI lead updates and personal responses through owner-only endpoints', () => {
+      service.getLeads({ appScope: 'hai' }).subscribe();
+      httpMock.expectOne('/api/contact/hai/leads').flush([]);
+      service.updateLead('l1', { status: 'contacted' }, 'hai').subscribe();
+      const update = httpMock.expectOne('/api/contact/hai/leads/l1');
+      expect(update.request.method).toBe('PATCH');
+      update.flush({ id: 'l1' });
+      service
+        .respondToLead('l1', { subject: 'Hello', message: 'Thanks' }, 'hai')
+        .subscribe();
+      const response = httpMock.expectOne('/api/contact/hai/leads/l1/respond');
+      expect(response.request.method).toBe('POST');
+      response.flush({ lead: { id: 'l1' }, delivery: { success: true } });
     });
 
     it('patches a lead', () => {

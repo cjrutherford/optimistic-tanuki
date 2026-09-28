@@ -1,9 +1,15 @@
 .projectGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   align-items: stretch;
   gap: 1.5rem;
   padding: 0;
+}
+
+:host ::ng-deep .projectGrid > .portfolio-card:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 42rem);
 }
 
 .section-heading-tile {
@@ -181,6 +187,21 @@
   &:hover {
     transform: translateY(-1px);
   }
+
+  &:focus-visible {
+    outline: 3px solid var(--card-accent);
+    outline-offset: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-link {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }
 
 .portfolio-link.primary {
@@ -195,33 +216,65 @@
 }
 
 .tone-social {
-  --card-accent: #4fc3f7;
+  --card-accent: var(--portfolio-tone-social);
 }
 
 .tone-civic {
-  --card-accent: #ffb74d;
+  --card-accent: var(--portfolio-tone-civic);
 }
 
 .tone-planning {
-  --card-accent: #9575cd;
+  --card-accent: var(--portfolio-tone-planning);
 }
 
 .tone-finance {
-  --card-accent: #4db6ac;
+  --card-accent: var(--portfolio-tone-finance);
 }
 
 .tone-discovery {
-  --card-accent: #ef9a9a;
+  --card-accent: var(--portfolio-tone-discovery);
 }
 
 .tone-developer {
-  --card-accent: #90caf9;
+  --card-accent: var(--portfolio-tone-developer);
 }
 
 .tone-commerce {
-  --card-accent: #f48fb1;
+  --card-accent: var(--portfolio-tone-commerce);
 }
 
 .tone-media {
-  --card-accent: #ce93d8;
+  --card-accent: var(--portfolio-tone-media);
+}
+
+.tone-business {
+  --card-accent: var(--portfolio-tone-business);
+}
+
+.tone-config {
+  --card-accent: var(--portfolio-tone-config);
+}
+
+.tone-publishing {
+  --card-accent: var(--portfolio-tone-publishing);
+}
+
+.tone-internal {
+  --card-accent: var(--portfolio-tone-internal);
+}
+
+.tone-marketing {
+  --card-accent: var(--portfolio-tone-marketing);
+}
+
+.tone-field {
+  --card-accent: var(--portfolio-tone-field);
+}
+
+.tone-practice {
+  --card-accent: var(--portfolio-tone-practice);
+}
+
+.tone-construction {
+  --card-accent: var(--portfolio-tone-construction);
 }

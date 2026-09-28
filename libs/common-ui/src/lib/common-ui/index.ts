@@ -110,3 +110,5 @@ export {
   type VariantType,
 } from './interfaces/variantable.interface';
 export { getDefaultVariantOptions } from './interfaces/defaultVariantOptions';
+export { DocumentDropZoneComponent } from './document-drop-zone/document-drop-zone.component';
+export { TotpChallengeModalComponent } from './totp-challenge-modal/totp-challenge-modal.component';

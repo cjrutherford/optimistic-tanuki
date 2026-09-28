@@ -33,6 +33,11 @@ export class ContactFormComponent {
   @Input() subjectId = 'contact-subject';
   @Input() subjectLabel = 'Subject';
   @Input() bannerImage = 'https://picsum.photos/1200/300';
+  @Input() set initialMessage(message: string | null) {
+    if (typeof message === 'string' && message) {
+      this.contactForm.patchValue({ message });
+    }
+  }
   @Output() formSubmit = new EventEmitter<{
     name: string;
     email: string;

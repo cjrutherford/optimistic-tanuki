@@ -71,7 +71,11 @@
       "@optimistic-tanuki/business-public-ui": [
         "libs/business-public-ui/src/index.ts"
       ],
+      "@optimistic-tanuki/business-security": [
+        "libs/business-security/src/index.ts"
+      ],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
+      "@optimistic-tanuki/canvas-ui": ["libs/canvas-ui/src/index.ts"],
       "@optimistic-tanuki/chat-contracts": ["libs/chat/contracts/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui-data-access": [
@@ -90,6 +94,7 @@
       ],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
+      "@optimistic-tanuki/document-text": ["libs/document-text/src/index.ts"],
       "@optimistic-tanuki/email": ["libs/email/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
       "@optimistic-tanuki/fin-commander-data-access": [
@@ -205,7 +210,10 @@
       "@optimistic-tanuki/theme-models": ["libs/theme-models/src/index.ts"],
       "@optimistic-tanuki/theme-ui": ["libs/theme-ui/src/index.ts"],
       "@optimistic-tanuki/ui-models": ["libs/ui-models/src/index.ts"],
-      "@optimistic-tanuki/video-ui": ["libs/video-ui/src/index.ts"]
+      "@optimistic-tanuki/video-ui": ["libs/video-ui/src/index.ts"],
+      "@optimistic-tanuki/whitebox-brand-config": [
+        "libs/whitebox-brand-config/src/index.ts"
+      ]
     }
   },
   "angularCompilerOptions": {

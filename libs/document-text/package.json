@@ -1,0 +1,25 @@
+{
+  "name": "@optimistic-tanuki/document-text",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Shared PDF, Word, OpenDocument, and plain-text extraction for Optimistic Tanuki services.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

@@ -7,6 +7,7 @@ export const LeadCommands = {
   GET_STATS: 'lead.getStats',
   SEARCH: 'lead.search',
   SEND_RESPONSE: 'lead.sendResponse',
+  COMMIT_HARDWARE_PROPOSAL: 'lead.commitHardwareProposal',
 } as const;
 
 export const LeadTopicCommands = {
