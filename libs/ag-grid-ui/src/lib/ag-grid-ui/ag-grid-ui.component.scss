@@ -215,14 +215,17 @@
   );
 }
 
-.ag-grid-wrapper ::ng-deep .ag-grid-action-button:focus-visible,
-.ag-grid-wrapper ::ng-deep .ag-grid-inline-select:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: 0 0 0 3px
-    var(
-      --local-focus-ring,
-      color-mix(in srgb, var(--local-accent, var(--primary)) 24%, transparent)
-    );
+.ag-grid-wrapper ::ng-deep .ag-grid-action-button,
+.ag-grid-wrapper ::ng-deep .ag-grid-inline-select {
+  @include p.keyboard-focus-ring(
+    transparent,
+    0,
+    0 0 0 3px
+      var(
+        --local-focus-ring,
+        color-mix(in srgb, var(--local-accent, var(--primary)) 24%, transparent)
+      )
+  );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-grid-delete-button {
