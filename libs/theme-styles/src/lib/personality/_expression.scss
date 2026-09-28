@@ -259,11 +259,12 @@ $_enter: personality-enter var(--motion-enter-duration, 0ms)
 /// `$color` until opt-in), plus the personality glow (--glow-focus).
 /// Named `keyboard-focus-ring` because `interaction`'s `focus-ring` is an
 /// unrelated input box-shadow. `$color`/`$offset` are the component's current
-/// ring (default currentColor / 2px). `$base-shadow` is the component's
+/// ring (default the page foreground / 2px, since the ring sits on the page; pass
+/// currentColor only for transparent controls). `$base-shadow` is the component's
 /// existing :focus-visible box-shadow, if any; the glow is appended to it.
 /// Place after the rule's plain declarations (nested rule => mixed-decls).
 @mixin keyboard-focus-ring(
-  $color: currentColor,
+  $color: var(--foreground, currentColor),
   $offset: 2px,
   $base-shadow: none
 ) {

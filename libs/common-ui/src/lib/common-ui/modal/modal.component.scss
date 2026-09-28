@@ -257,7 +257,7 @@
     background: color-mix(in srgb, currentColor 12%, transparent);
   }
 
-  @include p.keyboard-focus-ring;
+  @include p.keyboard-focus-ring(currentColor);
 }
 
 .modal-body {

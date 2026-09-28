@@ -40,8 +40,10 @@ button {
     background var(--animation-duration-fast) var(--animation-easing)
   );
 
+  // The ring sits outside the button on the page, so it takes the page's
+  // text colour; currentColor would be the on-primary text (often white).
   @include p.keyboard-focus-ring(
-    currentColor,
+    var(--foreground, currentColor),
     2px,
     var(--personality-box-shadow, var(--shadow-md))
   );
