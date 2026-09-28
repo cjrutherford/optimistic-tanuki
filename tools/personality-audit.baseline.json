@@ -2,8 +2,7 @@
   "libs/ag-grid-ui/src/lib/ag-grid-ui/ag-grid-ui.component.scss": {
     "border-radius": 2,
     "font-family": 2,
-    "font-size": 1,
-    "box-shadow": 1
+    "font-size": 1
   },
   "libs/auth-ui/src/lib/auth-ui/confirm-block/confirm-block.component.scss": {
     "border-radius": 1
