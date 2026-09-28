@@ -16,3 +16,5 @@ export * from './clay-blobs.component';
 export * from './neon-circuit.component';
 export * from './blueprint-scan.component';
 export * from './flock-field.component';
+export * from './scene-registry';
+export * from './personality-scene.component';
