@@ -22,9 +22,15 @@ export interface StorageModuleOptions {
 export const STORAGE_ADAPTERS = 'STORAGE_ADAPTERS';
 
 const VAULT_SERVICES: Provider[] = [
-  EnvelopeEncryptionService,
+  {
+    provide: EnvelopeEncryptionService,
+    useFactory: () => new EnvelopeEncryptionService(),
+  },
   TaxDocumentClassifierService,
-  ZfsStorageService,
+  {
+    provide: ZfsStorageService,
+    useFactory: () => new ZfsStorageService(),
+  },
 ];
 
 @Module({})
