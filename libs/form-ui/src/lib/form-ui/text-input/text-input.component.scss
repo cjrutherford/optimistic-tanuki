@@ -164,13 +164,13 @@
 
 .error-message {
   font-family: var(--font-body, system-ui, sans-serif);
-  font-size: 0.75rem;
   color: var(--danger, #dc2626);
   margin-top: 4px;
   padding-left: 8px;
   display: flex;
   align-items: center;
   gap: 4px;
+  @include p.small-text(0.75rem);
 
   &::before {
     content: '';

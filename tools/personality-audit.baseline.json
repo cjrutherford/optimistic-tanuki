@@ -286,31 +286,31 @@
     "border-radius": 6,
     "box-shadow": 3,
     "font-family": 3,
-    "font-size": 5,
+    "font-size": 4,
     "line-height": 1
   },
   "libs/form-ui/src/lib/form-ui/radio-button/radio-button.component.scss": {
     "font-family": 3,
-    "font-size": 6,
+    "font-size": 5,
     "border-radius": 4,
     "box-shadow": 4,
     "line-height": 1
   },
   "libs/form-ui/src/lib/form-ui/select/select.component.scss": {
     "font-family": 4,
-    "font-size": 6,
+    "font-size": 5,
     "border-radius": 5
   },
   "libs/form-ui/src/lib/form-ui/text-area/text-area.component.scss": {
     "font-family": 4,
-    "font-size": 8,
+    "font-size": 7,
     "border-radius": 4,
     "line-height": 1,
     "box-shadow": 1
   },
   "libs/form-ui/src/lib/form-ui/text-input/text-input.component.scss": {
     "font-family": 4,
-    "font-size": 6,
+    "font-size": 5,
     "border-radius": 3,
     "box-shadow": 2
   },
