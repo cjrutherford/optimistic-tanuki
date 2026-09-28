@@ -25,8 +25,8 @@ if (!args.storybook || !args.out) {
 }
 const STORY = args.story ?? 'common-ui-theme-personality-showcase--showcase';
 const MODES = ['light', 'dark'];
-// Storybook globals: personalityId, colorMode. There is no primary-colour global
-// (StorybookThemeBridge's primaryColor input is not wired to a global), so stills use each personality default.
+// Storybook globals: personalityId, colorMode, primaryColor. Stills cover every
+// primary in PRIMARIES; focus shots and motion clips use the first (indigo).
 const FOCUS_COUNT = 12;
 const CLIP_MS = 3000;
 const root = path.resolve(args.storybook);
@@ -92,8 +92,9 @@ if (args.only) ids = ids.filter((i) => i === args.only);
 if (ids.length === 0) throw new Error('no personalities found');
 
 const fontIssues = new Set();
-const url = (pid, mode) =>
-  `${base}/iframe.html?id=${STORY}&viewMode=story&globals=personalityId:${pid};colorMode:${mode}`;
+const PRIMARIES = ['3f51b5', 'd97706', '0d9488'];
+const url = (pid, mode, primary = PRIMARIES[0]) =>
+  `${base}/iframe.html?id=${STORY}&viewMode=story&globals=personalityId:${pid};colorMode:${mode};primaryColor:!hex(${primary})`;
 
 async function settle(page, label) {
   await page.waitForFunction(
@@ -146,13 +147,15 @@ const page = await ctx.newPage();
 for (const pid of ids) {
   for (const mode of MODES) {
     const label = `${pid}/${mode}`;
-    await page.goto(url(pid, mode));
-    fontLinks += await settle(page, label);
-    await page.screenshot({
-      path: path.join(out, 'stills', `${pid}__${mode}.png`),
-      animations: 'disabled',
-    });
-    stills++;
+    for (const primary of PRIMARIES) {
+      await page.goto(url(pid, mode, primary));
+      fontLinks += await settle(page, `${label}/${primary}`);
+      await page.screenshot({
+        path: path.join(out, 'stills', `${pid}__${mode}__${primary}.png`),
+        animations: 'disabled',
+      });
+      stills++;
+    }
     // focus pass: Tab through focusables, screenshot each focused element
     await page.goto(url(pid, mode));
     await settle(page, label);
