@@ -468,6 +468,8 @@ services:
         condition: service_started
       compliance-audit:
         condition: service_started
+      civic:
+        condition: service_started
       wellness:
         condition: service_started
       classifieds:
@@ -486,6 +488,27 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+
+  civic:
+    container_name: ot_civic
+    build:
+      context: .
+      dockerfile: ./apps/civic/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_PORT:-3026}:3026'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic
+      LISTEN_PORT: 3026
+      CIVIC_AGENDA_SOURCES: ${CIVIC_AGENDA_SOURCES:-}
+      CIVIC_TENANT_ID: ${CIVIC_TENANT_ID:-}
+      CIVIC_AGENDA_POLL_INTERVAL_MS: ${CIVIC_AGENDA_POLL_INTERVAL_MS:-21600000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   lead-tracker:
     container_name: ot_lead_tracker

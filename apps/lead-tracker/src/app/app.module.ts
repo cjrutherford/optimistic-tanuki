@@ -53,7 +53,9 @@ import { FlowService } from './flow.service';
 import { FlowBooking } from './entities/flow-booking.entity';
 import { FlowBookingUpdate } from './entities/flow-booking-update.entity';
 import { FlowEstimate } from './entities/flow-estimate.entity';
+import { LeadNotificationOutbox } from './entities/lead-notification-outbox.entity';
 import loadConfig from '../config';
+import loadDatabase from './loadDatabase';
 
 @Module({
   imports: [
@@ -71,29 +73,7 @@ import loadConfig from '../config';
     }),
     DatabaseModule.register({
       name: 'lead_tracker',
-      factory: (config: ConfigService) => {
-        const database = config.get('database');
-        return {
-          type: 'postgres',
-          host: database.host,
-          port: database.port,
-          username: database.username,
-          password: database.password,
-          database: database.database || database.name,
-          entities: [
-            Lead,
-            LeadFlag,
-            LeadTopic,
-            LeadTopicLink,
-            LeadQualification,
-            LeadApplicationRecord,
-            LeadOnboardingProfileRecord,
-            FlowEstimate,
-            FlowBooking,
-            FlowBookingUpdate,
-          ],
-        };
-      },
+      factory: loadDatabase,
     }),
     EmailModule.forRootAsync({
       inject: [ConfigService],
@@ -201,6 +181,12 @@ import loadConfig from '../config';
     {
       provide: getRepositoryToken(FlowBookingUpdate),
       useFactory: (ds: DataSource) => ds.getRepository(FlowBookingUpdate),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(LeadNotificationOutbox),
+      useFactory: (dataSource: DataSource) =>
+        dataSource.getRepository(LeadNotificationOutbox),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

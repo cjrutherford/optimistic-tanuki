@@ -2,11 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('sc_case_options')
+@Index('idx_sc_case_option_slug_title', ['chassisSlug', 'title'], {
+  unique: true,
+})
 export class CaseOptionEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -53,12 +57,12 @@ export class CaseOptionEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   externalId!: string | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   lastSyncedAt!: Date | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
 }

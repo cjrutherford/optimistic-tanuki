@@ -17,6 +17,7 @@ export class ContactSectionComponent {
 
   @Input() submittingContact = false;
   @Input() contactStatus: string | null = null;
+  @Input() contactPrefill: string | null = null;
 
   @Output() formSubmit = new EventEmitter<{
     name: string;

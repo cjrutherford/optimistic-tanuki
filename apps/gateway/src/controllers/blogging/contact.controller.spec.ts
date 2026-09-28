@@ -4,9 +4,10 @@ import {
   ContactCommands,
   LeadCommands,
   ProfileCommands,
+  RoleCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Logger } from '@nestjs/common';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
@@ -19,6 +20,7 @@ describe('ContactController', () => {
   let contactService: any;
   let leadService: any;
   let profileService: any;
+  let permissionsService: any;
 
   beforeEach(async () => {
     contactService = {
@@ -28,7 +30,25 @@ describe('ContactController', () => {
       send: jest.fn(),
     };
     profileService = {
-      send: jest.fn().mockReturnValue(of([{ id: 'global-profile' }])),
+      send: jest.fn().mockReturnValue(
+        of([
+          {
+            id: 'global-profile',
+            email: 'global-profile@example.com',
+            appScope: 'global',
+          },
+        ])
+      ),
+    };
+    permissionsService = {
+      send: jest.fn().mockReturnValue(
+        of([
+          {
+            role: { name: 'owner_console_owner' },
+            appScope: { name: 'owner-console' },
+          },
+        ])
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,9 +87,7 @@ describe('ContactController', () => {
         Reflector,
         {
           provide: ServiceTokens.PERMISSIONS_SERVICE,
-          useValue: {
-            send: jest.fn().mockReturnValue(of(true)),
-          },
+          useValue: permissionsService,
         },
         {
           provide: PermissionsCacheService,
@@ -113,6 +131,7 @@ describe('ContactController', () => {
     expect(leadService.send).toHaveBeenCalledWith(
       { cmd: LeadCommands.CREATE },
       expect.objectContaining({
+        ownerNotificationRecipients: ['global-profile@example.com'],
         context: expect.objectContaining({
           appScope: 'hai',
           profileId: 'global-profile',
@@ -125,8 +144,132 @@ describe('ContactController', () => {
     );
     expect(profileService.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.GetAll },
-      { where: { appScope: 'global' } }
+      expect.objectContaining({ where: expect.any(Object) })
     );
+  });
+
+  it('resolves all owner emails from exact owner-console role assignments and deduplicates them', async () => {
+    profileService.send.mockReturnValue(
+      of([
+        {
+          id: 'bootstrap-global-profile',
+          email: ' owner@example.com ',
+          appScope: 'global',
+        },
+        {
+          id: 'second-owner-profile',
+          email: 'OWNER@example.com',
+          appScope: 'global',
+        },
+        {
+          id: 'wrong-scope-profile',
+          email: 'wrong@example.com',
+          appScope: 'hai',
+        },
+      ])
+    );
+    permissionsService.send.mockImplementation((_command, payload) => {
+      if (payload.profileId === 'bootstrap-global-profile') {
+        return of([
+          {
+            role: { name: 'owner_console_owner' },
+            appScope: { name: 'owner-console' },
+          },
+        ]);
+      }
+      if (payload.profileId === 'second-owner-profile') {
+        return of([
+          {
+            role: { name: 'system_admin' },
+            appScope: { name: 'owner-console' },
+          },
+        ]);
+      }
+      return of([
+        {
+          role: { name: 'owner' },
+          appScope: { name: 'global' },
+        },
+      ]);
+    });
+    leadService.send.mockReturnValue(of({ id: 'lead-1' }));
+
+    await controller.createContact({
+      name: 'Test',
+      email: 'test@example.com',
+      message: 'This is a valid lead message.',
+      appScope: 'hai',
+    } as any);
+
+    expect(leadService.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        ownerNotificationRecipients: ['owner@example.com'],
+      })
+    );
+    expect(permissionsService.send).toHaveBeenCalledTimes(3);
+    expect(permissionsService.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.GetUserRoles },
+      {
+        profileId: 'bootstrap-global-profile',
+        appScope: 'owner-console',
+      }
+    );
+  });
+
+  it('fails HAI intake before creating a lead when there are no eligible owner recipients', async () => {
+    profileService.send.mockReturnValue(
+      of([
+        {
+          id: 'global-profile',
+          email: 'owner@example.com',
+          appScope: 'global',
+        },
+      ])
+    );
+    permissionsService.send.mockReturnValue(
+      of([
+        {
+          role: { name: 'owner' },
+          appScope: { name: 'global' },
+        },
+      ])
+    );
+
+    await expect(
+      controller.createContact({
+        name: 'Test',
+        email: 'test@example.com',
+        message: 'This is a valid lead message.',
+        appScope: 'hai',
+      } as any)
+    ).rejects.toMatchObject({ status: 503 });
+    expect(leadService.send).not.toHaveBeenCalled();
+  });
+
+  it('fails HAI intake before create when owner role lookup is unavailable', async () => {
+    profileService.send.mockReturnValue(
+      of([
+        {
+          id: 'global-profile',
+          email: 'owner@example.com',
+          appScope: 'global',
+        },
+      ])
+    );
+    permissionsService.send.mockReturnValue(
+      throwError(() => new Error('permissions unavailable'))
+    );
+
+    await expect(
+      controller.createContact({
+        name: 'Test',
+        email: 'test@example.com',
+        message: 'This is a valid lead message.',
+        appScope: 'hai',
+      } as any)
+    ).rejects.toMatchObject({ status: 503 });
+    expect(leadService.send).not.toHaveBeenCalled();
   });
 
   it('should ignore public identity and routing overrides', async () => {

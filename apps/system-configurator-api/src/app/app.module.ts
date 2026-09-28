@@ -15,6 +15,19 @@ import { HardwareOrderEntity } from '../hardware/entities/hardware-order.entity'
 import { SavedConfigurationEntity } from '../hardware/entities/saved-configuration.entity';
 import { CatalogBootstrapService } from '../hardware/catalog-bootstrap.service';
 import { PcPartPickerSyncService } from '../hardware/pcpartpicker-sync.service';
+import { SupplierOfferEntity } from '../hardware/entities/supplier-offer.entity';
+import { CommercialQuoteEntity } from '../hardware/entities/commercial-quote.entity';
+import {
+  COMMERCIAL_QUOTE_CLOCK,
+  CommercialQuoteService,
+} from './commercial-quote.service';
+import { SupplierOfferImportService } from './supplier-offer-import.service';
+import {
+  ClientDeploymentArtifactService,
+  CLIENT_DEPLOYMENT_ARTIFACT_CLOCK,
+} from './client-deployment-artifact.service';
+import { AmazonBusinessAdapter } from '../hardware/vendor-api/amazon-business.adapter';
+import { AmazonBusinessLiveSyncService } from './amazon-business-live-sync.service';
 
 @Module({
   imports: [
@@ -33,6 +46,24 @@ import { PcPartPickerSyncService } from '../hardware/pcpartpicker-sync.service';
     HardwareCatalogService,
     CatalogBootstrapService,
     PcPartPickerSyncService,
+    CommercialQuoteService,
+    SupplierOfferImportService,
+    ClientDeploymentArtifactService,
+    { provide: CLIENT_DEPLOYMENT_ARTIFACT_CLOCK, useValue: () => new Date() },
+    AmazonBusinessLiveSyncService,
+    {
+      provide: AmazonBusinessAdapter,
+      useFactory: () =>
+        new AmazonBusinessAdapter({
+          credentials: {
+            clientId: process.env.AMAZON_BUSINESS_CLIENT_ID,
+            clientSecret: process.env.AMAZON_BUSINESS_CLIENT_SECRET,
+            refreshToken: process.env.AMAZON_BUSINESS_REFRESH_TOKEN,
+            userEmail: process.env.AMAZON_BUSINESS_USER_EMAIL,
+          },
+        }),
+    },
+    { provide: COMMERCIAL_QUOTE_CLOCK, useValue: () => new Date() },
     {
       provide: getRepositoryToken(ChassisEntity),
       useFactory: (ds: DataSource) => ds.getRepository(ChassisEntity),
@@ -57,6 +88,16 @@ import { PcPartPickerSyncService } from '../hardware/pcpartpicker-sync.service';
       provide: getRepositoryToken(SavedConfigurationEntity),
       useFactory: (ds: DataSource) =>
         ds.getRepository(SavedConfigurationEntity),
+      inject: ['SYSTEM-CONFIGURATOR_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(SupplierOfferEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(SupplierOfferEntity),
+      inject: ['SYSTEM-CONFIGURATOR_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(CommercialQuoteEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(CommercialQuoteEntity),
       inject: ['SYSTEM-CONFIGURATOR_CONNECTION'],
     },
   ],

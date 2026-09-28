@@ -11,6 +11,7 @@ import {
 import { FlowBooking } from './entities/flow-booking.entity';
 import { FlowBookingUpdate } from './entities/flow-booking-update.entity';
 import { FlowEstimate } from './entities/flow-estimate.entity';
+import { LeadNotificationOutbox } from './entities/lead-notification-outbox.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -30,6 +31,7 @@ export default new DataSource({
     FlowEstimate,
     FlowBooking,
     FlowBookingUpdate,
+    LeadNotificationOutbox,
   ],
   migrations: ['src/migrations/*.ts', 'migrations/*.ts'],
 });

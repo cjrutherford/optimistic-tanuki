@@ -142,6 +142,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     configKey: 'billing',
   },
   {
+    token: ServiceTokens.CIVIC_SERVICE,
+    serviceId: 'civic',
+    configKey: 'civic',
+  },
+  {
     token: ServiceTokens.PAYMENTS_SERVICE,
     serviceId: 'payments',
     configKey: 'payments',

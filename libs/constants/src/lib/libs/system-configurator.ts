@@ -9,4 +9,14 @@ export const HardwareCommands = {
   SAVE_CONFIGURATION: 'system-configurator.hardware.saveConfiguration',
   GET_CONFIGURATION: 'system-configurator.hardware.getConfiguration',
   GET_TIERS: 'system-configurator.hardware.getTiers',
+  LIST_SUPPLIER_OFFERS: 'system-configurator.hardware.listSupplierOffers',
+  SEARCH_AMAZON_BUSINESS_OFFERS:
+    'system-configurator.hardware.searchAmazonBusinessOffers',
+  IMPORT_SUPPLIER_OFFERS: 'system-configurator.hardware.importSupplierOffers',
+  ISSUE_COMMERCIAL_QUOTE: 'system-configurator.hardware.issueCommercialQuote',
+  GET_COMMERCIAL_QUOTE: 'system-configurator.hardware.getCommercialQuote',
+  ACCEPT_COMMERCIAL_QUOTE: 'system-configurator.hardware.acceptCommercialQuote',
+  GENERATE_CLIENT_DEPLOYMENT_ARTIFACTS:
+    'system-configurator.hardware.generateClientDeploymentArtifacts',
+  PROBE_OPERATOR_ACCESS: 'system-configurator.hardware.probeOperatorAccess',
 } as const;

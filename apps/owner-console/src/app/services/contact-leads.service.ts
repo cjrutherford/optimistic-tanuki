@@ -1,5 +1,6 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, throwError } from 'rxjs';
 import {
   Lead,
   SendLeadResponseDto,
@@ -20,6 +21,25 @@ export interface LeadResponseResult {
 })
 export class ContactLeadsService {
   private readonly blogging = inject(OptomisitcTanukiAPIService);
+  private readonly http = inject(HttpClient);
+
+  private getHaiLeads(filters?: {
+    status?: string;
+    source?: string;
+  }): Observable<Lead[]> {
+    return this.http
+      .get<Lead[]>('/api/contact/hai/leads', {
+        params: {
+          ...(filters?.status ? { status: filters.status } : {}),
+          ...(filters?.source ? { source: filters.source } : {}),
+        },
+      })
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          error.status === 403 ? of([]) : throwError(() => error)
+        )
+      );
+  }
 
   getLeads(filters?: {
     status?: string;
@@ -27,18 +47,39 @@ export class ContactLeadsService {
     appScope?: string;
   }): Observable<Lead[]> {
     const { status, source, appScope } = filters || {};
-    return this.blogging.contactControllerFindAllLeads<Lead[]>({
+    const ordinaryLeads = this.blogging.contactControllerFindAllLeads<Lead[]>({
       ...(status ? { status } : {}),
       ...(source ? { source } : {}),
-      ...(appScope ? { appScope } : {}),
+      ...(appScope && appScope !== 'hai' ? { appScope } : {}),
     });
+    if (appScope === 'hai') {
+      return this.getHaiLeads({ status, source });
+    }
+    if (appScope) {
+      return ordinaryLeads;
+    }
+    return forkJoin([ordinaryLeads, this.getHaiLeads({ status, source })]).pipe(
+      map(([ordinary, hai]) => [...ordinary, ...hai])
+    );
   }
 
-  getLead(id: string): Observable<Lead> {
-    return this.blogging.contactControllerGetLead<Lead>(id);
+  getLead(id: string, appScope?: string): Observable<Lead> {
+    return appScope === 'hai'
+      ? this.http.get<Lead>(`/api/contact/hai/leads/${encodeURIComponent(id)}`)
+      : this.blogging.contactControllerGetLead<Lead>(id);
   }
 
-  updateLead(id: string, dto: UpdateLeadDto): Observable<Lead> {
+  updateLead(
+    id: string,
+    dto: UpdateLeadDto,
+    appScope?: string
+  ): Observable<Lead> {
+    if (appScope === 'hai') {
+      return this.http.patch<Lead>(
+        `/api/contact/hai/leads/${encodeURIComponent(id)}`,
+        dto
+      );
+    }
     // Generated body types for these Record-bodied routes are free-form
     // index signatures; spreading keeps the exact wire shape.
     return this.blogging.contactControllerUpdateLead<Lead>(id, { ...dto });
@@ -46,8 +87,15 @@ export class ContactLeadsService {
 
   respondToLead(
     id: string,
-    dto: SendLeadResponseDto
+    dto: SendLeadResponseDto,
+    appScope?: string
   ): Observable<LeadResponseResult> {
+    if (appScope === 'hai') {
+      return this.http.post<LeadResponseResult>(
+        `/api/contact/hai/leads/${encodeURIComponent(id)}/respond`,
+        dto
+      );
+    }
     return this.blogging.contactControllerRespondToLead<LeadResponseResult>(
       id,
       { ...dto }

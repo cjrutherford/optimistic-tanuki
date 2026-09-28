@@ -94,6 +94,10 @@
 
   <hai-hardware-catalog></hai-hardware-catalog>
 
+  <hai-roi-calculator
+    (emailComparison)="prefillContactWithComparison($event)"
+  ></hai-roi-calculator>
+
   <hai-solutions-matrix></hai-solutions-matrix>
 
   <hai-services-section
@@ -124,6 +128,7 @@
     [contactSubjects]="contactSubjects"
     [submittingContact]="submittingContact"
     [contactStatus]="contactStatus"
+    [contactPrefill]="contactPrefill"
     (formSubmit)="submitContactForm($event)"
   ></hai-contact-section>
 </div>

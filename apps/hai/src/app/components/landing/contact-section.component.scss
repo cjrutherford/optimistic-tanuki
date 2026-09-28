@@ -51,3 +51,9 @@ h2 {
   max-width: 36rem;
   color: color-mix(in srgb, var(--foreground) 82%, transparent);
 }
+
+.sla-notice {
+  margin: 0 auto 1.5rem;
+  max-width: 36rem;
+  font-weight: 600;
+}

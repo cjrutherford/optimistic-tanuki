@@ -120,6 +120,11 @@ services:
     transport: TCP
     host: billing
     port: 3019
+  civic:
+    name: civic
+    transport: TCP
+    host: civic
+    port: 3026
 # The confidential vault's model path.
 #
 # `ollama.baseUrl` is deliberately empty in source. It used to be a hardcoded

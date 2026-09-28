@@ -3,6 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  Index,
   UpdateDateColumn,
   OneToMany,
   Relation,
@@ -14,6 +15,10 @@ import { LeadTopicLink } from './lead-topic-link.model';
 import { LeadContactPoint } from './lead-contact-point.interface';
 
 @Entity('leads')
+@Index('UQ_leads_commercial_quote_id', ['commercialQuoteId'], { unique: true })
+@Index('UQ_leads_proposal_idempotency_key', ['proposalIdempotencyKey'], {
+  unique: true,
+})
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -92,4 +97,28 @@ export class Lead {
 
   @Column({ type: 'timestamp', nullable: true })
   lastRespondedAt?: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  dueAt?: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  firstPersonalResponseAt?: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  commercialQuoteId?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  proposalIdempotencyKey?: string | null;
+
+  @Column({ type: 'char', length: 64, nullable: true })
+  commercialProposalHash?: string | null;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  hardwareTier?: string | null;
+
+  @Column({ type: 'char', length: 3, nullable: true })
+  commercialCurrency?: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  acceptedTerms?: Record<string, unknown> | null;
 }

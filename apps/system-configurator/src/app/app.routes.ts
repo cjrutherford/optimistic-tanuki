@@ -53,6 +53,14 @@ export const appRoutes: Route[] = [
     title: 'Checkout',
   },
   {
+    path: 'operator/hardware',
+    loadComponent: () =>
+      import('./pages/operator/operator.component').then(
+        (m) => m.OperatorComponent
+      ),
+    title: 'Commercial Proposals · HAI Computer',
+  },
+  {
     path: 'confirmation/:orderId',
     component: ConfirmationComponent,
     canActivate: [AuthenticationGuard, ProfileReadyGuard],

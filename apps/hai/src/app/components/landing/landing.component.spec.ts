@@ -1,8 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
+import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { LandingComponent } from './landing.component';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
+import { RoiCalculatorSectionComponent } from './roi-calculator-section.component';
+import { DEFAULT_HARDWARE_TIERS } from '../../services/hardware-catalog.service';
 
 describe('LandingComponent', () => {
   let component: LandingComponent;
@@ -130,6 +134,37 @@ describe('LandingComponent', () => {
     expect(text).toContain('Fin Commander');
     expect(text).toContain('Opportunity Compass');
     expect(component.ecosystem$).toBeDefined();
+  });
+
+  it('prefills the contact message from the calculator comparison action', () => {
+    const calculator = fixture.debugElement.query(
+      By.directive(RoiCalculatorSectionComponent)
+    );
+    const calculatorComponent =
+      calculator.componentInstance as RoiCalculatorSectionComponent;
+    calculatorComponent.tiers = DEFAULT_HARDWARE_TIERS;
+    calculatorComponent.recalculate();
+    fixture.detectChanges();
+    const contact = fixture.nativeElement.querySelector(
+      '#contact'
+    ) as HTMLElement;
+    contact.scrollIntoView = jest.fn();
+    const emailButton = calculator.nativeElement.querySelector(
+      '.btn-email'
+    ) as HTMLButtonElement;
+
+    emailButton.click();
+    fixture.detectChanges();
+
+    const contactForm = fixture.debugElement.query(
+      By.directive(ContactFormComponent)
+    ).componentInstance as ContactFormComponent;
+    expect(contactForm.contactForm.value.message).toContain(
+      'Please send me the five-year comparison'
+    );
+    expect(contactForm.contactForm.value.message).toContain(
+      'Five-year savings'
+    );
   });
 
   it('uses motion layers in the hero scene', () => {

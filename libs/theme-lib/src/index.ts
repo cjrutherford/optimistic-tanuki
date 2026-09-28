@@ -10,4 +10,6 @@ export {
   sovereignVaultTheme,
   type IndustrialNexusTheme,
   industrialNexusTheme,
+  type CivicClearTheme,
+  civicClearTheme,
 } from '@optimistic-tanuki/theme-models';

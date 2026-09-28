@@ -330,6 +330,7 @@ export type Config = {
     videos: TcpServiceConfig;
     learning_service: TcpServiceConfig;
     billing: TcpServiceConfig;
+    civic: TcpServiceConfig;
   };
 };
 

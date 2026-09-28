@@ -33,4 +33,13 @@ describe('HeroComponent', () => {
     expect(compiled.querySelector('.hero-proof-strip')).toBeTruthy();
     expect(compiled.querySelector('.hero-pillars')).toBeFalsy();
   });
+
+  it('introduces Christopher as a systems architect and product engineer', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain(
+      'Independent systems architect and product engineer'
+    );
+    expect(compiled.textContent).toContain('clear architecture');
+  });
 });

@@ -93,6 +93,7 @@ import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { FlowController } from '../controllers/flow/flow.controller';
+import { CivicController } from '../controllers/civic/civic.controller';
 import { NexusController } from '../controllers/nexus/nexus.controller';
 import { VaultController } from '../controllers/vault/vault.controller';
 import {
@@ -340,6 +341,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'nexus',
         requiredServices: ['project-planning'],
         value: NexusController,
+      },
+      {
+        id: 'civic',
+        requiredServices: ['civic'],
+        value: CivicController,
       },
       {
         id: 'vault',

@@ -1,9 +1,15 @@
 .projectGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
   align-items: stretch;
   gap: 1.5rem;
   padding: 0;
+}
+
+:host ::ng-deep .projectGrid > .portfolio-card:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, 42rem);
 }
 
 .section-heading-tile {
@@ -181,6 +187,21 @@
   &:hover {
     transform: translateY(-1px);
   }
+
+  &:focus-visible {
+    outline: 3px solid var(--card-accent);
+    outline-offset: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-link {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }
 
 .portfolio-link.primary {
@@ -224,4 +245,36 @@
 
 .tone-media {
   --card-accent: #ce93d8;
+}
+
+.tone-business {
+  --card-accent: #81c784;
+}
+
+.tone-config {
+  --card-accent: #90a4ae;
+}
+
+.tone-publishing {
+  --card-accent: #dce775;
+}
+
+.tone-internal {
+  --card-accent: #b39ddb;
+}
+
+.tone-marketing {
+  --card-accent: #ff8a65;
+}
+
+.tone-field {
+  --card-accent: #ffd54f;
+}
+
+.tone-practice {
+  --card-accent: #4dd0e1;
+}
+
+.tone-construction {
+  --card-accent: #ff8f00;
 }

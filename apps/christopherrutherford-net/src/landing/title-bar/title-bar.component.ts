@@ -28,6 +28,10 @@ export class TitleBarComponent {
       action: () => this.navigateTo('#work'),
     },
     {
+      label: 'Systems Lab',
+      action: () => this.navigateTo('#systems-lab'),
+    },
+    {
       label: 'Capabilities',
       action: () => this.navigateTo('#capabilities'),
     },
