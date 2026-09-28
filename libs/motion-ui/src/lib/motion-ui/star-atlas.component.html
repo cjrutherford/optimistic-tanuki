@@ -1,0 +1,24 @@
+<section
+  class="star-atlas"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+>
+  <div class="nebula nebula-a"></div>
+  <div class="nebula nebula-b"></div>
+  <div class="stars stars-a"></div>
+  <div class="stars stars-b"></div>
+  <div class="orbits">
+    <div
+      *ngFor="let orbit of orbits"
+      class="orbit"
+      [style.--orbit-index]="orbit.index"
+      [style.--orbit-phase]="orbit.phase"
+    >
+      <span class="body"></span>
+    </div>
+    <div class="reticle"></div>
+  </div>
+</section>

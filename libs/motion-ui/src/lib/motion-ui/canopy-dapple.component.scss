@@ -1,0 +1,67 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+.canopy-dapple {
+  @include scene.scene-root;
+}
+
+// Pools of sunlight: warm tertiary into primary. Normal blending on purpose:
+// the shared --motion-blend is multiply in light mode, which can only darken,
+// and sunlight has to brighten.
+.light {
+  position: absolute;
+  width: var(--size);
+  aspect-ratio: 1.3;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    scene.ink(
+      color-mix(in srgb, var(--tertiary, var(--secondary)) 72%, white),
+      100%
+    ),
+    transparent 64%
+  );
+  filter: blur(6px);
+  animation: dapple
+    calc((5.5s + var(--index) * 1.3s) / max(var(--scene-speed), 0.2))
+    ease-in-out infinite alternate;
+  animation-delay: calc(var(--index) * -1.3s);
+}
+
+// Leaf shadows swaying above the light.
+.leaf {
+  position: absolute;
+  width: 9rem;
+  height: 3.6rem;
+  border-radius: 0 80% 0 80%;
+  background: scene.ink(var(--foreground), 34%);
+  filter: blur(4px);
+  transform-origin: 10% 50%;
+  animation: sway
+    calc((4.5s + var(--index) * 0.8s) / max(var(--scene-speed), 0.2))
+    ease-in-out infinite alternate;
+}
+
+@keyframes dapple {
+  from {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.45;
+  }
+  to {
+    transform: translate(calc(-50% + 3rem), calc(-50% - 1.5rem)) scale(1.25);
+    opacity: 1;
+  }
+}
+
+@keyframes sway {
+  from {
+    transform: rotate(-11deg);
+  }
+  to {
+    transform: rotate(10deg) translateY(0.8rem);
+  }
+}

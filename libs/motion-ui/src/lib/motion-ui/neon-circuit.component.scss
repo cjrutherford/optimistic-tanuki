@@ -1,0 +1,74 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+.neon-circuit {
+  @include scene.scene-root;
+}
+
+svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.trace {
+  fill: none;
+  stroke: scene.lit(var(--primary), 70%);
+  stroke-width: 0.5;
+}
+
+// A short dash of light travelling each trace.
+.pulse {
+  fill: none;
+  stroke: color-mix(
+    in srgb,
+    var(--tertiary, var(--secondary)) 70%,
+    var(--motion-tint)
+  );
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-dasharray: 9 91;
+  opacity: calc(0.35 + var(--scene-intensity) * 0.65);
+  filter: drop-shadow(
+    0 0 1.2px scene.ink(var(--tertiary, var(--secondary)), 90%)
+  );
+  animation: circuit-flow
+    calc((3.6s + var(--trace-index) * 0.55s) / max(var(--scene-speed), 0.2))
+    linear infinite;
+  animation-delay: calc(var(--trace-index) * -0.9s);
+}
+
+.node {
+  fill: scene.ink(var(--primary), 85%);
+  filter: drop-shadow(0 0 1.5px scene.ink(var(--primary), 90%));
+  animation: node-glow
+    calc((3.6s + var(--trace-index) * 0.55s) / max(var(--scene-speed), 0.2))
+    ease-in-out infinite;
+  animation-delay: calc(var(--trace-index) * -0.9s);
+}
+
+@keyframes circuit-flow {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes node-glow {
+  0%,
+  80% {
+    opacity: 0.45;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.45;
+  }
+}

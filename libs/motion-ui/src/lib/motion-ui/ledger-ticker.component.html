@@ -1,0 +1,27 @@
+<section
+  class="ledger-ticker"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+  [style.--column-count]="columns.length"
+>
+  <div class="ruling"></div>
+  <div class="columns">
+    <div
+      *ngFor="let column of columns; let index = index"
+      class="column"
+      [style.--column-index]="index"
+    >
+      <div class="figures">
+        <span
+          *ngFor="let figure of column"
+          [class.negative]="figure.negative"
+          >{{ figure.text }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <div class="totals-rule"></div>
+</section>

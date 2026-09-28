@@ -1,0 +1,179 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+.star-atlas {
+  --star: #{scene.ink(var(--foreground), 95%)};
+  @include scene.scene-root($accent: var(--primary));
+}
+
+.stars,
+.nebula {
+  position: absolute;
+  inset: 0;
+}
+
+// Two faint nebulae drifting behind the chart.
+.nebula {
+  filter: blur(18px);
+  animation: nebula-drift scene.duration(8s) ease-in-out infinite alternate;
+}
+.nebula-a {
+  background: radial-gradient(
+    40% 50% at 30% 40%,
+    scene.ink(var(--primary), 48%),
+    transparent 70%
+  );
+}
+.nebula-b {
+  background: radial-gradient(
+    34% 44% at 72% 62%,
+    scene.ink(var(--tertiary, var(--secondary)), 42%),
+    transparent 70%
+  );
+  animation-direction: alternate-reverse;
+}
+
+.stars-a {
+  background-image: radial-gradient(
+      2.4px 2.4px at 12% 18%,
+      var(--star),
+      transparent
+    ),
+    radial-gradient(1.6px 1.6px at 27% 64%, var(--star), transparent),
+    radial-gradient(2.8px 2.8px at 44% 30%, var(--star), transparent),
+    radial-gradient(1.6px 1.6px at 58% 82%, var(--star), transparent),
+    radial-gradient(2.2px 2.2px at 71% 12%, var(--star), transparent),
+    radial-gradient(1.6px 1.6px at 86% 48%, var(--star), transparent),
+    radial-gradient(2.4px 2.4px at 93% 76%, var(--star), transparent);
+  background-size: 300px 220px;
+  animation: twinkle scene.duration(3s) ease-in-out infinite alternate;
+}
+
+.stars-b {
+  background-image: radial-gradient(
+      1.8px 1.8px at 6% 72%,
+      var(--star),
+      transparent
+    ),
+    radial-gradient(2.2px 2.2px at 21% 38%, var(--star), transparent),
+    radial-gradient(1.6px 1.6px at 36% 8%, var(--star), transparent),
+    radial-gradient(2.6px 2.6px at 63% 56%, var(--star), transparent),
+    radial-gradient(1.6px 1.6px at 79% 90%, var(--star), transparent);
+  background-size: 240px 180px;
+  animation: twinkle scene.duration(4.5s) ease-in-out infinite alternate-reverse;
+}
+
+.orbits {
+  position: absolute;
+  left: 64%;
+  top: 56%;
+}
+
+.orbit {
+  position: absolute;
+  width: calc(6rem + var(--orbit-index) * 4.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid
+    scene.lit(var(--primary), calc(70% - var(--orbit-index) * 8%));
+  transform: translate(-50%, -50%);
+  --orbit-period: calc(
+    (8s + var(--orbit-index) * 5s) / max(var(--scene-speed), 0.2)
+  );
+  animation: orbit-turn var(--orbit-period) linear infinite;
+  // Spread the bodies around their orbits instead of starting in a line.
+  animation-delay: calc(var(--orbit-period) * var(--orbit-phase, 0) * -1);
+
+  // Comet trail: a lit arc behind the body, turning with the orbit.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0 62%,
+      scene.lit(var(--primary), 100%) 100%
+    );
+    mask: radial-gradient(
+      farthest-side,
+      transparent calc(100% - 5px),
+      black calc(100% - 4.5px)
+    );
+  }
+}
+
+.orbit:nth-child(even)::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 62%,
+    scene.lit(var(--tertiary, var(--secondary)), 100%) 100%
+  );
+}
+
+.body {
+  position: absolute;
+  top: -5px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 70%, var(--motion-tint));
+  box-shadow: 0 0 14px scene.ink(var(--primary), 80%);
+}
+
+.orbit:nth-child(even) .body {
+  background: color-mix(
+    in srgb,
+    var(--tertiary, var(--secondary)) 70%,
+    var(--motion-tint)
+  );
+  box-shadow: 0 0 10px scene.ink(var(--tertiary, var(--secondary)), 60%);
+}
+
+.reticle {
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(
+        scene.ink(var(--foreground), 50%),
+        scene.ink(var(--foreground), 50%)
+      )
+      center / 1px 100% no-repeat,
+    linear-gradient(
+        scene.ink(var(--foreground), 50%),
+        scene.ink(var(--foreground), 50%)
+      )
+      center / 100% 1px no-repeat;
+}
+
+@keyframes nebula-drift {
+  from {
+    transform: translate(-3%, 2%) scale(1);
+  }
+  to {
+    transform: translate(3%, -2%) scale(1.12);
+  }
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-turn {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}

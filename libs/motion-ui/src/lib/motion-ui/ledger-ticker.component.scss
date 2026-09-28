@@ -1,0 +1,89 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+$row: 1.75rem;
+
+.ledger-ticker {
+  @include scene.scene-root;
+}
+
+.ruling {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+      180deg,
+      transparent 0 calc(#{$row} - 1px),
+      scene.lit(var(--primary), 42%) calc(#{$row} - 1px) #{$row}
+    ),
+    linear-gradient(
+      90deg,
+      transparent 2.5rem,
+      scene.ink(var(--tertiary, var(--secondary)), 40%) 2.5rem
+        calc(2.5rem + 1px),
+      transparent calc(2.5rem + 1px) calc(2.5rem + 4px),
+      scene.ink(var(--tertiary, var(--secondary)), 40%) calc(2.5rem + 4px)
+        calc(2.5rem + 5px),
+      transparent calc(2.5rem + 5px)
+    );
+}
+
+.columns {
+  position: absolute;
+  inset: 0 1rem 0 3.5rem;
+  display: grid;
+  grid-template-columns: repeat(var(--column-count), 1fr);
+  mask-image: linear-gradient(
+    180deg,
+    transparent,
+    black 18%,
+    black 82%,
+    transparent
+  );
+}
+
+.column {
+  overflow: hidden;
+  border-left: 1px solid scene.ink(var(--primary), 28%);
+}
+
+.figures {
+  display: flex;
+  flex-direction: column;
+  padding-right: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  line-height: $row;
+  text-align: right;
+  color: scene.ink(var(--foreground), 92%);
+  animation: ticker-scroll
+    calc((30s + var(--column-index) * 5s) / max(var(--scene-speed), 0.2)) linear
+    infinite;
+  animation-delay: calc(var(--column-index) * -5s);
+}
+
+.negative {
+  color: scene.ink(var(--danger, var(--tertiary, var(--secondary))), 90%);
+}
+
+.totals-rule {
+  position: absolute;
+  left: 3.5rem;
+  right: 1rem;
+  bottom: 2.5rem;
+  height: 4px;
+  border-top: 1px solid scene.ink(var(--foreground), 45%);
+  border-bottom: 1px solid scene.ink(var(--foreground), 45%);
+}
+
+@keyframes ticker-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}

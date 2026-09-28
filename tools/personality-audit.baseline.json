@@ -372,8 +372,25 @@
   "libs/motion-ui/src/lib/motion-ui/aurora-ribbon.component.scss": {
     "border-radius": 2
   },
+  "libs/motion-ui/src/lib/motion-ui/blueprint-scan.component.scss": {
+    "box-shadow": 1,
+    "font-family": 1,
+    "font-size": 1,
+    "letter-spacing": 1
+  },
+  "libs/motion-ui/src/lib/motion-ui/canopy-dapple.component.scss": {
+    "border-radius": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/clay-blobs.component.scss": {
+    "box-shadow": 1,
+    "border-radius": 4
+  },
   "libs/motion-ui/src/lib/motion-ui/glass-fog.component.scss": {
     "border-radius": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/ledger-ticker.component.scss": {
+    "font-family": 1,
+    "font-size": 1
   },
   "libs/motion-ui/src/lib/motion-ui/murmuration-scene.component.scss": {
     "border-radius": 2
@@ -394,6 +411,10 @@
     "border-radius": 1
   },
   "libs/motion-ui/src/lib/motion-ui/signal-mesh.component.scss": {
+    "border-radius": 3,
+    "box-shadow": 2
+  },
+  "libs/motion-ui/src/lib/motion-ui/star-atlas.component.scss": {
     "border-radius": 3,
     "box-shadow": 2
   },

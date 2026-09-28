@@ -1,0 +1,73 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+.halftone-tide {
+  @include scene.scene-root;
+}
+
+.tide,
+.tide-glow {
+  position: absolute;
+  inset: 0;
+}
+
+.tide-glow {
+  background: radial-gradient(
+      70% 90% at 20% 30%,
+      scene.ink(var(--primary), 18%),
+      transparent 70%
+    ),
+    radial-gradient(
+      60% 80% at 85% 80%,
+      scene.ink(var(--tertiary, var(--secondary)), 14%),
+      transparent 70%
+    );
+}
+
+.tide {
+  background-size: var(--dot-step) var(--dot-step);
+  mask-image: linear-gradient(
+    105deg,
+    transparent 8%,
+    black 32%,
+    black 52%,
+    transparent 78%
+  );
+  mask-size: 260% 100%;
+  mask-repeat: no-repeat;
+  mask-position: 50% 0;
+}
+
+.tide-a {
+  background-image: radial-gradient(
+    circle,
+    scene.ink(var(--primary), 72%) 30%,
+    transparent 35%
+  );
+  animation: tide-roll scene.duration(14s) ease-in-out infinite alternate;
+}
+
+// The second drum: a different ink, offset a few px — the misregistration.
+.tide-b {
+  background-image: radial-gradient(
+    circle,
+    scene.ink(var(--tertiary, var(--secondary)), 58%) 24%,
+    transparent 29%
+  );
+  background-position: 3px 2px;
+  mix-blend-mode: var(--motion-blend);
+  animation: tide-roll scene.duration(19s) ease-in-out infinite
+    alternate-reverse;
+}
+
+@keyframes tide-roll {
+  from {
+    mask-position: 115% 0;
+  }
+  to {
+    mask-position: -15% 0;
+  }
+}
