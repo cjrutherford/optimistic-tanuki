@@ -162,8 +162,9 @@
       border-radius: var(--border-radius-sm, 4px);
       background: var(--background);
       color: var(--foreground);
-      font-size: var(--font-size-sm, 0.875rem);
       cursor: pointer;
+      @include p.small-text(var(--font-size-sm, 0.875rem));
+      @include p.touch-target;
       @include p.personality-transition(all, 'fast');
       @include focus-visible-ring;
 
@@ -397,8 +398,9 @@
 
       button {
         padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-        font-size: var(--font-size-sm, 0.875rem);
         cursor: pointer;
+        @include p.small-text(var(--font-size-sm, 0.875rem));
+        @include p.touch-target;
         border: none;
         border-radius: var(--border-radius-sm, 4px);
         background-color: var(--primary);

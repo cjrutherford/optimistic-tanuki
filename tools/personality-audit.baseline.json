@@ -222,13 +222,13 @@
   },
   "libs/common-ui/src/lib/common-ui/table/table.component.scss": {
     "border-radius": 8,
-    "font-size": 10,
+    "font-size": 8,
     "font-family": 1,
     "box-shadow": 3
   },
   "libs/common-ui/src/lib/common-ui/tabs/tabs.component.scss": {
     "border-radius": 5,
-    "font-size": 2
+    "font-size": 1
   },
   "libs/common-ui/src/lib/common-ui/tile/tile.component.scss": {
     "box-shadow": 2,
