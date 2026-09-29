@@ -22,7 +22,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
-import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
@@ -38,7 +38,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     DevInfoComponent,
     HaiAboutTagComponent,
     MessageComponent,
-    ParticleVeilComponent,
+    PersonalitySceneComponent,
     BugReportUiComponent,
   ],
 })
@@ -71,18 +71,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   ngOnInit() {
