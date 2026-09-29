@@ -396,6 +396,9 @@ if (!seedBase && defaults.personalityClass) {
     version: '1.0.0',
   };
 }
+if (args.personality && seedBase) {
+  seedBase = { ...seedBase, personalityId: args.personality };
+}
 console.log(
   `default personality: ${personalityId} (stored=${!!defaults.stored}, seed primary=${
     seedBase?.primaryColor
