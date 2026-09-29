@@ -66,14 +66,14 @@
     }
 
     .contact-last-message {
-      font-size: 11px;
       color: var(--muted-foreground, var(--foreground));
       margin-bottom: 2px;
+      @include p.small-text(11px);
     }
 
     .contact-last-message-time {
-      font-size: 10px;
       color: var(--muted-foreground, var(--foreground));
+      @include p.small-text(10px);
     }
   }
 }

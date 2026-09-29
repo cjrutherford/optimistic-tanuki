@@ -163,11 +163,11 @@
 
 .message-sender-name {
   font-family: var(--font-heading, inherit);
-  font-size: 0.8rem;
   font-weight: 600;
   color: var(--foreground);
   margin-bottom: 2px;
   letter-spacing: 0.01em;
+  @include p.small-text(0.8rem);
 }
 
 .message-text {
@@ -191,9 +191,9 @@
 
 .message-timestamp {
   font-family: var(--font-body, inherit);
-  font-size: 0.65rem;
   color: var(--foreground);
   opacity: 0.6;
+  @include p.small-text(0.65rem);
 
   .message-sent & {
     color: color-mix(
@@ -275,10 +275,10 @@
 }
 
 .edited-label {
-  font-size: 0.6rem;
   color: var(--foreground);
   opacity: 0.5;
   font-style: italic;
+  @include p.small-text(0.6rem);
 }
 
 .deleted-text {
@@ -393,9 +393,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  font-size: 0.8rem;
   color: var(--foreground);
   opacity: 0.7;
+  @include p.small-text(0.8rem);
 }
 
 .typing-dots {
@@ -445,20 +445,20 @@
 .assistant-did {
   margin: 0.35rem 0 0;
   padding-left: 1.05rem;
-  font-size: 0.8rem;
   opacity: 0.85;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  @include p.small-text(0.8rem);
 }
 
 .assistant-pending {
   margin-left: 0.35rem;
   padding: 0 0.35rem;
-  font-size: 0.7rem;
   border-radius: 999px;
   border: 1px solid currentColor;
   opacity: 0.9;
+  @include p.small-text(0.7rem);
 }
 
 // Said plainly rather than quietly: on a project that requires approval,
@@ -466,9 +466,9 @@
 .assistant-awaiting,
 .assistant-caution {
   margin: 0.4rem 0 0;
-  font-size: 0.8rem;
   line-height: 1.4;
   opacity: 0.9;
+  @include p.small-text(0.8rem);
 }
 
 .assistant-caution {

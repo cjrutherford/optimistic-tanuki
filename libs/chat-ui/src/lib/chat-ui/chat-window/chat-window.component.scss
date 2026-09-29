@@ -190,12 +190,12 @@
 
 .contact-status {
   font-family: var(--font-body, inherit);
-  font-size: 0.8rem;
   color: var(--foreground);
   opacity: 0.7;
   display: flex;
   align-items: center;
   gap: 6px;
+  @include p.small-text(0.8rem);
 
   &.status-online {
     color: var(--success);
@@ -304,7 +304,7 @@
   }
 
   .contact-status {
-    font-size: 0.74rem;
+    @include p.small-text(0.74rem);
   }
 
   .chat-window-actions {
