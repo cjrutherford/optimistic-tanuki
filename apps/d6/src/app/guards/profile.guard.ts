@@ -27,6 +27,11 @@ export const ProfileGuard: CanActivateFn = (route, state) => {
         profileService.selectProfile(effectiveProfile);
         return true;
       }
+      // The dashboard is itself behind this guard; redirecting to it from
+      // itself re-ran the guard forever. Let it render without a profile.
+      if (state.url.startsWith('/dashboard')) {
+        return true;
+      }
       router.navigate(['/dashboard']);
       return false;
     })

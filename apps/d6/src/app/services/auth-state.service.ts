@@ -169,7 +169,9 @@ export class AuthStateService {
 
   getDecodedTokenValue(): any {
     const token = this._token();
-    if (!token) return null;
+    // Cookie sessions keep no token client-side; the session payload restored
+    // from /authentication/session carries the same claims (userId, profileId).
+    if (!token) return this._user();
     try {
       return JSON.parse(atob(token.split('.')[1]));
     } catch {
