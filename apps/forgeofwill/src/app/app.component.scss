@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .motion-background {
   position: fixed;
   inset: 0;
@@ -76,10 +78,10 @@
 .workflow-kicker {
   margin: 0 0 0.45rem;
   color: var(--primary-text, var(--primary));
-  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  @include p.small-text(0.75rem);
 }
 
 .router-links {
