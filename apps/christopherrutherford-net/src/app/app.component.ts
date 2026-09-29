@@ -2,10 +2,15 @@ import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { isPlatformBrowser } from '@angular/common';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [RouterModule, PersonalitySceneComponent],
+  imports: [
+    RouterModule,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
+  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
