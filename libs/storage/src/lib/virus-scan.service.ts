@@ -1,6 +1,8 @@
 import {
+  Inject,
   Injectable,
   Logger,
+  Optional,
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -40,6 +42,17 @@ export interface VirusScanServiceOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+/**
+ * Optional DI token for VirusScanService options. A plain string is used
+ * because the constructor parameter is typed as an interface (no runtime
+ * token), and stuffing an unresolvable dependency into the constructor
+ * crashes Nest at boot with UnknownDependenciesException — this exact
+ * failure took down the assets service in e2e (no ClamAV options provider
+ * exists; the service reads env itself). Direct `new VirusScanService({...})`
+ * construction (as used in unit tests) keeps working.
+ */
+export const VIRUS_SCAN_OPTIONS = 'VIRUS_SCAN_OPTIONS';
+
 class ClamAVResponseLimitError extends Error {}
 class ClamAVDeadlineError extends Error {}
 
@@ -64,23 +77,28 @@ export class VirusScanService {
   private readonly chunkSize: number;
   private readonly socketFactory: () => net.Socket;
 
-  constructor(options: VirusScanServiceOptions = {}) {
-    this.env = options.env ?? process.env;
-    this.host = options.host ?? this.env[CLAMAV_ENV.host]?.trim();
+  constructor(
+    @Optional()
+    @Inject(VIRUS_SCAN_OPTIONS)
+    options?: VirusScanServiceOptions | null
+  ) {
+    const opts = options ?? {};
+    this.env = opts.env ?? process.env;
+    this.host = opts.host ?? this.env[CLAMAV_ENV.host]?.trim();
     this.port =
-      options.port ?? this.readPositiveInt(this.env[CLAMAV_ENV.port], 3310);
+      opts.port ?? this.readPositiveInt(this.env[CLAMAV_ENV.port], 3310);
     this.socketTimeoutMs =
-      options.socketTimeoutMs ??
+      opts.socketTimeoutMs ??
       this.readPositiveInt(this.env[CLAMAV_ENV.socketTimeoutMs], 3000);
     this.absoluteDeadlineMs =
-      options.absoluteDeadlineMs ??
+      opts.absoluteDeadlineMs ??
       this.readPositiveInt(this.env[CLAMAV_ENV.absoluteDeadlineMs], 30000);
     this.maxScanBytes =
-      options.maxScanBytes ??
+      opts.maxScanBytes ??
       this.readPositiveInt(this.env[CLAMAV_ENV.maxScanBytes], MAX_SCAN_BYTES);
-    this.maxResponseBytes = options.maxResponseBytes ?? MAX_RESPONSE_BYTES;
-    this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_BYTES;
-    this.socketFactory = options.socketFactory ?? (() => new net.Socket());
+    this.maxResponseBytes = opts.maxResponseBytes ?? MAX_RESPONSE_BYTES;
+    this.chunkSize = opts.chunkSize ?? DEFAULT_CHUNK_BYTES;
+    this.socketFactory = opts.socketFactory ?? (() => new net.Socket());
   }
 
   async scanFile(
