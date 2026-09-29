@@ -1,7 +1,9 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   provideZoneChangeDetection,
   Injectable,
+  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
@@ -17,7 +19,10 @@ import {
   provideClientHydration,
   withEventReplay,
 } from '@angular/platform-browser';
-import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+import {
+  provideProductTheme,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 @Injectable()
 class AppScopeInterceptor implements HttpInterceptor {
@@ -47,6 +52,7 @@ class AppScopeInterceptor implements HttpInterceptor {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('christopherrutherford-net'),
     provideClientHydration(withEventReplay()),
     provideZoneChangeDetection({ eventCoalescing: true }),

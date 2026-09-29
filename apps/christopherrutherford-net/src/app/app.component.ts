@@ -2,10 +2,10 @@ import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ThemeColors, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { isPlatformBrowser } from '@angular/common';
-import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
-  imports: [RouterModule, TopographicDriftComponent],
+  imports: [RouterModule, PersonalitySceneComponent],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -20,18 +20,6 @@ export class AppComponent implements OnInit {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   ngOnInit() {
