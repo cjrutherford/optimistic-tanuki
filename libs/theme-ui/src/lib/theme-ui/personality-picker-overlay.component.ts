@@ -109,7 +109,7 @@ export interface PersonalityPickerOverlayContract {
 
       .personality-picker-dialog {
         position: relative;
-        width: min(500px, calc(100vw - 2rem));
+        width: min(960px, calc(100vw - 2rem));
         max-width: 100%;
         height: min(80vh, calc(100vh - 2rem));
         height: min(80dvh, calc(100dvh - 2rem));
