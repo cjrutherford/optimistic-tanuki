@@ -25,7 +25,7 @@ interface Palette {
 }
 
 /**
- * Flock field — a proposed replacement for `otui-murmuration-scene`.
+ * Flock field — replaced the retired three.js `otui-murmuration-scene`.
  *
  * A real flock (separation, alignment, cohesion) on a Canvas 2D surface
  * instead of a three.js point cloud pulled toward its centroid:
@@ -35,7 +35,7 @@ interface Palette {
  *   (--scene-tempo, --scene-energy);
  * - pauses offscreen and in hidden tabs, caps DPR at 2, runs outside Angular;
  * - reduced motion renders one composed still frame instead of nothing.
- * Same inputs as the other scenes; `count` is kept for murmuration parity.
+ * Same inputs as the other scenes, plus an optional explicit `count`.
  */
 @Component({
   selector: 'otui-flock-field',
@@ -48,7 +48,7 @@ interface Palette {
 export class FlockFieldComponent implements AfterViewInit, OnDestroy {
   @Input() height = '20rem';
   @Input() density = 5;
-  /** Explicit bird count; overrides `density` (murmuration-scene parity). */
+  /** Explicit bird count; overrides `density`. */
   @Input() count?: number;
   @Input() speed = 1;
   @Input() intensity = 0.7;

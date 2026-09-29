@@ -1,7 +1,6 @@
 import type { Type } from '@angular/core';
 import { AuroraRibbonComponent } from './aurora-ribbon.component';
 import { GlassFogComponent } from './glass-fog.component';
-import { MurmurationSceneComponent } from './murmuration-scene.component';
 import { ParallaxGridWarpComponent } from './parallax-grid-warp.component';
 import { ParticleVeilComponent } from './particle-veil.component';
 import { PulseRingsComponent } from './pulse-rings.component';
@@ -45,15 +44,6 @@ const withoutDensity = ({ density: _density, ...rest }: SceneInputs) => rest;
 export const SCENE_REGISTRY = {
   'aurora-ribbon': { component: AuroraRibbonComponent, inputs: standard },
   'glass-fog': { component: GlassFogComponent, inputs: standard },
-  'murmuration-scene': {
-    component: MurmurationSceneComponent,
-    inputs: ({ height, density, speed, reducedMotion }) => ({
-      height,
-      count: 30 + density * 12,
-      speed: speed * 0.5,
-      reducedMotion,
-    }),
-  },
   'parallax-grid-warp': {
     component: ParallaxGridWarpComponent,
     inputs: standard,

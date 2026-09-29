@@ -1,6 +1,5 @@
 export * from './aurora-ribbon.component';
 export * from './glass-fog.component';
-export * from './murmuration-scene.component';
 export * from './particle-veil.component';
 export * from './parallax-grid-warp.component';
 export * from './pulse-rings.component';

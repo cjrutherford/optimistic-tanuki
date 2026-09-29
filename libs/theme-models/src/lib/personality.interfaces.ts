@@ -910,7 +910,6 @@ export type SceneKind =
   // existing libs/motion-ui scenes
   | 'aurora-ribbon'
   | 'glass-fog'
-  | 'murmuration-scene'
   | 'parallax-grid-warp'
   | 'particle-veil'
   | 'pulse-rings'
