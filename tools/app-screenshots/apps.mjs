@@ -35,7 +35,13 @@ export const APPS = {
   },
   hai: { routes: ['/'], skipped: [] },
   'store-client': {
-    routes: ['/catalog', '/cart', '/donations', '/bookings', '/forum'],
+    routes: [
+      '/catalog?catalogId=5e5d0c47-4a1b-4c8e-9f2a-3b7d6c1e0a01',
+      '/cart',
+      '/donations',
+      '/bookings',
+      '/forum',
+    ],
     skipped: [],
   },
   'leads-app': {
@@ -93,8 +99,12 @@ export const APPS = {
     ],
   },
   'configurable-client': {
-    routes: ['/', '/login', '/config/demo', '/app/demo'],
-    skipped: ['/owner/* (ownerWorkspaceGuard)'],
+    routes: ['/', '/login'],
+    skipped: [
+      '/owner/* (ownerWorkspaceGuard)',
+      '/config/:appId (appId is generated at seed time; there is no "demo" app)',
+      '/app/:appName (by-name lookup needs a workspace selector; gateway answers 400)',
+    ],
   },
   d6: {
     routes: ['/', '/about', '/login', '/register'],
