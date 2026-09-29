@@ -330,6 +330,136 @@ export const EXISTING_EXTENSIONS: Record<string, PersonalityExtensions> = {
     atmosphere: { backdrop: 'none', surface: 'flat' },
     motion: { scenes: [] },
   },
+  risograph: {
+    expression: {
+      ground: { light: 'paper', dark: 'tinted' },
+      accent: 'duotone',
+    },
+    typeScale: {
+      ratio: 1.414,
+      headingWeight: 800,
+      headingCase: 'uppercase',
+      headingTracking: '-0.01em',
+      headingLineHeight: 1.0,
+    },
+    atmosphere: {
+      backdrop: 'none',
+      surface: 'flat',
+      accentFill: 'split',
+      accentPattern: 'halftone',
+      buttonFill: 'split',
+      intensity: 1.3,
+    },
+    motion: { scenes: ['halftone-tide'] },
+  },
+  observatory: {
+    expression: {
+      ground: { light: 'toned', dark: 'ink' },
+      accent: 'restrained',
+    },
+    typeScale: {
+      ratio: 1.333,
+      headingWeight: 400,
+      headingCase: 'none',
+      headingTracking: '0em',
+      headingLineHeight: 1.15,
+    },
+    atmosphere: {
+      backdrop: 'horizon',
+      surface: 'glass',
+      accentFill: 'radial',
+      accentPattern: 'rings',
+      intensity: 1.2,
+    },
+    motion: { scenes: ['star-atlas', 'topographic-drift', 'particle-veil'] },
+  },
+  ledger: {
+    expression: {
+      ground: { light: 'paper', dark: 'black' },
+      accent: 'tinted-surfaces',
+      neutralBase: 'respect',
+    },
+    typeScale: {
+      ratio: 1.2,
+      headingWeight: 700,
+      headingCase: 'uppercase',
+      headingTracking: '0.04em',
+      headingLineHeight: 1.2,
+    },
+    atmosphere: {
+      backdrop: 'none',
+      surface: 'flat',
+      accentPattern: 'ledger',
+      intensity: 1,
+    },
+    motion: { scenes: ['ledger-ticker'] },
+  },
+  kunsthalle: {
+    expression: {
+      ground: { light: 'white', dark: 'black' },
+      accent: 'primary-ground',
+      neutralBase: 'respect',
+    },
+    typeScale: {
+      ratio: 1.5,
+      headingWeight: 800,
+      headingCase: 'none',
+      headingTracking: '-0.035em',
+      headingLineHeight: 0.95,
+    },
+    atmosphere: {
+      backdrop: 'none',
+      surface: 'flat',
+      accentFill: 'split',
+      buttonFill: 'split',
+      intensity: 1.2,
+    },
+    motion: { enter: 'slide', scenes: ['grid-shift'] },
+  },
+  canopy: {
+    expression: {
+      ground: { light: 'tinted', dark: 'tinted' },
+      accent: 'tinted-surfaces',
+    },
+    typeScale: {
+      ratio: 1.333,
+      headingWeight: 400,
+      headingCase: 'none',
+      headingTracking: '0em',
+      headingLineHeight: 1.1,
+    },
+    atmosphere: {
+      backdrop: 'aurora',
+      surface: 'gradient',
+      accentFill: 'radial',
+      accentPattern: 'waves',
+      buttonFill: 'gradient',
+      intensity: 1.1,
+    },
+    motion: { scenes: ['canopy-dapple', 'flock-field'] },
+  },
+  clay: {
+    expression: {
+      ground: { light: 'toned', dark: 'dim' },
+      accent: 'tinted-surfaces',
+    },
+    typeScale: {
+      ratio: 1.25,
+      headingWeight: 700,
+      headingCase: 'none',
+      headingTracking: '-0.01em',
+      headingLineHeight: 1.1,
+    },
+    atmosphere: {
+      backdrop: 'glow',
+      surface: 'raised',
+      accentFill: 'radial',
+      pagePattern: 'dots',
+      buttonFill: 'shine',
+      intensity: 1.1,
+    },
+    motion: { ambient: 'breathe', scenes: ['clay-blobs', 'pulse-rings'] },
+  },
 };
 
 interface ThemeServiceInternals {

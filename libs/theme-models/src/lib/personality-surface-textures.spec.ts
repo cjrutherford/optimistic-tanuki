@@ -31,6 +31,8 @@ const CURATED_SURFACE_TEXTURE_IDS = [
   'control-center',
   'architect',
   'electric',
+  'risograph',
+  'ledger',
 ] as const;
 const MAX_SURFACE_TEXTURE_OPACITY = 0.05;
 

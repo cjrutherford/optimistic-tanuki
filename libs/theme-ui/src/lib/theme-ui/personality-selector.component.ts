@@ -495,6 +495,12 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
       electric: 'flame',
       'control-center': 'settings-applications',
       foundation: 'shield',
+      risograph: 'image',
+      observatory: 'compass',
+      ledger: 'book',
+      kunsthalle: 'target',
+      canopy: 'trending-up',
+      clay: 'extension',
     };
 
     return icons[personality.id] ?? 'extension';

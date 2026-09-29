@@ -133,6 +133,78 @@ export const COMPOSITION_BY_ID: Record<string, PersonalityComposition> = {
     feedback: 'outline',
     labelCase: 'none',
   },
+  risograph: {
+    // Tinted headers read as a flat ink block; pill tabs are the rubber-stamp
+    // chips of a zine index; stripe feedback is a margin slug.
+    density: 'comfortable',
+    shape: 'crisp',
+    header: 'tint',
+    surface: 'textured',
+    fill: 'flat',
+    tabs: 'pill',
+    feedback: 'stripe',
+    labelCase: 'uppercase',
+  },
+  observatory: {
+    // Airy reading space; mono "strip" headers are catalogue plates; inset
+    // surfaces are eyepieces; underline tabs keep the chrome to a hairline.
+    density: 'airy',
+    shape: 'crisp',
+    header: 'strip',
+    surface: 'inset',
+    fill: 'flat',
+    tabs: 'underline',
+    feedback: 'outline',
+    labelCase: 'uppercase',
+  },
+  ledger: {
+    // Dense rows, square cells, ruled headers with tracked caps, green-bar
+    // textured surfaces, and a stripe in the margin for feedback.
+    density: 'compact',
+    shape: 'square',
+    header: 'rule',
+    surface: 'textured',
+    fill: 'flat',
+    tabs: 'underline',
+    feedback: 'stripe',
+    labelCase: 'uppercase',
+  },
+  kunsthalle: {
+    // Solid signal-colour header bars over borderless fields; everything else
+    // stays out of the way.
+    density: 'comfortable',
+    shape: 'square',
+    header: 'bar',
+    surface: 'borderless',
+    fill: 'flat',
+    tabs: 'underline',
+    feedback: 'stripe',
+    labelCase: 'none',
+  },
+  canopy: {
+    // Airy pods with pill primitives, sunlit (tinted) headers, gradient fills
+    // for dappled light, and a segmented "seed tray" tab track.
+    density: 'airy',
+    shape: 'pill',
+    header: 'tint',
+    surface: 'elevated',
+    fill: 'gradient',
+    tabs: 'segment',
+    feedback: 'tint',
+    labelCase: 'none',
+  },
+  clay: {
+    // Elevated pods, gradient (moulded) fills, plain headers so the pod shape
+    // carries the hierarchy, segmented tabs as a single pressed tray.
+    density: 'comfortable',
+    shape: 'rounded',
+    header: 'plain',
+    surface: 'elevated',
+    fill: 'gradient',
+    tabs: 'segment',
+    feedback: 'tint',
+    labelCase: 'none',
+  },
 };
 
 const DENSITY: Record<

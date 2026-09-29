@@ -574,7 +574,8 @@ export interface Personality {
    * all (absence is the default, not an omission to flag); only
    * personalities whose stated character is literally tactile/textured
    * (soft-touch's paper grain, control-center's scanlines, architect's
-   * blueprint cross-hatch, electric's circuit accent) declare one.
+   * blueprint cross-hatch, electric's circuit accent, risograph's toner
+   * specks, ledger's green-bar banding) declare one.
    */
   surfaceTexture?: {
     /** SVG pattern - colors will be replaced with theme colors */
