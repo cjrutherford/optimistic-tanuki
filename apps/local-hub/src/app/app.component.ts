@@ -23,6 +23,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
@@ -39,6 +40,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     BugReportUiComponent,
   ],
 })
