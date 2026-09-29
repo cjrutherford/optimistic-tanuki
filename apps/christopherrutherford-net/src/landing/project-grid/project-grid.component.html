@@ -1,6 +1,7 @@
-<otui-tile class="section-heading-tile">
+<div class="section-heading-tile">
   <span class="section-kicker">Selected work</span>
   <otui-heading
+    [color]="'var(--foreground)'"
     [text]="'A broad set of apps that show the range of product work I take on'"
     [size]="'2em'"
   ></otui-heading>
@@ -8,7 +9,7 @@
     Explore customer products, focused workflows, and tools built for specific
     audiences. Each project links to its source in the workspace.
   </p>
-</otui-tile>
+</div>
 <div class="projectGrid" role="list" aria-label="Registered web apps">
   @for (project of (projects$ | async) ?? []; track project.id) {
   <otui-card

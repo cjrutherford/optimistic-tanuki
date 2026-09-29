@@ -18,9 +18,9 @@
 }
 
 .section-kicker {
-  display: inline-block;
+  display: block;
   margin-bottom: 0.75rem;
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -31,7 +31,7 @@
   max-width: 52rem;
   margin: 0.85rem 0 0;
   line-height: 1.65;
-  color: color-mix(in srgb, var(--foreground) 82%, white 18%);
+  color: var(--muted-foreground, var(--foreground));
 }
 
 .portfolio-card {
@@ -121,7 +121,7 @@
 .portfolio-category {
   display: inline-flex;
   margin-bottom: 0.25rem;
-  color: var(--card-accent);
+  color: color-mix(in srgb, var(--card-accent) 45%, var(--foreground));
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -136,7 +136,7 @@
 }
 
 .portfolio-tagline {
-  color: color-mix(in srgb, var(--foreground) 72%, white 28%);
+  color: var(--muted-foreground, var(--foreground));
 }
 
 .portfolio-copy {
@@ -145,11 +145,11 @@
 }
 
 .portfolio-summary {
-  color: color-mix(in srgb, var(--foreground) 88%, white 12%);
+  color: var(--foreground);
 }
 
 .portfolio-proof {
-  color: color-mix(in srgb, var(--foreground) 74%, white 26%);
+  color: var(--foreground);
 }
 
 .portfolio-state {
@@ -160,7 +160,7 @@
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--card-accent) 18%, transparent);
   background: color-mix(in srgb, var(--background) 78%, transparent);
-  color: color-mix(in srgb, var(--foreground) 80%, white 20%);
+  color: var(--foreground);
   font-size: 0.76rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -205,8 +205,9 @@
 }
 
 .portfolio-link.primary {
-  background: var(--card-accent);
-  color: white;
+  background: color-mix(in srgb, var(--card-accent) 28%, var(--background));
+  border: 1px solid var(--card-accent);
+  color: var(--foreground);
 }
 
 .portfolio-link.secondary {

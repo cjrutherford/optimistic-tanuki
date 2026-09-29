@@ -1,6 +1,7 @@
-<otui-tile class="section-heading-tile">
+<div class="section-heading-tile">
   <span class="section-kicker">What I offer</span>
   <otui-heading
+    [color]="'var(--foreground)'"
     [text]="
       'I help teams sort out product, platform, and delivery work that needs a clearer path'
     "
@@ -11,7 +12,7 @@
     work that has drifted, stalled, or grown harder to maintain than it should
     be.
   </p>
-</otui-tile>
+</div>
 <div class="projectGrid">
   @for (service of services; track service.title) {
   <lib-blog-post-card
