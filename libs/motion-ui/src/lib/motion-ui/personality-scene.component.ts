@@ -29,7 +29,8 @@ type SceneAware = ScenePersonality | null | undefined;
  *   <otui-personality-scene height="100vh" />
  *
  * - scene: the personality's `motion.scenes[prefer]` (falls back to the first,
- *   or to `fallbackScene`; an empty list renders nothing, e.g. foundation);
+ *   or to `fallbackScene` when it names none, e.g. foundation's empty list;
+ *   an app that wants no scene there sets no fallback);
  * - reduced motion: follows the OS setting (override with `reducedMotion`);
  * - pauses its scene while offscreen (`.is-offscreen` on the host, read by
  *   the scene contract) — one scene per view is the budget.
@@ -72,7 +73,10 @@ export class PersonalitySceneComponent implements AfterViewInit {
   @Input() set prefer(value: number) {
     this.preferSignal.set(value);
   }
-  /** Used when the personality names no scenes the registry knows. */
+  /**
+   * The app's own scene, used when the personality names none the registry
+   * knows (including an empty list). Leave unset for no scene in that case.
+   */
   @Input() set fallbackScene(value: SceneKind | null) {
     this.fallbackSignal.set(value);
   }
@@ -97,7 +101,6 @@ export class PersonalitySceneComponent implements AfterViewInit {
     const listed = (this.personality()?.motion?.scenes ?? []).filter(
       isSceneKind
     );
-    if (this.personality()?.motion?.scenes && listed.length === 0) return null;
     return listed[this.preferSignal()] ?? listed[0] ?? this.fallbackSignal();
   });
 

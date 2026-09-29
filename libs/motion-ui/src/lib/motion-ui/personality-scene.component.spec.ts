@@ -49,10 +49,17 @@ describe('PersonalitySceneComponent', () => {
     expect(host().querySelector('otui-topographic-drift')).toBeTruthy();
   });
 
-  it('renders nothing for a personality that lists no scenes', () => {
+  it('renders nothing for a personality that lists no scenes and no fallback', () => {
     personality$.next({ id: 'foundation', motion: { scenes: [] } });
     fixture.detectChanges();
     expect(host().children.length).toBe(0);
+  });
+
+  it("keeps the app's fallback scene for a personality that lists none", () => {
+    personality$.next({ id: 'foundation', motion: { scenes: [] } });
+    fixture.componentRef.setInput('fallbackScene', 'signal-mesh');
+    fixture.detectChanges();
+    expect(host().querySelector('otui-signal-mesh')).toBeTruthy();
   });
 
   it('uses the fallback scene when the personality says nothing', () => {
