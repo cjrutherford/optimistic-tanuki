@@ -6,11 +6,12 @@
 }
 
 .portal-shell {
+  color: var(--portal-foreground);
   min-height: 100vh;
   padding: 4rem 1.5rem 5rem;
   background: radial-gradient(
       circle at top,
-      rgba(56, 189, 248, 0.18),
+      color-mix(in srgb, var(--primary) 18%, transparent),
       transparent 30%
     ),
     linear-gradient(
@@ -83,7 +84,7 @@ h1 {
     var(--portal-accent-gradient-from),
     var(--portal-accent-gradient-to)
   );
-  color: var(--portal-bg-1);
+  color: var(--portal-on-accent);
 }
 
 .secondary {
@@ -120,7 +121,7 @@ h1 {
   border: 1px solid var(--portal-border);
   background: var(--portal-surface);
   backdrop-filter: blur(14px);
-  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.3);
+  box-shadow: 0 20px 45px color-mix(in srgb, var(--foreground) 14%, transparent);
 }
 
 .metric-card {
@@ -158,8 +159,8 @@ h1 {
 .highlight {
   background: linear-gradient(
     180deg,
-    rgba(14, 165, 233, 0.18),
-    rgba(15, 23, 42, 0.88)
+    color-mix(in srgb, var(--primary) 16%, var(--surface, var(--background))),
+    var(--portal-surface)
   );
 }
 
