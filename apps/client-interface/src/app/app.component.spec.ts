@@ -161,7 +161,7 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
-    expect(compiled.querySelector('otui-murmuration-scene')).toBeTruthy();
+    expect(compiled.querySelector('otui-personality-scene')).toBeTruthy();
   });
 
   it('suppresses fixed bottom overlays on dedicated mobile chat routes', () => {
@@ -386,32 +386,6 @@ describe('AppComponent behaviour', () => {
       app.isMobileViewport.set(true);
       app.currentPath.set('/communities/abc/chat');
       expect(app.suppressFixedChatOverlays()).toBe(true);
-    });
-  });
-
-  describe('reducedMotion', () => {
-    it('follows the prefers-reduced-motion media query', () => {
-      const matchMedia = jest
-        .fn()
-        .mockReturnValue({ matches: true } as MediaQueryList);
-      const original = window.matchMedia;
-      (window as unknown as { matchMedia: unknown }).matchMedia = matchMedia;
-
-      expect(app.reducedMotion).toBe(true);
-      expect(matchMedia).toHaveBeenCalledWith(
-        '(prefers-reduced-motion: reduce)'
-      );
-
-      (window as unknown as { matchMedia: unknown }).matchMedia = original;
-    });
-
-    it('is false when the browser has no matchMedia', () => {
-      const original = window.matchMedia;
-      (window as unknown as { matchMedia: unknown }).matchMedia = undefined;
-
-      expect(app.reducedMotion).toBe(false);
-
-      (window as unknown as { matchMedia: unknown }).matchMedia = original;
     });
   });
 

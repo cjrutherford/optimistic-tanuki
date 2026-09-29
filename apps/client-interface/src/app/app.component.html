@@ -1,11 +1,12 @@
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-murmuration-scene
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
-    [count]="72"
-    [speed]="0.3"
-  ></otui-murmuration-scene>
+    fallbackScene="murmuration-scene"
+    [density]="3.5"
+    [speed]="0.6"
+    [intensity]="0.64"
+  ></otui-personality-scene>
 </div>
 }
 

@@ -1,8 +1,10 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   importProvidersFrom,
   provideZoneChangeDetection,
   ErrorHandler,
+  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
@@ -31,10 +33,14 @@ import {
 } from '@optimistic-tanuki/chat-ui';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
-import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+import {
+  provideProductTheme,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('client-interface'),
     provideClientHydration(),
     provideZoneChangeDetection({ eventCoalescing: true }),
