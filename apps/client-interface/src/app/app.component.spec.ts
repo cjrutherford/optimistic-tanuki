@@ -155,7 +155,7 @@ describe('AppComponent', () => {
     expect(themeService.setPersonality).not.toHaveBeenCalled();
   });
 
-  it('renders the murmuration motion background shell', () => {
+  it('renders the personality scene motion background shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;

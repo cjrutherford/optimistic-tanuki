@@ -13,6 +13,11 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import * as THREE from 'three';
 
+/**
+ * @deprecated Use `otui-flock-field` (or `otui-personality-scene`). The
+ * three.js point cloud keeps its first palette and costs more; it stays
+ * exported for one release (still used by business-public-ui).
+ */
 @Component({
   selector: 'otui-murmuration-scene',
   standalone: true,
