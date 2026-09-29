@@ -2,6 +2,7 @@ import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 /**
@@ -20,6 +21,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     RouterModule,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
