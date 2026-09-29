@@ -103,6 +103,8 @@ export * from './theme-storage';
 export * from './theme.interface';
 export * from './theme.service';
 export * from './personality-extensions.token';
+export * from './personality-extensions';
+export * from './readable-text';
 export * from './theme-defaults';
 export * from './themeable.interface';
 export * from './theme-variable.service';

@@ -100,20 +100,17 @@ interface GroupedPersonality {
                   aria-hidden="true"
                   [style]="previewVars(personality)"
                 >
-                  <span class="pv-copy">
+                  <span class="pv-band">
                     <span class="pv-aa">Aa</span>
                     <span class="pv-name">{{ personality.name }}</span>
-                    <span class="pv-body">Quick brown fox jumps</span>
-                    <span class="pv-dots"
-                      ><i class="pv-dot pv-dot--p"></i
-                      ><i class="pv-dot pv-dot--s"></i
-                      ><i class="pv-dot pv-dot--t"></i
-                    ></span>
                   </span>
-                  <span class="pv-surface">
-                    <span class="pv-line"></span>
-                    <span class="pv-line pv-line--short"></span>
-                    <span class="pv-button">Apply</span>
+                  <span class="pv-stage">
+                    <span class="pv-body">Quick brown fox jumps over</span>
+                    <span class="pv-surface">
+                      <span class="pv-line"></span>
+                      <span class="pv-line pv-line--short"></span>
+                      <span class="pv-button">Apply</span>
+                    </span>
                   </span>
                 </span>
                 <span class="option-content">
@@ -338,15 +335,14 @@ interface GroupedPersonality {
         }
       }
 
-      /* Mini preview: scoped --pv-* variables from the personality itself. */
+      /* Mini preview: scoped --pv-* variables from the personality's resolver. */
       .preview {
         display: flex;
-        align-items: stretch;
-        gap: 10px;
-        min-height: 128px;
-        padding: 12px;
+        flex-direction: column;
+        min-height: 132px;
         background-color: var(--pv-bg);
-        background-image: var(--pv-pattern);
+        background-image: var(--pv-ground-image);
+        background-size: var(--pv-pattern-size);
         color: var(--pv-fg);
         border: var(--pv-border-width) var(--pv-border-style) var(--pv-border);
         border-radius: var(--pv-card-radius);
@@ -354,56 +350,47 @@ interface GroupedPersonality {
         font-family: var(--pv-font-body), system-ui, sans-serif;
       }
 
-      .pv-copy {
+      .pv-band {
         display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        flex: 1 1 0;
-        min-width: 0;
+        align-items: baseline;
+        gap: 10px;
+        padding: 8px 12px;
+        background-color: var(--pv-band);
+        background-image: var(--pv-band-image);
+        background-size: var(--pv-band-size);
+        color: var(--pv-band-fg);
+        border-bottom: 3px solid var(--pv-band-rule);
+        font-family: var(--pv-font-heading), system-ui, sans-serif;
+        font-weight: var(--pv-heading-weight);
+        text-transform: var(--pv-heading-transform);
+        letter-spacing: var(--pv-heading-tracking);
       }
 
       .pv-aa {
-        font-family: var(--pv-font-heading), system-ui, sans-serif;
-        font-weight: var(--pv-heading-weight);
-        font-size: 2.1rem;
+        font-size: 1.9rem;
         line-height: 1;
-        color: var(--pv-fg);
-        text-decoration: underline solid var(--pv-primary) 3px;
-        text-underline-offset: 4px;
+        text-transform: none;
       }
 
       .pv-name {
-        font-family: var(--pv-font-heading), system-ui, sans-serif;
-        font-weight: var(--pv-heading-weight);
         font-size: 0.95rem;
         line-height: 1.2;
         overflow-wrap: anywhere;
       }
 
-      .pv-body {
-        font-size: 0.75rem;
-        line-height: 1.3;
-      }
-
-      .pv-dots {
+      .pv-stage {
         display: flex;
-        gap: 4px;
+        flex: 1;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px 12px;
       }
 
-      .pv-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: var(--pv-radius);
-        background: var(--pv-primary);
-        border: 1px solid var(--pv-border);
-      }
-
-      .pv-dot--s {
-        background: var(--pv-secondary);
-      }
-
-      .pv-dot--t {
-        background: var(--pv-tertiary);
+      .pv-body {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.75rem;
+        line-height: 1.35;
       }
 
       .pv-surface {
@@ -411,9 +398,11 @@ interface GroupedPersonality {
         flex-direction: column;
         justify-content: flex-end;
         gap: 6px;
-        flex: 0 0 46%;
+        flex: 0 0 48%;
         padding: 10px;
-        background: var(--pv-surface);
+        background-color: var(--pv-surface);
+        background-image: var(--pv-surface-image);
+        backdrop-filter: var(--pv-surface-filter);
         border: var(--pv-border-width) var(--pv-border-style) var(--pv-border);
         border-radius: var(--pv-card-radius);
         box-shadow: var(--pv-card-shadow);
@@ -434,8 +423,9 @@ interface GroupedPersonality {
       .pv-button {
         display: block;
         margin-top: 4px;
-        padding: 5px 8px;
-        background: var(--pv-primary);
+        padding: 5px var(--pv-button-pad-right, 8px) 5px 8px;
+        background-color: var(--pv-primary);
+        background-image: var(--pv-primary-image);
         color: var(--pv-primary-fg);
         border-radius: var(--pv-button-radius);
         font-family: var(--pv-font-body), system-ui, sans-serif;
