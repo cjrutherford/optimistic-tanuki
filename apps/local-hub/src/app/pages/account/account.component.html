@@ -74,19 +74,7 @@
       <p class="theme-description">
         Choose the visual personality for your local hub experience
       </p>
-      <div class="theme-grid">
-        @for (personality of availablePersonalities(); track personality.id) {
-        <button
-          class="theme-option"
-          [class.active]="currentPersonalityId() === personality.id"
-          (click)="changePersonality(personality.id)"
-          [attr.aria-pressed]="currentPersonalityId() === personality.id"
-        >
-          <span class="theme-name">{{ personality.name }}</span>
-          <span class="theme-tags">{{ personality.tags.join(', ') }}</span>
-        </button>
-        }
-      </div>
+      <lib-personality-selector></lib-personality-selector>
     </section>
 
     <section class="communities-section">
