@@ -30,7 +30,10 @@ if [ -n "$BUILD_APPS" ]; then
   echo "Projects: $PROJECTS"
   echo ""
 
-  NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run-many \
+  # Separate graph cache from the editor's (Nx Console rewrites the default one
+  # mid-build, killing random tasks with "No cached ProjectGraph").
+  NX_WORKSPACE_DATA_DIRECTORY=.nx/workspace-data-build \
+    NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run-many \
     --target=build \
     --projects="$PROJECTS" \
     --configuration=development
