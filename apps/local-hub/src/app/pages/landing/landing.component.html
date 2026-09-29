@@ -1,65 +1,74 @@
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-badge">
-      Towne Square | Local coordination for everyday life
-    </div>
-    <h1 class="hero-title">
-      Find your people, your market, and your
-      <span class="highlight">neighborhood rhythm</span>
-    </h1>
-    <p class="hero-subtitle">
-      Towne Square brings neighborhood conversation, local commerce, and civic
-      participation into one place so nearby trade, communication, and community
-      life feel easier to coordinate.
-    </p>
-    <div class="hero-actions">
-      <button class="btn btn-primary" (click)="navigateToCities()">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-          <line x1="8" y1="2" x2="8" y2="18" />
-          <line x1="16" y1="6" x2="16" y2="22" />
-        </svg>
-        Explore Map
-      </button>
-      <button class="btn btn-outline" (click)="navigateToRegister()">
-        Join your community
-      </button>
-    </div>
-    <div class="hero-trust-strip">
-      <div class="trust-item">
-        <strong>Belong locally</strong>
-        <span>Join real place-based communities instead of generic feeds.</span>
+    <div class="hero-copy">
+      <div class="hero-badge">
+        Towne Square | Local coordination for everyday life
       </div>
-      <div class="trust-item">
-        <strong>Trade nearby</strong>
-        <span>Buy, sell, and message within a neighborhood-scale network.</span>
-      </div>
-      <div class="trust-item">
-        <strong>Coordinate together</strong>
-        <span
-          >Support projects, events, and everyday local needs in one hub.</span
-        >
+      <h1 class="hero-title">
+        Find your people, your market, and your
+        <span class="highlight">neighborhood rhythm</span>
+      </h1>
+      <p class="hero-subtitle">
+        Towne Square brings neighborhood conversation, local commerce, and civic
+        participation into one place so nearby trade, communication, and
+        community life feel easier to coordinate.
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" (click)="navigateToCities()">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+            <line x1="8" y1="2" x2="8" y2="18" />
+            <line x1="16" y1="6" x2="16" y2="22" />
+          </svg>
+          Explore Map
+        </button>
+        <button class="btn btn-outline" (click)="navigateToRegister()">
+          Join your community
+        </button>
       </div>
     </div>
-    <div class="hero-stats">
-      <div class="stat">
-        <span class="stat-value">{{ totalCities() }}</span>
-        <span class="stat-label">Localities</span>
+    <div class="hero-aside">
+      <div class="hero-trust-strip">
+        <div class="trust-item">
+          <strong>Belong locally</strong>
+          <span
+            >Join real place-based communities instead of generic feeds.</span
+          >
+        </div>
+        <div class="trust-item">
+          <strong>Trade nearby</strong>
+          <span
+            >Buy, sell, and message within a neighborhood-scale network.</span
+          >
+        </div>
+        <div class="trust-item">
+          <strong>Coordinate together</strong>
+          <span
+            >Support projects, events, and everyday local needs in one
+            hub.</span
+          >
+        </div>
       </div>
-      <div class="stat">
-        <span class="stat-value">{{ totalCommunities() }}</span>
-        <span class="stat-label">Communities</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value">{{ totalMembers() | number }}</span>
-        <span class="stat-label">Members</span>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-value">{{ totalCities() }}</span>
+          <span class="stat-label">Localities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ totalCommunities() }}</span>
+          <span class="stat-label">Communities</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ totalMembers() | number }}</span>
+          <span class="stat-label">Members</span>
+        </div>
       </div>
     </div>
   </div>
