@@ -138,7 +138,6 @@ export const classicPersonality: Personality = {
     backdrop: 'glow',
     surface: 'sheen',
     accentFill: 'linear',
-    buttonFill: 'gradient',
     intensity: 0.8,
   },
   motion: { ambient: 'breathe', scenes: ['aurora-ribbon', 'glass-fog'] },
