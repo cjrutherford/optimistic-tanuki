@@ -23,16 +23,34 @@ export function readableOn(
   const passes = (c: string) =>
     backgrounds.every((bg) => getContrastRatio(c, bg) >= ratio);
   if (passes(color)) return color;
-  // Dark backgrounds need lighter text, light backgrounds darker text.
-  const dark = backgrounds.every(
-    (bg) => getContrastRatio(bg, '#ffffff') > getContrastRatio(bg, '#000000')
-  );
-  const target = dark ? '#ffffff' : '#000000';
+  // Move toward whichever extreme reads better on these backgrounds.
+  const worst = (c: string) =>
+    Math.min(...backgrounds.map((bg) => getContrastRatio(c, bg)));
+  const target = worst('#ffffff') >= worst('#000000') ? '#ffffff' : '#000000';
   for (let step = 1; step <= 20; step++) {
     const candidate = mix(target, color, step / 20);
     if (passes(candidate)) return candidate;
   }
   return target;
+}
+
+/**
+ * The colours a gradient `fill` (as emitted by the atmosphere layer: rgba()
+ * stops and `transparent`) actually shows once painted over `base`.
+ */
+export function fillColorsOver(
+  fill: string | undefined,
+  base: string
+): string[] {
+  if (!fill) return [];
+  return [...fill.matchAll(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/g)].map(
+    ([, r, g, b, a]) => {
+      const hex = `#${[r, g, b]
+        .map((c) => Number(c).toString(16).padStart(2, '0'))
+        .join('')}`;
+      return mix(hex, base, Number(a));
+    }
+  );
 }
 
 /** Tones whose colour is also drawn as text (outline/ghost/soft emphases, links). */
@@ -62,21 +80,36 @@ export function resolveReadableText(
   const surface = vars['--surface'] || page;
   if (![page, surface].every((c) => c && isHex(c))) return {};
   const out: Record<string, string> = {};
+  // Everything text may sit on: the page and its atmosphere backdrop, the
+  // surface and its finish (sheen / gradient / raised fills).
+  const grounds = [
+    page,
+    surface,
+    ...fillColorsOver(vars['--atmosphere-backdrop'], page),
+    ...fillColorsOver(vars['--surface-fill'], surface),
+  ];
   // Tone text sits on the page, on surfaces, and on the tone's own soft tint
   // (the `soft` emphasis mixes 18% of the tone over its container, in oklab;
   // 25% here covers the difference from this sRGB mix).
   for (const tone of TEXT_TONES) {
     const color = vars[`--${tone}`];
     if (!color || !isHex(color)) continue;
-    out[`--${tone}-text`] = readableOn(
+    // The grounds must pass; the soft tints too whenever that is possible
+    // (a near-white tone in dark mode can't also read on its own light tint).
+    const withTints = readableOn(
       color,
-      [page, surface, mix(color, page, 0.25), mix(color, surface, 0.25)],
+      [...grounds, ...grounds.map((g) => mix(color, g, 0.25))],
       TARGET_RATIO
     );
+    out[`--${tone}-text`] = grounds.every(
+      (g) => getContrastRatio(withTints, g) >= TARGET_RATIO
+    )
+      ? withTints
+      : readableOn(color, grounds, TARGET_RATIO);
   }
   const muted = vars['--muted-foreground'];
   if (muted && isHex(muted)) {
-    const readableMuted = readableOn(muted, [page, surface], TARGET_RATIO);
+    const readableMuted = readableOn(muted, grounds, TARGET_RATIO);
     if (readableMuted !== muted) out['--muted-foreground'] = readableMuted;
   }
   return out;

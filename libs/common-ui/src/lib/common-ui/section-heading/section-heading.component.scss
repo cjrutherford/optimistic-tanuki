@@ -48,9 +48,14 @@
     font-size: 1.25rem;
     font-weight: normal;
     margin: 0 0 0.5rem 0;
+    // On an accent band, --on-accent-ground itself (not a faded mix of it)
+    // is what is guaranteed readable over the band's fill.
     color: var(
       --section-heading-subtitle-color,
-      color-mix(in oklab, currentColor 80%, transparent)
+      var(
+        --on-accent-ground,
+        color-mix(in oklab, currentColor 80%, transparent)
+      )
     );
   }
 }
