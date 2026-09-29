@@ -1,4 +1,9 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
+import {
+  ApplicationConfig,
+  provideZoneChangeDetection,
+  inject,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { appRoutes } from './app.routes';
@@ -11,6 +16,7 @@ import {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('d6'),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

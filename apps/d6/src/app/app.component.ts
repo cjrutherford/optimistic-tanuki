@@ -6,7 +6,7 @@ import { NavigationComponent } from './components/navigation/navigation.componen
 import { MessageService, MessageType } from './services/message.service';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
-import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'app-root',
@@ -17,18 +17,18 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
     CommonModule,
     DevInfoComponent,
     HaiAboutTagComponent,
-    ShimmerBeamComponent,
+    PersonalitySceneComponent,
   ],
   template: `
     @if (isBrowser) {
     <div class="motion-background" aria-hidden="true">
-      <otui-shimmer-beam
-        [reducedMotion]="reducedMotion"
+      <otui-personality-scene
         height="100vh"
+        fallbackScene="shimmer-beam"
+        [density]="8"
         [speed]="0.2"
         [intensity]="0.36"
-        direction="diagonal"
-      ></otui-shimmer-beam>
+      ></otui-personality-scene>
     </div>
     }
 
@@ -197,18 +197,6 @@ export class AppComponent {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   dismiss(id: number): void {

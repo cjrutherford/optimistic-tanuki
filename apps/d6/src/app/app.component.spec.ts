@@ -60,7 +60,7 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
-    expect(compiled.querySelector('otui-shimmer-beam')).toBeTruthy();
+    expect(compiled.querySelector('otui-personality-scene')).toBeTruthy();
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
@@ -82,37 +82,7 @@ describe('AppComponent', () => {
     expect(messageServiceStub.removeMessage).toHaveBeenCalledWith(3);
   });
 
-  describe('reducedMotion', () => {
-    it('reflects prefers-reduced-motion when matchMedia is available', () => {
-      const matchMediaMock = jest.fn().mockReturnValue({ matches: true });
-      Object.defineProperty(window, 'matchMedia', {
-        value: matchMediaMock,
-        configurable: true,
-      });
-
-      const fixture = TestBed.createComponent(AppComponent);
-      fixture.detectChanges();
-
-      expect(fixture.componentInstance.reducedMotion).toBe(true);
-      expect(matchMediaMock).toHaveBeenCalledWith(
-        '(prefers-reduced-motion: reduce)'
-      );
-    });
-
-    it('returns false when matchMedia is unavailable in the browser', () => {
-      Object.defineProperty(window, 'matchMedia', {
-        value: undefined,
-        configurable: true,
-      });
-
-      const fixture = TestBed.createComponent(AppComponent);
-      fixture.detectChanges();
-
-      expect(fixture.componentInstance.reducedMotion).toBe(false);
-    });
-  });
-
-  it('treats a non-browser platform as reduced motion without probing matchMedia', async () => {
+  it('does not apply the theme on a non-browser platform', async () => {
     await TestBed.resetTestingModule()
       .configureTestingModule({
         imports: [AppComponent],
@@ -129,7 +99,6 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.reducedMotion).toBe(true);
     expect(themeServiceStub.setTheme).not.toHaveBeenCalled();
   });
 });
