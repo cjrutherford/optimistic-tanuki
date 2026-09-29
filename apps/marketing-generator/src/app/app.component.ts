@@ -15,6 +15,7 @@ import {
   NavSidebarComponent,
 } from '@optimistic-tanuki/navigation-ui';
 import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
   selector: 'app-root',
@@ -26,8 +27,10 @@ import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
     AppBarComponent,
     NavSidebarComponent,
     MetricTileComponent,
+    PersonalityBackdropComponent,
   ],
   template: `
+    <lib-personality-backdrop />
     <div class="app-shell">
       <header class="shell-header">
         <otui-app-bar
