@@ -499,7 +499,7 @@
 
 .stat-value {
   display: block;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--app-foreground);
@@ -575,7 +575,7 @@
 }
 
 .stage-count {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 0.75rem;
   color: var(--app-foreground-muted);
 }

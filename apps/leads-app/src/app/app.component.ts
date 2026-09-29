@@ -13,6 +13,7 @@ import { AuthStateService } from './auth-state.service';
 import { Subscription, filter } from 'rxjs';
 import { NotificationBellComponent } from '@optimistic-tanuki/notification-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
@@ -22,6 +23,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     RouterModule,
     NotificationBellComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     HaiAboutTagComponent,
     BugReportUiComponent,
   ],

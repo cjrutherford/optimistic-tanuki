@@ -26,7 +26,7 @@
 }
 
 .nav-brand {
-  font-family: var(--font-heading);
+  font-family: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--app-primary);

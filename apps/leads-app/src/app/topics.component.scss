@@ -87,7 +87,7 @@
 }
 
 .count-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--app-primary);
@@ -747,7 +747,7 @@
 
 .topic-local-area-value {
   color: var(--app-foreground);
-  font-family: var(--font-mono);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
 }
 
 .keyword-chip {
@@ -808,7 +808,7 @@
 
 .topic-last-run {
   font-size: 0.6875rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
   color: var(--app-foreground-muted);
 }
 
