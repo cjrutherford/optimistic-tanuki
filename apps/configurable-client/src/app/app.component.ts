@@ -2,7 +2,7 @@ import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
-import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 /**
  * Root AppComponent now delegates configuration loading to AppResolverComponent
@@ -19,7 +19,7 @@ import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
     CommonModule,
     RouterModule,
     HaiAboutTagComponent,
-    TopographicDriftComponent,
+    PersonalitySceneComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -39,17 +39,5 @@ export class AppComponent {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 }
