@@ -65,8 +65,8 @@
 }
 
 .product-stock {
-  font-size: 0.875rem;
   color: var(--success);
+  @include p.small-text(0.875rem);
 
   &.out-of-stock {
     color: var(--danger);
