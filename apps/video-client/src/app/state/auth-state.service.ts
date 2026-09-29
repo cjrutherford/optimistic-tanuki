@@ -25,7 +25,15 @@ export class AuthStateService {
   public readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) void this.restoreSession();
+    if (isPlatformBrowser(this.platformId)) void this.ensureSession();
+  }
+
+  private sessionRestore: Promise<void> | null = null;
+
+  /** Resolves once the cookie session has been checked against the API. */
+  ensureSession(): Promise<void> {
+    this.sessionRestore ??= this.restoreSession();
+    return this.sessionRestore;
   }
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
@@ -43,6 +51,11 @@ export class AuthStateService {
     if (!response) {
       throw new Error('Login failed');
     }
+
+    // The session lives in an httpOnly cookie, so the login response alone
+    // never flips the auth state; read it back from the session endpoint.
+    this.sessionRestore = this.restoreSession();
+    await this.sessionRestore;
 
     return response;
   }

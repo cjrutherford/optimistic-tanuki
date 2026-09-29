@@ -72,7 +72,7 @@ import { ProfileService } from '../services/profile.service';
       .auth-story {
         display: grid;
         gap: 1rem;
-        color: #f7f0e8;
+        color: var(--foreground);
       }
 
       .eyebrow {
@@ -81,7 +81,7 @@ import { ProfileService } from '../services/profile.service';
         font-weight: 800;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: #ff9d66;
+        color: var(--primary-text, var(--primary));
       }
 
       h1 {
@@ -93,7 +93,7 @@ import { ProfileService } from '../services/profile.service';
 
       .lede {
         margin: 0;
-        color: rgba(247, 240, 232, 0.8);
+        color: var(--muted-foreground, var(--foreground));
         line-height: 1.7;
       }
 
