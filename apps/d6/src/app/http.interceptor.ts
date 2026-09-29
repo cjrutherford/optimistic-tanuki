@@ -1,11 +1,13 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { inject, Injector } from '@angular/core';
 import { AuthStateService } from './services/auth-state.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
-  const authStateService = inject(AuthStateService);
+  // Resolved lazily: AuthStateService's constructor makes the session request,
+  // which runs through this interceptor, so injecting it eagerly is circular.
+  const injector = inject(Injector);
   const router = inject(Router);
   const appScope = 'D6';
 
@@ -20,7 +22,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   return next(clonedRequest).pipe(
     catchError((error) => {
       if (error.status === 401) {
-        authStateService.logout();
+        injector.get(AuthStateService).logout();
         router.navigate(['/login']);
       }
       return throwError(error);

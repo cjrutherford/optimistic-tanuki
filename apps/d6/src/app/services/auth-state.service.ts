@@ -38,8 +38,16 @@ export class AuthStateService {
 
   constructor() {
     if (this.isBrowser()) {
-      void this.restoreSession();
+      void this.ensureSession();
     }
+  }
+
+  private sessionRestore: Promise<boolean> | null = null;
+
+  /** Resolves once the cookie session has been checked against the API. */
+  ensureSession(): Promise<boolean> {
+    this.sessionRestore ??= this.restoreSession();
+    return this.sessionRestore;
   }
 
   async restoreSession(): Promise<boolean> {
@@ -103,7 +111,7 @@ export class AuthStateService {
 
   setToken(token?: string): void {
     if (!token) {
-      void this.restoreSession();
+      this.sessionRestore = this.restoreSession();
       return;
     }
     this._token.set(token);
