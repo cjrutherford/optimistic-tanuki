@@ -145,11 +145,20 @@ const rendered = {};
 
 // Runs in the page. Returns text elements below their WCAG AA ratio.
 function renderedContrastFailures() {
+  // Any CSS colour (rgb, oklab, oklch, hsl, color-mix results...) to
+  // [r, g, b, a] via a 1x1 canvas, which Chromium converts to sRGB.
+  const ctx = Object.assign(document.createElement('canvas'), {
+    width: 1,
+    height: 1,
+  }).getContext('2d', { willReadFrequently: true });
   const parse = (c) => {
-    const m = c.match(/rgba?\(([^)]+)\)/);
-    if (!m) return null;
-    const [r, g, b, a = '1'] = m[1].split(/[ ,\/]+/).filter(Boolean);
-    return [+r, +g, +b, +a];
+    if (!c || c === 'transparent') return null;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = '#000';
+    ctx.fillStyle = c;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+    return [r, g, b, a / 255];
   };
   const over = (fg, bg) =>
     fg.slice(0, 3).map((c, i) => c * fg[3] + bg[i] * (1 - fg[3]));
@@ -170,7 +179,11 @@ function renderedContrastFailures() {
     for (let e = el; e; e = e.parentElement) {
       const cs = getComputedStyle(e);
       if (cs.backgroundImage.includes('gradient')) {
-        const stops = [...cs.backgroundImage.matchAll(/rgba?\([^)]+\)/g)]
+        const stops = [
+          ...cs.backgroundImage.matchAll(
+            /(?:rgba?|oklab|oklch|lab|lch|hsla?|color)\([^()]*\)/g
+          ),
+        ]
           .map((m) => parse(m[0]))
           .filter(Boolean);
         if (stops.length) {

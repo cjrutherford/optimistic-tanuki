@@ -4,6 +4,13 @@ import { getContrastRatio, isHex, mix } from '@optimistic-tanuki/theme-models';
 export const READABLE_TEXT_RATIO = 4.5;
 
 /**
+ * What the resolver aims for: a little above AA, because the browser's own
+ * colour maths (oklab color-mix, 8-bit rounding) can land a hair under an
+ * exact 4.5 (seen as 4.47-4.49 in rendered captures).
+ */
+const TARGET_RATIO = 4.6;
+
+/**
  * `color`, moved toward black or white just far enough to reach `ratio`
  * against every background (the page and the surface it may sit on).
  * Unchanged when it already passes.
@@ -61,16 +68,15 @@ export function resolveReadableText(
   for (const tone of TEXT_TONES) {
     const color = vars[`--${tone}`];
     if (!color || !isHex(color)) continue;
-    out[`--${tone}-text`] = readableOn(color, [
-      page,
-      surface,
-      mix(color, page, 0.25),
-      mix(color, surface, 0.25),
-    ]);
+    out[`--${tone}-text`] = readableOn(
+      color,
+      [page, surface, mix(color, page, 0.25), mix(color, surface, 0.25)],
+      TARGET_RATIO
+    );
   }
   const muted = vars['--muted-foreground'];
   if (muted && isHex(muted)) {
-    const readableMuted = readableOn(muted, [page, surface]);
+    const readableMuted = readableOn(muted, [page, surface], TARGET_RATIO);
     if (readableMuted !== muted) out['--muted-foreground'] = readableMuted;
   }
   return out;
