@@ -224,7 +224,7 @@
     top: -8px;
     left: 16px;
     font-size: 0.75rem;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     background: var(--background);
     padding: 0 8px;
   }

@@ -41,7 +41,7 @@
     font-family: var(--font-heading, system-ui, sans-serif);
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -195,7 +195,7 @@ input[type='color'] {
     border-radius: var(--border-radius-sm, 6px);
     font-family: var(--font-mono, 'JetBrains Mono', monospace);
     font-size: 0.875em;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 
   blockquote {
@@ -215,7 +215,7 @@ input[type='color'] {
   }
 
   a {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-decoration: none;
     font-weight: 500;
     border-bottom: var(--border-width, 2px) solid
@@ -272,7 +272,7 @@ input[type='color'] {
       align-items: center;
       justify-content: center;
       background: color-mix(in srgb, var(--background, #fff) 95%, transparent);
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       padding: 24px;
       border-radius: var(--border-radius-md, 16px);
       @include p.shadow('lg');
@@ -364,7 +364,7 @@ input[type='color'] {
       &:hover {
         background: color-mix(in srgb, var(--primary) 10%, transparent);
         border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
       }
     }
   }

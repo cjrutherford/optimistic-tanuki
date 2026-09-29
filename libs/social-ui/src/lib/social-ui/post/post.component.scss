@@ -96,7 +96,7 @@
         padding: 2px 8px;
         border-radius: var(--border-radius-full, 999px);
         background: color-mix(in srgb, var(--primary) 16%, transparent);
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         font-size: 0.75rem;
         font-weight: 600;
       }
@@ -146,7 +146,7 @@
         }
 
         a {
-          color: var(--primary);
+          color: var(--primary-text, var(--primary));
           text-decoration: none;
           font-weight: 500;
           border-bottom: var(--border-width, 2px) solid
@@ -195,7 +195,7 @@
       h3 {
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 0.8125rem;
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         margin: 0 0 8px 0;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -223,7 +223,7 @@
       h3 {
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 0.8125rem;
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         margin: 0 0 8px 0;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -231,7 +231,7 @@
       }
 
       a {
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         text-decoration: none;
         font-weight: 500;
         @include p.personality-transition(all, 'fast');

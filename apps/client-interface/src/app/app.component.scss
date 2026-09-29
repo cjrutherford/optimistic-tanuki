@@ -57,7 +57,7 @@
 
 .workflow-kicker {
   margin: 0 0 0.45rem;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.12em;

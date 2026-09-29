@@ -26,9 +26,14 @@
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    // On an accent band, only --on-accent-ground is guaranteed readable over
+    // every stop of the band's fill; the page's muted colour is not.
     color: var(
-      --muted-foreground,
-      color-mix(in oklab, currentColor 65%, transparent)
+      --on-accent-ground,
+      var(
+        --muted-foreground,
+        color-mix(in oklab, currentColor 65%, transparent)
+      )
     );
   }
 

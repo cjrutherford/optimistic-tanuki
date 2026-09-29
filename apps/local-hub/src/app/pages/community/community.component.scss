@@ -336,7 +336,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .sidebar-title {
@@ -640,7 +640,7 @@
   width: 36px;
   height: 36px;
   background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-radius: 8px;
 }
 
@@ -746,7 +746,7 @@
 }
 
 .action-link {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-weight: 600;
   text-decoration: none;
 
@@ -813,7 +813,7 @@
 .post-community {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

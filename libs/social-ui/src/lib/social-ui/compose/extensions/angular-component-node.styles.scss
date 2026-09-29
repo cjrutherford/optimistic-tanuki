@@ -84,7 +84,7 @@
     margin: 0 0 var(--spacing-xs, 4px) 0;
     font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 
   p {

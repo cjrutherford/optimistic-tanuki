@@ -14,7 +14,7 @@
 
 .section-heading h2 {
   margin-bottom: var(--spacing-sm);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .section-heading p {

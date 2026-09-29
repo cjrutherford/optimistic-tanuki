@@ -14,7 +14,7 @@
 
 .heading-container h2 {
   margin-bottom: var(--spacing-sm);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .heading-container h3 {

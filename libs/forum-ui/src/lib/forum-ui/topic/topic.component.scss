@@ -18,7 +18,7 @@
   }
 
   &:hover h3 {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 

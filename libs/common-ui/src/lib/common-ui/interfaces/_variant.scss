@@ -19,22 +19,27 @@
   }
   &[data-tone='info'] {
     --variant-bg-source: var(--info);
+    --variant-text-source: var(--info-text, var(--info));
     --variant-fg-source: var(--on-info, var(--info-foreground));
   }
   &[data-tone='success'] {
     --variant-bg-source: var(--success);
+    --variant-text-source: var(--success-text, var(--success));
     --variant-fg-source: var(--on-success, var(--success-foreground));
   }
   &[data-tone='warning'] {
     --variant-bg-source: var(--warning);
+    --variant-text-source: var(--warning-text, var(--warning));
     --variant-fg-source: var(--on-warning, var(--warning-foreground));
   }
   &[data-tone='danger'] {
     --variant-bg-source: var(--danger);
+    --variant-text-source: var(--danger-text, var(--danger));
     --variant-fg-source: var(--on-danger, var(--danger-foreground));
   }
   &[data-tone='brand'] {
     --variant-bg-source: var(--primary);
+    --variant-text-source: var(--primary-text, var(--primary));
     --variant-fg-source: var(--on-primary, var(--primary-foreground));
   }
 
@@ -46,17 +51,17 @@
   }
   &[data-emphasis='soft'] {
     background: color-mix(in oklab, var(--variant-bg-source) 18%, transparent);
-    color: var(--variant-bg-source);
+    color: var(--variant-text-source, var(--variant-bg-source));
     border-color: transparent;
   }
   &[data-emphasis='outline'] {
     background: transparent;
-    color: var(--variant-bg-source);
-    border-color: var(--variant-bg-source);
+    color: var(--variant-text-source, var(--variant-bg-source));
+    border-color: var(--variant-text-source, var(--variant-bg-source));
   }
   &[data-emphasis='ghost'] {
     background: transparent;
-    color: var(--variant-bg-source);
+    color: var(--variant-text-source, var(--variant-bg-source));
     border-color: transparent;
   }
 

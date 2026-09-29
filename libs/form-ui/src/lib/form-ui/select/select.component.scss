@@ -213,7 +213,7 @@
 
       &.selected {
         background: color-mix(in srgb, var(--primary) 12%, transparent);
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         font-weight: 600;
       }
     }

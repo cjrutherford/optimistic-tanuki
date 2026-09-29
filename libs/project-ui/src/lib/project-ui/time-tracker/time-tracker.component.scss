@@ -41,7 +41,7 @@
 
     .current-time {
       .time {
-        color: var(--primary, #3498db);
+        color: var(--primary-text, var(--primary, #3498db));
       }
     }
   }

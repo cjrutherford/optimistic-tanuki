@@ -11,7 +11,7 @@
 .btn-back {
   background: none;
   border: none;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   cursor: pointer;
   font-size: 0.9rem;
   padding: 0;
@@ -156,7 +156,7 @@
 .price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .category-badge,
@@ -287,7 +287,7 @@
 }
 
 .action-link {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
@@ -316,7 +316,7 @@
 .btn-outline {
   background: transparent;
   border: 1.5px solid var(--primary);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   &:hover:not(:disabled) {
     background: var(--hover-bg);
   }

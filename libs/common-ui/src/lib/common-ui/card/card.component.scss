@@ -163,7 +163,7 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     margin-bottom: 16px;
   }
 

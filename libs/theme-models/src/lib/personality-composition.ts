@@ -295,7 +295,7 @@ const TABS: Record<PersonalityComposition['tabs'], Record<string, string>> = {
     '--personality-tabs-track-padding': '0px',
     '--personality-tabs-track-width': 'auto',
     '--personality-tab-active-bg': 'transparent',
-    '--personality-tab-active-fg': 'var(--primary)',
+    '--personality-tab-active-fg': 'var(--primary-text, var(--primary))',
     '--personality-tab-active-shadow': 'none',
     '--personality-tab-indicator': '2px',
     '--personality-tab-radius': '0px',

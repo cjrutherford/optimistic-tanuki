@@ -80,7 +80,7 @@
 
     // Contact items rendered as links.
     &:is(a) {
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
     }
   }
 }

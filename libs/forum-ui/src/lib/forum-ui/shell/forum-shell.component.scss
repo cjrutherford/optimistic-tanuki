@@ -35,7 +35,7 @@
   .back-button {
     background: none;
     border: none;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     cursor: pointer;
     text-decoration: underline;
     padding: 0;

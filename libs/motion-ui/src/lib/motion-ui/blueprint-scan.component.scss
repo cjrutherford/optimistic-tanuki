@@ -48,7 +48,7 @@
   font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
   letter-spacing: 0.06em;
-  color: scene.lit(var(--primary), 100%, 45%);
+  color: scene.lit(var(--primary-text, var(--primary)), 100%, 45%);
   opacity: 0.4;
   animation: mark-reveal var(--scan-period) linear infinite;
   animation-delay: calc(

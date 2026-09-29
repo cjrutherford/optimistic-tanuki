@@ -134,7 +134,7 @@
 
   &:hover {
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 
   &.active {
@@ -236,7 +236,7 @@
     }
 
     .view-link {
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       transform: translateX(4px);
     }
   }
@@ -308,7 +308,7 @@
   margin: 0 0 12px;
 
   svg {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 
@@ -369,7 +369,7 @@
 .view-link {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   transition: all 0.3s ease;
 }
 

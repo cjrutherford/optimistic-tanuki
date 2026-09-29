@@ -59,7 +59,7 @@
   display: block;
   margin-bottom: var(--spacing-xs);
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   text-transform: uppercase;
   letter-spacing: 0.5px;

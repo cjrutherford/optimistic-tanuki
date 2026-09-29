@@ -65,7 +65,7 @@
     background: color-mix(in srgb, var(--primary) 15%, transparent);
 
     .count {
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
     }
   }
 }

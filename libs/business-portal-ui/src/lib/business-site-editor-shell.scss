@@ -45,7 +45,7 @@ business-site-editor-page .workspace-kicker {
   letter-spacing: 0.16em;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 business-site-editor-page .workspace-theme-note {
@@ -137,7 +137,7 @@ business-site-editor-page .guided-step-chip span {
 
 business-site-editor-page .guided-step-chip.active {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 business-site-editor-page .guided-actions {

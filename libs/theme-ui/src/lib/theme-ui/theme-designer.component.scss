@@ -386,7 +386,7 @@
   &:hover {
     background: color-mix(in srgb, var(--primary) 10%, transparent);
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 

@@ -14,7 +14,7 @@
 
 .dots {
   /* change color here */
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 .dots,
 .dots div {
@@ -97,7 +97,7 @@
 
 .default {
   /* change color here */
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 .default,
 .default div {
@@ -134,7 +134,7 @@
 }
 .dual-ring {
   /* change color here */
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 .dual-ring,
 .dual-ring:after {
@@ -167,7 +167,7 @@
 
 .hourglass {
   /* change color here */
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 .hourglass,
 .hourglass:after {

@@ -58,7 +58,7 @@
 }
 
 :where(a) {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 :where(:focus-visible) {

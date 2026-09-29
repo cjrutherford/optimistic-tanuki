@@ -259,7 +259,7 @@
 .btn-outline {
   background: transparent;
   border: 1.5px solid var(--primary);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 
   &:hover:not(:disabled) {
     background: var(--hover-bg);

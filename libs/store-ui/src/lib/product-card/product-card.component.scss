@@ -61,7 +61,7 @@
 .product-price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .product-stock {
@@ -88,7 +88,7 @@
   margin-bottom: 0.75rem;
   border: 1px solid var(--primary);
   background-color: transparent;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .add-to-cart-btn {

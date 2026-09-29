@@ -49,6 +49,7 @@ import { GradientFactory } from './gradient-factory';
 import { THEME_DEFAULTS } from './theme-defaults.token';
 import { PERSONALITY_EXTENSIONS_ENABLED } from './personality-extensions.token';
 import { resolveExtensionVariables } from './personality-extensions';
+import { resolveReadableText } from './readable-text';
 
 /**
  * Storage key for personality themes
@@ -1239,7 +1240,7 @@ export class ThemeService {
       shadows?.inset ?? DEFAULT_DESIGN_TOKENS.shadows.inset;
 
     // Personality extension layer (wiring, expression, type scale, atmosphere,
-    // motion). Runs last so `applyAppThemeVariables()` still wins. Emits
+    // motion). Runs after the base variables so it can re-derive them. Emits
     // nothing until a personality opts in, and is skipped entirely when the
     // app provides `PERSONALITY_EXTENSIONS_ENABLED` as false.
     if (this.extensionsEnabled) {
@@ -1254,6 +1255,10 @@ export class ThemeService {
         )
       );
     }
+
+    // Text drawn in the brand colour, and muted text, must read on the final
+    // page and surface (whatever ground the personality chose).
+    Object.assign(variables, resolveReadableText(variables));
 
     return variables;
   }

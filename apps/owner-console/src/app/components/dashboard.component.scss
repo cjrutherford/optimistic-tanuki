@@ -61,7 +61,7 @@
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: 0.78rem;
   text-transform: uppercase;
 }

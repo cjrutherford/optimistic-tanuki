@@ -94,7 +94,7 @@
   }
 
   &__link {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-decoration: none;
     &:hover {
       text-decoration: underline;

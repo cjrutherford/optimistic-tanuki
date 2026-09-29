@@ -387,7 +387,7 @@
       padding: 0;
       border: none;
       background: transparent;
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       font-size: var(--font-size-sm, 0.875rem);
       cursor: pointer;
       @include p.personality-transition(color, 'fast');
@@ -494,7 +494,7 @@
         padding: 2px var(--spacing-xs, 4px);
         border: none;
         background: transparent;
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         font-size: var(--font-size-xs, 0.75rem);
         cursor: pointer;
 
