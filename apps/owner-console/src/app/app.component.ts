@@ -1,24 +1,24 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
-  imports: [RouterModule, SignalMeshComponent, BugReportUiComponent],
+  imports: [RouterModule, PersonalitySceneComponent, BugReportUiComponent],
   selector: 'app-root',
   template: `
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
     @if (isBrowser) {
     <div class="motion-background" aria-hidden="true">
-      <otui-signal-mesh
-        [reducedMotion]="reducedMotion"
+      <otui-personality-scene
         height="100vh"
+        fallbackScene="signal-mesh"
         [density]="5"
         [speed]="0.4"
         [intensity]="0.5"
-      ></otui-signal-mesh>
+      ></otui-personality-scene>
     </div>
     }
 
@@ -36,17 +36,5 @@ export class AppComponent {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 }

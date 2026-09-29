@@ -1,8 +1,10 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
   APP_INITIALIZER,
+  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import {
@@ -18,7 +20,10 @@ import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { AuthService } from './services/auth.service';
 import { firstValueFrom } from 'rxjs';
-import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+import {
+  provideProductTheme,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 function initializeTheme() {
   // Lazy load ThemeService to avoid SSR issues
@@ -30,6 +35,7 @@ function initializeTheme() {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('owner-console'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
