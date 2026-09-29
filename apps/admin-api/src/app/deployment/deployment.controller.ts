@@ -23,7 +23,7 @@ import { AdminApiPublic } from '../auth/admin-api-access.decorator';
 export class DeploymentController {
   constructor(private readonly deploymentService: DeploymentService) {}
 
-  @Get('api/status/public')
+  @Get('status/public')
   @AdminApiPublic()
   @ApiOperation({ summary: 'Get public deployment status (legacy)' })
   @ApiResponse({ status: 200, description: 'Public status returned' })
@@ -46,7 +46,7 @@ export class DeploymentController {
     };
   }
 
-  @Get('api/rollouts/preview')
+  @Get('rollouts/preview')
   @ApiOperation({ summary: 'Preview a rollout (legacy)' })
   @ApiResponse({ status: 200, description: 'Rollout preview returned' })
   getRolloutPreview(@Query('tag') tag?: string) {
@@ -66,7 +66,7 @@ export class DeploymentController {
     };
   }
 
-  @Get('api/rollouts/latest')
+  @Get('rollouts/latest')
   @ApiOperation({ summary: 'Get latest rollout state (legacy)' })
   @ApiResponse({ status: 200, description: 'Latest rollout returned' })
   getLatestRollout() {
@@ -77,7 +77,7 @@ export class DeploymentController {
     return history[0];
   }
 
-  @Post('api/rollouts/start')
+  @Post('rollouts/start')
   @ApiOperation({ summary: 'Start a rollout (legacy)' })
   @ApiResponse({ status: 200, description: 'Rollout started' })
   startRollout(@Body('tag') tag?: string) {
@@ -88,7 +88,7 @@ export class DeploymentController {
     };
   }
 
-  @Get('api/oauth/inspect')
+  @Get('oauth/inspect')
   @ApiOperation({ summary: 'Inspect OAuth configuration (legacy)' })
   @ApiResponse({ status: 200, description: 'OAuth inspection returned' })
   getOAuthInspect() {
@@ -99,14 +99,14 @@ export class DeploymentController {
     };
   }
 
-  @Get('api/deployment/health')
+  @Get('deployment/health')
   @ApiOperation({ summary: 'Get deployment health' })
   @ApiResponse({ status: 200, description: 'Deployment health returned' })
   getHealth() {
     return this.deploymentService.getHealth();
   }
 
-  @Get('api/rollouts/history')
+  @Get('rollouts/history')
   @ApiOperation({ summary: 'Get rollout history' })
   @ApiResponse({ status: 200, description: 'Rollout history returned' })
   getRolloutHistory(@Query('limit') limit?: string) {
@@ -114,7 +114,7 @@ export class DeploymentController {
     return this.deploymentService.getRolloutHistory(limitNum);
   }
 
-  @Get('api/deployment/images')
+  @Get('deployment/images')
   @ApiOperation({ summary: 'Get image freshness information' })
   @ApiResponse({ status: 200, description: 'Image information returned' })
   getImages(): ImageInfo[] {
