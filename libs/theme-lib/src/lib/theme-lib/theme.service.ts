@@ -27,6 +27,7 @@ import {
   getDefaultPersonality,
   getPersonalityById,
   generatePersonalityColors,
+  harmonyHueOptions,
   generatePerceptualShades,
   generateSemanticColors,
   ensureContrast,
@@ -745,7 +746,8 @@ export class ThemeService {
       personality.colorHarmony.saturationBoost,
       personality.colorHarmony.lightnessShift,
       personality.colorHarmony.accentSaturation,
-      personality.colorHarmony.accentLightness
+      personality.colorHarmony.accentLightness,
+      harmonyHueOptions(personality.colorHarmony)
     );
 
     // Generate shades using personality's curve

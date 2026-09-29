@@ -12,6 +12,7 @@ import {
   generateSemanticColors,
   calculateColorTemperature,
   generatePersonalityColors,
+  harmonyHueOptions,
   getHarmonyDescription,
   generateShadowTintColor,
   generateShadowColor,
@@ -69,6 +70,26 @@ describe('color-harmony', () => {
       expect(generateHarmonyHues(180, 'analogous', { spread: 10 })).toEqual([
         170, 180, 190,
       ]);
+    });
+
+    it('respects an authored distance for complementary and split-complementary', () => {
+      expect(
+        generateHarmonyHues(0, 'complementary', { distance: 160 })
+      ).toEqual([0, 160]);
+      expect(
+        generateHarmonyHues(0, 'split-complementary', { distance: 140 })
+      ).toEqual([0, 140, 220]);
+      expect(generateHarmonyHues(0, 'split-complementary')).toEqual([
+        0, 150, 210,
+      ]);
+    });
+
+    it('maps colorHarmony fields onto hue options', () => {
+      expect(harmonyHueOptions({ analogousSpread: 20 })).toEqual({
+        spread: 20,
+        distance: undefined,
+        tertiaryDistance: undefined,
+      });
     });
 
     it('falls back to complementary for an unknown type', () => {
@@ -423,5 +444,39 @@ describe('color-harmony', () => {
       );
       expect(colors.surface).toMatch(HEX_RE);
     });
+  });
+});
+
+describe('generatePersonalityColors hue options', () => {
+  it('moves the analogous tertiary with the authored spread', () => {
+    const base = generatePersonalityColors('#3f51b5', 'analogous', 0, 0);
+    const wide = generatePersonalityColors(
+      '#3f51b5',
+      'analogous',
+      0,
+      0,
+      undefined,
+      undefined,
+      {
+        spread: 60,
+      }
+    );
+    expect(wide.tertiaryHsl.h).not.toBe(base.tertiaryHsl.h);
+    expect(wide.secondary).toBe(base.secondary);
+  });
+
+  it('places the tertiary at tertiaryDistance when authored', () => {
+    const r = generatePersonalityColors(
+      '#3f51b5',
+      'triadic',
+      0,
+      0,
+      undefined,
+      undefined,
+      {
+        tertiaryDistance: 90,
+      }
+    );
+    expect(r.tertiaryHsl.h).toBeCloseTo((r.primaryHsl.h + 90) % 360, 5);
   });
 });

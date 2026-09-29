@@ -35,6 +35,7 @@ import {
 } from '@optimistic-tanuki/theme-models';
 import {
   generatePersonalityColors,
+  harmonyHueOptions,
   generatePerceptualShades,
 } from './color-harmony';
 import {
@@ -198,7 +199,8 @@ export function resolveExtensionVariables(
       personality.colorHarmony.saturationBoost,
       personality.colorHarmony.lightnessShift,
       Math.min(baseHsl.s, 8),
-      lightness
+      lightness,
+      harmonyHueOptions(personality.colorHarmony)
     );
     primary = colors.primary;
     secondary = colors.secondary;

@@ -73,6 +73,8 @@ export {
   generateSemanticColors,
   calculateColorTemperature,
   generatePersonalityColors,
+  harmonyHueOptions,
+  type HarmonyHueOptions,
   getHarmonyDescription,
   // Contrast utilities
   getRelativeLuminance,

@@ -1761,10 +1761,8 @@ export const observatoryPersonality: Personality = {
   version: '1.0.0',
 
   // Twilight: analogous neighbours (blue -> violet) with pale, light
-  // "starlight" accents rather than saturated ones. Note theme-lib's
-  // generatePersonalityColors() does not forward `analogousSpread`, so the
-  // rendered tertiary sits at the default 30deg; the authored 60 only
-  // registers in the distinctiveness metric until that is wired upstream.
+  // "starlight" accents rather than saturated ones. `analogousSpread` places
+  // the rendered tertiary 60deg from the primary.
   colorHarmony: {
     type: 'analogous',
     saturationBoost: -0.1,
