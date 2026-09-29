@@ -11,8 +11,8 @@
 
   /* Text scale */
   --text-strong: var(--foreground);
-  --text-secondary: var(--muted);
-  --text-muted: var(--muted);
+  --text-secondary: var(--muted-foreground, var(--muted));
+  --text-muted: var(--muted-foreground, var(--muted));
   --text-disabled: color-mix(in srgb, var(--muted) 60%, var(--background));
 
   /* Brand/Playful palette */
@@ -52,7 +52,7 @@
   --neutral-soft-bg: color-mix(in srgb, var(--muted) 16%, var(--background));
   --neutral-soft-fg: var(--foreground);
   --info-tint-bg: color-mix(in srgb, var(--info) 12%, var(--background));
-  --info-tint-fg: var(--info);
+  --info-tint-fg: color-mix(in srgb, var(--info) 35%, var(--foreground));
 
   /* Legacy aliases for components that still reference older names */
   --background-color: var(--background);

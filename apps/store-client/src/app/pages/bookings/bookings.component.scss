@@ -67,7 +67,7 @@
     border: 1px solid var(--border-subtle);
     border-radius: 8px;
     overflow: hidden;
-    background: white;
+    background: var(--surface);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s;
 
@@ -100,7 +100,7 @@
 
         .resource-type-icon {
           font-size: 64px;
-          color: white;
+          color: var(--on-accent-ground, var(--on-primary));
           font-weight: bold;
         }
       }
@@ -186,7 +186,7 @@
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
       padding: 20px;
-      background: white;
+      background: var(--surface);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
       .booking-header {
@@ -274,7 +274,7 @@
     z-index: 1000;
 
     .modal-content {
-      background: white;
+      background: var(--surface);
       border-radius: 8px;
       max-width: 600px;
       width: 90%;
@@ -386,7 +386,7 @@
 
     &.btn-primary {
       background: var(--accent);
-      color: white;
+      color: var(--on-accent);
 
       &:hover:not(:disabled) {
         background: var(--accent-hover);
@@ -399,11 +399,12 @@
     }
 
     &.btn-secondary {
-      background: var(--neutral);
-      color: white;
+      background: var(--surface-alt);
+      color: var(--foreground);
+      border: 1px solid var(--border-input);
 
       &:hover:not(:disabled) {
-        background: var(--neutral-hover);
+        background: color-mix(in srgb, var(--surface) 88%, var(--foreground));
       }
     }
 
