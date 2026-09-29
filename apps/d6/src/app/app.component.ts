@@ -6,6 +6,7 @@ import { NavigationComponent } from './components/navigation/navigation.componen
 import { MessageService, MessageType } from './services/message.service';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -18,8 +19,10 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     DevInfoComponent,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
   ],
   template: `
+    <lib-personality-backdrop />
     @if (isBrowser) {
     <div class="motion-background" aria-hidden="true">
       <otui-personality-scene
