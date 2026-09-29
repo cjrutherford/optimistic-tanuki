@@ -53,6 +53,7 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 const AUTH_NAV_LINKS = [
@@ -134,6 +135,7 @@ const AUTH_NAV_LINKS = [
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     BugReportUiComponent,
   ],
 })
