@@ -139,3 +139,118 @@ export const APPS = {
     ],
   },
 };
+
+// --- live mode (capture.mjs --live) -----------------------------------------
+// `url`: host URL of the app's running docker-compose.dev.yaml container.
+// `login`: seeded account (scripts/dev-seed.sh) filled into the app's own form.
+// `auth`: authenticated routes captured when login succeeds.
+// `modeNote`: set when the app deliberately ignores the user's light/dark mode.
+const SOCIAL = {
+  email: 'social.alice@example.com',
+  password: 'TestPassword123!',
+};
+const OWNER = {
+  email: 'owner@optimistic-tanuki.local',
+  password: 'DevOwner!123',
+};
+const BIZ_OWNER = {
+  email: 'owner-artist@localbusiness.test',
+  password: 'BusinessOwnerPass123!',
+};
+const BIZ_CLIENT = {
+  email: 'client@localbusiness.test',
+  password: 'ClientPass123!',
+};
+const LIVE = {
+  'client-interface': {
+    url: 'http://127.0.0.1:8080',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/feed', '/profile', '/communities', '/settings', '/messages'],
+  },
+  forgeofwill: {
+    url: 'http://127.0.0.1:8081',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/projects', '/profile', '/settings', '/invitations', '/messages'],
+  },
+  'digital-homestead': {
+    url: 'http://127.0.0.1:8082',
+    login: { route: '/login', ...SOCIAL },
+    auth: [],
+  },
+  'christopherrutherford-net': { url: 'http://127.0.0.1:8083' },
+  'owner-console': {
+    url: 'http://127.0.0.1:8084',
+    login: { route: '/login', ...OWNER },
+    auth: [
+      '/dashboard',
+      '/dashboard/overview',
+      '/dashboard/users',
+      '/dashboard/theme',
+      '/dashboard/registry',
+    ],
+  },
+  'store-client': { url: 'http://127.0.0.1:8085' },
+  d6: {
+    url: 'http://127.0.0.1:8086',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/dashboard', '/daily-four', '/daily-six', '/feed', '/profile'],
+  },
+  'local-hub': {
+    url: 'http://127.0.0.1:8087',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/account', '/seller-dashboard', '/messages'],
+  },
+  hai: { url: 'http://127.0.0.1:8088' },
+  'fin-commander': {
+    url: 'http://127.0.0.1:8089',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/onboarding', '/settings', '/account'],
+  },
+  'configurable-client': {
+    url: 'http://127.0.0.1:8090',
+    login: {
+      route: '/login',
+      email: 'configurable-client-owner-v2@optimistic-tanuki.local',
+      password: 'DevConfigurableClient!123',
+    },
+    auth: ['/owner'],
+  },
+  'system-configurator': {
+    url: 'http://127.0.0.1:8091',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/profile-gate', '/checkout'],
+  },
+  'marketing-generator': { url: 'http://127.0.0.1:8092' },
+  'video-client': {
+    url: 'http://127.0.0.1:8093',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/upload', '/profile', '/history', '/my-channel'],
+  },
+  'business-site': {
+    url: 'http://127.0.0.1:8094',
+    login: { route: '/sites/emberline-studio/owner/login', ...BIZ_OWNER },
+    auth: ['/sites/emberline-studio/owner', '/owner/dashboard'],
+  },
+  'leads-app': {
+    url: 'http://127.0.0.1:8095',
+    login: { route: '/login', ...SOCIAL },
+    auth: ['/dashboard', '/leads', '/topics', '/analytics', '/settings'],
+  },
+  'business-configurator': {
+    url: 'http://127.0.0.1:8096',
+    login: { route: '/login', ...BIZ_OWNER },
+    auth: [],
+  },
+  'developer-portal': {
+    url: 'http://127.0.0.1:8097',
+    modeNote:
+      'Fixed dark by design: apps/developer-portal/src/styles.scss renders a dark editorial surface regardless of the user theme preference.',
+  },
+  learning: {
+    url: 'http://127.0.0.1:8099',
+    login: { route: '/sign-in', ...SOCIAL },
+    auth: ['/dashboard', '/author'],
+  },
+};
+for (const [k, v] of Object.entries(LIVE))
+  APPS[k] = { ...(APPS[k] ?? { routes: ['/'], skipped: [] }), ...v };

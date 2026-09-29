@@ -17,7 +17,17 @@ const args = Object.fromEntries(
     .slice(2)
     .reduce(
       (a, v, i, all) =>
-        v.startsWith('--') ? [...a, [v.slice(2), all[i + 1]]] : a,
+        v.startsWith('--')
+          ? [
+              ...a,
+              [
+                v.slice(2),
+                all[i + 1] === undefined || all[i + 1].startsWith('--')
+                  ? true
+                  : all[i + 1],
+              ],
+            ]
+          : a,
       []
     )
 );
@@ -36,7 +46,12 @@ const cfg = APPS[app] ?? {
   routes: ['/'],
   skipped: ['(no entry in apps.mjs: only / captured)'],
 };
-const routes = args.routes ? args.routes.split(',') : cfg.routes;
+const live = Boolean(args.live || args['base-url']);
+const authRoutes = live && !args['no-login'] && cfg.login ? cfg.auth ?? [] : [];
+const routes = args.routes
+  ? args.routes.split(',')
+  : [...cfg.routes, ...authRoutes];
+const isAuth = (r) => authRoutes.includes(r);
 const outDir = path.join(path.resolve(args.out ?? '/tmp/app-review'), app);
 fs.mkdirSync(outDir, { recursive: true });
 for (const f of fs.readdirSync(outDir))
@@ -44,7 +59,7 @@ for (const f of fs.readdirSync(outDir))
 
 // --- dist ---
 let root = args.dist && path.resolve(args.dist);
-if (!root) {
+if (!root && !live) {
   const c = [`dist/apps/${app}/browser`, `dist/apps/${app}`].map((p) =>
     path.join(repo, p)
   );
@@ -54,7 +69,7 @@ if (!root) {
       fs.existsSync(path.join(p, 'index.csr.html'))
   );
 }
-if (!root)
+if (!root && !live)
   throw new Error(`no build for ${app}; run: nx build ${app} -c development`);
 
 // --- gateway: a running container whose name contains "gateway" ---
@@ -75,7 +90,9 @@ function detectGateway() {
 }
 const gateway = detectGateway();
 console.log(
-  `dist: ${root}\ngateway: ${gateway ?? 'NOT RUNNING (API calls will 502)'}`
+  `${live ? 'live' : 'dist: ' + root}\ngateway: ${
+    gateway ?? 'NOT RUNNING (API calls will 502)'
+  }`
 );
 
 const MIME = {
@@ -138,8 +155,14 @@ const server = http.createServer((req, res) => {
   });
   fs.createReadStream(file).pipe(res);
 });
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const base = `http://127.0.0.1:${server.address().port}`;
+let base;
+if (live) {
+  base = String(args['base-url'] ?? cfg.url ?? '').replace(/\/$/, '');
+  if (!base) throw new Error(`no url for ${app}; pass --base-url`);
+} else {
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  base = `http://127.0.0.1:${server.address().port}`;
+}
 
 const KEY = 'optimistic-tanuki-personality-theme';
 const VIEWPORTS = {
@@ -150,8 +173,9 @@ const slug = (r) =>
   r === '/' ? 'home' : r.replace(/^\//, '').replace(/[^\w]+/g, '-');
 const browser = await chromium.launch();
 
-async function newCtx(vp, mode, seed) {
+async function newCtx(vp, mode, seed, storageState) {
   const ctx = await browser.newContext({
+    ...(storageState ? { storageState } : {}),
     viewport: VIEWPORTS[vp],
     colorScheme: mode,
     reducedMotion: 'reduce',
@@ -201,10 +225,108 @@ async function readTheme(page) {
   }, KEY);
 }
 
+// Some apps scroll the body or an inner container instead of the document, so
+// a fullPage shot only captures the first screen. Neutralise every scroller
+// that is clipping content, then report the resulting page height.
+async function expandScrollers(page) {
+  return page.evaluate(() => {
+    const before = document.documentElement.scrollHeight;
+    const st = document.createElement('style');
+    st.textContent =
+      'html,body{height:auto !important;min-height:0 !important;overflow:visible !important}';
+    document.head.appendChild(st);
+    const fixed = [];
+    for (const el of document.querySelectorAll('body *')) {
+      const cs = getComputedStyle(el);
+      if (
+        /(auto|scroll)/.test(cs.overflowY) &&
+        el.scrollHeight > el.clientHeight + 40 &&
+        el.clientHeight > 200
+      ) {
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('max-height', 'none', 'important');
+        el.style.setProperty('overflow', 'visible', 'important');
+        fixed.push(
+          el.tagName.toLowerCase() +
+            (el.className && typeof el.className === 'string'
+              ? '.' + el.className.split(/\s+/)[0]
+              : '')
+        );
+      }
+    }
+    return {
+      before,
+      after: Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      ),
+      expanded: fixed.slice(0, 5),
+    };
+  });
+}
+
 async function settle(page) {
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(600);
+}
+
+// Logs in through the app's own login form with a seeded account and returns
+// Playwright storageState (cookies + localStorage) minus the theme keys.
+async function login() {
+  const L = cfg.login;
+  const ctx = await newCtx('desktop', 'light');
+  const page = await ctx.newPage();
+  const result = { ok: false, account: L.email, note: '' };
+  try {
+    await page.goto(base + L.route);
+    await settle(page);
+    const email = page
+      .locator(
+        L.emailSel ??
+          'input[type="email"], input[name*="email" i], input[formcontrolname*="email" i], input[autocomplete="username"], input[placeholder*="email" i], input[type="text"]'
+      )
+      .first();
+    await email.fill(L.email, { timeout: 8000 });
+    await page.locator('input[type="password"]').first().fill(L.password);
+    const submit = page
+      .locator(
+        L.submitSel ??
+          'button[type="submit"], button:has-text("Log in"), button:has-text("Login"), button:has-text("Sign in")'
+      )
+      .first();
+    await Promise.all([
+      page
+        .waitForResponse(
+          (r) =>
+            /login|sign-?in|auth/i.test(r.url()) &&
+            r.request().method() === 'POST',
+          { timeout: 10000 }
+        )
+        .catch(() => {}),
+      submit.click(),
+    ]);
+    await settle(page);
+    const stillLogin = page.url().includes(L.route.split('?')[0]);
+    result.ok = !stillLogin;
+    result.note = `after login: ${page.url().replace(base, '') || '/'}`;
+    if (!result.ok)
+      result.note += ` | still on login: ${(
+        await page.evaluate(() => document.body.innerText)
+      )
+        .replace(/\s+/g, ' ')
+        .slice(0, 200)}`;
+    const state = await ctx.storageState();
+    for (const o of state.origins)
+      o.localStorage = o.localStorage.filter(
+        (i) => i.name !== KEY && i.name !== '__seeded'
+      );
+    result.state = state;
+  } catch (e) {
+    result.note = `login error: ${e.message.split('\n')[0]}`;
+  }
+  await ctx.close();
+  return result;
 }
 
 // 1. Discover the app's default personality with a clean profile.
@@ -255,8 +377,26 @@ console.log(
   })`
 );
 
+let loginResult = null;
+if (authRoutes.length) {
+  loginResult = await login();
+  console.log(
+    `login ${loginResult.account}: ${loginResult.ok ? 'OK' : 'FAILED'} ${
+      loginResult.note
+    }`
+  );
+}
 const meta = {
   app,
+  mode: live ? 'live' : 'dist',
+  login: loginResult
+    ? {
+        account: loginResult.account,
+        ok: loginResult.ok,
+        note: loginResult.note,
+      }
+    : null,
+  modeNote: cfg.modeNote ?? null,
   base,
   gateway,
   root,
@@ -270,7 +410,14 @@ for (const route of routes) {
   for (const mode of ['light', 'dark']) {
     for (const vp of ['desktop', 'mobile']) {
       const seed = seedBase ? JSON.stringify({ ...seedBase, mode }) : null;
-      const ctx = await newCtx(vp, mode, seed);
+      const authed = isAuth(route) && loginResult?.ok;
+      if (isAuth(route) && !authed) continue;
+      const ctx = await newCtx(
+        vp,
+        mode,
+        seed,
+        authed ? loginResult.state : undefined
+      );
       const page = await ctx.newPage();
       const consoleErrors = [];
       const failedRequests = [];
@@ -307,10 +454,28 @@ for (const route of routes) {
           { text: `check failed: ${e.message}`, ratio: 0, min: 0, el: '' },
         ]);
       const file = `${slug(route)}__${mode}__${vp}.png`;
+      const expanded = await expandScrollers(page).catch(() => null);
+      await page.waitForTimeout(300);
       await page.screenshot({
         path: path.join(outDir, file),
         fullPage: true,
         animations: 'disabled',
+      });
+      const renderedBg = await page.evaluate(() => {
+        for (const el of [document.body, document.documentElement]) {
+          const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g);
+          if (m && (m[3] === undefined || +m[3] > 0.5)) {
+            const [r, g, b] = m.slice(0, 3).map(Number);
+            return {
+              rgb: `rgb(${r},${g},${b})`,
+              luminance: +(
+                (0.2126 * r + 0.7152 * g + 0.0722 * b) /
+                255
+              ).toFixed(3),
+            };
+          }
+        }
+        return { rgb: 'transparent', luminance: null };
       });
       const bodyText = await page.evaluate(
         () => document.body.innerText.trim().length
@@ -328,6 +493,15 @@ for (const route of routes) {
           applied.personalityClass ??
           applied.dataPersonality,
         modeApplied: applied.dataMode,
+        loggedIn: Boolean(authed),
+        pageHeight: expanded,
+        renderedBackground: renderedBg,
+        renderedMode:
+          renderedBg.luminance === null
+            ? 'unknown'
+            : renderedBg.luminance < 0.4
+            ? 'dark'
+            : 'light',
         bodyTextLength: bodyText,
         consoleErrors: [...new Set(consoleErrors)],
         failedRequests: [...new Set(failedRequests)],
@@ -344,3 +518,4 @@ for (const route of routes) {
 fs.writeFileSync(path.join(outDir, 'meta.json'), JSON.stringify(meta, null, 2));
 await browser.close();
 server.close();
+process.exit(0);

@@ -104,12 +104,49 @@ const section = (a) => {
     )}</b> &middot; gateway: ${esc(
     a.gateway ?? 'not running (API calls returned 502)'
   )}</p>
+    ${
+      a.login
+        ? `<p>Login: ${esc(a.login.account)} &mdash; ${
+            a.login.ok ? 'signed in' : '<b class="w">FAILED</b>'
+          } (${esc(a.login.note)})</p>`
+        : ''
+    }${a.modeNote ? `<p class="w">${esc(a.modeNote)}</p>` : ''}
     <p>Skipped auth routes: ${
       a.skippedAuthRoutes.length
         ? a.skippedAuthRoutes.map((x) => `<code>${esc(x)}</code>`).join(' ')
         : 'none'
     }</p>${rows}</section>`;
 };
+
+const selDir = path.join(out, '_selector');
+const selFiles = fs.existsSync(selDir)
+  ? fs
+      .readdirSync(selDir)
+      .filter((f) => f.endsWith('.png'))
+      .sort()
+  : [];
+const selNotes = fs.existsSync(path.join(selDir, 'notes.json'))
+  ? JSON.parse(fs.readFileSync(path.join(selDir, 'notes.json'), 'utf8'))
+  : {};
+const selectorSection = selFiles.length
+  ? `<section id="_selector"><h2>Personality selector (as users see it)</h2>
+  <div class="desk">${selFiles
+    .map(
+      (f) =>
+        `<figure><figcaption>${esc(
+          f.replace('.png', '')
+        )}</figcaption><a href="_selector/${f}" target="_blank"><img class="${
+          f.includes('mobile') ? 'm' : 'd'
+        }" style="${
+          f.includes('mobile') ? '' : 'width:460px'
+        }" src="_selector/${f}"></a></figure>`
+    )
+    .join('')}</div>
+  <ul>${Object.entries(selNotes)
+    .filter(([, v]) => v !== 'ok')
+    .map(([k, v]) => `<li><code>${esc(k)}</code> ${esc(v)}</li>`)
+    .join('')}</ul></section>`
+  : '';
 
 const html = `<!doctype html><meta charset="utf-8"><title>App review</title>
 <style>
@@ -126,8 +163,11 @@ img.m{width:140px;max-height:300px;object-fit:cover;object-position:top;border:1
 .w{color:#a40000;font-size:12px;margin-top:4px}.ok{color:#060;font-size:12px;margin-top:4px}
 ul{margin:2px 0;padding-left:18px;font-size:11px}code{background:#eee;padding:0 3px}
 </style>
-<nav>${apps.map((a) => `<a href="#${a.app}">${a.app}</a>`).join('')}</nav>
+<nav>${selectorSection ? '<a href="#_selector">Selector</a>' : ''}${apps
+  .map((a) => `<a href="#${a.app}">${a.app}</a>`)
+  .join('')}</nav>
 <h1 style="padding:0 24px">App review &mdash; ${apps.length} apps</h1>
+${selectorSection}
 ${apps.map(section).join('\n')}`;
 fs.writeFileSync(path.join(out, 'index.html'), html);
 console.log(`wrote ${path.join(out, 'index.html')} (${apps.length} apps)`);
