@@ -9,6 +9,7 @@ import {
 } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { hexToRgb } from '@optimistic-tanuki/theme-lib';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -18,6 +19,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     DevInfoComponent,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
   ],
   selector: 'dh-root',
   templateUrl: './app.component.html',
