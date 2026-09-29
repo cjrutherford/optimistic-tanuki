@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface CreateBugIssueArgs {
@@ -11,6 +11,9 @@ type FetchFn = (
   init?: { method?: string; headers?: Record<string, string>; body?: string }
 ) => Promise<{ ok: boolean; status: number; json: () => Promise<any> }>;
 
+/** Optional DI token for the fetch implementation (tests inject a stub). */
+export const GITHUB_FETCH = 'GITHUB_FETCH';
+
 /**
  * Opens issues in a single central repo: BUG_REPORT_GITHUB_REPO=owner/repo.
  * Auth: BUG_REPORT_GITHUB_TOKEN (server-only, never exposed to client).
@@ -22,8 +25,12 @@ export class GithubService {
 
   constructor(
     private readonly config: ConfigService,
-    private readonly fetchFn?: FetchFn
-  ) {}
+    @Optional() @Inject(GITHUB_FETCH) fetchFn?: FetchFn | null
+  ) {
+    if (fetchFn) this.fetchFn = fetchFn;
+  }
+
+  private fetchFn?: FetchFn;
 
   private fetchImpl(): FetchFn {
     if (this.fetchFn) return this.fetchFn;
