@@ -31,9 +31,10 @@ const MODES: Mode[] = ['light', 'dark'];
  * actually emits, averaged over 3 primaries x light/dark.
  *
  * Measured minimum at introduction: classic vs foundation = 0.136.
- * Floor sits just below; raise it as personality-differentiation slices land.
+ * After D1 (classic, foundation, professional, minimal opted in): soft vs
+ * soft-touch = 0.324. Floor sits just below; raise it as D-slices land.
  */
-const RENDERED_FLOOR = 0.13;
+const RENDERED_FLOOR = 0.32;
 
 describe('Rendered personality distinctiveness', () => {
   it('keeps the closest rendered pair above the floor', async () => {

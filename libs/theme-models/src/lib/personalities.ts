@@ -131,6 +131,26 @@ export const classicPersonality: Personality = {
   tags: ['versatile', 'balanced', 'professional', 'default'],
   category: 'professional',
   isClassic: true,
+  // Extension layer (rollout D1): white page, brand-washed surfaces and dark mode.
+  expression: {
+    ground: { light: 'white', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.25,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.2,
+  },
+  atmosphere: {
+    backdrop: 'glow',
+    surface: 'sheen',
+    accentFill: 'linear',
+    buttonFill: 'gradient',
+    intensity: 0.8,
+  },
+  motion: { ambient: 'breathe', scenes: ['aurora-ribbon', 'glass-fog'] },
 };
 
 /**
@@ -246,6 +266,26 @@ export const minimalPersonality: Personality = {
 
   tags: ['clean', 'spacious', 'elegant', 'modern'],
   category: 'professional',
+  // Extension layer (rollout D1): whitespace and type do the work.
+  expression: {
+    ground: { light: 'white', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 300,
+    headingCase: 'none',
+    headingTracking: '-0.025em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    pagePattern: 'dots',
+    intensity: 0.7,
+  },
+  motion: { glow: 'soft', scenes: ['glass-fog'] },
 };
 
 /**
@@ -590,6 +630,26 @@ export const professionalPersonality: Personality = {
 
   tags: ['enterprise', 'trustworthy', 'conservative', 'b2b'],
   category: 'professional',
+  // Extension layer (rollout D1): grey app canvas, white cards, dense scale.
+  expression: {
+    ground: { light: 'toned', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '-0.005em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'sheen',
+    pagePattern: 'grid',
+    intensity: 0.6,
+  },
+  motion: { scenes: ['ledger-ticker', 'parallax-grid-warp'] },
 };
 
 /**
@@ -1398,18 +1458,16 @@ export const foundationPersonality: Personality = {
 
   fonts: {
     body: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      family: '"Public Sans", system-ui, sans-serif',
       weights: [400, 500, 600],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     heading: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      family: '"Public Sans", system-ui, sans-serif',
       weights: [500, 600, 700],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     mono: {
       family: '"SF Mono", Monaco, "Inconsolata", monospace',
@@ -1467,6 +1525,21 @@ export const foundationPersonality: Personality = {
 
   tags: ['minimal', 'functional', 'clean', 'utilitarian', 'base'],
   category: 'technical',
+  // Extension layer (rollout D1): the flat, neutral baseline; no scene.
+  expression: {
+    ground: { light: 'white', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 500,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: { backdrop: 'none', surface: 'flat' },
+  motion: { scenes: [] },
 };
 
 function createPresentation(

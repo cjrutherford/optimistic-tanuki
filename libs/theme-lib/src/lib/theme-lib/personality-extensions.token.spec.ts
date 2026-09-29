@@ -5,6 +5,7 @@ import {
   EXISTING_EXTENSIONS,
   MODES,
   captureThemeVariables,
+  withoutExtensions,
   createThemeService,
 } from './personality-extension-assignments.fixture';
 
@@ -19,7 +20,12 @@ describe('PERSONALITY_EXTENSIONS_ENABLED kill switch', () => {
     const on = createThemeService(true);
     for (const p of ALL_PERSONALITIES) {
       for (const mode of MODES) {
-        const plain = await captureThemeVariables(on, p, '#3f51b5', mode);
+        const plain = await captureThemeVariables(
+          on,
+          withoutExtensions(p),
+          '#3f51b5',
+          mode
+        );
         const opted = await captureThemeVariables(off, p, '#3f51b5', mode, {
           extensions: true,
         });

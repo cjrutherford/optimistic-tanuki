@@ -45,6 +45,17 @@ export const MODES: Mode[] = ['light', 'dark'];
 export const ALL_PERSONALITIES: readonly Personality[] =
   PREDEFINED_PERSONALITIES;
 
+/** A personality with its extension-layer fields removed ("no config"). */
+export function withoutExtensions(p: Personality): Personality {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { expression, typeScale, atmosphere, motion, ...plain } = p;
+  return plain;
+}
+
+/** Every predefined personality as it was before any opted in. */
+export const UNCONFIGURED_PERSONALITIES: readonly Personality[] =
+  PREDEFINED_PERSONALITIES.map(withoutExtensions);
+
 export const EXISTING_EXTENSIONS: Record<string, PersonalityExtensions> = {
   // The friendly default: plain white page, but surfaces and dark mode carry
   // a soft wash of the brand colour (what separates it from foundation's

@@ -8,6 +8,7 @@ import {
   EXISTING_EXTENSIONS,
   MODES,
   PROBE_PRIMARIES,
+  UNCONFIGURED_PERSONALITIES,
   captureThemeVariables,
   createThemeService,
 } from './personality-extension-assignments.fixture';
@@ -24,7 +25,7 @@ describe('personality extension resolver', () => {
   it('no-op: no config means zero overrides and an unchanged ThemeService output', async () => {
     const off = createThemeService(false);
     const offVars = new Map<string, Record<string, string>>();
-    for (const p of ALL_PERSONALITIES) {
+    for (const p of UNCONFIGURED_PERSONALITIES) {
       for (const mode of MODES) {
         offVars.set(
           `${p.id}/${mode}`,
@@ -33,7 +34,7 @@ describe('personality extension resolver', () => {
       }
     }
     const on = createThemeService();
-    for (const p of ALL_PERSONALITIES) {
+    for (const p of UNCONFIGURED_PERSONALITIES) {
       for (const mode of MODES) {
         const base = await captureThemeVariables(on, p, '#3f51b5', mode);
         expect(base).toEqual(offVars.get(`${p.id}/${mode}`));
