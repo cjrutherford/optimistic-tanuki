@@ -49,8 +49,8 @@ All values live in environment configuration (see `.env.sample`), never in code.
 | `BUG_REPORT_GITHUB_REPO`                                        | Yes (prod)   | empty (issue creation skipped)     | Central repo as `owner/repo`                                                |
 | `BUG_REPORT_GITHUB_TOKEN`                                       | Yes (prod)   | empty (issue creation skipped)     | Token with Issues read/write on the central repo                            |
 | `BUG_REPORT_ALLOWED_ORIGINS`                                    | Recommended  | empty (any origin accepted)        | CSV of origins allowed to submit, e.g. `https://app.example.com`            |
-| `BUG_REPORT_SERVICE_URL`                                        | gateway only | `http://localhost:3025`            | Where the gateway proxy forwards (`http://bug-report:3025` in compose)      |
-| `BUG_REPORT_PORT`                                               | No           | `3025`                             | Listen port of the `bug-report` service                                     |
+| `BUG_REPORT_SERVICE_URL`                                        | gateway only | `http://localhost:3027`            | Where the gateway proxy forwards (`http://bug-report:3027` in compose)      |
+| `BUG_REPORT_PORT`                                               | No           | `3027`                             | Listen port of the `bug-report` service (3025/3026 are taken)               |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Yes (prod)   | empty (console provider)           | Real email delivery; see [Email Provider Setup Guide](./email-providers.md) |
 
 If `BUG_REPORT_OWNER_EMAIL` is missing, the email step is skipped and logged; if the token or repo is missing, issue creation is skipped. The submit endpoint still returns `{ id, emailSent, issueUrl }` so the client never learns which halves are configured.
@@ -89,7 +89,7 @@ Report emails contain an inline screenshot (`data:image/jpeg` attachment rendere
 ## Allowed Origins and Service URL
 
 - `BUG_REPORT_ALLOWED_ORIGINS`: comma-separated origins enforced on submit (in addition to the service-level CORS allowlist). Example: `BUG_REPORT_ALLOWED_ORIGINS=https://app.example.com,https://www.example.com`. Leave empty only in local dev.
-- `BUG_REPORT_SERVICE_URL`: gateway-side pointer at the microservice. Local default `http://localhost:3025`; compose override `http://bug-report:3025` (already in `.env.sample`).
+- `BUG_REPORT_SERVICE_URL`: gateway-side pointer at the microservice. Local default `http://localhost:3027`; compose override `http://bug-report:3027` (already in `.env.sample`).
 - The gateway preserves the client IP via `X-Forwarded-For` so nonce IP-binding survives the proxy. Do not put another unauthenticated proxy in front that strips it.
 
 ## Local Development

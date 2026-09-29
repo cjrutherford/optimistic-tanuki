@@ -22,7 +22,7 @@ export class BugReportProxyController {
     return (
       this.config.get<string>('BUG_REPORT_SERVICE_URL') ||
       process.env['BUG_REPORT_SERVICE_URL'] ||
-      'http://localhost:3025'
+      'http://localhost:3027'
     ).replace(/\/$/, '');
   }
 

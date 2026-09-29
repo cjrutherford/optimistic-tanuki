@@ -26,7 +26,8 @@ async function bootstrap() {
   );
 
   // Controller paths already include `api/bug-reports`; no global prefix.
-  const port = Number(process.env['BUG_REPORT_PORT'] || 3025);
+  // Default 3027: 3025 is taken by compliance-audit, 3026 by civic/learning-service.
+  const port = Number(process.env['BUG_REPORT_PORT'] || 3027);
   await app.listen(port, '0.0.0.0');
   Logger.log(`Bug-report service listening on port ${port}`);
 }

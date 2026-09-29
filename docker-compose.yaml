@@ -410,6 +410,7 @@ services:
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net,https://letsgo.experiments.christopherrutherford.net}
+      BUG_REPORT_SERVICE_URL: ${BUG_REPORT_SERVICE_URL:-http://bug-report:3027}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:
@@ -679,6 +680,26 @@ services:
       db-setup: # Ensures db-setup is completed before starting chat-collector
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  bug-report:
+    container_name: ot_bug_report
+    build:
+      context: .
+      dockerfile: ./apps/bug-report/Dockerfile
+    image: cjrutherford/optimistic_tanuki_bug-report:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BUG_REPORT_PORT:-3027}:3027'
+    environment:
+      BUG_REPORT_PORT: 3027
+      BUG_REPORT_OWNER_EMAIL: ${BUG_REPORT_OWNER_EMAIL:-}
+      BUG_REPORT_GITHUB_REPO: ${BUG_REPORT_GITHUB_REPO:-}
+      BUG_REPORT_GITHUB_TOKEN: ${BUG_REPORT_GITHUB_TOKEN:-}
+      BUG_REPORT_ALLOWED_ORIGINS: ${BUG_REPORT_ALLOWED_ORIGINS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
   assets:
     container_name: ot_assets
     build:

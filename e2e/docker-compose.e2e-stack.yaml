@@ -304,6 +304,28 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  bug-report:
+    image: cjrutherford/optimistic_tanuki_bug-report:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/bug-report/Dockerfile
+    ports:
+      - '3027:3027'
+    environment:
+      BUG_REPORT_PORT: 3027
+      BUG_REPORT_OWNER_EMAIL: ''
+      BUG_REPORT_GITHUB_REPO: ''
+      BUG_REPORT_GITHUB_TOKEN: ''
+      BUG_REPORT_ALLOWED_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://127.0.0.1:8081
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3027,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   telos-docs-service:
     image: cjrutherford/optimistic_tanuki_telos-docs-service:${E2E_IMAGE_TAG:-latest}
     build:
@@ -705,6 +727,7 @@ services:
       APP_CONFIGURATOR_PORT: 3014
       LEAD_TRACKER_HOST: lead-tracker
       LEAD_TRACKER_PORT: 3020
+      BUG_REPORT_SERVICE_URL: http://bug-report:3027
     # service_healthy, not service_started: a started container is not a
     # listening one. The gateway opens its microservice clients at boot and
     # OAuthController does not recover from a refused connection, so starting

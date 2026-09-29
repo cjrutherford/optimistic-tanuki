@@ -290,6 +290,7 @@ test('resolves a manifest target to its compose files, dependency closure, and t
         'chat-collector',
         'forum',
         'telos-docs-service',
+        'bug-report',
         'oauth-provider',
         'gateway',
         'client-interface',

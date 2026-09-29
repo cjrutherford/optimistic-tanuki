@@ -319,6 +319,7 @@ const UI_ENVIRONMENTS = [
       'chat-collector',
       'forum',
       'telos-docs-service',
+      'bug-report',
       'oauth-provider',
       'gateway',
     ],

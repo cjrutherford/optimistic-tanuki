@@ -4,7 +4,7 @@ import { BugReportProxyController } from './bug-report-proxy.controller';
 describe('BugReportProxyController', () => {
   const config = {
     get: (k: string) =>
-      k === 'BUG_REPORT_SERVICE_URL' ? 'http://bug-report:3025' : undefined,
+      k === 'BUG_REPORT_SERVICE_URL' ? 'http://bug-report:3027' : undefined,
   } as unknown as ConfigService;
 
   beforeEach(() => {
