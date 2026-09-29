@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .bubble {
   position: fixed;
   right: 1.25rem;
@@ -41,10 +43,10 @@
 
 .unread {
   font-family: var(--font-mono, monospace);
-  font-size: 0.7rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
   border: 1px solid var(--color-border, rgba(128, 128, 128, 0.4));
+  @include p.small-text(0.7rem);
 }
 
 /* Something is happening even with the panel shut. */
@@ -88,8 +90,8 @@
 }
 
 .scope {
-  font-size: 0.78rem;
   opacity: 0.7;
+  @include p.small-text(0.78rem);
 }
 
 // Sits directly after the name, because it is about the name. "Start over"

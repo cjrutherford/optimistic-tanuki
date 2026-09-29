@@ -29,8 +29,8 @@
         gap: 4px;
 
         .stat-label {
-          font-size: 0.875rem;
           color: var(--muted-foreground, #666);
+          @include p.small-text(0.875rem);
         }
 
         .stat-value {
@@ -112,8 +112,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.75rem;
       color: var(--muted-foreground, #666);
+      @include p.small-text(0.75rem);
 
       .entry-count,
       .task-count {

@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .task-time {
   display: flex;
   flex-direction: column;
@@ -14,8 +16,8 @@
 
 .total {
   font-family: var(--font-mono, monospace);
-  font-size: 0.8rem;
   opacity: 0.8;
+  @include p.small-text(0.8rem);
 }
 
 .total.running {
@@ -51,8 +53,8 @@
 }
 
 .status {
-  font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.7;
+  @include p.small-text(0.7rem);
 }

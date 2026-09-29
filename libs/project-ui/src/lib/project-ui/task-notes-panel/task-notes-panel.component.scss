@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .task-notes {
   display: flex;
   flex-direction: column;
@@ -14,8 +16,8 @@
 
 .total {
   font-family: var(--font-mono, monospace);
-  font-size: 0.8rem;
   opacity: 0.8;
+  @include p.small-text(0.8rem);
 }
 
 .empty {
@@ -48,11 +50,11 @@
 }
 
 .count {
-  font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.7;
   white-space: nowrap;
+  @include p.small-text(0.75rem);
 }
 
 .body {
@@ -76,8 +78,8 @@
 }
 
 .note time {
-  font-size: 0.72rem;
   opacity: 0.65;
+  @include p.small-text(0.72rem);
 }
 
 .write {

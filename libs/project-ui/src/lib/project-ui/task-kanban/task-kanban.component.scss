@@ -49,8 +49,8 @@
     color: var(--primary-foreground, white);
     border-radius: var(--border-radius-full, 12px);
     padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
     font-weight: 600;
+    @include p.small-text(0.875rem);
   }
 
   .add-task-btn {
@@ -159,7 +159,7 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.75rem;
-  font-size: 0.75rem;
+  @include p.small-text(0.75rem);
 
   .priority-badge {
     padding: 0.25rem 0.5rem;

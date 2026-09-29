@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .invite-form {
   display: flex;
   flex-wrap: wrap;
@@ -49,9 +51,9 @@
 .error {
   flex: 1 1 100%;
   margin: 0;
-  font-size: 0.82rem;
   // No danger token is defined in every application, so the accent stands in.
   // currentColor would give text the same colour as everything around it,
   // which is not a failure a reader notices.
   color: var(--danger, var(--primary-text, var(--primary)));
+  @include p.small-text(0.82rem);
 }

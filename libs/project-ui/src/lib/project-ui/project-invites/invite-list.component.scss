@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .invite-list ul {
   list-style: none;
   margin: 0;
@@ -28,7 +30,7 @@
 
 .status {
   opacity: 0.75;
-  font-size: 0.85rem;
+  @include p.small-text(0.85rem);
 }
 
 .withdraw {

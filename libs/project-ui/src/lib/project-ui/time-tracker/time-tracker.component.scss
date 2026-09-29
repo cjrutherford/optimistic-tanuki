@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .time-tracker {
   display: flex;
   flex-direction: column;
@@ -19,9 +21,9 @@
       gap: 4px;
 
       .label {
-        font-size: 0.75rem;
         color: var(--muted-foreground, #666);
         font-weight: 500;
+        @include p.small-text(0.75rem);
       }
 
       .time {
