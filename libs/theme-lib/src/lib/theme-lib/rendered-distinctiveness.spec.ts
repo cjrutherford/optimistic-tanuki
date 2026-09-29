@@ -32,9 +32,11 @@ const MODES: Mode[] = ['light', 'dark'];
  *
  * Measured minimum at introduction: classic vs foundation = 0.136.
  * After D1 (classic, foundation, professional, minimal opted in): soft vs
- * soft-touch = 0.324. Floor sits just below; raise it as D-slices land.
+ * soft-touch = 0.324.
+ * After D2 (soft, soft-touch, elegant, control-center): bold vs electric =
+ * 0.327. Floor sits just below; raise it as D-slices land.
  */
-const RENDERED_FLOOR = 0.32;
+const RENDERED_FLOOR = 0.325;
 
 describe('Rendered personality distinctiveness', () => {
   it('keeps the closest rendered pair above the floor', async () => {

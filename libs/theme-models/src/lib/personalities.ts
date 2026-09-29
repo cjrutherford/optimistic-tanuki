@@ -516,6 +516,26 @@ export const softPersonality: Personality = {
 
   tags: ['gentle', 'airy', 'calming', 'wellness'],
   category: 'casual',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'tinted', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: {
+    backdrop: 'aurora',
+    surface: 'glass',
+    accentFill: 'mesh',
+    buttonFill: 'gradient',
+    intensity: 1,
+  },
+  motion: { scenes: ['canopy-dapple', 'glass-fog'] },
 };
 
 /**
@@ -884,6 +904,31 @@ export const elegantPersonality: Personality = {
 
   tags: ['luxury', 'sophisticated', 'premium', 'refined'],
   category: 'professional',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'paper', dark: 'black' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.5,
+    headingWeight: 400,
+    headingCase: 'none',
+    headingTracking: '0.005em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'spotlight',
+    surface: 'sheen',
+    accentFill: 'radial',
+    accentPattern: 'rings',
+    intensity: 0.9,
+  },
+  motion: {
+    enter: 'drift',
+    ambient: 'shimmer',
+    scenes: ['star-atlas', 'shimmer-beam'],
+  },
 };
 
 /**
@@ -1149,6 +1194,26 @@ export const softTouchPersonality: Personality = {
 
   tags: ['warm', 'tactile', 'paper', 'organic', 'wellness'],
   category: 'casual',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'paper', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.25,
+    headingWeight: 500,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.15,
+  },
+  atmosphere: {
+    backdrop: 'glow',
+    surface: 'raised',
+    accentFill: 'radial',
+    buttonFill: 'gradient',
+    intensity: 1,
+  },
+  motion: { scenes: ['canopy-dapple', 'clay-blobs'] },
 };
 
 /**
@@ -1412,6 +1477,27 @@ export const controlCenterPersonality: Personality = {
 
   tags: ['technical', 'dashboard', 'monospace', 'grid', 'precision'],
   category: 'technical',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'toned', dark: 'ink' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.125,
+    headingWeight: 600,
+    headingCase: 'uppercase',
+    headingTracking: '0.04em',
+    headingLineHeight: 1.2,
+  },
+  atmosphere: {
+    backdrop: 'horizon',
+    surface: 'sheen',
+    pagePattern: 'scanline',
+    accentPattern: 'grid',
+    intensity: 0.9,
+  },
+  motion: { scenes: ['signal-mesh', 'blueprint-scan'] },
 };
 
 /**
