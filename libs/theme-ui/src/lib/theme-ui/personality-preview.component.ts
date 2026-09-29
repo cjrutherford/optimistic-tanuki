@@ -300,7 +300,7 @@ import { Subject, takeUntil } from 'rxjs';
 
         .subtitle {
           margin: 0;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
           font-size: 0.9rem;
         }
       }
@@ -321,7 +321,7 @@ import { Subject, takeUntil } from 'rxjs';
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
           margin: 0 0 1rem;
           padding-bottom: 0.5rem;
           border-bottom: 1px solid var(--border);
@@ -356,7 +356,7 @@ import { Subject, takeUntil } from 'rxjs';
 
         .muted-text {
           margin: 0 0 0.5rem;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
         }
 
         .code-text {
@@ -390,7 +390,7 @@ import { Subject, takeUntil } from 'rxjs';
         .color-label {
           font-size: 0.75rem;
           font-weight: 500;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
           min-width: 80px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -420,6 +420,19 @@ import { Subject, takeUntil } from 'rxjs';
           font-size: 0.875rem;
           font-weight: 500;
           color: white;
+
+          &.success {
+            color: var(--on-success, var(--success-foreground, white));
+          }
+          &.warning {
+            color: var(--on-warning, var(--warning-foreground, white));
+          }
+          &.danger {
+            color: var(--on-danger, var(--danger-foreground, white));
+          }
+          &.info {
+            color: var(--on-info, var(--info-foreground, white));
+          }
         }
       }
 
@@ -438,7 +451,7 @@ import { Subject, takeUntil } from 'rxjs';
         .demo-label {
           font-size: 0.75rem;
           font-weight: 500;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
           min-width: 80px;
           text-transform: uppercase;
           padding-top: 0.5rem;
@@ -509,7 +522,7 @@ import { Subject, takeUntil } from 'rxjs';
         p {
           margin: 0 0 1rem;
           font-size: 0.875rem;
-          color: var(--muted);
+          color: color-mix(in srgb, var(--foreground) 78%, var(--background));
         }
       }
 
@@ -555,19 +568,28 @@ import { Subject, takeUntil } from 'rxjs';
 
         &.alert-success {
           background: rgba(var(--success-rgb), 0.1);
-          color: var(--success);
+          color: var(
+            --success-text,
+            color-mix(in srgb, var(--success) 50%, var(--foreground))
+          );
           border: 1px solid var(--success);
         }
 
         &.alert-warning {
           background: rgba(var(--warning-rgb), 0.1);
-          color: var(--warning);
+          color: var(
+            --warning-text,
+            color-mix(in srgb, var(--warning) 50%, var(--foreground))
+          );
           border: 1px solid var(--warning);
         }
 
         &.alert-danger {
           background: rgba(var(--danger-rgb), 0.1);
-          color: var(--danger);
+          color: var(
+            --danger-text,
+            color-mix(in srgb, var(--danger) 50%, var(--foreground))
+          );
           border: 1px solid var(--danger);
         }
       }
@@ -621,6 +643,7 @@ import { Subject, takeUntil } from 'rxjs';
         .spacing-label {
           display: block;
           background: var(--surface);
+          color: var(--foreground);
           padding: 0.25rem 0.5rem;
           font-size: 0.75rem;
           font-weight: 500;
@@ -705,7 +728,7 @@ import { Subject, takeUntil } from 'rxjs';
           font-size: 0.875rem;
 
           .anim-label {
-            color: var(--muted);
+            color: color-mix(in srgb, var(--foreground) 78%, var(--background));
           }
 
           .anim-value {
