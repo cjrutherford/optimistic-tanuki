@@ -30,18 +30,24 @@ const SKIP_PATHS = [/libs\/theme-(styles|lib|models|ui)\//];
 
 const PERSONALITY_USE =
   /var\(--(personality-|type-|heading-|accent-ground|on-accent-ground|line-height|letter-spacing|touch-target|layout-max-width|stagger-delay|shadow-|font-heading|font-body|font-mono|border-radius-)|@include\s+p\./;
+// Each lookahead sits directly after `:\s*` inside a non-backtracking
+// position: `\s*(?!var\()` alone lets `\s*` match zero spaces, so the
+// lookahead would see " var(" and every value would count (a bug in the
+// original port: var()-based and allowed values were counted as literals).
+const value = (prop, allowed, tail) =>
+  new RegExp(`^\\s*${prop}\\s*:(?!\\s*(?:${allowed}))\\s*${tail}`);
 const LITERAL_RULES = [
   [
     'border-radius',
-    /^\s*border-radius\s*:\s*(?!var\()(?!0\s*;)(?!none)(?!inherit)(?!50%)(?!9999px)[^;]*\d/,
+    value('border-radius', 'var\\(|0\\s*;|none|inherit|50%|9999px', '[^;]*\\d'),
   ],
-  ['box-shadow', /^\s*box-shadow\s*:\s*(?!var\()(?!none)(?!inherit)[^;]*\d/],
-  ['font-family', /^\s*font-family\s*:\s*(?!var\()(?!inherit)[^;]+/],
-  ['font-size', /^\s*font-size\s*:\s*(?!var\()[^;]*\d(px|rem|em)/],
-  ['line-height', /^\s*line-height\s*:\s*(?!var\()(?!inherit)[^;]*\d/],
+  ['box-shadow', value('box-shadow', 'var\\(|none|inherit', '[^;]*\\d')],
+  ['font-family', value('font-family', 'var\\(|inherit', '[^;]+')],
+  ['font-size', value('font-size', 'var\\(', '[^;]*\\d(px|rem|em)')],
+  ['line-height', value('line-height', 'var\\(|inherit', '[^;]*\\d')],
   [
     'letter-spacing',
-    /^\s*letter-spacing\s*:\s*(?!var\()(?!normal)(?!inherit)[^;]*\d/,
+    value('letter-spacing', 'var\\(|normal|inherit', '[^;]*\\d'),
   ],
 ];
 
