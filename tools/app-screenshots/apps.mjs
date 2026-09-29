@@ -73,4 +73,69 @@ export const APPS = {
       '/settings (AuthGuard)',
     ],
   },
+  'business-site': {
+    routes: [
+      '/',
+      '/auth',
+      '/owner/register',
+      '/sites/demo/client/login',
+      '/sites/demo/owner/login',
+    ],
+    skipped: [
+      '/owner/dashboard etc., /client/* portal (owner/client auth guards)',
+      '/sites/:siteSlug, /products/:productId (need API data)',
+    ],
+  },
+  'business-configurator': {
+    routes: ['/login'],
+    skipped: [
+      '/ , /workspaces/:workspaceId/* (configuratorAuthGuard; / redirects to /login)',
+    ],
+  },
+  'configurable-client': {
+    routes: ['/', '/login', '/config/demo', '/app/demo'],
+    skipped: ['/owner/* (ownerWorkspaceGuard)'],
+  },
+  d6: {
+    routes: ['/', '/about', '/login', '/register'],
+    skipped: [
+      '/dashboard',
+      '/daily-four',
+      '/daily-six',
+      '/feed',
+      '/profile (AuthGuard/ProfileGuard)',
+    ],
+  },
+  'developer-portal': { routes: ['/'], skipped: [] },
+  learning: {
+    routes: ['/', '/courses', '/sign-in', '/about', '/docs'],
+    skipped: [
+      '/course/:offeringId, /module/* (need API data)',
+      '/dashboard, /author (may need auth data)',
+    ],
+  },
+  'marketing-generator': {
+    routes: ['/', '/offers', '/offers/new'],
+    skipped: ['/offers/:offerId (needs API data)'],
+  },
+  'setup-console': { routes: ['/', '/setup'], skipped: [] },
+  'system-configurator': {
+    routes: ['/', '/review', '/login'],
+    skipped: [
+      '/configure/:chassisId (needs API data)',
+      '/profile-gate',
+      '/checkout',
+      '/confirmation/:orderId (AuthenticationGuard/ProfileReadyGuard)',
+    ],
+  },
+  'video-client': {
+    routes: ['/', '/login', '/register'],
+    skipped: [
+      '/upload',
+      '/profile',
+      '/history',
+      '/my-channel (authGuard)',
+      '/watch/:id, /c/:slugOrId (need API data)',
+    ],
+  },
 };
