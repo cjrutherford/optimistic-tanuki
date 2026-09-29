@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   color: var(--portal-foreground);
   display: block;
@@ -37,8 +39,8 @@
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 0.78rem;
   color: var(--portal-accent);
+  @include p.small-text(0.78rem);
 }
 
 h1,
@@ -58,8 +60,8 @@ h1 {
 .lede {
   max-width: 68ch;
   font-size: 1.05rem;
-  line-height: 1.7;
   color: var(--portal-foreground-muted);
+  @include p.body-text(1.7);
 }
 
 .hero-actions {
