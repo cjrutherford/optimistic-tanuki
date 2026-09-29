@@ -17,21 +17,20 @@
 
 // Two faint nebulae drifting behind the chart.
 .nebula {
-  filter: blur(18px);
   animation: nebula-drift scene.duration(8s) ease-in-out infinite alternate;
 }
 .nebula-a {
   background: radial-gradient(
     40% 50% at 30% 40%,
-    scene.ink(var(--primary), 48%),
-    transparent 70%
+    scene.ink(var(--primary), 70%),
+    transparent 100%
   );
 }
 .nebula-b {
   background: radial-gradient(
     34% 44% at 72% 62%,
-    scene.ink(var(--tertiary, var(--secondary)), 42%),
-    transparent 70%
+    scene.ink(var(--tertiary, var(--secondary)), 60%),
+    transparent 100%
   );
   animation-direction: alternate-reverse;
 }
@@ -153,16 +152,16 @@
 
 @keyframes nebula-drift {
   from {
-    transform: translate(-3%, 2%) scale(1);
+    transform: translate(-8%, 5%) scale(1);
   }
   to {
-    transform: translate(3%, -2%) scale(1.12);
+    transform: translate(8%, -5%) scale(1.25);
   }
 }
 
 @keyframes twinkle {
   from {
-    opacity: 0.25;
+    opacity: 0.1;
   }
   to {
     opacity: 1;

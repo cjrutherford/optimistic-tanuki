@@ -17,8 +17,8 @@ svg {
 
 .trace {
   fill: none;
-  stroke: scene.lit(var(--primary), 70%);
-  stroke-width: 0.5;
+  stroke: scene.lit(var(--primary), 95%);
+  stroke-width: 0.7;
 }
 
 // A short dash of light travelling each trace.

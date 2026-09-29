@@ -14,15 +14,15 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(
-        scene.lit(var(--primary), 64%) 1px,
+        scene.lit(var(--primary), 80%) 1px,
         transparent 1px
       )
       0 0 / 100% 4rem,
-    linear-gradient(90deg, scene.lit(var(--primary), 64%) 1px, transparent 1px)
+    linear-gradient(90deg, scene.lit(var(--primary), 80%) 1px, transparent 1px)
       0 0 / 4rem 100%,
-    linear-gradient(scene.lit(var(--primary), 24%) 1px, transparent 1px) 0 0 /
+    linear-gradient(scene.lit(var(--primary), 36%) 1px, transparent 1px) 0 0 /
       100% 1rem,
-    linear-gradient(90deg, scene.lit(var(--primary), 24%) 1px, transparent 1px)
+    linear-gradient(90deg, scene.lit(var(--primary), 36%) 1px, transparent 1px)
       0 0 / 1rem 100%;
 }
 

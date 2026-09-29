@@ -16,15 +16,15 @@ $row: 1.75rem;
   background: repeating-linear-gradient(
       180deg,
       transparent 0 calc(#{$row} - 1px),
-      scene.lit(var(--primary), 42%) calc(#{$row} - 1px) #{$row}
+      scene.lit(var(--primary), 62%) calc(#{$row} - 1px) #{$row}
     ),
     linear-gradient(
       90deg,
       transparent 2.5rem,
-      scene.ink(var(--tertiary, var(--secondary)), 40%) 2.5rem
+      scene.ink(var(--tertiary, var(--secondary)), 60%) 2.5rem
         calc(2.5rem + 1px),
       transparent calc(2.5rem + 1px) calc(2.5rem + 4px),
-      scene.ink(var(--tertiary, var(--secondary)), 40%) calc(2.5rem + 4px)
+      scene.ink(var(--tertiary, var(--secondary)), 60%) calc(2.5rem + 4px)
         calc(2.5rem + 5px),
       transparent calc(2.5rem + 5px)
     );
@@ -46,7 +46,7 @@ $row: 1.75rem;
 
 .column {
   overflow: hidden;
-  border-left: 1px solid scene.ink(var(--primary), 28%);
+  border-left: 1px solid scene.ink(var(--primary), 45%);
 }
 
 .figures {
@@ -55,10 +55,10 @@ $row: 1.75rem;
   padding-right: 0.75rem;
   font-family: var(--font-mono, monospace);
   font-variant-numeric: tabular-nums;
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: $row;
   text-align: right;
-  color: scene.ink(var(--foreground), 92%);
+  color: scene.ink(var(--foreground), 100%);
   animation: ticker-scroll
     calc((30s + var(--column-index) * 5s) / max(var(--scene-speed), 0.2)) linear
     infinite;
