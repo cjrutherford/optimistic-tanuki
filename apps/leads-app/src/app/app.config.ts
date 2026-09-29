@@ -1,3 +1,4 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   PLATFORM_ID,
@@ -26,6 +27,7 @@ import { AuthStateService } from './auth-state.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('leads-app'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
