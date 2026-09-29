@@ -17,3 +17,23 @@ are read from the built storybook's globals; focus shots and clips use #3f51b5. 
 
 compare.mjs does an exact RGBA comparison (pngjs) and reports identical/changed/missing per group.
 Captures are not committed; keep them under /tmp or `out/` (gitignored).
+
+## Scene presence (motion-ui)
+
+`presence.mjs` measures whether each motion-ui scene is visible and visibly moves, the port of the
+playground's `npm run presence`. Build the motion-ui storybook and point it at the output:
+
+```
+nx build-storybook motion-ui --outputDir=/tmp/motion-ui-sb
+node presence.mjs --storybook /tmp/motion-ui-sb [--only <scene>] [--json] [--keep <dir>]
+```
+
+Each scene's `Default` story (found through `index.json`) is rendered at 960x540 under its lead
+personality (the `LEAD` table in the script), light and dark, via the `personalityId` / `colorMode` /
+`primaryColor` globals. Measures, in 0-255 luminance units:
+
+- `content`: mean |frame - empty frame|, the scene's children hidden so only its own background remains
+- `motion`: mean |frame(t) - frame(t + 1s)|
+
+Band: content 4-30, motion 0.5-10. Exits 1 when any scene/mode is outside it. The stories' own
+`speed`/`intensity` args apply, and no scene cost is shown here (frame times are a separate M0 measure).
