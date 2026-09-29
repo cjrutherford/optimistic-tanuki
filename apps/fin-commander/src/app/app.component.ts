@@ -6,6 +6,7 @@ import { ProfileContext } from './profile.context';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TenantContextService } from './tenant-context.service';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
@@ -15,6 +16,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     RouterOutlet,
     TitleBarComponent,
     HaiAboutTagComponent,
+    PersonalityBackdropComponent,
     BugReportUiComponent,
   ],
   templateUrl: './app.component.html',

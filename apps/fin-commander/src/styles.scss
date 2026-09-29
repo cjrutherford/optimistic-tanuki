@@ -133,8 +133,14 @@ a {
     transform var(--fc-transition-duration) var(--fc-transition-ease);
   --fc-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
   --fc-border-width: 2px;
-  --fc-font-heading: 'Sora', 'Avenir Next', sans-serif;
-  --fc-font-body: 'Manrope', 'Segoe UI', sans-serif;
+  --fc-font-heading: var(
+    --heading-family,
+    var(--font-heading, 'Sora', 'Avenir Next', sans-serif)
+  );
+  --fc-font-body: var(
+    --font-body,
+    var(--personality-font-family, 'Manrope', 'Segoe UI', sans-serif)
+  );
 }
 
 /* Form element base styling */

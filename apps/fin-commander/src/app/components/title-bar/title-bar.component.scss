@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   position: sticky;
   top: 0;
@@ -53,11 +55,11 @@
 }
 
 .state-label {
-  font-size: 0.55rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 600;
   color: var(--foreground);
+  @include p.small-text(0.55rem);
 }
 
 .state-chip strong {
@@ -179,7 +181,7 @@
   p {
     margin: 0;
     color: var(--muted-foreground);
-    line-height: 1.5;
+    @include p.body-text(1.5);
   }
 
   a {
@@ -228,7 +230,7 @@
 
 .help-links span {
   color: var(--muted-foreground);
-  font-size: 0.85rem;
+  @include p.small-text(0.85rem);
 }
 
 @media (max-width: 720px) {
