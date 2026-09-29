@@ -101,16 +101,6 @@ export type AnimationSpeed =
   | 'deliberate';
 
 /**
- * Icon style preference
- */
-export type IconStyle =
-  | 'outlined'
-  | 'filled'
-  | 'rounded'
-  | 'sharp'
-  | 'two-tone';
-
-/**
  * Border style preference
  */
 export type BorderStyle = 'none' | 'hairline' | 'thin' | 'thick' | 'double';
@@ -216,32 +206,7 @@ export interface ColorGenerationConfig {
  * Mobile-specific adaptations
  */
 export interface MobileAdaptations {
-  spacingMultiplier: number;
-  borderRadiusMultiplier: number;
-  shadowReduction: number;
-  fontScale: number;
   touchTargetSize: string;
-}
-
-/**
- * Mode-specific configuration (light/dark)
- */
-export interface ModeConfig {
-  background: {
-    base: string;
-    elevated: string;
-    overlay: string;
-    surface: string;
-  };
-  foreground: {
-    primary: string;
-    secondary: string;
-    muted: string;
-    inverted: string;
-  };
-  surfaceOpacity: number;
-  shadowOpacity: number;
-  shadowColor: string;
 }
 
 /**
@@ -263,8 +228,6 @@ export interface ColorHarmonyConfig {
  */
 export interface ContrastConfig {
   minimumRatio: 4.5 | 7;
-  enhancedRatio: 7 | 4.5;
-  backgroundOffset: number;
   autoAdjust: boolean;
 }
 
@@ -536,17 +499,8 @@ export interface Personality {
   // Presentation contract layered on top of the personality metadata
   presentation?: PersonalityPresentation;
 
-  // Icons
-  iconStyle: IconStyle;
-
   // Color generation (theme-responsive)
   colorGeneration: ColorGenerationConfig;
-
-  // Legacy mode support (optional, for backward compatibility during transition)
-  modes?: {
-    light: ModeConfig;
-    dark: ModeConfig;
-  };
 
   // Mobile adaptations
   mobile: MobileAdaptations;

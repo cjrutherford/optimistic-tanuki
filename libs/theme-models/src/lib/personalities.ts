@@ -13,7 +13,6 @@ import {
   PersonalityShadowProfile,
   TypographyStyle,
   AnimationSpeed,
-  IconStyle,
   BorderStyle,
 } from './personality.interfaces';
 import { getPersonalityComposition } from './personality-composition';
@@ -39,8 +38,6 @@ export const classicPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.05,
     autoAdjust: true,
   },
 
@@ -95,8 +92,6 @@ export const classicPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 100,
     surfaceLuminosityOffset: -2,
@@ -121,10 +116,6 @@ export const classicPersonality: Personality = {
   // provide. Intentional, not an oversight (Workstream C1).
 
   mobile: {
-    spacingMultiplier: 0.875,
-    borderRadiusMultiplier: 1,
-    shadowReduction: 0.3,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
@@ -175,8 +166,6 @@ export const minimalPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
     autoAdjust: true,
   },
 
@@ -229,8 +218,6 @@ export const minimalPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -1,
@@ -257,10 +244,6 @@ export const minimalPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.75,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
     touchTargetSize: '48px',
   },
 
@@ -309,8 +292,6 @@ export const boldPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
     autoAdjust: true,
   },
 
@@ -363,8 +344,6 @@ export const boldPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'filled' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -5,
@@ -392,10 +371,6 @@ export const boldPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 1.1,
-    shadowReduction: 0.2,
-    fontScale: 0.98,
     touchTargetSize: '48px',
   },
 
@@ -446,8 +421,6 @@ export const softPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
     autoAdjust: true,
   },
 
@@ -500,8 +473,6 @@ export const softPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'rounded' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -2,
@@ -528,10 +499,6 @@ export const softPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 1.3,
-    shadowReduction: 0.5,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
@@ -580,8 +547,6 @@ export const professionalPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
     autoAdjust: true,
   },
 
@@ -634,8 +599,6 @@ export const professionalPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'sharp' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -3,
@@ -662,10 +625,6 @@ export const professionalPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.875,
-    shadowReduction: 0.3,
-    fontScale: 0.96,
     touchTargetSize: '48px',
   },
 
@@ -713,8 +672,6 @@ export const playfulPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.12,
     autoAdjust: true,
   },
 
@@ -767,8 +724,6 @@ export const playfulPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'two-tone' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -7,
@@ -796,10 +751,6 @@ export const playfulPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 1,
-    borderRadiusMultiplier: 1.5,
-    shadowReduction: 0.15,
-    fontScale: 1,
     touchTargetSize: '56px',
   },
 
@@ -849,8 +800,6 @@ export const elegantPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.06,
     autoAdjust: true,
   },
 
@@ -909,8 +858,6 @@ export const elegantPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 96,
     surfaceLuminosityOffset: -4,
@@ -937,10 +884,6 @@ export const elegantPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.9,
-    shadowReduction: 0.35,
-    fontScale: 0.94,
     touchTargetSize: '44px',
   },
 
@@ -995,8 +938,6 @@ export const architectPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
     autoAdjust: true,
   },
 
@@ -1049,8 +990,6 @@ export const architectPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'sharp' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -5,
@@ -1091,10 +1030,6 @@ export const architectPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.5,
-    shadowReduction: 0.2,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
@@ -1153,8 +1088,6 @@ export const softTouchPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.06,
     autoAdjust: true,
   },
 
@@ -1211,8 +1144,6 @@ export const softTouchPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 97,
     surfaceLuminosityOffset: -3,
@@ -1250,12 +1181,8 @@ export const softTouchPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
     // Mobile surfaces are smaller, so radii clip sooner — no extra
     // amplification on top of the (already capped) base multiplier.
-    borderRadiusMultiplier: 1.0,
-    shadowReduction: 0.4,
-    fontScale: 0.95,
     touchTargetSize: '48px',
   },
 
@@ -1305,8 +1232,6 @@ export const electricPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
     autoAdjust: true,
   },
 
@@ -1359,8 +1284,6 @@ export const electricPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'two-tone' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -6,
@@ -1400,10 +1323,6 @@ export const electricPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.95,
-    borderRadiusMultiplier: 1.0,
-    shadowReduction: 0.15,
-    fontScale: 1.0,
     touchTargetSize: '48px',
   },
 
@@ -1452,8 +1371,6 @@ export const controlCenterPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
     autoAdjust: true,
   },
 
@@ -1506,8 +1423,6 @@ export const controlCenterPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 97,
     surfaceLuminosityOffset: -4,
@@ -1553,10 +1468,6 @@ export const controlCenterPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.35,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
     touchTargetSize: '44px',
   },
 
@@ -1607,8 +1518,6 @@ export const foundationPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
     autoAdjust: true,
   },
 
@@ -1661,8 +1570,6 @@ export const foundationPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 100,
     surfaceLuminosityOffset: -1,
@@ -1687,10 +1594,6 @@ export const foundationPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.7,
-    shadowReduction: 0.5,
-    fontScale: 0.9,
     touchTargetSize: '44px',
   },
 
@@ -1734,8 +1637,6 @@ export const risographPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.07,
     autoAdjust: true,
   },
 
@@ -1790,8 +1691,6 @@ export const risographPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'filled',
-
   colorGeneration: {
     // Off-white newsprint rather than bright white.
     backgroundLuminosity: 96,
@@ -1829,10 +1728,6 @@ export const risographPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.5,
-    shadowReduction: 0.25,
-    fontScale: 0.96,
     touchTargetSize: '46px',
   },
 
@@ -1882,8 +1777,6 @@ export const observatoryPersonality: Personality = {
   // Built for long reading sessions in the dark: AAA text contrast.
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.04,
     autoAdjust: true,
   },
 
@@ -1939,8 +1832,6 @@ export const observatoryPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined',
-
   colorGeneration: {
     // Light mode is a cool daylight atlas page; dark mode (the headline
     // mode) is nearly black with a deep indigo cast.
@@ -1971,10 +1862,6 @@ export const observatoryPersonality: Personality = {
   // page, not on the glass.
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.9,
-    shadowReduction: 0.5,
-    fontScale: 0.94,
     touchTargetSize: '48px',
   },
 
@@ -2022,8 +1909,6 @@ export const ledgerPersonality: Personality = {
   // Auditable means legible: AAA everywhere.
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
     autoAdjust: true,
   },
 
@@ -2080,8 +1965,6 @@ export const ledgerPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'sharp',
-
   colorGeneration: {
     backgroundLuminosity: 96,
     surfaceLuminosityOffset: -4,
@@ -2117,10 +2000,6 @@ export const ledgerPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.5,
-    shadowReduction: 0,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
@@ -2171,8 +2050,6 @@ export const kunsthallePersonality: Personality = {
   // to brick to chase 7:1.
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
     autoAdjust: true,
   },
 
@@ -2229,7 +2106,6 @@ export const kunsthallePersonality: Personality = {
   },
 
   // Solid pictograms, Aicher-style.
-  iconStyle: 'filled',
 
   colorGeneration: {
     // Pure white paper, pure black type.
@@ -2257,10 +2133,6 @@ export const kunsthallePersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0,
-    shadowReduction: 0,
-    fontScale: 0.9,
     touchTargetSize: '44px',
   },
 
@@ -2307,8 +2179,6 @@ export const canopyPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.06,
     autoAdjust: true,
   },
 
@@ -2363,7 +2233,6 @@ export const canopyPersonality: Personality = {
   },
 
   // Duotone leaves.
-  iconStyle: 'two-tone',
 
   colorGeneration: {
     backgroundLuminosity: 97,
@@ -2389,10 +2258,6 @@ export const canopyPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.88,
-    borderRadiusMultiplier: 1.1,
-    shadowReduction: 0.35,
-    fontScale: 0.96,
     touchTargetSize: '48px',
   },
 
@@ -2441,8 +2306,6 @@ export const clayPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
     autoAdjust: true,
   },
 
@@ -2498,8 +2361,6 @@ export const clayPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'rounded',
-
   colorGeneration: {
     // A tinted, slightly dim "clay table" background so the lighter pods pop.
     backgroundLuminosity: 94,
@@ -2527,10 +2388,6 @@ export const clayPersonality: Personality = {
   // No surface texture: clay is smooth. Its tactility is in the shading.
 
   mobile: {
-    spacingMultiplier: 0.92,
-    borderRadiusMultiplier: 1.2,
-    shadowReduction: 0.35,
-    fontScale: 1,
     // Chunky, thumb-friendly pods.
     touchTargetSize: '52px',
   },
