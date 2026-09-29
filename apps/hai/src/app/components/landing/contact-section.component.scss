@@ -1,5 +1,13 @@
 :host {
   display: block;
+  // lib-contact-form paints its form panel with --background-overlay, whose
+  // fallback is a translucent black (a grey slab on light grounds). Give it a
+  // themed surface so the labels sit on a ground they were designed for.
+  --background-overlay: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 90%,
+    var(--primary) 10%
+  );
 }
 
 .contact-panel {
@@ -56,4 +64,10 @@ h2 {
   margin: 0 auto 1.5rem;
   max-width: 36rem;
   font-weight: 600;
+}
+
+// otui-heading paints an inline white default; on the themed form panel it
+// must follow the theme's body text instead.
+lib-contact-form ::ng-deep .form .heading {
+  color: var(--foreground) !important;
 }
