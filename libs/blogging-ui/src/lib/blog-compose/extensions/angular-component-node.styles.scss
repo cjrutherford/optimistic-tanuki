@@ -145,8 +145,8 @@
     padding: var(--spacing-xs, 4px);
 
     .component-label {
-      font-size: var(--font-size-xs, 0.75rem);
       margin: 0 var(--spacing-xs, 4px);
+      @include p.small-text(var(--font-size-xs, 0.75rem));
     }
 
     button {

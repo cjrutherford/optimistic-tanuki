@@ -28,9 +28,9 @@
     .contact-subject-label {
       margin: 0 0 -0.65rem;
       color: var(--foreground);
-      font-size: 0.82rem;
       font-weight: 700;
       letter-spacing: 0.04em;
+      @include p.small-text(0.82rem);
     }
   }
 }
