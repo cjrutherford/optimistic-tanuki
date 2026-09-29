@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -13,6 +14,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     TitleBarComponent,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
