@@ -36,32 +36,31 @@
   inset: 0;
   background: radial-gradient(
       circle at 24% 30%,
-      color-mix(in srgb, var(--primary) 14%, transparent),
-      transparent 32%
+      scene.lit(var(--primary), 40%),
+      transparent 36%
     ),
     radial-gradient(
       circle at 78% 24%,
-      color-mix(in srgb, var(--secondary) 12%, transparent),
-      transparent 30%
+      scene.lit(var(--secondary), 36%),
+      transparent 34%
     ),
     radial-gradient(
       circle at 60% 72%,
       color-mix(in srgb, var(--motion-tint) 10%, transparent),
       transparent 24%
     );
-  opacity: calc(0.32 + (var(--scene-intensity) * 0.16));
+  opacity: 1;
 }
 
 .fog-blob {
   border-radius: var(--border-radius-full, 999px);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--motion-tint) 18%, transparent),
-    color-mix(in srgb, var(--secondary) 12%, transparent) 45%,
+    scene.lit(var(--motion-tint), 70%),
+    scene.lit(var(--secondary), 55%) 45%,
     transparent 72%
   );
-  filter: blur(18px);
-  opacity: calc(0.28 + (var(--scene-intensity) * 0.2));
+  will-change: transform;
   mix-blend-mode: var(--motion-blend);
   animation: fog-float ease-in-out infinite;
 }
@@ -73,11 +72,10 @@
   background: linear-gradient(
     110deg,
     transparent 14%,
-    color-mix(in srgb, var(--motion-tint) 16%, transparent) 36%,
+    scene.ink(var(--motion-tint), 50%) 36%,
     transparent 58%
   );
-  opacity: calc(0.24 + (var(--scene-intensity) * 0.18));
-  filter: blur(12px);
+  will-change: transform;
   transform: rotate(10deg);
   animation: fog-sheen-drift ease-in-out infinite;
 }
@@ -90,10 +88,10 @@
 @keyframes fog-float {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) scale(0.94);
+    transform: translate3d(-8%, 4%, 0);
   }
   50% {
-    transform: translate3d(6%, -5%, 0) scale(1.04);
+    transform: translate3d(10%, -8%, 0);
   }
 }
 
@@ -103,6 +101,17 @@
     transform: translate3d(0, 0, 0) rotate(10deg);
   }
   50% {
-    transform: translate3d(10%, -3%, 0) rotate(10deg);
+    transform: translate3d(28%, -3%, 0) rotate(10deg);
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .glass-fog {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

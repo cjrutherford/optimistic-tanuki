@@ -69,18 +69,18 @@
   width: calc(72% + (var(--layer-index) * 8%));
   height: calc(36% + (var(--layer-index) * 4%));
   border-radius: var(--border-radius-full, 999px);
-  opacity: calc(0.16 + (var(--scene-intensity) * 0.12));
-  filter: blur(calc(28px + (var(--layer-index) * 8px)));
+  opacity: calc(0.5 + (var(--scene-intensity) * 0.4));
   transform: rotate(calc(-10deg + (var(--layer-index) * 7deg)));
   transform-origin: center;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--motion-primary) 12%, transparent),
-    color-mix(in srgb, var(--motion-secondary) 70%, var(--motion-tint)),
-    color-mix(in srgb, var(--motion-primary) 32%, transparent)
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--motion-secondary) 62%, var(--motion-tint)) 0,
+    color-mix(in srgb, var(--motion-primary) 34%, transparent) 46%,
+    transparent 72%
   );
   mix-blend-mode: var(--motion-blend);
-  animation: aurora-drift scene.duration(18s) ease-in-out infinite alternate;
+  animation: aurora-drift scene.duration(24s) ease-in-out infinite alternate;
+  will-change: transform;
   animation-delay: calc(var(--layer-index) * -1.8s);
 }
 
@@ -91,11 +91,22 @@
 
 @keyframes aurora-drift {
   from {
-    transform: translate3d(-2%, -4%, 0)
-      rotate(calc(-10deg + (var(--layer-index) * 7deg))) scale(0.98);
+    transform: translate3d(-9%, -6%, 0)
+      rotate(calc(-10deg + (var(--layer-index) * 7deg)));
   }
   to {
-    transform: translate3d(4%, 3%, 0)
-      rotate(calc(-6deg + (var(--layer-index) * 7deg))) scale(1.05);
+    transform: translate3d(9%, 5%, 0)
+      rotate(calc(-6deg + (var(--layer-index) * 7deg)));
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .aurora-ribbon {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

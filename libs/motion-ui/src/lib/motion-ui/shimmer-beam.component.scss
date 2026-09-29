@@ -77,13 +77,13 @@
     transparent 76%
   );
   mix-blend-mode: var(--motion-blend);
-  filter: blur(8px);
+  will-change: transform;
   transform: translate3d(-62%, 0, 0) rotate(-9deg);
-  animation: beam-sweep scene.duration(8s) linear infinite;
+  animation: beam-sweep scene.duration(30s) linear infinite;
 }
 
 .beam-sweep-secondary {
-  animation-delay: scene.duration(-4s);
+  animation-delay: scene.duration(-15s);
   opacity: 0.72;
 }
 
@@ -124,5 +124,16 @@
   }
   100% {
     transform: translate3d(62%, 0, 0) rotate(-9deg);
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .shimmer-beam {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

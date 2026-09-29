@@ -41,57 +41,52 @@
 
 .warp-horizon {
   inset: 18% 12% auto;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--secondary) 34%, transparent),
+    scene.lit(var(--secondary), 100%),
     transparent
   );
-  opacity: calc(0.26 + (var(--scene-intensity) * 0.22));
+  opacity: 1;
 }
 
 .warp-plane {
-  inset: 22% 0 0;
+  inset: 22% 0 -3.1rem;
   transform-origin: top center;
   transform: perspective(520px) rotateX(76deg);
-  animation: warp-plane-shift scene.duration(14s, 0.25) linear infinite;
+  animation: warp-plane-shift scene.duration(5s, 0.25) linear infinite;
   background-image: linear-gradient(
-      color-mix(in srgb, var(--secondary) 16%, transparent) 1px,
-      transparent 1px
+      scene.lit(var(--secondary), 62%) 2px,
+      transparent 2px
     ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--primary) 14%, transparent) 1px,
-      transparent 1px
-    );
+    linear-gradient(90deg, scene.lit(var(--primary), 56%) 2px, transparent 2px);
   background-size: 3.1rem 3.1rem;
   mask-image: linear-gradient(to bottom, black 14%, transparent 92%);
-  opacity: calc(0.34 + (var(--scene-intensity) * 0.2));
+  will-change: transform;
 }
 
 .warp-drift {
   inset: -8% -12% 0;
   background: radial-gradient(
       circle at 50% 18%,
-      color-mix(in srgb, var(--secondary) 18%, transparent),
-      transparent 28%
+      scene.lit(var(--secondary), 60%),
+      transparent 34%
     ),
     linear-gradient(
       90deg,
       transparent,
-      color-mix(in srgb, var(--primary) 10%, transparent),
+      scene.lit(var(--primary), 36%),
       transparent
     );
   mix-blend-mode: var(--motion-blend);
-  opacity: calc(0.26 + (var(--scene-intensity) * 0.14));
   animation: warp-drift-slide scene.duration(9s, 0.25) linear infinite;
 }
 
 .warp-beam {
   top: -4%;
   bottom: 8%;
-  width: 1px;
+  width: 2px;
   background: linear-gradient(
     180deg,
     transparent,
@@ -112,11 +107,9 @@
   border-radius: var(--border-radius-full, 999px);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--secondary) 16%, transparent),
+    scene.lit(var(--secondary), 60%),
     transparent 68%
   );
-  filter: blur(24px);
-  opacity: calc(0.5 + (var(--scene-intensity) * 0.14));
 }
 
 .parallax-grid-warp.is-fallback .warp-beam {
@@ -132,11 +125,9 @@
 @keyframes warp-plane-shift {
   0% {
     transform: perspective(520px) rotateX(76deg) translate3d(0, 0, 0);
-    background-position: 0 0, 0 0;
   }
   100% {
-    transform: perspective(520px) rotateX(76deg) translate3d(0, -3%, 0);
-    background-position: 0 2.4rem, 1.2rem 0;
+    transform: perspective(520px) rotateX(76deg) translate3d(0, 3.1rem, 0);
   }
 }
 
@@ -158,5 +149,16 @@
   50% {
     transform: translateY(-8%) scaleY(1.08);
     opacity: 0.92;
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .parallax-grid-warp {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

@@ -33,12 +33,12 @@ export class ParticleVeilComponent {
     return Array.from({ length: count }, (_, index) => {
       const x = (index * 37) % 100;
       const y = (index * 19) % 100;
-      const size = 0.25 + ((index * 7) % 6) * 0.08;
-      const opacity = 0.22 + ((index * 11) % 5) * 0.08;
+      const size = 0.55 + ((index * 7) % 6) * 0.2;
+      const opacity = 0.5 + ((index * 11) % 5) * 0.1;
       const delay = -((index % 9) * 0.55);
       const duration = 7 + ((index * 5) % 6) / Math.max(this.speed, 0.2);
-      const driftX = -12 + ((index * 13) % 25);
-      const driftY = -18 - ((index * 9) % 24);
+      const driftX = (-12 + ((index * 13) % 25)) * 0.3;
+      const driftY = (-18 - ((index * 9) % 24)) * 0.45;
 
       return {
         left: `${x}%`,
@@ -47,8 +47,8 @@ export class ParticleVeilComponent {
         opacity,
         delay: `${delay.toFixed(2)}s`,
         duration: `${duration.toFixed(2)}s`,
-        driftX: `${driftX.toFixed(2)}%`,
-        driftY: `${driftY.toFixed(2)}%`,
+        driftX: `${driftX.toFixed(2)}rem`,
+        driftY: `${driftY.toFixed(2)}rem`,
       };
     });
   }

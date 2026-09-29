@@ -34,7 +34,7 @@ export class TopographicDriftComponent {
       return {
         top: `${top.toFixed(2)}%`,
         width: `${width}%`,
-        opacity: 0.24 + ((index * 2) % 5) * 0.1,
+        opacity: 0.6 + ((index * 2) % 5) * 0.1,
         delay: `${(-0.35 * (index % 6)).toFixed(2)}s`,
         duration: `${(
           8 +
