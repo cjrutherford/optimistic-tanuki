@@ -1,6 +1,6 @@
 ---
 title: Personality Catalog
-summary: Catalog of all 12 predefined personalities, their distinctiveness matrix, and the canonical product mapping.
+summary: Catalog of all 18 predefined personalities, their distinctiveness matrix, and the canonical product mapping.
 category: design-system
 section: design-system
 tags:
@@ -363,6 +363,92 @@ both-modes visual comparison of background/surface/elevated tiers.
 - **Identity:** the compact/technical/reduced-motion baseline — borderless (`border: none`), no shadow (`shadowIntensity: none`), and instant animation (`speed: instant`, ~0–120ms durations), on top of pure system fonts. This flat look is a deliberate, legitimately separate identity from `classic`, not an underdeveloped one — see the Distinctiveness Matrix note above.
 - **Best for:** Prototypes, getting-started kits, utilitarian internal tooling.
 
+### risograph
+
+- **Tags:** print, zine, halftone, two-ink, poster
+- **Category:** creative
+- **Identity:** two-ink print zine. Misregistered offset shadows in a second ink, halftone dot fields, grainy stock, punchy grotesque headlines.
+- **Scenes:** `halftone-tide`
+- **Best for:** Posters, zines, creative portfolios.
+
+### observatory
+
+- **Tags:** celestial, night, research, contemplative, data
+- **Category:** technical
+- **Identity:** star-atlas aesthetic. Ink-black skies, hairline coordinate rules, starlight glows on hover, slow deliberate motion.
+- **Scenes:** `star-atlas`, `topographic-drift`, `particle-veil`
+- **Best for:** Research tools, data exploration, contemplative dashboards.
+
+### ledger
+
+- **Tags:** finance, ledger, tabular, auditable, serif
+- **Category:** professional
+- **Identity:** bookkeeper's ledger. Ruled green-bar paper, double-rule totals, a grotesque masthead over tabular serif figures.
+- **Scenes:** `ledger-ticker`
+- **Best for:** Accounting, audit trails, dense tabular work.
+
+### kunsthalle
+
+- **Tags:** swiss, grid, editorial, typographic, gallery
+- **Category:** creative
+- **Identity:** International Typographic Style. A visible modular grid, oversized tight grotesque headlines, one signal accent, no ornament.
+- **Scenes:** `grid-shift`
+- **Best for:** Editorial sites, galleries, typographic showcases.
+
+### canopy
+
+- **Tags:** solarpunk, organic, community, optimistic, greenhouse
+- **Category:** casual
+- **Identity:** solarpunk greenhouse. Sun-warmed leafy tints, rounded pods, dappled-light gradients, growth-inspired easing.
+- **Scenes:** `canopy-dapple`, `flock-field`
+- **Best for:** Community and sustainability products.
+
+### clay
+
+- **Tags:** claymorphism, tactile, 3d, friendly, family
+- **Category:** casual
+- **Identity:** tactile claymorphism. Puffy pressable pods with inner highlights, chunky rounded display type, squishy spring motion.
+- **Scenes:** `clay-blobs`, `pulse-rings`
+- **Best for:** Family and consumer apps that want a soft, physical feel.
+
+## Extension layer
+
+The extension layer lets a personality shape more than the base tokens do. It is optional per personality and per lever. A personality that sets nothing renders as it did before. The sources are `personality-extensions.ts`, `personality-atmosphere.ts`, `personality-motion.ts` and `readable-text.ts` in `libs/theme-lib/src/lib/theme-lib/`, and the field types in `libs/theme-models/src/lib/personality.interfaces.ts`.
+
+### Levers
+
+- **`expression`**: `ground` (the canvas, light and dark), `accent` (how accent bands and fills are built) and `neutralBase` (`hue-only` keeps today's behaviour; `respect` lets a grey, black or white brand colour stay neutral).
+- **`typeScale`**: modular ratio, heading weight, case, tracking and line height. Emitted as `--type-*` and `--heading-*`.
+- **`atmosphere`**: gradient backdrops, CSS-gradient patterns and surface finishes, built from theme colours and capped against text contrast.
+- **`motion`**: entrance style, glow, focus ring and ambient effect, plus `motion.scenes`, the ordered list of motion-ui scenes that suit the personality (see `libs/motion-ui/README.md`).
+
+Five older fields (line height, letter spacing, touch target, layout width, stagger delay) are also wired into variables now.
+
+### Readable text guarantee
+
+`--<tone>-text` (for `primary`, `secondary`, `success`, `warning`, `danger`, `info`) and `--muted-foreground` clear 4.5:1 on the page, the surface, the atmosphere fills and the surface finish. The resolver aims at 4.6:1 to leave margin for rounding. It runs last, after the extension layer, so it holds for whatever ground a personality picks. `--<tone>` stays the fill colour.
+
+### Kill switch
+
+`PERSONALITY_EXTENSIONS_ENABLED` (an injection token in theme-lib, default `true`) turns the whole layer off. When `false`, `ThemeService` skips the extension variables and the app renders as before the layer existed. Use it for an app whose components have not adopted the mixins yet, or as a fast rollback for a bad opt-in.
+
+### Rendered-distinctiveness floor
+
+The declared-value matrix below does not see the extension layer. A second metric scores what personalities emit, over all personalities, three primaries and both modes. The spec is `libs/theme-lib/src/lib/theme-lib/rendered-distinctiveness.spec.ts`. The floor is **0.335**. The closest pair is `minimal` vs `foundation` at 0.339.
+
+The generated Distinctiveness Matrix section in this file predates the extension layer and the six newest personalities. It was generated on 2026-07-18 and is not regenerated here.
+
+### Consistency rules
+
+1. Colour comes only from the user's primary. Personalities shape the derivation and never carry a palette.
+2. Texture is derived, never pasted. The resolver builds gradients and patterns from theme colours and caps their alpha against text contrast.
+3. Every lever is optional and defaults to today's output, with a spec proving it.
+4. Emit the full key set. An empty string means cleared.
+5. Components read variables with today's value as the fallback. They never branch on a personality id.
+6. Measure what renders. A new lever or personality lands with the rendered floor, contrast and limits specs, screenshots and clips.
+7. Ratchet, do not rewrite. Style literals only go down, one primitive per PR.
+8. App themes stay on top, as the exception. A product theme that is really a personality becomes a personality.
+
 ## Declaring a Personality in an App
 
 Apps declare their canonical personality in two places that must stay aligned:
@@ -378,8 +464,8 @@ Switching the canonical personality requires updating both the mapping and the m
 - **Distinctiveness test:** `libs/theme-models/src/lib/personality-distinctiveness.spec.ts` fails the build if any pair drops below `DISTINCTIVENESS_THRESHOLD` or the product set drops below `PRODUCT_DISTINCTIVENESS_THRESHOLD` — the enforcement mechanism behind the Distinctiveness Matrix above.
 - **Storybook:** the personality showcase stories in `libs/theme-ui` render the catalog and let a reviewer compare personalities side-by-side.
 - **Live comparison:** the `<otui-personality-comparison>` component (see `libs/theme-ui/src/lib/theme-ui/personality-comparison.component.ts`) renders the same UI primitives across multiple personalities and can be embedded in apps or stories.
-- **"All 12 at a glance" grid:** the `Theme/Personality Grid (All 12)` Storybook story (`libs/theme-ui/src/lib/theme-ui/personality-grid.stories.ts`, backed by `<lib-personality-grid>`) renders a heading, body copy, button, card, and input for every predefined personality in both light and dark mode simultaneously — the visual counterpart to the numeric matrix, useful for catching near-duplicates or font-fallback that the metric alone wouldn't surface.
-- **Token variation stories (Workstream D4):** `Theme/Personality Variation/Shadow Profiles`, `Theme/Personality Variation/Page Backgrounds`, and `Theme/Personality Variation/Surfaces` (all in `libs/theme-ui`, backed by `<lib-personality-token-showcase>`) render the same 12-across, both-modes comparison for the three dimensions this catalog documents above — each cell calls the same pure `generatePersonalityShadows()` / `generatePageBackgroundPattern()` / `generateThemeResponsiveColors()` functions `ThemeService` uses internally, so what's on screen is provably what the app would actually render.
+- **"All 18 at a glance" grid:** the `Theme/Personality Grid (All 18)` Storybook story (`libs/theme-ui/src/lib/theme-ui/personality-grid.stories.ts`, backed by `<lib-personality-grid>`) renders a heading, body copy, button, card, and input for every predefined personality in both light and dark mode simultaneously — the visual counterpart to the numeric matrix, useful for catching near-duplicates or font-fallback that the metric alone wouldn't surface.
+- **Token variation stories (Workstream D4):** `Theme/Personality Variation/Shadow Profiles`, `Theme/Personality Variation/Page Backgrounds`, and `Theme/Personality Variation/Surfaces` (all in `libs/theme-ui`, backed by `<lib-personality-token-showcase>`) render the same all-personalities, both-modes comparison for the three dimensions this catalog documents above — each cell calls the same pure `generatePersonalityShadows()` / `generatePageBackgroundPattern()` / `generateThemeResponsiveColors()` functions `ThemeService` uses internally, so what's on screen is provably what the app would actually render.
 
 ## Accessibility
 
