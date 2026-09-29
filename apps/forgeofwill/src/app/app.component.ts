@@ -32,8 +32,8 @@ import { filter } from 'rxjs';
 import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
-import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
 
 const FORGE_AUTH_NAV_LINKS = [
   {
@@ -75,7 +75,7 @@ const FORGE_AUTH_NAV_LINKS = [
     MessageComponent,
     DevInfoComponent,
     HaiAboutTagComponent,
-    PulseRingsComponent,
+    PersonalitySceneComponent,
     PersonalityBackdropComponent,
     BugReportUiComponent,
   ],
@@ -141,18 +141,6 @@ export class AppComponent implements OnInit {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   constructor() {

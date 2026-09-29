@@ -6,13 +6,13 @@
 
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-pulse-rings
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
-    [ringCount]="5"
+    fallbackScene="pulse-rings"
+    [density]="5"
     [speed]="0.32"
     [intensity]="0.45"
-  ></otui-pulse-rings>
+  ></otui-personality-scene>
 </div>
 }
 
