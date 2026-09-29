@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { NavigationLinkComponent } from '@optimistic-tanuki/app-registry';
 import { AuthStateService } from './state/auth-state.service';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -20,6 +21,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
     RouterModule,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     NavigationLinkComponent,
   ],
   selector: 'app-root',
