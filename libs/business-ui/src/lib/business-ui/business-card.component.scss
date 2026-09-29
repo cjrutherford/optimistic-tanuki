@@ -58,10 +58,10 @@
   }
 
   &__tier {
-    font-size: 0.75rem;
     padding: 0.125rem 0.5rem;
     border-radius: var(--border-radius-full, 100px);
     font-weight: 500;
+    @include p.small-text(0.75rem);
 
     &.tier--basic {
       background: var(--tier-basic-bg);
@@ -90,7 +90,7 @@
   &__meta {
     display: flex;
     gap: 1rem;
-    font-size: 0.8125rem;
+    @include p.small-text(0.8125rem);
   }
 
   &__link {

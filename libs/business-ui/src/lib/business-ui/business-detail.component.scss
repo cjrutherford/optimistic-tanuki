@@ -25,12 +25,12 @@
 
   &__tier,
   &__status {
-    font-size: 0.75rem;
     padding: 0.125rem 0.5rem;
     border-radius: var(--border-radius-full, 100px);
     font-weight: 500;
     margin-right: 0.5rem;
     @include p.personality-transition('background, color', 'fast');
+    @include p.small-text(0.75rem);
   }
 
   .tier--basic {
