@@ -76,12 +76,10 @@
   width: 2.7rem;
   aspect-ratio: 1;
   border-radius: var(--personality-button-radius, 0.9rem);
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--primary) 88%, black 12%),
-    color-mix(in srgb, var(--primary) 72%, black 28%)
-  );
-  color: var(--background, #f8f2e6);
+  // Text and fill must pair: the on-primary token is chosen against the plain
+  // primary, so the fill stays primary (no darkening gradient).
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground, var(--background)));
   font-family: var(
     --font-heading,
     var(--personality-font-family, Georgia, serif)
