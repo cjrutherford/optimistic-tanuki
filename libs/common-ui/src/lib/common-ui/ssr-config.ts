@@ -74,15 +74,19 @@ export function matchesAllowedHost(
   host: string,
   patterns: readonly string[]
 ): boolean {
-  const normalized = host.trim().toLowerCase();
-  if (!normalized) return false;
+  // Strip port from host before comparison (e.g. "127.0.0.1:4000" → "127.0.0.1")
+  const hostWithoutPort = host.split(':')[0].trim().toLowerCase();
+  if (!hostWithoutPort) return false;
   for (const pattern of patterns) {
     const candidate = pattern.trim().toLowerCase();
     if (!candidate) continue;
-    if (candidate === normalized) return true;
+    if (candidate === hostWithoutPort) return true;
     if (candidate.startsWith('*.')) {
       const suffix = candidate.slice(1);
-      if (normalized.endsWith(suffix) && normalized.length > suffix.length) {
+      if (
+        hostWithoutPort.endsWith(suffix) &&
+        hostWithoutPort.length > suffix.length
+      ) {
         return true;
       }
     }
