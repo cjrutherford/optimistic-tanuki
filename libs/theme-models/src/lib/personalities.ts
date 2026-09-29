@@ -401,6 +401,27 @@ export const boldPersonality: Personality = {
 
   tags: ['vibrant', 'energetic', 'marketing', 'creative'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'tinted', dark: 'ink' },
+    accent: 'primary-ground',
+  },
+  typeScale: {
+    ratio: 1.414,
+    headingWeight: 800,
+    headingCase: 'none',
+    headingTracking: '-0.03em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'sweep',
+    surface: 'gradient',
+    accentFill: 'linear',
+    accentPattern: 'stripes',
+    buttonFill: 'gradient',
+    intensity: 1.3,
+  },
+  motion: { scenes: ['halftone-tide', 'shimmer-beam'] },
 };
 
 /**
@@ -784,6 +805,27 @@ export const playfulPersonality: Personality = {
 
   tags: ['fun', 'energetic', 'creative', 'youth'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'tinted', dark: 'tinted' },
+    accent: 'duotone',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 700,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.15,
+  },
+  atmosphere: {
+    backdrop: 'mesh',
+    surface: 'gradient',
+    accentFill: 'mesh',
+    accentPattern: 'dots',
+    buttonFill: 'shine',
+    intensity: 1.3,
+  },
+  motion: { ambient: 'shimmer', scenes: ['clay-blobs', 'halftone-tide'] },
 };
 
 /**
@@ -1058,6 +1100,31 @@ export const architectPersonality: Personality = {
 
   tags: ['brutalist', 'industrial', 'structural', 'bold', 'technical'],
   category: 'technical',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'toned', dark: 'black' },
+    accent: 'primary-ground',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 700,
+    headingCase: 'uppercase',
+    headingTracking: '0.02em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    accentFill: 'split',
+    accentPattern: 'diagonal',
+    buttonFill: 'split',
+    intensity: 1.1,
+  },
+  motion: {
+    enter: 'snap',
+    ambient: 'drift',
+    scenes: ['blueprint-scan', 'grid-shift'],
+  },
 };
 
 /**
@@ -1342,6 +1409,24 @@ export const electricPersonality: Personality = {
 
   tags: ['vibrant', 'energetic', 'kinetic', 'playful', 'social'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: { ground: { light: 'tinted', dark: 'ink' }, accent: 'duotone' },
+  typeScale: {
+    ratio: 1.414,
+    headingWeight: 800,
+    headingCase: 'none',
+    headingTracking: '-0.025em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'aurora',
+    surface: 'glass',
+    accentFill: 'mesh',
+    accentPattern: 'diagonal',
+    buttonFill: 'shine',
+    intensity: 1.5,
+  },
+  motion: { scenes: ['neon-circuit', 'aurora-ribbon'] },
 };
 
 /**
