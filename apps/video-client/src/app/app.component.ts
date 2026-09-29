@@ -19,7 +19,7 @@ import {
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
-import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
@@ -30,7 +30,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
     RouterModule,
     AppBarComponent,
     NavSidebarComponent,
-    TopographicDriftComponent,
+    PersonalitySceneComponent,
     HaiAboutTagComponent,
   ],
   templateUrl: './app.component.html',
