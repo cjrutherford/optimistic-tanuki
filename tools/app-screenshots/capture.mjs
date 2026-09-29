@@ -175,7 +175,14 @@ const browser = await chromium.launch();
 
 async function newCtx(vp, mode, seed, storageState) {
   const ctx = await browser.newContext({
-    ...(storageState ? { storageState } : {}),
+    ...(storageState
+      ? {
+          storageState: {
+            cookies: storageState.cookies,
+            origins: storageState.origins,
+          },
+        }
+      : {}),
     viewport: VIEWPORTS[vp],
     colorScheme: mode,
     reducedMotion: 'reduce',
@@ -194,6 +201,13 @@ async function newCtx(vp, mode, seed, storageState) {
       },
       [KEY, seed]
     );
+  if (storageState?.sessionStorage && storageState.sessionStorage !== '{}')
+    await ctx.addInitScript((j) => {
+      try {
+        for (const [k, v] of Object.entries(JSON.parse(j)))
+          sessionStorage.setItem(k, v);
+      } catch {}
+    }, storageState.sessionStorage);
   if (gateway) {
     await ctx.route('http://localhost:3000/**', (route) => {
       const u = new URL(route.request().url());
@@ -271,6 +285,40 @@ async function settle(page) {
   await page.waitForTimeout(600);
 }
 
+// Fills and submits the app's own login form; resolves to the login POST response.
+async function formLogin(page) {
+  const L = cfg.login;
+  await page.goto(base + L.route);
+  await settle(page);
+  const email = page
+    .locator(
+      L.emailSel ??
+        'input[type="email"], input[name*="email" i], input[formcontrolname*="email" i], input[autocomplete="username"], input[placeholder*="email" i], input[type="text"]'
+    )
+    .first();
+  await email.fill(L.email, { timeout: 8000 });
+  await page.locator('input[type="password"]').first().fill(L.password);
+  let submit = page.locator(L.submitSel ?? 'button[type="submit"]').first();
+  if (!L.submitSel && !(await submit.count()))
+    submit = page
+      .locator(
+        'button:has-text("Log in"), button:has-text("Login"), button:has-text("Sign in")'
+      )
+      .first();
+  const [resp] = await Promise.all([
+    page
+      .waitForResponse(
+        (r) =>
+          /login|sign-?in|auth/i.test(r.url()) &&
+          r.request().method() === 'POST',
+        { timeout: 10000 }
+      )
+      .catch(() => null),
+    submit.click(),
+  ]);
+  return resp;
+}
+
 // Logs in through the app's own login form with a seeded account and returns
 // Playwright storageState (cookies + localStorage) minus the theme keys.
 async function login() {
@@ -279,43 +327,20 @@ async function login() {
   const page = await ctx.newPage();
   const result = { ok: false, account: L.email, note: '' };
   try {
-    await page.goto(base + L.route);
+    const resp = await formLogin(page);
     await settle(page);
-    const email = page
-      .locator(
-        L.emailSel ??
-          'input[type="email"], input[name*="email" i], input[formcontrolname*="email" i], input[autocomplete="username"], input[placeholder*="email" i], input[type="text"]'
-      )
-      .first();
-    await email.fill(L.email, { timeout: 8000 });
-    await page.locator('input[type="password"]').first().fill(L.password);
-    const submit = page
-      .locator(
-        L.submitSel ??
-          'button[type="submit"], button:has-text("Log in"), button:has-text("Login"), button:has-text("Sign in")'
-      )
-      .first();
-    await Promise.all([
-      page
-        .waitForResponse(
-          (r) =>
-            /login|sign-?in|auth/i.test(r.url()) &&
-            r.request().method() === 'POST',
-          { timeout: 10000 }
-        )
-        .catch(() => {}),
-      submit.click(),
-    ]);
-    await settle(page);
+    await page.waitForTimeout(1500);
+    const status = resp?.status() ?? 0;
     const stillLogin = page.url().includes(L.route.split('?')[0]);
-    result.ok = !stillLogin;
-    result.note = `after login: ${page.url().replace(base, '') || '/'}`;
-    if (!result.ok)
-      result.note += ` | still on login: ${(
-        await page.evaluate(() => document.body.innerText)
-      )
-        .replace(/\s+/g, ' ')
-        .slice(0, 200)}`;
+    // Some apps stay on /login after a successful POST (no profile yet), so the
+    // API status decides; the URL is only reported.
+    result.ok = status >= 200 && status < 300;
+    result.note = `login POST ${status}; after login: ${
+      page.url().replace(base, '') || '/'
+    }${stillLogin ? ' (still on login route)' : ''}`;
+    result.sessionStorage = await page.evaluate(() =>
+      JSON.stringify({ ...sessionStorage })
+    );
     const state = await ctx.storageState();
     for (const o of state.origins)
       o.localStorage = o.localStorage.filter(
@@ -442,9 +467,21 @@ for (const route of routes) {
           }`.slice(0, 200)
         )
       );
-      await page
-        .goto(base + route)
-        .catch((e) => consoleErrors.push(`goto: ${e.message}`));
+      if (authed && cfg.login.inPage) {
+        // Auth held in memory: sign in inside this page, then route client-side.
+        await formLogin(page).catch((e) =>
+          consoleErrors.push(`login: ${e.message}`)
+        );
+        await settle(page);
+        await page.evaluate((r) => {
+          history.pushState({}, '', r);
+          window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+        }, route);
+        await page.waitForTimeout(1500);
+      } else
+        await page
+          .goto(base + route)
+          .catch((e) => consoleErrors.push(`goto: ${e.message}`));
       await settle(page);
       const finalUrl = page.url().replace(base, '') || '/';
       const applied = await readTheme(page);

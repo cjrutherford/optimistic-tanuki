@@ -207,6 +207,8 @@ const LIVE = {
     auth: ['/onboarding', '/settings', '/account'],
   },
   'configurable-client': {
+    modeNote:
+      "Mode comes from the tenant theme config (TenantThemeService.DEFAULT_MODE=light, theme.mode); the user's dark request is honoured only on some routes.",
     url: 'http://127.0.0.1:8090',
     login: {
       route: '/login',
@@ -216,6 +218,8 @@ const LIVE = {
     auth: ['/owner'],
   },
   'system-configurator': {
+    modeNote:
+      'Rendered surface is dark in both requested modes (light request only sets data-mode).',
     url: 'http://127.0.0.1:8091',
     login: { route: '/login', ...SOCIAL },
     auth: ['/profile-gate', '/checkout'],
@@ -227,8 +231,14 @@ const LIVE = {
     auth: ['/upload', '/profile', '/history', '/my-channel'],
   },
   'business-site': {
+    modeNote:
+      'Public /sites/:slug pages take their mode from the site theme, not the user request (some dark requests render light, emberline owner area renders dark).',
     url: 'http://127.0.0.1:8094',
-    login: { route: '/sites/emberline-studio/owner/login', ...BIZ_OWNER },
+    login: {
+      route: '/sites/emberline-studio/owner/login',
+      inPage: true,
+      ...BIZ_OWNER,
+    },
     auth: ['/sites/emberline-studio/owner', '/owner/dashboard'],
   },
   'leads-app': {
@@ -237,6 +247,8 @@ const LIVE = {
     auth: ['/dashboard', '/leads', '/topics', '/analytics', '/settings'],
   },
   'business-configurator': {
+    modeNote:
+      'Fixed dark by design: apps/business-configurator/src/styles.scss defines a dark hardware-editorial palette; the light request only sets data-mode=light, the rendered surface stays dark.',
     url: 'http://127.0.0.1:8096',
     login: { route: '/login', ...BIZ_OWNER },
     auth: [],
