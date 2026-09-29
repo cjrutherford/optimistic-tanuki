@@ -113,57 +113,27 @@ for (const g of groups) {
   }
 }
 
-// ---- readability: text/background contrast from each capture's colors.json ----
-const readColors = (d) => {
-  const f = path.join(d, 'colors.json');
-  return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {};
+// ---- readability: rendered text contrast from each capture ----
+// capture.mjs measures every visible text element's computed colour against
+// the background actually behind it (rendered-contrast.json).
+const readRendered = (d) => {
+  const f = path.join(d, 'rendered-contrast.json');
+  return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
 };
-const colorsA = readColors(a);
-const colorsB = readColors(b);
-const rgb = (v) => {
-  if (!v) return null;
-  let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (m) {
-    const h = m[1].length === 3 ? [...m[1]].map((c) => c + c).join('') : m[1];
-    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-  }
-  m = v.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
-  return m ? [m[1], m[2], m[3]].map(Number) : null;
-};
-const lum = ([r, g, b2]) =>
-  [r, g, b2]
-    .map((c) => c / 255)
-    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
-    .reduce((acc, c, i) => acc + c * [0.2126, 0.7152, 0.0722][i], 0);
-const contrast = (x, y) => {
-  const p = rgb(x),
-    q = rgb(y);
-  if (!p || !q) return null;
-  const [l1, l2] = [lum(p), lum(q)].sort((m, n) => n - m);
-  return (l1 + 0.05) / (l2 + 0.05);
-};
-// Text drawn in the first colour on the second; 4.5:1 is WCAG AA for body text.
-const PAIRS = [
-  ['Body text on page', '--foreground', '--background'],
-  ['Body text on surface', '--foreground', '--surface'],
-  ['Muted text on page', '--muted-foreground', '--background'],
-  ['Muted text on surface', '--muted-foreground', '--surface'],
-  [
-    'Primary as text on page (links, active tab, outlined/text buttons)',
-    '--primary',
-    '--background',
-  ],
-  ['Primary as text on surface', '--primary', '--surface'],
-  ['Button label on primary', '--on-primary', '--primary'],
-];
-const MIN = 4.5;
-const readability = []; // failing (after) or worsened rows
-for (const n of Object.keys(colorsB).sort()) {
-  for (const [label, fg, bg] of PAIRS) {
-    const after = contrast(colorsB[n][fg], colorsB[n][bg]);
-    const before = colorsA[n] ? contrast(colorsA[n][fg], colorsA[n][bg]) : null;
-    if (after === null) continue;
-    if (after < MIN) readability.push({ n, label, before, after });
+const renderedA = readRendered(a) ?? {};
+const renderedB = readRendered(b);
+const readability = []; // text elements below their ratio after the change
+for (const n of Object.keys(renderedB ?? {}).sort()) {
+  const beforeByKey = new Map(
+    (renderedA[n] ?? []).map((x) => [`${x.el}|${x.text}`, x.ratio])
+  );
+  for (const x of renderedB[n]) {
+    const key = `${x.el}|${x.text}`;
+    readability.push({
+      n,
+      ...x,
+      before: renderedA[n] ? beforeByKey.get(key) ?? null : undefined,
+    });
   }
 }
 // ---- report ----
@@ -242,29 +212,34 @@ const nav = [...byPid.entries()]
     )} (${c})</a>`;
   })
   .join('');
-const fmt = (x) => (x === null ? '–' : `${x.toFixed(2)}:1`);
-const readTable = Object.keys(colorsB).length
-  ? `<section id="readability"><h2>Readability <small>text/background pairs under ${MIN}:1 after the change (${
+const fmt = (x) => (x == null ? '–' : `${x.toFixed(2)}:1`);
+const readTable = renderedB
+  ? `<section id="readability"><h2>Readability <small>rendered text below WCAG AA after the change (${
       readability.length
     })</small></h2>${
       readability.length
-        ? `<table><tr><th>Personality</th><th>Mode</th><th>Primary</th><th>Pair</th><th>Before</th><th>After</th></tr>${readability
+        ? `<table><tr><th>Personality</th><th>Mode</th><th>Primary</th><th>Element</th><th>Text</th><th>Needs</th><th>Before</th><th>After</th></tr>${readability
             .map((r) => {
               const { pid, mode, rest } = parse(r.n);
-              const worse = r.before !== null && r.after < r.before - 0.05;
-              const newFail = r.before !== null && r.before >= MIN;
-              return `<tr class="${
-                newFail ? 'new' : worse ? 'worse' : ''
-              }"><td>${esc(pid)}</td><td>${esc(mode)}</td><td>#${esc(
-                rest
-              )}</td><td>${esc(r.label)}</td><td>${fmt(r.before)}</td><td>${fmt(
-                r.after
-              )}</td></tr>`;
+              // before: number = already failing; null = passed before; undefined = no before data
+              const cls =
+                r.before === null
+                  ? 'new'
+                  : r.before != null && r.ratio < r.before - 0.05
+                  ? 'worse'
+                  : '';
+              return `<tr class="${cls}"><td>${esc(pid)}</td><td>${esc(
+                mode
+              )}</td><td>#${esc(rest)}</td><td><code>${esc(
+                r.el
+              )}</code></td><td>${esc(r.text)}</td><td>${r.min}:1</td><td>${
+                r.before === null ? 'passed' : fmt(r.before)
+              }</td><td>${fmt(r.ratio)}</td></tr>`;
             })
             .join(
               ''
-            )}</table><p class="same">Red rows fail only after the change; amber rows already failed and got worse; plain rows already failed by the same amount.</p>`
-        : '<p class="same">Every pair meets 4.5:1.</p>'
+            )}</table><p class="same">Measured from rendered pixels' colours: text colour against the first opaque background behind it. Red rows fail only after the change; amber rows got worse. Text over gradients or images is measured against the background colour beneath them.</p>`
+        : '<p class="same">All rendered text meets WCAG AA.</p>'
     }</section>`
   : '';
 const skipped = onlyIn.A.length + onlyIn.B.length;
@@ -311,13 +286,13 @@ for (const r of results.filter(
   (x) => x.status === 'changed' && x.g === 'stills'
 ))
   console.log(`  CHANGED ${r.n}: ${r.note}`);
-if (!Object.keys(colorsB).length)
+if (!renderedB)
   console.log(
-    'readability: NOT CHECKED (no colors.json in B; recapture with the current capture.mjs)'
+    'readability: NOT CHECKED (no rendered-contrast.json in B; recapture with the current capture.mjs)'
   );
 else
   console.log(
-    `readability: ${readability.length} text/background pairs under ${MIN}:1 after`
+    `readability: ${readability.length} rendered text elements below WCAG AA after`
   );
 if (skipped)
   console.log(
