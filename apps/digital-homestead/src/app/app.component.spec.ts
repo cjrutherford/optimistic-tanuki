@@ -48,7 +48,7 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
-    expect(compiled.querySelector('otui-glass-fog')).toBeTruthy();
+    expect(compiled.querySelector('otui-personality-scene')).toBeTruthy();
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
