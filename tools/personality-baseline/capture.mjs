@@ -23,7 +23,7 @@ if (!args.storybook || !args.out) {
   );
   process.exit(2);
 }
-const STORY = args.story ?? 'common-ui-theme-personality-showcase--showcase';
+const STORY = args.story ?? 'common-ui-theme-personality-review--review';
 const MODES = ['light', 'dark'];
 // Storybook globals: personalityId, colorMode, primaryColor. Stills cover every
 // primary in PRIMARIES; focus shots and motion clips use the first (indigo).
@@ -92,6 +92,7 @@ if (args.only) ids = ids.filter((i) => i === args.only);
 if (ids.length === 0) throw new Error('no personalities found');
 
 const fontIssues = new Set();
+const checkedFontLinks = new Set();
 const PRIMARIES = ['3f51b5', 'd97706', '0d9488'];
 const url = (pid, mode, primary = PRIMARIES[0]) =>
   `${base}/iframe.html?id=${STORY}&viewMode=story&globals=personalityId:${pid};colorMode:${mode};primaryColor:!hex(${primary})`;
@@ -118,9 +119,18 @@ async function settle(page, label) {
     return { links, bad };
   });
   for (const href of info.links) {
-    const r = await page.request.get(href);
-    if (r.status() !== 200)
-      fontIssues.add(`${label}: ${href} -> ${r.status()}`);
+    if (checkedFontLinks.has(href)) continue;
+    // A slow network must not abort the whole capture: retry, then record it.
+    let status = 'no response';
+    for (let attempt = 0; attempt < 3 && status !== 200; attempt++) {
+      try {
+        status = (await page.request.get(href, { timeout: 15000 })).status();
+      } catch (e) {
+        status = e.name ?? 'error';
+      }
+    }
+    checkedFontLinks.add(href);
+    if (status !== 200) fontIssues.add(`${label}: ${href} -> ${status}`);
   }
   if (info.bad.length)
     fontIssues.add(
@@ -129,6 +139,17 @@ async function settle(page, label) {
   return info.links.length;
 }
 
+const labels = {};
+const colors = {};
+const COLOR_VARS = [
+  '--background',
+  '--surface',
+  '--foreground',
+  '--muted-foreground',
+  '--primary',
+  '--on-primary',
+  '--primary-foreground',
+];
 let stills = 0,
   focus = 0,
   clips = 0,
@@ -137,7 +158,7 @@ fs.mkdirSync(path.join(out, 'stills'), { recursive: true });
 fs.mkdirSync(path.join(out, 'focus'), { recursive: true });
 fs.mkdirSync(path.join(out, 'motion'), { recursive: true });
 const ctxOpts = {
-  viewport: { width: 1000, height: 700 },
+  viewport: { width: 1100, height: 900 },
   deviceScaleFactor: 1,
   reducedMotion: 'no-preference',
 };
@@ -152,9 +173,20 @@ for (const pid of ids) {
       fontLinks += await settle(page, `${label}/${primary}`);
       await page.screenshot({
         path: path.join(out, 'stills', `${pid}__${mode}__${primary}.png`),
+        fullPage: true,
         animations: 'disabled',
       });
       stills++;
+      // The colours text is drawn in and on, for the report's readability check.
+      colors[`stills/${pid}__${mode}__${primary}.png`] = await page.evaluate(
+        (names) => {
+          const cs = getComputedStyle(document.documentElement);
+          return Object.fromEntries(
+            names.map((n) => [n, cs.getPropertyValue(n).trim()])
+          );
+        },
+        COLOR_VARS
+      );
     }
     // focus pass: Tab through focusables, screenshot each focused element
     await page.goto(url(pid, mode));
@@ -162,6 +194,8 @@ for (const pid of ids) {
     await page.evaluate(() => document.activeElement?.blur());
     for (let i = 0; i < FOCUS_COUNT; i++) {
       await page.keyboard.press('Tab');
+      // Let focus transitions (box-shadow, outline) finish before the shot.
+      await page.waitForTimeout(250);
       const handle = await page.evaluateHandle(() => {
         let a = document.activeElement;
         while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
@@ -172,11 +206,20 @@ for (const pid of ids) {
       const box = await el.boundingBox();
       if (!box) continue;
       const clip = {
-        x: Math.max(0, box.x - 8),
-        y: Math.max(0, box.y - 8),
-        width: box.width + 16,
-        height: box.height + 16,
+        x: Math.max(0, box.x - 12),
+        y: Math.max(0, box.y - 12),
+        width: box.width + 24,
+        height: box.height + 24,
       };
+      // What was focused, for the review report's labels.
+      labels[`focus/${pid}__${mode}__${String(i).padStart(2, '0')}.png`] =
+        await el.evaluate((e) => {
+          const text = (e.getAttribute('aria-label') || e.textContent || '')
+            .trim()
+            .replace(/\s+/g, ' ')
+            .slice(0, 40);
+          return `${e.tagName.toLowerCase()}${text ? ` "${text}"` : ''}`;
+        });
       await page.screenshot({
         path: path.join(
           out,
@@ -197,7 +240,7 @@ for (const pid of ids) {
   const tmp = path.join(out, 'motion', `.tmp-${pid}`);
   const c = await browser.newContext({
     ...ctxOpts,
-    recordVideo: { dir: tmp, size: { width: 1000, height: 700 } },
+    recordVideo: { dir: tmp, size: { width: 1100, height: 900 } },
   });
   const p = await c.newPage();
   await p.goto(url(pid, 'light'));
@@ -214,6 +257,20 @@ for (const pid of ids) {
 await browser.close();
 server.close();
 
+const colorsFile = path.join(out, 'colors.json');
+const priorColors = fs.existsSync(colorsFile)
+  ? JSON.parse(fs.readFileSync(colorsFile, 'utf8'))
+  : {};
+fs.writeFileSync(
+  colorsFile,
+  JSON.stringify({ ...priorColors, ...colors }, null, 2)
+);
+// Merge with labels from earlier --only runs into the same directory.
+const labelsFile = path.join(out, 'labels.json');
+const prior = fs.existsSync(labelsFile)
+  ? JSON.parse(fs.readFileSync(labelsFile, 'utf8'))
+  : {};
+fs.writeFileSync(labelsFile, JSON.stringify({ ...prior, ...labels }, null, 2));
 console.log(
   `personalities=${ids.length} stills=${stills} focus=${focus} motion=${clips} googleFontLinks=${fontLinks}`
 );
