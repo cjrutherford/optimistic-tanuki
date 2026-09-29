@@ -34,7 +34,7 @@
 }
 
 .grid-container .grid .card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: var(--spacing-md);
   box-shadow: 0 4px 12px var(--shadow);
@@ -62,12 +62,12 @@
 
 .grid-container .grid .card h3 {
   margin-bottom: var(--spacing-sm);
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(1.25rem, 2vw, 1.5rem);
 }
 
 .grid-container .grid .card p {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   line-height: 1.5;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
 }

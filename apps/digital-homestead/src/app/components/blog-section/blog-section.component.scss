@@ -9,7 +9,7 @@
   width: 90%;
   max-width: 800px;
   background: var(--heading-gradient);
-  color: var(--background);
+  color: var(--band-foreground);
   padding: var(--spacing-lg);
   border-radius: 12px;
 }
@@ -21,7 +21,7 @@
 .heading-container p {
   margin-bottom: var(--spacing-sm);
   font-size: clamp(0.9rem, 2vw, 1.1rem);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--band-foreground);
 }
 
 .blog-post-row {
@@ -32,7 +32,7 @@
 }
 
 .blog-post-card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: var(--spacing-md);
   box-shadow: 0 4px 12px var(--shadow);
@@ -60,12 +60,12 @@
 
 .blog-post-card h3 {
   margin-bottom: var(--spacing-sm);
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(1.25rem, 2vw, 1.5rem);
 }
 
 .blog-post-card p {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   line-height: 1.5;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
   margin-bottom: var(--spacing-sm);
@@ -88,7 +88,7 @@
 }
 
 .blog-post-card .publish-date {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   margin-bottom: var(--spacing-sm);
 }
@@ -104,7 +104,7 @@
   text-align: center;
 
   p {
-    color: var(--text-light);
+    color: var(--muted-foreground, var(--text-secondary));
     font-size: clamp(0.9rem, 1.5vw, 1.1rem);
   }
 }

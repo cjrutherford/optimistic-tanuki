@@ -5,8 +5,8 @@
   justify-content: center;
   align-items: center;
   border-radius: 8px;
-  background: var(--local-background);
-  color: var(--text);
+  background: var(--surface);
+  color: var(--foreground);
   padding: var(--spacing-md) 0;
   backdrop-filter: blur(10px);
   box-shadow: 0 -4px 12px var(--shadow);
@@ -26,18 +26,18 @@
 .tile {
   text-align: center;
   padding: var(--spacing-sm);
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
   border-radius: 6px;
 }
 
 .tile h3 {
   margin-bottom: var(--spacing-xs);
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(1rem, 2vw, 1.25rem);
 }
 
 .tile p {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   line-height: 1.4;
   font-size: clamp(0.8rem, 1.5vw, 0.9rem);
 }
@@ -47,7 +47,7 @@
   text-align: center;
   padding: var(--spacing-sm) 0;
   border-top: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   font-size: clamp(0.75rem, 1.5vw, 0.85rem);
 }
 

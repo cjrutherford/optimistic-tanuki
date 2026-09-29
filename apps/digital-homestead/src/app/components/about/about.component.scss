@@ -20,7 +20,7 @@
 .section-heading p {
   font-size: clamp(0.9rem, 2vw, 1.1rem);
   line-height: 1.6;
-  color: var(--text-light);
+  color: var(--band-foreground);
   margin-bottom: var(--spacing-sm);
 }
 
@@ -33,7 +33,7 @@
 }
 
 .benefit {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: var(--spacing-xs);
   box-shadow: 0 4px 12px var(--shadow);
@@ -49,12 +49,23 @@
 
 .benefit h3 {
   margin-bottom: var(--spacing-sm);
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(1.25rem, 2vw, 1.5rem);
 }
 
+.benefit-body {
+  // otui-tile paints its own primary/secondary ground; content sits on an
+  // opaque surface so --foreground text always pairs with it.
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius, 6px);
+  background: var(--surface);
+  color: var(--foreground);
+  height: 100%;
+  box-sizing: border-box;
+}
+
 .benefit p {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   line-height: 1.5;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
 }
@@ -67,7 +78,7 @@
 }
 
 .benefit-grid .benefit {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: var(--spacing-md);
   box-shadow: 0 4px 12px var(--shadow);
@@ -83,12 +94,12 @@
 
 .benefit-grid .benefit h3 {
   margin-bottom: var(--spacing-sm);
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(1.25rem, 2vw, 1.5rem);
 }
 
 .benefit-grid .benefit p {
-  color: var(--text-light);
+  color: var(--muted-foreground, var(--text-secondary));
   line-height: 1.5;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
 }

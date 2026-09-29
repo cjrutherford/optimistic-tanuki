@@ -33,6 +33,8 @@ router-outlet {
   --surface-lighter: color-mix(in srgb, var(--surface) 90%, var(--foreground));
   --surface-accent: color-mix(in srgb, var(--surface) 86%, var(--foreground));
   --text: var(--foreground);
+  /* Text on the primary-derived heading bands (see app.component.ts) */
+  --band-foreground: var(--on-primary, var(--primary-foreground, #fff));
   --text-secondary: var(--muted);
   --text-tertiary: color-mix(in srgb, var(--muted) 70%, var(--background));
   --border-light: color-mix(in srgb, var(--border) 80%, var(--foreground));

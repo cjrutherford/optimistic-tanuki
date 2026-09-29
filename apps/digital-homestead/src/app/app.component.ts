@@ -3,12 +3,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import {
-  GradientBuilder,
-  DevInfoComponent,
-} from '@optimistic-tanuki/common-ui';
+import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
-import { hexToRgb } from '@optimistic-tanuki/theme-lib';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -30,7 +26,9 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 })
 export class AppComponent implements OnInit {
   title = 'digital-homestead';
-  headingGradient = 'linear-gradient(90deg, #ff7e5f, #feb47b)'; // Example gradient
+  // Heading bands stay on the user's primary so --band-foreground always pairs.
+  headingGradient =
+    'linear-gradient(180deg, var(--primary), color-mix(in srgb, var(--primary) 85%, var(--tertiary)))';
   readonly haiAboutConfig = {
     appId: 'digital-grange',
     appName: 'Digital Grange',
@@ -53,28 +51,6 @@ export class AppComponent implements OnInit {
     this.themeService.themeColors$.subscribe({
       next: (colors) => {
         if (!colors || !isPlatformBrowser(this.platformId)) return;
-        const accentRgb = hexToRgb(colors.accent) as {
-          r: number;
-          g: number;
-          b: number;
-        };
-        const complementRgb = hexToRgb(colors.complementary) as {
-          r: number;
-          g: number;
-          b: number;
-        };
-        const accentRgba = `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.9)`;
-        const complementRgba = `rgba(${complementRgb.r}, ${complementRgb.g}, ${complementRgb.b}, 0.9)`;
-
-        this.headingGradient = new GradientBuilder()
-          .setType('linear')
-          .setOptions({
-            direction: '180deg',
-            colors: [accentRgba, complementRgba],
-          })
-          .build();
-
-        console.log('Updated heading gradient:', this.headingGradient);
         // Only set app-specific variables, theme colors are handled by ThemeService
         const backgroundPattern = `
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 52 52">
