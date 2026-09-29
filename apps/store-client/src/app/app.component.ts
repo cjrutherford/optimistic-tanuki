@@ -3,9 +3,15 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 
 @Component({
-  imports: [RouterModule, HaiAboutTagComponent, PersonalitySceneComponent],
+  imports: [
+    RouterModule,
+    HaiAboutTagComponent,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
+  ],
   selector: 'store-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
