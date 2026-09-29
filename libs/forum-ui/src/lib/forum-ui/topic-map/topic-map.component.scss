@@ -44,9 +44,9 @@
   }
 
   .count {
-    font-size: var(--font-size-sm);
     color: var(--muted-foreground);
     font-weight: normal;
+    @include p.small-text(var(--font-size-sm));
   }
 }
 
@@ -60,20 +60,20 @@
   padding: var(--spacing-sm) 0;
   border-top: var(--border-width, 1px) solid
     color-mix(in srgb, var(--border) 50%, transparent);
-  font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   display: flex;
   justify-content: space-between;
   cursor: pointer;
   color: var(--muted-foreground);
   @include p.personality-transition(color, 'fast');
+  @include p.small-text(var(--font-size-sm));
 
   &:hover {
     color: var(--primary-text, var(--primary));
   }
 
   .count {
-    font-size: var(--font-size-xs);
     color: var(--muted-foreground);
+    @include p.small-text(var(--font-size-xs));
   }
 }

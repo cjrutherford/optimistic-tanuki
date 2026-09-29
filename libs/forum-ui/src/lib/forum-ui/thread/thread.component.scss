@@ -32,10 +32,10 @@
 .thread-meta {
   display: flex;
   gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
   color: var(--muted-foreground);
   margin: var(--spacing-sm) 0;
   @include p.label-type;
+  @include p.small-text(var(--font-size-sm));
 }
 
 .thread-actions {

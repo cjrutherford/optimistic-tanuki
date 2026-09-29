@@ -20,7 +20,6 @@
   color: var(--foreground);
   border-radius: var(--border-radius-full);
   padding: var(--spacing-xs) var(--spacing-md);
-  font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   cursor: pointer;
   @include p.personality-transition(
@@ -31,6 +30,7 @@
   align-items: center;
   gap: var(--spacing-xs);
   border: var(--border-width, 1px) solid transparent;
+  @include p.small-text(var(--font-size-sm));
 
   &:hover {
     background-color: color-mix(in srgb, var(--primary) 15%, transparent);
@@ -39,10 +39,10 @@
   }
 
   .count {
-    font-size: var(--font-size-xs);
     opacity: 0.7;
     background: color-mix(in srgb, var(--foreground) 10%, transparent);
     padding: 0 var(--spacing-xs);
     border-radius: var(--border-radius-full);
+    @include p.small-text(var(--font-size-xs));
   }
 }

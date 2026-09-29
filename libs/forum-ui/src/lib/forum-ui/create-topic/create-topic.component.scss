@@ -12,9 +12,9 @@
     margin-bottom: var(--spacing-sm);
     font-weight: 600;
     font-family: var(--font-body, sans-serif);
-    font-size: var(--font-size-sm);
     color: var(--foreground);
     @include p.label-type;
+    @include p.small-text(var(--font-size-sm));
   }
 }
 
