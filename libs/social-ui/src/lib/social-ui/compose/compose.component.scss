@@ -39,11 +39,11 @@
 
   label {
     font-family: var(--font-heading, system-ui, sans-serif);
-    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--primary-text, var(--primary));
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    @include p.small-text(0.8125rem);
   }
 }
 
@@ -97,9 +97,9 @@
 
   .label {
     font-family: var(--font-heading, system-ui, sans-serif);
-    font-size: 0.875rem;
     font-weight: 600;
     color: var(--muted-foreground, #6b7280);
+    @include p.small-text(0.875rem);
   }
 }
 

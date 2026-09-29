@@ -50,11 +50,11 @@
   }
 
   .count {
-    font-size: 0.75rem;
     font-weight: 600;
     color: var(--muted-foreground, #6b7280);
     min-width: 14px;
     text-align: center;
+    @include p.small-text(0.75rem);
   }
 
   &:hover {
@@ -71,9 +71,9 @@
 }
 
 .reaction-count {
-  font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted-foreground, #6b7280);
+  @include p.small-text(0.875rem);
 }
 
 .add-reaction {
@@ -187,11 +187,11 @@
   border: none;
   border-radius: var(--border-radius-full, 50%);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
-  font-size: 0.75rem;
   cursor: pointer;
   margin-left: 4px;
   color: var(--foreground, #666);
   @include p.personality-transition(all, 'normal');
+  @include p.small-text(0.75rem);
 
   @include reduced-motion {
     transition: none;
@@ -212,6 +212,7 @@
     width: 32px;
     height: 32px;
     font-size: 1rem;
+    @include p.touch-target;
   }
 
   .reaction-picker {
