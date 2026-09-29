@@ -46,7 +46,7 @@ const applyPublicAppSecurityHeaders: express.RequestHandler = (
       "form-action 'self'",
       "img-src 'self' data: https:",
       "font-src 'self' data: https:",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "script-src 'self' 'unsafe-inline'",
       "connect-src 'self' http: https: ws: wss:",
       "object-src 'none'",
