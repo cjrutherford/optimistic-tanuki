@@ -26,6 +26,13 @@ import { PersonalitySelectorComponent } from './personality-selector.component';
         max-width: 100%;
         max-height: 100%;
       }
+
+      lib-personality-selector {
+        flex: 1 1 auto;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+      }
     `,
   ],
 })

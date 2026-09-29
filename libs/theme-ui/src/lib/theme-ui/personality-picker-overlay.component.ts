@@ -109,10 +109,12 @@ export interface PersonalityPickerOverlayContract {
 
       .personality-picker-dialog {
         position: relative;
-        width: min(960px, calc(100vw - 2rem));
+        width: min(1240px, calc(100vw - 2rem));
         max-width: 100%;
-        height: min(80vh, calc(100vh - 2rem));
-        height: min(80dvh, calc(100dvh - 2rem));
+        /* Use most of the viewport: the header stays pinned (it sits outside
+           the scrolling region) and only the card grid scrolls. */
+        height: min(92vh, calc(100vh - 2rem));
+        height: min(92dvh, calc(100dvh - 2rem));
         max-height: calc(100vh - 2rem);
         max-height: calc(100dvh - 2rem);
         min-height: 0;

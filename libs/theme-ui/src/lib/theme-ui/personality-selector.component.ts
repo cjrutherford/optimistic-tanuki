@@ -289,7 +289,7 @@ interface GroupedPersonality {
 
       .personality-options {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
         gap: 14px;
       }
 
@@ -339,7 +339,7 @@ interface GroupedPersonality {
       .preview {
         display: flex;
         flex-direction: column;
-        min-height: 132px;
+        min-height: 112px;
         background-color: var(--pv-bg);
         background-image: var(--pv-ground-image);
         background-size: var(--pv-pattern-size);
