@@ -20,6 +20,7 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
@@ -31,6 +32,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
     AppBarComponent,
     NavSidebarComponent,
     PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     HaiAboutTagComponent,
   ],
   templateUrl: './app.component.html',
