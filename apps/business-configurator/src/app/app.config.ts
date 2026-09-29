@@ -1,7 +1,9 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
+  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import {
@@ -16,10 +18,14 @@ import { BusinessConfigStateService } from './state/business-config-state.servic
 import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './services/authentication.service';
 import { authenticationInterceptor } from './auth/auth.interceptor';
-import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+import {
+  provideProductTheme,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('business-configurator'),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
