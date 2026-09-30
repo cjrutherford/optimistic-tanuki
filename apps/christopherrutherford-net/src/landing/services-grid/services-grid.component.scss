@@ -37,7 +37,7 @@
   color: var(--muted-foreground, var(--foreground));
 }
 
-// lib-blog-post-card renders otui-heading with its default inline #fff and no
+// lib-blog-post-card renders otui-heading with its default inline white and no
 // way to override it, so the card title needs the surface's own text colour.
 lib-blog-post-card ::ng-deep .heading {
   color: var(--foreground) !important;
