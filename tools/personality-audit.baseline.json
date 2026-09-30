@@ -27,6 +27,9 @@
   "libs/blogging-ui/src/lib/hero/hero.component.scss": {
     "font-size": 1
   },
+  "libs/bug-report/src/lib/bug-report-ui/bug-report-ui.component.scss": {
+    "font-size": 2
+  },
   "libs/business-portal-ui/src/lib/business-site-editor-shell.scss": {
     "letter-spacing": 1,
     "font-size": 5,
