@@ -8,7 +8,8 @@
 // `generatePersonalityCSSVariables()`) for the small curated set of
 // personalities whose stated character is literally tactile/textured
 // (soft-touch's paper grain, control-center's scanlines, architect's
-// blueprint cross-hatch, electric's circuit accent). Every other personality
+// blueprint cross-hatch, electric's circuit accent, risograph's toner
+// specks, ledger's green-bar banding). Every other personality
 // leaves the variable cleared, so the mixin's `var(--surface-texture, none)`
 // fallback keeps them texture-free by default — the same "absence is the
 // default" contract `_shadows.scss` documents for shadow profiles.

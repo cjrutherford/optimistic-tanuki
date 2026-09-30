@@ -85,7 +85,7 @@ li {
   gap: var(--spacing-sm, 8px);
 
   a {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-decoration: none;
     @include p.personality-transition(color, 'fast');
     word-break: break-all;

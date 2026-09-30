@@ -239,11 +239,14 @@
 }
 
 // Focus management for accessibility
-@mixin focus-visible-ring($color: var(--primary), $offset: 2px) {
-  &:focus-visible {
-    outline: 2px solid #{$color};
-    outline-offset: #{$offset};
-  }
+// Keyboard ring via the personality `keyboard-focus-ring`; also suppresses the
+// mouse-focus outline. Pass `$base-shadow` if the element has a resting shadow.
+@mixin focus-visible-ring(
+  $color: var(--primary),
+  $offset: 2px,
+  $base-shadow: none
+) {
+  @include p.keyboard-focus-ring($color, $offset, $base-shadow);
 
   &:focus:not(:focus-visible) {
     outline: none;

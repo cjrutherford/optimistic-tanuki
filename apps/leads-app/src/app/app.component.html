@@ -1,12 +1,14 @@
+<lib-personality-backdrop />
+
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-parallax-grid-warp
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
+    fallbackScene="parallax-grid-warp"
     [density]="6"
     [speed]="0.24"
     [intensity]="0.42"
-  ></otui-parallax-grid-warp>
+  ></otui-personality-scene>
 </div>
 }
 

@@ -164,12 +164,12 @@
 }
 
 .role-badge {
-  font-size: var(--font-size-xs, 0.75rem);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   text-transform: capitalize;
   font-weight: 500;
   border: var(--border-width, 1px) solid transparent;
+  @include p.small-text(var(--font-size-xs, 0.75rem));
 
   &.owner {
     background: var(--local-accent);
@@ -200,8 +200,8 @@
 .joined,
 .requested,
 .invited {
-  font-size: var(--font-size-xs, 0.85rem);
   color: var(--local-complement);
+  @include p.small-text(var(--font-size-xs, 0.85rem));
 }
 
 .invite-section {
@@ -242,7 +242,7 @@
     color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
-  font-size: var(--font-size-sm, 0.9rem);
+  @include p.small-text(var(--font-size-sm, 0.9rem));
 }
 
 .empty-state {

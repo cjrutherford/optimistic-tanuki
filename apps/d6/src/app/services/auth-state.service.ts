@@ -38,8 +38,16 @@ export class AuthStateService {
 
   constructor() {
     if (this.isBrowser()) {
-      void this.restoreSession();
+      void this.ensureSession();
     }
+  }
+
+  private sessionRestore: Promise<boolean> | null = null;
+
+  /** Resolves once the cookie session has been checked against the API. */
+  ensureSession(): Promise<boolean> {
+    this.sessionRestore ??= this.restoreSession();
+    return this.sessionRestore;
   }
 
   async restoreSession(): Promise<boolean> {
@@ -103,7 +111,7 @@ export class AuthStateService {
 
   setToken(token?: string): void {
     if (!token) {
-      void this.restoreSession();
+      this.sessionRestore = this.restoreSession();
       return;
     }
     this._token.set(token);
@@ -169,7 +177,9 @@ export class AuthStateService {
 
   getDecodedTokenValue(): any {
     const token = this._token();
-    if (!token) return null;
+    // Cookie sessions keep no token client-side; the session payload restored
+    // from /authentication/session carries the same claims (userId, profileId).
+    if (!token) return this._user();
     try {
       return JSON.parse(atob(token.split('.')[1]));
     } catch {

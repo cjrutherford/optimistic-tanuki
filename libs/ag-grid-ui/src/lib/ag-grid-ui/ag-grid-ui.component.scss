@@ -19,6 +19,8 @@
  * `ThemeService` has run.
  */
 
+@use 'personality' as p;
+
 .ag-grid-wrapper {
   width: 100%;
   height: 100%;
@@ -154,6 +156,7 @@
 .ag-grid-wrapper ::ng-deep .ag-popup-child,
 .ag-grid-wrapper ::ng-deep .ag-select-list {
   box-shadow: var(--local-shadow, var(--shadow-lg));
+  @include p.surface-finish;
 }
 
 .ag-grid-wrapper ::ng-deep .ag-cell,
@@ -186,7 +189,6 @@
   color: var(--local-action-button-foreground, var(--on-primary));
   box-shadow: none;
   font: inherit;
-  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color
@@ -198,6 +200,7 @@
     transform
       var(--local-transition-duration, var(--animation-duration-fast, 150ms))
       var(--local-easing, var(--animation-easing, ease));
+  @include p.small-text(0.8125rem);
 }
 
 .ag-grid-wrapper ::ng-deep .ag-grid-action-button:hover {
@@ -212,14 +215,17 @@
   );
 }
 
-.ag-grid-wrapper ::ng-deep .ag-grid-action-button:focus-visible,
-.ag-grid-wrapper ::ng-deep .ag-grid-inline-select:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: 0 0 0 3px
-    var(
-      --local-focus-ring,
-      color-mix(in srgb, var(--local-accent, var(--primary)) 24%, transparent)
-    );
+.ag-grid-wrapper ::ng-deep .ag-grid-action-button,
+.ag-grid-wrapper ::ng-deep .ag-grid-inline-select {
+  @include p.keyboard-focus-ring(
+    transparent,
+    0,
+    0 0 0 3px
+      var(
+        --local-focus-ring,
+        color-mix(in srgb, var(--local-accent, var(--primary)) 24%, transparent)
+      )
+  );
 }
 
 .ag-grid-wrapper ::ng-deep .ag-grid-delete-button {

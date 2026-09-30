@@ -10,11 +10,6 @@ on:
         required: false
         default: true
         type: boolean
-      run_load_test:
-        description: Run k6 load testing
-        required: false
-        default: true
-        type: boolean
 
 permissions:
   contents: read
@@ -24,6 +19,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # Load testing runs in ci-cd.yml (load_performance), after image_check has
+  # built this run's images, so it tests the change rather than :latest.
   lighthouse:
     name: Lighthouse Performance Audit
     runs-on: ubuntu-24.04
@@ -98,116 +95,3 @@ jobs:
       - name: Stop application
         if: always()
         run: docker rm -f app-${{ matrix.app }} 2>/dev/null || true
-
-  load-test:
-    name: Load Testing
-    runs-on: ubuntu-24.04
-    if: github.event_name != 'workflow_dispatch' || github.event.inputs.run_load_test == 'true'
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build services
-        run: pnpm exec nx run-many -t build --configuration=production --parallel=3
-        env:
-          CI: true
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build db-setup
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml build db-setup
-
-      - name: Start full stack
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d db-setup
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d
-
-          # Wait for services to be ready
-          echo "Waiting for services..."
-          sleep 60
-
-      - name: Dump stack logs on failure
-        if: failure()
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
-          docker compose -f e2e/docker-compose.e2e-stack.yaml logs db-setup gateway || true
-
-      - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
-
-      - name: Create load test script
-        run: |
-          cat > load-test.js << 'EOF'
-          import http from 'k6/http';
-          import { check, sleep } from 'k6';
-
-          export const options = {
-            stages: [
-              { duration: '30s', target: 10 },  // Ramp up to 10 users
-              { duration: '1m', target: 10 },   // Stay at 10 users
-              { duration: '30s', target: 50 },  // Ramp up to 50 users
-              { duration: '1m', target: 50 },   // Stay at 50 users
-              { duration: '30s', target: 0 },   // Ramp down to 0 users
-            ],
-            thresholds: {
-              http_req_duration: ['p(95)<500'], // 95% of requests must complete below 500ms
-              http_req_failed: ['rate<0.05'],   // Error rate must be below 5%
-            },
-          };
-
-          export default function () {
-            const res = http.get('http://localhost:3000/api-docs');
-            check(res, {
-              'status is 200': (r) => r.status === 200,
-              'response time < 500ms': (r) => r.timings.duration < 500,
-            });
-            sleep(1);
-          }
-          EOF
-
-      - name: Run load test
-        run: k6 run load-test.js --out json=load-test-results.json
-
-      - name: Stop services
-        if: always()
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down
-
-      - name: Upload load test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: load-test-results
-          path: load-test-results.json
-          retention-days: 30
-
-      - name: Generate load test summary
-        if: always()
-        run: |
-          echo "## 📊 Load Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f "load-test-results.json" ]; then
-            echo "Load test completed. See artifacts for detailed results." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Load test results not found." >> $GITHUB_STEP_SUMMARY
-          fi

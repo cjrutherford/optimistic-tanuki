@@ -119,3 +119,6 @@ apps/ui-playground/public/generated/
 
 # Ephemeral browser/runtime audit output
 /.runtime-artifacts/
+
+# personality-baseline captures
+tools/personality-baseline/out/

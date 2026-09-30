@@ -69,10 +69,6 @@
   --brand-cold: #64748b;
   --brand-local: #10b981;
 
-  --font-heading: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
-  --font-body: var(--font-body, 'IBM Plex Sans', system-ui, sans-serif);
-  --font-mono: var(--font-mono, 'JetBrains Mono', monospace);
-
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -95,7 +91,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-body);
+  font-family: var(--font-body, 'IBM Plex Sans', system-ui, sans-serif);
   background: var(--app-background);
   color: var(--app-foreground);
   min-height: 100vh;
@@ -108,7 +104,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-heading);
+  font-family: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
   font-weight: 600;
   margin: 0;
 }
@@ -130,5 +126,5 @@ a {
 input,
 select,
 textarea {
-  font-family: var(--font-body);
+  font-family: var(--font-body, 'IBM Plex Sans', system-ui, sans-serif);
 }

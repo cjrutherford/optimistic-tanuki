@@ -1,5 +1,6 @@
 @use '../../styles/mixins' as *;
 @use '../interfaces/variant' as variant;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Accordion
@@ -116,10 +117,7 @@
     }
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(var(--primary));
 
   &.expanded {
     background: color-mix(in srgb, var(--primary) 10%, transparent);

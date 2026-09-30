@@ -8,6 +8,7 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { filter } from 'rxjs';
 import {
   DEFAULT_BUSINESS_SITE_CONFIG,
@@ -54,8 +55,14 @@ export const businessSiteSkipLinkStyles = `
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink],
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    RouterLink,
+    PersonalityBackdropComponent,
+  ],
   template: `
+    <lib-personality-backdrop />
     <div class="app-shell">
       @if (isHostedBusinessLandingRoute()) {
       <a class="skip-link" href="#main-content">Skip to main content</a>

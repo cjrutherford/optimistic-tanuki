@@ -1,0 +1,27 @@
+<section
+  class="neon-circuit"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+>
+  <svg viewBox="0 0 120 80" preserveAspectRatio="xMidYMid slice">
+    <path *ngFor="let trace of traces" class="trace" [attr.d]="trace.d"></path>
+    <path
+      *ngFor="let trace of traces"
+      class="pulse"
+      pathLength="100"
+      [attr.d]="trace.d"
+      [style.--trace-index]="trace.index"
+    ></path>
+    <circle
+      *ngFor="let trace of traces"
+      class="node"
+      r="1.6"
+      [attr.cx]="trace.end[0]"
+      [attr.cy]="trace.end[1]"
+      [style.--trace-index]="trace.index"
+    ></circle>
+  </svg>
+</section>

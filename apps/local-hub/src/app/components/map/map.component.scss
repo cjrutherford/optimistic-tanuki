@@ -179,7 +179,7 @@
     border-radius: 6px 0 0 0;
 
     a {
-      color: var(--primary) !important;
+      color: var(--primary-text, var(--primary)) !important;
     }
   }
 
@@ -292,7 +292,7 @@
     font-family: var(--font-heading, serif);
     font-size: 11px;
     font-weight: 700;
-    color: var(--map-label, var(--primary));
+    color: var(--map-label, var(--primary-text, var(--primary)));
     background: var(--map-surface, var(--background));
     padding: 4px 8px;
     border-radius: 4px;

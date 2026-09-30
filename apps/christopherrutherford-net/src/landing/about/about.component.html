@@ -1,6 +1,10 @@
 <div class="about-layout">
   <otui-card class="about-left-card">
-    <otui-heading [text]="'Capabilities'" [size]="'2rem'"></otui-heading>
+    <otui-heading
+      [color]="'var(--foreground)'"
+      [text]="'Capabilities'"
+      [size]="'2rem'"
+    ></otui-heading>
     <p class="about-intro">
       I work across product delivery, architecture, and implementation. The
       through-line is pretty simple: build things that are useful, and build
@@ -23,7 +27,11 @@
   <div class="about-right-cards">
     @for (group of capabilityGroups; track group.title) {
     <otui-card class="capability-card">
-      <otui-heading [text]="group.title" [size]="'1.5rem'"></otui-heading>
+      <otui-heading
+        [color]="'var(--foreground)'"
+        [text]="group.title"
+        [size]="'1.5rem'"
+      ></otui-heading>
       <div class="capability-list">
         @for (item of group.items; track item) {
         <div class="capability-item">

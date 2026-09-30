@@ -13,7 +13,6 @@ import {
   PersonalityShadowProfile,
   TypographyStyle,
   AnimationSpeed,
-  IconStyle,
   BorderStyle,
 } from './personality.interfaces';
 import { getPersonalityComposition } from './personality-composition';
@@ -39,8 +38,6 @@ export const classicPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.05,
     autoAdjust: true,
   },
 
@@ -95,8 +92,6 @@ export const classicPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 100,
     surfaceLuminosityOffset: -2,
@@ -121,16 +116,31 @@ export const classicPersonality: Personality = {
   // provide. Intentional, not an oversight (Workstream C1).
 
   mobile: {
-    spacingMultiplier: 0.875,
-    borderRadiusMultiplier: 1,
-    shadowReduction: 0.3,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
   tags: ['versatile', 'balanced', 'professional', 'default'],
   category: 'professional',
   isClassic: true,
+  // Extension layer (rollout D1): white page, brand-washed surfaces and dark mode.
+  expression: {
+    ground: { light: 'white', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.25,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.2,
+  },
+  atmosphere: {
+    backdrop: 'glow',
+    surface: 'sheen',
+    accentFill: 'linear',
+    intensity: 0.8,
+  },
+  motion: { ambient: 'breathe', scenes: ['aurora-ribbon', 'glass-fog'] },
 };
 
 /**
@@ -155,8 +165,6 @@ export const minimalPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
     autoAdjust: true,
   },
 
@@ -209,8 +217,6 @@ export const minimalPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -1,
@@ -237,15 +243,31 @@ export const minimalPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.75,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
     touchTargetSize: '48px',
   },
 
   tags: ['clean', 'spacious', 'elegant', 'modern'],
   category: 'professional',
+  // Extension layer (rollout D1): whitespace and type do the work.
+  expression: {
+    ground: { light: 'white', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 300,
+    headingCase: 'none',
+    headingTracking: '-0.025em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    pagePattern: 'dots',
+    intensity: 0.7,
+  },
+  motion: { glow: 'soft', scenes: ['glass-fog'] },
 };
 
 /**
@@ -269,8 +291,6 @@ export const boldPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
     autoAdjust: true,
   },
 
@@ -323,8 +343,6 @@ export const boldPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'filled' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -5,
@@ -352,15 +370,32 @@ export const boldPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 1.1,
-    shadowReduction: 0.2,
-    fontScale: 0.98,
     touchTargetSize: '48px',
   },
 
   tags: ['vibrant', 'energetic', 'marketing', 'creative'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'tinted', dark: 'ink' },
+    accent: 'primary-ground',
+  },
+  typeScale: {
+    ratio: 1.414,
+    headingWeight: 800,
+    headingCase: 'none',
+    headingTracking: '-0.03em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'sweep',
+    surface: 'gradient',
+    accentFill: 'linear',
+    accentPattern: 'stripes',
+    buttonFill: 'gradient',
+    intensity: 1.3,
+  },
+  motion: { scenes: ['halftone-tide', 'shimmer-beam'] },
 };
 
 /**
@@ -385,8 +420,6 @@ export const softPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
     autoAdjust: true,
   },
 
@@ -439,8 +472,6 @@ export const softPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'rounded' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -2,
@@ -467,15 +498,31 @@ export const softPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 1.3,
-    shadowReduction: 0.5,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
   tags: ['gentle', 'airy', 'calming', 'wellness'],
   category: 'casual',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'tinted', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: {
+    backdrop: 'aurora',
+    surface: 'glass',
+    accentFill: 'mesh',
+    buttonFill: 'gradient',
+    intensity: 1,
+  },
+  motion: { scenes: ['canopy-dapple', 'glass-fog'] },
 };
 
 /**
@@ -499,8 +546,6 @@ export const professionalPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
     autoAdjust: true,
   },
 
@@ -553,8 +598,6 @@ export const professionalPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'sharp' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -3,
@@ -581,15 +624,31 @@ export const professionalPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.875,
-    shadowReduction: 0.3,
-    fontScale: 0.96,
     touchTargetSize: '48px',
   },
 
   tags: ['enterprise', 'trustworthy', 'conservative', 'b2b'],
   category: 'professional',
+  // Extension layer (rollout D1): grey app canvas, white cards, dense scale.
+  expression: {
+    ground: { light: 'toned', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 600,
+    headingCase: 'none',
+    headingTracking: '-0.005em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'sheen',
+    pagePattern: 'grid',
+    intensity: 0.6,
+  },
+  motion: { scenes: ['ledger-ticker', 'parallax-grid-warp'] },
 };
 
 /**
@@ -612,8 +671,6 @@ export const playfulPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.12,
     autoAdjust: true,
   },
 
@@ -666,8 +723,6 @@ export const playfulPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'two-tone' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 98,
     surfaceLuminosityOffset: -7,
@@ -695,15 +750,32 @@ export const playfulPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 1,
-    borderRadiusMultiplier: 1.5,
-    shadowReduction: 0.15,
-    fontScale: 1,
     touchTargetSize: '56px',
   },
 
   tags: ['fun', 'energetic', 'creative', 'youth'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'tinted', dark: 'tinted' },
+    accent: 'duotone',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 700,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.15,
+  },
+  atmosphere: {
+    backdrop: 'mesh',
+    surface: 'gradient',
+    accentFill: 'mesh',
+    accentPattern: 'dots',
+    buttonFill: 'shine',
+    intensity: 1.3,
+  },
+  motion: { ambient: 'shimmer', scenes: ['clay-blobs', 'halftone-tide'] },
 };
 
 /**
@@ -727,8 +799,6 @@ export const elegantPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.06,
     autoAdjust: true,
   },
 
@@ -787,8 +857,6 @@ export const elegantPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 96,
     surfaceLuminosityOffset: -4,
@@ -815,15 +883,36 @@ export const elegantPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 0.9,
-    shadowReduction: 0.35,
-    fontScale: 0.94,
     touchTargetSize: '44px',
   },
 
   tags: ['luxury', 'sophisticated', 'premium', 'refined'],
   category: 'professional',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'paper', dark: 'black' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.5,
+    headingWeight: 400,
+    headingCase: 'none',
+    headingTracking: '0.005em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'spotlight',
+    surface: 'sheen',
+    accentFill: 'radial',
+    accentPattern: 'rings',
+    intensity: 0.9,
+  },
+  motion: {
+    enter: 'drift',
+    ambient: 'shimmer',
+    scenes: ['star-atlas', 'shimmer-beam'],
+  },
 };
 
 /**
@@ -848,8 +937,6 @@ export const architectPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.08,
     autoAdjust: true,
   },
 
@@ -902,8 +989,6 @@ export const architectPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'sharp' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -5,
@@ -944,15 +1029,36 @@ export const architectPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.5,
-    shadowReduction: 0.2,
-    fontScale: 0.95,
     touchTargetSize: '44px',
   },
 
   tags: ['brutalist', 'industrial', 'structural', 'bold', 'technical'],
   category: 'technical',
+  // Extension layer (rollout D3).
+  expression: {
+    ground: { light: 'toned', dark: 'black' },
+    accent: 'primary-ground',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 700,
+    headingCase: 'uppercase',
+    headingTracking: '0.02em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    accentFill: 'split',
+    accentPattern: 'diagonal',
+    buttonFill: 'split',
+    intensity: 1.1,
+  },
+  motion: {
+    enter: 'snap',
+    ambient: 'drift',
+    scenes: ['blueprint-scan', 'grid-shift'],
+  },
 };
 
 /**
@@ -981,8 +1087,6 @@ export const softTouchPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.06,
     autoAdjust: true,
   },
 
@@ -1039,8 +1143,6 @@ export const softTouchPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 97,
     surfaceLuminosityOffset: -3,
@@ -1078,17 +1180,33 @@ export const softTouchPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.9,
     // Mobile surfaces are smaller, so radii clip sooner — no extra
     // amplification on top of the (already capped) base multiplier.
-    borderRadiusMultiplier: 1.0,
-    shadowReduction: 0.4,
-    fontScale: 0.95,
     touchTargetSize: '48px',
   },
 
   tags: ['warm', 'tactile', 'paper', 'organic', 'wellness'],
   category: 'casual',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'paper', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.25,
+    headingWeight: 500,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.15,
+  },
+  atmosphere: {
+    backdrop: 'glow',
+    surface: 'raised',
+    accentFill: 'radial',
+    buttonFill: 'gradient',
+    intensity: 1,
+  },
+  motion: { scenes: ['canopy-dapple', 'clay-blobs'] },
 };
 
 /**
@@ -1113,8 +1231,6 @@ export const electricPersonality: Personality = {
 
   contrast: {
     minimumRatio: 4.5,
-    enhancedRatio: 7,
-    backgroundOffset: 0.1,
     autoAdjust: true,
   },
 
@@ -1167,8 +1283,6 @@ export const electricPersonality: Personality = {
     prefersReducedMotion: false,
   },
 
-  iconStyle: 'two-tone' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 99,
     surfaceLuminosityOffset: -6,
@@ -1208,15 +1322,29 @@ export const electricPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.95,
-    borderRadiusMultiplier: 1.0,
-    shadowReduction: 0.15,
-    fontScale: 1.0,
     touchTargetSize: '48px',
   },
 
   tags: ['vibrant', 'energetic', 'kinetic', 'playful', 'social'],
   category: 'creative',
+  // Extension layer (rollout D3).
+  expression: { ground: { light: 'tinted', dark: 'ink' }, accent: 'duotone' },
+  typeScale: {
+    ratio: 1.414,
+    headingWeight: 800,
+    headingCase: 'none',
+    headingTracking: '-0.025em',
+    headingLineHeight: 1.05,
+  },
+  atmosphere: {
+    backdrop: 'aurora',
+    surface: 'glass',
+    accentFill: 'mesh',
+    accentPattern: 'diagonal',
+    buttonFill: 'shine',
+    intensity: 1.5,
+  },
+  motion: { scenes: ['neon-circuit', 'aurora-ribbon'] },
 };
 
 /**
@@ -1242,8 +1370,6 @@ export const controlCenterPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.03,
     autoAdjust: true,
   },
 
@@ -1296,8 +1422,6 @@ export const controlCenterPersonality: Personality = {
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'outlined' as IconStyle,
-
   colorGeneration: {
     backgroundLuminosity: 97,
     surfaceLuminosityOffset: -4,
@@ -1343,15 +1467,32 @@ export const controlCenterPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.85,
-    borderRadiusMultiplier: 0.35,
-    shadowReduction: 0.4,
-    fontScale: 0.92,
     touchTargetSize: '44px',
   },
 
   tags: ['technical', 'dashboard', 'monospace', 'grid', 'precision'],
   category: 'technical',
+  // Extension layer (rollout D2).
+  expression: {
+    ground: { light: 'toned', dark: 'ink' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.125,
+    headingWeight: 600,
+    headingCase: 'uppercase',
+    headingTracking: '0.04em',
+    headingLineHeight: 1.2,
+  },
+  atmosphere: {
+    backdrop: 'horizon',
+    surface: 'sheen',
+    pagePattern: 'scanline',
+    accentPattern: 'grid',
+    intensity: 0.9,
+  },
+  motion: { scenes: ['signal-mesh', 'blueprint-scan'] },
 };
 
 /**
@@ -1376,8 +1517,6 @@ export const foundationPersonality: Personality = {
 
   contrast: {
     minimumRatio: 7,
-    enhancedRatio: 7,
-    backgroundOffset: 0.02,
     autoAdjust: true,
   },
 
@@ -1398,18 +1537,16 @@ export const foundationPersonality: Personality = {
 
   fonts: {
     body: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      family: '"Public Sans", system-ui, sans-serif',
       weights: [400, 500, 600],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     heading: {
-      family:
-        'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      family: '"Public Sans", system-ui, sans-serif',
       weights: [500, 600, 700],
       display: 'swap',
-      preload: false,
+      preload: true,
     },
     mono: {
       family: '"SF Mono", Monaco, "Inconsolata", monospace',
@@ -1431,8 +1568,6 @@ export const foundationPersonality: Personality = {
     staggerDelay: '10ms',
     prefersReducedMotion: true,
   },
-
-  iconStyle: 'outlined' as IconStyle,
 
   colorGeneration: {
     backgroundLuminosity: 100,
@@ -1458,15 +1593,825 @@ export const foundationPersonality: Personality = {
   },
 
   mobile: {
-    spacingMultiplier: 0.8,
-    borderRadiusMultiplier: 0.7,
-    shadowReduction: 0.5,
-    fontScale: 0.9,
     touchTargetSize: '44px',
   },
 
   tags: ['minimal', 'functional', 'clean', 'utilitarian', 'base'],
   category: 'technical',
+  // Extension layer (rollout D1): the flat, neutral baseline; no scene.
+  expression: {
+    ground: { light: 'white', dark: 'dim' },
+    accent: 'restrained',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 500,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.25,
+  },
+  atmosphere: { backdrop: 'none', surface: 'flat' },
+  motion: { scenes: [] },
+};
+
+export const risographPersonality: Personality = {
+  id: 'risograph',
+  name: 'Risograph',
+  description:
+    'Two-ink print-zine aesthetic - misregistered offset shadows in a second ink, halftone dot fields, grainy stock, and punchy grotesque headlines.',
+  version: '1.0.0',
+
+  // Riso drums are loaded with a handful of fluorescent inks. Triadic puts
+  // the tertiary 240deg from the primary, so the "second ink" (used for the
+  // misregistration offsets below) is always a distinct drum colour — the
+  // classic fluoro-pink + blue pairing with a pink primary.
+  colorHarmony: {
+    type: 'triadic',
+    saturationBoost: 0.3,
+    lightnessShift: 0.04,
+    accentSaturation: 92,
+    accentLightness: 56,
+  },
+
+  contrast: {
+    minimumRatio: 4.5,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'comfortable',
+    spacingMultiplier: 1.05,
+    borderRadius: 'sharp',
+    borderRadiusMultiplier: 0.4,
+    borderStyle: 'thick',
+    borderWidth: '2.5px',
+    shadowIntensity: 'dramatic',
+    shadowMultiplier: 1.3,
+    // Zero-blur offset is the literal look of a misregistered second pass.
+    shadowProfile: 'hard-offset',
+    typography: 'playful',
+    lineHeight: 1.45,
+    letterSpacing: '0.01em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Bricolage Grotesque", "Arial Narrow", sans-serif',
+      weights: [600, 700, 800],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Karla", system-ui, sans-serif',
+      weights: [400, 500, 700],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Space Mono", monospace',
+      weights: [400, 700],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // A "thunk": fast, with a small overshoot like a drum pressing paper.
+  animations: {
+    speed: 'fast',
+    easing: 'cubic-bezier(0.3, 1.4, 0.6, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '90ms',
+      normal: '180ms',
+      slow: '320ms',
+    },
+    staggerDelay: '40ms',
+    prefersReducedMotion: false,
+  },
+
+  colorGeneration: {
+    // Off-white newsprint rather than bright white.
+    backgroundLuminosity: 96,
+    surfaceLuminosityOffset: -4,
+    foregroundContrast: 88,
+    secondaryLuminosityOffset: 36,
+    mutedLuminosityOffset: 52,
+    neutralSaturation: 22,
+    darkModeLuminosityScale: 9,
+    darkModeSaturationBoost: 10,
+    // Ink, not shadow: offsets carry the primary hue.
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.2,
+    pageBackgroundOpacity: 0.06,
+    // Uncoated stock leans warm regardless of the chosen ink.
+    surfaceHueBias: 'warm',
+    surfaceSaturationShift: 4,
+  },
+
+  // Halftone ramp: dot radius steps down across the tile so the page reads
+  // as a screened gradient rather than a uniform polka dot. Primary-tinted,
+  // like a light first pass of ink.
+  pageBackground: {
+    pattern: `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg"><circle cx="3" cy="3" r="2" fill="currentColor"/><circle cx="15" cy="3" r="1.4" fill="currentColor"/><circle cx="9" cy="9" r="1.7" fill="currentColor"/><circle cx="21" cy="9" r="1" fill="currentColor"/><circle cx="3" cy="15" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="0.7" fill="currentColor"/><circle cx="9" cy="21" r="0.9" fill="currentColor"/><circle cx="21" cy="21" r="0.4" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  // Surface texture: irregular ink specks — the stray toner flecks every riso
+  // print carries. Square specks (not circles) so it can't be mistaken for
+  // soft-touch's round paper grain.
+  surfaceTexture: {
+    pattern: `<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="2" width="0.6" height="0.6" fill="currentColor"/><rect x="6" y="1" width="0.4" height="0.4" fill="currentColor"/><rect x="4" y="5" width="0.7" height="0.5" fill="currentColor"/><rect x="8" y="7" width="0.5" height="0.6" fill="currentColor"/><rect x="2" y="8" width="0.4" height="0.4" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+    opacity: 0.035,
+  },
+
+  mobile: {
+    touchTargetSize: '46px',
+  },
+
+  tags: ['print', 'zine', 'halftone', 'two-ink', 'poster'],
+  category: 'creative',
+  // Extension layer (rollout D4).
+  expression: { ground: { light: 'paper', dark: 'tinted' }, accent: 'duotone' },
+  typeScale: {
+    ratio: 1.414,
+    headingWeight: 800,
+    headingCase: 'uppercase',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.0,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    accentFill: 'split',
+    accentPattern: 'halftone',
+    buttonFill: 'split',
+    intensity: 1.3,
+  },
+  motion: { scenes: ['halftone-tide'] },
+};
+
+export const observatoryPersonality: Personality = {
+  id: 'observatory',
+  name: 'Observatory',
+  description:
+    'Celestial star-atlas aesthetic - ink-black skies, hairline coordinate rules, starlight glows on hover, and a slow, deliberate orbit of motion.',
+  version: '1.0.0',
+
+  // Twilight: analogous neighbours (blue -> violet) with pale, light
+  // "starlight" accents rather than saturated ones. `analogousSpread` places
+  // the rendered tertiary 60deg from the primary.
+  colorHarmony: {
+    type: 'analogous',
+    saturationBoost: -0.1,
+    lightnessShift: 0.12,
+    accentSaturation: 58,
+    accentLightness: 70,
+    analogousSpread: 60,
+  },
+
+  // Built for long reading sessions in the dark: AAA text contrast.
+  contrast: {
+    minimumRatio: 7,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'spacious',
+    spacingMultiplier: 1.2,
+    // Lens-like rounded corners.
+    borderRadius: 'round',
+    borderRadiusMultiplier: 0.9,
+    borderStyle: 'hairline',
+    borderWidth: '0.5px',
+    shadowIntensity: 'subtle',
+    shadowMultiplier: 0.8,
+    // Primary-colour glow, not a drop: surfaces emit light.
+    shadowProfile: 'neon',
+    typography: 'elegant',
+    lineHeight: 1.7,
+    letterSpacing: '0.015em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Instrument Serif", Georgia, serif',
+      weights: [400],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Manrope", system-ui, sans-serif',
+      weights: [300, 400, 500, 600],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Martian Mono", "JetBrains Mono", monospace',
+      weights: [300, 400],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // Orbital: long, strongly decelerating curves; nothing snaps.
+  animations: {
+    speed: 'deliberate',
+    easing: 'cubic-bezier(0.33, 0, 0.1, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '240ms',
+      normal: '520ms',
+      slow: '900ms',
+    },
+    staggerDelay: '110ms',
+    prefersReducedMotion: true,
+  },
+
+  colorGeneration: {
+    // Light mode is a cool daylight atlas page; dark mode (the headline
+    // mode) is nearly black with a deep indigo cast.
+    backgroundLuminosity: 97,
+    surfaceLuminosityOffset: -3,
+    foregroundContrast: 93,
+    secondaryLuminosityOffset: 34,
+    mutedLuminosityOffset: 50,
+    neutralSaturation: 14,
+    darkModeLuminosityScale: 4,
+    darkModeSaturationBoost: 22,
+    shadowTint: 'cool',
+    shadowOpacity: 0.12,
+    pageBackgroundOpacity: 0.07,
+    surfaceHueBias: 'cool',
+    surfaceSaturationShift: 8,
+  },
+
+  // Star chart: stars of five magnitudes, one three-star constellation joined
+  // by hairline slivers (fill-drawn polygons, not strokes, so the runtime
+  // fill substitution controls them), and a coordinate reticle.
+  pageBackground: {
+    pattern: `<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg"><circle cx="18" cy="24" r="1.2" fill="currentColor"/><circle cx="52" cy="40" r="0.9" fill="currentColor"/><circle cx="74" cy="18" r="1.5" fill="currentColor"/><polygon points="18,24 52,40 52,40.4 18,24.4" fill="currentColor"/><polygon points="52,40 74,18 74.35,18.3 52.35,40.3" fill="currentColor"/><circle cx="8" cy="70" r="0.5" fill="currentColor"/><circle cx="36" cy="82" r="0.8" fill="currentColor"/><circle cx="88" cy="62" r="0.6" fill="currentColor"/><circle cx="62" cy="88" r="0.4" fill="currentColor"/><circle cx="90" cy="90" r="0.3" fill="currentColor"/><circle cx="30" cy="6" r="0.35" fill="currentColor"/><rect x="79.5" y="72" width="0.4" height="5" fill="currentColor"/><rect x="77.2" y="74.3" width="5" height="0.4" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  // No surface texture: surfaces are viewports (inset), and the sky is on the
+  // page, not on the glass.
+
+  mobile: {
+    touchTargetSize: '48px',
+  },
+
+  tags: ['celestial', 'night', 'research', 'contemplative', 'data'],
+  category: 'technical',
+  // Extension layer (rollout D4).
+  expression: { ground: { light: 'toned', dark: 'ink' }, accent: 'restrained' },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 400,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.15,
+  },
+  atmosphere: {
+    backdrop: 'horizon',
+    surface: 'glass',
+    accentFill: 'radial',
+    accentPattern: 'rings',
+    intensity: 1.2,
+  },
+  motion: { scenes: ['star-atlas', 'topographic-drift', 'particle-veil'] },
+};
+
+export const ledgerPersonality: Personality = {
+  id: 'ledger',
+  name: 'Ledger',
+  description:
+    "Bookkeeper's ledger aesthetic - ruled green-bar paper, double-rule totals, a grotesque masthead over tabular serif figures, and a banker's quiet calm.",
+  version: '1.0.0',
+
+  // Two inks, like a real ledger: the primary and its complement (the red
+  // used for negatives), both deep and desaturated. Lightness 24 is dark
+  // enough that on-primary text clears the personality's own 7:1 floor for
+  // any hue, so buttons are as auditable as body text.
+  colorHarmony: {
+    type: 'complementary',
+    saturationBoost: -0.15,
+    lightnessShift: -0.08,
+    accentSaturation: 48,
+    accentLightness: 24,
+    complementDistance: 180,
+  },
+
+  // Auditable means legible: AAA everywhere.
+  contrast: {
+    minimumRatio: 7,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'compact',
+    spacingMultiplier: 0.9,
+    borderRadius: 'sharp',
+    borderRadiusMultiplier: 0.25,
+    // Double rules are the ledger's signature (totals, column dividers).
+    // 3px is the minimum width at which `double` renders two lines.
+    borderStyle: 'double',
+    borderWidth: '3px',
+    shadowIntensity: 'none',
+    shadowMultiplier: 0.5,
+    // A crisp 1px ring at low alpha — a ruled edge, not a lift.
+    shadowProfile: 'technical',
+    typography: 'clean',
+    lineHeight: 1.55,
+    letterSpacing: '0.005em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Libre Franklin", "Franklin Gothic Medium", sans-serif',
+      weights: [600, 700, 800],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Source Serif 4", Georgia, serif',
+      weights: [400, 500, 600],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"DM Mono", monospace',
+      weights: [400, 500],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // Brisk and linear-ish: a pen stroke, no flourish.
+  animations: {
+    speed: 'fast',
+    easing: 'cubic-bezier(0.2, 0, 0, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '80ms',
+      normal: '140ms',
+      slow: '220ms',
+    },
+    staggerDelay: '16ms',
+    prefersReducedMotion: true,
+  },
+
+  colorGeneration: {
+    backgroundLuminosity: 96,
+    surfaceLuminosityOffset: -4,
+    foregroundContrast: 91,
+    secondaryLuminosityOffset: 36,
+    mutedLuminosityOffset: 50,
+    neutralSaturation: 12,
+    darkModeLuminosityScale: 7,
+    darkModeSaturationBoost: 6,
+    shadowTint: 'neutral',
+    shadowOpacity: 0.05,
+    pageBackgroundOpacity: 0.05,
+    // Green-bar paper follows the ink: the surface picks up the primary hue
+    // (banker's green with the default ledger primary).
+    surfaceHueBias: 'primary',
+    surfaceSaturationShift: 10,
+  },
+
+  // Ledger ruling: a writing line every 24px and a double column rule every
+  // 160px, so the page reads as columns of a journal.
+  pageBackground: {
+    pattern: `<svg width="160" height="24" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="23.5" width="160" height="0.5" fill="currentColor"/><rect x="0" y="0" width="0.5" height="24" fill="currentColor"/><rect x="2" y="0" width="0.5" height="24" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  // Surface texture: continuous-form "green-bar" banding — alternating 24px
+  // bands, the same rhythm as the page ruling, so rows of figures on a card
+  // sit on alternating stripes.
+  surfaceTexture: {
+    pattern: `<svg width="8" height="48" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="8" height="24" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+    opacity: 0.03,
+  },
+
+  mobile: {
+    touchTargetSize: '44px',
+  },
+
+  tags: ['finance', 'ledger', 'tabular', 'auditable', 'serif'],
+  category: 'professional',
+  // Extension layer (rollout D4).
+  expression: {
+    ground: { light: 'paper', dark: 'black' },
+    accent: 'tinted-surfaces',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.2,
+    headingWeight: 700,
+    headingCase: 'uppercase',
+    headingTracking: '0.04em',
+    headingLineHeight: 1.2,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    accentPattern: 'ledger',
+    intensity: 1,
+  },
+  motion: { scenes: ['ledger-ticker'] },
+};
+
+export const kunsthallePersonality: Personality = {
+  id: 'kunsthalle',
+  name: 'Kunsthalle',
+  description:
+    'International Typographic Style - a visible modular grid, oversized tight grotesque headlines, flush-left rag, a single signal accent, and zero ornament.',
+  version: '1.0.0',
+
+  // One accent and its immediate neighbours only: a very tight analogous
+  // spread keeps secondary/tertiary as tonal variants of the signal colour.
+  colorHarmony: {
+    type: 'analogous',
+    saturationBoost: 0.2,
+    lightnessShift: -0.02,
+    accentSaturation: 80,
+    accentLightness: 46,
+    analogousSpread: 12,
+  },
+
+  // Body text is pure black on pure white (21:1) regardless; the AA floor is
+  // what lets a true signal red carry white button text without being muddied
+  // to brick to chase 7:1.
+  contrast: {
+    minimumRatio: 4.5,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'comfortable',
+    spacingMultiplier: 1.1,
+    borderRadius: 'sharp',
+    borderRadiusMultiplier: 0,
+    // Heavy rules, used structurally (header bars, column dividers).
+    borderStyle: 'thick',
+    borderWidth: '2px',
+    shadowIntensity: 'none',
+    shadowMultiplier: 0.3,
+    shadowProfile: 'minimal',
+    typography: 'modern',
+    // Tight leading and negative tracking: display-first typography.
+    lineHeight: 1.3,
+    letterSpacing: '-0.02em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Archivo", "Helvetica Neue", Arial, sans-serif',
+      weights: [700, 800, 900],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Inter Tight", "Helvetica Neue", Arial, sans-serif',
+      weights: [400, 500, 600],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Roboto Mono", monospace',
+      weights: [400, 500],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // A hard in-out slide: things move decisively from one column to the next.
+  animations: {
+    speed: 'fast',
+    easing: 'cubic-bezier(0.7, 0, 0.3, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '120ms',
+      normal: '220ms',
+      slow: '400ms',
+    },
+    staggerDelay: '60ms',
+    prefersReducedMotion: false,
+  },
+
+  // Solid pictograms, Aicher-style.
+
+  colorGeneration: {
+    // Pure white paper, pure black type.
+    backgroundLuminosity: 100,
+    surfaceLuminosityOffset: -6,
+    foregroundContrast: 100,
+    secondaryLuminosityOffset: 30,
+    mutedLuminosityOffset: 48,
+    neutralSaturation: 0,
+    darkModeLuminosityScale: 3,
+    darkModeSaturationBoost: 0,
+    shadowTint: 'neutral',
+    // Zero: the `minimal` profile collapses to no shadow at all.
+    shadowOpacity: 0,
+    pageBackgroundOpacity: 0.05,
+    surfaceHueBias: 'none',
+    surfaceSaturationShift: 0,
+  },
+
+  // The grid, made visible: a column rule and a gutter rule every 96px, with
+  // short baseline ticks at the column edge every 8px.
+  pageBackground: {
+    pattern: `<svg width="96" height="8" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="0.75" height="8" fill="currentColor"/><rect x="80" y="0" width="0.75" height="8" fill="currentColor"/><rect x="0" y="0" width="3" height="0.5" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+  },
+
+  mobile: {
+    touchTargetSize: '44px',
+  },
+
+  tags: ['swiss', 'grid', 'editorial', 'typographic', 'gallery'],
+  category: 'creative',
+  // Extension layer (rollout D4).
+  expression: {
+    ground: { light: 'white', dark: 'black' },
+    accent: 'primary-ground',
+    neutralBase: 'respect',
+  },
+  typeScale: {
+    ratio: 1.5,
+    headingWeight: 800,
+    headingCase: 'none',
+    headingTracking: '-0.035em',
+    headingLineHeight: 0.95,
+  },
+  atmosphere: {
+    backdrop: 'none',
+    surface: 'flat',
+    accentFill: 'split',
+    buttonFill: 'split',
+    intensity: 1.2,
+  },
+  motion: { enter: 'slide', scenes: ['grid-shift'] },
+};
+
+export const canopyPersonality: Personality = {
+  id: 'canopy',
+  name: 'Canopy',
+  description:
+    'Optimistic solarpunk greenhouse - sun-warmed leafy tints, generous rounded pods, dappled-light gradients, and growth-inspired easing.',
+  version: '1.0.0',
+
+  // Leaf, sun and sky: three evenly spaced hues, moderately saturated.
+  colorHarmony: {
+    type: 'triadic',
+    saturationBoost: 0.1,
+    lightnessShift: 0.06,
+    accentSaturation: 62,
+    accentLightness: 52,
+  },
+
+  contrast: {
+    minimumRatio: 4.5,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'airy',
+    spacingMultiplier: 1.3,
+    borderRadius: 'round',
+    borderRadiusMultiplier: 1.35,
+    borderStyle: 'thin',
+    borderWidth: '1px',
+    shadowIntensity: 'medium',
+    shadowMultiplier: 1,
+    shadowProfile: 'layered',
+    typography: 'friendly',
+    lineHeight: 1.65,
+    letterSpacing: '0.005em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Young Serif", Georgia, serif',
+      weights: [400],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Figtree", system-ui, sans-serif',
+      weights: [400, 500, 600, 700],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Fira Code", monospace',
+      weights: [400],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // Growth: a gentle overshoot, like a shoot springing up, never a bounce.
+  animations: {
+    speed: 'slow',
+    easing: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+    duration: {
+      instant: '0ms',
+      fast: '220ms',
+      normal: '420ms',
+      slow: '720ms',
+    },
+    staggerDelay: '90ms',
+    prefersReducedMotion: true,
+  },
+
+  // Duotone leaves.
+
+  colorGeneration: {
+    backgroundLuminosity: 97,
+    surfaceLuminosityOffset: -3,
+    foregroundContrast: 89,
+    secondaryLuminosityOffset: 40,
+    mutedLuminosityOffset: 55,
+    neutralSaturation: 20,
+    darkModeLuminosityScale: 9,
+    darkModeSaturationBoost: 14,
+    // Shadows are cast by leaves: tinted, never grey.
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.13,
+    pageBackgroundOpacity: 0.06,
+    surfaceHueBias: 'primary',
+    surfaceSaturationShift: 9,
+  },
+
+  // Scattered leaves on a vine plus a few seeds; primary-tinted.
+  pageBackground: {
+    pattern: `<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><ellipse cx="16" cy="18" rx="7" ry="2.8" transform="rotate(-35 16 18)" fill="currentColor"/><ellipse cx="24" cy="12" rx="5" ry="2" transform="rotate(20 24 12)" fill="currentColor"/><ellipse cx="46" cy="44" rx="6.5" ry="2.6" transform="rotate(30 46 44)" fill="currentColor"/><circle cx="52" cy="14" r="1.1" fill="currentColor"/><circle cx="10" cy="50" r="0.9" fill="currentColor"/><circle cx="34" cy="56" r="0.6" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  mobile: {
+    touchTargetSize: '48px',
+  },
+
+  tags: ['solarpunk', 'organic', 'community', 'optimistic', 'greenhouse'],
+  category: 'casual',
+  // Extension layer (rollout D4).
+  expression: {
+    ground: { light: 'tinted', dark: 'tinted' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.333,
+    headingWeight: 400,
+    headingCase: 'none',
+    headingTracking: '0em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'aurora',
+    surface: 'gradient',
+    accentFill: 'radial',
+    accentPattern: 'waves',
+    buttonFill: 'gradient',
+    intensity: 1.1,
+  },
+  motion: { scenes: ['canopy-dapple', 'flock-field'] },
+};
+
+export const clayPersonality: Personality = {
+  id: 'clay',
+  name: 'Clay',
+  description:
+    'Tactile claymorphism - puffy, pressable pods with inner highlights and soft outer drops, chunky rounded display type, and squishy spring motion.',
+  version: '1.0.0',
+
+  // Pastel but not washed out: split-complementary gives two candy-like
+  // companions to the primary.
+  colorHarmony: {
+    type: 'split-complementary',
+    saturationBoost: 0.05,
+    lightnessShift: 0.14,
+    accentSaturation: 70,
+    accentLightness: 66,
+    complementDistance: 150,
+  },
+
+  contrast: {
+    minimumRatio: 4.5,
+    autoAdjust: true,
+  },
+
+  tokens: {
+    spacingScale: 'comfortable',
+    spacingMultiplier: 1.1,
+    borderRadius: 'round',
+    borderRadiusMultiplier: 1.6,
+    // No outlines: shape is carried entirely by light and shade.
+    borderStyle: 'none',
+    borderWidth: '0px',
+    shadowIntensity: 'dramatic',
+    shadowMultiplier: 1.3,
+    // A pronounced vertical drop — the pod sits on the table.
+    shadowProfile: 'playful-drop',
+    typography: 'playful',
+    lineHeight: 1.55,
+    letterSpacing: '0em',
+  },
+
+  fonts: {
+    heading: {
+      family: '"Unbounded", system-ui, sans-serif',
+      weights: [500, 700],
+      display: 'swap',
+      preload: true,
+    },
+    body: {
+      family: '"Plus Jakarta Sans", system-ui, sans-serif',
+      weights: [400, 500, 600, 700],
+      display: 'swap',
+      preload: true,
+    },
+    mono: {
+      family: '"Fira Code", monospace',
+      weights: [400],
+      display: 'swap',
+      preload: false,
+    },
+  },
+
+  // Squish: a strong spring overshoot on release.
+  animations: {
+    speed: 'normal',
+    easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.6)',
+    duration: {
+      instant: '0ms',
+      fast: '160ms',
+      normal: '320ms',
+      slow: '520ms',
+    },
+    staggerDelay: '60ms',
+    prefersReducedMotion: false,
+  },
+
+  colorGeneration: {
+    // A tinted, slightly dim "clay table" background so the lighter pods pop.
+    backgroundLuminosity: 94,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 86,
+    secondaryLuminosityOffset: 36,
+    mutedLuminosityOffset: 50,
+    neutralSaturation: 28,
+    // Dark clay, not black.
+    darkModeLuminosityScale: 12,
+    darkModeSaturationBoost: 8,
+    shadowTint: 'primary-tint',
+    shadowOpacity: 0.18,
+    pageBackgroundOpacity: 0.05,
+    surfaceHueBias: 'primary',
+    surfaceSaturationShift: 5,
+  },
+
+  // Loose pebbles of clay scattered across the table.
+  pageBackground: {
+    pattern: `<svg width="72" height="72" xmlns="http://www.w3.org/2000/svg"><ellipse cx="18" cy="20" rx="7" ry="5.5" fill="currentColor"/><ellipse cx="52" cy="50" rx="9" ry="7" fill="currentColor"/><circle cx="58" cy="14" r="3" fill="currentColor"/><circle cx="14" cy="56" r="2" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  // No surface texture: clay is smooth. Its tactility is in the shading.
+
+  mobile: {
+    // Chunky, thumb-friendly pods.
+    touchTargetSize: '52px',
+  },
+
+  tags: ['claymorphism', 'tactile', '3d', 'friendly', 'family'],
+  category: 'casual',
+  // Extension layer (rollout D4).
+  expression: {
+    ground: { light: 'toned', dark: 'dim' },
+    accent: 'tinted-surfaces',
+  },
+  typeScale: {
+    ratio: 1.25,
+    headingWeight: 700,
+    headingCase: 'none',
+    headingTracking: '-0.01em',
+    headingLineHeight: 1.1,
+  },
+  atmosphere: {
+    backdrop: 'glow',
+    surface: 'raised',
+    accentFill: 'radial',
+    pagePattern: 'dots',
+    buttonFill: 'shine',
+    intensity: 1.1,
+  },
+  motion: { ambient: 'breathe', scenes: ['clay-blobs', 'pulse-rings'] },
 };
 
 function createPresentation(
@@ -1498,6 +2443,11 @@ function withDerivedFontFamilies(
     },
   };
 }
+
+const SECOND_INK = 'color-mix(in srgb, var(--tertiary) 82%, var(--foreground))';
+
+const CLAY_INNER =
+  'inset 3px 3px 6px color-mix(in srgb, white 45%, transparent), inset -4px -4px 8px color-mix(in srgb, var(--shadow-color, #000) 12%, transparent)';
 
 const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
   classic: createPresentation({
@@ -2102,10 +3052,362 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       },
     },
   }),
+  risograph: createPresentation({
+    interaction: {
+      // Lift off the page with a slight skew, exposing the second ink.
+      hoverTransform: 'translate(-1px, -2px) rotate(-0.4deg)',
+      hoverShadow: `4px 4px 0 ${SECOND_INK}, -1px -1px 0 color-mix(in srgb, var(--primary) 45%, transparent)`,
+      // Stamp back down onto the paper.
+      activeTransform: 'translate(2px, 2px)',
+      activeShadow: `1px 1px 0 ${SECOND_INK}`,
+      accentBorder: '2.5px solid var(--primary)',
+    },
+    label: {
+      fontFamily: 'var(--font-mono)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em',
+    },
+    border: {
+      style: 'solid',
+      width: 'thick',
+      radius: 'small',
+      styleValue: 'solid',
+      widthValue: '2.5px',
+      radiusValue: '2px',
+    },
+    shadow: { style: 'dramatic', value: '4px 4px 0px rgba(0,0,0,0.22)' },
+    typography: {
+      fontFamily: 'display',
+      headingFamily: 'display',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'extrabold',
+      fontStyle: 'normal',
+      weightValue: '800',
+    },
+    animation: {
+      style: 'wobbly',
+      speed: 'fast',
+      timingFunction: 'cubic-bezier(0.3, 1.4, 0.6, 1)',
+      duration: '0.18s',
+      transition: 'all 0.18s cubic-bezier(0.3, 1.4, 0.6, 1)',
+    },
+    layout: { borderRadius: '2px', spacing: 'normal', maxWidth: '70rem' },
+    components: {
+      button: {
+        borderRadius: '2px',
+        padding: '12px 22px',
+        fontWeight: '800',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '2px',
+        padding: '22px',
+        boxShadow: `6px 6px 0 ${SECOND_INK}`,
+      },
+      input: {
+        borderRadius: '2px',
+        borderWidth: '2.5px',
+        focusStyle: `3px 3px 0 ${SECOND_INK}`,
+      },
+    },
+  }),
+  observatory: createPresentation({
+    interaction: {
+      // No movement on hover — stars don't jump. Light comes up instead.
+      hoverShadow:
+        '0 0 0 1px color-mix(in srgb, var(--primary) 60%, transparent), 0 0 28px color-mix(in srgb, var(--primary) 30%, transparent)',
+      activeShadow:
+        '0 0 0 1px var(--primary), 0 0 12px color-mix(in srgb, var(--primary) 45%, transparent)',
+      accentBorder:
+        '1px solid color-mix(in srgb, var(--primary) 55%, var(--border))',
+    },
+    label: {
+      fontFamily: 'var(--font-mono)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.18em',
+    },
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'large',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '14px',
+    },
+    // Static fallback only (the rendered glow is the `neon` profile, built from
+    // the primary by ThemeService) — kept neutral like the other presets.
+    shadow: { style: 'glow', value: '0 0 24px rgba(0,0,0,0.18)' },
+    typography: {
+      fontFamily: 'serif',
+      headingFamily: 'serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'light',
+      fontStyle: 'normal',
+      weightValue: '300',
+    },
+    animation: {
+      style: 'flowing',
+      speed: 'slow',
+      timingFunction: 'cubic-bezier(0.33, 0, 0.1, 1)',
+      duration: '0.52s',
+      transition: 'all 0.52s cubic-bezier(0.33, 0, 0.1, 1)',
+    },
+    // A reading measure, not a dashboard width.
+    layout: { borderRadius: '14px', spacing: 'relaxed', maxWidth: '66rem' },
+    components: {
+      button: {
+        borderRadius: '9999px',
+        padding: '11px 26px',
+        fontWeight: '500',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '16px',
+        padding: '28px',
+        boxShadow: '0 0 32px rgba(0,0,0,0.14)',
+      },
+      input: {
+        borderRadius: '10px',
+        borderWidth: '1px',
+        focusStyle:
+          '0 0 0 1px var(--primary), 0 0 18px color-mix(in srgb, var(--primary) 35%, transparent)',
+      },
+    },
+  }),
+  ledger: createPresentation({
+    interaction: {
+      // A margin tick in the primary ink marks the row you're on.
+      hoverShadow: 'inset 3px 0 0 var(--primary)',
+      activeShadow: 'inset 0 0 0 1px var(--primary)',
+      accentBorder: '3px double var(--foreground)',
+    },
+    label: {
+      fontFamily: 'var(--font-heading)',
+      textTransform: 'uppercase',
+      letterSpacing: '0.1em',
+    },
+    border: {
+      style: 'double',
+      width: 'thick',
+      radius: 'none',
+      styleValue: 'double',
+      widthValue: '3px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'none', value: 'none' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'serif',
+      fontWeight: 'semibold',
+      fontStyle: 'normal',
+      weightValue: '600',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'fast',
+      timingFunction: 'cubic-bezier(0.2, 0, 0, 1)',
+      duration: '0.14s',
+      transition: 'all 0.14s cubic-bezier(0.2, 0, 0, 1)',
+    },
+    layout: { borderRadius: '0px', spacing: 'compact', maxWidth: '82rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '8px 16px',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '16px',
+        boxShadow: 'none',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '1px',
+        // Focus writes on the line: an underline, not a ring.
+        focusStyle: 'inset 0 -2px 0 var(--primary)',
+      },
+    },
+  }),
+  kunsthalle: createPresentation({
+    interaction: {
+      // Slide along the grid; a signal rule appears at the flush-left edge.
+      hoverTransform: 'translateX(4px)',
+      hoverShadow: 'inset 4px 0 0 var(--primary)',
+      activeTransform: 'translateX(2px)',
+      activeShadow: 'inset 6px 0 0 var(--primary)',
+      accentBorder: '4px solid var(--primary)',
+    },
+    label: {
+      fontFamily: 'var(--font-body)',
+      textTransform: 'lowercase',
+      letterSpacing: '-0.01em',
+    },
+    border: {
+      style: 'solid',
+      width: 'medium',
+      radius: 'none',
+      styleValue: 'solid',
+      widthValue: '2px',
+      radiusValue: '0px',
+    },
+    shadow: { style: 'none', value: 'none' },
+    typography: {
+      fontFamily: 'sans-serif',
+      headingFamily: 'sans-serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'bold',
+      fontStyle: 'normal',
+      weightValue: '700',
+    },
+    animation: {
+      style: 'subtle',
+      speed: 'fast',
+      timingFunction: 'cubic-bezier(0.7, 0, 0.3, 1)',
+      duration: '0.22s',
+      transition: 'all 0.22s cubic-bezier(0.7, 0, 0.3, 1)',
+    },
+    // A wide 12-column canvas.
+    layout: { borderRadius: '0px', spacing: 'normal', maxWidth: '90rem' },
+    components: {
+      button: {
+        borderRadius: '0px',
+        padding: '14px 28px',
+        fontWeight: '700',
+        textTransform: 'lowercase',
+      },
+      card: {
+        borderRadius: '0px',
+        padding: '24px',
+        boxShadow: 'none',
+      },
+      input: {
+        borderRadius: '0px',
+        borderWidth: '2px',
+        focusStyle: '0 0 0 2px var(--foreground)',
+      },
+    },
+  }),
+  canopy: createPresentation({
+    interaction: {
+      // Rise toward the light, casting a longer leaf-tinted shadow.
+      hoverTransform: 'translateY(-3px) scale(1.01)',
+      hoverShadow:
+        '0 14px 28px -10px color-mix(in srgb, var(--primary) 35%, transparent)',
+      activeTransform: 'translateY(-1px) scale(0.995)',
+      accentBorder:
+        '1px solid color-mix(in srgb, var(--primary) 40%, var(--border))',
+    },
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'large',
+      styleValue: 'solid',
+      widthValue: '1px',
+      radiusValue: '20px',
+    },
+    shadow: { style: 'medium', value: '0 8px 20px -6px rgba(0,0,0,0.14)' },
+    typography: {
+      fontFamily: 'serif',
+      headingFamily: 'serif',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      weightValue: '400',
+    },
+    animation: {
+      style: 'bouncy',
+      speed: 'slow',
+      timingFunction: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+      duration: '0.42s',
+      transition: 'all 0.42s cubic-bezier(0.34, 1.3, 0.64, 1)',
+    },
+    layout: { borderRadius: '20px', spacing: 'relaxed', maxWidth: '72rem' },
+    components: {
+      button: {
+        borderRadius: '9999px',
+        padding: '13px 28px',
+        fontWeight: '600',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '22px',
+        padding: '26px',
+        boxShadow: '0 10px 24px -8px rgba(0,0,0,0.14)',
+      },
+      input: {
+        borderRadius: '14px',
+        borderWidth: '1px',
+        // Focus blooms in the tertiary ("sky") hue.
+        focusStyle:
+          '0 0 0 4px color-mix(in srgb, var(--tertiary) 25%, transparent)',
+      },
+    },
+  }),
+  clay: createPresentation({
+    interaction: {
+      hoverTransform: 'translateY(-2px) scale(1.015)',
+      hoverShadow: `${CLAY_INNER}, 0 16px 28px -8px color-mix(in srgb, var(--shadow-color, #000) 28%, transparent)`,
+      // Pressed: squashes and the moulding inverts (pushed into the clay).
+      activeTransform: 'translateY(1px) scale(0.97)',
+      activeShadow:
+        'inset 4px 4px 10px color-mix(in srgb, var(--shadow-color, #000) 22%, transparent), inset -3px -3px 8px color-mix(in srgb, white 20%, transparent)',
+    },
+    border: {
+      style: 'solid',
+      width: 'thin',
+      radius: 'large',
+      styleValue: 'none',
+      widthValue: '0px',
+      radiusValue: '28px',
+    },
+    shadow: {
+      style: 'dramatic',
+      value: `${CLAY_INNER}, 0 12px 24px -6px rgba(0,0,0,0.18)`,
+    },
+    typography: {
+      fontFamily: 'display',
+      headingFamily: 'display',
+      bodyFamily: 'sans-serif',
+      fontWeight: 'semibold',
+      fontStyle: 'normal',
+      weightValue: '600',
+    },
+    animation: {
+      style: 'bouncy',
+      speed: 'normal',
+      timingFunction: 'cubic-bezier(0.175, 0.885, 0.32, 1.6)',
+      duration: '0.32s',
+      transition: 'all 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.6)',
+    },
+    layout: { borderRadius: '28px', spacing: 'relaxed', maxWidth: '68rem' },
+    components: {
+      button: {
+        borderRadius: '9999px',
+        padding: '14px 30px',
+        fontWeight: '700',
+        textTransform: 'none',
+      },
+      card: {
+        borderRadius: '32px',
+        padding: '28px',
+        boxShadow: `${CLAY_INNER}, 0 14px 28px -8px rgba(0,0,0,0.16)`,
+      },
+      input: {
+        borderRadius: '20px',
+        borderWidth: '0px',
+        // Inputs are wells pressed into the clay; focus adds a soft ring.
+        focusStyle:
+          'inset 3px 3px 6px color-mix(in srgb, var(--shadow-color, #000) 14%, transparent), inset -3px -3px 6px color-mix(in srgb, white 35%, transparent), 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent)',
+      },
+    },
+  }),
 };
 
 /**
- * All predefined personalities (12 total: 7 original + 5 library-promoted)
+ * All predefined personalities (18 total: 7 original + 5 library-promoted + 6 playground)
  */
 export const PREDEFINED_PERSONALITIES: Personality[] = [
   classicPersonality,
@@ -2120,6 +3422,12 @@ export const PREDEFINED_PERSONALITIES: Personality[] = [
   electricPersonality,
   controlCenterPersonality,
   foundationPersonality,
+  risographPersonality,
+  observatoryPersonality,
+  ledgerPersonality,
+  kunsthallePersonality,
+  canopyPersonality,
+  clayPersonality,
 ].map((personality) => ({
   ...personality,
   presentation: {

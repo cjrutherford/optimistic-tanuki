@@ -53,22 +53,24 @@
   border-radius: var(--personality-tab-radius, 0px);
   background: transparent;
   color: var(--tabs-inactive-color, var(--foreground));
-  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   position: relative;
   @include p.label-type;
   @include p.personality-transition('color, background-color', 'fast');
+  @include p.small-text(14px);
+  @include p.touch-target;
+  @include p.keyboard-focus-ring(var(--primary));
 
   &:hover:not(.disabled):not(.active) {
-    color: var(--tabs-active-color, var(--primary));
+    color: var(--tabs-active-color, var(--primary-text, var(--primary)));
     background: var(--hover-bg, rgba(0, 0, 0, 0.05));
   }
 
   &.active {
     color: var(
       --personality-tab-active-fg,
-      var(--tabs-active-color, var(--primary))
+      var(--tabs-active-color, var(--primary-text, var(--primary)))
     );
     background: var(--personality-tab-active-bg, transparent);
     box-shadow: var(--personality-tab-active-shadow, none);

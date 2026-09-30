@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .particle-veil {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 18rem;
   overflow: hidden;
@@ -30,20 +32,38 @@
 }
 
 .particle-grid,
+.veil-haze,
 .particle {
   position: absolute;
 }
 
+// Slow drifting haze: the "veil" the particles rise through.
+.veil-haze {
+  inset: -12% -18%;
+  background: radial-gradient(
+      ellipse at 30% 42%,
+      scene.lit(var(--primary), 60%),
+      transparent 56%
+    ),
+    radial-gradient(
+      ellipse at 72% 60%,
+      scene.lit(var(--secondary), 50%),
+      transparent 52%
+    );
+  animation: veil-sweep scene.duration(16s) ease-in-out infinite alternate;
+  will-change: transform;
+}
+
 .particle-grid {
   inset: 0;
-  opacity: 0.3;
+  opacity: 0.6;
   background-image: linear-gradient(
-      color-mix(in srgb, var(--primary) 6%, transparent) 1px,
+      scene.lit(var(--primary), 16%) 1px,
       transparent 1px
     ),
     linear-gradient(
       90deg,
-      color-mix(in srgb, var(--secondary) 6%, transparent) 1px,
+      scene.lit(var(--secondary), 16%) 1px,
       transparent 1px
     );
   background-size: 2.8rem 2.8rem;
@@ -62,14 +82,27 @@
     color-mix(in srgb, var(--primary) 70%, transparent) 64%,
     transparent 100%
   );
-  box-shadow: 0 0 18px color-mix(in srgb, var(--secondary) 16%, transparent);
+  box-shadow: 0 0 26px scene.ink(var(--secondary), 40%);
   animation: particle-rise linear infinite;
   will-change: transform, opacity;
 }
 
+@keyframes veil-sweep {
+  from {
+    transform: translate3d(-7%, 3%, 0);
+  }
+  to {
+    transform: translate3d(7%, -4%, 0);
+  }
+}
+
+.particle-veil.is-fallback .veil-haze {
+  animation: none;
+}
+
 .particle-veil.is-fallback .particle {
   animation: none;
-  opacity: calc(0.18 + (var(--veil-intensity) * 0.14));
+  opacity: calc(0.18 + (var(--scene-intensity) * 0.14));
 }
 
 @keyframes particle-rise {
@@ -84,7 +117,7 @@
         0
       )
       scale(1.06);
-    opacity: calc(0.32 + (var(--veil-intensity) * 0.28));
+    opacity: calc(0.32 + (var(--scene-intensity) * 0.28));
   }
   100% {
     transform: translate3d(
@@ -93,5 +126,16 @@
         0
       )
       scale(0.9);
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .particle-veil {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

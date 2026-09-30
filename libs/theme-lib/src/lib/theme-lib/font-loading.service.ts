@@ -93,6 +93,17 @@ const REGISTRY_WEB_FONTS = buildRegistryWebFonts();
 /**
  * Service for loading fonts dynamically based on personality
  */
+/**
+ * The `wght@` axis value for Google Fonts css2: unique weights, ascending,
+ * separated by `;`. A comma (`400,500`) or unsorted list makes Google reject
+ * the whole request with a 400, so the font silently falls back.
+ */
+export function googleFontWeights(
+  weights: ReadonlyArray<number | string>
+): string {
+  return [...new Set(weights.map(Number))].sort((a, b) => a - b).join(';');
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -147,7 +158,7 @@ export class FontLoadingService {
     type: string,
     config: FontConfig
   ): Promise<FontLoadStatus> {
-    const fontKey = `${config.family}:${config.weights.join(',')}`;
+    const fontKey = `${config.family}:${googleFontWeights(config.weights)}`;
 
     // Already loaded
     if (this.loadedFonts.has(fontKey)) {
@@ -234,7 +245,7 @@ export class FontLoadingService {
    */
   private async loadGoogleFont(config: FontConfig): Promise<void> {
     const familyName = config.family.split(',')[0].trim().replace(/['"]/g, '');
-    const weights = config.weights.join(',');
+    const weights = googleFontWeights(config.weights);
     const display = config.display || 'swap';
 
     // Create link element
@@ -323,7 +334,7 @@ export class FontLoadingService {
           .split(',')[0]
           .trim()
           .replace(/['"]/g, '');
-        const weights = config.weights.join(',');
+        const weights = googleFontWeights(config.weights);
         const display = config.display || 'swap';
 
         const linkId = `font-preload-${this.sanitizeFontName(familyName)}`;
@@ -364,7 +375,7 @@ export class FontLoadingService {
     ].filter((f): f is FontConfig => !!f);
 
     for (const config of fontConfigs) {
-      const fontKey = `${config.family}:${config.weights.join(',')}`;
+      const fontKey = `${config.family}:${googleFontWeights(config.weights)}`;
       if (!this.loadedFonts.has(fontKey)) {
         return false;
       }

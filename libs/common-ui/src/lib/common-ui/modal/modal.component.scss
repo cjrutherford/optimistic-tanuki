@@ -68,6 +68,7 @@
   z-index: var(--z-index-modal, 1050);
   animation: personality-modal-appear var(--animation-duration-fast, 100ms)
     var(--animation-easing, ease);
+  @include p.surface-finish;
 
   @include reduced-motion {
     animation: none;
@@ -256,10 +257,7 @@
     background: color-mix(in srgb, currentColor 12%, transparent);
   }
 
-  &:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(currentColor);
 }
 
 .modal-body {
@@ -270,7 +268,7 @@
   overflow-x: hidden;
   font-family: var(--font-body, system-ui, sans-serif);
   font-size: 0.875rem;
-  line-height: 1.6;
+  @include p.body-text(1.6, inherit);
 }
 
 .modal-footer {

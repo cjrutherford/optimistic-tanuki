@@ -9,7 +9,7 @@
   width: 90%;
   max-width: 800px;
   background: var(--heading-gradient);
-  color: var(--background);
+  color: var(--band-foreground);
   padding: var(--spacing-lg);
   border-radius: 12px;
 }
@@ -21,7 +21,7 @@
 .heading-container p {
   margin-bottom: var(--spacing-sm);
   font-size: clamp(0.9rem, 2vw, 1.1rem);
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--band-foreground);
 }
 
 .contact-form-container {
@@ -31,7 +31,7 @@
 }
 
 .contact-form {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: var(--spacing-md);
   box-shadow: 0 4px 12px var(--shadow);
@@ -59,7 +59,7 @@
   display: block;
   margin-bottom: var(--spacing-xs);
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -73,7 +73,7 @@
   border-radius: 6px;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
   transition: all 0.3s ease;
-  background: white;
+  background: var(--surface);
 }
 
 .form-group input:focus,

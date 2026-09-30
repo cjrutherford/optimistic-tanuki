@@ -69,7 +69,7 @@
 
   .item-total {
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 
   .remove-btn {
@@ -106,7 +106,7 @@
 
     .total-amount {
       font-weight: 700;
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
     }
   }
 

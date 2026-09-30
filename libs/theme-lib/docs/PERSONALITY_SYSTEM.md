@@ -45,6 +45,17 @@ The Personality System is a centralized theming solution that provides applicati
 | Control Center | Technical dashboard  | Space Grotesk, JetBrains Mono, grid background |
 | Foundation     | Minimal functional   | System fonts, maximum clarity                  |
 
+### Added Later (6)
+
+| Personality | Description                                        |
+| ----------- | -------------------------------------------------- |
+| Risograph   | Two-ink print zine, halftone, offset shadows       |
+| Observatory | Night star atlas, hairlines, slow orbital motion   |
+| Ledger      | Green-bar bookkeeping, double rules, tabular serif |
+| Kunsthalle  | Swiss grid, tight grotesque, one signal accent     |
+| Canopy      | Solarpunk greenhouse, leafy tints, growth easing   |
+| Clay        | Claymorphism, puffy pods, squash on press          |
+
 ## How It Works
 
 ### 1. Personality Selection
@@ -143,6 +154,31 @@ export class MyComponent extends Themeable {
 }
 ```
 
+### 5. Adopting the Extension Mixins
+
+Personalities can opt in to expression, type scale, atmosphere and motion (see "Extension layer" in `docs/design-system/personalities.md`). Components adopt this through the mixins in `libs/theme-styles/src/lib/personality/_expression.scss`:
+
+```scss
+@use 'personality' as p;
+
+.title {
+  @include p.heading('h2', $size: 1.375rem, $family: inherit, $weight: 600, $line-height: 1.3);
+}
+```
+
+Rules:
+
+- Pass the component's current value as the fallback. Where a mixin has no safe default the parameter is required, so a missing value fails to compile. Until a personality opts in, the output is unchanged.
+- Never branch on a personality id. Read variables only.
+- Mixins available: `body-text`, `heading`, `small-text`, `touch-target`, `page-width`, `stagger`, `enter`, `accent-band`, `page-atmosphere`, `surface-finish`, `primary-fill`, `keyboard-focus-ring`, `primary-motion`, `band-motion`, and `motion-keyframes` (emit once per app).
+- For text drawn in a tone colour, use `color: var(--primary-text, var(--primary));`. `--primary` is the fill colour and can fail contrast as text. `--<tone>-text` is guaranteed 4.5:1 on the page and surface.
+- Apps that have not adopted the mixins can provide `PERSONALITY_EXTENSIONS_ENABLED` as `false`.
+
+### 6. Review Workflow
+
+- **Pixel baseline** (`tools/personality-baseline`): `capture.mjs` renders every personality in light and dark against a static Storybook, and `compare.mjs` diffs two captures. The report also lists rendered text that falls below WCAG AA after the change. Read its Readability section as well as the pixel diff. See the README in that directory.
+- **Style-literal ratchet** (`tools/personality-audit.mjs`): counts hard-coded radius, shadow, font, spacing and font-size literals in component SCSS. Run `pnpm run check:personality-audit`. It fails when a file gains literals. When a file improves, re-baseline `tools/personality-audit.baseline.json` in the same PR. The count only goes down.
+
 ## Giving an App Its Personality by Default
 
 Each app declares its default personality, mode, and primary colour once, in
@@ -219,7 +255,7 @@ this.themeService.setTheme('dark');
 
 ```
 libs/theme-lib/src/lib/theme-lib/
-├── personalities.ts           # All 12 personality definitions
+├── personalities.ts           # All 18 personality definitions
 ├── personality.interface.ts   # TypeScript interfaces
 ├── theme.service.ts          # Main theme management
 ├── color-harmony.ts          # Color generation logic

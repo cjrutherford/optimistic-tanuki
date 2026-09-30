@@ -99,10 +99,17 @@
     background: var(--background);
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(
+    var(--primary),
+    2px,
+    (
+      var(--shadow-md),
+      var(
+        --personality-input-focus-style,
+        0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent)
+      )
+    )
+  );
 
   &:disabled {
     opacity: 0.5;
@@ -164,13 +171,13 @@
 
 .error-message {
   font-family: var(--font-body, system-ui, sans-serif);
-  font-size: 0.75rem;
   color: var(--danger, #dc2626);
   margin-top: 4px;
   padding-left: 8px;
   display: flex;
   align-items: center;
   gap: 4px;
+  @include p.small-text(0.75rem);
 
   &::before {
     content: '';
@@ -204,7 +211,11 @@
   }
 
   &:focus-within .input-icon {
-    color: color-mix(in srgb, var(--primary) 60%, transparent);
+    color: color-mix(
+      in srgb,
+      var(--primary-text, var(--primary)) 60%,
+      transparent
+    );
   }
 }
 

@@ -405,7 +405,7 @@
   .anvil-icon {
     width: 48px;
     height: 48px;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     filter: drop-shadow(
       0 0 20px color-mix(in srgb, var(--primary) 60%, transparent)
     );
@@ -422,7 +422,7 @@
     font-weight: 600;
     letter-spacing: 0.4em;
     text-transform: uppercase;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-shadow: 0 0 30px color-mix(in srgb, var(--primary) 40%, transparent);
   }
 }
@@ -479,7 +479,7 @@
     font-weight: 500;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 
@@ -699,7 +699,7 @@
 
   &:hover {
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     background: color-mix(in srgb, var(--primary) 8%, transparent);
     box-shadow: 0 0 30px color-mix(in srgb, var(--primary) 20%, transparent);
   }
@@ -1110,7 +1110,7 @@
     }
 
     &:hover {
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       opacity: 1;
       transform: scale(1.15) rotate(5deg);
       filter: drop-shadow(

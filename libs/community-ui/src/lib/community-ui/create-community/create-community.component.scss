@@ -59,9 +59,9 @@
 }
 
 .help-text {
-  font-size: var(--font-size-xs, 0.85rem);
   color: var(--local-complement);
   margin-top: var(--spacing-xs);
+  @include p.small-text(var(--font-size-xs, 0.85rem));
 
   @media (max-width: 640px) {
     font-size: 0.75rem;
@@ -76,7 +76,7 @@
     color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-lg);
-  font-size: var(--font-size-sm, 0.9rem);
+  @include p.small-text(var(--font-size-sm, 0.9rem));
 
   @media (max-width: 640px) {
     padding: var(--spacing-sm);

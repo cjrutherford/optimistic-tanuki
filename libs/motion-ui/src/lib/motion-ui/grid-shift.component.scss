@@ -1,0 +1,58 @@
+@use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
+
+@include motion-theme.motion-theme-tokens;
+@include scene.scene-contract-tokens;
+
+.grid-shift {
+  container-type: inline-size;
+  @include scene.scene-root;
+}
+
+.guides {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+      90deg,
+      scene.ink(var(--foreground), 16%) 0 1px,
+      transparent 1px
+    )
+    0 0 / calc(100% / 12) 100%;
+}
+
+.block {
+  position: absolute;
+  left: calc(var(--start) * 100% / 12);
+  width: calc(var(--span) * 100% / 12);
+  top: calc(6% + var(--row) * (88% / var(--row-count)));
+  height: calc(88% / var(--row-count) - 4%);
+  // Hold, slide decisively along the grid, hold, slide back: Swiss, not floaty.
+  animation: grid-step
+    calc((11s + var(--row) * 1.7s) / max(var(--scene-speed), 0.2))
+    cubic-bezier(0.7, 0, 0.3, 1) infinite;
+  animation-delay: calc(var(--row) * -2.3s);
+}
+
+.tone-a {
+  background: scene.ink(var(--primary), 95%);
+}
+.tone-b {
+  background: scene.ink(var(--foreground), 85%);
+}
+.tone-c {
+  background: scene.ink(var(--tertiary, var(--secondary)), 90%);
+}
+
+@keyframes grid-step {
+  0%,
+  38% {
+    transform: translateX(0);
+  }
+  50%,
+  88% {
+    transform: translateX(calc(var(--shift) * 100cqw / 12));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

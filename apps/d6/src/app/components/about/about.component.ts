@@ -175,7 +175,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         }
 
         strong {
-          color: var(--primary, #4f46e5);
+          color: var(--primary-text, var(--primary, #4f46e5));
         }
       }
 

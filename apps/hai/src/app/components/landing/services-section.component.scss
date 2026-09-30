@@ -96,7 +96,7 @@ h3 {
   margin-bottom: 1rem;
   border-radius: calc(var(--hai-radius-panel) * 0.5);
   background: color-mix(in srgb, var(--primary) 12%, transparent);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: 1.2rem;
   line-height: 1;
 }

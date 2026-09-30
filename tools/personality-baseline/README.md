@@ -1,0 +1,39 @@
+# personality-baseline
+
+Pixel baseline for the personality/motion migration. Plain Node ESM, uses Playwright chromium.
+
+```
+node capture.mjs --storybook <static-storybook-dir> --out <dir> [--story <id>] [--only <personalityId>]
+node compare.mjs <dirA> <dirB> --report <report.html>
+```
+
+Build the static storybook with
+`nx build-storybook common-ui --outputDir=<dir>` (use the Nx env from CLAUDE.md).
+
+capture.mjs writes `stills/` (every predefined personality x light/dark x primaries #3f51b5, #d97706,
+#0d9488, via the `primaryColor` global), `focus/` (Tab through the
+first 12 focusables, element box + 8px), and `motion/` (3s webm per personality, light). Personality ids
+are read from the built storybook's globals; focus shots and clips use #3f51b5. It fails if a Google Fonts stylesheet is not 200 or any font face errors.
+
+compare.mjs does an exact RGBA comparison (pngjs) and reports identical/changed/missing per group.
+Captures are not committed; keep them under /tmp or `out/` (gitignored).
+
+## Scene presence (motion-ui)
+
+`presence.mjs` measures whether each motion-ui scene is visible and visibly moves, the port of the
+playground's `npm run presence`. Build the motion-ui storybook and point it at the output:
+
+```
+nx build-storybook motion-ui --outputDir=/tmp/motion-ui-sb
+node presence.mjs --storybook /tmp/motion-ui-sb [--only <scene>] [--json] [--keep <dir>]
+```
+
+Each scene's `Default` story (found through `index.json`) is rendered at 960x540 under its lead
+personality (the `LEAD` table in the script), light and dark, via the `personalityId` / `colorMode` /
+`primaryColor` globals. Measures, in 0-255 luminance units:
+
+- `content`: mean |frame - empty frame|, the scene's children hidden so only its own background remains
+- `motion`: mean |frame(t) - frame(t + 1s)|
+
+Band: content 4-30, motion 0.5-10. Exits 1 when any scene/mode is outside it. The stories' own
+`speed`/`intensity` args apply, and no scene cost is shown here (frame times are a separate M0 measure).

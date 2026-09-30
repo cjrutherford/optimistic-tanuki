@@ -18,8 +18,9 @@ const themeBridgeDecorator: Decorator = (story, context) => {
       ...storyResult.props,
       storybookPersonalityId: context.globals['personalityId'] ?? 'classic',
       storybookColorMode: context.globals['colorMode'] ?? 'light',
+      storybookPrimaryColor: context.globals['primaryColor'] ?? '#3f51b5',
     },
-    template: `<lib-storybook-theme-bridge [personalityId]="storybookPersonalityId" [mode]="storybookColorMode">${
+    template: `<lib-storybook-theme-bridge [personalityId]="storybookPersonalityId" [mode]="storybookColorMode" [primaryColor]="storybookPrimaryColor">${
       storyResult.template ?? '<story />'
     }</lib-storybook-theme-bridge>`,
   };
@@ -65,11 +66,25 @@ export function createPreview(overrides: Preview = {}): Preview {
           ],
         },
       },
+      primaryColor: {
+        name: 'Primary',
+        description: "The user's primary colour",
+        toolbar: {
+          icon: 'circle',
+          dynamicTitle: true,
+          items: [
+            { value: '#3f51b5', title: 'Indigo' },
+            { value: '#d97706', title: 'Amber' },
+            { value: '#0d9488', title: 'Teal' },
+          ],
+        },
+      },
       ...overrides.globalTypes,
     },
     initialGlobals: {
       personalityId: 'classic',
       colorMode: 'light',
+      primaryColor: '#3f51b5',
       ...overrides.initialGlobals,
     },
     decorators: [

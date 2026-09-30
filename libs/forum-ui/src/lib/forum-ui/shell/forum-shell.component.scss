@@ -28,14 +28,14 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   color: var(--muted-foreground);
+  @include p.small-text(var(--font-size-sm));
 
   .back-button {
     background: none;
     border: none;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     cursor: pointer;
     text-decoration: underline;
     padding: 0;
@@ -142,9 +142,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: var(--font-size-sm);
   color: var(--muted-foreground);
   gap: var(--spacing-sm);
+  @include p.small-text(var(--font-size-sm));
 }
 
 // Topic Detail View
@@ -206,16 +206,16 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    font-size: var(--font-size-sm);
     color: var(--muted-foreground);
     flex-shrink: 0;
+    @include p.small-text(var(--font-size-sm));
   }
 }
 
 .thread-footer {
-  font-size: var(--font-size-sm);
   color: var(--muted-foreground);
   margin-top: var(--spacing-sm);
+  @include p.small-text(var(--font-size-sm));
 }
 
 // Thread Detail View
@@ -244,8 +244,8 @@
   .thread-info {
     display: flex;
     gap: var(--spacing-md);
-    font-size: var(--font-size-sm);
     color: var(--muted-foreground);
+    @include p.small-text(var(--font-size-sm));
   }
 }
 
@@ -257,11 +257,11 @@
 
 // Badges
 .badge {
-  font-size: var(--font-size-xs);
   padding: 2px var(--spacing-sm);
   border-radius: var(--border-radius-full);
   white-space: nowrap;
   font-weight: 600;
+  @include p.small-text(var(--font-size-xs));
 
   &.pinned {
     background-color: color-mix(in srgb, var(--warning) 15%, transparent);

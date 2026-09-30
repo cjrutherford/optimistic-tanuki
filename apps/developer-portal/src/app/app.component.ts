@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { AppBarComponent } from '@optimistic-tanuki/navigation-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 
 type PortalSection = {
   eyebrow: string;
@@ -17,7 +18,7 @@ type MetricCard = {
 
 @Component({
   selector: 'app-root',
-  imports: [AppBarComponent],
+  imports: [AppBarComponent, PersonalityBackdropComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

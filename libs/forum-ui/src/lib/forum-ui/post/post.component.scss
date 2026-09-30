@@ -13,22 +13,22 @@
 }
 
 .edited-badge {
-  font-size: var(--font-size-xs);
   font-style: italic;
   color: var(--muted-foreground);
   margin-left: var(--spacing-xs);
+  @include p.small-text(var(--font-size-xs));
 }
 
 .post-meta {
   display: flex;
   gap: var(--spacing-md);
-  font-size: var(--font-size-xs);
   color: var(--muted-foreground);
   margin: var(--spacing-sm) 0;
   padding-top: var(--spacing-sm);
   border-top: var(--border-width, 1px) solid
     color-mix(in srgb, var(--border) 50%, transparent);
   @include p.label-type;
+  @include p.small-text(var(--font-size-xs));
 }
 
 .post-actions {

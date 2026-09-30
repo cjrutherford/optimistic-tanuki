@@ -307,6 +307,132 @@ export const PERSONALITY_GRADIENT_THEMES: Record<
     surfaceElevated:
       'linear-gradient(165deg, #ffffff 0%, #f4f8fb 58%, #e8eff5 100%)',
   },
+  risograph: {
+    primary: 'linear-gradient(100deg, #ae0062 0%, #ff3eab 52%, #ff85ca 100%)',
+    secondary: 'linear-gradient(280deg, #b7ff5a 0%, #92e494 54%, #c9fe84 100%)',
+    tertiary: 'linear-gradient(100deg, #4cb1ff 0%, #7994ea 50%, #79c2fa 100%)',
+    surface: 'linear-gradient(180deg, #f7e8f1 0%, #f1f4e6 54%, #e9e6e8 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(255, 62, 171, 0.30) 0%, rgba(255, 62, 171, 0.13) 42%, transparent 82%)',
+    border: 'linear-gradient(90deg, #ae0062 0%, #db9f83 54%, #b7ff5a 100%)',
+    text: 'linear-gradient(100deg, #ae0062 0%, #780747 100%)',
+    animated:
+      'linear-gradient(90deg, #ae0062, #ff3eab, #b7ff5a, #4cb1ff, #ff85ca)',
+    buttonHover:
+      'linear-gradient(100deg, #ff3eab 0%, #e6828f 55%, #ff85ca 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #bd2e7f 0%, #f990c6 60%, #f1f4e6 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(75, 12, 48, 0.60) 0%, rgba(75, 12, 48, 0.47) 56%, rgba(75, 12, 48, 0.35) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(255, 62, 171, 0.27) 0%, rgba(255, 62, 171, 0.13) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #f7eef3 0%, #f3f4ec 58%, #e9e6e8 100%)',
+  },
+  observatory: {
+    primary: 'linear-gradient(200deg, #334ba3 0%, #778acf 52%, #c5cce7 100%)',
+    secondary: 'linear-gradient(210deg, #95a3d5 0%, #989ad3 54%, #e0e3f1 100%)',
+    tertiary: 'linear-gradient(220deg, #9d89cf 0%, #9489cf 50%, #dad4ea 100%)',
+    surface: 'linear-gradient(180deg, #eef0f6 0%, #eceff5 54%, #e8e9ea 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(119, 138, 207, 0.46) 0%, rgba(119, 138, 207, 0.19) 42%, transparent 82%)',
+    border: 'linear-gradient(180deg, #334ba3 0%, #8697d2 54%, #95a3d5 100%)',
+    text: 'linear-gradient(190deg, #334ba3 0%, #25346e 100%)',
+    animated:
+      'linear-gradient(160deg, #334ba3, #778acf, #95a3d5, #9d89cf, #c5cce7)',
+    buttonHover:
+      'linear-gradient(200deg, #778acf 0%, #8293d1 55%, #c5cce7 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #586cb4 0%, #acb7e0 60%, #eceff5 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(24, 33, 64, 0.78) 0%, rgba(24, 33, 64, 0.61) 56%, rgba(24, 33, 64, 0.45) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(119, 138, 207, 0.41) 0%, rgba(119, 138, 207, 0.19) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #f4f5f7 0%, #f4f5f7 58%, #e8e9ea 100%)',
+  },
+  ledger: {
+    primary: 'linear-gradient(180deg, #030706 0%, #1f3e2f 52%, #467c63 100%)',
+    secondary: 'linear-gradient(180deg, #432533 0%, #422432 54%, #7f4f66 100%)',
+    tertiary: 'linear-gradient(180deg, #3f2230 0%, #372930 50%, #794e62 100%)',
+    surface: 'linear-gradient(180deg, #e9edeb 0%, #eff0ef 54%, #e6e8e7 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(31, 62, 47, 0.18) 0%, rgba(31, 62, 47, 0.08) 42%, transparent 82%)',
+    border: 'repeating-linear-gradient(90deg, #030706 0 8px, #313231 8px 16px)',
+    text: 'linear-gradient(180deg, #030706 0%, #060908 100%)',
+    animated:
+      'linear-gradient(180deg, #030706, #1f3e2f, #432533, #3f2230, #467c63)',
+    buttonHover:
+      'linear-gradient(180deg, #1f3e2f 0%, #2c3530 55%, #467c63 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #313534 0%, #7d8e85 60%, #eff0ef 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(9, 11, 11, 0.60) 0%, rgba(9, 11, 11, 0.47) 56%, rgba(9, 11, 11, 0.35) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(31, 62, 47, 0.16) 0%, rgba(31, 62, 47, 0.08) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #eef2f0 0%, #f1f2f2 58%, #e6e8e7 100%)',
+  },
+  kunsthalle: {
+    primary: 'linear-gradient(90deg, #450402 0%, #d5120b 52%, #ef4842 100%)',
+    secondary: 'linear-gradient(90deg, #e41b14 0%, #df3d14 54%, #eb635e 100%)',
+    tertiary: 'linear-gradient(90deg, #d77c15 0%, #d76213 50%, #e6a357 100%)',
+    surface: 'linear-gradient(90deg, #ffffff 0%, #ffffff 54%, #f0f0f0 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(213, 18, 11, 0.12) 0%, rgba(213, 18, 11, 0.05) 42%, transparent 82%)',
+    border: 'linear-gradient(90deg, #450402 0%, #dd1710 54%, #e41b14 100%)',
+    text: 'linear-gradient(90deg, #450402 0%, #2d0301 100%)',
+    animated:
+      'linear-gradient(90deg, #450402, #d5120b, #e41b14, #d77c15, #ef4842)',
+    buttonHover:
+      'linear-gradient(90deg, #d5120b 0%, #da150e 55%, #ef4842 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #6a3635 0%, #e87d79 60%, #ffffff 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(24, 1, 1, 0.82) 0%, rgba(24, 1, 1, 0.64) 56%, rgba(24, 1, 1, 0.48) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(213, 18, 11, 0.11) 0%, rgba(213, 18, 11, 0.05) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #ffffff 0%, #ffffff 58%, #f0f0f0 100%)',
+  },
+  canopy: {
+    primary: 'linear-gradient(160deg, #1a9d4f 0%, #54de8b 52%, #94e6b4 100%)',
+    secondary: 'linear-gradient(150deg, #9b6fde 0%, #b17cb4 54%, #ad8cdf 100%)',
+    tertiary: 'linear-gradient(40deg, #db9465 0%, #b9a76f 50%, #daa784 100%)',
+    surface: 'linear-gradient(170deg, #e3f6ea 0%, #edebf5 54%, #e8ebe9 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(84, 222, 139, 0.46) 0%, rgba(84, 222, 139, 0.19) 42%, transparent 82%)',
+    border: 'linear-gradient(145deg, #1a9d4f 0%, #78a7b5 54%, #9b6fde 100%)',
+    text: 'linear-gradient(150deg, #1a9d4f 0%, #186d3a 100%)',
+    animated:
+      'linear-gradient(135deg, #1a9d4f, #54de8b, #9b6fde, #db9465, #94e6b4)',
+    buttonHover:
+      'linear-gradient(160deg, #54de8b 0%, #6db7a8 55%, #94e6b4 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #42af6e 0%, #99e4bb 60%, #edebf5 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(21, 69, 41, 0.46) 0%, rgba(21, 69, 41, 0.36) 56%, rgba(21, 69, 41, 0.27) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(84, 222, 139, 0.41) 0%, rgba(84, 222, 139, 0.19) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #eef7f1 0%, #f0f0f5 58%, #e8ebe9 100%)',
+  },
+  clay: {
+    primary: 'linear-gradient(145deg, #3e28e2 0%, #a89fef 52%, #e1ddf8 100%)',
+    secondary: 'linear-gradient(145deg, #f2debe 0%, #e3e4b9 54%, #f2e2c9 100%)',
+    tertiary: 'linear-gradient(145deg, #c8eeb0 0%, #c0dac0 50%, #cfedbc 100%)',
+    surface: 'linear-gradient(160deg, #e2e0f3 0%, #ede9ee 54%, #dfdee7 100%)',
+    glow: 'radial-gradient(circle at 50% 35%, rgba(168, 159, 239, 0.50) 0%, rgba(168, 159, 239, 0.21) 42%, transparent 82%)',
+    border: 'linear-gradient(145deg, #3e28e2 0%, #cdbfd7 54%, #f2debe 100%)',
+    text: 'linear-gradient(135deg, #3e28e2 0%, #2f219a 100%)',
+    animated:
+      'linear-gradient(120deg, #3e28e2, #a89fef, #f2debe, #c8eeb0, #e1ddf8)',
+    buttonHover:
+      'linear-gradient(145deg, #a89fef 0%, #c2b5de 55%, #e1ddf8 100%)',
+    cardHeader:
+      'linear-gradient(180deg, #5f4de5 0%, #c7c0ef 60%, #ede9ee 100%)',
+    modalOverlay:
+      'linear-gradient(to bottom, rgba(35, 26, 93, 0.44) 0%, rgba(35, 26, 93, 0.34) 56%, rgba(35, 26, 93, 0.26) 100%)',
+    inputFocus:
+      'radial-gradient(circle at 50% 50%, rgba(168, 159, 239, 0.45) 0%, rgba(168, 159, 239, 0.21) 46%, transparent 82%)',
+    surfaceElevated:
+      'linear-gradient(165deg, #ebeaf4 0%, #edeaf0 58%, #dfdee7 100%)',
+  },
 };
 
 export const GRADIENT_PERSONALITY_ALIASES: Record<string, string> = {
@@ -547,6 +673,103 @@ const PERSONALITY_GRADIENT_RECIPES: Record<string, PersonalityGradientRecipe> =
       surfaceSecondaryMix: 0.06,
       glowOpacity: 0.34,
       overlayOpacity: 0.5,
+    },
+    risograph: {
+      primaryAngle: '100deg',
+      secondaryAngle: '280deg',
+      tertiaryAngle: '100deg',
+      surfaceAngle: '180deg',
+      animatedAngle: '90deg',
+      borderAngle: '90deg',
+      textAngle: '100deg',
+      saturationShift: 18,
+      lightnessShift: 6,
+      contrastShift: 12,
+      surfaceAccentMix: 0.06,
+      surfaceSecondaryMix: 0.1,
+      glowOpacity: 0.3,
+      overlayOpacity: 0.6,
+    },
+    observatory: {
+      primaryAngle: '200deg',
+      secondaryAngle: '210deg',
+      tertiaryAngle: '220deg',
+      surfaceAngle: '180deg',
+      animatedAngle: '160deg',
+      borderAngle: '180deg',
+      textAngle: '190deg',
+      saturationShift: -10,
+      lightnessShift: -6,
+      contrastShift: 18,
+      surfaceAccentMix: 0.06,
+      surfaceSecondaryMix: 0.1,
+      glowOpacity: 0.46,
+      overlayOpacity: 0.78,
+    },
+    ledger: {
+      primaryAngle: '180deg',
+      secondaryAngle: '180deg',
+      tertiaryAngle: '180deg',
+      surfaceAngle: '180deg',
+      animatedAngle: '180deg',
+      borderAngle: '90deg',
+      textAngle: '180deg',
+      saturationShift: -14,
+      lightnessShift: -6,
+      contrastShift: 12,
+      surfaceAccentMix: 0.05,
+      surfaceSecondaryMix: 0.03,
+      glowOpacity: 0.18,
+      overlayOpacity: 0.6,
+      repeatingBorder: true,
+    },
+    kunsthalle: {
+      primaryAngle: '90deg',
+      secondaryAngle: '90deg',
+      tertiaryAngle: '90deg',
+      surfaceAngle: '90deg',
+      animatedAngle: '90deg',
+      borderAngle: '90deg',
+      textAngle: '90deg',
+      saturationShift: 10,
+      lightnessShift: -2,
+      contrastShift: 22,
+      surfaceAccentMix: 0,
+      surfaceSecondaryMix: 0,
+      glowOpacity: 0.12,
+      overlayOpacity: 0.82,
+    },
+    canopy: {
+      primaryAngle: '160deg',
+      secondaryAngle: '150deg',
+      tertiaryAngle: '40deg',
+      surfaceAngle: '170deg',
+      animatedAngle: '135deg',
+      borderAngle: '145deg',
+      textAngle: '150deg',
+      saturationShift: 6,
+      lightnessShift: 8,
+      contrastShift: 6,
+      surfaceAccentMix: 0.12,
+      surfaceSecondaryMix: 0.1,
+      glowOpacity: 0.46,
+      overlayOpacity: 0.46,
+    },
+    clay: {
+      primaryAngle: '145deg',
+      secondaryAngle: '145deg',
+      tertiaryAngle: '145deg',
+      surfaceAngle: '160deg',
+      animatedAngle: '120deg',
+      borderAngle: '145deg',
+      textAngle: '135deg',
+      saturationShift: 2,
+      lightnessShift: 12,
+      contrastShift: 4,
+      surfaceAccentMix: 0.14,
+      surfaceSecondaryMix: 0.12,
+      glowOpacity: 0.5,
+      overlayOpacity: 0.44,
     },
   };
 
@@ -894,6 +1117,12 @@ export class GradientFactory {
     this.strategies.set('electric', this.createElectricStrategy());
     this.strategies.set('control-center', this.createControlCenterStrategy());
     this.strategies.set('foundation', this.createFoundationStrategy());
+    this.strategies.set('risograph', this.createRisographStrategy());
+    this.strategies.set('observatory', this.createObservatoryStrategy());
+    this.strategies.set('ledger', this.createLedgerStrategy());
+    this.strategies.set('kunsthalle', this.createKunsthalleStrategy());
+    this.strategies.set('canopy', this.createCanopyStrategy());
+    this.strategies.set('clay', this.createClayStrategy());
   }
 
   getPersonalityGradients(personalityId: string): PersonalityGradientTheme {
@@ -1502,6 +1731,98 @@ export class GradientFactory {
       name: 'Foundation',
       prefersAnimation: false,
       animationDuration: '180ms',
+    };
+  }
+
+  private createRisographStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createBoldStrategy(),
+      id: 'risograph',
+      name: 'Risograph',
+      appliesTo: {
+        buttons: true,
+        cards: false,
+        headers: true,
+        backgrounds: false,
+        borders: true,
+        badges: true,
+      },
+      animationDuration: '180ms',
+      animationEasing: 'cubic-bezier(0.3, 1.4, 0.6, 1)',
+    };
+  }
+
+  private createObservatoryStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createElegantStrategy(),
+      id: 'observatory',
+      name: 'Observatory',
+      appliesTo: {
+        buttons: false,
+        cards: false,
+        headers: true,
+        backgrounds: true,
+        borders: false,
+        badges: true,
+      },
+      animationDuration: '520ms',
+      animationEasing: 'cubic-bezier(0.33, 0, 0.1, 1)',
+    };
+  }
+
+  private createLedgerStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createProfessionalStrategy(),
+      id: 'ledger',
+      name: 'Ledger',
+      prefersAnimation: false,
+      animationDuration: '140ms',
+    };
+  }
+
+  private createKunsthalleStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createMinimalStrategy(),
+      id: 'kunsthalle',
+      name: 'Kunsthalle',
+      animationDuration: '220ms',
+      animationEasing: 'cubic-bezier(0.7, 0, 0.3, 1)',
+    };
+  }
+
+  private createCanopyStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createSoftStrategy(),
+      id: 'canopy',
+      name: 'Canopy',
+      appliesTo: {
+        buttons: true,
+        cards: true,
+        headers: true,
+        backgrounds: true,
+        borders: false,
+        badges: true,
+      },
+      animationDuration: '420ms',
+      animationEasing: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+    };
+  }
+
+  private createClayStrategy(): PersonalityGradientStrategy {
+    return {
+      ...this.createPlayfulStrategy(),
+      id: 'clay',
+      name: 'Clay',
+      appliesTo: {
+        buttons: true,
+        cards: true,
+        headers: false,
+        backgrounds: true,
+        borders: false,
+        badges: true,
+      },
+      animationDuration: '320ms',
+      animationEasing: 'cubic-bezier(0.175, 0.885, 0.32, 1.6)',
     };
   }
 }

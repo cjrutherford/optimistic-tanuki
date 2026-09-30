@@ -53,8 +53,11 @@
         background-color: rgba(255, 255, 255, 0.08);
       }
 
+      // Marked with an underline in the nav text colour rather than a light
+      // wash, which would lower the text's contrast on the accent bar.
       &.active {
-        background-color: rgba(255, 255, 255, 0.12);
+        text-decoration: underline;
+        text-underline-offset: 0.35rem;
       }
     }
   }

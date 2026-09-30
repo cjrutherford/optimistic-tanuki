@@ -1,8 +1,15 @@
 .hero {
   position: relative;
   padding: 100px 24px 80px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--tertiary) 100%);
-  --hero-foreground: white;
+  // Text on this band pairs with --primary, so the ground stays close to
+  // primary (a light tertiary wash only) and the text is --on-primary.
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    color-mix(in srgb, var(--primary) 85%, var(--tertiary)) 100%
+  );
+  --hero-foreground: var(--on-primary, var(--primary-foreground, white));
+  --hero-tint: color-mix(in srgb, var(--hero-foreground) 14%, transparent);
   color: var(--hero-foreground);
   overflow: hidden;
 
@@ -15,7 +22,7 @@
     height: 600px;
     background: radial-gradient(
       circle,
-      rgba(255, 255, 255, 0.15) 0%,
+      color-mix(in srgb, var(--hero-foreground) 12%, transparent) 0%,
       transparent 70%
     );
     pointer-events: none;
@@ -49,13 +56,18 @@
   min-width: 0;
 }
 
+.hero-copy,
+.hero-aside {
+  min-width: 0;
+}
+
 .hero-badge {
   display: inline-block;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--hero-tint);
   padding: 8px 16px;
   border-radius: 30px;
   margin-bottom: 20px;
@@ -79,7 +91,7 @@
       left: 0;
       right: 0;
       height: 8px;
-      background: rgba(255, 255, 255, 0.4);
+      background: color-mix(in srgb, var(--hero-foreground) 45%, transparent);
       border-radius: 4px;
     }
   }
@@ -89,7 +101,6 @@
   font-size: 1.2rem;
   max-width: 500px;
   margin: 0 0 36px;
-  opacity: 0.9;
   line-height: 1.6;
 }
 
@@ -108,9 +119,9 @@
 
 .trust-item {
   padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid color-mix(in srgb, var(--hero-foreground) 30%, transparent);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--hero-tint);
   backdrop-filter: blur(12px);
 
   strong,
@@ -126,7 +137,6 @@
   span {
     font-size: 0.9rem;
     line-height: 1.5;
-    opacity: 0.88;
   }
 }
 
@@ -147,7 +157,7 @@
 
   &-primary {
     background: var(--surface);
-    color: var(--primary);
+    color: var(--foreground);
 
     &:hover {
       transform: translateY(-3px);
@@ -161,7 +171,7 @@
     border-color: color-mix(in srgb, var(--hero-foreground) 50%, transparent);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--hero-tint);
       border-color: var(--hero-foreground);
     }
   }
@@ -172,7 +182,8 @@
   gap: 40px;
   margin-top: 48px;
   padding-top: 32px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-top: 1px solid
+    color-mix(in srgb, var(--hero-foreground) 30%, transparent);
 }
 
 .stat {
@@ -188,7 +199,6 @@
 
 .stat-label {
   font-size: 0.8rem;
-  opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -243,12 +253,12 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--hero-foreground);
 }
 
 .carousel-meta {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.94);
+  color: var(--hero-foreground);
 }
 
 .carousel-controls {
@@ -263,7 +273,7 @@
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid color-mix(in srgb, var(--hero-foreground) 40%, transparent);
   background: rgba(255, 255, 255, 0.12);
   color: var(--hero-foreground);
   cursor: pointer;
@@ -342,6 +352,8 @@
   flex-direction: column;
   gap: 6px;
   z-index: 1;
+  // Sits on the fixed dark photo scrim above, not on the themed hero band.
+  color: #fff;
 }
 
 .visual-card-title {
@@ -377,7 +389,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .section-title {
@@ -500,7 +512,7 @@
     font-weight: 500;
 
     svg {
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       flex-shrink: 0;
     }
   }

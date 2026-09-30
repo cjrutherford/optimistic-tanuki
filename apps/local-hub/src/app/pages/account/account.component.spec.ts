@@ -49,6 +49,9 @@ describe('AccountComponent profile section', () => {
           useValue: {
             availablePersonalities$: new BehaviorSubject([]),
             getCurrentPersonality: () => ({ id: 'bold' }),
+            personality$: new BehaviorSubject(null),
+            generatedTheme$: new BehaviorSubject(null),
+            theme$: () => new BehaviorSubject('light'),
             setPersonality: jest.fn(),
           },
         },

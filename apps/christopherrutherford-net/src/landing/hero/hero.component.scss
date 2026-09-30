@@ -62,8 +62,8 @@
 }
 
 .hero-cta.primary {
-  background: var(--accent);
-  color: white;
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
   box-shadow: 0 16px 30px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
@@ -89,7 +89,7 @@
     border: 1px solid
       color-mix(in srgb, var(--accent) 18%, var(--border, transparent) 82%);
     background: color-mix(in srgb, var(--background) 78%, transparent);
-    color: color-mix(in srgb, var(--foreground) 86%, white 14%);
+    color: var(--foreground);
     font-size: 0.9rem;
     box-shadow: 0 10px 24px color-mix(in srgb, black 16%, transparent);
   }

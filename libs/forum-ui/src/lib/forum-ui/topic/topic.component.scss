@@ -18,13 +18,12 @@
   }
 
   &:hover h3 {
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 
 .pinned-badge,
 .locked-badge {
-  font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
   background-color: color-mix(
@@ -36,6 +35,7 @@
   font-weight: 600;
   white-space: nowrap;
   @include p.label-type;
+  @include p.small-text(var(--font-size-sm));
 }
 
 .topic-description {
@@ -48,10 +48,10 @@
 .topic-meta {
   display: flex;
   gap: var(--spacing-md);
-  font-size: var(--font-size-sm);
   color: var(--muted-foreground);
   margin: var(--spacing-sm) 0;
   @include p.label-type;
+  @include p.small-text(var(--font-size-sm));
 }
 
 .topic-actions {

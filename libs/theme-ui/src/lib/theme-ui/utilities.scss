@@ -119,7 +119,7 @@
 }
 
 .text-accent {
-  color: var(--primary, #3f51b5);
+  color: var(--primary-text, var(--primary, #3f51b5));
 }
 .text-complement {
   color: var(--secondary, #c0af4b);

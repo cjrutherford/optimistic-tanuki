@@ -3,7 +3,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
-import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   selector: 'hai-root',
@@ -12,7 +13,8 @@ import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
     RouterModule,
     TitleBarComponent,
     HaiAboutTagComponent,
-    AuroraRibbonComponent,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -33,17 +35,5 @@ export class AppComponent {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 }

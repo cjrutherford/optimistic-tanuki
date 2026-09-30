@@ -52,7 +52,7 @@ const MOTION_SECTION_FIELDS: BlockFieldDefinition[] = [
       { label: 'Pulse Rings', value: 'pulse-rings' },
       { label: 'Signal Mesh', value: 'signal-mesh' },
       { label: 'Topographic Drift', value: 'topographic-drift' },
-      { label: 'Murmuration (3D)', value: 'murmuration-scene' },
+      { label: 'Flock Field', value: 'flock-field' },
       { label: 'Shimmer Beam', value: 'shimmer-beam' },
     ],
   },

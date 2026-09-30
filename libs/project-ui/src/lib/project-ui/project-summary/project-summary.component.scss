@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .project-summary {
   padding: 1.25rem;
   color: var(--text-primary, inherit);
@@ -17,11 +19,11 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--primary);
-  font-size: 0.75rem;
+  color: var(--primary-text, var(--primary));
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  @include p.small-text(0.75rem);
 }
 
 h3,
@@ -51,8 +53,8 @@ h4 {
 .insight-grid span,
 .health-bars span,
 .timeline span {
-  font-size: 0.8rem;
   opacity: 0.7;
+  @include p.small-text(0.8rem);
 }
 
 .insight-grid {
@@ -108,7 +110,7 @@ h4 {
 }
 
 .timeline button:hover strong {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .empty {
@@ -152,9 +154,9 @@ h4 {
 }
 
 .narrative-head .by {
-  font-size: 0.72rem;
   opacity: 0.7;
   font-family: var(--font-mono, monospace);
+  @include p.small-text(0.72rem);
 }
 
 .narrative .headline {

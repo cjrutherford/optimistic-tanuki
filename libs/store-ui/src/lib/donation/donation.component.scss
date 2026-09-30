@@ -145,7 +145,7 @@
 
   .amount {
     font-weight: 700;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 

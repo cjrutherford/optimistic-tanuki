@@ -166,9 +166,9 @@
 
   .no-groups {
     color: var(--local-complement);
-    font-size: var(--font-size-sm, 0.9rem);
     text-align: center;
     padding: var(--spacing-md) 0;
+    @include p.small-text(var(--font-size-sm, 0.9rem));
 
     @media (max-width: 640px) {
       font-size: var(--font-size-xs, 0.8rem);
@@ -233,9 +233,9 @@
     }
 
     .member-count {
-      font-size: var(--font-size-xs, 0.8rem);
       color: var(--local-complement);
       margin-top: 2px;
+      @include p.small-text(var(--font-size-xs, 0.8rem));
 
       @media (max-width: 640px) {
         font-size: 0.7rem;
@@ -366,7 +366,7 @@
     color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-top: var(--spacing-md);
-  font-size: var(--font-size-sm, 0.9rem);
+  @include p.small-text(var(--font-size-sm, 0.9rem));
 
   @media (max-width: 640px) {
     padding: var(--spacing-sm);
@@ -413,7 +413,7 @@
     color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-top: var(--spacing-md);
-  font-size: var(--font-size-sm, 0.9rem);
+  @include p.small-text(var(--font-size-sm, 0.9rem));
 }
 
 .loading-overlay {

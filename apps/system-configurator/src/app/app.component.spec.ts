@@ -59,7 +59,7 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
-    expect(compiled.querySelector('otui-signal-mesh')).toBeTruthy();
+    expect(compiled.querySelector('otui-personality-scene')).toBeTruthy();
     expect(compiled.querySelector('.app-shell')).toBeTruthy();
   });
 
@@ -79,32 +79,6 @@ describe('AppComponent', () => {
     authenticated$.next(true);
     expect(component.isAuthenticated()).toBe(true);
     expect(component.actionLabel()).toBe('Sign out');
-  });
-
-  it('reducedMotion is false when matchMedia is unavailable in the browser', () => {
-    const original = window.matchMedia;
-    Object.defineProperty(window, 'matchMedia', {
-      value: undefined,
-      configurable: true,
-    });
-    expect(component.reducedMotion).toBe(false);
-    Object.defineProperty(window, 'matchMedia', {
-      value: original,
-      configurable: true,
-    });
-  });
-
-  it('reducedMotion reflects the prefers-reduced-motion media query', () => {
-    const original = window.matchMedia;
-    Object.defineProperty(window, 'matchMedia', {
-      value: jest.fn().mockReturnValue({ matches: true }),
-      configurable: true,
-    });
-    expect(component.reducedMotion).toBe(true);
-    Object.defineProperty(window, 'matchMedia', {
-      value: original,
-      configurable: true,
-    });
   });
 
   it('navigateHome navigates to the root route', () => {

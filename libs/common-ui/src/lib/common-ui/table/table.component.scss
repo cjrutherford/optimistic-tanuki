@@ -113,10 +113,7 @@
         background: color-mix(in srgb, var(--primary) 10%, transparent);
       }
 
-      &:focus-visible {
-        outline: 2px solid var(--primary);
-        outline-offset: -2px;
-      }
+      @include p.keyboard-focus-ring(var(--primary), -2px);
     }
 
     td {
@@ -162,10 +159,11 @@
       border-radius: var(--border-radius-sm, 4px);
       background: var(--background);
       color: var(--foreground);
-      font-size: var(--font-size-sm, 0.875rem);
       cursor: pointer;
       @include p.personality-transition(all, 'fast');
       @include focus-visible-ring;
+      @include p.small-text(var(--font-size-sm, 0.875rem));
+      @include p.touch-target;
 
       &:hover:not(:disabled) {
         background: color-mix(in srgb, var(--primary) 5%, transparent);
@@ -212,7 +210,7 @@
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     border-radius: var(--personality-primitive-radius, 9999px);
     background: color-mix(in srgb, var(--primary) 14%, transparent);
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     font-size: var(--font-size-xs, 0.75rem);
     font-weight: 500;
   }
@@ -379,6 +377,7 @@
           &:last-child {
             margin-bottom: 0;
           }
+          @include p.keyboard-focus-ring(var(--primary));
         }
       }
 
@@ -397,17 +396,19 @@
 
       button {
         padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-        font-size: var(--font-size-sm, 0.875rem);
         cursor: pointer;
         border: none;
         border-radius: var(--border-radius-sm, 4px);
         background-color: var(--primary);
         color: var(--primary-foreground, #fff);
         @include p.personality-transition(background-color, 'fast');
+        @include p.small-text(var(--font-size-sm, 0.875rem));
+        @include p.touch-target;
 
         &:hover {
           background-color: var(--secondary);
         }
+        @include p.keyboard-focus-ring(var(--primary));
       }
     }
 
@@ -415,11 +416,12 @@
       margin-left: var(--spacing-sm, 8px);
       background: none;
       border: none;
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
       cursor: pointer;
       font-size: 0.9em;
       padding: 0;
       vertical-align: middle;
+      @include p.keyboard-focus-ring(var(--primary));
     }
   }
 }

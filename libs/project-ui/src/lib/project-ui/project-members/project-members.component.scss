@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .project-members {
   display: flex;
   flex-direction: column;
@@ -32,10 +34,10 @@ ul {
 
 .owner-tag {
   margin-left: auto;
-  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.75;
+  @include p.small-text(0.7rem);
 }
 
 .remove {

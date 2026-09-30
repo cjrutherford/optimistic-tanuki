@@ -1,11 +1,14 @@
+<lib-personality-backdrop />
+
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-murmuration-scene
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
-    [count]="72"
+    fallbackScene="flock-field"
+    [density]="5"
     [speed]="0.3"
-  ></otui-murmuration-scene>
+    [intensity]="0.7"
+  ></otui-personality-scene>
 </div>
 }
 

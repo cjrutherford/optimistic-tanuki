@@ -1,13 +1,13 @@
 import { Component, inject } from '@angular/core';
 
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
-import { TileComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
+import { HeadingComponent } from '@optimistic-tanuki/common-ui';
 import { ContactService } from '../../app/contact.service';
 
 @Component({
   selector: 'app-contact',
   providers: [ContactService],
-  imports: [ContactFormComponent, TileComponent, HeadingComponent],
+  imports: [ContactFormComponent, HeadingComponent],
   templateUrl: './contact.component.html',
   styleUrl: './contact.component.scss',
 })

@@ -1,0 +1,355 @@
+// ============================================================================
+// Personality expression, type scale, atmosphere and motion contract
+// ----------------------------------------------------------------------------
+// Drop-in partial for libs/theme-styles/src/lib/personality/. Forward it from
+// personality/_index.scss only when the first real consumer lands (that file's
+// own rule: "grow this file deliberately").
+//
+// THE ADOPTION RULE: every mixin here reads ONLY extension variables, which
+// ThemeService leaves empty until a personality opts in, and its fallback is
+// the component's CURRENT value. Pass today's values; where there is no safe
+// default the parameter is required, so a missing value is a compile error,
+// not a silent visual change. Adopting a mixin therefore changes no pixels
+// until a personality opts in. The one deliberate exception is `keyboard-focus-ring`
+// (an accessibility fix that is visible by design, adopted in its own slice).
+//
+// Variable contract (resolveExtensionVariables; '' / absent => fallback):
+//   wiring      --line-height, --letter-spacing, --touch-target,
+//               --layout-max-width, --stagger-delay
+//   type scale  --type-small, --type-body, --type-h4 … --type-h1,
+//               --type-display, --heading-family, --heading-weight,
+//               --heading-transform, --heading-tracking, --heading-line-height
+//   accent      --accent-ground, --on-accent-ground
+//   atmosphere  --atmosphere-backdrop, --pattern-page(+-size), --surface-fill,
+//               --surface-backdrop-filter, --accent-fill,
+//               --pattern-accent(+-size), --primary-fill
+//               (glass also overrides --personality-surface-bg)
+//   motion      --motion-enter-*, --glow-hover, --glow-focus,
+//               --focus-ring-color, --ambient-*, --scene-tempo, --scene-energy
+//   ground      no new variables: --background / --surface / --border /
+//               --foreground* are re-derived in place
+//
+//   @use 'personality' as p;
+//   .title { @include p.heading('h2', $size: 1.375rem, $family: inherit, $weight: 600, $line-height: 1.3); }
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// Type
+// ---------------------------------------------------------------------------
+
+/// Running text: the personality's authored leading and tracking.
+/// Pass the component's current values.
+@mixin body-text($line-height, $letter-spacing: normal) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    line-height: var(--line-height, #{$line-height});
+    letter-spacing: var(--letter-spacing, #{$letter-spacing});
+  }
+}
+
+/// Heading at a type-scale level: 'display' | 'h1' | 'h2' | 'h3' | 'h4'.
+/// Every argument is the component's CURRENT value (used until opt-in).
+@mixin heading(
+  $level,
+  $size,
+  $family: inherit,
+  $weight: inherit,
+  $line-height: inherit
+) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    font-family: var(--heading-family, #{$family});
+    font-size: var(--type-#{$level}, #{$size});
+    font-weight: var(--heading-weight, #{$weight});
+    line-height: var(--heading-line-height, #{$line-height});
+    letter-spacing: var(--heading-tracking, normal);
+    text-transform: var(--heading-transform, none);
+  }
+}
+
+/// Small print (captions, helper text, table meta). Pass the current size.
+@mixin small-text($size) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    font-size: var(--type-small, #{$size});
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Layout and touch (wiring)
+// ---------------------------------------------------------------------------
+
+/// Minimum hit area on touch devices (from `mobile.touchTargetSize`).
+/// Default `auto` leaves the component's size alone until opt-in.
+@mixin touch-target($fallback: auto) {
+  @media (pointer: coarse) {
+    min-height: var(--touch-target, #{$fallback});
+    min-width: var(--touch-target, #{$fallback});
+  }
+}
+
+/// Page/content measure (from `presentation.layout.maxWidth`).
+/// Default `none` leaves the width alone until opt-in.
+@mixin page-width($fallback: none) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    max-width: var(--layout-max-width, #{$fallback});
+    margin-inline: auto;
+  }
+}
+
+/// Staggered entrance delay for the nth item (from `animations.staggerDelay`).
+@mixin stagger($index) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    animation-delay: calc(var(--stagger-delay, 0ms) * #{$index});
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-delay: 0ms;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Colour application: accent ground and atmosphere
+// ---------------------------------------------------------------------------
+// Layer order for backgrounds: pattern on top, then the repo's SVG page
+// pattern, then the gradient backdrop. Size lists name the pattern's sizes
+// FIRST, then enough `auto`s for the remaining layers (CSS repeats a short
+// size list across all layers, which would tile the gradients).
+
+/// A band that carries brand colour (app bars, heroes, section headers), with
+/// its gradient finish and pattern. Pass the band's current background.
+@mixin accent-band($background) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    background-color: var(--accent-ground, #{$background});
+    background-image: var(--pattern-accent, none), var(--accent-fill, none);
+    background-size: var(--pattern-accent-size, auto), auto, auto, auto;
+    color: var(--on-accent-ground, inherit);
+  }
+
+  @media (prefers-contrast: more), (forced-colors: active) {
+    background-image: none;
+  }
+}
+
+/// Page canvas: gradient backdrop + optional CSS pattern + the repo's SVG page
+/// pattern. Apply once, on the app shell. Not `background-attachment: fixed`:
+/// that is broken on iOS Safari and repaints on every scroll.
+@mixin page-atmosphere {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    background-image: var(--pattern-page, none),
+      var(--page-background-pattern, none), var(--atmosphere-backdrop, none);
+    background-size: var(--pattern-page-size, auto), auto, auto, auto, auto,
+      auto, auto;
+  }
+
+  @media (prefers-contrast: more), (forced-colors: active) {
+    background-image: var(--page-background-pattern, none);
+  }
+}
+
+/// Surface finish (sheen / gradient / raised / glass) layered over whatever the
+/// surface already paints. Elevated containers only: glass's backdrop-filter
+/// is expensive on long lists.
+@mixin surface-finish {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    background-image: var(--surface-fill, none);
+    backdrop-filter: var(--surface-backdrop-filter, none);
+  }
+
+  @media (prefers-contrast: more), (forced-colors: active) {
+    background-image: none;
+    backdrop-filter: none;
+  }
+}
+
+/// Primary action fill. Pass the button's current background.
+@mixin primary-fill($background) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    background: var(--primary-fill, #{$background});
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Motion: entrances, interaction glow, focus ring, ambient
+// ---------------------------------------------------------------------------
+// Keyframes (`motion-keyframes`, emitted globally) read personality variables, so switching
+// personality changes the motion without new CSS. All motion is gated on
+// `prefers-reduced-motion: no-preference`; personalities that declare
+// `prefersReducedMotion` already resolve to fade-only / no ambient.
+// Limits: travel <= 8px, scale >= .97, entrance <= 700ms, glow alpha <= .35,
+// ambient period >= 4s.
+
+/// The keyframes the motion mixins and `--ambient-*-animation` variables name.
+/// Emitted ONCE, globally, by `base.scss`: Angular scopes `@keyframes` inside
+/// component stylesheets, which would break names that arrive through CSS
+/// variables, and emitting them per component duplicates them ~90 times.
+@mixin motion-keyframes {
+  @keyframes personality-enter {
+    from {
+      opacity: var(--motion-enter-opacity, 1);
+      transform: var(--motion-enter-transform, none);
+      filter: var(--motion-enter-filter, none);
+    }
+  }
+  @keyframes personality-breathe {
+    from {
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    to {
+      filter: var(--ambient-glow, none);
+    }
+  }
+  @keyframes personality-pulse {
+    0% {
+      box-shadow: 0 0 0 0 var(--ambient-pulse-color, transparent);
+    }
+    75%,
+    100% {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
+  @keyframes personality-shimmer {
+    0%,
+    55% {
+      background-position: 150% 0;
+    }
+    100% {
+      background-position: -50% 0;
+    }
+  }
+  @keyframes personality-drift {
+    from {
+      background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+    }
+    to {
+      background-position: var(--ambient-drift-to, 0 0), 0 0, 0 0, 0 0;
+    }
+  }
+}
+
+$_enter: personality-enter var(--motion-enter-duration, 0ms)
+  var(--motion-enter-easing, ease) both;
+
+/// Staggered entrance for the nth view-level block (<= 8 per view). Not for
+/// list rows or table cells. Duration is 0ms until opt-in (no visible change).
+@mixin enter($index: 0) {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: $_enter;
+    animation-delay: calc(var(--stagger-delay, 0ms) * #{$index});
+  }
+}
+
+/// VISIBLE BY DESIGN (accessibility): a 2px keyboard focus ring on
+/// :focus-visible that clears 3:1 against page and surface (--focus-ring-color;
+/// `$color` until opt-in), plus the personality glow (--glow-focus).
+/// Named `keyboard-focus-ring` because `interaction`'s `focus-ring` is an
+/// unrelated input box-shadow. `$color`/`$offset` are the component's current
+/// ring (default the page foreground / 2px, since the ring sits on the page; pass
+/// currentColor only for transparent controls). `$base-shadow` is the component's
+/// existing :focus-visible box-shadow, if any; the glow is appended to it.
+/// Place after the rule's plain declarations (nested rule => mixed-decls).
+@mixin keyboard-focus-ring(
+  $color: var(--foreground, currentColor),
+  $offset: 2px,
+  $base-shadow: none
+) {
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #{$color});
+    outline-offset: $offset;
+    @if $base-shadow != none {
+      box-shadow: #{$base-shadow}, var(--glow-focus, 0 0 #0000);
+    } @else {
+      box-shadow: var(--glow-focus, none);
+    }
+  }
+}
+
+/// Decorative layers for motion, painted BEHIND the element's content without
+/// touching its children: the element becomes a stacking context (isolation)
+/// and the pseudo-elements sit at z-index -1, above its own background but
+/// below its text and children. Never forces positioning on children.
+@mixin _motion-layers($pseudos...) {
+  // Declarations wrapped in `& {}` so mixins can be combined freely
+  // (Sass mixed-decls: plain declarations after another mixin's nested rules).
+  & {
+    position: relative;
+    isolation: isolate;
+  }
+
+  @each $pseudo in $pseudos {
+    &::#{$pseudo} {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+  }
+}
+
+/// The one primary action per view: hover glow + ambient (breathe / pulse
+/// ring / shimmer sheen). Uses ::before and ::after, so it must not be
+/// applied to a component that already uses them.
+@mixin primary-motion {
+  @include _motion-layers(before, after);
+
+  &:hover,
+  &:focus-visible {
+    filter: var(--glow-hover, none);
+  }
+  &::after {
+    background: var(--ambient-sheen, none);
+    background-size: 250% 100%;
+    background-position: 150% 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    animation: var(--ambient-primary-animation, none);
+    &::before {
+      animation: var(--ambient-pulse-animation, none);
+    }
+    &::after {
+      animation: var(--ambient-sheen-animation, none);
+    }
+  }
+}
+
+/// Accent band ambient (pattern drift / sheen); use with `accent-band`. Uses
+/// ::after. If the band is ALSO an entrance element, pass `$enter-index`: both
+/// animations must be listed together, or the more specific rule silently
+/// replaces the ambient one (a real bug caught in the playground).
+@mixin band-motion($enter-index: null) {
+  @include _motion-layers(after);
+
+  &::after {
+    background: var(--ambient-sheen, none);
+    background-size: 250% 100%;
+    background-position: 150% 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    @if $enter-index != null {
+      animation: $_enter, var(--ambient-band-animation, none);
+      animation-delay: calc(var(--stagger-delay, 0ms) * #{$enter-index}), 0ms;
+    } @else {
+      animation: var(--ambient-band-animation, none);
+    }
+    &::after {
+      animation: var(--ambient-sheen-animation, none);
+    }
+  }
+}

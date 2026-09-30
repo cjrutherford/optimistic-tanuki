@@ -30,6 +30,7 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  @include p.keyboard-focus-ring(var(--primary));
 }
 
 .trigger-label {

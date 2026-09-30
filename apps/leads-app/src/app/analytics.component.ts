@@ -280,7 +280,7 @@ Chart.register(...registerables);
       }
 
       .funnel-value {
-        font-family: var(--font-mono);
+        font-family: var(--font-mono, 'JetBrains Mono', monospace);
         font-size: 0.875rem;
         font-weight: 600;
         color: var(--app-primary-foreground);
@@ -307,7 +307,7 @@ Chart.register(...registerables);
       }
 
       .metric-value {
-        font-family: var(--font-mono);
+        font-family: var(--font-mono, 'JetBrains Mono', monospace);
         font-size: 1rem;
         font-weight: 600;
         color: var(--app-foreground);

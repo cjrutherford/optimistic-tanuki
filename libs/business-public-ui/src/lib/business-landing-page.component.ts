@@ -37,14 +37,11 @@ import {
   ParallaxGridWarpComponent,
   ParticleVeilComponent,
   PulseRingsComponent,
+  FlockFieldComponent,
   ShimmerBeamComponent,
   SignalMeshComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
-// Deep import, not the barrel: the barrel pins every motion component into
-// one chunk, so pulling murmuration through it would drag three.js in with
-// the eagerly-used effects and defeat the @defer below.
-import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui/murmuration-scene';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import {
   resolvePublishedBlogCatalogId,
@@ -272,7 +269,7 @@ class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
     ParallaxGridWarpComponent,
     AuroraRibbonComponent,
     GlassFogComponent,
-    MurmurationSceneComponent,
+    FlockFieldComponent,
     PulseRingsComponent,
     SignalMeshComponent,
     TopographicDriftComponent,
@@ -351,23 +348,24 @@ class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
         [reducedMotion]="motionConfig.reducedMotion ?? false"
         [direction]="motionConfig.direction ?? 'diagonal'"
       ></otui-shimmer-beam>
-      } @case ('murmuration-scene') {
-      <!--
-        Deferred on purpose: this is the only motion kind backed by
-        three.js. Without @defer the whole WebGL runtime would be bundled
-        into the landing-page chunk that every visitor of every tenant
-        downloads, to serve the few sites that actually pick it. The
-        @defer block keeps it in its own chunk, fetched only when a
-        section really renders this kind.
-      -->
-      @defer (on immediate) {
-      <otui-murmuration-scene
+      } @case ('flock-field') {
+      <otui-flock-field
         [height]="motionHeight(motionConfig)"
-        [count]="motionConfig.density ?? 72"
-        [speed]="motionConfig.speed ?? 0.5"
+        [density]="motionConfig.density ?? 5"
+        [speed]="motionConfig.speed ?? 1"
+        [intensity]="motionConfig.intensity ?? 0.7"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-murmuration-scene>
-      } } } }
+      ></otui-flock-field>
+      } @case ('murmuration-scene') {
+      <!-- Legacy kind: the three.js murmuration was retired for flock-field. -->
+      <otui-flock-field
+        [height]="motionHeight(motionConfig)"
+        [density]="motionConfig.density ?? 5"
+        [speed]="motionConfig.speed ?? 1"
+        [intensity]="motionConfig.intensity ?? 0.7"
+        [reducedMotion]="motionConfig.reducedMotion ?? false"
+      ></otui-flock-field>
+      } } }
     </ng-template>
 
     @if (routeSite()) {

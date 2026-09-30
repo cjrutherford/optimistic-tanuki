@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .shimmer-beam {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 14rem;
   overflow: hidden;
@@ -50,38 +52,38 @@
     transparent 16%,
     color-mix(
         in srgb,
-        var(--motion-tint) calc(18% + (var(--beam-intensity) * 20%)),
+        var(--motion-tint) calc(18% + (var(--scene-intensity) * 20%)),
         transparent
       )
       32%,
     color-mix(
         in srgb,
-        var(--primary) calc(24% + (var(--beam-intensity) * 14%)),
+        var(--primary) calc(24% + (var(--scene-intensity) * 14%)),
         transparent
       )
       42%,
     color-mix(
         in srgb,
-        var(--secondary) calc(20% + (var(--beam-intensity) * 16%)),
+        var(--secondary) calc(20% + (var(--scene-intensity) * 16%)),
         transparent
       )
       50%,
     color-mix(
         in srgb,
-        var(--motion-tint) calc(16% + (var(--beam-intensity) * 18%)),
+        var(--motion-tint) calc(16% + (var(--scene-intensity) * 18%)),
         transparent
       )
       60%,
     transparent 76%
   );
   mix-blend-mode: var(--motion-blend);
-  filter: blur(8px);
+  will-change: transform;
   transform: translate3d(-62%, 0, 0) rotate(-9deg);
-  animation: beam-sweep calc(8s / max(var(--beam-speed), 0.2)) linear infinite;
+  animation: beam-sweep scene.duration(30s) linear infinite;
 }
 
 .beam-sweep-secondary {
-  animation-delay: calc(-4s / max(var(--beam-speed), 0.2));
+  animation-delay: scene.duration(-15s);
   opacity: 0.72;
 }
 
@@ -91,13 +93,13 @@
     transparent 28%,
     color-mix(
         in srgb,
-        var(--motion-tint) calc(18% + (var(--beam-intensity) * 20%)),
+        var(--motion-tint) calc(18% + (var(--scene-intensity) * 20%)),
         transparent
       )
       42%,
     color-mix(
         in srgb,
-        var(--secondary) calc(24% + (var(--beam-intensity) * 14%)),
+        var(--secondary) calc(24% + (var(--scene-intensity) * 14%)),
         transparent
       )
       50%,
@@ -122,5 +124,16 @@
   }
   100% {
     transform: translate3d(62%, 0, 0) rotate(-9deg);
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .shimmer-beam {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

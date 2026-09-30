@@ -358,11 +358,6 @@ const FIELD_SPECS: readonly FieldSpec[] = [
     distance: numeric((p) => p.colorGeneration.neutralSaturation, 15),
   },
   {
-    id: 'iconStyle',
-    weight: 0.02,
-    distance: categorical((p) => p.iconStyle),
-  },
-  {
     // Workstream C1/D3 (2026-07-18 refactor plan): page-background pattern
     // presence/type is now a genuine per-personality visual dimension (10 of
     // 12 personalities render a distinct pattern; `classic`/`foundation` are

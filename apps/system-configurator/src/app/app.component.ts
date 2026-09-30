@@ -12,14 +12,16 @@ import { Router } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { NavigationLinkComponent } from '@optimistic-tanuki/app-registry';
 import { AuthStateService } from './state/auth-state.service';
-import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   standalone: true,
   imports: [
     RouterModule,
     HaiAboutTagComponent,
-    SignalMeshComponent,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     NavigationLinkComponent,
   ],
   selector: 'app-root',
@@ -49,18 +51,6 @@ export class AppComponent implements OnInit {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   ngOnInit(): void {

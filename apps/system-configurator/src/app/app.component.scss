@@ -62,12 +62,11 @@
   display: grid;
   place-items: center;
   border-radius: 1rem;
-  background: linear-gradient(
-    135deg,
-    var(--config-brand-gradient-from),
-    var(--config-brand-gradient-to)
+  background: var(--primary, var(--config-brand-gradient-from));
+  color: var(
+    --on-primary,
+    var(--primary-foreground, var(--config-brand-foreground))
   );
-  color: var(--config-brand-foreground);
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -108,6 +107,13 @@
 
 .content-shell {
   padding: 0 0 3rem;
+}
+
+// The shell stays dark in every mode, so a translucent (glass) card would sit
+// on it as a grey slab with the mode's dark text. Cards get the theme's own
+// surface, which pairs with --foreground in both modes.
+.content-shell ::ng-deep otui-card .card[data-tone][data-emphasis] {
+  background: var(--surface, var(--background));
 }
 
 @media (max-width: 860px) {

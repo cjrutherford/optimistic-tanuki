@@ -84,6 +84,8 @@ export type LandingSectionMotionKind =
   | 'signal-mesh'
   | 'topographic-drift'
   | 'shimmer-beam'
+  | 'flock-field'
+  /** Legacy: the three.js scene was retired; saved sites render flock-field. */
   | 'murmuration-scene';
 export interface LandingSectionMediaItem {
   sourceType: LandingSectionMediaSourceType;

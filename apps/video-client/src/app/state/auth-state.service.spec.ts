@@ -39,9 +39,9 @@ describe('AuthStateService', () => {
     );
     expect(loginRequest.request.withCredentials).toBe(true);
     loginRequest.flush({ data: {} });
-    await login;
+    await Promise.resolve();
 
-    const restore = service.restoreSession();
+    // Login reads the cookie session back before it resolves.
     const sessionRequest = httpMock.expectOne('/api/authentication/session');
     expect(sessionRequest.request.withCredentials).toBe(true);
     sessionRequest.flush({
@@ -54,7 +54,7 @@ describe('AuthStateService', () => {
         },
       },
     });
-    await restore;
+    await login;
 
     expect(service.getToken()).toBeNull();
     expect(service.isAuthenticated).toBe(true);

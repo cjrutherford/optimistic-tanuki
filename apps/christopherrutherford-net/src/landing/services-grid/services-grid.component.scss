@@ -21,9 +21,9 @@
 }
 
 .section-kicker {
-  display: inline-block;
+  display: block;
   margin-bottom: 0.75rem;
-  color: var(--accent);
+  color: var(--primary-text, var(--primary));
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -34,5 +34,11 @@
   max-width: 50rem;
   margin: 0.85rem 0 0;
   line-height: 1.65;
-  color: color-mix(in srgb, var(--foreground) 82%, white 18%);
+  color: var(--muted-foreground, var(--foreground));
+}
+
+// lib-blog-post-card renders otui-heading with its default inline white and no
+// way to override it, so the card title needs the surface's own text colour.
+lib-blog-post-card ::ng-deep .heading {
+  color: var(--foreground) !important;
 }

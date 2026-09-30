@@ -321,7 +321,7 @@ app-donation-progress {
   width: 40px;
   height: 40px;
   background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-radius: 10px;
 }
 
@@ -433,7 +433,7 @@ app-donation-progress {
 
 .business-link {
   font-size: 0.875rem;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   text-decoration: none;
   font-weight: 500;
 
@@ -521,7 +521,11 @@ app-donation-progress {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   background: color-mix(in srgb, var(--primary) 14%, var(--surface));
-  color: color-mix(in srgb, var(--primary) 86%, var(--foreground));
+  color: color-mix(
+    in srgb,
+    var(--primary-text, var(--primary)) 86%,
+    var(--foreground)
+  );
   border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
   padding: 4px 8px;
   border-radius: 999px;
@@ -565,7 +569,11 @@ app-donation-progress {
   border-radius: 999px;
   padding: 0.45rem 0.8rem;
   background: var(--background-elevated, var(--surface));
-  color: color-mix(in srgb, var(--primary) 84%, var(--foreground));
+  color: color-mix(
+    in srgb,
+    var(--primary-text, var(--primary)) 84%,
+    var(--foreground)
+  );
   box-shadow: var(--shadow-sm, 0 4px 12px rgba(0, 0, 0, 0.14));
   cursor: pointer;
   font: inherit;
@@ -625,7 +633,7 @@ app-donation-progress {
 
   &:hover {
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
   }
 }
 
@@ -747,7 +755,7 @@ app-donation-progress {
 .btn-outline {
   background: transparent;
   border: 1.5px solid var(--primary);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 
   &:hover:not(:disabled) {
     background: var(--hover-bg);
@@ -927,7 +935,7 @@ app-donation-progress {
 
 .tier-price,
 .sponsor-price {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-weight: 600;
 }
 
@@ -991,7 +999,7 @@ app-donation-progress {
 
   .view-all-link {
     font-size: 0.875rem;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     text-decoration: none;
     font-weight: 500;
 

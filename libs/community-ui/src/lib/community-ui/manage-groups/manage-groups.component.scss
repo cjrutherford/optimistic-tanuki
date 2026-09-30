@@ -117,7 +117,6 @@
 }
 
 .private-badge {
-  font-size: var(--font-size-xs, 0.75rem);
   padding: var(--spacing-xs) var(--spacing-sm);
   background: color-mix(in srgb, var(--local-complement) 12%, transparent);
   border: var(--border-width, 1px) solid
@@ -125,6 +124,7 @@
   border-radius: var(--border-radius-sm);
   color: var(--local-complement);
   font-weight: 500;
+  @include p.small-text(var(--font-size-xs, 0.75rem));
 }
 
 .description {
@@ -138,8 +138,8 @@
   display: flex;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  font-size: var(--font-size-xs, 0.85rem);
   color: var(--local-complement);
+  @include p.small-text(var(--font-size-xs, 0.85rem));
 
   strong {
     color: var(--local-foreground);
@@ -153,13 +153,13 @@
 }
 
 .tag {
-  font-size: var(--font-size-xs, 0.75rem);
   padding: var(--spacing-xs) var(--spacing-sm);
   background: color-mix(in srgb, var(--local-accent) 10%, transparent);
   border-radius: var(--border-radius-full);
   color: var(--local-accent);
   font-weight: 500;
   @include p.personality-transition(background, 'fast');
+  @include p.small-text(var(--font-size-xs, 0.75rem));
 
   &:hover {
     background: color-mix(in srgb, var(--local-accent) 18%, transparent);
@@ -202,7 +202,7 @@
     color-mix(in srgb, var(--danger) 30%, transparent);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--spacing-md);
-  font-size: var(--font-size-sm, 0.9rem);
+  @include p.small-text(var(--font-size-sm, 0.9rem));
 }
 
 .empty-state {

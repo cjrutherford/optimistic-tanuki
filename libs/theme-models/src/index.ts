@@ -22,3 +22,19 @@ export * from './lib/tradecraft-theme';
 export * from './lib/sovereign-vault-theme';
 export * from './lib/industrial-nexus-theme';
 export * from './lib/civic-clear-theme';
+
+// Export rendered-distinctiveness metric (compares emitted CSS variables).
+// personality-color's hexToRgb collides with color-utils, so export selectively.
+export {
+  deltaE,
+  isHex,
+  hexToLab,
+  mix,
+  chroma,
+  hslToHex,
+  hexToHsl,
+  rgbToHex,
+  hexToRgb as personalityHexToRgb,
+} from './lib/personality-color';
+export type { Hsl } from './lib/personality-color';
+export * from './lib/rendered-distance';

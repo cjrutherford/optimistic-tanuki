@@ -63,4 +63,5 @@
     width: 12px;
     height: 12px;
   }
+  @include p.keyboard-focus-ring;
 }

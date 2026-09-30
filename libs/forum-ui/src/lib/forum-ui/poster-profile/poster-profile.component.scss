@@ -66,20 +66,20 @@
     }
 
     .username {
-      font-size: var(--font-size-sm);
       color: var(--muted-foreground);
+      @include p.small-text(var(--font-size-sm));
     }
   }
 
   .role-badge {
     display: inline-block;
-    font-size: var(--font-size-xs);
     padding: 2px var(--spacing-sm);
     border-radius: var(--border-radius-sm);
     text-transform: uppercase;
     font-weight: bold;
     margin-right: var(--spacing-sm);
     letter-spacing: 0.03em;
+    @include p.small-text(var(--font-size-xs));
 
     &.admin {
       background-color: color-mix(in srgb, var(--danger) 15%, transparent);
@@ -93,13 +93,13 @@
 
     &.user {
       background-color: color-mix(in srgb, var(--primary) 15%, transparent);
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
     }
   }
 
   .joined-date {
-    font-size: var(--font-size-xs);
     color: var(--muted-foreground);
+    @include p.small-text(var(--font-size-xs));
   }
 }
 
@@ -122,10 +122,10 @@
     }
 
     .stat-label {
-      font-size: var(--font-size-xs);
       color: var(--muted-foreground);
       text-transform: uppercase;
       letter-spacing: 0.04em;
+      @include p.small-text(var(--font-size-xs));
     }
   }
 }

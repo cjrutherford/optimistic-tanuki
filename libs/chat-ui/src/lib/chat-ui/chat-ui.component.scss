@@ -104,20 +104,20 @@
 }
 
 .contact-preview {
-  font-size: 0.85rem;
   color: var(--muted-foreground, var(--foreground));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
+  @include p.small-text(0.85rem);
 }
 
 .contact-timestamp {
-  font-size: 0.75rem;
   color: var(--muted-foreground, var(--foreground));
   margin-left: 8px;
   min-width: 40px;
   text-align: right;
+  @include p.small-text(0.75rem);
 }
 
 .messenger-main {

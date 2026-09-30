@@ -57,7 +57,7 @@
   letter-spacing: 0.14em;
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   border-radius: var(--fc-button-radius, 9999px);
   width: fit-content;
@@ -167,7 +167,7 @@ h2 {
   letter-spacing: 0.12em;
   font-size: 0.7rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .hero-signal ul {
@@ -243,7 +243,7 @@ h2 {
   letter-spacing: 0.14em;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .mode-card p {

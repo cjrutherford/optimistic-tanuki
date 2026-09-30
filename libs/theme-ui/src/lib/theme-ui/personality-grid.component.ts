@@ -31,6 +31,7 @@ import {
   Personality,
   ensureContrast,
   generatePersonalityColors,
+  harmonyHueOptions,
   getSuggestedTextColor,
 } from '@optimistic-tanuki/theme-models';
 import {
@@ -62,7 +63,8 @@ function buildCellCssVars(
     personality.colorHarmony.saturationBoost,
     personality.colorHarmony.lightnessShift,
     personality.colorHarmony.accentSaturation,
-    personality.colorHarmony.accentLightness
+    personality.colorHarmony.accentLightness,
+    harmonyHueOptions(personality.colorHarmony)
   );
 
   const themeColors = generateThemeResponsiveColors(

@@ -5,6 +5,7 @@
 
 import { hexToRgb } from './color-utils';
 import {
+  ColorHarmonyConfig,
   ColorHarmonyType,
   getContrastRatio,
 } from '@optimistic-tanuki/theme-models';
@@ -132,8 +133,11 @@ function rgbToHex(rgb: RGB): string {
  * Generate complementary harmony (180° opposite on color wheel)
  * Best for: Bold personalities with high contrast
  */
-export function generateComplementaryHarmony(hue: number): number[] {
-  return [hue, (hue + 180) % 360];
+export function generateComplementaryHarmony(
+  hue: number,
+  distance = 180
+): number[] {
+  return [hue, (hue + distance) % 360];
 }
 
 /**
@@ -156,8 +160,11 @@ export function generateAnalogousHarmony(hue: number, spread = 30): number[] {
  * Generate split-complementary harmony (150° and 210° offsets)
  * Best for: Professional personalities with subtle contrast
  */
-export function generateSplitComplementaryHarmony(hue: number): number[] {
-  return [hue, (hue + 150) % 360, (hue + 210) % 360];
+export function generateSplitComplementaryHarmony(
+  hue: number,
+  distance = 150
+): number[] {
+  return [hue, (hue + distance) % 360, (hue + 360 - distance) % 360];
 }
 
 /**
@@ -178,18 +185,44 @@ export function generateHarmonyHues(
 ): number[] {
   switch (type) {
     case 'complementary':
-      return generateComplementaryHarmony(hue);
+      return generateComplementaryHarmony(hue, options?.distance);
     case 'triadic':
       return generateTriadicHarmony(hue);
     case 'analogous':
       return generateAnalogousHarmony(hue, options?.spread ?? 30);
     case 'split-complementary':
-      return generateSplitComplementaryHarmony(hue);
+      return generateSplitComplementaryHarmony(hue, options?.distance);
     case 'tetradic':
       return generateTetradicHarmony(hue);
     default:
       return generateComplementaryHarmony(hue);
   }
+}
+
+/**
+ * Hue-geometry options a personality can author on its `colorHarmony`.
+ */
+export interface HarmonyHueOptions {
+  /** Analogous spread in degrees (default 30). */
+  spread?: number;
+  /** Complementary offset / split-complementary anchor in degrees. */
+  distance?: number;
+  /** Explicit hue offset of the tertiary colour from the primary. */
+  tertiaryDistance?: number;
+}
+
+/** Map a personality's `colorHarmony` fields onto `HarmonyHueOptions`. */
+export function harmonyHueOptions(
+  harmony: Pick<
+    ColorHarmonyConfig,
+    'analogousSpread' | 'complementDistance' | 'tertiaryDistance'
+  >
+): HarmonyHueOptions {
+  return {
+    spread: harmony.analogousSpread,
+    distance: harmony.complementDistance,
+    tertiaryDistance: harmony.tertiaryDistance,
+  };
 }
 
 /**
@@ -373,7 +406,8 @@ export function generatePersonalityColors(
   saturationBoost: number,
   lightnessShift: number,
   accentSaturation?: number,
-  accentLightness?: number
+  accentLightness?: number,
+  hueOptions?: HarmonyHueOptions
 ): {
   primary: string;
   secondary: string;
@@ -401,7 +435,11 @@ export function generatePersonalityColors(
   const adjustedPrimary = rgbToHex(hslToRgb(adjustedPrimaryHsl));
 
   // Generate harmony hues
-  const hues = generateHarmonyHues(adjustedPrimaryHsl.h, harmonyType);
+  const hues = generateHarmonyHues(
+    adjustedPrimaryHsl.h,
+    harmonyType,
+    hueOptions
+  );
 
   // Secondary is always the first harmony color
   const secondaryHsl: HSL = {
@@ -413,7 +451,10 @@ export function generatePersonalityColors(
 
   // Tertiary is the second harmony color (or complementary if only 2)
   const tertiaryHsl: HSL = {
-    h: hues[2] ?? (hues[0] + 180) % 360,
+    h:
+      hueOptions?.tertiaryDistance !== undefined
+        ? (adjustedPrimaryHsl.h + hueOptions.tertiaryDistance + 360) % 360
+        : hues[2] ?? (hues[0] + 180) % 360,
     s: adjustedPrimaryHsl.s * 0.9,
     l: Math.min(95, adjustedPrimaryHsl.l * 1.05),
   };

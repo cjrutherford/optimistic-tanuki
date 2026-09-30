@@ -16,11 +16,11 @@
 
 .settings-kicker {
   margin: 0 0 0.4rem;
-  color: var(--primary);
-  font-size: 0.78rem;
+  color: var(--primary-text, var(--primary));
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  @include p.small-text(0.78rem);
 }
 
 .settings-header h1,

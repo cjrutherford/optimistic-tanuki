@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthStateService } from '../services/auth-state.service';
 import { ProfileService } from '../services/profile.service';
-import { from, of } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
 
 export const ProfileGuard: CanActivateFn = (route, state) => {
@@ -10,25 +10,36 @@ export const ProfileGuard: CanActivateFn = (route, state) => {
   const profileService = inject(ProfileService);
   const router = inject(Router);
 
-  if (!authState.isLoggedIn()) {
-    router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
-    return false;
-  }
+  const checkProfile = (): Observable<boolean> => {
+    if (profileService.getCurrentUserProfile()) {
+      return of(true);
+    }
+    return from(profileService.getAllProfiles()).pipe(
+      map(() => {
+        const effectiveProfile = profileService.getEffectiveProfile();
+        if (effectiveProfile) {
+          profileService.selectProfile(effectiveProfile);
+          return true;
+        }
+        // The dashboard is itself behind this guard; redirecting to it from
+        // itself re-ran the guard forever. Let it render without a profile.
+        if (state.url.startsWith('/dashboard')) {
+          return true;
+        }
+        router.navigate(['/dashboard']);
+        return false;
+      })
+    );
+  };
 
-  const profile = profileService.getCurrentUserProfile();
-  if (profile) {
-    return true;
-  }
-
-  return from(profileService.getAllProfiles()).pipe(
-    map(() => {
-      const effectiveProfile = profileService.getEffectiveProfile();
-      if (effectiveProfile) {
-        profileService.selectProfile(effectiveProfile);
-        return true;
+  // Wait for the cookie session check so a reload doesn't bounce to /login.
+  return from(authState.ensureSession()).pipe(
+    switchMap(() => {
+      if (!authState.isLoggedIn()) {
+        router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
+        return of(false);
       }
-      router.navigate(['/dashboard']);
-      return false;
+      return checkProfile();
     })
   );
 };

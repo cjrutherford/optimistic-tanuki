@@ -101,16 +101,6 @@ export type AnimationSpeed =
   | 'deliberate';
 
 /**
- * Icon style preference
- */
-export type IconStyle =
-  | 'outlined'
-  | 'filled'
-  | 'rounded'
-  | 'sharp'
-  | 'two-tone';
-
-/**
  * Border style preference
  */
 export type BorderStyle = 'none' | 'hairline' | 'thin' | 'thick' | 'double';
@@ -216,32 +206,7 @@ export interface ColorGenerationConfig {
  * Mobile-specific adaptations
  */
 export interface MobileAdaptations {
-  spacingMultiplier: number;
-  borderRadiusMultiplier: number;
-  shadowReduction: number;
-  fontScale: number;
   touchTargetSize: string;
-}
-
-/**
- * Mode-specific configuration (light/dark)
- */
-export interface ModeConfig {
-  background: {
-    base: string;
-    elevated: string;
-    overlay: string;
-    surface: string;
-  };
-  foreground: {
-    primary: string;
-    secondary: string;
-    muted: string;
-    inverted: string;
-  };
-  surfaceOpacity: number;
-  shadowOpacity: number;
-  shadowColor: string;
 }
 
 /**
@@ -263,8 +228,6 @@ export interface ColorHarmonyConfig {
  */
 export interface ContrastConfig {
   minimumRatio: 4.5 | 7;
-  enhancedRatio: 7 | 4.5;
-  backgroundOffset: number;
   autoAdjust: boolean;
 }
 
@@ -536,17 +499,8 @@ export interface Personality {
   // Presentation contract layered on top of the personality metadata
   presentation?: PersonalityPresentation;
 
-  // Icons
-  iconStyle: IconStyle;
-
   // Color generation (theme-responsive)
   colorGeneration: ColorGenerationConfig;
-
-  // Legacy mode support (optional, for backward compatibility during transition)
-  modes?: {
-    light: ModeConfig;
-    dark: ModeConfig;
-  };
 
   // Mobile adaptations
   mobile: MobileAdaptations;
@@ -574,7 +528,8 @@ export interface Personality {
    * all (absence is the default, not an omission to flag); only
    * personalities whose stated character is literally tactile/textured
    * (soft-touch's paper grain, control-center's scanlines, architect's
-   * blueprint cross-hatch, electric's circuit accent) declare one.
+   * blueprint cross-hatch, electric's circuit accent, risograph's toner
+   * specks, ledger's green-bar banding) declare one.
    */
   surfaceTexture?: {
     /** SVG pattern - colors will be replaced with theme colors */
@@ -589,6 +544,12 @@ export interface Personality {
   tags: string[];
   category: 'professional' | 'creative' | 'casual' | 'technical';
   isClassic?: boolean;
+
+  // Extension layer (optional; absent reproduces today's output exactly)
+  expression?: PersonalityExpression;
+  typeScale?: PersonalityTypeScale;
+  atmosphere?: PersonalityAtmosphere;
+  motion?: PersonalityMotion;
 }
 
 /**
@@ -774,4 +735,210 @@ export interface PaletteMigrationResult {
   confidence: number;
   config: PersonalityThemeConfig;
   reason: string;
+}
+
+// ─── Personality extension layer ───
+// Colours still come only from the user's primary; these fields decide how
+// that colour is applied and never introduce a palette.
+
+/**
+ * The canvas: the largest area on screen, and today identical for every
+ * personality (light L96–100 near-white, dark L5–12 near-black).
+ *
+ * light:
+ *  - `white`  today's behaviour (colorGeneration decides; no override)
+ *  - `paper`  warm off-white stock, independent of the primary's hue
+ *  - `tinted` very light wash of the primary's hue
+ *  - `toned`  mid-light neutral canvas (enterprise "grey app, white cards"):
+ *             cards sit LIGHTER than the page
+ * dark:
+ *  - `black`  today's behaviour (no override)
+ *  - `ink`    deep, saturated primary-hued night (navy/aubergine/forest)
+ *  - `tinted` dark with a moderate primary cast
+ *  - `dim`    softer charcoal ("dim" mode), lower glare
+ * Opted-in dark grounds elevate surfaces LIGHTER than the page (the
+ * conventional dark-UI elevation), unlike today's darker-than-page surfaces.
+ */
+export type GroundLight = 'white' | 'paper' | 'tinted' | 'toned';
+export type GroundDark = 'black' | 'ink' | 'tinted' | 'dim';
+
+/**
+ * How much of the primary colours the neutral UI, emitted as surface tints
+ * and a new `--accent-ground` / `--on-accent-ground` pair for bands that
+ * should carry brand colour (app bars, heroes, section headers).
+ *  - `restrained`       primary only on controls; accent ground = surface
+ *  - `tinted-surfaces`  surfaces and tab tracks take a faint primary wash
+ *  - `primary-ground`   accent ground IS the primary (solid brand bands)
+ *  - `duotone`          accent ground is the tertiary; borders pick up the
+ *                       secondary — two inks instead of one
+ */
+export type AccentStrategy =
+  | 'restrained'
+  | 'tinted-surfaces'
+  | 'primary-ground'
+  | 'duotone';
+
+export interface PersonalityExpression {
+  ground?: { light?: GroundLight; dark?: GroundDark };
+  accent?: AccentStrategy;
+  /**
+   * `hue-only` (today): the personality pins the primary's saturation and
+   * lightness, so a grey/black/white brand colour becomes a saturated hue.
+   * `respect`: a neutral base colour (low chroma) stays neutral — black
+   * stays black-ish, greys stay grey; secondary/tertiary follow.
+   */
+  neutralBase?: 'hue-only' | 'respect';
+}
+
+/**
+ * Typography beyond font family: a modular scale and heading treatment.
+ * Emitted as `--type-*` / `--heading-*` variables.
+ */
+export interface PersonalityTypeScale {
+  /** Modular scale ratio: 1.125 (dense) … 1.5 (display-led). */
+  ratio: number;
+  /** Heading font weight. */
+  headingWeight: number;
+  headingCase: 'none' | 'uppercase' | 'lowercase';
+  /** Heading letter spacing, e.g. '-0.03em'. */
+  headingTracking: string;
+  /** Heading line height (unitless). */
+  headingLineHeight: number;
+}
+
+/** Gradient light on the page behind everything. */
+export type AtmosphereBackdrop =
+  | 'none'
+  | 'glow'
+  | 'spotlight'
+  | 'sweep'
+  | 'horizon'
+  | 'aurora'
+  | 'mesh';
+/** Finish on cards, panels, toasts and tab tracks. `glass` also makes surfaces translucent + blurred. */
+export type AtmosphereSurface =
+  | 'flat'
+  | 'sheen'
+  | 'gradient'
+  | 'raised'
+  | 'glass';
+/** Gradient finish for `--accent-ground` bands (needs `expression.accent`). */
+export type AtmosphereAccentFill =
+  | 'flat'
+  | 'linear'
+  | 'radial'
+  | 'mesh'
+  | 'split'
+  | 'shine';
+/** Primary action fill. `inherit` keeps the composition's flat/gradient fill. */
+export type AtmosphereButtonFill = 'inherit' | 'gradient' | 'split' | 'shine';
+/** CSS-gradient patterns (no SVG): tiled ink in the text colour at low alpha. */
+export type AtmospherePattern =
+  | 'none'
+  | 'dots'
+  | 'grid'
+  | 'diagonal'
+  | 'stripes'
+  | 'checker'
+  | 'halftone'
+  | 'rings'
+  | 'waves'
+  | 'scanline'
+  | 'ledger';
+
+/**
+ * Texture and gradient "pop". Every colour is derived from the theme
+ * (primary/secondary/tertiary, text colours), and every layer's alpha is
+ * capped by the resolver so body text, muted text, on-accent and on-primary
+ * text keep their contrast floors over the worst-case composite.
+ */
+export interface PersonalityAtmosphere {
+  backdrop?: AtmosphereBackdrop;
+  surface?: AtmosphereSurface;
+  accentFill?: AtmosphereAccentFill;
+  buttonFill?: AtmosphereButtonFill;
+  /** Pattern tiled across the page canvas (under content, very low alpha). */
+  pagePattern?: AtmospherePattern;
+  /** Pattern tiled over `--accent-ground` bands (higher alpha, on-accent ink). */
+  accentPattern?: AtmospherePattern;
+  /** 0–1.5 multiplier on the default alphas (before contrast capping). Default 1. */
+  intensity?: number;
+}
+
+/** How content arrives. `auto` (or absent) derives it from `presentation.animation.style`. */
+export type MotionEnter =
+  | 'auto'
+  | 'none'
+  | 'fade'
+  | 'rise'
+  | 'settle'
+  | 'slide'
+  | 'snap'
+  | 'drift';
+/** Hover/focus glow. `auto` (or absent) derives it from `tokens.shadowProfile`. */
+export type MotionGlow = 'auto' | 'none' | 'soft' | 'halo' | 'neon';
+/**
+ * One slow, looping "sign of life" on brand elements. `auto` (or absent)
+ * derives it from `presentation.animation.style`.
+ *  - `breathe`  primary action's glow swells and settles
+ *  - `pulse`    a soft ring expands from the primary action
+ *  - `shimmer`  a sheen passes across the primary action and accent band
+ *  - `drift`    the accent band's pattern slowly pans (needs `atmosphere.accentPattern`)
+ */
+export type MotionAmbient =
+  | 'auto'
+  | 'none'
+  | 'breathe'
+  | 'pulse'
+  | 'shimmer'
+  | 'drift';
+
+/**
+ * Motion character: entrances, interaction feedback (glow + focus ring) and
+ * ambient motion. Hard limits (enforced by the resolver and validation):
+ * entrance travel <= 8px, scale >= 0.97, duration <= 700ms; glow alpha <=
+ * 0.35; ambient period >= 4s. Personalities with
+ * `animations.prefersReducedMotion` get fade-only entrances and no ambient
+ * motion; the CSS mixins disable all of it under `prefers-reduced-motion`.
+ */
+/**
+ * motion-ui scenes a personality suits, most fitting first. Existing scenes
+ * plus the proposed new ones (integration/motion-ui). An empty list means
+ * "no background scene" (e.g. foundation).
+ */
+export type SceneKind =
+  // existing libs/motion-ui scenes
+  | 'aurora-ribbon'
+  | 'glass-fog'
+  | 'parallax-grid-warp'
+  | 'particle-veil'
+  | 'pulse-rings'
+  | 'shimmer-beam'
+  | 'signal-mesh'
+  | 'topographic-drift'
+  // proposed personality scenes
+  | 'halftone-tide'
+  | 'star-atlas'
+  | 'ledger-ticker'
+  | 'grid-shift'
+  | 'canopy-dapple'
+  | 'clay-blobs'
+  | 'neon-circuit'
+  | 'blueprint-scan'
+  | 'flock-field';
+
+export interface PersonalityMotion {
+  enter?: MotionEnter;
+  glow?: MotionGlow;
+  ambient?: MotionAmbient;
+  /** motion-ui scenes this personality suits, most fitting first. */
+  scenes?: SceneKind[];
+}
+
+/** Optional extension fields; absent means today's output. */
+export interface PersonalityExtensions {
+  expression?: PersonalityExpression;
+  typeScale?: PersonalityTypeScale;
+  atmosphere?: PersonalityAtmosphere;
+  motion?: PersonalityMotion;
 }

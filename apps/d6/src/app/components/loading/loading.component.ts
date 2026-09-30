@@ -44,14 +44,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         font-weight: 700;
         margin-bottom: 0.5rem;
         letter-spacing: 0.1em;
-        background: linear-gradient(
-          135deg,
-          var(--primary, #4f46e5) 0%,
-          var(--accent, #764ba2) 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        color: var(--primary-text, var(--primary, #4f46e5));
       }
 
       .app-tagline {

@@ -43,6 +43,7 @@
     transform var(--animation-duration-fast) var(--animation-easing),
     box-shadow var(--animation-duration-fast) var(--animation-easing)
   );
+  @include p.surface-finish;
 
   &:hover {
     @include p.hover-lift(translateY(-2px), var(--shadow-lg));
@@ -139,13 +140,22 @@
   }
 
   .card-title {
-    font-family: var(--font-heading, system-ui, sans-serif);
-    font-size: 1.5rem;
-    font-weight: var(--personality-font-weight, 700);
-    text-transform: var(--personality-button-text-transform, uppercase);
-    letter-spacing: 0.05em;
     margin: 0 0 12px 0;
     color: var(--foreground, #212121);
+    @include p.heading(
+      'h3',
+      $size: 1.5rem,
+      $family: var(--font-heading, system-ui, sans-serif),
+      $weight: var(--personality-font-weight, 700)
+    );
+    // heading() defaults tracking/transform to normal/none; keep today's.
+    & {
+      text-transform: var(
+        --heading-transform,
+        var(--personality-button-text-transform, uppercase)
+      );
+      letter-spacing: var(--heading-tracking, 0.05em);
+    }
   }
 
   .card-subtitle {
@@ -153,15 +163,15 @@
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--primary);
+    color: var(--primary-text, var(--primary));
     margin-bottom: 16px;
   }
 
   p {
     font-family: var(--font-body, system-ui, sans-serif);
     font-size: 0.875rem;
-    line-height: 1.6;
     margin: 0 0 16px 0;
+    @include p.body-text(1.6, inherit);
   }
 }
 

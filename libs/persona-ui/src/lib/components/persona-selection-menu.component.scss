@@ -206,14 +206,14 @@
   display: inline-block;
   padding: 4px 10px;
   background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-radius: var(--border-radius-md, 4px);
   font-size: 0.8rem;
   font-weight: 500;
 }
 
 .persona-arrow {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   opacity: 0.7;
   @include p.personality-transition(all, 'fast');
 

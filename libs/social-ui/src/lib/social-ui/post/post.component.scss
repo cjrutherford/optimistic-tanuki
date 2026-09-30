@@ -49,12 +49,12 @@
         background: var(--primary);
         color: var(--primary-foreground, #fff);
         border-radius: var(--border-radius-md, 10px);
-        font-size: 0.75rem;
         font-weight: 600;
         margin-left: var(--spacing-xs, 4px);
         @include p.shadow('md');
         animation: social-pulse var(--animation-duration-slow, 3s) ease-in-out
           infinite;
+        @include p.small-text(0.75rem);
 
         .community-logo {
           width: 16px;
@@ -86,9 +86,9 @@
     }
 
     .subtitle {
-      font-size: 0.875rem;
       color: var(--muted-foreground, #9ca3af);
       font-weight: 500;
+      @include p.small-text(0.875rem);
 
       .edited-badge {
         display: inline-block;
@@ -96,9 +96,9 @@
         padding: 2px 8px;
         border-radius: var(--border-radius-full, 999px);
         background: color-mix(in srgb, var(--primary) 16%, transparent);
-        color: var(--primary);
-        font-size: 0.75rem;
+        color: var(--primary-text, var(--primary));
         font-weight: 600;
+        @include p.small-text(0.75rem);
       }
     }
   }
@@ -146,7 +146,7 @@
         }
 
         a {
-          color: var(--primary);
+          color: var(--primary-text, var(--primary));
           text-decoration: none;
           font-weight: 500;
           border-bottom: var(--border-width, 2px) solid
@@ -195,7 +195,7 @@
       h3 {
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 0.8125rem;
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         margin: 0 0 8px 0;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -223,7 +223,7 @@
       h3 {
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 0.8125rem;
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         margin: 0 0 8px 0;
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -231,7 +231,7 @@
       }
 
       a {
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         text-decoration: none;
         font-weight: 500;
         @include p.personality-transition(all, 'fast');

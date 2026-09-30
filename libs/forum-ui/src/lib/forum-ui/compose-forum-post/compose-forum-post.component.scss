@@ -41,9 +41,9 @@
   label {
     font-weight: 600;
     color: var(--foreground);
-    font-size: var(--font-size-sm);
     font-family: var(--font-body, sans-serif);
     @include p.label-type;
+    @include p.small-text(var(--font-size-sm));
   }
 
   &.editor-group {
@@ -77,9 +77,9 @@
   background-color: var(--primary);
   color: var(--primary-foreground);
   border-radius: var(--border-radius-full);
-  font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   @include p.label-type;
+  @include p.small-text(var(--font-size-sm));
 }
 
 .tag-remove {

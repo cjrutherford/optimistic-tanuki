@@ -20,7 +20,7 @@ const meta: Meta<PersonalitySelectorComponent> = {
   },
   render: (args) => ({
     props: args,
-    template: `<div style="max-width: 520px"><lib-personality-selector [applyOnSelect]="applyOnSelect" (personalitySelected)="personalitySelected($event)" (onClose)="onClose($event)" /></div>`,
+    template: `<div style="max-width: 960px"><lib-personality-selector [applyOnSelect]="applyOnSelect" (personalitySelected)="personalitySelected($event)" (onClose)="onClose($event)" /></div>`,
   }),
 };
 

@@ -14,12 +14,12 @@
 
 .participants-label {
   font-family: var(--font-heading, inherit);
-  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--foreground);
   opacity: 0.5;
   margin-right: 4px;
+  @include p.small-text(0.75rem);
 }
 
 .participant {

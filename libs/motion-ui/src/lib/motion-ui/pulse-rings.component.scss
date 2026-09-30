@@ -1,13 +1,15 @@
 @use 'personality' as p;
 @use '../styles/motion-theme';
+@use '../styles/scene-contract' as scene;
 
 @include motion-theme.motion-theme-tokens;
-
-:host {
-  display: block;
-}
+@include scene.scene-contract-tokens;
 
 .pulse-rings {
+  --scene-speed: calc(var(--scene-speed-input, 1) * var(--scene-tempo, 1));
+  --scene-intensity: calc(
+    var(--scene-intensity-input, 0.7) * var(--scene-energy, 1)
+  );
   position: relative;
   min-height: 16rem;
   overflow: hidden;
@@ -29,9 +31,26 @@
   isolation: isolate;
 }
 
+.pulse-halo,
 .pulse-core,
 .pulse-ring {
   position: absolute;
+}
+
+.pulse-halo {
+  left: 50%;
+  top: 50%;
+  width: min(34rem, 96%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    scene.lit(var(--secondary), 75%),
+    scene.lit(var(--primary), 30%) 48%,
+    transparent 72%
+  );
+  animation: pulse-breathe scene.duration(8s) ease-in-out infinite alternate;
 }
 
 .pulse-core,
@@ -39,7 +58,7 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  border-radius: var(--border-radius-full, 999px);
+  border-radius: 50%;
 }
 
 .pulse-core {
@@ -56,17 +75,19 @@
 }
 
 .pulse-ring {
-  width: calc(7rem + (var(--ring-index) * 2.75rem));
+  width: calc(8rem + (var(--ring-index) * 4rem));
   aspect-ratio: 1;
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--secondary) calc(40% - (var(--ring-index) * 4%)),
-      transparent
-    );
-  opacity: calc(0.78 - (var(--ring-index) * 0.1));
-  animation: pulse-expand calc(9s / max(var(--pulse-speed), 0.2)) ease-out
-    infinite;
+  border: 2px solid
+    scene.lit(var(--secondary), calc(100% - (var(--ring-index) * 8%)));
+  // Inner glow as a gradient (a scene decoration, not an elevation shadow).
+  background: radial-gradient(
+    circle,
+    transparent 58%,
+    scene.lit(var(--primary), 40%) 100%
+  );
+  opacity: calc(0.9 - (var(--ring-index) * 0.06));
+  will-change: transform, opacity;
+  animation: pulse-expand scene.duration(9s) ease-out infinite;
   animation-delay: calc(var(--ring-index) * -1.2s);
 }
 
@@ -75,16 +96,42 @@
   opacity: calc(0.56 - (var(--ring-index) * 0.08));
 }
 
+.pulse-rings.is-fallback .pulse-halo {
+  animation: none;
+}
+
 @keyframes pulse-expand {
   0% {
-    transform: translate(-50%, -50%) scale(0.72);
-    opacity: calc(0.62 + (var(--pulse-intensity) * 0.16));
+    transform: translate(-50%, -50%) scale(0.55);
+    opacity: calc(0.7 + (var(--scene-intensity) * 0.3));
   }
   70% {
-    opacity: 0.08;
+    opacity: 0.12;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.14);
+    transform: translate(-50%, -50%) scale(1.4);
     opacity: 0;
+  }
+}
+
+@keyframes pulse-breathe {
+  from {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 1;
+  }
+}
+
+// Decorative layers: show only the system canvas in forced-colours mode.
+@media (forced-colors: active) {
+  .pulse-rings {
+    background: Canvas;
+
+    > * {
+      display: none;
+    }
   }
 }

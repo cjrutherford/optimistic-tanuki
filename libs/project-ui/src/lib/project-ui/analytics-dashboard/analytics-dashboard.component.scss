@@ -29,14 +29,14 @@
         gap: 4px;
 
         .stat-label {
-          font-size: 0.875rem;
           color: var(--muted-foreground, #666);
+          @include p.small-text(0.875rem);
         }
 
         .stat-value {
           font-size: 1.75rem;
           font-weight: 700;
-          color: var(--primary, #3498db);
+          color: var(--primary-text, var(--primary, #3498db));
         }
       }
     }
@@ -81,7 +81,7 @@
       .task-time,
       .tag-time {
         font-weight: 600;
-        color: var(--primary, #3498db);
+        color: var(--primary-text, var(--primary, #3498db));
         margin-left: 12px;
       }
     }
@@ -112,8 +112,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.75rem;
       color: var(--muted-foreground, #666);
+      @include p.small-text(0.75rem);
 
       .entry-count,
       .task-count {

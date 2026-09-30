@@ -1,11 +1,18 @@
+<lib-personality-backdrop />
 <div class="container">
   <div class="motion-background">
-    <otui-topographic-drift></otui-topographic-drift>
+    <otui-personality-scene
+      height="24rem"
+      fallbackScene="topographic-drift"
+      [density]="8"
+      [speed]="1.4"
+      [intensity]="0.64"
+    ></otui-personality-scene>
   </div>
 
   <otui-app-bar
     appTitle="Video Platform"
-    logoSrc="assets/logo.png"
+    logoSrc="android-chrome-192x192.png"
     logoAlt="Video Platform Logo"
     [showThemeToggle]="true"
     [useTile]="false"

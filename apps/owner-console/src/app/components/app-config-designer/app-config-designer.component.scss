@@ -74,7 +74,10 @@
     letter-spacing: 0.16em;
     font-size: 0.72rem;
     font-weight: 700;
-    color: var(--primary, var(--primary));
+    color: var(
+      --primary-text,
+      var(--primary, var(--primary-text, var(--primary)))
+    );
   }
 
   .header-actions {
@@ -211,7 +214,10 @@
     var(--primary, var(--primary)) 42%,
     var(--border, var(--border))
   );
-  color: var(--primary, var(--primary));
+  color: var(
+    --primary-text,
+    var(--primary, var(--primary-text, var(--primary)))
+  );
 }
 
 .guided-actions {
@@ -465,7 +471,10 @@
   align-items: center;
 
   &:hover {
-    color: var(--primary, var(--primary));
+    color: var(
+      --primary-text,
+      var(--primary, var(--primary-text, var(--primary)))
+    );
   }
 }
 
@@ -481,7 +490,10 @@
     transparent
   );
   border-radius: 0.8rem;
-  color: var(--primary, var(--primary));
+  color: var(
+    --primary-text,
+    var(--primary, var(--primary-text, var(--primary)))
+  );
 }
 
 .section-info {
@@ -523,7 +535,10 @@
       var(--primary, var(--primary)) 8%,
       transparent
     );
-    color: var(--primary, var(--primary));
+    color: var(
+      --primary-text,
+      var(--primary, var(--primary-text, var(--primary)))
+    );
   }
 
   &.danger:hover {
@@ -585,7 +600,10 @@
   border-bottom: 1px solid var(--editor-border);
 
   mat-icon {
-    color: var(--primary, var(--primary));
+    color: var(
+      --primary-text,
+      var(--primary, var(--primary-text, var(--primary)))
+    );
   }
 
   h3 {
@@ -793,7 +811,10 @@
     text-transform: uppercase;
     letter-spacing: 0.14em;
     font-size: 0.72rem;
-    color: var(--primary, var(--primary));
+    color: var(
+      --primary-text,
+      var(--primary, var(--primary-text, var(--primary)))
+    );
     font-weight: 700;
   }
 

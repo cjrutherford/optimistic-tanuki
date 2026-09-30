@@ -1,0 +1,24 @@
+<section
+  class="canopy-dapple"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+>
+  <span
+    *ngFor="let spot of spots"
+    class="light"
+    [style.left.%]="spot.left"
+    [style.top.%]="spot.top"
+    [style.--size]="spot.size + 'rem'"
+    [style.--index]="spot.index"
+  ></span>
+  <span
+    *ngFor="let leaf of leaves"
+    class="leaf"
+    [style.left.%]="leaf.left"
+    [style.top.%]="leaf.top"
+    [style.--index]="leaf.index"
+  ></span>
+</section>

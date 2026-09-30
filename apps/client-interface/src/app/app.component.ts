@@ -52,7 +52,8 @@ import {
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
-import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 const AUTH_NAV_LINKS = [
@@ -133,7 +134,8 @@ const AUTH_NAV_LINKS = [
     DevInfoComponent,
     HaiAboutTagComponent,
     MessageComponent,
-    MurmurationSceneComponent,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     BugReportUiComponent,
   ],
 })
@@ -236,18 +238,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   ngOnInit() {

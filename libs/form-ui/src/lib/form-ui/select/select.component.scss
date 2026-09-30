@@ -55,10 +55,22 @@
     outline: none;
   }
 
-  &:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--primary) 50%, transparent);
-    outline-offset: 2px;
-  }
+  @include p.keyboard-focus-ring(
+    color-mix(in srgb, var(--primary) 50%, transparent),
+    2px,
+    (
+      var(
+        --shadow-sm,
+        inset 0 1px 2px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
+      var(
+        --shadow-lg,
+        0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
+      ),
+      var(--personality-input-focus-style, 0 0 0 0 transparent)
+    )
+  );
 
   &:disabled {
     opacity: 0.5;
@@ -132,13 +144,13 @@
 
 .error-message {
   font-family: var(--font-body, system-ui, sans-serif);
-  font-size: 0.75rem;
   color: var(--danger, #dc2626);
   margin-top: 4px;
   padding-left: 8px;
   display: flex;
   align-items: center;
   gap: 4px;
+  @include p.small-text(0.75rem);
 
   &::before {
     content: '';
@@ -179,6 +191,7 @@
     visibility: hidden;
     transform: translateY(-8px);
     @include p.personality-transition(all, 'fast');
+    @include p.surface-finish;
 
     &.open {
       opacity: 1;
@@ -200,7 +213,7 @@
 
       &.selected {
         background: color-mix(in srgb, var(--primary) 12%, transparent);
-        color: var(--primary);
+        color: var(--primary-text, var(--primary));
         font-weight: 600;
       }
     }

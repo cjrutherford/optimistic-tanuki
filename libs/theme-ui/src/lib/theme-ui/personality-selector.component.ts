@@ -1,6 +1,6 @@
 /**
- * Personality Selector Component for the deferred personality picker
- * Allows users to choose from predefined design personalities
+ * Personality Selector Component for the deferred personality picker.
+ * Each card previews its personality in that personality's own look.
  */
 
 import {
@@ -10,15 +10,22 @@ import {
   Input,
   Output,
   EventEmitter,
+  ElementRef,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Personality,
-  getPersonalityPreviewColors,
   ThemeService,
+  FontLoadingService,
 } from '@optimistic-tanuki/theme-lib';
 import { IconComponent, IconName } from '@optimistic-tanuki/common-ui';
 import { Subject, takeUntil } from 'rxjs';
+import {
+  buildPersonalityPreviewVars,
+  personalityIcon,
+  PersonalityPreviewMode,
+} from './personality-card-preview';
 
 interface GroupedPersonality {
   category: string;
@@ -32,17 +39,26 @@ interface GroupedPersonality {
   template: `
     <div class="personality-overlay-container">
       <div class="overlay-header">
-        <h2 class="overlay-title" [id]="titleId || null">Choose Your Style</h2>
+        <div class="header-text">
+          <h2 class="overlay-title" [id]="titleId || null">
+            Choose Your Style
+          </h2>
+          <p class="overlay-subtitle" *ngIf="currentPersonality">
+            Current: <strong>{{ currentPersonality.name }}</strong>
+          </p>
+        </div>
         <button
           class="close-button"
           (click)="onClose.emit()"
           aria-label="Close"
+          type="button"
         >
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -51,68 +67,95 @@ interface GroupedPersonality {
       </div>
 
       <div class="overlay-content">
-        <div class="current-selection" *ngIf="currentPersonality">
-          <span class="current-label">Current:</span>
-          <span class="current-name">{{ currentPersonality.name }}</span>
-        </div>
-
-        <div class="personality-groups">
-          <div
+        <div
+          class="personality-groups"
+          role="radiogroup"
+          aria-label="Personality style"
+        >
+          <section
             *ngFor="let group of groupedPersonalities"
             class="personality-group"
+            role="group"
+            [attr.aria-labelledby]="'ps-group-' + group.category"
           >
-            <h3 class="group-label">{{ getCategoryLabel(group.category) }}</h3>
+            <h3 class="group-label" [id]="'ps-group-' + group.category">
+              {{ getCategoryLabel(group.category) }}
+              <span class="group-count">{{ group.personalities.length }}</span>
+            </h3>
             <div class="personality-options">
               <button
                 *ngFor="let personality of group.personalities"
                 class="personality-option"
-                [class.selected]="personality.id === currentPersonality?.id"
+                [class.selected]="isSelected(personality)"
                 [attr.data-personality]="personality.id"
+                role="radio"
+                [attr.aria-checked]="isSelected(personality)"
+                [attr.tabindex]="tabIndexFor(personality)"
                 (click)="selectPersonality(personality)"
+                (keydown)="onCardKeydown($event, personality)"
                 type="button"
               >
-                <span class="personality-icon" aria-hidden="true">
-                  <otui-icon
-                    [name]="getPersonalityIcon(personality)"
-                    [size]="22"
-                    stroke="currentColor"
-                  ></otui-icon>
+                <span
+                  class="preview"
+                  aria-hidden="true"
+                  [style]="previewVars(personality)"
+                >
+                  <span class="pv-band">
+                    <span class="pv-aa">Aa</span>
+                    <span class="pv-name">{{ personality.name }}</span>
+                  </span>
+                  <span class="pv-stage">
+                    <span class="pv-body">Quick brown fox jumps over</span>
+                    <span class="pv-surface">
+                      <span class="pv-line"></span>
+                      <span class="pv-line pv-line--short"></span>
+                      <span class="pv-button">Apply</span>
+                    </span>
+                  </span>
                 </span>
-                <div class="option-preview">
-                  <div
-                    class="preview-swatch"
-                    [style.background]="
-                      getPreviewColor(personality, 'background')
-                    "
-                  ></div>
-                </div>
-                <div class="option-content">
+                <span class="option-content">
                   <span class="option-name">
-                    {{ personality.name }}
-                    <span *ngIf="personality.isClassic" class="classic-badge"
+                    <otui-icon
+                      [name]="getPersonalityIcon(personality)"
+                      [size]="18"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    ></otui-icon>
+                    <span class="option-title">{{ personality.name }}</span>
+                    <span *ngIf="personality.isClassic" class="tag"
                       >Classic</span
+                    >
+                    <span
+                      *ngIf="isSelected(personality)"
+                      class="tag tag--current"
+                      ><otui-icon
+                        name="check"
+                        [size]="12"
+                        [strokeWidth]="3"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      ></otui-icon
+                      >Current</span
                     >
                   </span>
                   <span class="option-description">{{
                     personality.description
                   }}</span>
-                  <div class="option-meta">
-                    <span class="meta-tag">{{
-                      personality.tokens.typography
-                    }}</span>
-                    <span class="meta-tag">{{
-                      personality.tokens.spacingScale
-                    }}</span>
-                  </div>
-                </div>
+                </span>
               </button>
             </div>
-          </div>
+          </section>
         </div>
       </div>
 
       <div class="overlay-footer">
-        <p class="hint">Click any style to apply it instantly</p>
+        <p class="hint">
+          {{
+            applyOnSelect
+              ? 'Pick a style to apply it instantly. Arrow keys move between styles.'
+              : 'Pick a style to preview it. Arrow keys move between styles.'
+          }}
+        </p>
       </div>
     </div>
   `,
@@ -120,6 +163,7 @@ interface GroupedPersonality {
     `
       :host {
         display: block;
+        min-width: 0;
       }
 
       .personality-overlay-container {
@@ -127,6 +171,7 @@ interface GroupedPersonality {
         flex: 1 1 auto;
         flex-direction: column;
         background: var(--surface, #ffffff);
+        color: var(--foreground, #171717);
         border: var(--border-width, 1px) solid var(--primary);
         border-radius: var(--border-radius-lg, 12px);
         box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25));
@@ -143,6 +188,7 @@ interface GroupedPersonality {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 12px;
         padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
         background: var(--primary);
         color: var(--primary-foreground, #ffffff);
@@ -154,34 +200,35 @@ interface GroupedPersonality {
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 1.25rem;
         font-weight: 700;
-        text-transform: uppercase;
         letter-spacing: 0.02em;
+      }
+
+      .overlay-subtitle {
+        margin: 2px 0 0;
+        font-size: 0.8125rem;
       }
 
       .close-button {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
         padding: 0;
         background: transparent;
         border: 2px solid var(--primary-foreground, #ffffff);
         color: var(--primary-foreground, #ffffff);
         cursor: pointer;
         border-radius: var(--border-radius-sm, 4px);
-        transition: all var(--animation-duration-fast, 100ms)
-          var(--animation-easing, ease);
 
         &:hover {
-          background: var(--secondary);
-          border-color: var(--secondary);
-          color: #000;
-          transform: scale(1.1);
+          background: var(--primary-foreground, #ffffff);
+          color: var(--primary);
         }
 
         &:focus-visible {
-          outline: 3px solid var(--primary-foreground, #ffffff);
+          outline: 2px solid var(--primary-foreground, #ffffff);
           outline-offset: 3px;
         }
 
@@ -197,214 +244,274 @@ interface GroupedPersonality {
         min-height: 0;
         overflow-y: auto;
         overflow-x: hidden;
-        padding: var(--spacing-md, 16px);
+        padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
         overscroll-behavior: contain;
-        scroll-padding-block: var(--spacing-sm, 12px);
+        scroll-padding-block: 16px;
         scrollbar-gutter: stable;
         -webkit-overflow-scrolling: touch;
         touch-action: pan-y;
       }
 
-      .current-selection {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs, 8px);
-        padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
-        background: var(--background-elevated, #fafafa);
-        border-radius: var(--border-radius-md, 8px);
-        margin-bottom: var(--spacing-md, 16px);
-        font-size: 0.875rem;
-      }
-
-      .current-label {
-        color: var(--muted, #737373);
-        font-weight: 500;
-      }
-
-      .current-name {
-        color: var(--primary);
-        font-weight: 700;
-      }
-
       .personality-groups {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-md, 16px);
-      }
-
-      .personality-group {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs, 8px);
+        gap: 24px;
       }
 
       .group-label {
-        margin: 0;
-        padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-        font-family: var(--font-mono, monospace);
-        font-size: 0.625rem;
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border, #e5e7eb);
+        font-family: var(--font-heading, system-ui, sans-serif);
+        font-size: 0.8125rem;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: var(--muted, #737373);
-        background: var(--background-elevated, #fafafa);
-        border-radius: var(--border-radius-sm, 4px);
+        color: var(--foreground, #171717);
+      }
+
+      .group-count {
+        font-family: var(--font-body, system-ui, sans-serif);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        padding: 1px 8px;
+        border-radius: 9999px;
+        background: color-mix(
+          in srgb,
+          var(--foreground, #171717) 10%,
+          transparent
+        );
       }
 
       .personality-options {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-xs, 8px);
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+        gap: 14px;
       }
 
       .personality-option {
         display: flex;
-        align-items: flex-start;
-        gap: var(--spacing-sm, 12px);
+        flex-direction: column;
+        gap: 10px;
         min-width: 0;
-        padding: var(--spacing-sm, 12px);
-        background: transparent;
-        border: 1px solid var(--border, #e5e7eb);
-        border-radius: var(--border-radius-md, 8px);
+        padding: 8px 8px 12px;
+        background: color-mix(
+          in srgb,
+          var(--foreground, #171717) 4%,
+          var(--surface, #fff)
+        );
+        color: var(--foreground, #171717);
+        border: 2px solid var(--border, #d4d4d8);
+        border-radius: var(--border-radius-md, 10px);
         cursor: pointer;
         text-align: left;
-        transition: all var(--animation-duration-fast, 150ms)
-          var(--animation-easing, ease);
+        font: inherit;
+        transition: border-color 120ms ease, transform 120ms ease,
+          box-shadow 120ms ease;
 
         &:hover {
-          background: var(--surface, #f9fafb);
           border-color: var(--primary);
-          transform: translateX(4px);
+          transform: translateY(-2px);
         }
 
         &:focus-visible {
-          outline: 3px solid var(--primary);
+          outline: 3px solid var(--focus-ring-color, var(--foreground, #171717));
           outline-offset: 3px;
-          scroll-margin-block: var(--spacing-sm, 12px);
+          box-shadow: var(--glow-focus, none);
         }
 
         &.selected {
-          background: color-mix(in srgb, var(--primary) 10%, var(--background));
           border-color: var(--primary);
-          border-width: 2px;
-
-          .option-name {
-            color: var(--primary);
-          }
+          box-shadow: 0 0 0 2px var(--primary);
+          background: color-mix(
+            in srgb,
+            var(--primary) 10%,
+            var(--surface, #fff)
+          );
         }
       }
 
-      .option-preview {
-        flex-shrink: 0;
+      /* Mini preview: scoped --pv-* variables from the personality's resolver. */
+      .preview {
+        display: flex;
+        flex-direction: column;
+        min-height: 112px;
+        background-color: var(--pv-bg);
+        background-image: var(--pv-ground-image);
+        background-size: var(--pv-pattern-size);
+        color: var(--pv-fg);
+        border: var(--pv-border-width) var(--pv-border-style) var(--pv-border);
+        border-radius: var(--pv-card-radius);
+        overflow: hidden;
+        font-family: var(--pv-font-body), system-ui, sans-serif;
       }
 
-      .personality-icon {
-        display: grid;
-        place-items: center;
-        flex: 0 0 36px;
-        width: 36px;
-        height: 36px;
-        border-radius: var(--border-radius-full, 50%);
-        background: color-mix(in srgb, var(--primary) 14%, var(--background));
-        color: var(--primary);
+      .pv-band {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 8px 12px;
+        background-color: var(--pv-band);
+        background-image: var(--pv-band-image);
+        background-size: var(--pv-band-size);
+        color: var(--pv-band-fg);
+        border-bottom: 3px solid var(--pv-band-rule);
+        font-family: var(--pv-font-heading), system-ui, sans-serif;
+        font-weight: var(--pv-heading-weight);
+        text-transform: var(--pv-heading-transform);
+        letter-spacing: var(--pv-heading-tracking);
       }
 
-      .preview-swatch {
-        width: 48px;
-        height: 48px;
-        border-radius: var(--border-radius-md, 8px);
-        border: 2px solid var(--border, #e5e7eb);
-        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+      .pv-aa {
+        font-size: 1.9rem;
+        line-height: 1;
+        text-transform: none;
+      }
+
+      .pv-name {
+        font-size: 0.95rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+
+      .pv-stage {
+        display: flex;
+        flex: 1;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px 12px;
+      }
+
+      .pv-body {
+        flex: 1 1 0;
+        min-width: 0;
+        font-size: 0.75rem;
+        line-height: 1.35;
+      }
+
+      .pv-surface {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 6px;
+        flex: 0 0 48%;
+        padding: 10px;
+        background-color: var(--pv-surface);
+        background-image: var(--pv-surface-image);
+        backdrop-filter: var(--pv-surface-filter);
+        border: var(--pv-border-width) var(--pv-border-style) var(--pv-border);
+        border-radius: var(--pv-card-radius);
+        box-shadow: var(--pv-card-shadow);
+      }
+
+      .pv-line {
+        display: block;
+        height: 5px;
+        border-radius: 3px;
+        background: var(--pv-fg);
+        opacity: 0.45;
+      }
+
+      .pv-line--short {
+        width: 60%;
+      }
+
+      .pv-button {
+        display: block;
+        margin-top: 4px;
+        padding: 5px var(--pv-button-pad-right, 8px) 5px 8px;
+        background-color: var(--pv-primary);
+        background-image: var(--pv-primary-image);
+        color: var(--pv-primary-fg);
+        border-radius: var(--pv-button-radius);
+        font-family: var(--pv-font-body), system-ui, sans-serif;
+        font-weight: var(--pv-button-weight);
+        text-transform: var(--pv-button-transform);
+        font-size: 0.75rem;
+        line-height: 1.2;
+        text-align: center;
       }
 
       .option-content {
-        flex: 1;
-        min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-xs, 4px);
+        gap: 4px;
+        min-width: 0;
+        padding: 0 4px;
       }
 
       .option-name {
         display: flex;
         align-items: center;
-        gap: var(--spacing-xs, 8px);
+        flex-wrap: wrap;
+        gap: 6px;
         font-family: var(--font-heading, system-ui, sans-serif);
         font-size: 0.9375rem;
-        font-weight: 600;
-        color: var(--foreground, #171717);
+        font-weight: 700;
+      }
+
+      .option-title {
         overflow-wrap: anywhere;
       }
 
-      .classic-badge {
-        font-size: 0.625rem;
-        padding: 2px 6px;
-        background: var(--primary);
-        color: var(--primary-foreground, #ffffff);
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 8px;
+        border: 1px solid currentColor;
         border-radius: 9999px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        font-family: var(--font-body, system-ui, sans-serif);
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+      }
+
+      .tag--current {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: var(--primary-foreground, #ffffff);
       }
 
       .option-description {
-        font-size: 0.75rem;
-        color: var(--muted, #737373);
+        font-size: 0.8125rem;
         line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        overflow-wrap: anywhere;
-      }
-
-      .option-meta {
-        display: flex;
-        gap: var(--spacing-xs, 8px);
-        margin-top: var(--spacing-xs, 4px);
-      }
-
-      .meta-tag {
-        font-size: 0.6875rem;
-        padding: 2px 6px;
-        background: var(--background-elevated, #f3f4f6);
-        color: var(--foreground-secondary, #6b7280);
-        border-radius: var(--border-radius-sm, 4px);
-        text-transform: capitalize;
-        font-family: var(--font-mono, monospace);
+        color: var(--foreground-secondary, var(--foreground, #404040));
+        opacity: 0.9;
       }
 
       .overlay-footer {
-        padding: var(--spacing-sm, 12px) var(--spacing-md, 16px);
+        padding: 10px var(--spacing-lg, 24px);
         border-top: 1px solid var(--border, #e5e7eb);
-        background: var(--background-elevated, #fafafa);
         flex-shrink: 0;
       }
 
       .hint {
         margin: 0;
         font-size: 0.75rem;
-        color: var(--muted, #737373);
+        color: var(--foreground-secondary, var(--foreground, #404040));
         text-align: center;
-        font-style: italic;
       }
 
-      /* Scrollbar styling */
-      .overlay-content::-webkit-scrollbar {
-        width: 8px;
+      @media (max-width: 520px) {
+        .overlay-content {
+          padding: 12px;
+        }
+        .personality-options {
+          grid-template-columns: 1fr;
+        }
       }
 
-      .overlay-content::-webkit-scrollbar-track {
-        background: var(--background-elevated, #f3f4f6);
-        border-radius: var(--border-radius-sm, 4px);
-      }
-
-      .overlay-content::-webkit-scrollbar-thumb {
-        background: var(--border, #d1d5db);
-        border-radius: var(--border-radius-sm, 4px);
-
-        &:hover {
-          background: var(--muted, #9ca3af);
+      @media (prefers-reduced-motion: reduce) {
+        .personality-option {
+          transition: none;
+        }
+        .personality-option:hover {
+          transform: none;
         }
       }
     `,
@@ -426,8 +533,12 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
 
   groupedPersonalities: GroupedPersonality[] = [];
   currentPrimaryColor = '#3f51b5';
+  mode: PersonalityPreviewMode = 'light';
 
   private destroy$ = new Subject<void>();
+  private varsCache = new Map<string, Record<string, string>>();
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private fonts = inject(FontLoadingService, { optional: true });
 
   constructor(private themeService: ThemeService) {}
 
@@ -452,13 +563,21 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
         }
       });
 
-    // Subscribe to primary color changes
     this.themeService.generatedTheme$
       .pipe(takeUntil(this.destroy$))
       .subscribe((theme) => {
         if (theme) {
           this.currentPrimaryColor = theme.config.primaryColor;
+          this.varsCache.clear();
         }
+      });
+
+    this.themeService
+      .theme$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((mode) => {
+        this.mode = mode === 'dark' ? 'dark' : 'light';
+        this.varsCache.clear();
       });
   }
 
@@ -467,47 +586,79 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * Generate preview color for personality based on current primary color
-   */
-  getPreviewColor(
-    personality: Personality,
-    type: 'background' | 'foreground'
-  ): string {
-    const colors = getPersonalityPreviewColors(
-      personality,
-      this.currentPrimaryColor
-    );
-    return type === 'background' ? colors.light[0] : colors.light[1];
+  /** CSS variables for one card's preview, in that personality's own look. */
+  previewVars(personality: Personality): Record<string, string> {
+    let vars = this.varsCache.get(personality.id);
+    if (!vars) {
+      vars = buildPersonalityPreviewVars(
+        personality,
+        this.mode,
+        this.currentPrimaryColor
+      );
+      this.varsCache.set(personality.id, vars);
+    }
+    return vars;
   }
 
   getPersonalityIcon(personality: Personality): IconName {
-    const icons: Record<string, IconName> = {
-      classic: 'home',
-      minimal: 'remove',
-      bold: 'flame',
-      soft: 'heart',
-      professional: 'work',
-      playful: 'star',
-      elegant: 'star',
-      architect: 'view-quilt',
-      'soft-touch': 'favorite',
-      electric: 'flame',
-      'control-center': 'settings-applications',
-      foundation: 'shield',
-    };
+    return personalityIcon(personality);
+  }
 
-    return icons[personality.id] ?? 'extension';
+  isSelected(personality: Personality): boolean {
+    return personality.id === this.currentPersonality?.id;
+  }
+
+  /** Roving tabindex: the selected card (or the first) is the tab stop. */
+  tabIndexFor(personality: Personality): number {
+    const all = this.personalities;
+    const anchor = all.some((p) => this.isSelected(p))
+      ? this.currentPersonality?.id
+      : all[0]?.id;
+    return personality.id === anchor ? 0 : -1;
+  }
+
+  onCardKeydown(event: KeyboardEvent, personality: Personality): void {
+    const flat = this.groupedPersonalities.flatMap((g) => g.personalities);
+    const index = flat.findIndex((p) => p.id === personality.id);
+    const cards = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLElement>(
+        '.personality-option'
+      )
+    );
+    const cols = Math.max(
+      1,
+      getComputedStyle(
+        cards[index]?.parentElement ?? document.body
+      ).gridTemplateColumns.split(' ').length
+    );
+    const step: Record<string, number> = {
+      ArrowRight: 1,
+      ArrowLeft: -1,
+      ArrowDown: cols,
+      ArrowUp: -cols,
+    };
+    let next = -1;
+    if (event.key in step) {
+      next = Math.min(flat.length - 1, Math.max(0, index + step[event.key]));
+    } else if (event.key === 'Home') {
+      next = 0;
+    } else if (event.key === 'End') {
+      next = flat.length - 1;
+    }
+    if (next < 0) return;
+    event.preventDefault();
+    const target = cards[next];
+    cards.forEach((c, i) =>
+      c.setAttribute('tabindex', i === next ? '0' : '-1')
+    );
+    target?.focus();
   }
 
   private groupPersonalities(): void {
     const groups: Record<string, Personality[]> = {};
 
     for (const personality of this.personalities) {
-      if (!groups[personality.category]) {
-        groups[personality.category] = [];
-      }
-      groups[personality.category].push(personality);
+      (groups[personality.category] ??= []).push(personality);
     }
 
     this.groupedPersonalities = Object.entries(groups).map(
@@ -516,6 +667,15 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
         personalities,
       })
     );
+    this.loadFonts();
+  }
+
+  /** Load each personality's fonts so previews render in them; failures fall back. */
+  private loadFonts(): void {
+    if (!this.fonts) return;
+    for (const personality of this.personalities) {
+      void this.fonts.loadPersonalityFonts(personality).catch(() => undefined);
+    }
   }
 
   selectPersonality(personality: Personality): void {

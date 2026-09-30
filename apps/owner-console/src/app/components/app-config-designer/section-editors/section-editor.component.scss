@@ -51,7 +51,10 @@
 
   &:hover {
     background-color: var(--accent-light, var(--surface, var(--background)));
-    color: var(--accent, color-mix(in oklab, var(--primary) 90%, black));
+    color: var(
+      --accent,
+      color-mix(in oklab, var(--primary-text, var(--primary)) 90%, black)
+    );
   }
 
   mat-icon {
@@ -162,7 +165,10 @@
 
   &:hover {
     background: var(--accent-light, var(--surface, var(--background)));
-    color: var(--accent, color-mix(in oklab, var(--primary) 90%, black));
+    color: var(
+      --accent,
+      color-mix(in oklab, var(--primary-text, var(--primary)) 90%, black)
+    );
   }
 
   &.danger:hover {

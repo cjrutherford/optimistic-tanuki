@@ -1,12 +1,14 @@
+<lib-personality-backdrop />
+
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-glass-fog
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
+    fallbackScene="glass-fog"
     [density]="5"
     [speed]="0.22"
     [intensity]="0.4"
-  ></otui-glass-fog>
+  ></otui-personality-scene>
 </div>
 }
 

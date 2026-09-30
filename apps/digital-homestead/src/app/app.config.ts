@@ -1,6 +1,8 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   inject,
+  Injector,
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -55,9 +57,12 @@ class AppScopeInterceptor implements HttpInterceptor {
 
 @Injectable()
 class HttpBearerAuthInterceptor implements HttpInterceptor {
-  private readonly authStateService = inject(AuthStateService);
+  // AuthStateService injects HttpClient, and HttpClient builds its chain from
+  // HTTP_INTERCEPTORS, so injecting it eagerly here is a cycle (NG0200).
+  // Resolve it on first request instead, once the chain exists.
+  private readonly injector = inject(Injector);
   intercept(req: HttpRequest<unknown>, next: HttpHandler) {
-    const token = this.authStateService.getToken();
+    const token = this.injector.get(AuthStateService).getToken();
     if (token) {
       const cloned = req.clone({
         setHeaders: { Authorization: `Bearer ${token}` },
@@ -71,6 +76,7 @@ class HttpBearerAuthInterceptor implements HttpInterceptor {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('digital-homestead'),
     provideClientHydration(withEventReplay()),
     provideZoneChangeDetection({ eventCoalescing: true }),

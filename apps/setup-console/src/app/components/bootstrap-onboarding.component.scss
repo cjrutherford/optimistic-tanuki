@@ -185,7 +185,7 @@
 .service-item-icon-fallback {
   display: grid;
   place-items: center;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-weight: 700;
 }
 

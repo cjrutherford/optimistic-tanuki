@@ -13,7 +13,7 @@
 
 .about-intro {
   margin: 0;
-  color: color-mix(in srgb, var(--foreground) 86%, white 14%);
+  color: var(--foreground);
   line-height: 1.65;
 }
 
@@ -25,7 +25,7 @@
   p {
     margin: 0;
     line-height: 1.65;
-    color: color-mix(in srgb, var(--foreground) 80%, white 20%);
+    color: var(--foreground);
   }
 }
 

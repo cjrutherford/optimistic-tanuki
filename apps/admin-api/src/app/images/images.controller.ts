@@ -9,21 +9,21 @@ import { OwnerAuthorizationGuard } from '../auth/owner-authorization.guard';
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
-  @Get('api/deployment/images')
+  @Get('deployment/images')
   @ApiOperation({ summary: 'Get image freshness information' })
   @ApiResponse({ status: 200, description: 'Image information returned' })
   getImages(): ImageInfo[] {
     return this.imagesService.getImages();
   }
 
-  @Get('api/deployment/images/refresh')
+  @Get('deployment/images/refresh')
   @ApiOperation({ summary: 'Force refresh image registry check' })
   @ApiResponse({ status: 200, description: 'Image information refreshed' })
   refreshImages(): ImageInfo[] {
     return this.imagesService.refreshImages();
   }
 
-  @Post('api/deployment/images/rollout')
+  @Post('deployment/images/rollout')
   @ApiOperation({ summary: 'Trigger rollout using specified tag' })
   @ApiResponse({ status: 200, description: 'Rollout triggered' })
   async rollout(@Body('tag') tag: string) {

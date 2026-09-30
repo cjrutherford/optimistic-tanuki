@@ -79,6 +79,7 @@
     "packages:publish": "node -e \"console.error('Public package publishing moved to the mirror repo.'); process.exit(1);\"",
     "catalog:check": "node scripts/validate-app-catalog.mjs",
     "check:no-personality-scss": "node tools/check-no-personality-scss.mjs",
+    "check:personality-audit": "node tools/personality-audit.mjs check tools/personality-audit.baseline.json",
     "docs:personalities": "node scripts/generate-personality-matrix.mjs --write"
   },
   "private": true,
@@ -148,7 +149,6 @@
     "@tiptap/starter-kit": "^3.31.2",
     "@types/eventsource": "^1.1.15",
     "@types/leaflet": "^1.9.22",
-    "@types/three": "^0.183.1",
     "ag-grid-angular": "^35.3.1",
     "ag-grid-community": "^35.3.1",
     "axios": "^1.20.0",
@@ -197,7 +197,6 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
-    "three": "^0.185.1",
     "tslib": "^2.3.0",
     "turndown": "^7.2.0",
     "typeorm": "^0.3.31",

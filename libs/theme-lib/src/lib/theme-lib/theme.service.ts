@@ -27,6 +27,7 @@ import {
   getDefaultPersonality,
   getPersonalityById,
   generatePersonalityColors,
+  harmonyHueOptions,
   generatePerceptualShades,
   generateSemanticColors,
   ensureContrast,
@@ -47,6 +48,9 @@ import {
 import { FontLoadingService } from './font-loading.service';
 import { GradientFactory } from './gradient-factory';
 import { THEME_DEFAULTS } from './theme-defaults.token';
+import { PERSONALITY_EXTENSIONS_ENABLED } from './personality-extensions.token';
+import { resolveExtensionVariables } from './personality-extensions';
+import { resolveReadableText } from './readable-text';
 
 /**
  * Storage key for personality themes
@@ -291,6 +295,8 @@ export class ThemeService {
   // App-level defaults from `provideThemeDefaults()`; a saved user theme wins.
   private readonly defaults = inject(THEME_DEFAULTS, { optional: true });
   private appThemeVariables: Record<string, string> = {};
+  // Kill switch for the personality extension layer (see the token's docs).
+  private readonly extensionsEnabled = inject(PERSONALITY_EXTENSIONS_ENABLED);
 
   // Compatibility state
   private _theme!: 'light' | 'dark';
@@ -740,7 +746,8 @@ export class ThemeService {
       personality.colorHarmony.saturationBoost,
       personality.colorHarmony.lightnessShift,
       personality.colorHarmony.accentSaturation,
-      personality.colorHarmony.accentLightness
+      personality.colorHarmony.accentLightness,
+      harmonyHueOptions(personality.colorHarmony)
     );
 
     // Generate shades using personality's curve
@@ -900,7 +907,8 @@ export class ThemeService {
       themeColors.overlay,
       shadowTintRgb,
       shadowOpacity,
-      shadows
+      shadows,
+      config.primaryColor
     );
 
     // Build generated theme
@@ -937,7 +945,8 @@ export class ThemeService {
     overlay: string,
     shadowTintRgb: { r: number; g: number; b: number },
     shadowOpacity: number,
-    shadows: DesignTokens['shadows']
+    shadows: DesignTokens['shadows'],
+    primaryColor: string
   ): Record<string, string> {
     const variables: Record<string, string> = {};
 
@@ -1232,6 +1241,27 @@ export class ThemeService {
     variables['--shadow-inset'] =
       shadows?.inset ?? DEFAULT_DESIGN_TOKENS.shadows.inset;
 
+    // Personality extension layer (wiring, expression, type scale, atmosphere,
+    // motion). Runs after the base variables so it can re-derive them. Emits
+    // nothing until a personality opts in, and is skipped entirely when the
+    // app provides `PERSONALITY_EXTENSIONS_ENABLED` as false.
+    if (this.extensionsEnabled) {
+      Object.assign(
+        variables,
+        resolveExtensionVariables(
+          personality,
+          personality,
+          primaryColor,
+          mode,
+          variables
+        )
+      );
+    }
+
+    // Text drawn in the brand colour, and muted text, must read on the final
+    // page and surface (whatever ground the personality chose).
+    Object.assign(variables, resolveReadableText(variables));
+
     return variables;
   }
 
@@ -1371,6 +1401,24 @@ export class ThemeService {
     Object.entries(this.appThemeVariables).forEach(([property, value]) => {
       root.style.setProperty(property, value);
     });
+
+    // An app theme can replace the colours the readable-text tokens were
+    // derived from; derive them again from what is now on the root, keeping
+    // any the app sets itself.
+    const applied: Record<string, string> = {};
+    for (let i = 0; i < root.style.length; i++) {
+      const property = root.style.item(i);
+      if (property.startsWith('--')) {
+        applied[property] = root.style.getPropertyValue(property).trim();
+      }
+    }
+    Object.entries(resolveReadableText(applied)).forEach(
+      ([property, value]) => {
+        if (!(property in this.appThemeVariables)) {
+          root.style.setProperty(property, value);
+        }
+      }
+    );
   }
 
   private applyBodyPersonalityClass(personalityId: string): void {

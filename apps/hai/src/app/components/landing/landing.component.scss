@@ -204,7 +204,11 @@ h1 {
     --font-heading,
     var(--personality-font-family, Georgia, serif)
   );
-  color: color-mix(in srgb, var(--foreground) 92%, var(--primary));
+  color: color-mix(
+    in srgb,
+    var(--foreground) 92%,
+    var(--primary-text, var(--primary))
+  );
 }
 
 .lede {
@@ -240,8 +244,8 @@ h1 {
 }
 
 .hero-actions .cta.primary {
-  color: color-mix(in srgb, var(--background) 92%, white 8%);
-  background: var(--gradient-animated, var(--gradient-primary, var(--primary)));
+  color: var(--on-primary, var(--primary-foreground));
+  background: var(--primary);
   box-shadow: 0 20px 40px -18px color-mix(in srgb, var(--primary) 48%, transparent);
 }
 
@@ -306,7 +310,11 @@ h1 {
   font-family: var(--font-heading, var(--personality-font-family, serif));
   font-size: 1.35rem;
   line-height: 1.2;
-  color: color-mix(in srgb, var(--foreground) 92%, var(--primary));
+  color: color-mix(
+    in srgb,
+    var(--foreground) 92%,
+    var(--primary-text, var(--primary))
+  );
 }
 
 @media (max-width: 960px) {

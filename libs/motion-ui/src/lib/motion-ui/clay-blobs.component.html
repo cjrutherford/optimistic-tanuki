@@ -1,0 +1,17 @@
+<section
+  class="clay-blobs"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+>
+  <span
+    *ngFor="let blob of blobs"
+    [class]="'blob tone-' + blob.tone"
+    [style.left.%]="blob.left"
+    [style.top.%]="blob.top"
+    [style.--size]="blob.size + 'rem'"
+    [style.--index]="blob.index"
+  ></span>
+</section>

@@ -1,3 +1,4 @@
+import { provideScenePersonality } from '@optimistic-tanuki/motion-ui';
 import {
   ApplicationConfig,
   inject,
@@ -30,10 +31,14 @@ import { authenticationInterceptor } from './authentication.interceptor';
 import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { provideRouter, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
-import { provideProductTheme } from '@optimistic-tanuki/theme-lib';
+import {
+  provideProductTheme,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('forgeofwill'),
     provideClientHydration(withEventReplay()),
     provideHttpClient(

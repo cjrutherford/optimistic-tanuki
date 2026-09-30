@@ -1,3 +1,4 @@
+@use 'personality' as p;
 .pagination {
   display: flex;
   align-items: center;
@@ -22,29 +23,20 @@
   }
 
   .pagination-item otui-button {
-    &:focus-visible {
-      outline: 2px solid var(--primary);
-      outline-offset: 2px;
-    }
+    @include p.keyboard-focus-ring(var(--primary));
 
     &.active {
       background: var(--primary);
       color: var(--primary-foreground, #fff);
 
-      &:focus-visible {
-        outline: 2px solid var(--primary-foreground, #fff);
-        outline-offset: 2px;
-      }
+      @include p.keyboard-focus-ring(var(--primary-foreground, #fff));
     }
 
     &[disabled] {
       opacity: 0.6;
       cursor: not-allowed;
 
-      &:focus-visible {
-        outline: 2px solid var(--foreground);
-        outline-offset: 2px;
-      }
+      @include p.keyboard-focus-ring(var(--foreground));
     }
   }
 

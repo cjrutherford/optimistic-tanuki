@@ -1,12 +1,24 @@
+@use 'personality' as p;
+
 .section-heading {
   width: 90%;
   margin: 20px auto;
   padding: var(--section-heading-padding, 1.5rem 1.75rem);
-  background: var(--section-heading-background, var(--surface, transparent));
-  color: var(--section-heading-color, var(--foreground, inherit));
   border-radius: var(--section-heading-radius, var(--border-radius-md, 8px));
   box-shadow: 0 2px 10px
     color-mix(in oklab, var(--primary, transparent) 30%, transparent);
+  @include p.accent-band(
+    var(--section-heading-background, var(--surface, transparent))
+  );
+  // accent-band() defaults the text colour to inherit; keep today's.
+  & {
+    color: var(
+      --on-accent-ground,
+      var(--section-heading-color, var(--foreground, inherit))
+    );
+  }
+  // Entrance and ambient are listed together (see band-motion).
+  @include p.band-motion(0);
 
   &__eyebrow {
     margin: 0 0 0.25rem 0;
@@ -14,9 +26,14 @@
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    // On an accent band, only --on-accent-ground is guaranteed readable over
+    // every stop of the band's fill; the page's muted colour is not.
     color: var(
-      --muted-foreground,
-      color-mix(in oklab, currentColor 65%, transparent)
+      --on-accent-ground,
+      var(
+        --muted-foreground,
+        color-mix(in oklab, currentColor 65%, transparent)
+      )
     );
   }
 
@@ -31,9 +48,14 @@
     font-size: 1.25rem;
     font-weight: normal;
     margin: 0 0 0.5rem 0;
+    // On an accent band, --on-accent-ground itself (not a faded mix of it)
+    // is what is guaranteed readable over the band's fill.
     color: var(
       --section-heading-subtitle-color,
-      color-mix(in oklab, currentColor 80%, transparent)
+      var(
+        --on-accent-ground,
+        color-mix(in oklab, currentColor 80%, transparent)
+      )
     );
   }
 }

@@ -54,7 +54,14 @@ import {
       </section>
       } @else {
       <section class="panel">
+        @if (loadFailed()) {
+        <p role="alert">
+          Control-center status is unavailable right now. Check that the Admin
+          API is running, then reload.
+        </p>
+        } @else {
         <p>Loading control-center status…</p>
+        }
       </section>
       }
 
@@ -211,13 +218,15 @@ export class PublicControlCenterComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly status = signal<ControlCenterStatus | null>(null);
+  readonly loadFailed = signal(false);
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    this.controlCenter.getPublicStatus().subscribe((status) => {
-      this.status.set(status);
+    this.controlCenter.getPublicStatus().subscribe({
+      next: (status) => this.status.set(status),
+      error: () => this.loadFailed.set(true),
     });
   }
 }

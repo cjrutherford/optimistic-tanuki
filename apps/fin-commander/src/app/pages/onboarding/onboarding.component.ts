@@ -323,8 +323,8 @@ type SetupStep =
         letter-spacing: 0.14em;
         font-size: 0.66rem;
         font-weight: 700;
-        color: var(--primary);
-        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--on-primary, var(--primary-foreground));
+        background: var(--primary);
         border-radius: var(--fc-button-radius, 9999px);
         margin-bottom: 0.5rem;
       }

@@ -107,7 +107,7 @@ import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
 
       .hero-subtitle {
         font-size: 1.125rem;
-        color: rgba(var(--foreground-rgb, 232, 232, 236), 0.7);
+        color: var(--muted-foreground, var(--foreground));
         max-width: 540px;
         margin: 0 auto;
         line-height: 1.6;

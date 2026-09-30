@@ -12,7 +12,8 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AuthStateService } from './auth-state.service';
 import { Subscription, filter } from 'rxjs';
 import { NotificationBellComponent } from '@optimistic-tanuki/notification-ui';
-import { ParallaxGridWarpComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
+import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
@@ -21,7 +22,8 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     CommonModule,
     RouterModule,
     NotificationBellComponent,
-    ParallaxGridWarpComponent,
+    PersonalitySceneComponent,
+    PersonalityBackdropComponent,
     HaiAboutTagComponent,
     BugReportUiComponent,
   ],
@@ -55,18 +57,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
-  }
-
-  get reducedMotion(): boolean {
-    if (!this.isBrowser) {
-      return true;
-    }
-
-    if (typeof window.matchMedia !== 'function') {
-      return false;
-    }
-
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   get brandRoute(): string {

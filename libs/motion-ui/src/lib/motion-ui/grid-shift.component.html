@@ -1,0 +1,19 @@
+<section
+  class="grid-shift"
+  aria-hidden="true"
+  [class.is-fallback]="reducedMotion"
+  [style.height]="height"
+  [style.--scene-speed-input]="speed"
+  [style.--scene-intensity-input]="intensity"
+  [style.--row-count]="blocks.length"
+>
+  <div class="guides"></div>
+  <div
+    *ngFor="let block of blocks"
+    [class]="'block tone-' + block.tone"
+    [style.--start]="block.start"
+    [style.--span]="block.span"
+    [style.--row]="block.row"
+    [style.--shift]="block.shift"
+  ></div>
+</section>

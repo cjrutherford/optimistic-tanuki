@@ -1,12 +1,14 @@
+<lib-personality-backdrop />
+
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
-  <otui-particle-veil
-    [reducedMotion]="reducedMotion"
+  <otui-personality-scene
     height="100vh"
+    fallbackScene="particle-veil"
     [density]="18"
     [speed]="0.2"
     [intensity]="0.4"
-  ></otui-particle-veil>
+  ></otui-personality-scene>
 </div>
 }
 
