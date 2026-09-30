@@ -19,6 +19,7 @@ import { AuthStateService } from './state/auth-state.service';
 import { AuthenticationService } from './authentication.service';
 import { AuthInterceptor } from './http.interceptor';
 import { errorInterceptor } from './http.error-interceptor';
+import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { GlobalErrorHandler } from './global-error-handler';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import {
@@ -40,7 +41,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([AuthInterceptor, errorInterceptor]),
+      withInterceptors([
+        AuthInterceptor,
+        errorInterceptor,
+        bugReportTraceInterceptor,
+      ]),
       withFetch()
     ),
     {

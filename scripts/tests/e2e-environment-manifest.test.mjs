@@ -55,6 +55,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'chat-collector',
     'forum',
     'telos-docs-service',
+    'bug-report',
     'oauth-provider',
     'gateway',
     'client-interface',
@@ -106,10 +107,10 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     resolveE2eServices(entry).join(',')
   );
   assert.equal(new Set(uiServiceSets).size, 9);
-  // client-interface is the largest closure at 14, since community creation
-  // provisions a workspace.
+  // client-interface is the largest closure at 15, since community creation
+  // provisions a workspace and the bug-report spec needs the bug-report service.
   assert.ok(
-    uiServiceSets.every((services) => services.split(',').length <= 14)
+    uiServiceSets.every((services) => services.split(',').length <= 15)
   );
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });

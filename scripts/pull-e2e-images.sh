@@ -103,8 +103,15 @@ declare -a PIDS=()
 while IFS=$'\t' read -r SHA_REF FALLBACK_REF; do
   [ -n "$SHA_REF" ] || continue
 
+  # `wait -n` reports the exit of whichever job finished, and a failed pull
+  # is a normal, collect-later outcome here — the PIDS loop below gathers
+  # per-slot results and exits non-zero with the culprit named. Without
+  # `|| true`, `set -e` would kill the main shell on the first failed pull:
+  # the EXIT trap would then delete $WORK_DIR while sibling jobs still run,
+  # producing "$WORK_DIR/N.log: No such file or directory" noise and hiding
+  # which image was actually missing (observed in CI).
   while [ "$(jobs -rp | wc -l)" -ge "$MAX_PARALLEL" ]; do
-    wait -n
+    wait -n || true
   done
 
   resolve_one "$SHA_REF" "$FALLBACK_REF" "$SLOT" &

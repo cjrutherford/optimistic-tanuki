@@ -162,8 +162,8 @@ const MICROSERVICE_ENTRIES = [
     suiteKind: 'microservice',
     baseUrl: 'http://127.0.0.1:3005',
     port: 3005,
-    backendDependencies: ['db', 'db-setup'],
-    imageBudget: 3,
+    backendDependencies: ['db', 'db-setup', 'clamav'],
+    imageBudget: 4,
     readinessUrl: null,
   }),
   sharedEntry({
@@ -319,6 +319,7 @@ const UI_ENVIRONMENTS = [
       'chat-collector',
       'forum',
       'telos-docs-service',
+      'bug-report',
       'oauth-provider',
       'gateway',
     ],

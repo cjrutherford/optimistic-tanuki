@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter, Router } from '@angular/router';
 import { AppComponent } from './app.component';
@@ -49,6 +50,7 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
         provideRouter([
           { path: '', component: HomeRedirectComponent },
           { path: 'dashboard', component: DashboardComponent },

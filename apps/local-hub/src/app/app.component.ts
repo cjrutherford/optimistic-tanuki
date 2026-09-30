@@ -23,6 +23,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
 import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
   selector: 'app-root',
@@ -38,6 +39,7 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
     HaiAboutTagComponent,
     MessageComponent,
     ParticleVeilComponent,
+    BugReportUiComponent,
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {

@@ -14,6 +14,7 @@ import { Subscription, filter } from 'rxjs';
 import { NotificationBellComponent } from '@optimistic-tanuki/notification-ui';
 import { ParallaxGridWarpComponent } from '@optimistic-tanuki/motion-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
   imports: [
@@ -22,6 +23,7 @@ import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
     NotificationBellComponent,
     ParallaxGridWarpComponent,
     HaiAboutTagComponent,
+    BugReportUiComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',

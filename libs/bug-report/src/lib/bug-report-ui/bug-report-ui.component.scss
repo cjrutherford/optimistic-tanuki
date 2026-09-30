@@ -1,0 +1,168 @@
+@use 'personality' as p;
+
+// Floating bug-report button + dialog. Theme-aware via the workspace theme
+// tokens (--background/--foreground/--primary/--accent/--muted) with sane
+// fallbacks, personality-aware via the `personality` mixins (shadows,
+// motion, texture, focus). The default position stacks ABOVE the persistent
+// bottom-right chat cluster (client-interface's chat FAB occupies
+// bottom:24px/right:24px at ~48px tall) so it never covers existing UI.
+
+.bug-fab {
+  position: fixed;
+  right: 24px;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent, var(--primary));
+  color: var(--background);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  cursor: pointer;
+  z-index: var(--z-index-dropdown, 1000);
+  @include p.shadow('md');
+  @include p.personality-transition((transform, box-shadow));
+
+  &:hover {
+    transform: translateY(-2px);
+    @include p.shadow('lg');
+  }
+
+  &:focus-visible {
+    outline: none;
+    @include p.focus-ring();
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Explicit corners for apps whose layout collides with the default.
+.bug-fab.bug-pos-bottom-right {
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.bug-fab.bug-pos-bottom-left {
+  right: auto;
+  left: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.bug-fab.bug-pos-top-right {
+  bottom: auto;
+  top: 24px;
+}
+.bug-fab.bug-pos-top-left {
+  bottom: auto;
+  right: auto;
+  top: 24px;
+  left: 24px;
+}
+
+.bug-dialog {
+  position: fixed;
+  right: 24px;
+  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  width: min(320px, calc(100vw - 32px));
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  border-radius: var(--border-radius-lg, 8px);
+  padding: 12px;
+  z-index: var(--z-index-modal, 1050);
+  @include p.shadow('lg');
+  @include p.surface-texture();
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: color-mix(in srgb, var(--foreground) 4%, var(--background));
+    color: var(--foreground);
+    border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+    border-radius: var(--border-radius-md, 6px);
+    padding: 8px;
+    font: inherit;
+
+    &:focus-visible {
+      outline: none;
+      @include p.focus-ring();
+    }
+  }
+
+  &.bug-pos-bottom-left {
+    right: auto;
+    left: 24px;
+  }
+
+  &.bug-pos-top-right,
+  &.bug-pos-top-left {
+    bottom: auto;
+    top: 76px;
+  }
+
+  &.bug-pos-top-left {
+    right: auto;
+    left: 24px;
+  }
+}
+
+.bug-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.bug-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.bug-error {
+  color: var(--error);
+}
+
+.bug-ok {
+  color: var(--success);
+}
+
+.bug-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: var(--border-radius-md, 6px);
+    padding: 6px 12px;
+    @include p.personality-transition((transform, box-shadow));
+
+    &:focus-visible {
+      outline: none;
+      @include p.focus-ring();
+    }
+  }
+
+  .bug-cancel {
+    background: transparent;
+    color: var(--foreground);
+    border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  }
+
+  .bug-send {
+    background: var(--accent, var(--primary));
+    color: var(--background);
+    border: 1px solid transparent;
+    @include p.shadow('sm');
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      @include p.shadow('md');
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}

@@ -2,6 +2,7 @@ import {
   PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import * as net from 'net';
 
 import { VirusScanService } from './virus-scan.service';
@@ -76,6 +77,18 @@ describe('VirusScanService', () => {
       await activeServer.close();
       activeServer = null;
     }
+  });
+
+  describe('nest dependency injection', () => {
+    it('resolves through the injector with no options provider (assets boot regression)', async () => {
+      const moduleRef = await Test.createTestingModule({
+        providers: [VirusScanService],
+      }).compile();
+      const service = moduleRef.get(VirusScanService);
+      expect(service).toBeInstanceOf(VirusScanService);
+      expect(service.isConfigured()).toBe(false);
+      await moduleRef.close();
+    });
   });
 
   describe('unconfigured', () => {

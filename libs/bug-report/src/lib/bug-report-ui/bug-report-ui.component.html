@@ -1,0 +1,45 @@
+<button
+  type="button"
+  class="bug-fab"
+  [ngClass]="'bug-pos-' + position()"
+  (click)="toggle()"
+  aria-label="Report a bug"
+>
+  🐞
+</button>
+@if (open()) {
+<div
+  class="bug-dialog"
+  [ngClass]="'bug-pos-' + position()"
+  role="dialog"
+  aria-label="Report a bug"
+>
+  <h3 class="bug-title">Report a bug</h3>
+  <p class="bug-hint">
+    A screenshot and recent browser logs are attached automatically.
+  </p>
+  <textarea
+    rows="4"
+    placeholder="What went wrong?"
+    [ngModel]="description()"
+    (ngModelChange)="description.set($event)"
+    [disabled]="sending()"
+  ></textarea>
+  @if (error()) {
+  <p class="bug-error">{{ error() }}</p>
+  } @if (result()) {
+  <p class="bug-ok">{{ result() }}</p>
+  }
+  <div class="bug-actions">
+    <button type="button" class="bug-cancel" (click)="toggle()">Cancel</button>
+    <button
+      type="button"
+      class="bug-send"
+      (click)="submit()"
+      [disabled]="sending() || !description().trim()"
+    >
+      {{ sending() ? 'Sending…' : 'Send report' }}
+    </button>
+  </div>
+</div>
+}

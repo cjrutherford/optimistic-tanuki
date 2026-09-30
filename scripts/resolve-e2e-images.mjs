@@ -28,7 +28,7 @@ export const LOCALLY_BUILT = new Set([
   'oauth-provider',
 ]);
 /** Third-party images keep their published tag instead of receiving a CI SHA. */
-export const FIXED_IMAGES = new Set(['learning-runner-relay']);
+export const FIXED_IMAGES = new Set(['learning-runner-relay', 'clamav']);
 
 /**
  * Splits an image reference into its repository and tag.

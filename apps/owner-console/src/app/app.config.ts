@@ -14,6 +14,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideClientHydration } from '@angular/platform-browser';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { AuthService } from './services/auth.service';
 import { firstValueFrom } from 'rxjs';
@@ -33,7 +34,10 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([authInterceptor, bugReportTraceInterceptor])
+    ),
     {
       provide: API_BASE_URL,
       useValue: '/api',
