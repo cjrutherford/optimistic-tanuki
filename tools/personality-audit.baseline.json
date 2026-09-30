@@ -449,6 +449,12 @@
     "letter-spacing": 1,
     "line-height": 1
   },
+  "apps/christopherrutherford-net/src/landing/systems-lab/systems-lab.component.scss": {
+    "font-size": 12,
+    "letter-spacing": 3,
+    "line-height": 8,
+    "border-radius": 3
+  },
   "apps/christopherrutherford-net/src/landing/title-bar/title-bar.component.scss": {
     "font-size": 1,
     "border-radius": 1
@@ -653,6 +659,13 @@
     "font-size": 3,
     "box-shadow": 1
   },
+  "apps/hai/src/app/components/hardware-catalog/hardware-catalog.component.scss": {
+    "letter-spacing": 5,
+    "font-size": 11,
+    "line-height": 5,
+    "border-radius": 3,
+    "box-shadow": 2
+  },
   "apps/hai/src/app/components/landing/contact-section.component.scss": {
     "letter-spacing": 1,
     "font-size": 1,
@@ -669,10 +682,10 @@
     "line-height": 3
   },
   "apps/hai/src/app/components/landing/landing.component.scss": {
-    "letter-spacing": 2,
-    "font-size": 4,
-    "line-height": 3,
-    "box-shadow": 1
+    "box-shadow": 3,
+    "font-size": 5,
+    "letter-spacing": 3,
+    "line-height": 4
   },
   "apps/hai/src/app/components/landing/manifesto-section.component.scss": {
     "letter-spacing": 1,
@@ -695,6 +708,19 @@
     "font-size": 3,
     "line-height": 2,
     "border-radius": 1
+  },
+  "apps/hai/src/app/components/solutions-matrix/solutions-matrix.component.scss": {
+    "letter-spacing": 4,
+    "font-size": 18,
+    "line-height": 7,
+    "border-radius": 4,
+    "box-shadow": 3
+  },
+  "apps/hai/src/app/components/title-bar/title-bar.component.scss": {
+    "border-radius": 1,
+    "font-size": 4,
+    "letter-spacing": 2,
+    "box-shadow": 2
   },
   "apps/leads-app/src/app/app.component.scss": {
     "font-size": 6,
@@ -739,7 +765,7 @@
   },
   "apps/local-hub/src/app/pages/account/account.component.scss": {
     "border-radius": 5,
-    "font-size": 11,
+    "font-size": 12,
     "letter-spacing": 1,
     "line-height": 1
   },
@@ -789,6 +815,11 @@
     "border-radius": 16,
     "line-height": 7,
     "box-shadow": 7
+  },
+  "apps/local-hub/src/app/pages/profile/profile.component.scss": {
+    "font-size": 7,
+    "border-radius": 3,
+    "line-height": 1
   },
   "apps/local-hub/src/styles.scss": {
     "border-radius": 1
@@ -843,6 +874,13 @@
     "letter-spacing": 2,
     "line-height": 1
   },
+  "apps/owner-console/src/app/components/whitebox-tenant-management/whitebox-tenant-management.component.scss": {
+    "font-size": 20,
+    "letter-spacing": 1,
+    "line-height": 1,
+    "border-radius": 10,
+    "box-shadow": 1
+  },
   "apps/owner-console/src/styles.scss": {
     "border-radius": 1,
     "box-shadow": 1
@@ -886,5 +924,74 @@
   },
   "apps/video-client/src/styles.scss": {
     "border-radius": 1
+  },
+  "apps/whitebox-civic-core/src/app/app.component.scss": {
+    "border-radius": 1,
+    "font-size": 1
+  },
+  "apps/whitebox-field-flow/src/app/components/auth/login.component.scss": {
+    "font-size": 5,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/whitebox-field-flow/src/app/components/auth/register.component.scss": {
+    "font-size": 5,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/whitebox-field-flow/src/app/components/book/book.component.scss": {
+    "font-size": 12,
+    "letter-spacing": 2,
+    "line-height": 2,
+    "border-radius": 6,
+    "box-shadow": 1
+  },
+  "apps/whitebox-field-flow/src/app/components/demo/demo.component.scss": {
+    "font-size": 12,
+    "letter-spacing": 3,
+    "line-height": 4,
+    "box-shadow": 1,
+    "border-radius": 2
+  },
+  "apps/whitebox-field-flow/src/app/components/deposit/deposit.component.scss": {
+    "font-size": 13,
+    "letter-spacing": 2,
+    "line-height": 3,
+    "border-radius": 4
+  },
+  "apps/whitebox-field-flow/src/app/components/estimate/estimate.component.scss": {
+    "font-size": 18,
+    "letter-spacing": 2,
+    "line-height": 3,
+    "border-radius": 4,
+    "box-shadow": 2
+  },
+  "apps/whitebox-field-flow/src/app/components/header/header.component.scss": {
+    "border-radius": 11,
+    "box-shadow": 3,
+    "font-size": 7,
+    "letter-spacing": 1
+  },
+  "apps/whitebox-field-flow/src/app/components/status/status.component.scss": {
+    "font-size": 12,
+    "letter-spacing": 1,
+    "line-height": 2,
+    "box-shadow": 1,
+    "border-radius": 2
+  },
+  "apps/whitebox-field-flow/src/styles.scss": {
+    "font-family": 1,
+    "font-size": 2,
+    "line-height": 1,
+    "border-radius": 1,
+    "box-shadow": 1
+  },
+  "apps/whitebox-practice-vault/src/app/app.component.scss": {
+    "font-size": 3,
+    "line-height": 1,
+    "border-radius": 1
+  },
+  "apps/whitebox-project-nexus/src/app/app.component.scss": {
+    "font-size": 2
   }
 }
