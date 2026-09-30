@@ -151,9 +151,58 @@ export function isTrustProxyEnabled(
   return raw !== 'false' && raw !== '0' && raw !== 'no' && raw !== 'off';
 }
 
+/**
+ * Proxy headers Angular allows when `trustProxyHeaders` is a plain boolean.
+ * nginx (`swag`) also emits `x-forwarded-ssl`, `x-forwarded-server`,
+ * `x-forwarded-uri` and `x-forwarded-method`; when any unlisted
+ * `x-forwarded-*` header is present Angular strips it and degrades the response
+ * to client-side rendering, so the trusted set is listed explicitly here.
+ */
+export const SSR_TRUSTED_PROXY_HEADERS: readonly string[] = [
+  'x-forwarded-for',
+  'x-forwarded-host',
+  'x-forwarded-port',
+  'x-forwarded-prefix',
+  'x-forwarded-proto',
+  'x-forwarded-server',
+  'x-forwarded-ssl',
+  'x-forwarded-uri',
+  'x-forwarded-method',
+];
+
 export interface SsrEngineOptions {
   allowedHosts: string[];
-  trustProxyHeaders: boolean;
+  trustProxyHeaders: boolean | string[];
+}
+
+/** Minimal structural type so this lib stays free of an Express dependency. */
+export interface SsrTrustProxyApp {
+  set(key: string, value: unknown): unknown;
+}
+
+/**
+ * Configure an Express app for Angular SSR behind a reverse proxy and return
+ * the engine options to pass to `CommonEngine` / `AngularNodeAppEngine`.
+ *
+ * ```ts
+ * const ssrOptions = applySsrProxyTrust(app);
+ * const angularApp = new AngularNodeAppEngine(ssrOptions as never);
+ * ```
+ *
+ * Trusting `x-forwarded-*` keeps `req.protocol`/`req.hostname` accurate behind
+ * nginx, and the derived `allowedHosts` list stops Angular from rejecting the
+ * public hostname (or from stripping the forwarded headers as CSRF bait).
+ */
+export function applySsrProxyTrust(
+  app: SsrTrustProxyApp,
+  env: NodeJS.ProcessEnv = process.env,
+  options: SsrAllowedHostsOptions = {}
+): SsrEngineOptions {
+  const engineOptions = getSsrEngineOptions(env, options);
+  // Express `trust proxy` takes a boolean/IP list (not header names), so it is
+  // derived from `SSR_TRUST_PROXY` directly rather than the header allow-list.
+  app.set('trust proxy', isTrustProxyEnabled(env));
+  return engineOptions;
 }
 
 /**
@@ -165,8 +214,9 @@ export function getSsrEngineOptions(
   env: NodeJS.ProcessEnv = process.env,
   options: SsrAllowedHostsOptions = {}
 ): SsrEngineOptions {
+  const trustProxy = isTrustProxyEnabled(env);
   return {
     allowedHosts: getSsrAllowedHosts(env, options),
-    trustProxyHeaders: isTrustProxyEnabled(env),
+    trustProxyHeaders: trustProxy ? [...SSR_TRUSTED_PROXY_HEADERS] : false,
   };
 }

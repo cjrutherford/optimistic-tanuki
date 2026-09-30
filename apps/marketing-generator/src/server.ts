@@ -15,12 +15,15 @@ import {
 } from './app/services/marketing-enrichment.server';
 import { CampaignConcept, GenerationRequest } from './app/types';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
+import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 const app = express();
+// Trust nginx `x-forwarded-*` headers so SSR sees the public scheme/host.
+const ssrOptions = applySsrProxyTrust(app);
 app.use(oauthCallbackReferrerPolicy);
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 startNodeRuntimeMonitoring({
   appId: 'marketing-generator',

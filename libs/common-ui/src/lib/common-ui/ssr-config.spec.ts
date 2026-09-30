@@ -1,10 +1,12 @@
 import {
+  applySsrProxyTrust,
   getSsrAllowedHosts,
   getSsrEngineOptions,
   hostnameFromBaseUrl,
   isTrustProxyEnabled,
   matchesAllowedHost,
   parseAllowedHostsList,
+  SSR_TRUSTED_PROXY_HEADERS,
 } from './ssr-config';
 
 describe('parseAllowedHostsList', () => {
@@ -148,7 +150,56 @@ describe('getSsrEngineOptions', () => {
       } as NodeJS.ProcessEnv)
     ).toEqual({
       allowedHosts: ['example.com', 'localhost', '127.0.0.1'],
-      trustProxyHeaders: true,
+      trustProxyHeaders: [...SSR_TRUSTED_PROXY_HEADERS],
     });
+  });
+
+  it('disables every proxy header when trust is opted out', () => {
+    expect(
+      getSsrEngineOptions({ SSR_TRUST_PROXY: 'false' } as NodeJS.ProcessEnv)
+        .trustProxyHeaders
+    ).toBe(false);
+  });
+
+  it('trusts the x-forwarded-ssl family nginx emits', () => {
+    const { trustProxyHeaders } = getSsrEngineOptions({} as NodeJS.ProcessEnv);
+    for (const header of [
+      'x-forwarded-ssl',
+      'x-forwarded-server',
+      'x-forwarded-uri',
+      'x-forwarded-method',
+      'x-forwarded-host',
+      'x-forwarded-proto',
+      'x-forwarded-port',
+      'x-forwarded-for',
+    ]) {
+      expect(trustProxyHeaders as string[]).toContain(header);
+    }
+  });
+});
+
+describe('applySsrProxyTrust', () => {
+  it('configures express trust proxy and returns engine options', () => {
+    const set = jest.fn();
+    const options = applySsrProxyTrust({ set }, {
+      SSR_ALLOWED_HOSTS: 'example.com',
+      SSR_TRUST_PROXY: 'true',
+    } as NodeJS.ProcessEnv);
+
+    expect(set).toHaveBeenCalledWith('trust proxy', true);
+    expect(options.allowedHosts).toEqual([
+      'example.com',
+      'localhost',
+      '127.0.0.1',
+    ]);
+  });
+
+  it('opts express out of proxy trust when disabled', () => {
+    const set = jest.fn();
+    applySsrProxyTrust({ set }, {
+      SSR_TRUST_PROXY: 'false',
+    } as NodeJS.ProcessEnv);
+
+    expect(set).toHaveBeenCalledWith('trust proxy', false);
   });
 });

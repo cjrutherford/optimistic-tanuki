@@ -7,12 +7,15 @@ import {
 import express from 'express';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Trust nginx `x-forwarded-*` headers so SSR sees the public scheme/host.
+const ssrOptions = applySsrProxyTrust(app);
+const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 
 /**
  * Example Express Rest API endpoints can be defined here.

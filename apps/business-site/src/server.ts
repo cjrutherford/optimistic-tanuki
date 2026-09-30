@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { isEvaluatorGuideEnabled } from './server-evaluator-guide';
 import { shouldPreserveClientOrigin } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
+import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -21,8 +22,10 @@ const evaluatorGuidePath = resolve(
     '/app/docs/guides/business-site-evaluator-guide.html'
 );
 const app = express();
+// Trust nginx `x-forwarded-*` headers so SSR sees the public scheme/host.
+const ssrOptions = applySsrProxyTrust(app);
 app.use(oauthCallbackReferrerPolicy);
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayOrigin = new URL(gatewayUrl).origin;
 const gatewayHost = new URL(gatewayUrl).host;

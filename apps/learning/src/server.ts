@@ -10,13 +10,16 @@ import { fileURLToPath } from 'node:url';
 import { configureBrowserServerRoutes } from './browser-server-routing';
 import { createGatewayProxy } from './server-proxy';
 import { applyPublicAppSecurityHeaders } from './server-security';
+import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 const browserIndexPath = resolve(browserDistFolder, 'index.csr.html');
 const serverStartedAt = Date.now();
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Trust nginx `x-forwarded-*` headers so SSR sees the public scheme/host.
+const ssrOptions = applySsrProxyTrust(app);
+const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 
 app.use(applyPublicAppSecurityHeaders);
