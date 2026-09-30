@@ -177,6 +177,8 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_assets
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
     depends_on:
       db:
         condition: service_healthy
@@ -325,6 +327,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+
+  clamav:
+    # Real ClamAV daemon: the platform scans uploads fail-closed, so e2e
+    # exercises the genuine scan path instead of a stub.
+    image: clamav/clamav:stable
+    ports:
+      - '3310:3310'
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 10s
+      timeout: 5s
+      retries: 30
 
   telos-docs-service:
     image: cjrutherford/optimistic_tanuki_telos-docs-service:${E2E_IMAGE_TAG:-latest}

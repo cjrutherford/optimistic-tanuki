@@ -301,7 +301,7 @@ test('resolves a manifest target to its compose files, dependency closure, and t
   );
   assert.deepEqual(resolveReadinessOptions({ target: 'assets-e2e' }), {
     composeFiles: ['e2e/docker-compose.e2e-stack.yaml'],
-    requiredServices: ['db', 'db-setup', 'assets'],
+    requiredServices: ['db', 'db-setup', 'clamav', 'assets'],
     requiredUrls: [],
     completedServices: ['db-setup'],
   });
