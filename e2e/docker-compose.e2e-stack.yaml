@@ -179,6 +179,10 @@ services:
       DATABASE_NAME: ot_assets
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
+      # Test-only envelope key (mirrors the e2e JWT_SECRET precedent).
+      # Production MUST inject a real high-entropy value; see .env.sample.
+      VAULT_STORAGE_KEK: e2e-test-vault-kek-do-not-use-in-production
+      VAULT_STORAGE_KEK_ID: e2e-test
     depends_on:
       db:
         condition: service_healthy

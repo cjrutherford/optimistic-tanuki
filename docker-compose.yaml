@@ -733,6 +733,8 @@ services:
       ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
       CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      VAULT_STORAGE_KEK_ID: ${VAULT_STORAGE_KEK_ID:-}
     depends_on:
       postgres:
         condition: service_healthy
