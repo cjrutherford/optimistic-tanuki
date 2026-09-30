@@ -25,7 +25,7 @@ import {
   ConsoleEmailProvider,
   SmtpEmailProvider,
 } from '@optimistic-tanuki/email';
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
 import { ProjectInviteMailer } from '../controllers/project-planning/project-invite.mailer';
@@ -478,6 +478,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       useFactory: () => DEFAULT_NAVIGATION_LINKS,
     },
     AuthGuard,
+    Logger,
     SocketSessionAuthService,
     TenantResolverService,
     TenantContextGuard,
