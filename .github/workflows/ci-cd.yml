@@ -901,9 +901,17 @@ jobs:
   load_performance:
     name: Load Performance
     runs-on: ubuntu-24.04
-    needs: [plan, microservices_e2e, ui_e2e]
-    if: needs.plan.outputs.run_performance == 'true' && needs.microservices_e2e.result == 'success' && needs.ui_e2e.result == 'success'
+    # Load-tests the images this run built, so it waits for image_check and
+    # publish_images (and the e2e suites, which prove the stack starts) rather
+    # than racing them and pulling whatever the base branch last published.
+    needs: [plan, image_check, publish_images, microservices_e2e, ui_e2e]
+    if: ${{ !cancelled() && (needs.plan.outputs.run_performance == 'true' || github.event_name == 'pull_request') && needs.plan.outputs.run_e2e == 'true' && (needs.image_check.result == 'success' || needs.image_check.result == 'skipped') && (needs.publish_images.result == 'success' || needs.publish_images.result == 'skipped') && needs.microservices_e2e.result == 'success' && (needs.ui_e2e.result == 'success' || needs.ui_e2e.result == 'skipped') }}
     timeout-minutes: 30
+    env:
+      E2E_COMPOSE_PROJECT: ot-load-${{ github.run_id }}-${{ github.run_attempt }}
+      E2E_ALLOW_GITHUB_RUNNER_DOCKER_PRUNE: true
+      # The load test drives the gateway, so it starts the gateway-e2e stack.
+      LOAD_TARGET: gateway-e2e
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -920,29 +928,56 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build services
-        run: pnpm exec nx run-many -t build --configuration=production --parallel=3
+      - name: Log in to Docker Hub
+        if: needs.plan.outputs.publish_images == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Prepare runner Docker capacity
+        run: node scripts/wait-for-e2e-readiness.mjs --prepare-runner
+
+      - name: Build local prerequisites
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+
+      - name: Resolve stack services
+        run: |
+          node scripts/e2e-environment-manifest.mjs --target "$LOAD_TARGET" --services | jq -r '.[]' > /tmp/load-services
+          printf 'Load test services:\n'
+          cat /tmp/load-services
+
+      - name: Pull this run's images
+        run: ./scripts/pull-e2e-images.sh /tmp/load-services
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
+          E2E_FALLBACK_TAG: ${{ needs.plan.outputs.e2e_fallback_tag }}
+
+      - name: Start stack
+        run: |
+          while IFS= read -r PHASE; do
+            NAME=$(jq -r '.name' <<< "$PHASE")
+            START_WITH_DEPENDENCIES=$(jq -r '.startWithDependencies // false' <<< "$PHASE")
+            mapfile -t SERVICES < <(jq -r '.services[]' <<< "$PHASE")
+            if [ "$START_WITH_DEPENDENCIES" = true ]; then
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml up -d --no-build "${SERVICES[@]}"
+            else
+              docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml up -d --no-build --no-deps "${SERVICES[@]}"
+            fi
+            node scripts/wait-for-e2e-readiness.mjs --target "$LOAD_TARGET" --phase "$NAME"
+          done < <(node scripts/e2e-environment-manifest.mjs --target "$LOAD_TARGET" --phases | jq -c '.[]')
+          node scripts/wait-for-e2e-readiness.mjs --target "$LOAD_TARGET"
         env:
           CI: true
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build db-setup
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml build db-setup
-
-      - name: Start full stack
-        run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d db-setup
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d
-          echo "Waiting for services..."
-          sleep 60
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
       - name: Dump stack logs on failure
         if: failure()
         run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
-          docker compose -f e2e/docker-compose.e2e-stack.yaml logs db-setup gateway || true
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml ps
+          docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml logs --tail 200 || true
 
       - name: Install k6
         run: |
@@ -987,7 +1022,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose -f e2e/docker-compose.e2e-stack.yaml down
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml down -v
 
       - name: Upload load test results
         if: always()
