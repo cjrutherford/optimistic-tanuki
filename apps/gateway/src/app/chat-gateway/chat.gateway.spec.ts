@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
 import { LoggerModule } from '@optimistic-tanuki/logger';
@@ -41,7 +40,6 @@ describe('ChatGateway', () => {
       imports: [LoggerModule],
       providers: [
         ChatGateway,
-        Logger,
         {
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
           useValue: chatCollectorService,
