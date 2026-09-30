@@ -1401,6 +1401,24 @@ export class ThemeService {
     Object.entries(this.appThemeVariables).forEach(([property, value]) => {
       root.style.setProperty(property, value);
     });
+
+    // An app theme can replace the colours the readable-text tokens were
+    // derived from; derive them again from what is now on the root, keeping
+    // any the app sets itself.
+    const applied: Record<string, string> = {};
+    for (let i = 0; i < root.style.length; i++) {
+      const property = root.style.item(i);
+      if (property.startsWith('--')) {
+        applied[property] = root.style.getPropertyValue(property).trim();
+      }
+    }
+    Object.entries(resolveReadableText(applied)).forEach(
+      ([property, value]) => {
+        if (!(property in this.appThemeVariables)) {
+          root.style.setProperty(property, value);
+        }
+      }
+    );
   }
 
   private applyBodyPersonalityClass(personalityId: string): void {
