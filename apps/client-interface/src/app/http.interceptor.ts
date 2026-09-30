@@ -1,11 +1,13 @@
 import { HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { inject, Injector } from '@angular/core';
 import { AuthStateService } from './state/auth-state.service';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
-  const authStateService = inject(AuthStateService);
+  // Resolved lazily: AuthStateService's constructor sends the session request
+  // through this interceptor, so injecting it eagerly is circular.
+  const injector = inject(Injector);
   const router = inject(Router);
   // Determine app scope based on API route to align with
   // permissions configuration (social endpoints use the
@@ -40,7 +42,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
         error.status === 401 &&
         !req.url.includes('/authentication/session')
       ) {
-        authStateService.logout();
+        injector.get(AuthStateService).logout();
         router.navigate(['/login']);
       }
       return throwError(error);
