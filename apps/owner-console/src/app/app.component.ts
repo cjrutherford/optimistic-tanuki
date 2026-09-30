@@ -3,15 +3,15 @@ import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
+import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 @Component({
   imports: [
     RouterModule,
     PersonalitySceneComponent,
     PersonalityBackdropComponent,
+    BugReportUiComponent,
   ],
-import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
-  imports: [RouterModule, PersonalitySceneComponent, BugReportUiComponent],
   selector: 'app-root',
   template: `
     <a class="skip-link" href="#main-content">Skip to main content</a>
