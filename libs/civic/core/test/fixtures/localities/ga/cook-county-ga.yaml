@@ -54,4 +54,5 @@ sources:
     aggregateUrl: https://news.google.com/rss/search?q=Adel+News+Tribune+Georgia
     config:
       query: Adel News Tribune Georgia
-      matchNames: [Adel News Tribune, Adel, Cook County, Cook, Sparks, Lenox, Cecil]
+      matchNames:
+        [Adel News Tribune, Adel, Cook County, Cook, Sparks, Lenox, Cecil]

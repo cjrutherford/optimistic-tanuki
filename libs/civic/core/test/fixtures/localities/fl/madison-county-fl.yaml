@@ -6,7 +6,17 @@ lat: 30.45
 lon: -83.47
 kind: county
 parents: [florida]
-excludePhrases: ['Madison County, Georgia', 'Madison County, Ga.', 'Madison County, Alabama', 'Madison County, Mississippi', 'Madison County, Tennessee', 'Madison County, Illinois', 'Madison County, New York', 'Madison County, Indiana']
+excludePhrases:
+  [
+    'Madison County, Georgia',
+    'Madison County, Ga.',
+    'Madison County, Alabama',
+    'Madison County, Mississippi',
+    'Madison County, Tennessee',
+    'Madison County, Illinois',
+    'Madison County, New York',
+    'Madison County, Indiana',
+  ]
 topics: [county-government, schools, roads, weather, news]
 sources:
   - sourceKey: greene-publishing

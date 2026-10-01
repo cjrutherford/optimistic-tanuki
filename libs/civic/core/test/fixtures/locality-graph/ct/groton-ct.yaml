@@ -8,7 +8,8 @@ kind: town
 parents: [southeastern-ct]
 edition: true
 aliases: [Town of Groton]
-excludePhrases: ['Groton, Massachusetts', 'Groton, Mass.', 'Groton, New York', 'Groton, N.Y.']
+excludePhrases:
+  ['Groton, Massachusetts', 'Groton, Mass.', 'Groton, New York', 'Groton, N.Y.']
 cadence: [daily]
 sources:
   - sourceKey: groton-town-council

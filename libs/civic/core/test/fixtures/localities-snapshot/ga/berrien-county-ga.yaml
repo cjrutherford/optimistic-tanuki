@@ -7,7 +7,8 @@ lon: -83.25
 kind: county
 parents: [south-georgia]
 aliases: [Berrien]
-excludePhrases: [Berrien Springs, 'Berrien County, Michigan', 'Berrien County, Mich.']
+excludePhrases:
+  [Berrien Springs, 'Berrien County, Michigan', 'Berrien County, Mich.']
 topics: [county-government, schools, roads, weather, news]
 sources:
   - sourceKey: berrien-documents
@@ -46,7 +47,8 @@ sources:
     aggregateUrl: https://news.google.com/rss/search?q=Berrien+County+Georgia
     config:
       query: Berrien County Georgia OR Nashville Georgia
-      matchNames: [Berrien County, Berrien, Nashville, Alapaha, Enigma, Ray City]
+      matchNames:
+        [Berrien County, Berrien, Nashville, Alapaha, Enigma, Ray City]
   - sourceKey: berrien-schools-board
     adapter: apptegy
     name: Berrien County Schools board meetings and announcements

@@ -1,3 +1,13 @@
 [
-  {"title":"Pineville Berrien festival opens","body":"Pineville in Berrien County opens its annual harvest festival Friday with local growers and musicians.","kind":"news","topics":["agriculture"],"jurisdictionSlug":"pineville-beta-ga","externalId":"pineville-berrien-festival-001","originalSnippet":"The Berrien County Pineville festival opens Friday.","publisher":"Berrien Herald","originalUrl":"https://articles.test/fallback-festival"}
+  {
+    "title": "Pineville Berrien festival opens",
+    "body": "Pineville in Berrien County opens its annual harvest festival Friday with local growers and musicians.",
+    "kind": "news",
+    "topics": ["agriculture"],
+    "jurisdictionSlug": "pineville-beta-ga",
+    "externalId": "pineville-berrien-festival-001",
+    "originalSnippet": "The Berrien County Pineville festival opens Friday.",
+    "publisher": "Berrien Herald",
+    "originalUrl": "https://articles.test/fallback-festival"
+  }
 ]

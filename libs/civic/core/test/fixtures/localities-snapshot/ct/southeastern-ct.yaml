@@ -22,7 +22,15 @@ sources:
     aggregateUrl: https://news.google.com/rss/search?q=Groton+OR+Mystic+OR+Stonington+Connecticut&hl=en-US&gl=US&ceid=US:en
     config:
       query: Groton OR Mystic OR Stonington Connecticut
-      matchNames: [Groton, Mystic, Stonington, Noank, Poquonnock Bridge, Groton Long Point]
+      matchNames:
+        [
+          Groton,
+          Mystic,
+          Stonington,
+          Noank,
+          Poquonnock Bridge,
+          Groton Long Point,
+        ]
   - sourceKey: the-day
     adapter: news-discover
     name: The Day

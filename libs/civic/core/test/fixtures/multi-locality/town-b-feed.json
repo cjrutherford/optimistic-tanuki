@@ -1,3 +1,13 @@
 [
-  {"title":"Lakeview park reopening","body":"Lakeview will reopen its riverside park Saturday after repairs to the footbridge and playground were completed.","kind":"news","topics":["news"],"jurisdictionSlug":"lakeview-alpha-ga","externalId":"lakeview-park-001","originalSnippet":"The riverside park reopens Saturday.","publisher":"Lakeview Ledger","originalUrl":"https://articles.test/park"}
+  {
+    "title": "Lakeview park reopening",
+    "body": "Lakeview will reopen its riverside park Saturday after repairs to the footbridge and playground were completed.",
+    "kind": "news",
+    "topics": ["news"],
+    "jurisdictionSlug": "lakeview-alpha-ga",
+    "externalId": "lakeview-park-001",
+    "originalSnippet": "The riverside park reopens Saturday.",
+    "publisher": "Lakeview Ledger",
+    "originalUrl": "https://articles.test/park"
+  }
 ]

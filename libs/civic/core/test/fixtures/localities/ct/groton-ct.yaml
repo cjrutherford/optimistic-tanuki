@@ -8,7 +8,15 @@ kind: town
 parents: [southeastern-ct]
 edition: true
 aliases: [Town of Groton]
-excludePhrases: ['Groton, Massachusetts', 'Groton, Mass.', 'Groton, New York', 'Groton, N.Y.', 'Groton, Vermont', 'Groton School']
+excludePhrases:
+  [
+    'Groton, Massachusetts',
+    'Groton, Mass.',
+    'Groton, New York',
+    'Groton, N.Y.',
+    'Groton, Vermont',
+    'Groton School',
+  ]
 topics: [town-government, schools, roads, weather, news]
 cadence: [daily]
 sources:

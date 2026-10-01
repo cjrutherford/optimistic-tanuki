@@ -43,7 +43,8 @@ sources:
       # pages cover a month, so 130 reach six months back on a town's first
       # run. Paging stops once a page is older than the requested start, so a
       # daily run reads a page or two.
-      pagination: { mode: page, parameter: paged, maxPages: 130, untilCovered: true }
+      pagination:
+        { mode: page, parameter: paged, maxPages: 130, untilCovered: true }
     config:
       # The city publishes agendas but no minutes, so the outcome of a vote is
       # only on the record in the paper. These searches recover the decision

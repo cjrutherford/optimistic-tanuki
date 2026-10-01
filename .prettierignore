@@ -5,6 +5,3 @@
 /.nx/workspace-data
 .angular
 pnpm-lock.yaml
-
-# Civic test fixtures are recorded inputs and expected outputs; keep them byte-for-byte.
-libs/civic/core/test/fixtures

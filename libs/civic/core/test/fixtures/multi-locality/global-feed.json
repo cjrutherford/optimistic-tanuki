@@ -1,3 +1,13 @@
 [
-  {"title":"Global Cook County road grant","body":"A national wire confirms that Cook County will receive a road grant for a public works project after the latest funding announcement.","kind":"news","topics":["roads"],"jurisdictionSlug":"cook-county-ga","externalId":"cook-global-grant-001","originalSnippet":"Cook County will receive a road grant.","publisher":"National Fixture Wire","originalUrl":"https://articles.test/road-grant"}
+  {
+    "title": "Global Cook County road grant",
+    "body": "A national wire confirms that Cook County will receive a road grant for a public works project after the latest funding announcement.",
+    "kind": "news",
+    "topics": ["roads"],
+    "jurisdictionSlug": "cook-county-ga",
+    "externalId": "cook-global-grant-001",
+    "originalSnippet": "Cook County will receive a road grant.",
+    "publisher": "National Fixture Wire",
+    "originalUrl": "https://articles.test/road-grant"
+  }
 ]

@@ -1,3 +1,13 @@
 [
-  {"title":"Pineville road resurfacing begins","body":"Pineville began resurfacing Main Street this week, with crews posting a clear detour schedule for residents and visitors.","kind":"news","topics":["roads","agriculture"],"jurisdictionSlug":"pineville-alpha-ga","externalId":"pineville-road-001","originalSnippet":"Main Street resurfacing began this week.","publisher":"Pineville Gazette","originalUrl":"https://articles.test/road-resurfacing"}
+  {
+    "title": "Pineville road resurfacing begins",
+    "body": "Pineville began resurfacing Main Street this week, with crews posting a clear detour schedule for residents and visitors.",
+    "kind": "news",
+    "topics": ["roads", "agriculture"],
+    "jurisdictionSlug": "pineville-alpha-ga",
+    "externalId": "pineville-road-001",
+    "originalSnippet": "Main Street resurfacing began this week.",
+    "publisher": "Pineville Gazette",
+    "originalUrl": "https://articles.test/road-resurfacing"
+  }
 ]

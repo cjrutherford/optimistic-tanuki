@@ -2,6 +2,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { format, resolveConfig } from 'prettier';
 import YAML from 'yaml';
 import { createFoundationDataSource } from '../../src/store.js';
 import { registerAdapter } from '../../src/registry.js';
@@ -480,14 +481,18 @@ test('real runner produces isolated, repeatable multi-locality daily editions', 
       /Generated: .*$/gm,
       'Generated: <TIMESTAMP>'
     );
+    // The fixture is workspace-formatted, so compare the edition in that form;
+    // pure formatting (e.g. *italic* vs _italic_) is not a difference.
+    const expectedPath = join(fixtureDir, 'expected-daily.md');
+    const formatted = format(normalized, {
+      ...resolveConfig.sync(expectedPath),
+      filepath: expectedPath,
+    });
     // UPDATE_SNAPSHOTS=1 rewrites the expected edition; read the diff before committing it.
     if (process.env['UPDATE_SNAPSHOTS'] === '1')
-      await writeFile(join(fixtureDir, 'expected-daily.md'), normalized);
-    const expected = await readFile(
-      join(fixtureDir, 'expected-daily.md'),
-      'utf8'
-    );
-    expect(normalized).toBe(expected);
+      await writeFile(expectedPath, formatted);
+    const expected = await readFile(expectedPath, 'utf8');
+    expect(formatted).toBe(expected);
     expect(normalized).toMatch(/Pineville|Cook County/);
     expect(normalized).toMatch(/Coverage gaps/);
     // The fixture's articles state no date, so none can be placed in time: they are not reported.
