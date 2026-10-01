@@ -13,8 +13,8 @@ locality-discovery services.
 
 ## Status (2026-10-01)
 
-**Phase 0 and Phase 1 libraries:** 7 of 8 done. P0.1–P1.5 are ticked
-below; P1.6 is next.
+**Phase 0 and Phase 1 libraries:** all 8 done (P0.1–P1.6). Next is P1.7,
+the discovery benchmark, then Phase 2.
 
 | Slice     | What                                        | Commits                     |
 | --------- | ------------------------------------------- | --------------------------- |
@@ -35,9 +35,8 @@ civic-adapters`; `test-db` needs `CIVIC_TEST_DATABASE_URL`):
 
 All 54 POC core tests are ported.
 
-**Next:** P1.6 (community and access libs). Then P1.7, the discovery
-benchmark, which is unblocked now that adapters are ported. Then Phase 2 (the
-civic-briefing service and the parity gate).
+**Next:** P1.7, the discovery benchmark (now that adapters are ported), then
+Phase 2: the civic-briefing service and the parity gate.
 
 **Waiting on the owner:**
 
@@ -84,6 +83,15 @@ civic-briefing service and the parity gate).
   `CIVIC_TEST_DATABASE_URL`; `nx test civic-core` needs no infrastructure. The
   POC's current localities YAML is frozen as the test fixture
   `libs/civic/core/test/fixtures/localities`.
+- **D19** Civic roles are merged into local-hub's existing roles.
+  `local_hub_member` gains reading, contributing and corroborating;
+  `local_hub_admin` gains the operator permissions (review decisions, account
+  suspension, town configuration, density); `local_hub_verified_official` is
+  the one new role. Permission names follow the seed's `resource.action`
+  convention.
+- **D20** A verified official never corroborates, even though members can.
+  Role grants are additive, so civic-access declares this in `ROLE_DENIALS`
+  and civic-contributions enforces it through `effectivePermissions`.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -125,8 +133,8 @@ fixes stay with the lead agent.
       database tests
 - [x] P1.5 `libs/civic/adapters`: nine adapters as folders of one lib, plus
       core's three adapter-dependent tests
-- [ ] P1.6 `libs/civic/community`, `libs/civic/access` (+ Jest; roles
-      against `permission-lib`)
+- [x] P1.6 `libs/civic/community`, `libs/civic/access` (roles reconciled
+      with the permissions seed; D19, D20)
 - [ ] P2.0 Research: the prompt-proxy path for D5 (no code, a short note)
 - [ ] P2.1 `apps/civic-briefing`: Nest app, config, `DatabaseModule`, token,
       compose, Dockerfile (the image needs `pdftoppm` (poppler-utils) and
@@ -137,11 +145,17 @@ fixes stay with the lead agent.
 - [ ] P2.4 Replay parity gate: 38/38 golden artifacts identical. Nothing
       after this proceeds on red.
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
-      ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note)
+      ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note;
+      refuses corroborations from verified officials using civic-access's
+      `effectivePermissions`, per D20)
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
-- [ ] P3.2 Gateway contribution and profile routes, permissions seeding
+- [ ] P3.2 Gateway contribution and profile routes, permissions seeding: add
+      civic-access's permissions, the new `local_hub_verified_official` role and
+      the grants on `local_hub_member`/`local_hub_admin` to
+      `apps/permissions/src/assets/default-permissions.json`, and guard routes
+      with the dotted permission names
 - [ ] P3.3 File the eight open security findings (the stub virus scanner is
       already fixed upstream) as issues (owner approves before
       anything is posted)
@@ -368,3 +382,15 @@ must not change the replayed corpora.
     exceeded Jest's 5 s default under parallel load.
     All 54 of the POC's core tests are now ported: 49 in core, 2 in llm and
     3 in adapters. Next: P1.6 (`libs/civic/community`, `libs/civic/access`).
+- 2026-10-01: Rebased onto `main` after #271; the commit hashes above are
+  post-rebase. P1.6 is done: `libs/civic/community` (61 tests, unchanged
+  rules) and `libs/civic/access` (7 tests).
+  - civic-access is reconciled with `default-permissions.json`, per D19 and
+    D20: dotted permission names, the existing roles extended, one new role,
+    and a denial of corroboration to officials.
+  - A test checks the role list against the permissions seed, so P3.2's
+    seeding can't drift from it. A mutation check confirmed the officials
+    test fails without the denial.
+  - `PREVIOUS_APP_SCOPE_NAMES` (renaming the beta's `towne-square` scope) is
+    removed, since D6 drops the beta data.
+    Next: P1.7.
