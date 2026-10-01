@@ -18,11 +18,11 @@ below; P1.6 is next.
 
 | Slice     | What                                        | Commits                     |
 | --------- | ------------------------------------------- | --------------------------- |
-| P0.1      | Replay parity tool, `tools/civic-parity`    | bd800bdd                    |
-| P0.2      | Upstream drift note                         | 4491d2e2                    |
-| P1.1–P1.3 | `libs/civic/core`, Postgres only, all tests | 63f4fbb2…ddac62d3, 5decb322 |
-| P1.4      | `libs/civic/llm`                            | 998f7de4, d0e199f4          |
-| P1.5      | `libs/civic/adapters`                       | 4c5a8931, a1cd6760          |
+| P0.1      | Replay parity tool, `tools/civic-parity`    | f0264f56                    |
+| P0.2      | Upstream drift note                         | bcf0ff6d                    |
+| P1.1–P1.3 | `libs/civic/core`, Postgres only, all tests | 36a377a4…80cf2700, 25df7ba4 |
+| P1.4      | `libs/civic/llm`                            | ccce3be4, cc9d7dc0          |
+| P1.5      | `libs/civic/adapters`                       | 90999a48, 79b0569e          |
 
 **Tests** (`nx run-many -t typecheck test test-db -p civic-core civic-llm
 civic-adapters`; `test-db` needs `CIVIC_TEST_DATABASE_URL`):
@@ -41,9 +41,9 @@ civic-briefing service and the parity gate).
 
 **Waiting on the owner:**
 
-- **Rebase.** PR #271 merged on 2026-10-01 and `main` is 2 commits ahead.
-  The rebase is held until the migration is complete, per the owner, and
-  sits at P4.0. PR #186 is still open.
+- **Rebased** onto `main` on 2026-10-01, after PR #271 merged. The hashes
+  above are post-rebase. Re-check PR #186 (still open) before Phase 4; a
+  final rebase comes before the PR (P4.0).
 - **CI.** The civic `test-db` targets and the `tools/civic-parity` tests are
   not in CI yet. CI has no Postgres service, and adding one changes the
   workflow.
@@ -344,7 +344,7 @@ must not change the replayed corpora.
   formatting rather than the POC's bytes. Fixtures are now formatted. The
   multi-locality e2e test formats the generated edition before comparing,
   and the negative type fixture's directives sit on the erroring lines
-  (5decb322).
+  (25df7ba4).
 - 2026-10-01: P1.4 is done. `libs/civic/llm` (`civic-llm`, import
   `@optimistic-tanuki/civic-llm`): 170 unit tests and 29 database tests pass
   (`live-analysis-integration` and `llm-provenance` moved here from core).

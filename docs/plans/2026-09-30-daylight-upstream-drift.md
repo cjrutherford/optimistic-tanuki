@@ -2,7 +2,7 @@
 
 Slice P0.2 of `2026-09-30-daylight-civic-briefing-integration.md`. This note
 measures how far this repository has moved since the Daylight POC vendored
-code from it (`7e1d8740`, 2026-09-15; 204 commits ago, HEAD `bd800bdd`). It
+code from it (`7e1d8740`, 2026-09-15; 204 commits ago, HEAD `f0264f56`). It
 records what each port slice has to handle as a result.
 
 ## Method
