@@ -11,6 +11,45 @@ merged. Re-check PR #186 (`metro-cast`) before Phase 5; it rewrites the
 local-hub city, cities, landing and community pages and adds
 locality-discovery services.
 
+## Status (2026-10-01)
+
+**Phase 0 and Phase 1 libraries:** 7 of 8 done. P0.1–P1.5 are ticked
+below; P1.6 is next.
+
+| Slice     | What                                        | Commits                     |
+| --------- | ------------------------------------------- | --------------------------- |
+| P0.1      | Replay parity tool, `tools/civic-parity`    | bd800bdd                    |
+| P0.2      | Upstream drift note                         | 4491d2e2                    |
+| P1.1–P1.3 | `libs/civic/core`, Postgres only, all tests | 63f4fbb2…ddac62d3, 5decb322 |
+| P1.4      | `libs/civic/llm`                            | 998f7de4, d0e199f4          |
+| P1.5      | `libs/civic/adapters`                       | 4c5a8931, a1cd6760          |
+
+**Tests** (`nx run-many -t typecheck test test-db -p civic-core civic-llm
+civic-adapters`; `test-db` needs `CIVIC_TEST_DATABASE_URL`):
+
+| Lib            | `test` | `test-db`                      |
+| -------------- | ------ | ------------------------------ |
+| civic-core     | 225    | 87 + 1 todo (SQLite-only lock) |
+| civic-llm      | 170    | 29                             |
+| civic-adapters | 81     | 31                             |
+
+All 54 POC core tests are ported.
+
+**Next:** P1.6 (community and access libs). Then P1.7, the discovery
+benchmark, which is unblocked now that adapters are ported. Then Phase 2 (the
+civic-briefing service and the parity gate).
+
+**Waiting on the owner:**
+
+- **Rebase.** PR #271 merged on 2026-10-01 and `main` is 2 commits ahead.
+  The rebase is held until the migration is complete, per the owner, and
+  sits at P4.0. PR #186 is still open.
+- **CI.** The civic `test-db` targets and the `tools/civic-parity` tests are
+  not in CI yet. CI has no Postgres service, and adding one changes the
+  workflow.
+- **Not started:** the parity gate (P2.4) can't run until civic-briefing
+  exists.
+
 ## Decisions (owner, 2026-09-30)
 
 - **D1** A separate `apps/civic-briefing` service sits beside `apps/civic`,
