@@ -145,7 +145,9 @@ fixes stay with the lead agent.
       core's three adapter-dependent tests
 - [x] P1.6 `libs/civic/community`, `libs/civic/access` (roles reconciled
       with the permissions seed; D19, D20)
-- [ ] P2.0 Research: the prompt-proxy path for D5 (no code, a short note)
+- [x] P2.0 Research: the prompt-proxy path for D5. See
+      `2026-10-02-p2.0-prompt-proxy-note.md`: yes, via an injected `fetchImpl`
+      that forwards the native Ollama body over TCP; civic-llm is unchanged
 - [ ] P2.1 `apps/civic-briefing`: Nest app, config, `DatabaseModule`, token,
       compose, Dockerfile (the image needs `pdftoppm` (poppler-utils) and
       `tesseract` for the document adapter's OCR fallback)
@@ -455,3 +457,10 @@ must not change the replayed corpora.
   - Adel publishes, but sparsely: its agendas listing is paginated, with
     only 2 agenda or minutes PDFs on page 1, under the "page of PDFs"
     rule's threshold of 3.
+- 2026-10-02: The source and outreach work is **pinned** at the owner's
+  request (`2026-10-02-civic-source-outreach-plan.md`), and Phase 2 resumes.
+  P2.0 is done: prompt-proxy passes payloads to Ollama's `/api/chat`
+  unchanged (it has no validation pipe), so civic-briefing routes its calls
+  through it with an injected `fetchImpl` and civic-llm needs no changes.
+  The gaps for P2.3 are timeouts, error mapping, the `GeneratePrompt` type,
+  and models on the shared Ollama host. Next: P2.1.
