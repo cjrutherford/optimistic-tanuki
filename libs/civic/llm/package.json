@@ -1,0 +1,7 @@
+{
+  "name": "@optimistic-tanuki/civic-llm",
+  "version": "0.0.1",
+  "description": "Civic briefing model access: prompts, validators, and the two-stage brief writer",
+  "license": "AGPL-3.0-only",
+  "private": true
+}
