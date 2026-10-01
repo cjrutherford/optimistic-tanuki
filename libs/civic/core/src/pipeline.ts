@@ -762,16 +762,14 @@ export async function gather(
             const persistedRaw = await ds
               .getRepository(RawDocumentSchema)
               .findOneBy({ sourceId: source.sourceKey, url: normalizedUrl });
-            const attempt = await ds
-              .getRepository(FetchAttemptSchema)
-              .findOne({
-                where: {
-                  sourceId: source.sourceKey,
-                  url: normalizedUrl,
-                  attemptedAt: raw.fetchedAt,
-                },
-                order: { id: 'DESC' },
-              });
+            const attempt = await ds.getRepository(FetchAttemptSchema).findOne({
+              where: {
+                sourceId: source.sourceKey,
+                url: normalizedUrl,
+                attemptedAt: raw.fetchedAt,
+              },
+              order: { id: 'DESC' },
+            });
             const ledger = await ds
               .getRepository(FetchLedgerSchema)
               .findOneBy({ sourceId: source.sourceKey, url: normalizedUrl });
@@ -1227,9 +1225,7 @@ export interface AgendaFixupInput {
   civicItemId: number;
   runId?: string;
 }
-export type AgendaFixup = (
-  input: AgendaFixupInput
-) => Promise<
+export type AgendaFixup = (input: AgendaFixupInput) => Promise<
   {
     section: string;
     heading: string;
@@ -1835,15 +1831,13 @@ export async function loadThreads(
     ? new Set(
         exactRuleVersion
           ? (
-              await ds
-                .getRepository(EditionItemSchema)
-                .find({
-                  where: {
-                    localitySlug,
-                    decision: 'include',
-                    ruleVersion: exactRuleVersion,
-                  },
-                })
+              await ds.getRepository(EditionItemSchema).find({
+                where: {
+                  localitySlug,
+                  decision: 'include',
+                  ruleVersion: exactRuleVersion,
+                },
+              })
             ).map((r) => r.civicItemId)
           : []
       )
@@ -2520,12 +2514,10 @@ export async function developStories(
         );
       generationId = generation.id;
       existingRevision =
-        (await ds
-          .getRepository(CanonicalStoryRevisionSchema)
-          .findOneBy({
-            canonicalStoryId: canonical.id as number,
-            inputSha256: analysis.provenance.inputSha256,
-          })) ?? undefined;
+        (await ds.getRepository(CanonicalStoryRevisionSchema).findOneBy({
+          canonicalStoryId: canonical.id as number,
+          inputSha256: analysis.provenance.inputSha256,
+        })) ?? undefined;
       if (existingRevision) {
         // A revision with an older receipt contract is never eligible for
         // reattachment during a full synthesis pass. The briefing shortcut
@@ -2761,12 +2753,10 @@ export async function developStories(
         await manager
           .getRepository(CanonicalStoryItemSchema)
           .delete({ canonicalStoryId: In(canonicalIds) });
-        await manager
-          .getRepository(EditionStorySchema)
-          .delete({
-            localitySlug: locality.slug,
-            canonicalStoryId: In(canonicalIds),
-          });
+        await manager.getRepository(EditionStorySchema).delete({
+          localitySlug: locality.slug,
+          canonicalStoryId: In(canonicalIds),
+        });
         await manager
           .getRepository(CanonicalStorySchema)
           .save(previousCanonical);
@@ -3127,11 +3117,9 @@ export async function composeEdition(context: ComposeEditionContext) {
   const viewStoryIds = carryForwardStories.map((view) => view.story.id);
   const revisedStoryIds = new Set([
     ...(viewStoryIds.length
-      ? await ds
-          .getRepository(CanonicalStoryRevisionSchema)
-          .find({
-            where: { canonicalStoryId: In(viewStoryIds), status: 'successful' },
-          })
+      ? await ds.getRepository(CanonicalStoryRevisionSchema).find({
+          where: { canonicalStoryId: In(viewStoryIds), status: 'successful' },
+        })
       : []
     ).map((revision) => revision.canonicalStoryId),
     ...(developed.revisionInputs ?? []).map(
@@ -3557,17 +3545,15 @@ export async function composeEdition(context: ComposeEditionContext) {
     throw new Error('strict briefing analysis is required');
   const briefingGeneration =
     tldrResult.analysis && runId !== undefined
-      ? await ds
-          .getRepository(LlmGenerationSchema)
-          .findOne({
-            where: {
-              runId,
-              localitySlug: locality.slug,
-              operation: 'brief',
-              inputSha256: tldrResult.analysis.provenance.inputSha256,
-            },
-            order: { attempt: 'DESC' },
-          })
+      ? await ds.getRepository(LlmGenerationSchema).findOne({
+          where: {
+            runId,
+            localitySlug: locality.slug,
+            operation: 'brief',
+            inputSha256: tldrResult.analysis.provenance.inputSha256,
+          },
+          order: { attempt: 'DESC' },
+        })
       : null;
   if (tldrResult.analysis && runId !== undefined && !briefingGeneration)
     throw new Error(`brief generation provenance missing for ${locality.slug}`);
@@ -3961,17 +3947,15 @@ export async function brief(
     if (summarizer.strict && !analysis && summary)
       throw new Error('strict cluster analysis is required');
     if (analysis && runId !== undefined) {
-      const generation = await ds
-        .getRepository(LlmGenerationSchema)
-        .findOne({
-          where: {
-            runId,
-            localitySlug: locality.slug,
-            operation: 'cluster',
-            inputSha256: analysis.provenance.inputSha256,
-          },
-          order: { attempt: 'DESC' },
-        });
+      const generation = await ds.getRepository(LlmGenerationSchema).findOne({
+        where: {
+          runId,
+          localitySlug: locality.slug,
+          operation: 'cluster',
+          inputSha256: analysis.provenance.inputSha256,
+        },
+        order: { attempt: 'DESC' },
+      });
       if (!generation)
         throw new Error(
           `cluster generation provenance missing for ${locality.slug}`

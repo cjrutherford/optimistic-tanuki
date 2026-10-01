@@ -180,11 +180,9 @@ async function captureDatabase(
   periodEnd: string
 ): Promise<BriefDatabaseSnapshot> {
   const ruleVersion = locality.ruleVersion ?? 'unversioned';
-  const editionItems = await ds
-    .getRepository(EditionItemSchema)
-    .find({
-      where: { localitySlug: locality.slug, decision: 'include', ruleVersion },
-    });
+  const editionItems = await ds.getRepository(EditionItemSchema).find({
+    where: { localitySlug: locality.slug, decision: 'include', ruleVersion },
+  });
   const civicIds = editionItems.map((item) => item.civicItemId);
   const priorEditionStories = await ds
     .getRepository(EditionStorySchema)
@@ -265,12 +263,10 @@ async function restoreDatabase(
       await queryRunner.manager
         .getRepository(CivicItemSchema)
         .save(snapshot.civicItems);
-    await queryRunner.manager
-      .getRepository(EditionStorySchema)
-      .delete({
-        localitySlug: snapshot.briefingKey.localitySlug,
-        ruleVersion: snapshot.briefingKey.ruleVersion,
-      });
+    await queryRunner.manager.getRepository(EditionStorySchema).delete({
+      localitySlug: snapshot.briefingKey.localitySlug,
+      ruleVersion: snapshot.briefingKey.ruleVersion,
+    });
     if (snapshot.editionStories.length)
       await queryRunner.manager
         .getRepository(EditionStorySchema)

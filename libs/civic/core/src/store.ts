@@ -1,8 +1,6 @@
 import 'reflect-metadata';
 import { DataSource, type QueryRunner } from 'typeorm';
-import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { resolve } from 'node:path';
 import { ALL_SCHEMAS, FOUNDATION_SCHEMAS, SchemaMetaSchema } from './schema.js';
 import {
   LlmGenerationSchema,
@@ -31,85 +29,54 @@ let cached: DataSource | null = null;
 export const FOUNDATION_SCHEMA_VERSION = '2026-09-17.1';
 const SCHEMA_VERSION_KEY = 'schemaVersion';
 
-/** sqlite://./data/civic.db for dev, postgres://... for cloud. Same entities. */
+/** Foundation databases are Postgres; the URL is postgres://… or postgresql://… */
+function requirePostgresUrl(targetUrl: string): void {
+  if (
+    !targetUrl.startsWith('postgres://') &&
+    !targetUrl.startsWith('postgresql://')
+  ) {
+    throw new Error('foundation target must be a postgres URL');
+  }
+}
+
 export async function getDataSource(url?: string): Promise<DataSource> {
   if (cached?.isInitialized) return cached;
-  const raw =
-    url ?? process.env['DATA_SOURCE_URL'] ?? 'sqlite://./data/civic.db';
-  if (raw.startsWith('sqlite://')) {
-    const database = raw.slice('sqlite://'.length);
-    const explicitLegacyBootstrap = url !== undefined && !existsSync(database);
-    cached = new DataSource({
-      type: 'better-sqlite3',
-      database,
-      // An explicitly named, not-yet-created legacy fixture keeps the old
-      // SourceSchema-only bootstrap used by the CLI's compatibility path.
-      // Existing legacy files and the default civic.db are strictly read/open
-      // paths: they never create or alter foundation tables.
-      entities: explicitLegacyBootstrap ? [SourceSchema] : ALL_SCHEMAS,
-      synchronize: explicitLegacyBootstrap,
-      migrationsRun: false,
-    });
-  } else {
-    cached = new DataSource({
-      type: 'postgres',
-      url: raw,
-      entities: ALL_SCHEMAS,
-      synchronize: false,
-      migrationsRun: false,
-    });
-  }
+  const raw = url ?? process.env['DATA_SOURCE_URL'];
+  if (!raw) throw new Error('DATA_SOURCE_URL is required');
+  requirePostgresUrl(raw);
+  cached = new DataSource({
+    type: 'postgres',
+    url: raw,
+    entities: ALL_SCHEMAS,
+    synchronize: false,
+    migrationsRun: false,
+  });
   await cached.initialize();
   return cached;
-}
-
-function sqlitePath(url: string): string | null {
-  return url.startsWith('sqlite://') ? url.slice('sqlite://'.length) : null;
-}
-
-function rejectUnsafeTarget(targetUrl: string): void {
-  const database = sqlitePath(targetUrl);
-  const canonical = database ? resolve(database) : null;
-  if (
-    !targetUrl ||
-    canonical === resolve('data/civic.db') ||
-    canonical === resolve('data/civic.db.pre-foundation')
-  ) {
-    throw new Error(
-      'foundation target must be an explicit database distinct from the legacy civic.db and backup'
-    );
-  }
 }
 
 /** 'empty' for a database with no application tables, otherwise its recorded schema version (null when unrecorded). */
 async function readSchemaVersion(
   dataSource: DataSource
 ): Promise<'empty' | string | null> {
-  const isPostgres = dataSource.options.type === 'postgres';
-  const rows: { name: string }[] = isPostgres
-    ? await dataSource.query(
-        "SELECT table_name AS name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'"
-      )
-    : await dataSource.query(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
-      );
+  const rows: { name: string }[] = await dataSource.query(
+    "SELECT table_name AS name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'"
+  );
   const tables = rows.map((row) => row.name);
   if (!tables.length) return 'empty';
   if (!tables.includes('schema_meta')) return null;
   const meta = (await dataSource.query(
-    `SELECT value FROM schema_meta WHERE ${
-      isPostgres ? '"key" = $1' : '"key" = ?'
-    }`,
+    'SELECT value FROM schema_meta WHERE "key" = $1',
     [SCHEMA_VERSION_KEY]
   )) as { value: string }[];
   return meta[0]?.value ?? null;
 }
 
-function schemaMismatch(targetUrl: string, version: string | null): Error {
+function schemaMismatch(version: string | null): Error {
   return new Error(
-    `foundation target ${sqlitePath(targetUrl) ?? 'database'} has schema ${
+    `foundation target has schema ${
       version ?? 'unversioned (created before 2026-09-16)'
-    }, expected ${FOUNDATION_SCHEMA_VERSION}; foundation databases are derived data, so point the run at a new database file`
+    }, expected ${FOUNDATION_SCHEMA_VERSION}; foundation databases are derived data, so point the run at a new database`
   );
 }
 
@@ -117,46 +84,19 @@ function schemaMismatch(targetUrl: string, version: string | null): Error {
 export async function preflightFoundationTarget(
   targetUrl: string
 ): Promise<void> {
-  rejectUnsafeTarget(targetUrl);
-  const database = sqlitePath(targetUrl);
-  if (database && (!existsSync(database) || !database.trim()))
-    throw new Error('foundation target does not exist');
-  if (
-    !database &&
-    !targetUrl.startsWith('postgres://') &&
-    !targetUrl.startsWith('postgresql://')
-  )
-    throw new Error('foundation target must be a sqlite or postgres URL');
-  const dataSource = database
-    ? new DataSource({
-        type: 'better-sqlite3',
-        database,
-        entities: [],
-        synchronize: false,
-        migrationsRun: false,
-        readonly: true,
-        fileMustExist: true,
-      })
-    : new DataSource({
-        type: 'postgres',
-        url: targetUrl,
-        entities: [],
-        synchronize: false,
-        migrationsRun: false,
-      });
+  requirePostgresUrl(targetUrl);
+  const dataSource = new DataSource({
+    type: 'postgres',
+    url: targetUrl,
+    entities: [],
+    synchronize: false,
+    migrationsRun: false,
+  });
   try {
     await dataSource.initialize();
     const version = await readSchemaVersion(dataSource);
     if (version === 'empty') throw new Error('foundation target is empty');
-    if (version !== FOUNDATION_SCHEMA_VERSION)
-      throw schemaMismatch(targetUrl, version);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/not a database|SQLITE_NOTADB|malformed/i.test(message))
-      throw new Error(
-        `foundation target is not a recognized foundation database: ${message}`
-      );
-    throw error;
+    if (version !== FOUNDATION_SCHEMA_VERSION) throw schemaMismatch(version);
   } finally {
     if (dataSource.isInitialized) await dataSource.destroy();
   }
@@ -170,58 +110,35 @@ const APPEND_ONLY_TABLES = [
 ] as const;
 
 async function createAppendOnlyGuards(dataSource: DataSource): Promise<void> {
-  if (dataSource.options.type === 'postgres') {
-    await dataSource.query(
-      `CREATE OR REPLACE FUNCTION civic_reject_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'append-only table % cannot be changed', TG_TABLE_NAME; END; $$`
-    );
-    for (const table of APPEND_ONLY_TABLES) {
-      await dataSource.query(
-        `CREATE TRIGGER civic_${table}_immutable_update BEFORE UPDATE ON ${table} FOR EACH ROW EXECUTE FUNCTION civic_reject_immutable()`
-      );
-      await dataSource.query(
-        `CREATE TRIGGER civic_${table}_immutable_delete BEFORE DELETE ON ${table} FOR EACH ROW EXECUTE FUNCTION civic_reject_immutable()`
-      );
-    }
-    return;
-  }
+  await dataSource.query(
+    `CREATE OR REPLACE FUNCTION civic_reject_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'append-only table % cannot be changed', TG_TABLE_NAME; END; $$`
+  );
   for (const table of APPEND_ONLY_TABLES) {
     await dataSource.query(
-      `CREATE TRIGGER civic_${table}_immutable_update BEFORE UPDATE ON ${table} BEGIN SELECT RAISE(ABORT, 'append-only table ${table} cannot be changed'); END`
+      `CREATE TRIGGER civic_${table}_immutable_update BEFORE UPDATE ON ${table} FOR EACH ROW EXECUTE FUNCTION civic_reject_immutable()`
     );
     await dataSource.query(
-      `CREATE TRIGGER civic_${table}_immutable_delete BEFORE DELETE ON ${table} BEGIN SELECT RAISE(ABORT, 'append-only table ${table} cannot be changed'); END`
+      `CREATE TRIGGER civic_${table}_immutable_delete BEFORE DELETE ON ${table} FOR EACH ROW EXECUTE FUNCTION civic_reject_immutable()`
     );
   }
 }
 
-/** Create or open an isolated foundation target. An empty target is created from the entity definitions. */
+/**
+ * Create or open an isolated foundation target. An empty target is created
+ * from the entity definitions; slice P2.2 replaces this with a generated
+ * migration owned by civic-briefing.
+ */
 export async function createFoundationDataSource(
   targetUrl: string
 ): Promise<DataSource> {
-  rejectUnsafeTarget(targetUrl);
-  const database = sqlitePath(targetUrl);
-  if (
-    !database &&
-    !targetUrl.startsWith('postgres://') &&
-    !targetUrl.startsWith('postgresql://')
-  ) {
-    throw new Error('foundation target must be a sqlite or postgres URL');
-  }
-  const dataSource = database
-    ? new DataSource({
-        type: 'better-sqlite3',
-        database,
-        entities: FOUNDATION_SCHEMAS,
-        synchronize: false,
-        migrationsRun: false,
-      })
-    : new DataSource({
-        type: 'postgres',
-        url: targetUrl,
-        entities: FOUNDATION_SCHEMAS,
-        synchronize: false,
-        migrationsRun: false,
-      });
+  requirePostgresUrl(targetUrl);
+  const dataSource = new DataSource({
+    type: 'postgres',
+    url: targetUrl,
+    entities: FOUNDATION_SCHEMAS,
+    synchronize: false,
+    migrationsRun: false,
+  });
   try {
     await dataSource.initialize();
     const version = await readSchemaVersion(dataSource);
@@ -232,7 +149,7 @@ export async function createFoundationDataSource(
         .getRepository(SchemaMetaSchema)
         .insert({ key: SCHEMA_VERSION_KEY, value: FOUNDATION_SCHEMA_VERSION });
     } else if (version !== FOUNDATION_SCHEMA_VERSION) {
-      throw schemaMismatch(targetUrl, version);
+      throw schemaMismatch(version);
     }
     return dataSource;
   } catch (error) {

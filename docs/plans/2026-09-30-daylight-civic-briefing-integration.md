@@ -38,6 +38,8 @@ locality-discovery services.
   changes. Its corpora and `golden/baseline.json` are read in place,
   read-only, by the parity gate (see P0.1).
 - **D8** Superseded by the branch line above.
+- **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
+  removed, and tests and parity replays need a Postgres database.
 
 ## Facts checked in this repo (HEAD 620703c0)
 
@@ -68,8 +70,8 @@ fixes stay with the lead agent.
 - [x] P0.2 Measure drift: the POC's vendored code (reference `7e1d8740`)
       against current libs here (auth, database, storage, permissions,
       profile)
-- [ ] P1.1 `libs/civic/core`: copy and build (`packages/core` +
-      `packages/nestjs` as `nest/`)
+- [x] P1.1 `libs/civic/core`: copy and typecheck, Postgres only (D16).
+      Whether `packages/nestjs` is ported is still open; see the handoff note.
 - [ ] P1.2 `libs/civic/core`: tests to Jest (part 1)
 - [ ] P1.3 `libs/civic/core`: tests to Jest (part 2), Postgres dialect for
       SQLite-only SQL (POC S1.2 step 1)
@@ -232,3 +234,26 @@ must not change the replayed corpora.
   vendored code, so drift can't affect P1.x or the parity gate. Real drift
   is in storage (envelope encryption, a ClamAV scanner that fails closed),
   which affects P2.5. Next: P1.1 (`libs/civic/core` copy and build).
+- 2026-09-30: P1.1 is done. `libs/civic/core` (project `civic-core`, import
+  `@optimistic-tanuki/civic-core`) typechecks via `nx typecheck civic-core`.
+  The owner chose Postgres only (D16): the SQLite branches are collapsed to
+  their Postgres forms, verbatim, and the parity tool now needs
+  `CIVIC_PARITY_DATABASE_URL` with `{corpus}`.
+  **Known Postgres bugs for P1.3**, never exercised in the POC:
+  1. `runner.ts`'s raw SQL uses unquoted camelCase columns (`scopeSlug`,
+     `completedAt`, `runId`, …), which Postgres folds to lowercase while
+     TypeORM creates quoted columns.
+  2. `recoverExpired`'s `UPDATE pipeline_runs` has 2 placeholders but is
+     passed 3 parameters.
+  3. The lease `INSERT` passes 7 parameters for 6 placeholders.
+  4. The takeover's `result.affected ?? result.changes` may always be 0 on
+     Postgres.
+     **Parity risk:** the POC recorded its baseline on SQLite, so row-ordering
+     differences on Postgres may show up at P2.4 as decisions to explain.
+     `createFoundationDataSource` still calls `synchronize()` on an empty
+     database until P2.2's generated migration.
+     **Open, for the owner:** `packages/nestjs` (a scheduling `PipelineService`)
+     is imported by no POC app, only by its own test. It depends on
+     `@civic/llm`, so folding it into civic-core as the POC plan suggested
+     would create a core↔llm cycle. Tests (54 files, plus fixtures and helpers)
+     are not copied yet; they come with P1.2. Next: P1.2.

@@ -39,20 +39,13 @@ export function defaultPublicationLockPath(): string {
 
 /**
  * The lock guards story and Markdown writes, which only conflict between runs
- * that share a database. A run on a SQLite file locks beside that file, so a
- * replay and a live run on separate databases proceed in parallel while runs
- * on the same database still serialize. Other targets use the global lock.
+ * that share a database. All runs use the global lock; the database argument
+ * is accepted for call-site compatibility.
  */
 export function publicationLockPathFor(
-  database: { type?: string; database?: unknown } | undefined
+  _database: { type?: string; database?: unknown } | undefined
 ): string {
-  const file =
-    database?.type === 'better-sqlite3' && typeof database.database === 'string'
-      ? database.database
-      : '';
-  if (!file || file === ':memory:' || file.startsWith('file:'))
-    return defaultPublicationLockPath();
-  return `${resolve(file)}.publication.lock`;
+  return defaultPublicationLockPath();
 }
 
 /**

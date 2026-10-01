@@ -269,9 +269,7 @@ export class OfficialDirectories {
    * .gov list by domain — which government, in which state — so a namesake
    * elsewhere can be told apart. Failures leave the rest standing.
    */
-  async sitesFor(
-    places: readonly LocalityConfig[]
-  ): Promise<{
+  async sitesFor(places: readonly LocalityConfig[]): Promise<{
     sites: OfficialSite[];
     governmentDomains: Map<string, { organization: string; state: string }>;
     notes: string[];

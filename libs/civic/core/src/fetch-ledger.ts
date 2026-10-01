@@ -135,7 +135,6 @@ export async function acquireLedgerKeyLock(
   sourceId: string,
   url: string
 ): Promise<void> {
-  if (manager.connection.options.type !== 'postgres') return;
   await manager.query('SELECT pg_advisory_xact_lock($1::bigint)', [
     ledgerAdvisoryKey(sourceId, canonicalUrl(url)),
   ]);
@@ -152,9 +151,7 @@ export async function findLedgerForUpdate(
   const ledgerRepo = manager.getRepository(FetchLedgerSchema);
   return (await ledgerRepo.findOne({
     where: { sourceId, url: normalizedUrl },
-    ...(manager.connection.options.type === 'postgres'
-      ? { lock: { mode: 'pessimistic_write' as const } }
-      : {}),
+    lock: { mode: 'pessimistic_write' as const },
   })) as FetchLedgerState | null;
 }
 
@@ -165,23 +162,9 @@ export async function persistFetchResult(
 ): Promise<FetchOutcome> {
   const previous = persistenceLocks.get(dataSource) ?? Promise.resolve();
   const run = previous.then(async () => {
-    for (let attempt = 0; ; attempt += 1) {
-      try {
-        return await dataSource.transaction(async (manager) => {
-          if (dataSource.options.type === 'better-sqlite3')
-            await manager.query('PRAGMA busy_timeout = 5000');
-          return persistFetchResultInManager(manager, sourceId, result);
-        });
-      } catch (error) {
-        if (
-          dataSource.options.type !== 'better-sqlite3' ||
-          attempt >= 5 ||
-          !/locked|busy/i.test(String(error))
-        )
-          throw error;
-        await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)));
-      }
-    }
+    return dataSource.transaction(async (manager) =>
+      persistFetchResultInManager(manager, sourceId, result)
+    );
   });
   persistenceLocks.set(
     dataSource,
@@ -236,35 +219,31 @@ export async function persistEmptyFetch(
 ): Promise<{ attemptId: number; ledgerId: number }> {
   const normalizedUrl = canonicalUrl(url);
   return dataSource.transaction(async (manager) => {
-    const attempt = await manager
-      .getRepository(FetchAttemptSchema)
-      .save({
+    const attempt = await manager.getRepository(FetchAttemptSchema).save({
+      sourceId,
+      url: normalizedUrl,
+      requestUrl: normalizedUrl,
+      attemptedAt: at,
+      status: 200,
+      outcome: 'unchanged',
+      etag: null,
+      lastModified: null,
+      errorKind: null,
+      error: null,
+      retryable: null,
+    });
+    await manager.getRepository(FetchLedgerSchema).upsert(
+      {
         sourceId,
         url: normalizedUrl,
-        requestUrl: normalizedUrl,
-        attemptedAt: at,
-        status: 200,
-        outcome: 'unchanged',
-        etag: null,
-        lastModified: null,
-        errorKind: null,
-        error: null,
-        retryable: null,
-      });
-    await manager
-      .getRepository(FetchLedgerSchema)
-      .upsert(
-        {
-          sourceId,
-          url: normalizedUrl,
-          lastAttemptAt: at,
-          lastSuccessAt: at,
-          lastStatus: 200,
-          lastError: null,
-          consecutiveFailures: 0,
-        },
-        ['sourceId', 'url']
-      );
+        lastAttemptAt: at,
+        lastSuccessAt: at,
+        lastStatus: 200,
+        lastError: null,
+        consecutiveFailures: 0,
+      },
+      ['sourceId', 'url']
+    );
     const ledger = await manager
       .getRepository(FetchLedgerSchema)
       .findOneBy({ sourceId, url: normalizedUrl });

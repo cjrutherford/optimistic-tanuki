@@ -121,9 +121,7 @@ interface Seed {
   via: string;
 }
 
-export async function discoverSources(
-  input: SourcingInput
-): Promise<{
+export async function discoverSources(input: SourcingInput): Promise<{
   decisions: SourcingDecision[];
   searched: string | null;
   pagesRead: number;

@@ -21,7 +21,9 @@ import { join, relative, resolve, sep } from 'node:path';
  * The POC is closed and its data stays out of this repository: it is read in
  * place, read-only, from DAYLIGHT_POC_DIR. Output goes to tmp/civic-parity.
  *
- *   DAYLIGHT_POC_DIR=~/workspace/daylight-poc pnpm civic:parity [--require]
+ *   DAYLIGHT_POC_DIR=~/workspace/daylight-poc \
+ *   CIVIC_PARITY_DATABASE_URL=postgres://…/parity_{corpus} \
+ *   pnpm civic:parity [--require]
  *
  * Without the POC checkout or the civic-briefing build there is nothing to
  * compare, so the tool reports SKIPPED and exits 0; `--require` makes that a
@@ -125,13 +127,21 @@ export function resolveSettings(env, cwd) {
       skip: `civic-briefing replay is not built yet (${replay})`,
     };
   }
+  if (!databaseTemplate.includes('{corpus}')) {
+    return {
+      skip: 'CIVIC_PARITY_DATABASE_URL is not set to a postgres URL containing {corpus}',
+    };
+  }
   return { poc, baselinePath, replay, work, databaseTemplate };
 }
 
-/** `{corpus}` in CIVIC_PARITY_DATABASE_URL gives each corpus its own database. */
-export function databaseUrl(template, work, corpus) {
-  if (template) return template.replaceAll('{corpus}', corpus);
-  return `sqlite://${join(work, corpus, 'foundation.db')}`;
+/**
+ * `{corpus}` in CIVIC_PARITY_DATABASE_URL gives each corpus its own Postgres
+ * database. Each must be empty before a run: the replay creates the schema in
+ * an empty database and would otherwise add to an earlier run's rows.
+ */
+export function databaseUrl(template, corpus) {
+  return template.replaceAll('{corpus}', corpus);
 }
 
 export function replayArguments(settings, run, out) {
@@ -148,7 +158,7 @@ export function replayArguments(settings, run, out) {
     '--backfill-days',
     BACKFILL_DAYS,
     '--database',
-    databaseUrl(settings.databaseTemplate, settings.work, run.corpus),
+    databaseUrl(settings.databaseTemplate, run.corpus),
     '--artifacts',
     out,
     '--localities',

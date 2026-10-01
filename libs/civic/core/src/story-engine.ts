@@ -485,12 +485,10 @@ export async function evidenceUnitsFor(
   const items = await manager
     .getRepository(CivicItemSchema)
     .find({ where: { id: In([...itemIds]) } });
-  const agenda = await manager
-    .getRepository(AgendaItemSchema)
-    .find({
-      where: { itemId: In([...itemIds]), procedural: false },
-      order: { id: 'ASC' },
-    });
+  const agenda = await manager.getRepository(AgendaItemSchema).find({
+    where: { itemId: In([...itemIds]), procedural: false },
+    order: { id: 'ASC' },
+  });
   const agendaByItem = new Map<number, typeof agenda>();
   for (const row of agenda)
     agendaByItem.set(row.itemId, [

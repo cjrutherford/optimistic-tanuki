@@ -119,6 +119,7 @@ fs.writeFileSync(path.join(at('artifacts'), 'args.json'), JSON.stringify(argv.sl
     DAYLIGHT_POC_DIR: poc,
     CIVIC_PARITY_REPLAY: replay,
     CIVIC_PARITY_WORK: path.join(root, 'work'),
+    CIVIC_PARITY_DATABASE_URL: 'postgres://db/parity_{corpus}',
   });
 
   it('skips with a reason when the POC checkout is not configured', async () => {
@@ -148,6 +149,17 @@ fs.writeFileSync(path.join(at('artifacts'), 'args.json'), JSON.stringify(argv.sl
     expect(lines[0]).toMatch(
       /^SKIPPED: civic-briefing replay is not built yet/
     );
+  });
+
+  it('skips until a per-corpus Postgres URL is configured', async () => {
+    const { verify } = await load();
+    await writeBaseline('# Briefing');
+    const settings = {
+      ...env(writeStubReplay('# Briefing')),
+      CIVIC_PARITY_DATABASE_URL: 'postgres://db/parity',
+    };
+    expect(verify({ env: settings, cwd: root, argv: [], ...io() })).toBe(0);
+    expect(lines[0]).toMatch(/^SKIPPED: CIVIC_PARITY_DATABASE_URL/);
   });
 
   it('passes when the replay reproduces the baseline', async () => {
@@ -195,16 +207,14 @@ fs.writeFileSync(path.join(at('artifacts'), 'args.json'), JSON.stringify(argv.sl
     const after = (flag) => args[args.indexOf(flag) + 1];
     expect(after('--corpus')).toBe(path.join(poc, 'data', 'corpus', 'ga'));
     expect(after('--localities')).toBe(path.join(poc, 'localities'));
-    expect(after('--database')).toBe(
-      `sqlite://${path.join(root, 'work', 'ga', 'foundation.db')}`
-    );
+    expect(after('--database')).toBe('postgres://db/parity_ga');
     expect(after('--backfill-days')).toBe('120');
     expect(fs.readdirSync(poc)).toEqual(['golden']);
   });
 
   it('gives each corpus its own database from a URL template', async () => {
     const { databaseUrl } = await load();
-    expect(databaseUrl('postgres://db/parity_{corpus}', '/w', 'ct')).toBe(
+    expect(databaseUrl('postgres://db/parity_{corpus}', 'ct')).toBe(
       'postgres://db/parity_ct'
     );
   });

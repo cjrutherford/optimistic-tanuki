@@ -215,13 +215,11 @@ export async function localityHealth(
     | 'eventDate'
     | 'geographyDecision'
   >[] = ds.hasMetadata(CivicItemSchema)
-    ? await ds
-        .getRepository(CivicItemSchema)
-        .find({
-          where: sourceKeys.length
-            ? { sourceId: In(sourceKeys) }
-            : { localitySlug: locality.slug },
-        })
+    ? await ds.getRepository(CivicItemSchema).find({
+        where: sourceKeys.length
+          ? { sourceId: In(sourceKeys) }
+          : { localitySlug: locality.slug },
+      })
     : [];
   const raws: { sourceId: string; fetchedAt: string }[] = ds.hasMetadata(
     RawDocumentSchema
@@ -303,11 +301,9 @@ export async function localityHealth(
   }
   const agendaRows = ds.hasMetadata(AgendaItemSchema)
     ? items.length
-      ? await ds
-          .getRepository(AgendaItemSchema)
-          .find({
-            where: { itemId: In(items.map((item) => item.id as number)) },
-          })
+      ? await ds.getRepository(AgendaItemSchema).find({
+          where: { itemId: In(items.map((item) => item.id as number)) },
+        })
       : []
     : [];
   const datesByTopic = new Map<string, Set<string>>();
@@ -395,13 +391,11 @@ export async function localityHealth(
     error?: string | null;
   }[] = ds.hasMetadata(PipelineRunSchema)
     ? (
-        await ds
-          .getRepository(PipelineRunSchema)
-          .find({
-            where: { localitySlug: locality.slug },
-            order: { id: 'DESC' },
-            take: 1,
-          })
+        await ds.getRepository(PipelineRunSchema).find({
+          where: { localitySlug: locality.slug },
+          order: { id: 'DESC' },
+          take: 1,
+        })
       ).filter(
         (row): row is typeof row & { id: number } => row.id !== undefined
       )

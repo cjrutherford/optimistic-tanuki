@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { In, IsNull, Not, type DataSource, type QueryRunner } from 'typeorm';
+import { In, IsNull, Not, type DataSource } from 'typeorm';
 import type {
   BlobStore,
   BriefingCoverageMetadata,
@@ -220,16 +220,6 @@ const STAGES: readonly PipelineStage[] = [
 ];
 const LEASE_MS = 10 * 60 * 1000;
 
-function sql(
-  runner: QueryRunner,
-  sqlite: string,
-  postgres: string
-): [string, unknown[]] {
-  return [
-    runner.connection.options.type === 'postgres' ? postgres : sqlite,
-    [],
-  ];
-}
 function nowDate(value?: Date): Date {
   return value ? new Date(value) : new Date();
 }
@@ -425,9 +415,7 @@ async function acquireOnce(
   const until = new Date(at.getTime() + LEASE_MS).toISOString();
   try {
     const insert =
-      dataSource.options.type === 'postgres'
-        ? 'INSERT INTO pipeline_runs (scopeSlug,localitySlug,cadence,startedAt,completedAt,status,currentStage,ruleVersion,counts,coverageGaps,error) VALUES ($1,$2,$3,$4,NULL,$5,NULL,$6,$7,$8,NULL) RETURNING id'
-        : 'INSERT INTO pipeline_runs (scopeSlug,localitySlug,cadence,startedAt,completedAt,status,currentStage,ruleVersion,counts,coverageGaps,error) VALUES (?,?,?, ?,NULL,?,NULL,?,?,?,NULL)';
+      'INSERT INTO pipeline_runs (scopeSlug,localitySlug,cadence,startedAt,completedAt,status,currentStage,ruleVersion,counts,coverageGaps,error) VALUES ($1,$2,$3,$4,NULL,$5,NULL,$6,$7,$8,NULL) RETURNING id';
     const params = [
       scopeSlug,
       localitySlug,
@@ -439,16 +427,9 @@ async function acquireOnce(
       '[]',
     ];
     const inserted = await qr.query(insert, params);
-    const runId = Number(
-      dataSource.options.type === 'postgres'
-        ? inserted[0].id
-        : inserted?.lastInsertRowid ??
-            (await qr.query('SELECT last_insert_rowid() AS id'))[0]?.id
-    );
+    const runId = Number(inserted[0].id);
     const leaseSql =
-      dataSource.options.type === 'postgres'
-        ? 'INSERT INTO pipeline_run_leases (scopeSlug,cadence,ownerId,runId,leaseUntil,createdAt,updatedAt) VALUES ($1,$2,$3,$4,$5,$6,$6) ON CONFLICT (scopeSlug,cadence) DO NOTHING'
-        : 'INSERT OR IGNORE INTO pipeline_run_leases (scopeSlug,cadence,ownerId,runId,leaseUntil,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)';
+      'INSERT INTO pipeline_run_leases (scopeSlug,cadence,ownerId,runId,leaseUntil,createdAt,updatedAt) VALUES ($1,$2,$3,$4,$5,$6,$6) ON CONFLICT (scopeSlug,cadence) DO NOTHING';
     await qr.query(leaseSql, [
       scopeSlug,
       cadence,
@@ -459,9 +440,7 @@ async function acquireOnce(
       now,
     ]);
     const existing = await qr.query(
-      dataSource.options.type === 'postgres'
-        ? 'SELECT ownerId,runId,leaseUntil FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 FOR UPDATE'
-        : 'SELECT ownerId,runId,leaseUntil FROM pipeline_run_leases WHERE scopeSlug=? AND cadence=?',
+      'SELECT ownerId,runId,leaseUntil FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 FOR UPDATE',
       [scopeSlug, cadence]
     );
     const lease = existing[0] as
@@ -473,9 +452,7 @@ async function acquireOnce(
     }
     if (lease && new Date(lease.leaseUntil).getTime() <= at.getTime()) {
       const takeover =
-        dataSource.options.type === 'postgres'
-          ? 'UPDATE pipeline_run_leases SET ownerId=$1,runId=$2,leaseUntil=$3,updatedAt=$4 WHERE scopeSlug=$5 AND cadence=$6 AND leaseUntil <= $7'
-          : 'UPDATE pipeline_run_leases SET ownerId=?,runId=?,leaseUntil=?,updatedAt=? WHERE scopeSlug=? AND cadence=? AND leaseUntil <= ?';
+        'UPDATE pipeline_run_leases SET ownerId=$1,runId=$2,leaseUntil=$3,updatedAt=$4 WHERE scopeSlug=$5 AND cadence=$6 AND leaseUntil <= $7';
       const result = await qr.query(takeover, [
         ownerId,
         runId,
@@ -486,9 +463,7 @@ async function acquireOnce(
         now,
       ]);
       const afterTakeover = await qr.query(
-        dataSource.options.type === 'postgres'
-          ? 'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2'
-          : 'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=? AND cadence=?',
+        'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2',
         [scopeSlug, cadence]
       );
       const changed =
@@ -497,9 +472,7 @@ async function acquireOnce(
           Number(afterTakeover[0]?.runId) === runId);
       if (changed) {
         await qr.query(
-          dataSource.options.type === 'postgres'
-            ? 'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=$3 WHERE id=$4'
-            : 'UPDATE pipeline_runs SET status=?,completedAt=?,error=? WHERE id=?',
+          'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=$3 WHERE id=$4',
           ['failed', now, 'run lease expired', lease.runId]
         );
         await qr.commitTransaction();
@@ -507,9 +480,7 @@ async function acquireOnce(
       }
     }
     await qr.query(
-      dataSource.options.type === 'postgres'
-        ? 'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=NULL WHERE id=$3'
-        : 'UPDATE pipeline_runs SET status=?,completedAt=?,error=NULL WHERE id=?',
+      'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=NULL WHERE id=$3',
       ['skipped-overlap', now, runId]
     );
     await qr.commitTransaction();
@@ -530,29 +501,14 @@ async function acquire(
   ruleVersion: string,
   at: Date
 ): Promise<{ runId: number; ownerId: string; skipped: boolean }> {
-  let delay = 20;
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      return await acquireOnce(
-        dataSource,
-        scopeSlug,
-        localitySlug,
-        cadence,
-        ruleVersion,
-        at
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (
-        dataSource.options.type !== 'better-sqlite3' ||
-        !/busy|locked/i.test(message) ||
-        attempt >= 5
-      )
-        throw error;
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      delay = Math.min(delay * 2, 250);
-    }
-  }
+  return acquireOnce(
+    dataSource,
+    scopeSlug,
+    localitySlug,
+    cadence,
+    ruleVersion,
+    at
+  );
 }
 
 export async function recoverExpired(
@@ -560,11 +516,8 @@ export async function recoverExpired(
   at: Date
 ): Promise<void> {
   const now = at.toISOString();
-  const postgres = dataSource.options.type === 'postgres';
   const leases = (await dataSource.query(
-    postgres
-      ? 'SELECT scopeSlug,cadence,ownerId,runId FROM pipeline_run_leases WHERE leaseUntil <= $1'
-      : 'SELECT scopeSlug,cadence,ownerId,runId FROM pipeline_run_leases WHERE leaseUntil <= ?',
+    'SELECT scopeSlug,cadence,ownerId,runId FROM pipeline_run_leases WHERE leaseUntil <= $1',
     [now]
   )) as {
     scopeSlug: string;
@@ -573,63 +526,38 @@ export async function recoverExpired(
     runId: number;
   }[];
   for (const lease of leases) {
-    let delay = 20;
-    for (let attempt = 0; ; attempt += 1) {
-      const queryRunner = dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      try {
-        // Claim and terminalize in one transaction. Rechecking owner/run and
-        // expiry makes a heartbeat renewal that wins the race immune to stale
-        // recovery observations.
-        const deleted = await queryRunner.query(
-          postgres
-            ? 'DELETE FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4 AND leaseUntil <= $5 RETURNING runId'
-            : 'DELETE FROM pipeline_run_leases WHERE scopeSlug=? AND cadence=? AND ownerId=? AND runId=? AND leaseUntil <= ?',
-          [lease.scopeSlug, lease.cadence, lease.ownerId, lease.runId, now]
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      // Claim and terminalize in one transaction. Rechecking owner/run and
+      // expiry makes a heartbeat renewal that wins the race immune to stale
+      // recovery observations.
+      const deleted = await queryRunner.query(
+        'DELETE FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4 AND leaseUntil <= $5 RETURNING runId',
+        [lease.scopeSlug, lease.cadence, lease.ownerId, lease.runId, now]
+      );
+      const affected = Array.isArray(deleted) ? deleted.length : 0;
+      if (Number(affected) > 0) {
+        await queryRunner.query(
+          "UPDATE pipeline_stage_runs SET status='failed',completedAt=$1,error='run lease expired' WHERE runId=$2 AND status='running'",
+          [now, lease.runId]
         );
-        let affected = postgres
-          ? Array.isArray(deleted)
-            ? deleted.length
-            : 0
-          : deleted?.affected ?? deleted?.changes;
-        if (!postgres && affected === undefined)
-          affected = (await queryRunner.query('SELECT changes() AS changes'))[0]
-            ?.changes;
-        if (Number(affected) > 0) {
-          await queryRunner.query(
-            postgres
-              ? "UPDATE pipeline_stage_runs SET status='failed',completedAt=$1,error='run lease expired' WHERE runId=$2 AND status='running'"
-              : "UPDATE pipeline_stage_runs SET status='failed',completedAt=?,error='run lease expired' WHERE runId=? AND status='running'",
-            [now, lease.runId]
-          );
-          await queryRunner.query(
-            postgres
-              ? "UPDATE pipeline_runs SET status='failed',completedAt=$1,error='run lease expired',currentStage=NULL WHERE id=$2 AND status='running'"
-              : "UPDATE pipeline_runs SET status=?,completedAt=?,error='run lease expired',currentStage=NULL WHERE id=? AND status='running'",
-            ['failed', now, lease.runId]
-          );
-        }
-        await queryRunner.commitTransaction();
-        break;
-      } catch (error) {
-        try {
-          await queryRunner.rollbackTransaction();
-        } catch {
-          /* connection cleanup below */
-        }
-        const message = error instanceof Error ? error.message : String(error);
-        if (
-          dataSource.options.type !== 'better-sqlite3' ||
-          !/busy|locked/i.test(message) ||
-          attempt >= 5
-        )
-          throw error;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        delay = Math.min(delay * 2, 250);
-      } finally {
-        await queryRunner.release();
+        await queryRunner.query(
+          "UPDATE pipeline_runs SET status='failed',completedAt=$1,error='run lease expired',currentStage=NULL WHERE id=$2 AND status='running'",
+          ['failed', now, lease.runId]
+        );
       }
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      try {
+        await queryRunner.rollbackTransaction();
+      } catch {
+        /* connection cleanup below */
+      }
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 }
@@ -643,17 +571,12 @@ async function renew(
 ): Promise<void> {
   const now = new Date();
   const until = new Date(now.getTime() + LEASE_MS).toISOString();
-  const postgres = dataSource.options.type === 'postgres';
   await dataSource.query(
-    postgres
-      ? 'UPDATE pipeline_run_leases SET leaseUntil=$1,updatedAt=$2 WHERE scopeSlug=$3 AND cadence=$4 AND ownerId=$5 AND runId=$6'
-      : 'UPDATE pipeline_run_leases SET leaseUntil=?,updatedAt=? WHERE scopeSlug=? AND cadence=? AND ownerId=? AND runId=?',
+    'UPDATE pipeline_run_leases SET leaseUntil=$1,updatedAt=$2 WHERE scopeSlug=$3 AND cadence=$4 AND ownerId=$5 AND runId=$6',
     [until, now.toISOString(), scopeSlug, cadence, ownerId, runId]
   );
   const current = await dataSource.query(
-    postgres
-      ? 'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4'
-      : 'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=? AND cadence=? AND ownerId=? AND runId=?',
+    'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4',
     [scopeSlug, cadence, ownerId, runId]
   );
   if (!current[0]) throw new Error('run lease lost');
@@ -839,18 +762,16 @@ export async function runPipeline(
         acquired.ownerId,
         acquired.runId
       );
-      await options.dataSource
-        .getRepository('PipelineStageRun')
-        .save({
-          runId: acquired.runId,
-          stage: name,
-          startedAt: start,
-          completedAt: null,
-          status: 'running',
-          counts: '{}',
-          coverageGaps: '[]',
-          error: null,
-        });
+      await options.dataSource.getRepository('PipelineStageRun').save({
+        runId: acquired.runId,
+        stage: name,
+        startedAt: start,
+        completedAt: null,
+        status: 'running',
+        counts: '{}',
+        coverageGaps: '[]',
+        error: null,
+      });
       await updateRun(options.dataSource, acquired.runId, {
         currentStage: name,
       });
@@ -880,17 +801,15 @@ export async function runPipeline(
             ([key, entry]) => !key.startsWith('__') && typeof entry === 'number'
           )
         ) as Record<string, number>;
-        await options.dataSource
-          .getRepository('PipelineStageRun')
-          .update(
-            { runId: acquired.runId, stage: name },
-            {
-              completedAt: new Date().toISOString(),
-              status,
-              counts: json(counts),
-              coverageGaps: json(gaps),
-            }
-          );
+        await options.dataSource.getRepository('PipelineStageRun').update(
+          { runId: acquired.runId, stage: name },
+          {
+            completedAt: new Date().toISOString(),
+            status,
+            counts: json(counts),
+            coverageGaps: json(gaps),
+          }
+        );
         result.stages.push({
           stage: name,
           status,
@@ -900,16 +819,14 @@ export async function runPipeline(
         return value;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        await options.dataSource
-          .getRepository('PipelineStageRun')
-          .update(
-            { runId: acquired.runId, stage: name },
-            {
-              completedAt: new Date().toISOString(),
-              status: 'failed',
-              error: message,
-            }
-          );
+        await options.dataSource.getRepository('PipelineStageRun').update(
+          { runId: acquired.runId, stage: name },
+          {
+            completedAt: new Date().toISOString(),
+            status: 'failed',
+            error: message,
+          }
+        );
         result.stages.push({
           stage: name,
           status: 'failed',
@@ -1311,15 +1228,13 @@ export async function runPipeline(
     await stage('collate', async () => ({ clusters: dailyClusters.length }));
     const briefing = await stage('brief', async () => {
       const prior = activeSummarizer.strict
-        ? await options.dataSource
-            .getRepository(BriefingSchema)
-            .findOneBy({
-              localitySlug: locality.slug,
-              cadence: options.cadence,
-              periodStart: p.start,
-              periodEnd: p.end,
-              ruleVersion,
-            })
+        ? await options.dataSource.getRepository(BriefingSchema).findOneBy({
+            localitySlug: locality.slug,
+            cadence: options.cadence,
+            periodStart: p.start,
+            periodEnd: p.end,
+            ruleVersion,
+          })
         : null;
       let priorItemIds: number[] = [];
       if (prior?.itemIds) {
