@@ -96,6 +96,12 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
 - **D20** A verified official never corroborates, even though members can.
   Role grants are additive, so civic-access declares this in `ROLE_DENIALS`
   and civic-contributions enforces it through `effectivePermissions`.
+- **D21** Search is off by default (it supersedes D12). SearXNG's
+  challenge-free engines are unusable: DuckDuckGo answers with a CAPTCHA, and
+  Mojeek is inactive in SearXNG because of a proof-of-work CAPTCHA, which the
+  POC's config never actually enabled. Discovery uses the directories, the
+  crawl and the new channels. Search stays pluggable through
+  `SEARCH_PROVIDER`. SD.7 is dropped.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -275,7 +281,7 @@ must not change the replayed corpora.
       quiet-source detection, auto-retire and rediscovery (D9, D11, D13).
 - [ ] SD.6 Sources admin in `owner-console`: the decision log, overrides and
       health (D14).
-- [ ] SD.7 SearXNG compose service (D12). Can be done any time before SD.5.
+- [ ] ~~SD.7 SearXNG compose service (D12).~~ Dropped by D21.
 
 ## Handoff log
 
@@ -412,3 +418,7 @@ must not change the replayed corpora.
     decision.
   - The SearXNG container was started from a copy under `tmp/` and removed
     afterwards.
+- 2026-10-01: The SearXNG check found a configuration gap but no fix:
+  Mojeek is `inactive` in SearXNG's defaults (proof-of-work CAPTCHA), and the
+  POC never enabled it. The owner chose to rely on the directories (D21).
+  Next: fix B1 and B2, re-run the benchmark for Adel and Tifton, then Phase 2.

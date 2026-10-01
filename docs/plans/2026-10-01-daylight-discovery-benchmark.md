@@ -89,29 +89,36 @@ From the POC's logged runs (with search):
   items but no recent dates. That is either date parsing or stale pages, and
   it needs a look when those adapters are next touched.
 
-## Search is not available (affects D12)
+## Search is not available (D21)
 
 The POC's SearXNG settings deliberately enable only engines that answer
 automated queries without a challenge: DuckDuckGo, Mojeek and Wikipedia. On
 2026-10-01 from this machine:
 
 - DuckDuckGo answered with a CAPTCHA, and SearXNG suspended it.
-- Mojeek returned an empty response to automated searches.
+- **Mojeek was never on.** SearXNG's defaults mark it `inactive: true`
+  because it "uses a Proof of Work CAPTCHA". The POC's `keep_only` list keeps
+  it in the engine list without activating it, so the POC's runs only ever
+  had DuckDuckGo and Wikipedia. Enabling it would mean working around a bot
+  defence, which the POC's rule excludes.
 - Wikipedia is an encyclopedia engine and returns nothing useful for these
   queries.
 
-Per the POC's own rule, those defences are not worked around. A "with
-search" run would have repeated the no-search run, so it was not made.
-SearXNG as configured cannot be relied on as discovery's search provider. D12
-needs a decision: a keyed API (the code already supports Brave), retrying
-later, or treating search as optional.
+So there was a configuration gap, but nothing to fix within the rules. The
+"with search" comparison was not run, because it would have repeated the
+no-search run.
+
+**Decision (owner, D21):** discovery relies on the directories, the crawl
+and the new channels (SD.1–SD.3). Search stays pluggable through
+`SEARCH_PROVIDER`, off by default. SD.7 (a SearXNG compose service) is
+dropped unless a challenge-free engine becomes available.
 
 ## Suggested order of work (for the owner to decide)
 
 1. **Fix B1 and B2.** They are small. Adel's agendas may be found once the
    correct .gov domain seeds the crawl, and following same-government domain
    moves helps every town that has changed domains.
-2. **SD.3, local news, is the largest category.** Without working search, it
+2. **SD.3, local news, is the largest category.** With search off (D21), it
    rests on the legal-organ lists and RSS autodiscovery.
 3. **SD.4, bespoke government pages,** is the second largest. It is also the
    riskiest under full automation (D9).
