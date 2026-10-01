@@ -21,6 +21,13 @@
       "options": {
         "jestConfig": "libs/civic/core/jest.config.ts"
       }
+    },
+    "test-db": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/civic/core-db"],
+      "options": {
+        "jestConfig": "libs/civic/core/jest.db.config.ts"
+      }
     }
   }
 }
