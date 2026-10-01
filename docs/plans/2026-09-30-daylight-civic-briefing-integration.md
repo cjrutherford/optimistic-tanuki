@@ -23,26 +23,31 @@ the discovery benchmark, then Phase 2.
 | P1.1–P1.3 | `libs/civic/core`, Postgres only, all tests | 36a377a4…80cf2700, 25df7ba4 |
 | P1.4      | `libs/civic/llm`                            | ccce3be4, cc9d7dc0          |
 | P1.5      | `libs/civic/adapters`                       | 90999a48, 79b0569e          |
+| P1.6      | `libs/civic/community`, `libs/civic/access` | e592ea0c, 991bd809          |
 
 **Tests** (`nx run-many -t typecheck test test-db -p civic-core civic-llm
-civic-adapters`; `test-db` needs `CIVIC_TEST_DATABASE_URL`):
+civic-adapters civic-community civic-access`; `test-db` needs
+`CIVIC_TEST_DATABASE_URL`):
 
-| Lib            | `test` | `test-db`                      |
-| -------------- | ------ | ------------------------------ |
-| civic-core     | 225    | 87 + 1 todo (SQLite-only lock) |
-| civic-llm      | 170    | 29                             |
-| civic-adapters | 81     | 31                             |
+| Lib             | `test` | `test-db`                      |
+| --------------- | ------ | ------------------------------ |
+| civic-core      | 225    | 87 + 1 todo (SQLite-only lock) |
+| civic-llm       | 170    | 29                             |
+| civic-adapters  | 81     | 31                             |
+| civic-community | 61     | —                              |
+| civic-access    | 7      | —                              |
 
 All 54 POC core tests are ported.
+
+**Branch:** rebased onto `main` on 2026-10-01, after PR #271 merged. The
+hashes above are post-rebase. Re-check PR #186 (still open) before Phase 4;
+a final rebase comes before the PR (P4.0).
 
 **Next:** P1.7, the discovery benchmark (now that adapters are ported), then
 Phase 2: the civic-briefing service and the parity gate.
 
 **Waiting on the owner:**
 
-- **Rebased** onto `main` on 2026-10-01, after PR #271 merged. The hashes
-  above are post-rebase. Re-check PR #186 (still open) before Phase 4; a
-  final rebase comes before the PR (P4.0).
 - **CI.** The civic `test-db` targets and the `tools/civic-parity` tests are
   not in CI yet. CI has no Postgres service, and adding one changes the
   workflow.
