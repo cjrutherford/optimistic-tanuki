@@ -422,3 +422,12 @@ must not change the replayed corpora.
   Mojeek is `inactive` in SearXNG's defaults (proof-of-work CAPTCHA), and the
   POC never enabled it. The owner chose to rely on the directories (D21).
   Next: fix B1 and B2, re-run the benchmark for Adel and Tifton, then Phase 2.
+- 2026-10-01: B1 and B2 are fixed with regression tests (9f7cf863). In the
+  re-run, Adel now seeds `cityofadelga.gov`, but its agendas page is bespoke
+  (SD.4); recall is unchanged at 6 of 16.
+- **Observed flake:** one of five parallel runs of all civic targets had 1
+  failing test in `civic-core:test-db`, and four reruns passed. The failing
+  test wasn't captured. Suspects are the timing-sensitive lease and heartbeat
+  tests in `runner.test.ts`. If it recurs, capture the output and fix the
+  cause; don't retry. Next: Phase 2, starting with P2.0 (the prompt-proxy
+  research note).

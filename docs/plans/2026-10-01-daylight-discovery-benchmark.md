@@ -89,6 +89,24 @@ From the POC's logged runs (with search):
   items but no recent dates. That is either date parsing or stale pages, and
   it needs a look when those adapters are next touched.
 
+## After fixing B1 and B2 (9f7cf863)
+
+Adel and Tifton were re-run:
+
+- **Adel.** It now seeds `cityofadelga.gov` from the .gov list (3 directory
+  sites, up from 2), but still adopts nothing. Its agendas page,
+  `/documents/agendas-minutes`, lists dated agenda PDFs under a Drupal file
+  path that no recognised platform uses. That makes it a bespoke page
+  (SD.4), not a seeding failure.
+- **Tifton.** Unchanged. Its agenda center was already found through
+  `tiftonga.gov`.
+- **B2** has a regression test (a listed domain redirecting to the
+  government's new one). It mattered less here than expected, because both
+  towns' new domains were also in the .gov list once B1 was fixed.
+
+Recall is unchanged at 6 of 16. The fixes remove two ways for a town to be
+missed, but the misses in this sample need the new channels.
+
 ## Search is not available (D21)
 
 The POC's SearXNG settings deliberately enable only engines that answer
