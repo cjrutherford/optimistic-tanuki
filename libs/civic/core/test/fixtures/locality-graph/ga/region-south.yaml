@@ -1,0 +1,15 @@
+slug: region-south
+name: South Region
+state: GA
+timezone: America/New_York
+lat: 31.5
+lon: -83.5
+kind: region
+parents: [state-ga]
+broad: true
+sources:
+  - sourceKey: region-news
+    adapter: rss
+    name: Region News
+    url: https://example.test/region-feed/
+    kind: news

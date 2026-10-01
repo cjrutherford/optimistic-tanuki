@@ -1,0 +1,32 @@
+# Adel, GA (Cook County seat). All source URLs verified live 2026-09-11.
+slug: adel-ga
+name: Adel
+state: GA
+timezone: America/New_York
+lat: 31.1376
+lon: -83.4258
+kind: town
+parents: [cook-county-ga]
+edition: true
+topics:
+  - council
+  - planning
+  - water
+  - roads
+  - weather
+  - schools
+cadence:
+  - daily
+  - weekly
+sources:
+  - sourceKey: adel-documents
+    adapter: document
+    name: City of Adel agendas and minutes
+    url: https://www.cityofadelga.gov/documents/agendas-minutes
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://www.cityofadelga.gov/documents/agendas-minutes
+      linkPattern: uploads/(agendas|minutes)/.*\.pdf$

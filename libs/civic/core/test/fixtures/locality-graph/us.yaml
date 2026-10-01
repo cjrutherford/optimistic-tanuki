@@ -1,0 +1,15 @@
+slug: us
+name: United States
+state: US
+timezone: America/New_York
+lat: 39
+lon: -98
+kind: country
+parents: []
+broad: true
+sources:
+  - sourceKey: us-news
+    adapter: rss
+    name: National News
+    url: https://example.test/us-feed/
+    kind: news

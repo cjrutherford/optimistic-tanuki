@@ -1,0 +1,17 @@
+slug: town-b
+name: Bton
+state: GA
+timezone: America/New_York
+lat: 31.1
+lon: -83.2
+kind: city
+parents: [county-a]
+edition: true
+
+cadence: [daily]
+sources:
+  - sourceKey: city-news
+    adapter: rss
+    name: Bton News
+    url: https://example.test/city-news-feed/
+    kind: news

@@ -1,0 +1,43 @@
+slug: county-a
+name: Alpha County
+state: GA
+timezone: America/New_York
+lat: 31.2
+lon: -83.3
+kind: county
+parents: [region-south]
+excludePhrases: ['Alpha County, Illinois']
+sources:
+  - sourceKey: county-news
+    adapter: rss
+    name: County News
+    url: https://example.test/county-feed/
+    kind: news
+  - sourceKey: county-minutes
+    adapter: document
+    name: County Commission Minutes
+    url: https://example.test/county-minutes/
+    kind: meeting
+  - sourceKey: county-discover
+    adapter: news-discover
+    name: Discovered Alpha County news
+    url: https://news.example.test/rss/search?q=Alpha+County
+    kind: news
+    aggregateDiscovery: true
+    aggregateUrl: https://news.example.test/rss/search?q=Alpha+County
+    config:
+      query: Alpha County Georgia
+      matchNames: [Alpha County, Aville, Bton, Cburg]
+  - sourceKey: county-paper
+    adapter: news-discover
+    name: The Alpha Ledger
+    url: https://news.example.test/rss/search?q=Alpha+Ledger
+    kind: news
+    accessMode: snippet-only
+    accessRestrictionReason: Crawler policy disallows article body retrieval.
+    restrictionPolicyUrl: https://www.alphaledger.example/robots.txt
+    aggregateDiscovery: true
+    aggregateUrl: https://news.example.test/rss/search?q=Alpha+Ledger
+    config:
+      query: Alpha Ledger
+      matchNames: [Alpha Ledger, Alpha County]

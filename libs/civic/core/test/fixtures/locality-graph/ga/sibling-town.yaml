@@ -1,0 +1,17 @@
+slug: sibling-town
+name: Cburg
+state: GA
+timezone: America/New_York
+lat: 31.1
+lon: -83.2
+kind: town
+parents: [county-a]
+edition: true
+
+cadence: [daily]
+sources:
+  - sourceKey: sibling-news
+    adapter: rss
+    name: Cburg News
+    url: https://example.test/sibling-news-feed/
+    kind: news

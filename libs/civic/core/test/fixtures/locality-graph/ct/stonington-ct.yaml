@@ -1,0 +1,16 @@
+slug: stonington-ct
+name: Stonington
+state: CT
+timezone: America/New_York
+lat: 41.34
+lon: -71.9
+kind: town
+parents: [southeastern-ct]
+edition: true
+cadence: [daily]
+sources:
+  - sourceKey: stonington-news
+    adapter: rss
+    name: Stonington News
+    url: https://example.test/stonington-feed/
+    kind: news

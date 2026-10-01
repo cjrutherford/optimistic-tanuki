@@ -38,6 +38,13 @@ locality-discovery services.
   changes. Its corpora and `golden/baseline.json` are read in place,
   read-only, by the parity gate (see P0.1).
 - **D8** Superseded by the branch line above.
+- **D17** `packages/nestjs` is dropped. It's unused, and folding it into
+  core would make core and llm import each other. civic-briefing gets its
+  own scheduling in P2.1.
+- **D18** Database tests run under a separate `test-db` target that needs
+  `CIVIC_TEST_DATABASE_URL`; `nx test civic-core` needs no infrastructure. The
+  POC's current localities YAML is frozen as the test fixture
+  `libs/civic/core/test/fixtures/localities`.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -72,11 +79,13 @@ fixes stay with the lead agent.
       profile)
 - [x] P1.1 `libs/civic/core`: copy and typecheck, Postgres only (D16).
       Whether `packages/nestjs` is ported is still open; see the handoff note.
-- [ ] P1.2 `libs/civic/core`: tests to Jest (part 1)
-- [ ] P1.3 `libs/civic/core`: tests to Jest (part 2), Postgres dialect for
-      SQLite-only SQL (POC S1.2 step 1)
+- [x] P1.2 `libs/civic/core`: the 36 tests without a database, converted to Jest
+- [ ] P1.3 `libs/civic/core`: the 17 database tests in `test/db/` under a
+      `test-db` target (`CIVIC_TEST_DATABASE_URL`, fresh schema per test), plus
+      fixing the known Postgres SQL bugs (see the P1.1 handoff)
 - [ ] P1.4 `libs/civic/llm` (+ Jest)
-- [ ] P1.5 `libs/civic/adapters` (+ Jest, deps, licence check)
+- [ ] P1.5 `libs/civic/adapters` (+ Jest, deps, licence check; also takes
+      core's `http-client.test.ts`, which imports all nine adapters)
 - [ ] P1.6 `libs/civic/community`, `libs/civic/access` (+ Jest; roles
       against `permission-lib`)
 - [ ] P2.0 Research: the prompt-proxy path for D5 (no code, a short note)
@@ -257,3 +266,16 @@ must not change the replayed corpora.
      `@civic/llm`, so folding it into civic-core as the POC plan suggested
      would create a core↔llm cycle. Tests (54 files, plus fixtures and helpers)
      are not copied yet; they come with P1.2. Next: P1.2.
+- 2026-09-30: P1.2 is done. 36 test files are now Jest suites:
+  `nx test civic-core` gives 36 suites and 225 tests passing, and
+  `nx typecheck civic-core` checks the lib and spec tsconfigs. The 633
+  `node:assert` calls became `expect` through a TypeScript AST codemod;
+  `node:assert/strict` deep equality fails across Jest's VM realms, so this
+  was required, not cosmetic. A mutation check confirmed the converted tests
+  still fail on a regression. The ESM-only linkedom dependencies are
+  transformed via `transformIgnorePatterns`. The negative type fixture
+  `test/fixtures/types/invalid-fetch-result.ts` keeps `// prettier-ignore`
+  so each `@ts-expect-error` stays on its line. One POC test was stale (it
+  expected Adel not to be an edition, contrary to POC b8343a7) and was
+  updated. Next: P1.3, which needs a Postgres instance (the compose
+  `postgres` service).

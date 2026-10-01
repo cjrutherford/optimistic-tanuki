@@ -1,0 +1,54 @@
+slug: groton-ct
+name: Groton
+state: CT
+timezone: America/New_York
+lat: 41.35
+lon: -72.08
+kind: town
+parents: [southeastern-ct]
+edition: true
+aliases: [Town of Groton]
+excludePhrases:
+  [
+    'Groton, Massachusetts',
+    'Groton, Mass.',
+    'Groton, New York',
+    'Groton, N.Y.',
+    'Groton, Vermont',
+    'Groton School',
+  ]
+topics: [town-government, schools, roads, weather, news]
+cadence: [daily]
+sources:
+  - sourceKey: groton-documents
+    adapter: document
+    name: Town of Groton meeting agendas and minutes
+    url: https://www.agendasuite.org/iip/groton/meeting/list
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://www.agendasuite.org/iip/groton/meeting/list
+      # Meetings are listed on the index; each meeting page holds its documents.
+      indexLinkPattern: /meeting/details/
+      linkPattern: /file/getfile/
+      maxIndexPages: 12
+      maxDocs: 40
+  - sourceKey: ct-examiner-groton
+    adapter: rss
+    name: CT Examiner (Groton coverage)
+    url: https://ctexaminer.com/tag/groton/feed/
+    kind: news
+    desk: local-reporting
+    accessMode: full
+  - sourceKey: groton-town-news
+    adapter: http-scrape
+    name: Town of Groton newsroom
+    url: https://www.groton-ct.gov/newslist.php
+    kind: news
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      linkPattern: news_detail_

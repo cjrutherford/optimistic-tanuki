@@ -1,0 +1,43 @@
+# Madison, Florida (population about 3,000), the seat of rural Madison County.
+slug: madison-fl
+name: Madison
+state: FL
+timezone: America/New_York
+lat: 30.47
+lon: -83.41
+kind: city
+parents: [madison-county-fl]
+edition: true
+aliases: [City of Madison]
+excludePhrases:
+  [
+    'Madison, Wisconsin',
+    'Madison, Wis.',
+    'Madison, WI',
+    'Madison Square Garden',
+    'James Madison',
+    'Madison, Alabama',
+    'Madison, Mississippi',
+    'Madison, Georgia',
+    'Madison, Ga.',
+    'Madison, Tennessee',
+    'Madison, Indiana',
+    'Madison, New Jersey',
+    'Madison, Connecticut',
+  ]
+topics: [city-government, utilities, news]
+cadence: [daily]
+sources:
+  - sourceKey: madison-fl-documents
+    adapter: document
+    name: City of Madison commission agendas and minutes
+    url: https://cityofmadisonfl.com/agendas/
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://cityofmadisonfl.com/agendas/
+      # Documents are Word files; the page also links them through a Google viewer.
+      linkPattern: ^https://cityofmadisonfl\.com/wp-content/uploads/.*\.docx$
+      maxDocs: 20

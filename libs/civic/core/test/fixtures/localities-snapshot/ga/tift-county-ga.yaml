@@ -1,0 +1,36 @@
+slug: tift-county-ga
+name: Tift County
+state: GA
+timezone: America/New_York
+lat: 31.45
+lon: -83.5
+kind: county
+parents: [south-georgia]
+topics: [county-government, schools, roads, weather, news]
+sources:
+  - sourceKey: tift-documents
+    adapter: document
+    name: Tift County commission agendas and minutes
+    url: https://www.tiftcounty.org/government/resource_library.php
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://www.tiftcounty.org/government/resource_library.php
+      linkPattern: \.pdf(\?t=\d+)?$
+      # The library holds years of agendas and signed minutes; minutes carry
+      # the vote, so the cap has to be high enough to reach them.
+      maxDocs: 120
+  - sourceKey: tift-news-discover
+    adapter: news-discover
+    name: Auto-discovered Tift County news
+    url: https://news.google.com/rss/search?q=Tifton+Georgia
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Tifton+Georgia
+    config:
+      query: Tifton Georgia OR Tift County Georgia
+      matchNames: [Tifton, Tift County, Tift, Omega, Ty Ty, Chula]

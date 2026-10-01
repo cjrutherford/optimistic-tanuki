@@ -1,0 +1,26 @@
+slug: fixture-live-town
+name: Fixture Live Town
+state: GA
+timezone: America/New_York
+lat: 31
+lon: -83
+kind: town
+parents: [fixture-live-county]
+edition: true
+topics: [news]
+cadence: [daily]
+sources:
+  - sourceKey: fixture-live-news
+    adapter: news-discover
+    name: Fixture Live News
+    url: https://news.google.com/rss/search?q=Fixture
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Fixture
+    config:
+      query: Fixture news
+      matchNames: [Fixture Live Town]
+    coverageCapabilities:
+      pagination: { mode: next-link, maxPages: 2 }

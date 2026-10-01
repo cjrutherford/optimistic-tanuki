@@ -1,0 +1,20 @@
+slug: southeastern-ct
+name: Southeastern Connecticut
+state: CT
+timezone: America/New_York
+lat: 41.4
+lon: -72.1
+kind: planning-region
+parents: [state-ct]
+broad: true
+sources:
+  - sourceKey: se-ct-news-discover
+    adapter: news-discover
+    name: Discovered southeastern Connecticut news
+    url: https://news.example.test/rss/search?q=Groton+OR+Stonington
+    kind: news
+    aggregateDiscovery: true
+    aggregateUrl: https://news.example.test/rss/search?q=Groton+OR+Stonington
+    config:
+      query: Groton OR Stonington OR Mystic
+      matchNames: [Groton, Stonington, Mystic]

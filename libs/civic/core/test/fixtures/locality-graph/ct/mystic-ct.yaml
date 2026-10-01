@@ -1,0 +1,8 @@
+slug: mystic-ct
+name: Mystic
+state: CT
+timezone: America/New_York
+lat: 41.35
+lon: -71.97
+kind: village
+parents: [groton-ct, stonington-ct]

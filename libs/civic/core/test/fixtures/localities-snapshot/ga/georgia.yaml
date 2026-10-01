@@ -1,0 +1,24 @@
+slug: georgia
+name: Georgia
+kind: state
+state: GA
+timezone: America/New_York
+lat: 32.7
+lon: -83.3
+parents: [us]
+broad: true
+topics: [government, legislation, news, weather]
+sources:
+  - sourceKey: georgia-recorder
+    adapter: rss
+    name: Georgia Recorder (state policy)
+    url: https://georgiarecorder.com/feed/
+    kind: legislation
+  - sourceKey: nws-alerts-ga
+    adapter: open-data
+    name: National Weather Service alerts (Georgia)
+    url: https://api.weather.gov/alerts/active
+    kind: alert
+    desk: weather
+    config:
+      area: GA

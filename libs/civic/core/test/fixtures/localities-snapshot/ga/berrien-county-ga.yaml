@@ -1,0 +1,61 @@
+slug: berrien-county-ga
+name: Berrien County
+state: GA
+timezone: America/New_York
+lat: 31.2
+lon: -83.25
+kind: county
+parents: [south-georgia]
+aliases: [Berrien]
+excludePhrases:
+  [Berrien Springs, 'Berrien County, Michigan', 'Berrien County, Mich.']
+topics: [county-government, schools, roads, weather, news]
+sources:
+  - sourceKey: berrien-documents
+    adapter: document
+    name: Berrien County commission minutes 2026
+    url: https://berriencountygeorgia.com/document-category/berrien-county-board-of-commissioners-minutes/2026-county-commission-minutes/
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://berriencountygeorgia.com/document-category/berrien-county-board-of-commissioners-minutes/2026-county-commission-minutes/
+      linkPattern: wp-content/uploads/.*\.pdf$
+  - sourceKey: berrien-press
+    adapter: news-discover
+    name: The Berrien Press
+    url: https://news.google.com/rss/search?q=Berrien+Press+Georgia
+    kind: news
+    desk: community-news
+    accessMode: snippet-only
+    accessRestrictionReason: The publisher's crawler policy disallows named AI crawlers from retrieving the article body; only aggregate headline and snippet metadata may be used.
+    restrictionPolicyUrl: https://www.theberrienpress.com/robots.txt
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Berrien+Press+Georgia
+    config:
+      query: Berrien Press Georgia
+      matchNames: [Berrien Press, Berrien, Nashville, Alapaha, Enigma, Ray City]
+  - sourceKey: berrien-news-discover
+    adapter: news-discover
+    name: Auto-discovered Berrien County news
+    url: https://news.google.com/rss/search?q=Berrien+County+Georgia
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Berrien+County+Georgia
+    config:
+      query: Berrien County Georgia OR Nashville Georgia
+      matchNames:
+        [Berrien County, Berrien, Nashville, Alapaha, Enigma, Ray City]
+  - sourceKey: berrien-schools-board
+    adapter: apptegy
+    name: Berrien County Schools board meetings and announcements
+    url: https://www.berrienschools.org/page/board-meetings
+    kind: meeting
+    desk: schools
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      minLength: 40

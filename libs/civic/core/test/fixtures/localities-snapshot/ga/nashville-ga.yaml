@@ -1,0 +1,46 @@
+# Test locality: Nashville, GA (Berrien County). All source URLs verified live 2026-09-11.
+# News/policy feeds: no working local RSS found (VDT search-RSS 404s, Recorder
+# blocks bots). Add verified feed URLs here when found — rss adapter is ready.
+slug: nashville-ga
+name: Nashville
+state: GA
+timezone: America/New_York
+lat: 31.2076
+lon: -83.2468
+kind: town
+parents: [berrien-county-ga]
+edition: true
+excludePhrases: ['Nashville, Tennessee', 'Nashville, Tenn.', 'Nashville, TN']
+topics:
+  - council
+  - planning
+  - water
+  - roads
+  - weather
+  - schools
+cadence:
+  - daily
+  - weekly
+sources:
+  - sourceKey: nashville-agendas
+    adapter: http-scrape
+    name: City of Nashville GA agenda center
+    url: https://www.nashvillega.com/agendacenter
+    kind: meeting
+    enabled: false # superseded by nashville-documents (full PDF text)
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      linkPattern: ViewFile|\.pdf$|/Minutes/|/Agenda/
+  - sourceKey: nashville-documents
+    adapter: document
+    name: City of Nashville GA agenda and minutes documents
+    url: https://www.nashvillega.com/agendacenter
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://www.nashvillega.com/agendacenter
+      linkPattern: ViewFile/(Agenda|Minutes|Packet)/

@@ -1,0 +1,15 @@
+slug: state-ga
+name: Georgia
+state: GA
+timezone: America/New_York
+lat: 32.6
+lon: -83.4
+kind: state
+parents: [us]
+broad: true
+sources:
+  - sourceKey: state-news
+    adapter: rss
+    name: State News
+    url: https://example.test/state-feed/
+    kind: news
