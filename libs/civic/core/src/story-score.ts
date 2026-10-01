@@ -70,12 +70,12 @@ export async function loadScoredEvidence(
   ds: DataSource
 ): Promise<ScoredEvidence[]> {
   const rows = (await ds.query(`
-    SELECT l.civicItemId, l.agendaItemId, l.evidenceDate, s.id AS storyId, s.title AS storyTitle, c.sourceId, c.title AS itemTitle, a.heading
+    SELECT l."civicItemId", l."agendaItemId", l."evidenceDate", s.id AS "storyId", s.title AS "storyTitle", c."sourceId", c.title AS "itemTitle", a.heading
     FROM canonical_story_items l
-    JOIN canonical_stories s ON s.id = l.canonicalStoryId
-    JOIN civic_items c ON c.id = l.civicItemId
-    LEFT JOIN agenda_items a ON a.id = l.agendaItemId
-    ORDER BY l.evidenceDate, l.id`)) as {
+    JOIN canonical_stories s ON s.id = l."canonicalStoryId"
+    JOIN civic_items c ON c.id = l."civicItemId"
+    LEFT JOIN agenda_items a ON a.id = l."agendaItemId"
+    ORDER BY l."evidenceDate", l.id`)) as {
     civicItemId: number;
     agendaItemId: number | null;
     evidenceDate: string | null;

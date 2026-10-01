@@ -399,6 +399,12 @@ function persistedStorySynthesisContractVersion(
   }
 }
 
+/** TypeORM's postgres driver resolves a raw UPDATE as [rows, affectedCount]. */
+function affectedRows(result: unknown): number {
+  if (Array.isArray(result) && typeof result[1] === 'number') return result[1];
+  return 0;
+}
+
 async function acquireOnce(
   dataSource: DataSource,
   scopeSlug: string,
@@ -415,7 +421,7 @@ async function acquireOnce(
   const until = new Date(at.getTime() + LEASE_MS).toISOString();
   try {
     const insert =
-      'INSERT INTO pipeline_runs (scopeSlug,localitySlug,cadence,startedAt,completedAt,status,currentStage,ruleVersion,counts,coverageGaps,error) VALUES ($1,$2,$3,$4,NULL,$5,NULL,$6,$7,$8,NULL) RETURNING id';
+      'INSERT INTO pipeline_runs ("scopeSlug","localitySlug",cadence,"startedAt","completedAt",status,"currentStage","ruleVersion",counts,"coverageGaps",error) VALUES ($1,$2,$3,$4,NULL,$5,NULL,$6,$7,$8,NULL) RETURNING id';
     const params = [
       scopeSlug,
       localitySlug,
@@ -429,18 +435,10 @@ async function acquireOnce(
     const inserted = await qr.query(insert, params);
     const runId = Number(inserted[0].id);
     const leaseSql =
-      'INSERT INTO pipeline_run_leases (scopeSlug,cadence,ownerId,runId,leaseUntil,createdAt,updatedAt) VALUES ($1,$2,$3,$4,$5,$6,$6) ON CONFLICT (scopeSlug,cadence) DO NOTHING';
-    await qr.query(leaseSql, [
-      scopeSlug,
-      cadence,
-      ownerId,
-      runId,
-      until,
-      now,
-      now,
-    ]);
+      'INSERT INTO pipeline_run_leases ("scopeSlug",cadence,"ownerId","runId","leaseUntil","createdAt","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$6) ON CONFLICT ("scopeSlug",cadence) DO NOTHING';
+    await qr.query(leaseSql, [scopeSlug, cadence, ownerId, runId, until, now]);
     const existing = await qr.query(
-      'SELECT ownerId,runId,leaseUntil FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 FOR UPDATE',
+      'SELECT "ownerId","runId","leaseUntil" FROM pipeline_run_leases WHERE "scopeSlug"=$1 AND cadence=$2 FOR UPDATE',
       [scopeSlug, cadence]
     );
     const lease = existing[0] as
@@ -452,7 +450,7 @@ async function acquireOnce(
     }
     if (lease && new Date(lease.leaseUntil).getTime() <= at.getTime()) {
       const takeover =
-        'UPDATE pipeline_run_leases SET ownerId=$1,runId=$2,leaseUntil=$3,updatedAt=$4 WHERE scopeSlug=$5 AND cadence=$6 AND leaseUntil <= $7';
+        'UPDATE pipeline_run_leases SET "ownerId"=$1,"runId"=$2,"leaseUntil"=$3,"updatedAt"=$4 WHERE "scopeSlug"=$5 AND cadence=$6 AND "leaseUntil" <= $7';
       const result = await qr.query(takeover, [
         ownerId,
         runId,
@@ -463,16 +461,16 @@ async function acquireOnce(
         now,
       ]);
       const afterTakeover = await qr.query(
-        'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2',
+        'SELECT "ownerId","runId" FROM pipeline_run_leases WHERE "scopeSlug"=$1 AND cadence=$2',
         [scopeSlug, cadence]
       );
       const changed =
-        (result.affected ?? result.changes ?? 0) > 0 ||
+        affectedRows(result) > 0 ||
         (afterTakeover[0]?.ownerId === ownerId &&
           Number(afterTakeover[0]?.runId) === runId);
       if (changed) {
         await qr.query(
-          'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=$3 WHERE id=$4',
+          'UPDATE pipeline_runs SET status=$1,"completedAt"=$2,error=$3 WHERE id=$4',
           ['failed', now, 'run lease expired', lease.runId]
         );
         await qr.commitTransaction();
@@ -480,7 +478,7 @@ async function acquireOnce(
       }
     }
     await qr.query(
-      'UPDATE pipeline_runs SET status=$1,completedAt=$2,error=NULL WHERE id=$3',
+      'UPDATE pipeline_runs SET status=$1,"completedAt"=$2,error=NULL WHERE id=$3',
       ['skipped-overlap', now, runId]
     );
     await qr.commitTransaction();
@@ -517,7 +515,7 @@ export async function recoverExpired(
 ): Promise<void> {
   const now = at.toISOString();
   const leases = (await dataSource.query(
-    'SELECT scopeSlug,cadence,ownerId,runId FROM pipeline_run_leases WHERE leaseUntil <= $1',
+    'SELECT "scopeSlug",cadence,"ownerId","runId" FROM pipeline_run_leases WHERE "leaseUntil" <= $1',
     [now]
   )) as {
     scopeSlug: string;
@@ -534,18 +532,18 @@ export async function recoverExpired(
       // expiry makes a heartbeat renewal that wins the race immune to stale
       // recovery observations.
       const deleted = await queryRunner.query(
-        'DELETE FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4 AND leaseUntil <= $5 RETURNING runId',
+        'DELETE FROM pipeline_run_leases WHERE "scopeSlug"=$1 AND cadence=$2 AND "ownerId"=$3 AND "runId"=$4 AND "leaseUntil" <= $5 RETURNING "runId"',
         [lease.scopeSlug, lease.cadence, lease.ownerId, lease.runId, now]
       );
-      const affected = Array.isArray(deleted) ? deleted.length : 0;
-      if (Number(affected) > 0) {
+      // DELETE resolves as [rows, affectedCount], so count the claim, not the pair.
+      if (affectedRows(deleted) > 0) {
         await queryRunner.query(
-          "UPDATE pipeline_stage_runs SET status='failed',completedAt=$1,error='run lease expired' WHERE runId=$2 AND status='running'",
+          `UPDATE pipeline_stage_runs SET status='failed',"completedAt"=$1,error='run lease expired' WHERE "runId"=$2 AND status='running'`,
           [now, lease.runId]
         );
         await queryRunner.query(
-          "UPDATE pipeline_runs SET status='failed',completedAt=$1,error='run lease expired',currentStage=NULL WHERE id=$2 AND status='running'",
-          ['failed', now, lease.runId]
+          `UPDATE pipeline_runs SET status='failed',"completedAt"=$1,error='run lease expired',"currentStage"=NULL WHERE id=$2 AND status='running'`,
+          [now, lease.runId]
         );
       }
       await queryRunner.commitTransaction();
@@ -572,11 +570,11 @@ async function renew(
   const now = new Date();
   const until = new Date(now.getTime() + LEASE_MS).toISOString();
   await dataSource.query(
-    'UPDATE pipeline_run_leases SET leaseUntil=$1,updatedAt=$2 WHERE scopeSlug=$3 AND cadence=$4 AND ownerId=$5 AND runId=$6',
+    'UPDATE pipeline_run_leases SET "leaseUntil"=$1,"updatedAt"=$2 WHERE "scopeSlug"=$3 AND cadence=$4 AND "ownerId"=$5 AND "runId"=$6',
     [until, now.toISOString(), scopeSlug, cadence, ownerId, runId]
   );
   const current = await dataSource.query(
-    'SELECT ownerId,runId FROM pipeline_run_leases WHERE scopeSlug=$1 AND cadence=$2 AND ownerId=$3 AND runId=$4',
+    'SELECT "ownerId","runId" FROM pipeline_run_leases WHERE "scopeSlug"=$1 AND cadence=$2 AND "ownerId"=$3 AND "runId"=$4',
     [scopeSlug, cadence, ownerId, runId]
   );
   if (!current[0]) throw new Error('run lease lost');

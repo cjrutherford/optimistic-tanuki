@@ -1,32 +1,5 @@
 [
-  {
-    "title": "Cook County budget approved",
-    "body": "Cook County commissioners approved a balanced budget after a public hearing, preserving road and school funding for the coming year.",
-    "kind": "news",
-    "topics": ["government"],
-    "jurisdictionSlug": "cook-county-ga",
-    "externalId": "cook-budget-001",
-    "originalSnippet": "Commissioners approved the county budget.",
-    "publisher": "Cook Daily",
-    "originalUrl": "https://articles.test/road"
-  },
-  {
-    "title": "Lakeview school expansion",
-    "body": "Lakeview school leaders announced a classroom expansion and construction schedule for local families.",
-    "kind": "news",
-    "topics": ["schools"],
-    "jurisdictionSlug": "lakeview-alpha-ga",
-    "originalSnippet": "Lakeview schools announced an expansion.",
-    "publisher": "Cook Daily",
-    "originalUrl": "https://articles.test/fallback-lakeview-school"
-  },
-  {
-    "title": "Ambiguous county note",
-    "body": "Pineville and Lakeview leaders discussed a regional project without identifying a single jurisdiction in the notice.",
-    "kind": "news",
-    "topics": ["roads"],
-    "originalSnippet": "Pineville and Lakeview leaders discussed a regional project without identifying a single jurisdiction.",
-    "publisher": "Cook Daily",
-    "originalUrl": "https://articles.test/fallback-county-note"
-  }
+  {"title":"Cook County budget approved","body":"Cook County commissioners approved a balanced budget after a public hearing, preserving road and school funding for the coming year.","kind":"news","topics":["government"],"jurisdictionSlug":"cook-county-ga","externalId":"cook-budget-001","originalSnippet":"Commissioners approved the county budget.","publisher":"Cook Daily","originalUrl":"https://articles.test/road"},
+  {"title":"Lakeview school expansion","body":"Lakeview school leaders announced a classroom expansion and construction schedule for local families.","kind":"news","topics":["schools"],"jurisdictionSlug":"lakeview-alpha-ga","originalSnippet":"Lakeview schools announced an expansion.","publisher":"Cook Daily","originalUrl":"https://articles.test/fallback-lakeview-school"},
+  {"title":"Ambiguous county note","body":"Pineville and Lakeview leaders discussed a regional project without identifying a single jurisdiction in the notice.","kind":"news","topics":["roads"],"originalSnippet":"Pineville and Lakeview leaders discussed a regional project without identifying a single jurisdiction.","publisher":"Cook Daily","originalUrl":"https://articles.test/fallback-county-note"}
 ]

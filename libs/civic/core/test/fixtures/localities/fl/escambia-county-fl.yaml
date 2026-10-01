@@ -10,16 +10,7 @@ lon: -87.34
 kind: county
 parents: [florida]
 # Alabama has an Escambia County too, across the state line.
-excludePhrases:
-  [
-    'Escambia County, Alabama',
-    'Escambia County, Ala.',
-    'Escambia County, AL',
-    'Escambia County Alabama',
-    'Brewton',
-    'Atmore',
-    'Flomaton',
-  ]
+excludePhrases: ['Escambia County, Alabama', 'Escambia County, Ala.', 'Escambia County, AL', 'Escambia County Alabama', 'Brewton', 'Atmore', 'Flomaton']
 topics: [county-government, schools, roads, weather, news]
 sources:
   - sourceKey: escambia-civicclerk

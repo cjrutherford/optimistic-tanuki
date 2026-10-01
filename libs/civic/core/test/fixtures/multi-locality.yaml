@@ -28,7 +28,7 @@ localities:
         name: Fixture national wire
         url: https://fixtures.test/us-wire
         kind: news
-        config: { fixture: global-feed.json }
+        config: {fixture: global-feed.json}
   - slug: south-georgia
     name: South Georgia
     state: GA
@@ -57,7 +57,7 @@ localities:
         name: Cook County fixture desk
         url: https://fixtures.test/cook-county
         kind: news
-        config: { fixture: county-feed.json }
+        config: {fixture: county-feed.json}
   - slug: berrien-county-ga
     name: Berrien County
     state: GA
@@ -74,7 +74,7 @@ localities:
         name: Berrien County fixture desk
         url: https://fixtures.test/berrien-county
         kind: news
-        config: { fixture: namesake-county-town-feed.json }
+        config: {fixture: namesake-county-town-feed.json}
   - slug: pineville-alpha-ga
     name: Pineville
     state: GA
@@ -92,7 +92,7 @@ localities:
         name: Pineville fixture desk
         url: https://fixtures.test/pineville-alpha
         kind: news
-        config: { fixture: town-a-feed.json }
+        config: {fixture: town-a-feed.json}
   - slug: lakeview-alpha-ga
     name: Lakeview
     state: GA
@@ -110,7 +110,7 @@ localities:
         name: Lakeview fixture desk
         url: https://fixtures.test/lakeview-alpha
         kind: news
-        config: { fixture: town-b-feed.json }
+        config: {fixture: town-b-feed.json}
   - slug: pineville-beta-ga
     name: Pineville
     state: GA

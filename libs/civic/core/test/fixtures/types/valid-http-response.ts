@@ -11,6 +11,4 @@ class FixtureHttpResponse extends Response {
   }
 }
 
-export const validHttpResponse = new FixtureHttpResponse(
-  'https://example.test/story'
-) satisfies HttpResponse;
+export const validHttpResponse = new FixtureHttpResponse('https://example.test/story') satisfies HttpResponse;

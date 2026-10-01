@@ -4,7 +4,7 @@
 
 Daylight found no public business from Pineville dated in the past week.
 
-_2026-09-12 to 2026-09-13 · 3 sources · Model: deterministic-quiet-day_
+*2026-09-12 to 2026-09-13 · 3 sources · Model: deterministic-quiet-day*
 
 > Deterministic quiet-day edition; no LLM generation; background is carried forward only from verified, dated evidence.
 

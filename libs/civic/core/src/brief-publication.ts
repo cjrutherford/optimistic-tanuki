@@ -1,7 +1,12 @@
 import { readdir, readFile, unlink } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { In, type DataSource } from 'typeorm';
+import {
+  In,
+  type DataSource,
+  type EntityManager,
+  type EntitySchema,
+} from 'typeorm';
 import type {
   Cadence,
   CoverageRange,
@@ -257,7 +262,11 @@ async function restoreDatabase(
     if (ids.length) {
       await linkRepo.delete({ canonicalStoryId: In(ids) });
       await canonicalRepo.save(snapshot.canonical);
-      if (snapshot.links.length) await linkRepo.save(snapshot.links);
+      await reinsertWithIds(
+        queryRunner.manager,
+        CanonicalStoryItemSchema,
+        snapshot.links
+      );
     }
     if (snapshot.civicItems.length)
       await queryRunner.manager
@@ -267,13 +276,17 @@ async function restoreDatabase(
       localitySlug: snapshot.briefingKey.localitySlug,
       ruleVersion: snapshot.briefingKey.ruleVersion,
     });
-    if (snapshot.editionStories.length)
-      await queryRunner.manager
-        .getRepository(EditionStorySchema)
-        .save(snapshot.editionStories);
+    await reinsertWithIds(
+      queryRunner.manager,
+      EditionStorySchema,
+      snapshot.editionStories
+    );
     const briefingRepo = queryRunner.manager.getRepository(BriefingSchema);
     await briefingRepo.delete(snapshot.briefingKey);
-    if (snapshot.briefing) await briefingRepo.save(snapshot.briefing);
+    if (snapshot.briefing)
+      await reinsertWithIds(queryRunner.manager, BriefingSchema, [
+        snapshot.briefing,
+      ]);
     await queryRunner.commitTransaction();
   } catch (error) {
     await queryRunner.rollbackTransaction();
@@ -281,6 +294,39 @@ async function restoreDatabase(
   } finally {
     await queryRunner.release();
   }
+}
+
+/**
+ * Reinserts snapshot rows under their original ids. TypeORM leaves generated
+ * increment columns out of Postgres inserts (save and the insert builder
+ * alike), so the statement is written from the entity metadata, and the
+ * sequence is then moved past the restored ids so later inserts don't collide.
+ */
+async function reinsertWithIds<T extends { id?: number }>(
+  manager: EntityManager,
+  schema: EntitySchema<T>,
+  rows: readonly T[]
+): Promise<void> {
+  if (!rows.length) return;
+  const metadata = manager.connection.getMetadata(schema);
+  const driver = manager.connection.driver;
+  const table = metadata.tableName;
+  const names = metadata.columns.map((column) => `"${column.databaseName}"`);
+  for (const row of rows) {
+    const values = metadata.columns.map((column) =>
+      driver.preparePersistentValue(column.getEntityValue(row), column)
+    );
+    await manager.query(
+      `INSERT INTO "${table}" (${names.join(', ')}) VALUES (${values
+        .map((_, index) => `$${index + 1}`)
+        .join(', ')})`,
+      values
+    );
+  }
+  await manager.query(
+    `SELECT setval(pg_get_serial_sequence($1, 'id'), GREATEST((SELECT MAX(id) FROM "${table}"), 1))`,
+    [table]
+  );
 }
 
 export async function publishBriefing(

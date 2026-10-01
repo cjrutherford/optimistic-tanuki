@@ -80,12 +80,15 @@ fixes stay with the lead agent.
 - [x] P1.1 `libs/civic/core`: copy and typecheck, Postgres only (D16).
       Whether `packages/nestjs` is ported is still open; see the handoff note.
 - [x] P1.2 `libs/civic/core`: the 36 tests without a database, converted to Jest
-- [ ] P1.3 `libs/civic/core`: the 17 database tests in `test/db/` under a
-      `test-db` target (`CIVIC_TEST_DATABASE_URL`, fresh schema per test), plus
-      fixing the known Postgres SQL bugs (see the P1.1 handoff)
-- [ ] P1.4 `libs/civic/llm` (+ Jest)
+- [x] P1.3 `libs/civic/core`: 13 database test files in `test/db/` under the
+      `test-db` target, plus fixes to the Postgres SQL
+- [ ] P1.4 `libs/civic/llm` (+ Jest; also takes core's
+      `live-analysis-integration.test.ts` and `llm-provenance.test.ts`, which
+      import the POC's llm package)
 - [ ] P1.5 `libs/civic/adapters` (+ Jest, deps, licence check; also takes
-      core's `http-client.test.ts`, which imports all nine adapters)
+      core's `http-client.test.ts`, which imports all nine adapters, and
+      `article-enrichment.test.ts` / `restricted-source.test.ts`, which import
+      adapter-rss)
 - [ ] P1.6 `libs/civic/community`, `libs/civic/access` (+ Jest; roles
       against `permission-lib`)
 - [ ] P2.0 Research: the prompt-proxy path for D5 (no code, a short note)
@@ -279,3 +282,24 @@ must not change the replayed corpora.
   expected Adel not to be an edition, contrary to POC b8343a7) and was
   updated. Next: P1.3, which needs a Postgres instance (the compose
   `postgres` service).
+- 2026-10-01: P1.3 is done. `nx run civic-core:test-db` (needs
+  `CIVIC_TEST_DATABASE_URL`; locally
+  `postgres://postgres:postgres@localhost:5432/civic_test` in the compose `db`
+  container) gives 14 suites: 87 tests passing and 1 `it.todo`, the SQLite
+  per-file publication lock removed with D16. Each test gets its own schema
+  through `search_path`, schemas are dropped per file, and each file runs in
+  a temporary working directory so default `./data` output stays out of the
+  repo. Postgres fixes in src:
+  - quoted camelCase identifiers in the raw SQL in `runner.ts` and
+    `story-score.ts`;
+  - corrected bind-parameter counts;
+  - TypeORM's raw UPDATE and DELETE resolve as `[rows, affectedCount]`.
+    Lease recovery read `.length` (always 2), so it failed runs whose lease
+    a heartbeat had just renewed;
+  - brief-publication rollback reinserts snapshot rows under their original
+    ids. TypeORM drops increment ids from Postgres inserts, so the statement
+    is written from the metadata and the sequence is reset.
+    Fixtures had been reformatted by Prettier in P1.2. They are restored
+    verbatim from the POC, and `.prettierignore` now covers
+    `libs/civic/core/test/fixtures`. Four test files wait on unported packages
+    (P1.4, P1.5). Next: P1.4.

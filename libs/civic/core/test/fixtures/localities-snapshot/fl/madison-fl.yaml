@@ -9,22 +9,7 @@ kind: city
 parents: [madison-county-fl]
 edition: true
 aliases: [City of Madison]
-excludePhrases:
-  [
-    'Madison, Wisconsin',
-    'Madison, Wis.',
-    'Madison, WI',
-    'Madison Square Garden',
-    'James Madison',
-    'Madison, Alabama',
-    'Madison, Mississippi',
-    'Madison, Georgia',
-    'Madison, Ga.',
-    'Madison, Tennessee',
-    'Madison, Indiana',
-    'Madison, New Jersey',
-    'Madison, Connecticut',
-  ]
+excludePhrases: ['Madison, Wisconsin', 'Madison, Wis.', 'Madison, WI', 'Madison Square Garden', 'James Madison', 'Madison, Alabama', 'Madison, Mississippi', 'Madison, Georgia', 'Madison, Ga.', 'Madison, Tennessee', 'Madison, Indiana', 'Madison, New Jersey', 'Madison, Connecticut']
 topics: [city-government, utilities, news]
 cadence: [daily]
 sources:

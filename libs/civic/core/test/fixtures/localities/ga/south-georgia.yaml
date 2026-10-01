@@ -19,8 +19,7 @@ sources:
     aggregateDiscovery: false
     coverageCapabilities:
       # A few posts a week: twelve pages reach six months on a first run.
-      pagination:
-        { mode: page, parameter: paged, maxPages: 12, untilCovered: true }
+      pagination: { mode: page, parameter: paged, maxPages: 12, untilCovered: true }
   - sourceKey: south-georgia-news-discover
     # Disabled 2026-09-21: news.google.com's robots.txt disallows crawlers,
     # and this adapter discovers only through Google News search. Publishers'
@@ -36,16 +35,7 @@ sources:
     aggregateUrl: https://news.google.com/rss/search?q=South+Georgia+news
     config:
       query: South Georgia news
-      matchNames:
-        [
-          South Georgia,
-          Adel,
-          Nashville,
-          Tifton,
-          Cook County,
-          Berrien County,
-          Tift County,
-        ]
+      matchNames: [South Georgia, Adel, Nashville, Tifton, Cook County, Berrien County, Tift County]
       excludePublishers: [The Georgia Gazette]
   - sourceKey: valdosta-today
     adapter: rss

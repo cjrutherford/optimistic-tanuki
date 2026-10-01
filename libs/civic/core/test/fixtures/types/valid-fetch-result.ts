@@ -17,16 +17,7 @@ export const fetchedBlob = {
   requestUrl: 'https://example.test/index',
   contentType: 'application/pdf',
   fetchedAt: '2026-09-12T12:00:00.000Z',
-  payload: {
-    kind: 'blob-ref',
-    ref: {
-      store: 'local',
-      key: 'sha256/ab/hash',
-      sha256: 'ab'.repeat(32),
-      bytes: 4,
-      contentType: 'application/pdf',
-    },
-  },
+  payload: { kind: 'blob-ref', ref: { store: 'local', key: 'sha256/ab/hash', sha256: 'ab'.repeat(32), bytes: 4, contentType: 'application/pdf' } },
 } satisfies FetchResult;
 
 export const notModified = {
