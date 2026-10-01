@@ -102,6 +102,8 @@ beforeAll(() => {
   registerAllAdapters();
   mkdirSync(join(out, mode), { recursive: true });
   mkdirSync(directoriesDir, { recursive: true });
+  // Adapters cache downloads under ./data; keep them with the reports.
+  process.chdir(out);
 });
 
 describe(`discovery benchmark (${mode})`, () => {
