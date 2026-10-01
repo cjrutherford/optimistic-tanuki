@@ -12,6 +12,7 @@ export default {
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.pnpm|linkedom|css-select|css-what|domutils|dom-serializer|domhandler|domelementtype|entities|htmlparser2|nth-check|boolbase|uhyphen|html-escaper|cssom|pdfjs-dist)/)',
   ],
+  setupFilesAfterEnv: ['<rootDir>/test/helpers/temp-cwd.ts'],
   testMatch: ['<rootDir>/test/**/*.test.ts'],
   // Database tests need Postgres and run under the test-db target.
   testPathIgnorePatterns: ['/node_modules/', '<rootDir>/test/db/'],

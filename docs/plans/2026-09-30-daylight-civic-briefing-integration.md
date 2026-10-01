@@ -84,15 +84,14 @@ fixes stay with the lead agent.
       `test-db` target, plus fixes to the Postgres SQL
 - [x] P1.4 `libs/civic/llm` (+ Jest), including core's two llm-dependent
       database tests
-- [ ] P1.5 `libs/civic/adapters` (+ Jest, deps, licence check; also takes
-      core's `http-client.test.ts`, which imports all nine adapters, and
-      `article-enrichment.test.ts` / `restricted-source.test.ts`, which import
-      adapter-rss)
+- [x] P1.5 `libs/civic/adapters`: nine adapters as folders of one lib, plus
+      core's three adapter-dependent tests
 - [ ] P1.6 `libs/civic/community`, `libs/civic/access` (+ Jest; roles
       against `permission-lib`)
 - [ ] P2.0 Research: the prompt-proxy path for D5 (no code, a short note)
 - [ ] P2.1 `apps/civic-briefing`: Nest app, config, `DatabaseModule`, token,
-      compose, Dockerfile
+      compose, Dockerfile (the image needs `pdftoppm` (poppler-utils) and
+      `tesseract` for the document adapter's OCR fallback)
 - [ ] P2.2 `apps/civic-briefing`: generated initial migration, including the
       append-only triggers (POC S1.1)
 - [ ] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5)
@@ -313,3 +312,20 @@ must not change the replayed corpora.
   Its `test-db` target reuses civic-core's Postgres helpers. The model client
   is still the POC's own Ollama gateway; routing through prompt-proxy is
   P2.3 (D5). Next: P1.5 (`libs/civic/adapters`).
+- 2026-10-01: P1.5 is done. `libs/civic/adapters` (`civic-adapters`, import
+  `@optimistic-tanuki/civic-adapters`) holds one folder per adapter, with
+  `ALL_ADAPTERS` and `registerAllAdapters` at its root. Totals: 81 unit tests
+  and 31 database tests. Added deps: cheerio (MIT), pdfjs-dist 4 (Apache-2.0),
+  rss-parser (MIT).
+  - pdfjs-dist ships only ES modules, so Jest uses
+    `jest.pdfjs-transform.cjs`; webpack handles it at runtime.
+  - The document adapter's OCR calls the system binaries `pdftoppm` and
+    `tesseract`, which the P2.1 image must include.
+  - Adapter tests run in a temporary working directory, because the OCR
+    and download caches write to `./data`.
+  - Database test schemas are now scoped per project (`civic_t_<scope>_`),
+    so parallel `test-db` runs don't drop each other's schemas.
+  - The `test-db` targets use a 60 s timeout, since a whole pipeline run
+    exceeded Jest's 5 s default under parallel load.
+    All 54 of the POC's core tests are now ported: 49 in core, 2 in llm and
+    3 in adapters. Next: P1.6 (`libs/civic/community`, `libs/civic/access`).

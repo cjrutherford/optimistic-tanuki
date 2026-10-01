@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { DataSource, type EntitySchema } from 'typeorm';
 import { ALL_SCHEMAS } from '../../../src/schema.js';
-import { TEST_SCHEMA_PREFIX } from './global-setup.js';
+import { schemaPrefix } from './global-setup.js';
 
 /**
  * Database tests run against a real Postgres (CIVIC_TEST_DATABASE_URL), each
@@ -47,7 +47,9 @@ export async function createTestSchema(): Promise<{
   name: string;
   url: string;
 }> {
-  const name = `${TEST_SCHEMA_PREFIX}${randomBytes(6).toString('hex')}`;
+  const name = `${schemaPrefix(
+    (globalThis as Record<string, unknown>)['civicTestSchemaScope']
+  )}${randomBytes(6).toString('hex')}`;
   await withAdmin((admin) => admin.query(`CREATE SCHEMA "${name}"`));
   created.push(name);
   return { name, url: urlForSchema(name) };

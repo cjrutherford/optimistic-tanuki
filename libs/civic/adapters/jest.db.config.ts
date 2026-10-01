@@ -5,6 +5,9 @@ export default {
   ...base,
   displayName: 'civic-adapters-db',
   testMatch: ['<rootDir>/test/db/**/*.test.ts'],
+  globals: { civicTestSchemaScope: 'adapters' },
+  // Real Postgres and whole pipeline runs; node:test had no default timeout.
+  testTimeout: 60_000,
   testPathIgnorePatterns: ['/node_modules/'],
   globalSetup: '<rootDir>/../core/test/db/helpers/global-setup.ts',
   setupFilesAfterEnv: ['<rootDir>/../core/test/db/helpers/setup.ts'],
