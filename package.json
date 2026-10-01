@@ -80,6 +80,7 @@
     "catalog:check": "node scripts/validate-app-catalog.mjs",
     "check:no-personality-scss": "node tools/check-no-personality-scss.mjs",
     "check:personality-audit": "node tools/personality-audit.mjs check tools/personality-audit.baseline.json",
+    "civic:parity": "node tools/civic-parity/civic-parity.mjs",
     "docs:personalities": "node scripts/generate-personality-matrix.mjs --write"
   },
   "private": true,

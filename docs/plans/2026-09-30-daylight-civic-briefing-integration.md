@@ -59,7 +59,7 @@ Each slice fits one session, commits at its checkpoints, and ticks the log.
 Mechanical copy and import rewrites go to a Sonnet subagent; review and
 fixes stay with the lead agent.
 
-- [ ] P0.1 Port `tools/golden.ts` into this repo as a parity tool. It reads
+- [x] P0.1 Port `tools/golden.ts` into this repo as a parity tool. It reads
       the corpora and `golden/baseline.json` from the POC checkout, read-only,
       through a path env var (`DAYLIGHT_POC_DIR`), and replays them through
       `civic-briefing`. If the POC checkout is missing, it skips with a
@@ -214,3 +214,15 @@ must not change the replayed corpora.
 - 2026-09-30: Source discovery strategy decided (D9–D15). The POC's existing
   `sourcing.ts` is the base; the benchmark comes after civic-core is ported
   (P1.7).
+- 2026-09-30: P0.1 is done. `tools/civic-parity/` (`pnpm civic:parity
+[--require]`, Jest via `jest -c tools/civic-parity/jest.config.cjs`) reads
+  `DAYLIGHT_POC_DIR` read-only and writes to `tmp/civic-parity`. Its hashing
+  reproduces the POC's existing replay output: 38 of 38 artifacts, 0
+  differences. The replay entry that P2.4 must build is
+  `dist/apps/civic-briefing/replay.js` (override with `CIVIC_PARITY_REPLAY`).
+  It must accept the POC replay's arguments: `--corpus --towns --from --to
+--backfill-days 120 --database --artifacts --localities`, and write
+  `briefings/` and `stories/` markdown. The database defaults to SQLite per
+  corpus; set `CIVIC_PARITY_DATABASE_URL` with `{corpus}` for Postgres.
+  Replay uses `replaySummarizer` (no model), so D5 does not touch parity. Its
+  tests are not in CI yet. Next: P0.2 (vendored-code drift).
