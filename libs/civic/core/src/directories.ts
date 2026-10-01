@@ -171,11 +171,19 @@ export function dotgovSitesFor(
   const name = normalize(place.name);
   const county = place.kind === 'county';
   const bare = name.replace(/^(city|town|village|borough) of /u, '');
+  // Some governments register with their state after the name ("City of
+  // Adel, GA"); rows are already this state's, so the suffix says nothing.
+  const stateSuffix = new RegExp(
+    ` (${[place.state, STATE_NAMES[place.state] ?? place.state]
+      .map((label) => normalize(label))
+      .join('|')})$`,
+    'u'
+  );
   return rows
     .filter((row) => row.state === place.state)
     .filter((row) => (county ? row.type === 'County' : row.type === 'City'))
     .filter((row) => {
-      const organization = normalize(row.organization);
+      const organization = normalize(row.organization).replace(stateSuffix, '');
       if (county)
         return organization === name || organization.startsWith(`${name} `);
       if (name !== bare) return organization === name; // "City of Groton" means exactly that government

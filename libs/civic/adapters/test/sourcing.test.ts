@@ -13,13 +13,24 @@ import { registerAllAdapters } from '../src/index.js';
 
 /** A small web, entirely in memory: pages by address, and every request recorded. */
 function fakeWeb(
-  pages: Record<string, { body: string; type?: string; status?: number }>
+  pages: Record<
+    string,
+    { body?: string; type?: string; status?: number; redirectTo?: string }
+  >
 ): HttpClient & { requested: string[] } {
   const requested: string[] = [];
   return {
     requested,
     async fetch(input: string, _init?: HttpRequestInit): Promise<HttpResponse> {
       requested.push(input);
+      // A followed redirect, as the outbound policy reports it: the target's
+      // response, with response.url set to where it ended up.
+      const target = pages[input]?.redirectTo;
+      if (target) {
+        const response = await this.fetch(target, _init);
+        Object.defineProperty(response, 'url', { value: target });
+        return response;
+      }
       const page = pages[input];
       const status = page?.status ?? (page ? 200 : 404);
       return new Response(page?.body ?? 'not found', {
@@ -66,6 +77,52 @@ const rss = (items: { title: string; date: string; body: string }[]) =>
 beforeAll(() => registerAllAdapters());
 
 describe('the sourcing engine', () => {
+  it('keeps crawling a town site that has moved to a new domain', async () => {
+    // Adel's listed cityofadel.us redirects to cityofadelga.gov; links on the
+    // new domain are the town's own and must still be followed.
+    const web = fakeWeb({
+      'https://riverton-old.example.com/robots.txt': {
+        body: 'User-agent: *\nAllow: /',
+        type: 'text/plain',
+      },
+      'https://riverton-old.example.com/': {
+        redirectTo: 'https://riverton.example.gov/',
+      },
+      'https://riverton.example.gov/robots.txt': {
+        body: 'User-agent: *\nAllow: /',
+        type: 'text/plain',
+      },
+      'https://riverton.example.gov/': {
+        body: '<html><head><title>City of Riverton</title></head><body><a href="/news/">News</a></body></html>',
+      },
+      'https://riverton.example.gov/news/': {
+        body: '<html><head><title>News | City of Riverton</title><link rel="alternate" type="application/rss+xml" href="/feed/"></head><body></body></html>',
+      },
+      'https://riverton.example.gov/feed/': {
+        body: rss([
+          {
+            title: 'Council sets hearing on paving',
+            date: '2026-09-15',
+            body: 'The Riverton council set a hearing.',
+          },
+        ]),
+        type: 'application/rss+xml',
+      },
+    });
+    const { decisions } = await discoverSources({
+      locality: { ...town, websites: ['https://riverton-old.example.com/'] },
+      ancestors: [],
+      existing: [],
+      httpClient: web,
+      now: today,
+    });
+    const adopted = decisions.filter((decision) => decision.adopted);
+    expect(adopted.map((decision) => decision.source.url)).toStrictEqual([
+      'https://riverton.example.gov/feed/',
+    ]);
+    expect(web.requested).toContain('https://riverton.example.gov/news/');
+  });
+
   it("finds a feed on the town's own site and adopts it once a trial read finds recent items", async () => {
     const web = fakeWeb({
       'https://riverton.example.gov/robots.txt': {

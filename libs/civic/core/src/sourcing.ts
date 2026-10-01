@@ -295,7 +295,9 @@ async function crawlFrom(
     candidates.push(...candidatesOn(page, seed));
     if (depth >= MAX_DEPTH) continue;
     for (const link of promisingLinks(page)) {
-      if (!sameSite(link, url)) continue;
+      // The site the page came from: a listed domain may redirect to the
+      // government's new one (cityofadel.us to cityofadelga.gov).
+      if (!sameSite(link, page.url)) continue;
       // Meeting records first: an agenda centre's boards before a news page,
       // so the budget is spent where the records are.
       const entry = { url: link, depth: depth + 1, seed };

@@ -31,13 +31,16 @@ const CSV = [
   'berriencountyga.gov,County,Berrien County Government,,Nashville,GA,support@example.com',
   'morgancountyga.gov,County,Morgan County,,Madison,GA,person@example.com',
   '"quoted,name.gov",City,"Town of Quote, Inc",,Quote,GA,(blank)',
+  'cityofadelga.gov,City,"City of Adel, GA",,Adel,GA,(blank)',
+  'adeliowa.gov,City,City of Adel,,Adel,IA,(blank)',
+  'moultriega.gov,City,"City of Moultrie, Georgia",,Moultrie,GA,(blank)',
 ].join('\n');
 
 describe('official directories', () => {
   const rows = parseDotgov(CSV);
 
   it('keeps only what it uses from the .gov list — never the contact address', () => {
-    expect(rows.length).toBe(7);
+    expect(rows.length).toBe(10);
     expect(
       rows.every((row) => !JSON.stringify(row).includes('@'))
     ).toBeTruthy();
@@ -58,6 +61,21 @@ describe('official directories', () => {
         .map((site) => site.url)
         .sort()
     ).toStrictEqual(['https://cityofgroton-ct.gov/', 'https://groton-ct.gov/']);
+  });
+
+  it('matches a government registered with its state after its name', () => {
+    // The .gov list has "City of Adel, GA"; Adel, Iowa must not match.
+    expect(
+      dotgovSitesFor(place({ slug: 'adel-ga', name: 'Adel' }), rows).map(
+        (site) => site.url
+      )
+    ).toStrictEqual(['https://cityofadelga.gov/']);
+    expect(
+      dotgovSitesFor(
+        place({ slug: 'moultrie-ga', name: 'Moultrie' }),
+        rows
+      ).map((site) => site.url)
+    ).toStrictEqual(['https://moultriega.gov/']);
   });
 
   it('matches "City of Groton" to that government only', () => {
