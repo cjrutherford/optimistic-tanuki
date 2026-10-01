@@ -54,7 +54,17 @@ describe('client-interface SSR wiring', () => {
       } as NodeJS.ProcessEnv)
     ).toBe(false);
     const options = getClientInterfaceEngineOptions({} as NodeJS.ProcessEnv);
-    expect(options.trustProxyHeaders).toBe(true);
+    expect(options.trustProxyHeaders).toEqual(
+      expect.arrayContaining([
+        'x-forwarded-proto',
+        'x-forwarded-host',
+        'x-forwarded-for',
+      ])
+    );
+    const optedOut = getClientInterfaceEngineOptions({
+      SSR_TRUST_PROXY: 'false',
+    } as NodeJS.ProcessEnv);
+    expect(optedOut.trustProxyHeaders).toBe(false);
   });
 });
 

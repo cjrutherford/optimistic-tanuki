@@ -46,7 +46,17 @@ describe('owner-console SSR wiring', () => {
       } as NodeJS.ProcessEnv)
     ).toBe(false);
     const options = getOwnerConsoleEngineOptions({} as NodeJS.ProcessEnv);
-    expect(options.trustProxyHeaders).toBe(true);
+    expect(options.trustProxyHeaders).toEqual(
+      expect.arrayContaining([
+        'x-forwarded-proto',
+        'x-forwarded-host',
+        'x-forwarded-for',
+      ])
+    );
+    const optedOut = getOwnerConsoleEngineOptions({
+      SSR_TRUST_PROXY: '0',
+    } as NodeJS.ProcessEnv);
+    expect(optedOut.trustProxyHeaders).toBe(false);
   });
 });
 
