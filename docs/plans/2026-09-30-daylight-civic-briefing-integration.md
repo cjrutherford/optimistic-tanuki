@@ -88,7 +88,7 @@ fixes stay with the lead agent.
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
       ClamAV)
 - [ ] P2.6 ADR: converging with `apps/civic`
-- [ ] P2.7 Research (no code): source discovery — see "Open question" below
+- [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
 - [ ] P3.2 Gateway contribution and profile routes, permissions seeding
 - [ ] P3.3 File the nine security findings as issues (owner approves before
@@ -104,28 +104,113 @@ fixes stay with the lead agent.
 - [ ] P5.2 Model host config and alerts
 - [ ] P5.3 Open the PR to main (owner merges)
 
-## Open question: finding sources for a new town
+## Source discovery strategy (owner, 2026-09-30)
 
-The gathering pipeline is considered solid. The owner's open uncertainty is
-how to find _where_ to gather from, because each locality has its own mix of
-sources (agenda portals, municipal sites, local news, open data). No
-decision has been made. Today both systems are configured by hand:
+**The problem.** Each town has its own mix of sources, and each source has
+its own quirks: unusual date formats, Word files instead of PDFs, index pages
+nested two levels deep, places with the same name (Nashville TN vs GA), news
+sites that block crawlers, county pages that stopped updating. Of the POC's
+25 enabled sources, about 11 sit on standard platforms and about 14 are
+bespoke (a hand-written `linkPattern` or a particular publisher's feed).
 
-- The POC uses one YAML file per locality (`localities/{ct,fl,ga}/*.yaml`,
-  20 localities, 5 edition towns), written by hand.
-- `apps/civic` uses an operator-configured `CIVIC_AGENDA_SOURCES` list plus
-  `agenda-source-discovery.ts` (`docs/civic-core-agenda-source-ingestion.md`).
-- PR #186 adds `locality-discovery` / `locality-resolution` services to
-  local-hub and the gateway. They may be related; check before P2.7.
+**What exists.** The POC's `packages/core/src/sourcing.ts` already finds
+sources:
 
-P2.7 should survey these and propose options for the owner to choose from.
-Candidate options include: assisted discovery (search, then model-ranked
-candidates that an operator confirms), known platform fingerprints (Agenda
-Plus, CivicPlus, Granicus, Municode), and community-suggested sources
-reviewed through civic-contributions. P2.7 proposes; it does not decide.
+- It starts from official directories (the .gov list, Wikidata P856), the
+  town's own, county and school-district sites, existing sources, and
+  SearXNG.
+- It crawls same-site links two levels deep, up to 150 pages, honouring
+  robots.txt.
+- `detect.ts` recognises Legistar, Granicus, CivicClerk, CivicPlus and
+  Apptegy pages.
+- Every candidate is trial-read by its real adapter, and adopted only if it
+  yields dated items from the last 180 days. Rejected candidates are kept
+  with reasons.
+
+It has barely been exercised; the only saved output is Tifton's, with 3
+boards. Three things are still decided by a person: the place graph
+(`parents:`), the settings for bespoke scrapes, and news/legal notices
+(Google News discovery has been off since its robots.txt blocked it). This
+repo has no source discovery. `apps/civic`'s `agenda-source-discovery.ts`
+parses configured index pages, and #186's "locality discovery" finds nearby
+communities and businesses, not sources.
+
+**Decisions.**
+
+- **D9 Full automation.** Every candidate that passes the trial read is
+  adopted without review. Operators act afterwards, through overrides in the
+  admin UI: block a source or domain, pin a source, or edit its config.
+  Overrides always win over discovery.
+- **D10 Configuration lives in the database** (`ot_civic_briefing`): places,
+  the place graph, sources, overrides and an audit log of discovery
+  decisions with their evidence. The POC's YAML localities are imported once
+  as a seed and are not read at runtime.
+- **D11 Bad sources retire themselves.** A source is disabled automatically
+  after 3 failing days, or after 45 days of answering without publishing
+  anything new. Retiring a source triggers an immediate rediscovery run for
+  its town. Both steps are logged and can be reversed. Health must first
+  learn to tell "quiet" apart from "fresh"; today a source that keeps
+  answering with nothing new counts as fresh.
+- **D12 Search is a self-hosted SearXNG compose service**, the same setup
+  the POC deploys.
+- **D13 Publishers that block AI crawlers are auto-adopted as
+  snippet-only** (headline and link, no full text). robots.txt is still
+  honoured.
+- **D14 The admin UI goes in `owner-console`.**
+- **D15 Four new discovery channels are in scope.** Each is its own slice:
+  1. A Census place spine, so counties and school districts are derived
+     rather than hand-written.
+  2. Probing for Legistar and CivicClerk tenants through their public APIs.
+  3. County legal-organ newspapers, RSS autodiscovery and state
+     public-notice sites.
+  4. Scrape settings proposed by a model through prompt-proxy, adopted only
+     if the trial read passes.
+
+**Risks that full automation makes sharper:**
+
+- **A same-name town gets adopted.** Mitigation: place-name and state checks
+  on every candidate, and the Census FIPS IDs.
+- **A model-proposed config passes the trial read but reads the wrong
+  documents.** Mitigation: the trial read requires that the town is mentioned
+  and the dates are plausible, and every adoption is logged with sample items.
+- **Public-notice sites have no API.** Their terms must be checked before
+  SD.3 builds on them.
+- **Vendor portals may have terms of their own.** Prefer a vendor's public
+  API to scraping its HTML.
+
+**Discovery slices.** These come after the parity gate, because discovery
+must not change the replayed corpora.
+
+- [ ] P1.7 Benchmark: run the ported `discoverSources` against the 5 edition
+      towns and their parent places. Measure recall and precision against
+      the hand-written YAML, and list what it missed by quirk category. The
+      results may reorder SD.1–SD.5. (Needs P1.5.)
+- [ ] SD.0 Move sources and the place graph into the database (D10): the
+      entities, a generated migration, a one-time YAML seed import, and the
+      registry reading from the database. The audit log of discovery
+      decisions goes in here too.
+- [ ] SD.1 Census place spine. Import Census Government Units, give
+      `Community` FIPS and GNIS IDs (a generated social migration; consider
+      combining it with P4.3's `localitySlug`), and derive each town's parent
+      places.
+- [ ] SD.2 Platform tenant probing: Legistar `webapi.legistar.com/v1/{client}`
+      and CivicClerk `{tenant}.api.civicclerk.com`, checking each hit
+      against the town's name and state.
+- [ ] SD.3 Legal organs and notices: state press-association lists (GA
+      `LegalOrganList.pdf`, FL, CT), RSS autodiscovery, and the public-notice
+      sites, once their terms have been checked.
+- [ ] SD.4 Model-proposed scrape config through prompt-proxy, adopted only
+      if the trial read passes. (Needs P2.3.)
+- [ ] SD.5 Automation: auto-adoption including snippet-only publishers,
+      quiet-source detection, auto-retire and rediscovery (D9, D11, D13).
+- [ ] SD.6 Sources admin in `owner-console`: the decision log, overrides and
+      health (D14).
+- [ ] SD.7 SearXNG compose service (D12). Can be done any time before SD.5.
 
 ## Handoff log
 
 - 2026-09-30: Plan and decisions recorded. Nothing ported yet. The POC is
-  closed; the parity gate reads its data in place. Source discovery is an
-  open question (P2.7). Next: P0.1.
+  closed; the parity gate reads its data in place. Next: P0.1.
+- 2026-09-30: Source discovery strategy decided (D9–D15). The POC's existing
+  `sourcing.ts` is the base; the benchmark comes after civic-core is ported
+  (P1.7).
