@@ -431,3 +431,11 @@ must not change the replayed corpora.
   tests in `runner.test.ts`. If it recurs, capture the output and fix the
   cause; don't retry. Next: Phase 2, starting with P2.0 (the prompt-proxy
   research note).
+- 2026-10-01: **Unexplained:** the Adel/Tifton benchmark re-run wrote two
+  Tifton OCR cache files to a repo-root `data/`, although the harness moves
+  into `CIVIC_BENCH_OUT` first. A local check showed `chdir` works under the
+  target, and the files were removed. The harness now asserts its working
+  directory before and after each town, and that no repo-root `data/`
+  exists, so the next run will pinpoint the cause. A mistyped command
+  (`--testPathPattern` isn't passed through by Nx) also started a full live
+  benchmark run for about 5 minutes before the timeout stopped it.

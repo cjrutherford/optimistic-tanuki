@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   discoverSources,
@@ -30,6 +30,7 @@ const LOCAL_KINDS = new Set([
   'school-district',
 ]);
 
+const repoData = resolve('data');
 const out = resolve(process.env['CIVIC_BENCH_OUT'] ?? 'tmp/civic-discovery');
 const directoriesDir = resolve(
   process.env['CIVIC_BENCH_DIRECTORIES'] ?? join(out, 'directories')
@@ -109,6 +110,8 @@ beforeAll(() => {
 describe(`discovery benchmark (${mode})`, () => {
   for (const town of editions) {
     it(`sources ${town.slug} blind`, async () => {
+      // Caches go to ./data; a stray repo-root data/ appeared once (see plan).
+      expect(process.cwd()).toBe(out);
       const started = Date.now();
       const ancestors = registry.ancestors(town.slug);
       const descendants = registry.descendants(town.slug);
@@ -159,6 +162,10 @@ describe(`discovery benchmark (${mode})`, () => {
         `${JSON.stringify(report, null, 2)}\n`
       );
       expect(report.town).toBe(town.slug);
+      expect(process.cwd()).toBe(out);
+      expect(existsSync(repoData) && repoData !== join(out, 'data')).toBe(
+        false
+      );
     });
   }
 });
