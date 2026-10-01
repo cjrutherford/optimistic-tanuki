@@ -330,7 +330,7 @@ describe('BookComponent', () => {
         features: [],
       },
       currency: 'USD',
-      expiresAt: '2026-10-01T00:00:00.000Z',
+      expiresAt: '2099-10-01T00:00:00.000Z',
       isAuthoritative: true,
     });
     component.fullName = 'John Miller';

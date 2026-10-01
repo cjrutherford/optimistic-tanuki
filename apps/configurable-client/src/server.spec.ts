@@ -11,9 +11,7 @@ describe('configurable-client SSR server startup', () => {
     const manifestSetter = serverSource.indexOf(
       'ɵsetAngularAppEngineManifest(angularAppEngineManifest);'
     );
-    const angularEngine = serverSource.indexOf(
-      'const angularApp = new AngularNodeAppEngine();'
-    );
+    const angularEngine = serverSource.indexOf('new AngularNodeAppEngine(');
 
     expect(manifestImport).toBeGreaterThanOrEqual(0);
     expect(manifestSetter).toBeGreaterThan(manifestImport);

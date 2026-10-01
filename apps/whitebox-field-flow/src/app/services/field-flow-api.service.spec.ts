@@ -34,7 +34,7 @@ const serverEstimate = {
   depositRequired: 54,
   total: 231.12,
   currency: 'USD',
-  expiresAt: '2026-10-01T00:00:00.000Z',
+  expiresAt: '2099-10-01T00:00:00.000Z',
 };
 
 const bookingDetails = {
