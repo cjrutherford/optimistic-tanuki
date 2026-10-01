@@ -9,6 +9,9 @@ describe('adapter registry', () => {
       withFileTypes: true,
     })
       .filter((entry) => entry.isDirectory())
+      // `email` is registered by the service with its configured inbox: it
+      // needs a mailbox at construction, so it cannot sit in ALL_ADAPTERS.
+      .filter((entry) => entry.name !== 'email')
       .map((entry) => entry.name);
     const registered = ALL_ADAPTERS.map((adapter) =>
       adapter.name.replace(/-/gu, '')

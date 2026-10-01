@@ -37,3 +37,17 @@ export const ALL_ADAPTERS: readonly SourceAdapter[] = [
 export function registerAllAdapters(): void {
   for (const adapter of ALL_ADAPTERS) registerAdapter(adapter);
 }
+
+// The email adapter is not in ALL_ADAPTERS: it needs a mailbox at construction.
+// The service registers it with its configured inbox, e.g.
+// registerAdapter(createEmailAdapter(new ImapMailbox({ url })));
+export {
+  createEmailAdapter,
+  parseEmailConfig,
+  stripEmailFooter,
+} from './email/index.js';
+export type { EmailSourceConfig } from './email/index.js';
+export { ImapMailbox } from './email/imap-mailbox.js';
+export type { ImapMailboxOptions } from './email/imap-mailbox.js';
+export { senderMatches } from './email/mailbox.js';
+export type { MailMessage, Mailbox } from './email/mailbox.js';
