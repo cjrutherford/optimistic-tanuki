@@ -439,3 +439,19 @@ must not change the replayed corpora.
   exists, so the next run will pinpoint the cause. A mistyped command
   (`--testPathPattern` isn't passed through by Nx) also started a full live
   benchmark run for about 5 minutes before the timeout stopped it.
+- 2026-10-02: The owner asked for every source channel we can build, email
+  list subscriptions, and local-government outreach. See
+  `2026-10-02-civic-source-outreach-plan.md`: the owner's subscription
+  checklist, the outreach plan (press-association licences, clerks,
+  regional bodies, self-onboarding) and published clerk contacts.
+  - The email ingestion adapter is committed (31e6a883). The owner is
+    setting up a dedicated IMAP mailbox (`CIVIC_INBOX_IMAP_URL` in `.env`).
+  - The research found Georgia's statewide public-notice site forbids
+    automated access and Florida's needs written permission, so notices are
+    licence-only.
+  - The Google Custom Search JSON API is closed to new customers and shuts
+    down on 2027-01-01. Brave costs $5 per 1,000 requests, and storing
+    results needs a special plan.
+  - Adel publishes, but sparsely: its agendas listing is paginated, with
+    only 2 agenda or minutes PDFs on page 1, under the "page of PDFs"
+    rule's threshold of 3.
