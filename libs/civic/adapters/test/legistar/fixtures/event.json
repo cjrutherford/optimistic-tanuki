@@ -1,0 +1,11 @@
+{
+  "EventId": 101,
+  "EventBodyName": "City Council",
+  "EventDate": "/Date(1788307200000)/",
+  "EventTime": "6:00 PM",
+  "EventLocation": "Council Chambers",
+  "EventAgendaStatusName": "Final",
+  "EventMinutesStatusName": "Draft",
+  "EventAgendaFile": "https://example.legistar.com/Agenda/101.pdf",
+  "EventMinutesFile": null
+}

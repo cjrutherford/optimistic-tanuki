@@ -1,0 +1,7 @@
+{
+  "name": "@optimistic-tanuki/civic-adapters",
+  "version": "0.0.1",
+  "description": "Civic briefing source adapters: feeds, documents, agenda platforms and open data",
+  "license": "AGPL-3.0-only",
+  "private": true
+}
