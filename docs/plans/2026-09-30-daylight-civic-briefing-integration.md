@@ -65,7 +65,7 @@ fixes stay with the lead agent.
       `civic-briefing`. If the POC checkout is missing, it skips with a
       clear message. The 370 MB of data stays out of git, so the gate runs
       only on a machine that has the POC checkout.
-- [ ] P0.2 Measure drift: the POC's vendored code (reference `7e1d8740`)
+- [x] P0.2 Measure drift: the POC's vendored code (reference `7e1d8740`)
       against current libs here (auth, database, storage, permissions,
       profile)
 - [ ] P1.1 `libs/civic/core`: copy and build (`packages/core` +
@@ -86,12 +86,13 @@ fixes stay with the lead agent.
 - [ ] P2.4 Replay parity gate: 38/38 golden artifacts identical. Nothing
       after this proceeds on red.
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
-      ClamAV)
+      ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note)
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
 - [ ] P3.2 Gateway contribution and profile routes, permissions seeding
-- [ ] P3.3 File the nine security findings as issues (owner approves before
+- [ ] P3.3 File the eight open security findings (the stub virus scanner is
+      already fixed upstream) as issues (owner approves before
       anything is posted)
 - [ ] P4.0 Rebase on main (#271; re-check #186)
 - [ ] P4.1 `libs/civic/briefing-data-access`
@@ -226,3 +227,8 @@ must not change the replayed corpora.
   corpus; set `CIVIC_PARITY_DATABASE_URL` with `{corpus}` for Postgres.
   Replay uses `replaySummarizer` (no model), so D5 does not touch parity. Its
   tests are not in CI yet. Next: P0.2 (vendored-code drift).
+- 2026-09-30: P0.2 is done. See `2026-09-30-daylight-upstream-drift.md`. Of
+  the 431 vendored files, 344 are unchanged. The pipeline libs import no
+  vendored code, so drift can't affect P1.x or the parity gate. Real drift
+  is in storage (envelope encryption, a ClamAV scanner that fails closed),
+  which affects P2.5. Next: P1.1 (`libs/civic/core` copy and build).
