@@ -82,9 +82,8 @@ fixes stay with the lead agent.
 - [x] P1.2 `libs/civic/core`: the 36 tests without a database, converted to Jest
 - [x] P1.3 `libs/civic/core`: 13 database test files in `test/db/` under the
       `test-db` target, plus fixes to the Postgres SQL
-- [ ] P1.4 `libs/civic/llm` (+ Jest; also takes core's
-      `live-analysis-integration.test.ts` and `llm-provenance.test.ts`, which
-      import the POC's llm package)
+- [x] P1.4 `libs/civic/llm` (+ Jest), including core's two llm-dependent
+      database tests
 - [ ] P1.5 `libs/civic/adapters` (+ Jest, deps, licence check; also takes
       core's `http-client.test.ts`, which imports all nine adapters, and
       `article-enrichment.test.ts` / `restricted-source.test.ts`, which import
@@ -303,3 +302,14 @@ must not change the replayed corpora.
     verbatim from the POC, and `.prettierignore` now covers
     `libs/civic/core/test/fixtures`. Four test files wait on unported packages
     (P1.4, P1.5). Next: P1.4.
+- 2026-10-01: The owner wants ported code and fixtures to take the workspace
+  formatting rather than the POC's bytes. Fixtures are now formatted. The
+  multi-locality e2e test formats the generated edition before comparing,
+  and the negative type fixture's directives sit on the erroring lines
+  (5decb322).
+- 2026-10-01: P1.4 is done. `libs/civic/llm` (`civic-llm`, import
+  `@optimistic-tanuki/civic-llm`): 170 unit tests and 29 database tests pass
+  (`live-analysis-integration` and `llm-provenance` moved here from core).
+  Its `test-db` target reuses civic-core's Postgres helpers. The model client
+  is still the POC's own Ollama gateway; routing through prompt-proxy is
+  P2.3 (D5). Next: P1.5 (`libs/civic/adapters`).

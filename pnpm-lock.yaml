@@ -864,6 +864,8 @@ importers:
 
   libs/civic/core: {}
 
+  libs/civic/llm: {}
+
   libs/classified-ui:
     dependencies:
       '@angular/common':
