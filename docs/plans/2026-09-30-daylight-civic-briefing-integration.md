@@ -13,8 +13,7 @@ locality-discovery services.
 
 ## Status (2026-10-01)
 
-**Phase 0 and Phase 1 libraries:** all 8 done (P0.1–P1.6). Next is P1.7,
-the discovery benchmark, then Phase 2.
+**Phase 0 and Phase 1:** done, P0.1–P1.7. Next is Phase 2.
 
 | Slice     | What                                        | Commits                     |
 | --------- | ------------------------------------------- | --------------------------- |
@@ -43,8 +42,8 @@ All 54 POC core tests are ported.
 hashes above are post-rebase. Re-check PR #186 (still open) before Phase 4;
 a final rebase comes before the PR (P4.0).
 
-**Next:** P1.7, the discovery benchmark (now that adapters are ported), then
-Phase 2: the civic-briefing service and the parity gate.
+**Next:** Phase 2, the civic-briefing service and the parity gate. The
+discovery work (SD.\*) waits on the owner's choices from the benchmark.
 
 **Waiting on the owner:**
 
@@ -252,10 +251,10 @@ communities and businesses, not sources.
 **Discovery slices.** These come after the parity gate, because discovery
 must not change the replayed corpora.
 
-- [ ] P1.7 Benchmark: run the ported `discoverSources` against the 5 edition
-      towns and their parent places. Measure recall and precision against
-      the hand-written YAML, and list what it missed by quirk category. The
-      results may reorder SD.1–SD.5. (Needs P1.5.)
+- [x] P1.7 Benchmark: see `2026-10-01-daylight-discovery-benchmark.md`.
+      Blind recall was 6 of 16 in-scope sources with no wrong adoptions. Two
+      bugs were found (B1, B2), and SearXNG's challenge-free engines are
+      unusable, so D12 needs a decision.
 - [ ] SD.0 Move sources and the place graph into the database (D10): the
       entities, a generated migration, a one-time YAML seed import, and the
       registry reading from the database. The audit log of discovery
@@ -399,3 +398,17 @@ must not change the replayed corpora.
   - `PREVIOUS_APP_SCOPE_NAMES` (renaming the beta's `towne-square` scope) is
     removed, since D6 drops the beta data.
     Next: P1.7.
+- 2026-10-01: P1.7 is done; see `2026-10-01-daylight-discovery-benchmark.md`.
+  - The harness is `libs/civic/adapters/benchmark/discovery.bench.ts` (target
+    `discovery-benchmark`; live network, on demand).
+  - No-search blind recall: 6 of 16 in-scope hand sources, with 0 wrong
+    adoptions.
+  - Misses: 4 local news, 4 bespoke government pages, 1 AgendaSuite, 1
+    school board.
+  - Bugs: B1, the .gov match misses "City of Adel, GA"; B2, cross-origin
+    own-domain moves stall the crawl.
+  - SearXNG's challenge-free engines were unusable (DuckDuckGo CAPTCHA,
+    Mojeek empty), so the search comparison didn't run and D12 needs a
+    decision.
+  - The SearXNG container was started from a copy under `tmp/` and removed
+    afterwards.

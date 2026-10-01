@@ -28,6 +28,14 @@
       "options": {
         "jestConfig": "libs/civic/adapters/jest.db.config.ts"
       }
+    },
+    "discovery-benchmark": {
+      "executor": "@nx/jest:jest",
+      "cache": false,
+      "options": {
+        "jestConfig": "libs/civic/adapters/jest.benchmark.config.ts",
+        "runInBand": true
+      }
     }
   }
 }
