@@ -1,0 +1,7 @@
+{
+  "name": "@optimistic-tanuki/civic-community",
+  "version": "0.0.1",
+  "description": "Civic contribution rules: near-duplicate detection, corroboration gate, review, standing",
+  "license": "AGPL-3.0-only",
+  "private": true
+}

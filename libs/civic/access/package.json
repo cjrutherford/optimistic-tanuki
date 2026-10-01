@@ -1,0 +1,7 @@
+{
+  "name": "@optimistic-tanuki/civic-access",
+  "version": "0.0.1",
+  "description": "The local-hub app scope's civic roles and permissions, as seed data",
+  "license": "AGPL-3.0-only",
+  "private": true
+}
