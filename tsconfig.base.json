@@ -82,6 +82,7 @@
       "@optimistic-tanuki/chat-ui-data-access": [
         "libs/chat-ui-data-access/src/index.ts"
       ],
+      "@optimistic-tanuki/civic-core": ["libs/civic/core/src/index.ts"],
       "@optimistic-tanuki/classified-ui": ["libs/classified-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui/*": ["libs/common-ui/src/lib/common-ui/*"],

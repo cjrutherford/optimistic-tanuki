@@ -1,0 +1,7 @@
+{
+  "name": "@optimistic-tanuki/civic-core",
+  "version": "0.0.1",
+  "description": "Civic briefing pipeline domain: sources, foundation schema, stories and briefings",
+  "license": "AGPL-3.0-only",
+  "private": true
+}
