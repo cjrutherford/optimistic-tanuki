@@ -538,6 +538,34 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  civic-contributions:
+    container_name: ot_civic_contributions
+    build:
+      context: .
+      dockerfile: ./apps/civic-contributions/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic_contributions:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_CONTRIBUTIONS_PORT:-3029}:3029'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_contributions
+      LISTEN_PORT: 3029
+      # Uploads are scanned fail-closed and stored envelope-encrypted.
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      CIVIC_BRIEFING_HOST: civic-briefing
+      CIVIC_BRIEFING_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+
   lead-tracker:
     container_name: ot_lead_tracker
     build:

@@ -1,0 +1,112 @@
+{
+  "name": "civic-contributions",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/civic-contributions/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:civic"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "webpack-cli build",
+        "args": ["--node-env=production"],
+        "cwd": "apps/civic-contributions"
+      },
+      "configurations": {
+        "development": {
+          "args": ["--node-env=development"]
+        }
+      }
+    },
+    "prune-lockfile": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "executor": "@nx/js:prune-lockfile",
+      "outputs": [
+        "{workspaceRoot}/dist/apps/civic-contributions/package.json",
+        "{workspaceRoot}/dist/apps/civic-contributions/pnpm-lock.yaml"
+      ],
+      "options": {
+        "buildTarget": "build"
+      }
+    },
+    "copy-workspace-modules": {
+      "dependsOn": ["build"],
+      "cache": true,
+      "outputs": [
+        "{workspaceRoot}/dist/apps/civic-contributions/workspace_modules"
+      ],
+      "executor": "@nx/js:copy-workspace-modules",
+      "options": {
+        "buildTarget": "build"
+      }
+    },
+    "prune": {
+      "dependsOn": ["prune-lockfile", "copy-workspace-modules"],
+      "executor": "nx:noop"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "civic-contributions:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "civic-contributions:build:development"
+        },
+        "production": {
+          "buildTarget": "civic-contributions:build:production"
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/civic-contributions/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/civic-contributions",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        },
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:generate"
+      }
+    },
+    "typeorm:migration:run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/civic-contributions",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        },
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:run"
+      }
+    },
+    "typeorm:migration:revert": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/civic-contributions",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        },
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/app/staticDatabase.ts migration:revert"
+      }
+    },
+    "test-db": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/civic-contributions-db"],
+      "options": {
+        "jestConfig": "apps/civic-contributions/jest.db.config.ts"
+      }
+    }
+  }
+}
