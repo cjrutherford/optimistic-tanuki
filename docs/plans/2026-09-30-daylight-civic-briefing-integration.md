@@ -161,10 +161,16 @@ fixes stay with the lead agent.
 - [x] P2.4a Audit of unordered repository reads: 11 reads that reach
       output now order by `id` (insertion order, as SQLite gave); the gate
       is still 38/38
-- [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
-      ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note;
-      refuses corroborations from verified officials using civic-access's
-      `effectivePermissions`, per D20)
+- [x] P2.5a civic-briefing serves read-only corpus views over TCP
+      (`CivicBriefingCommands`: news for the copying index, subjects,
+      topic-for, records-since), so civic-contributions owns no copy of the
+      foundation database (owner's choice)
+- [ ] P2.5b `apps/civic-contributions` (real storage/encryption libs with
+      `VAULT_STORAGE_KEK`; the platform's `VirusScanService` with
+      `CLAMAV_HOST`; review model via prompt-proxy; corpus via
+      `CIVIC_BRIEFING_SERVICE`; generated migration; refuses corroborations
+      from verified officials using civic-access's `effectivePermissions`,
+      per D20)
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
@@ -563,3 +569,15 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
     the last row wins if a source ever had two ledgers.
   - **Verified:** the parity gate is still 38/38, and all civic suites
     pass. Next: P2.5.
+- 2026-10-02: **P2.5a is done.** The owner chose TCP over direct
+  database reads for civic-contributions' corpus needs.
+  - **The service:** `CorpusQueryService` in civic-briefing serves the
+    POC community service's four foundation queries, ported to Postgres:
+    quoted identifiers, a cutoff date computed in code, and explicit
+    `ORDER BY` with an id tie-break.
+  - **The endpoints** are under `CivicBriefingCommands` in
+    `libs/constants`.
+  - **Tests:** a 4-test DB spec.
+  - **Smoke test:** the built service answered all three endpoints over
+    TCP.
+    Next: P2.5b, the contributions service.
