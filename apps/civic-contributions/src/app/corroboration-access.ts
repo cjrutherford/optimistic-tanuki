@@ -11,12 +11,11 @@ import type { Actor } from '@optimistic-tanuki/civic-community';
  * enough; civic-access's `effectivePermissions` applies the official's
  * denial, and this is where it is enforced.
  *
- * civic-community's Actor carries no roles yet, so the gateway may add them
- * here. Without a `roles` list nothing is known about the actor's roles and
- * only what this service itself recorded (an official standing in the town)
- * can refuse.
+ * The gateway sends the actor's roles; without them nothing can be checked,
+ * so the request is refused (fail closed).
  */
-export type ActorWithRoles = Actor & { roles?: readonly string[] };
+/** Kept for call sites: Actor itself now carries `roles`. */
+export type ActorWithRoles = Actor;
 
 export const CORROBORATION_PERMISSION = 'corroboration.create';
 
@@ -36,10 +35,10 @@ export function corroborationRefusal(
   if (official) {
     return 'A verified official cannot corroborate a report: an official is not an independent witness of what they oversee. Send your own report or an official record instead.';
   }
-  if (
-    actor.roles !== undefined &&
-    !effectivePermissions(roles ?? []).has(CORROBORATION_PERMISSION)
-  ) {
+  if (actor.roles === undefined) {
+    return 'Your account roles were not provided, so corroboration cannot be checked.';
+  }
+  if (!effectivePermissions(roles ?? []).has(CORROBORATION_PERMISSION)) {
     return 'Your account is not permitted to corroborate reports.';
   }
   return null;

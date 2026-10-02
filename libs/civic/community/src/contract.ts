@@ -34,6 +34,11 @@ export interface Actor {
   userId: string;
   profileId: string;
   handle: string;
+  /**
+   * The account's local-hub roles, as the gateway resolved them. Required
+   * to corroborate: a request without them is refused (D20, fail closed).
+   */
+  roles?: readonly string[];
 }
 
 /**

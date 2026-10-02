@@ -109,6 +109,12 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   infected file is quarantined and never parsed; when the scanner is
   unavailable the fetch fails and is retried, rather than being read
   unscanned.
+- **D23** D20 fails closed: `Actor` (civic-community) carries `roles`, and
+  a corroboration without them is refused. The gateway (P3.2) must always
+  send the account's local-hub roles.
+- **D24** The POC's operator CLI is dropped. Operator actions (official
+  verification, suspension, sweeps) are manual triggers through gateway
+  API routes, used from the admin UI (P3.2, SD.6).
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -186,7 +192,9 @@ fixes stay with the lead agent.
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
-- [ ] P3.2 Gateway contribution and profile routes, permissions seeding: add
+- [ ] P3.2 Gateway contribution and profile routes (actors always carry
+      their local-hub roles, D23; operator actions as manual-trigger routes,
+      D24), permissions seeding: add
       civic-access's permissions, the new `local_hub_verified_official` role and
       the grants on `local_hub_member`/`local_hub_admin` to
       `apps/permissions/src/assets/default-permissions.json`, and guard routes
@@ -613,3 +621,7 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
     civic-community should gain `roles` (for P3.2); whether to keep the
     operator CLI.
     Next: P2.5c (D22, scanning external documents).
+- 2026-10-02: Owner answers on P2.5b. Missing roles are now refused (D23):
+  `Actor.roles` was added to civic-community's contract, and a DB test
+  covers the refusal. The operator CLI is dropped in favour of API triggers
+  from the UI (D24). Next: P2.5c.

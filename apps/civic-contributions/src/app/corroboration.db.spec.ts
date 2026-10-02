@@ -155,6 +155,15 @@ describe('corroboration', () => {
       ).toBe(0);
     });
 
+    it('refuses when the request carries no roles (fail closed)', async () => {
+      const report = contributionOf(await intake.submit(request(actor())));
+      const { roles: _sent, ...withoutRoles } = await veteran();
+      const result = await corroborate(withoutRoles, report.id);
+      expect(refusedOf(result).reasons.join(' ')).toMatch(
+        /roles were not provided/u
+      );
+    });
+
     it('refuses an account whose roles do not grant corroboration', async () => {
       const { result } = await corroboratorWith([]);
       expect(refusedOf(result).reasons.join(' ')).toMatch(

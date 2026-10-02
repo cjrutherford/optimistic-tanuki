@@ -45,8 +45,10 @@ describe('corroborationRefusal (D20)', () => {
     ).toBeNull();
   });
 
-  it('knows nothing of roles when none are sent, so only the recorded standing refuses', () => {
-    expect(corroborationRefusal(actor(), false)).toBeNull();
+  it('refuses when no roles are sent (fail closed)', () => {
+    expect(corroborationRefusal(actor(), false)).toMatch(
+      /roles were not provided/u
+    );
     expect(corroborationRefusal(actor(), true)).toMatch(/verified official/u);
     expect(corroborationRefusal(actor(['local_hub_member']), true)).toMatch(
       /verified official/u

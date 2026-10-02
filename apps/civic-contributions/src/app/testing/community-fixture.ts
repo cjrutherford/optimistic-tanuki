@@ -329,9 +329,10 @@ export async function createHarness(): Promise<Harness> {
 }
 
 let counter = 0;
+/** A member by default, as the gateway sends every actor's roles; `null` sends none. */
 export const actor = (
-  roles?: readonly string[]
-): Actor & { roles?: readonly string[] } => {
+  roles: readonly string[] | null = ['local_hub_member']
+): Actor => {
   counter += 1;
   const id = `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`;
   return {
