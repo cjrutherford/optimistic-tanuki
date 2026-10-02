@@ -148,9 +148,9 @@ fixes stay with the lead agent.
 - [x] P2.0 Research: the prompt-proxy path for D5. See
       `2026-10-02-p2.0-prompt-proxy-note.md`: yes, via an injected `fetchImpl`
       that forwards the native Ollama body over TCP; civic-llm is unchanged
-- [ ] P2.1 `apps/civic-briefing`: Nest app, config, `DatabaseModule`, token,
-      compose, Dockerfile (the image needs `pdftoppm` (poppler-utils) and
-      `tesseract` for the document adapter's OCR fallback)
+- [x] P2.1 `apps/civic-briefing`: Nest TCP service on 3028, `DatabaseModule`,
+      `CIVIC_BRIEFING_SERVICE` + gateway client, compose, Dockerfile (poppler,
+      tesseract), ported stage modules and daily schedule
 - [ ] P2.2 `apps/civic-briefing`: generated initial migration, including the
       append-only triggers (POC S1.1)
 - [ ] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5)
@@ -464,3 +464,25 @@ must not change the replayed corpora.
   through it with an injected `fetchImpl` and civic-llm needs no changes.
   The gaps for P2.3 are timeouts, error mapping, the `GeneratePrompt` type,
   and models on the shared Ollama host. Next: P2.1.
+- 2026-10-02: P2.1 is done (960e9352 scaffold, plus the stage port).
+  - **The service:** `apps/civic-briefing` is a TCP Nest service on 3028.
+    `CivicDatabaseModule` wraps `DatabaseModule.register({ name:
+'civic_briefing' })` and provides the TypeORM data-source and repository
+    tokens the stages inject.
+  - **The schedule:** the daily schedule starts only when
+    `CIVIC_LOCALITIES_DIR` is set; otherwise the TCP service runs and logs a
+    warning. The `source` and `run` one-shot modes are kept. Schedule
+    settings come from `PIPELINE_*`, `SOURCING_*` and `LLM_*` env vars, and
+    search is off (D21).
+  - **The build:** it webpack-builds, and was smoke-run on a scratch
+    database: it created 22 foundation tables and listened.
+  - **Tests:** 14 schedule-plan unit tests pass.
+  - **The 5 equivalence specs** (`*.equivalence.db.spec.ts`, `test-db`
+    target) pass against Postgres. They need a recorded corpus through
+    `CIVIC_CORPUS_DIR` (the POC's `data/corpus/ct`, read in place) and are
+    skipped without it.
+  - **The spec tsconfig is now strict.** It wasn't type-checking specs
+    before, and the change forced 56 bracket-access fixes in the ported
+    services.
+    Next: P2.2 (the generated migration, and `ot_civic_briefing` in
+    `scripts/setup-and-migrate.sh`).

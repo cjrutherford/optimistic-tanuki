@@ -6,6 +6,8 @@
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
     "moduleResolution": "node10",
+    "strict": true,
+    "noPropertyAccessFromIndexSignature": true,
     "types": ["jest", "node"]
   },
   "include": [
@@ -13,5 +15,6 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.d.ts"
-  ]
+  ],
+  "exclude": ["../../node_modules"]
 }

@@ -5,6 +5,8 @@ import 'pg';
 
 export declare type CivicBriefingConfigType = {
   listenPort: number;
+  /** Where the local blob store keeps fetched documents (CIVIC_BLOB_DIR). */
+  blobDirectory: string;
   database: {
     host: string;
     port: number;
@@ -35,6 +37,8 @@ const loadConfig = (): CivicBriefingConfigType => {
 
   return {
     ...configData,
+    blobDirectory:
+      process.env['CIVIC_BLOB_DIR'] || `${process.cwd()}/data/blobs`,
     listenPort: toNumber(
       process.env['LISTEN_PORT'],
       configData.listenPort ?? 3028
