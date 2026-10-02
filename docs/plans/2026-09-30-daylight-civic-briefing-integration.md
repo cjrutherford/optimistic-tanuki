@@ -172,12 +172,10 @@ fixes stay with the lead agent.
       (`CivicBriefingCommands`: news for the copying index, subjects,
       topic-for, records-since), so civic-contributions owns no copy of the
       foundation database (owner's choice)
-- [ ] P2.5b `apps/civic-contributions` (real storage/encryption libs with
-      `VAULT_STORAGE_KEK`; the platform's `VirusScanService` with
-      `CLAMAV_HOST`; review model via prompt-proxy; corpus via
-      `CIVIC_BRIEFING_SERVICE`; generated migration; refuses corroborations
-      from verified officials using civic-access's `effectivePermissions`,
-      per D20)
+- [x] P2.5b `apps/civic-contributions`: TCP service on 3029; corpus from
+      civic-briefing over TCP; platform `VirusScanService` and envelope-
+      encrypted storage; review model through prompt-proxy; D20 enforced;
+      generated migration `1790959295724-contributions`
 - [ ] P2.5c Scan external documents (D22): civic-briefing scans every binary
       payload (document adapter downloads, email attachments) through the
       platform `VirusScanService` before it reaches the blob store or a
@@ -595,3 +593,23 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
   - **Smoke test:** the built service answered all three endpoints over
     TCP.
     Next: P2.5b, the contributions service.
+- 2026-10-02: P2.5b is done (d12cb2b2 scaffold, 48686acf port, plus the
+  migration).
+  - **Tests:** 32 unit and 52 database tests, the POC's ~45 plus D20 cases.
+  - **The migration:** generated (13 tables). Run, revert and run all work,
+    `schema:log` shows no drift, and the validator passes.
+    `ot_civic_contributions` was added to the setup script.
+  - **UUIDs:** `uuid_generate_v4()` relies on `uuid-ossp`, which the compose
+    Postgres template already has. No repo migration creates it, and this one
+    follows suit.
+  - **Smoke run:** the built service starts without civic-briefing or
+    localities, and keeps its previous corpus index on a failed refresh.
+  - **D20:** a corroboration is refused when the actor's roles lack
+    `corroboration.create` (verified officials), or when this service
+    recorded the contributor as an official in that town. An absent roles
+    list counts as unknown, not refused (owner question below).
+  - **Not ported:** the POC's `operator.ts` CLI.
+  - **Owner questions:** the roles semantics; whether `Actor` in
+    civic-community should gain `roles` (for P3.2); whether to keep the
+    operator CLI.
+    Next: P2.5c (D22, scanning external documents).
