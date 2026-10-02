@@ -158,10 +158,9 @@ fixes stay with the lead agent.
       `LLM_TRANSPORT=prompt-proxy` by default
 - [x] P2.4 Replay parity gate: **38/38 golden artifacts identical**
       (2026-10-02, on Postgres through civic-briefing's ported stages)
-- [ ] P2.4a Audit civic-core's and civic-briefing's unordered repository reads
-      (61 in core) for order-dependent output; add explicit `order` where
-      results reach artifacts. The gate only exercises what the corpora
-      happen to hit
+- [x] P2.4a Audit of unordered repository reads: 11 reads that reach
+      output now order by `id` (insertion order, as SQLite gave); the gate
+      is still 38/38
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
       ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note;
       refuses corroborations from verified officials using civic-access's
@@ -548,3 +547,19 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
     databases (dropped afterwards). OCR ran fresh with tesseract 5.5, the
     same version as the POC.
     Next: P2.5 (`apps/civic-contributions`), or P2.4a first.
+- 2026-10-02: P2.4a is done.
+  - **11 reads fixed,** in civic-core (`pipeline.ts`, `story-engine.ts`,
+    `freshness.ts`, `health.ts`) and the ported `agenda`/`parse` services.
+    Their row order affected: which documents get the LLM fixup budget,
+    evidence-unit order in clustering, which candidate story wins a tie,
+    story item order, thread input order, and diagnostics ordering. Each
+    now orders by `id`, which reproduces SQLite's rowid order exactly on
+    these integer-id tables.
+  - **About 55 reads are order-insensitive:** key lookups, Maps and Sets,
+    counts, or results re-sorted totally.
+  - **No string-keyed table** (where insertion order isn't recoverable) has
+    an order that reaches output.
+  - **Borderline:** `health.ts` builds a fetch-ledger Map by `sourceId`;
+    the last row wins if a source ever had two ledgers.
+  - **Verified:** the parity gate is still 38/38, and all civic suites
+    pass. Next: P2.5.

@@ -1062,7 +1062,10 @@ export async function parseAll(
           scope?.scopeSlug ?? locality.slug,
           d.externalId ?? d.canonicalUrl ?? d.originalUrl
         );
-        const exists = await itemRepo.find({ where: { hash } });
+        const exists = await itemRepo.find({
+          where: { hash },
+          order: { id: 'ASC' },
+        });
         if (exists.length) {
           for (const item of exists)
             if (item.id !== undefined) result.currentItemIds!.push(item.id);
@@ -1429,6 +1432,8 @@ export async function extractAgenda(
       where: sourceKeys.length
         ? { sourceId: In(sourceKeys), kind: 'meeting' }
         : { localitySlug, kind: 'meeting' },
+      // The per-run LLM fixup budget goes to the first documents; pin insertion order.
+      order: { id: 'ASC' },
     })
   ).filter((doc) => {
     const day = itemLocalDate(doc, timezone);
@@ -1652,7 +1657,8 @@ export async function loadProjectedStories(
   );
   const links = await ds
     .getRepository(CanonicalStoryItemSchema)
-    .find({ where: { canonicalStoryId: In(storyIds) } });
+    // Link order becomes each story's item order; pin it to insertion order.
+    .find({ where: { canonicalStoryId: In(storyIds) }, order: { id: 'ASC' } });
   const includedItems = new Set(
     (
       await ds.getRepository(EditionItemSchema).find({
@@ -1860,6 +1866,8 @@ export async function loadThreads(
       itemId: In(candidates.map((item) => item.id as number)),
       procedural: false,
     },
+    // Row order is the thread input order; pin it to insertion order.
+    order: { id: 'ASC' },
   });
   if (!rows.length) return [];
   const docs = new Map<number, CivicItemRow>(

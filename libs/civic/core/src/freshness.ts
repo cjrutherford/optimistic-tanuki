@@ -171,9 +171,11 @@ export async function deriveSourceFreshnessForItemIds(
   scope: FreshnessScope
 ): Promise<SourceFreshness[]> {
   const items = scope.currentItemIds.length
-    ? await ds
-        .getRepository(CivicItemSchema)
-        .find({ where: { id: In(scope.currentItemIds) } })
+    ? await ds.getRepository(CivicItemSchema).find({
+        where: { id: In(scope.currentItemIds) },
+        // Source order in the result follows item order; pin it to insertion order.
+        order: { id: 'ASC' },
+      })
     : [];
   return deriveSourceFreshness(ds, items, scope);
 }

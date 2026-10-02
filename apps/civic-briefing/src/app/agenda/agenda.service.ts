@@ -74,6 +74,8 @@ export class AgendaService {
         where: sourceKeys.length
           ? { sourceId: In(sourceKeys), kind: 'meeting' }
           : { localitySlug, kind: 'meeting' },
+        // The per-run LLM fixup budget goes to the first documents; pin insertion order.
+        order: { id: 'ASC' },
       })
     ).filter((document) => {
       const day = itemLocalDate(document as never, timezone);

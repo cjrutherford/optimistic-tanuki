@@ -337,7 +337,8 @@ export async function localityHealth(
   const llmGenerations = ds.hasMetadata(LlmGenerationSchema)
     ? await ds
         .getRepository(LlmGenerationSchema)
-        .find({ where: { localitySlug: locality.slug } })
+        // Ties on generatedAt keep this order in the sorted diagnostics.
+        .find({ where: { localitySlug: locality.slug }, order: { id: 'ASC' } })
     : [];
   const failedAgendaFixups = llmGenerations
     .filter(
@@ -410,7 +411,8 @@ export async function localityHealth(
     latestRun && ds.hasMetadata(PipelineStageRunSchema)
       ? await ds
           .getRepository(PipelineStageRunSchema)
-          .find({ where: { runId: latestRun.id } })
+          // The first failed stage is reported; pin the order to insertion order.
+          .find({ where: { runId: latestRun.id }, order: { id: 'ASC' } })
       : [];
   const failedStage =
     stageRows.find((stage) => stage.status === 'failed')?.stage ?? null;

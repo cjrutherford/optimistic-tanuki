@@ -484,7 +484,8 @@ export async function evidenceUnitsFor(
   if (!itemIds.length) return [];
   const items = await manager
     .getRepository(CivicItemSchema)
-    .find({ where: { id: In([...itemIds]) } });
+    // Unit order feeds clustering and tie-breaks; pin it to insertion order.
+    .find({ where: { id: In([...itemIds]) }, order: { id: 'ASC' } });
   const agenda = await manager.getRepository(AgendaItemSchema).find({
     where: { itemId: In([...itemIds]), procedural: false },
     order: { id: 'ASC' },
@@ -583,20 +584,27 @@ export async function assignStories(
     .filter((date): date is string => Boolean(date))
     .sort();
   const earliest = dated[0];
-  const candidates = (
-    await storyRepo.find({ where: { scopeSlug: In(scopes) } })
-  ).filter(
-    (story) =>
-      !earliest ||
-      !story.lastEvidenceDate ||
-      daysBetween(story.lastEvidenceDate, earliest) <= STORY_WINDOW_DAYS ||
-      story.lastEvidenceDate > earliest
-  );
+  const candidates =
+    // Candidate order decides which story wins a matching tie; pin it to insertion order.
+    (
+      await storyRepo.find({
+        where: { scopeSlug: In(scopes) },
+        order: { id: 'ASC' },
+      })
+    ).filter(
+      (story) =>
+        !earliest ||
+        !story.lastEvidenceDate ||
+        daysBetween(story.lastEvidenceDate, earliest) <= STORY_WINDOW_DAYS ||
+        story.lastEvidenceDate > earliest
+    );
   const links = candidates.length
     ? await linkRepo.find({
         where: {
           canonicalStoryId: In(candidates.map((story) => story.id as number)),
         },
+        // Per-story unit order feeds matching; pin it to insertion order.
+        order: { id: 'ASC' },
       })
     : [];
   const existingUnits = await evidenceUnitsFor(

@@ -267,7 +267,10 @@ export class ParseService {
       scope?.scopeSlug ?? request.locality.slug,
       item.externalId ?? item.canonicalUrl ?? item.originalUrl
     );
-    const existing = await this.items.find({ where: { hash } });
+    const existing = await this.items.find({
+      where: { hash },
+      order: { id: 'ASC' },
+    });
     if (existing.length) {
       for (const row of existing)
         if (row['id'] !== undefined) result.currentItemIds.push(row['id']);
