@@ -3,20 +3,6 @@ packages:
   - 'libs/*'
   - 'libs/*/*'
 
-overrides:
-  '@angular/animations': 20.3.30
-  '@angular/common': 20.3.30
-  '@angular/compiler': 20.3.30
-  '@angular/compiler-cli': 20.3.30
-  '@angular/core': 20.3.30
-  '@angular/forms': 20.3.30
-  '@angular/language-service': 20.3.30
-  '@angular/platform-browser': 20.3.30
-  '@angular/platform-browser-dynamic': 20.3.30
-  '@angular/platform-server': 20.3.30
-  '@angular/router': 20.3.30
-  '@angular/service-worker': 20.3.30
-
 allowBuilds:
   '@compodoc/compodoc': false
   '@nestjs/core': true
