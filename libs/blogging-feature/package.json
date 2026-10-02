@@ -12,8 +12,5 @@
     "@optimistic-tanuki/configurable-plugin-contracts": "workspace:*",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
-  },
-  "devDependencies": {},
-  "peerDependencies": {},
-  "optionalDependencies": {}
+  }
 }

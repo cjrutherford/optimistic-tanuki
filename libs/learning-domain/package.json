@@ -8,8 +8,5 @@
   "dependencies": {
     "tslib": "^2.3.0",
     "zod": "^4.6.5"
-  },
-  "devDependencies": {},
-  "peerDependencies": {},
-  "optionalDependencies": {}
+  }
 }

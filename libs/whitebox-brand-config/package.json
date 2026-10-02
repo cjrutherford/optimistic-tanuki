@@ -8,8 +8,5 @@
   "dependencies": {
     "@angular/core": "^20.3.32",
     "tslib": "^2.3.0"
-  },
-  "devDependencies": {},
-  "peerDependencies": {},
-  "optionalDependencies": {}
+  }
 }
