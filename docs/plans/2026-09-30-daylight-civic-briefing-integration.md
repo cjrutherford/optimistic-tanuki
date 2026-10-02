@@ -102,6 +102,13 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   POC's config never actually enabled. Discovery uses the directories, the
   crawl and the new channels. Search stays pluggable through
   `SEARCH_PROVIDER`. SD.7 is dropped.
+- **D22** Every document fetched from an outside source is virus-scanned
+  before it is stored or parsed: PDFs, Word files and email attachments,
+  not just contributor uploads. This is the owner's rule as of 2026-10-02.
+  The scan uses the platform's fail-closed ClamAV `VirusScanService`. An
+  infected file is quarantined and never parsed; when the scanner is
+  unavailable the fetch fails and is retried, rather than being read
+  unscanned.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -171,6 +178,13 @@ fixes stay with the lead agent.
       `CIVIC_BRIEFING_SERVICE`; generated migration; refuses corroborations
       from verified officials using civic-access's `effectivePermissions`,
       per D20)
+- [ ] P2.5c Scan external documents (D22): civic-briefing scans every binary
+      payload (document adapter downloads, email attachments) through the
+      platform `VirusScanService` before it reaches the blob store or a
+      parser. Infected files are quarantined; scanner outages fail the fetch.
+      civic-briefing's compose service depends on `clamav`. The replay's
+      parity runs need a decision: a real ClamAV in the parity run, or a
+      recorded pass for the corpus
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
