@@ -13,6 +13,10 @@ module.exports = {
       target: 'node',
       compiler: 'tsc',
       main: './src/main.ts',
+      // The replay entry for the parity gate (tools/civic-parity, P2.4).
+      additionalEntryPoints: [
+        { entryName: 'replay', entryPath: './src/replay.ts' },
+      ],
       tsConfig: './tsconfig.app.json',
       assets: ['./src/assets'],
       optimization: false,

@@ -1,3 +1,4 @@
+import { CivicDatabaseModule } from '../civic-database.module';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -80,21 +81,5 @@ export async function freshFoundation(): Promise<DataSource> {
  * stages inject, resolving to a data source the test owns.
  */
 export function databaseFor(dataSource: DataSource): DynamicModule {
-  const repositories = (
-    FOUNDATION_SCHEMAS as readonly EntitySchema<unknown>[]
-  ).map((schema) => ({
-    provide: getRepositoryToken(schema),
-    useValue: dataSource.getRepository(schema),
-  }));
-  @Global()
-  @Module({})
-  class TestDatabaseModule {}
-  return {
-    module: TestDatabaseModule,
-    providers: [
-      { provide: getDataSourceToken(), useValue: dataSource },
-      ...repositories,
-    ],
-    exports: [getDataSourceToken(), ...repositories.map((r) => r.provide)],
-  };
+  return CivicDatabaseModule.forDataSource(dataSource);
 }

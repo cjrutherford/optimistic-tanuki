@@ -1,4 +1,9 @@
-import { Global, Module, type Provider } from '@nestjs/common';
+import {
+  Global,
+  Module,
+  type DynamicModule,
+  type Provider,
+} from '@nestjs/common';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { FOUNDATION_SCHEMAS } from '@optimistic-tanuki/civic-core';
@@ -31,4 +36,29 @@ const repositories: Provider[] = (
   ],
   exports: [getDataSourceToken(), ...repositories],
 })
-export class CivicDatabaseModule {}
+export class CivicDatabaseModule {
+  /**
+   * The same tokens over a DataSource made elsewhere: the replay entry and
+   * the stage tests open their own database and hand it to the stages.
+   */
+  static forDataSource(dataSource: DataSource): DynamicModule {
+    const provided: Provider[] = (
+      FOUNDATION_SCHEMAS as readonly EntitySchema<unknown>[]
+    ).map((schema) => ({
+      provide: getRepositoryToken(schema),
+      useValue: dataSource.getRepository(schema),
+    }));
+    return {
+      module: CivicDataSourceModule,
+      global: true,
+      providers: [
+        { provide: getDataSourceToken(), useValue: dataSource },
+        ...provided,
+      ],
+      exports: [getDataSourceToken(), ...provided],
+    };
+  }
+}
+
+@Module({})
+class CivicDataSourceModule {}
