@@ -147,6 +147,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     configKey: 'civic',
   },
   {
+    token: ServiceTokens.CIVIC_BRIEFING_SERVICE,
+    serviceId: 'civic-briefing',
+    configKey: 'civicBriefing',
+  },
+  {
     token: ServiceTokens.PAYMENTS_SERVICE,
     serviceId: 'payments',
     configKey: 'payments',

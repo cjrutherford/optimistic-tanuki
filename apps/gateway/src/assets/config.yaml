@@ -125,6 +125,11 @@ services:
     transport: TCP
     host: civic
     port: 3026
+  civicBriefing:
+    name: civic-briefing
+    transport: TCP
+    host: civic-briefing
+    port: 3028
 # The confidential vault's model path.
 #
 # `ollama.baseUrl` is deliberately empty in source. It used to be a hardcoded

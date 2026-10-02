@@ -517,6 +517,24 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  civic-briefing:
+    container_name: ot_civic_briefing
+    build:
+      context: .
+      dockerfile: ./apps/civic-briefing/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic_briefing:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_BRIEFING_PORT:-3028}:3028'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_briefing
+      LISTEN_PORT: 3028
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   lead-tracker:
     container_name: ot_lead_tracker
     build:
