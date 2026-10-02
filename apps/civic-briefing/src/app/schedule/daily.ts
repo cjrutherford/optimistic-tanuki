@@ -27,7 +27,10 @@ import {
   type SearchProvider,
   type SourcingDecision,
 } from '@optimistic-tanuki/civic-core';
-import { GatewaySummarizer } from '@optimistic-tanuki/civic-llm';
+import {
+  GatewaySummarizer,
+  type FetchImplementation,
+} from '@optimistic-tanuki/civic-llm';
 import { In, type DataSource } from 'typeorm';
 import {
   cadenceNow,
@@ -60,6 +63,9 @@ import type { ScheduleConfig } from './schedule.config';
  * next. Failures are logged and retried a few times a day, then left for
  * tomorrow rather than hammering a source or a model that is down.
  */
+
+/** The longest a model call may take; prompt-proxy's own limit must exceed it. */
+export const MODEL_TIMEOUT_MS = 300_000;
 export class DailySchedule {
   private readonly logger = new Logger('DailySchedule');
   private timer: NodeJS.Timeout | null = null;
@@ -71,7 +77,9 @@ export class DailySchedule {
   constructor(
     private readonly config: ScheduleConfig & { localitiesDir: string },
     private readonly dataSource: DataSource,
-    private readonly stages: PipelineStages
+    private readonly stages: PipelineStages,
+    /** Set when model calls go through prompt-proxy rather than LLM_BASE_URL. */
+    private readonly modelFetch?: FetchImplementation
   ) {
     this.registry = this.loadRegistry();
     this.search = searchProviderFromEnvironment();
@@ -319,7 +327,11 @@ export class DailySchedule {
             ...(this.config.model.planner && this.config.model.writer
               ? { writer: this.config.model.writer }
               : {}),
-            timeoutMs: 300_000,
+            // prompt-proxy forwards Ollama's native /api/chat request as is.
+            ...(this.modelFetch
+              ? { api: 'ollama' as const, fetchImpl: this.modelFetch }
+              : {}),
+            timeoutMs: MODEL_TIMEOUT_MS,
             recordAttempt: async (attempt) => {
               await recorder.record(attempt);
             },

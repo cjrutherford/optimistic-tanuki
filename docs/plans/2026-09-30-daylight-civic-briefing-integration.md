@@ -154,7 +154,8 @@ fixes stay with the lead agent.
 - [x] P2.2 `apps/civic-briefing`: generated initial migration
       (`1790940573082-foundation`), plus the append-only triggers and the
       schema version row
-- [ ] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5)
+- [x] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5),
+      `LLM_TRANSPORT=prompt-proxy` by default
 - [ ] P2.4 Replay parity gate: 38/38 golden artifacts identical. Nothing
       after this proceeds on red.
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
@@ -506,3 +507,22 @@ must not change the replayed corpora.
     Tests and parity still create test schemas with
     `createFoundationDataSource` (synchronize), which `schema:log` shows
     matches the migration. Next: P2.3 (prompt-proxy).
+- 2026-10-02: P2.3 is done.
+  - **The adapter:** `promptProxyFetch` (`src/app/model`) sends civic-llm's
+    native Ollama request to prompt-proxy over TCP (`PromptCommands.SEND`)
+    and wraps the reply as a `Response`. A proxy failure rejects, which the
+    gateway records as `unavailable`. It honours the gateway's abort signal,
+    and its own timeout is the gateway's 300 s plus 30.
+  - **Configuration:** `LLM_TRANSPORT` is `prompt-proxy` (the default) or
+    `direct`. `PROMPT_PROXY_HOST` and `PROMPT_PROXY_PORT` default to
+    prompt-proxy:3009. Compose raises prompt-proxy's
+    `PROMPT_PROXY_TIMEOUT_MS` to 360 s.
+  - **Tests:** 5 adapter specs.
+  - **Proved live:** `requestChatCompletion` went through a local
+    prompt-proxy to Ollama (qwen3.5:4b-q8_0) and back, with prompt and
+    output hashes computed as on the direct path.
+  - **Not done:** the `GeneratePrompt` widening, since civic-briefing never
+    uses that type.
+  - The Ollama host in the owner's environment is 192.168.1.180. Set
+    `OLLAMA_HOST` in `.env`.
+    Next: P2.4 (the replay parity gate).

@@ -1,11 +1,16 @@
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import {
+  ClientProxyFactory,
+  MicroserviceOptions,
+  Transport,
+} from '@nestjs/microservices';
 import { INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { preflightFoundationTarget } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
-import { DailySchedule } from './app/schedule/daily';
+import { DailySchedule, MODEL_TIMEOUT_MS } from './app/schedule/daily';
+import { promptProxyFetch } from './app/model/prompt-proxy-fetch';
 import { loadScheduleConfig } from './app/schedule/schedule.config';
 import { portedStages } from './app/stages';
 import loadConfig, { databaseUrl } from './config';
@@ -24,10 +29,28 @@ function buildSchedule(app: INestApplicationContext): DailySchedule | null {
     );
     return null;
   }
+  const modelFetch =
+    config.model.transport === 'prompt-proxy'
+      ? promptProxyFetch(
+          ClientProxyFactory.create({
+            transport: Transport.TCP,
+            options: config.model.promptProxy,
+          }),
+          // A little longer than the gateway's own limit, so it decides timeouts.
+          { timeoutMs: MODEL_TIMEOUT_MS + 30_000 }
+        )
+      : undefined;
+  Logger.log(
+    config.model.transport === 'prompt-proxy'
+      ? `model calls via prompt-proxy at ${config.model.promptProxy.host}:${config.model.promptProxy.port}`
+      : 'model calls direct to LLM_BASE_URL',
+    'Bootstrap'
+  );
   return new DailySchedule(
     { ...config, localitiesDir: config.localitiesDir },
     app.get<DataSource>(getDataSourceToken(), { strict: false }),
-    portedStages(app)
+    portedStages(app),
+    modelFetch
   );
 }
 

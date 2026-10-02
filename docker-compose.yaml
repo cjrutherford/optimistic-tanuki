@@ -529,6 +529,9 @@ services:
       <<: *service_db_env
       POSTGRES_DB: ot_civic_briefing
       LISTEN_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
     depends_on:
       postgres:
         condition: service_healthy
@@ -779,6 +782,8 @@ services:
       <<: *service_db_env
       OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      # civic-briefing's model calls take up to 300 s; the proxy must outlast them.
+      PROMPT_PROXY_TIMEOUT_MS: ${PROMPT_PROXY_TIMEOUT_MS:-360000}
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:

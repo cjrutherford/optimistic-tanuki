@@ -52,6 +52,13 @@ export interface ScheduleConfig {
    * one pass.
    */
   model: {
+    /**
+     * `prompt-proxy` (default, D5) sends model calls through the platform's
+     * prompt-proxy over TCP; `direct` calls LLM_BASE_URL itself, for local
+     * development without the proxy.
+     */
+    transport: 'prompt-proxy' | 'direct';
+    promptProxy: { host: string; port: number };
     baseUrl: string | undefined;
     primary: string | undefined;
     fallback: string | undefined;
@@ -106,6 +113,11 @@ export function loadScheduleConfig(
     sourcingPageBudget: positive(env, 'SOURCING_PAGE_BUDGET', 150),
     attemptsPerDay: positive(env, 'PIPELINE_ATTEMPTS_PER_DAY', 3),
     model: {
+      transport: env['LLM_TRANSPORT'] === 'direct' ? 'direct' : 'prompt-proxy',
+      promptProxy: {
+        host: env['PROMPT_PROXY_HOST'] || 'prompt-proxy',
+        port: positive(env, 'PROMPT_PROXY_PORT', 3009),
+      },
       baseUrl: env['LLM_BASE_URL'],
       primary: env['LLM_PRIMARY_MODEL'],
       fallback: env['LLM_FALLBACK_MODEL'],
