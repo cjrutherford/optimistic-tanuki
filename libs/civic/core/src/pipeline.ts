@@ -3903,7 +3903,12 @@ export async function brief(
   if (agendaParents.length) {
     for (const row of await ds
       .getRepository(AgendaItemSchema)
-      .find({ where: { itemId: In(agendaParents), procedural: false } })) {
+      // In agenda order. SQLite returned rows by rowid; Postgres guarantees
+      // no order without one, and the first line heads the section.
+      .find({
+        where: { itemId: In(agendaParents), procedural: false },
+        order: { ordinal: 'ASC', id: 'ASC' },
+      })) {
       const rows = agendaRowsByItemId.get(row.itemId) ?? [];
       rows.push(row);
       agendaRowsByItemId.set(row.itemId, rows);

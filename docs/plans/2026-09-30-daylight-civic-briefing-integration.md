@@ -156,8 +156,12 @@ fixes stay with the lead agent.
       schema version row
 - [x] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5),
       `LLM_TRANSPORT=prompt-proxy` by default
-- [ ] P2.4 Replay parity gate: 38/38 golden artifacts identical. Nothing
-      after this proceeds on red.
+- [x] P2.4 Replay parity gate: **38/38 golden artifacts identical**
+      (2026-10-02, on Postgres through civic-briefing's ported stages)
+- [ ] P2.4a Audit civic-core's and civic-briefing's unordered repository reads
+      (61 in core) for order-dependent output; add explicit `order` where
+      results reach artifacts. The gate only exercises what the corpora
+      happen to hit
 - [ ] P2.5 `apps/civic-contributions` (real storage/encryption/email libs,
       ClamAV; needs `VAULT_STORAGE_KEK` and `CLAMAV_HOST`, see drift note;
       refuses corroborations from verified officials using civic-access's
@@ -526,3 +530,21 @@ must not change the replayed corpora.
   - The Ollama host in the owner's environment is 192.168.1.180. Set
     `OLLAMA_HOST` in `.env`.
     Next: P2.4 (the replay parity gate).
+- 2026-10-02: **P2.4: the parity gate passes, 38/38 identical.** `replay.js`
+  is a second webpack entry. The parity tool now runs each replay inside its
+  corpus work directory, and the replay supplies its own config (blobs
+  beside the artifacts).
+  - **The one difference on the way:** Nashville's 2026-09-15 briefing
+    listed its agenda items in a different order. The agenda-row query (in
+    both civic-core's `pipeline.ts` and the ported `BriefingService`) had no
+    `ORDER BY`. SQLite returned rowid order; Postgres doesn't guarantee any.
+    Both now order by `ordinal` then `id`.
+  - **This is the SQLite-to-Postgres risk the plan anticipated.** Other
+    unordered reads may hide the same bug where the corpora don't expose
+    it; that's P2.4a.
+  - **How it was run:** `DAYLIGHT_POC_DIR=<poc>
+CIVIC_PARITY_DATABASE_URL=postgres://…/civic_parity_{corpus} pnpm
+civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
+    databases (dropped afterwards). OCR ran fresh with tesseract 5.5, the
+    same version as the POC.
+    Next: P2.5 (`apps/civic-contributions`), or P2.4a first.

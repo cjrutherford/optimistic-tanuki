@@ -176,7 +176,10 @@ export function collect(settings, baseline, log = () => undefined) {
     log(
       `replaying ${run.corpus} (${run.towns.join(', ')}) ${run.from}..${run.to}`
     );
+    // Replays cache downloads, OCR text and a publication lock under ./data;
+    // keep those in the corpus's work directory, never the repository.
     execFileSync(process.execPath, replayArguments(settings, run, out), {
+      cwd: join(settings.work, run.corpus),
       stdio: ['ignore', 'ignore', 'pipe'],
     });
     artifacts[run.corpus] = artifactsUnder(out);

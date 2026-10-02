@@ -1,5 +1,7 @@
 import 'reflect-metadata';
+import { join } from 'node:path';
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   createFoundationDataSource,
@@ -88,6 +90,12 @@ async function main(): Promise<void> {
 
   @Module({
     imports: [
+      // Only what the stages read from config; blobs stay beside the artifacts.
+      ConfigModule.forRoot({
+        isGlobal: true,
+        ignoreEnvFile: true,
+        load: [() => ({ blobDirectory: join(artifacts, '..', 'blobs') })],
+      }),
       CivicDatabaseModule.forDataSource(dataSource),
       PlatformModule,
       AdaptersModule,
