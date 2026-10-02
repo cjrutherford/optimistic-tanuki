@@ -151,8 +151,9 @@ fixes stay with the lead agent.
 - [x] P2.1 `apps/civic-briefing`: Nest TCP service on 3028, `DatabaseModule`,
       `CIVIC_BRIEFING_SERVICE` + gateway client, compose, Dockerfile (poppler,
       tesseract), ported stage modules and daily schedule
-- [ ] P2.2 `apps/civic-briefing`: generated initial migration, including the
-      append-only triggers (POC S1.1)
+- [x] P2.2 `apps/civic-briefing`: generated initial migration
+      (`1790940573082-foundation`), plus the append-only triggers and the
+      schema version row
 - [ ] P2.3 `apps/civic-briefing`: model access via prompt-proxy (D5)
 - [ ] P2.4 Replay parity gate: 38/38 golden artifacts identical. Nothing
       after this proceeds on red.
@@ -486,3 +487,22 @@ must not change the replayed corpora.
     services.
     Next: P2.2 (the generated migration, and `ot_civic_briefing` in
     `scripts/setup-and-migrate.sh`).
+- 2026-10-02: P2.2 is done.
+  - **The migration:** `apps/civic-briefing/migrations/1790940573082-foundation.ts`
+    was generated from `FOUNDATION_SCHEMAS`: 22 tables, 20 indexes and the
+    `operation` CHECK. The append-only function, its 6 triggers and the
+    `schemaVersion` row were then added to `up()` and `down()`. The owner
+    clarified that generated migrations may be edited; the rule protects
+    TypeORM's timestamps.
+  - **Verified:** run, revert, run; `schema:log` reports no drift;
+    `validate:typeorm-migrations` passes.
+  - **TypeORM CLI:** it needs `ts-node.experimentalResolver` in the app's
+    `tsconfig.app.json` to resolve civic-core's `.js` specifiers.
+  - **Startup** now calls `preflightFoundationTarget` (it fails fast on an
+    empty or mis-versioned database) instead of creating the schema.
+  - `ot_civic_briefing` was added to `scripts/setup-and-migrate.sh`.
+  - **Not done, for P5:** the service isn't yet in `docker-compose.dev.yaml`,
+    k8s or `docker-compose.local-hub-e2e.yaml` (that one comes with P4.5).
+    Tests and parity still create test schemas with
+    `createFoundationDataSource` (synchronize), which `schema:log` shows
+    matches the migration. Next: P2.3 (prompt-proxy).

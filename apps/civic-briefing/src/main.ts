@@ -2,7 +2,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { getDataSourceToken } from '@nestjs/typeorm';
-import { createFoundationDataSource } from '@optimistic-tanuki/civic-core';
+import { preflightFoundationTarget } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
 import { DailySchedule } from './app/schedule/daily';
@@ -60,9 +60,9 @@ async function runOnce(mode: 'source' | 'run', towns: string[]) {
 async function bootstrap() {
   const config = loadConfig();
 
-  // Until the generated migration lands (P2.2), an empty database gets the
-  // foundation schema from the entity definitions, as the POC did.
-  await (await createFoundationDataSource(databaseUrl(config))).destroy();
+  // The schema comes from this app's migrations (run by db-setup). Refuse to
+  // start against an empty or differently-versioned database.
+  await preflightFoundationTarget(databaseUrl(config));
 
   const mode = process.argv[2];
   if (mode === 'source' || mode === 'run') {
