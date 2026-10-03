@@ -214,7 +214,7 @@ fixes stay with the lead agent.
       `2026-10-03-security-findings-issues.md`
 - [x] P4.0 Rebased on main (2026-10-03, after #269); PR #186 dropped from
       consideration (owner: it will not merge)
-- [ ] P4.1 `libs/civic/briefing-data-access`
+- [x] P4.1 `libs/civic/briefing-data-access`
 - [ ] P4.2 `libs/civic/briefing-ui` (SSR-safe DOMPurify)
 - [ ] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
@@ -725,3 +725,24 @@ clamav`).
   - **PR #186** won't merge (owner), so Phase 4 builds on `main`'s
     local-hub.
     Next: P4.1.
+- 2026-10-03: P4.1 is done. `libs/civic/briefing-data-access`
+  (`@optimistic-tanuki/civic-briefing-data-access`, tags `type:data-access`,
+  `scope:civic`, `platform:web`) has the Angular clients for the local-hub
+  routes, ported from the POC web app.
+  - **Services:** `EditionsService`, `CommunityService`, `MembershipService`
+    (`me` only, since `PATCH me` was dropped) and `OperationsService` (the
+    operator routes that replace the CLI, D24), plus `problem` and
+    `problemCode`.
+  - **Shared shapes:** the lint rules bar a data-access lib from a
+    `type:domain` lib. As with the edition contract (P3.1), the community
+    reply shapes moved to `libs/models` (`civic/community-contract.ts`), and
+    civic-community re-exports them. `ContributorPage` (with the bio) and
+    `LocalHubMembership` are new there.
+  - **Written by hand,** not with orval: every reply is wrapped in
+    `{ data }`, and submission is multipart.
+  - **No `typecheck` target,** like `profile-ui-data-access`. Under the lib
+    config (`types: []`), `libs/models` fails on an existing `Buffer`
+    reference. The Jest run type-checks the sources.
+  - **Tests:** 16 new specs pass. civic-community, civic-contributions,
+    gateway, models and local-hub still pass.
+    Next: P4.2 (`libs/civic/briefing-ui`).

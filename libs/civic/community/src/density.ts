@@ -12,32 +12,13 @@
  * and it says what is thin rather than dressing it up.
  */
 
+import type { TownDensity } from '@optimistic-tanuki/models';
+
 export const DENSITY_TARGET = { low: 8, high: 12 } as const;
 /** A contributor counts as active with a contribution in this many days. */
 export const ACTIVE_DAYS = 28;
 
-export interface TownDensity {
-  localitySlug: string;
-  town: string;
-  /** Distinct contributors with a contribution in the active window. */
-  active: number;
-  /** Everyone who has ever contributed here. */
-  everContributed: number;
-  /** Contributions in the active window, by kind. */
-  reports: number;
-  corroborations: number;
-  /** Reports the gate opened for, and reports a briefing may quote. */
-  corroborated: number;
-  quotable: number;
-  /** What later records said about this town's reports. */
-  confirmed: number;
-  contradicted: number;
-  /** Meetings published in the window, and how many drew a contribution. */
-  meetings: number;
-  meetingsWithContributions: number;
-  /** Officials confirmed by callback. */
-  officials: number;
-}
+export type { TownDensity };
 
 export type DensityStanding = 'none' | 'short' | 'in band' | 'above';
 

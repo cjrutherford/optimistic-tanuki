@@ -16,6 +16,7 @@
  * enters the gate as weight and nowhere else.
  */
 
+import type { ContributorHistory } from '@optimistic-tanuki/models';
 export interface ReputationEvent {
   /** The subject area, as the pipeline desks it: government, schools, public-safety, local-reporting. */
   topic: string;
@@ -91,9 +92,4 @@ export function standingOf(
   return Math.round(Math.min(settings.ceiling, total) * 1000) / 1000;
 }
 
-/** What a contributor's page shows: counts, never a score. */
-export interface ContributorHistory {
-  confirmed: number;
-  contradicted: number;
-  pending: number;
-}
+export type { ContributorHistory };

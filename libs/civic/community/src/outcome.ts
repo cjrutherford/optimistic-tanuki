@@ -20,16 +20,11 @@
  * honest answer.
  */
 
+import type { RecordKind } from '@optimistic-tanuki/models';
 import type { ChatMessage } from './review.js';
 
 /** Where a record came from, which is how much it is worth as a check. */
-export type RecordKind =
-  /** The town's own paperwork: an agenda, minutes, a vote, a public notice. */
-  | 'record'
-  /** A published article from a local publisher. */
-  | 'news'
-  /** Material submitted through an official account the operator confirmed by callback. */
-  | 'official-channel';
+export type { RecordKind };
 
 export interface PrimaryRecord {
   kind: RecordKind;

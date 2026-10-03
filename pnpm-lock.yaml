@@ -884,6 +884,8 @@ importers:
 
   libs/civic/adapters: {}
 
+  libs/civic/briefing-data-access: {}
+
   libs/civic/community: {}
 
   libs/civic/core: {}
