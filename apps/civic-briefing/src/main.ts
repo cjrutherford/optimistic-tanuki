@@ -11,6 +11,8 @@ import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
 import { DailySchedule, MODEL_TIMEOUT_MS } from './app/schedule/daily';
 import { promptProxyFetch } from './app/model/prompt-proxy-fetch';
+import { BLOB_STORE } from './app/tokens';
+import type { BlobStore } from '@optimistic-tanuki/civic-core';
 import { loadScheduleConfig } from './app/schedule/schedule.config';
 import { portedStages } from './app/stages';
 import loadConfig, { databaseUrl } from './config';
@@ -50,7 +52,8 @@ function buildSchedule(app: INestApplicationContext): DailySchedule | null {
     { ...config, localitiesDir: config.localitiesDir },
     app.get<DataSource>(getDataSourceToken(), { strict: false }),
     portedStages(app),
-    modelFetch
+    modelFetch,
+    app.get<BlobStore>(BLOB_STORE)
   );
 }
 

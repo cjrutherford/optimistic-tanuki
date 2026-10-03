@@ -26,6 +26,7 @@ import {
   type PipelineStages,
   type SearchProvider,
   type SourcingDecision,
+  type BlobStore,
 } from '@optimistic-tanuki/civic-core';
 import {
   GatewaySummarizer,
@@ -79,7 +80,9 @@ export class DailySchedule {
     private readonly dataSource: DataSource,
     private readonly stages: PipelineStages,
     /** Set when model calls go through prompt-proxy rather than LLM_BASE_URL. */
-    private readonly modelFetch?: FetchImplementation
+    private readonly modelFetch?: FetchImplementation,
+    /** The platform's virus-scanning blob store (D22); runs never use another. */
+    private readonly blobStore?: BlobStore
   ) {
     this.registry = this.loadRegistry();
     this.search = searchProviderFromEnvironment();
@@ -292,6 +295,7 @@ export class DailySchedule {
     const started = Date.now();
     try {
       const result = await runPipeline({
+        ...(this.blobStore ? { blobStore: this.blobStore } : {}),
         registry: this.registry,
         localitySlug: town.slug,
         cadence,

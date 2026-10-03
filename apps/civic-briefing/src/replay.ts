@@ -9,6 +9,7 @@ import {
   loadLocalityRegistry,
   replaySummarizer,
   runPipeline,
+  type BlobStore,
 } from '@optimistic-tanuki/civic-core';
 import { AdaptersModule } from './app/adapters/adapters.module';
 import { AgendaModule } from './app/agenda/agenda.module';
@@ -21,6 +22,7 @@ import { PlatformModule } from './app/platform.module';
 import { ProjectionModule } from './app/projection/projection.module';
 import { QuarantineModule } from './app/quarantine/quarantine.module';
 import { portedStages } from './app/stages';
+import { BLOB_STORE } from './app/tokens';
 import { StoriesModule } from './app/stories/stories.module';
 
 /**
@@ -123,6 +125,8 @@ async function main(): Promise<void> {
           asOf: () => new Date(`${date}T23:59:59Z`),
         });
         const result = await runPipeline({
+          // The scanning blob store (D22): parity runs talk to a real ClamAV.
+          blobStore: app.get<BlobStore>(BLOB_STORE),
           registry,
           localitySlug: slug,
           cadence: 'daily',

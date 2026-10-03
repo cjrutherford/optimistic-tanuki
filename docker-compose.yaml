@@ -532,11 +532,15 @@ services:
       LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
       PROMPT_PROXY_HOST: prompt-proxy
       PROMPT_PROXY_PORT: 3009
+      # Every fetched document is virus-scanned before it is stored (D22).
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
 
   civic-contributions:
     container_name: ot_civic_contributions

@@ -11,7 +11,7 @@ export default {
   moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
   // linkedom's DOM dependencies and pdfjs-dist ship as ES modules only.
   transformIgnorePatterns: [
-    '/node_modules/(?!(\\.pnpm|linkedom|css-select|css-what|domutils|dom-serializer|domhandler|domelementtype|entities|htmlparser2|nth-check|boolbase|uhyphen|html-escaper|cssom|pdfjs-dist)/)',
+    '/node_modules/(?!(\\.pnpm|linkedom|css-select|css-what|domutils|dom-serializer|domhandler|domelementtype|entities|htmlparser2|nth-check|boolbase|uhyphen|html-escaper|cssom|pdfjs-dist|uuid)/)',
   ],
   testPathIgnorePatterns: [
     '/node_modules/',

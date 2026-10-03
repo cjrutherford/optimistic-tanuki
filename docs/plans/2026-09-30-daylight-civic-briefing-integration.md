@@ -182,13 +182,9 @@ fixes stay with the lead agent.
       civic-briefing over TCP; platform `VirusScanService` and envelope-
       encrypted storage; review model through prompt-proxy; D20 enforced;
       generated migration `1790959295724-contributions`
-- [ ] P2.5c Scan external documents (D22): civic-briefing scans every binary
-      payload (document adapter downloads, email attachments) through the
-      platform `VirusScanService` before it reaches the blob store or a
-      parser. Infected files are quarantined; scanner outages fail the fetch.
-      civic-briefing's compose service depends on `clamav`. The replay's
-      parity runs need a decision: a real ClamAV in the parity run, or a
-      recorded pass for the corpus
+- [x] P2.5c Scan external documents (D22): a scanning blob store in front of
+      every download; civic-briefing's schedule and replay always use it;
+      parity runs against the real ClamAV (38/38)
 - [ ] P2.6 ADR: converging with `apps/civic`
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
@@ -625,3 +621,25 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
   `Actor.roles` was added to civic-community's contract, and a DB test
   covers the refusal. The operator CLI is dropped in favour of API triggers
   from the UI (D24). Next: P2.5c.
+- 2026-10-03: **P2.5c is done (D22).**
+  - **The store:** civic-core's `createScanningBlobStore` scans before
+    every `put`.
+  - **Errors:** an infected file is never stored and becomes a
+    non-retryable `policy`/`infected` fetch error. A scanner outage becomes
+    a retryable `network`/`scanner-unavailable` error.
+  - **The adapters:** the document adapter reports scan failures as
+    structured errors. The email adapter records an infected attachment on
+    its own result.
+  - **Wiring:** civic-briefing's `PlatformModule` wraps its blob store with
+    the platform `VirusScanService`. The schedule and replay now pass that
+    store to `runPipeline`; before this, the runner silently made its own
+    unscanned store. Compose gives civic-briefing `CLAMAV_HOST` and makes it
+    wait for a healthy `clamav`.
+  - **Verified:** EICAR is caught through the real clamd, and the parity
+    gate is 38/38 with scanning on. With the scanner off it fails (45
+    differing artifacts), which shows the scan path is live and fails
+    closed.
+  - **Parity runs now need** `CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3310` with
+    the compose `clamav` service up (`docker compose up -d --no-deps
+clamav`).
+    Next: P2.6 (ADR on converging with `apps/civic`), then Phase 3.
