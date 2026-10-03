@@ -115,6 +115,11 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
 - **D24** The POC's operator CLI is dropped. Operator actions (official
   verification, suspension, sweeps) are manual triggers through gateway
   API routes, used from the admin UI (P3.2, SD.6).
+- **D25** Civic Core (`apps/civic`) is a first-party source for
+  civic-briefing over TCP. Its broadcasts appear as alerts and its TIP
+  projects as stories. A tenant is matched to a town by name and state
+  (the owner's choice), with safeguards. See
+  `docs/architecture/civic-briefing-and-civic-core.md`.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -185,7 +190,13 @@ fixes stay with the lead agent.
 - [x] P2.5c Scan external documents (D22): a scanning blob store in front of
       every download; civic-briefing's schedule and replay always use it;
       parity runs against the real ClamAV (38/38)
-- [ ] P2.6 ADR: converging with `apps/civic`
+- [x] P2.6 ADR: `docs/architecture/civic-briefing-and-civic-core.md`. Civic
+      Core becomes a first-party source; broadcasts become alerts and TIP
+      projects become stories; tenants are matched to towns by name and
+      state, with safeguards
+- [ ] P2.6a `civic-core` source adapter (TCP to `apps/civic`), tenant-to-town
+      matching (exact state, unique match, logged, overridable), broadcast
+      alerts and TIP stories. After Phase 3
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
 - [ ] P3.2 Gateway contribution and profile routes (actors always carry
@@ -643,3 +654,7 @@ civic:parity --require`, with fresh, empty `civic_parity_{ga,ct,fl}`
     the compose `clamav` service up (`docker compose up -d --no-deps
 clamav`).
     Next: P2.6 (ADR on converging with `apps/civic`), then Phase 3.
+- 2026-10-03: P2.6 is done. The ADR is accepted (D25), and P2.6a is added.
+  If Civic Core's tenant entity has no two-letter state, P2.6a adds one
+  with a generated migration. Phase 2 is complete apart from P2.6a.
+  Next: Phase 3 (gateway routes), starting with P3.1.
