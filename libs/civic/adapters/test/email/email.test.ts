@@ -5,6 +5,7 @@ import type {
   FetchContext,
   SourceConfig,
 } from '@optimistic-tanuki/civic-core';
+import { ContentScanError } from '@optimistic-tanuki/civic-core';
 import { createEmailAdapter } from '../../src/email/index.js';
 import type { MailMessage, Mailbox } from '../../src/email/mailbox.js';
 
@@ -197,6 +198,45 @@ describe('email adapter fetch', () => {
         '',
         'The council meets Monday.',
       ].join('\n'),
+    });
+  });
+
+  it('records an infected attachment as failed and keeps the message (D22)', async () => {
+    const inner = memoryBlobStore();
+    const store: BlobStore = {
+      ...inner,
+      put: async () => {
+        throw new ContentScanError(
+          'virus scan (test) found Eicar-Test-Signature; the document was not stored',
+          'infected',
+          'policy',
+          false,
+          ['Eicar-Test-Signature']
+        );
+      },
+    };
+    const { results } = await fetchWith(
+      [
+        message({
+          attachments: [
+            {
+              filename: 'Agenda.pdf',
+              contentType: 'application/pdf',
+              content: pdf('Agenda'),
+            },
+          ],
+        }),
+      ],
+      { from: ['cityofadelga.gov'] },
+      store
+    );
+    expect(results.map((r) => r.kind)).toStrictEqual(['fetched', 'failed']);
+    const failed = results[1];
+    if (failed?.kind !== 'failed') throw new Error('expected a failed result');
+    expect(failed.error).toMatchObject({
+      kind: 'policy',
+      code: 'infected',
+      retryable: false,
     });
   });
 

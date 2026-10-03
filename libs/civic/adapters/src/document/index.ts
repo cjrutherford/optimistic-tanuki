@@ -21,7 +21,10 @@ import {
   meetingDocumentTitle,
   truncate,
 } from '@optimistic-tanuki/civic-core';
-import { createLocalBlobStore } from '@optimistic-tanuki/civic-core';
+import {
+  ContentScanError,
+  createLocalBlobStore,
+} from '@optimistic-tanuki/civic-core';
 import {
   OutboundPolicy,
   restrictedPublisherDomains,
@@ -110,6 +113,17 @@ export class DocumentParseError extends Error {
 }
 
 function diagnosticFetchError(error: unknown, fallbackUrl: string): FetchError {
+  // The blob store's virus scan (D22): infected files are a policy refusal,
+  // a scanner outage is retried.
+  if (error instanceof ContentScanError) {
+    return {
+      kind: error.kind,
+      code: error.code,
+      message: error.message,
+      retryable: error.retryable,
+      url: fallbackUrl,
+    };
+  }
   if (error instanceof DocumentDownloadError) {
     return {
       kind: error.kind,

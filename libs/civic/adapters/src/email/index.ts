@@ -1,4 +1,5 @@
 import type {
+  BlobRef,
   DraftItem,
   FetchContext,
   FetchResult,
@@ -8,6 +9,7 @@ import type {
   SourceConfig,
 } from '@optimistic-tanuki/civic-core';
 import {
+  ContentScanError,
   meetingDateFromDocumentText,
   meetingDateFromTitle,
 } from '@optimistic-tanuki/civic-core';
@@ -189,18 +191,50 @@ export function createEmailAdapter(
         });
         if (!ctx.blobStore) continue;
         for (const attachment of message.attachments.filter(isPdf)) {
-          const ref = await ctx.blobStore.put(
-            attachment.content,
-            'application/pdf'
-          );
           const context = new URLSearchParams({
             subject: oneLine(message.subject),
             date: message.date,
           });
+          const attachmentUrl = `${url}/${encodeURIComponent(
+            attachment.filename
+          )}?${context}`;
+          let ref: BlobRef;
+          try {
+            // The blob store virus-scans (D22); a refused attachment is
+            // recorded on its own and the rest of the message still counts.
+            ref = await ctx.blobStore.put(
+              attachment.content,
+              'application/pdf'
+            );
+          } catch (error) {
+            out.push({
+              kind: 'failed',
+              status: null,
+              url: attachmentUrl,
+              requestUrl: source.url,
+              contentType: 'application/pdf',
+              fetchedAt,
+              error:
+                error instanceof ContentScanError
+                  ? {
+                      kind: error.kind,
+                      code: error.code,
+                      message: error.message,
+                      retryable: error.retryable,
+                    }
+                  : {
+                      kind: 'network',
+                      message:
+                        error instanceof Error ? error.message : String(error),
+                      retryable: true,
+                    },
+            });
+            continue;
+          }
           out.push({
             kind: 'fetched',
             status: 200,
-            url: `${url}/${encodeURIComponent(attachment.filename)}?${context}`,
+            url: attachmentUrl,
             requestUrl: source.url,
             contentType: 'application/pdf',
             payload: { kind: 'blob-ref', ref },

@@ -9,6 +9,7 @@ import {
 } from '../../src/document/index.js';
 import {
   createLocalBlobStore,
+  createScanningBlobStore,
   OutboundPolicy,
 } from '@optimistic-tanuki/civic-core';
 import type { HttpResponse } from '@optimistic-tanuki/civic-core';
@@ -257,6 +258,37 @@ describe('document payload contract', () => {
     );
     expect(result.error.message).toMatch(/status=200/);
     expect(result.error.message).toMatch(/bytes=0/);
+  });
+
+  it('refuses an infected document before it is stored, without retrying (D22)', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'civic-scan-'));
+    try {
+      const inner = createLocalBlobStore(root);
+      const store = createScanningBlobStore(inner, {
+        scan: async () => ({
+          clean: false,
+          threats: ['Eicar-Test-Signature'],
+          scanner: 'test',
+        }),
+      });
+      const [result] = await documentFetchAdapter(
+        Buffer.from(shortTextPdf())
+      ).fetch(source, {
+        locality: {} as never,
+        httpClient: {} as never,
+        blobStore: store,
+      });
+      expect(result?.kind).toBe('failed');
+      if (result?.kind !== 'failed') return;
+      expect(result.error).toMatchObject({
+        kind: 'policy',
+        code: 'infected',
+        retryable: false,
+      });
+      expect(result.error.message).toMatch(/Eicar-Test-Signature/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('fails closed on a non-PDF response even when HTTP succeeds', async () => {
