@@ -10,3 +10,5 @@ export const CIVIC_GET_TIP_PROJECT = 'civic.get_tip_project';
 export const CIVIC_REGISTER_TIP_PROJECT = 'civic.register_tip_project';
 export const CIVIC_BROADCAST_ALERT = 'civic.broadcast_alert';
 export const CIVIC_GET_BROADCASTS = 'civic.get_broadcasts';
+export const CIVIC_GET_TENANTS = 'civic.get_tenants';
+export const CIVIC_REGISTER_TENANT = 'civic.register_tenant';

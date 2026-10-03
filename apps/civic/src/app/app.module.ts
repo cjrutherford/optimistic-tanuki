@@ -5,6 +5,8 @@ import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 import { CivicController } from './civic/civic.controller';
 import { CivicService } from './civic/civic.service';
+import { CivicTenantsController } from './civic/civic-tenants.controller';
+import { CivicTenantsService } from './civic/civic-tenants.service';
 
 @Module({
   imports: [
@@ -17,8 +19,9 @@ import { CivicService } from './civic/civic.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [CivicController],
+  controllers: [CivicController, CivicTenantsController],
   providers: [
+    CivicTenantsService,
     {
       provide: CivicService,
       useFactory: (dataSource, config: ConfigService) =>

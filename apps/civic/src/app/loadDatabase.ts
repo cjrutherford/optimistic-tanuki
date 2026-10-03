@@ -4,6 +4,7 @@ import { CivicAgenda } from './entities/civic-agenda.entity';
 import { CivicAgendaItem } from './entities/civic-agenda-item.entity';
 import { TipProject } from './entities/tip-project.entity';
 import { EmergencyBroadcast } from './entities/emergency-broadcast.entity';
+import { CivicTenant } from './entities/civic-tenant.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -14,7 +15,13 @@ const loadDatabase = (config: ConfigService) => {
     username: database.username,
     password: database.password,
     database: database.database || database.name,
-    entities: [CivicAgenda, CivicAgendaItem, TipProject, EmergencyBroadcast],
+    entities: [
+      CivicAgenda,
+      CivicAgendaItem,
+      TipProject,
+      EmergencyBroadcast,
+      CivicTenant,
+    ],
   };
   return ormConfig;
 };
