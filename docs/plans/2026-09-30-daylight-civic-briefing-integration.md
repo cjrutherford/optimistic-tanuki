@@ -209,9 +209,9 @@ fixes stay with the lead agent.
 - [x] P3.2 Gateway contribution, official and operator routes (actors carry
       local-hub roles, D23; operator triggers under `local-hub/operations`,
       D24); civic permissions, role and grants seeded with a drift test
-- [ ] P3.3 File the eight open security findings (the stub virus scanner is
-      already fixed upstream) as issues (owner approves before
-      anything is posted)
+- [x] P3.3 Security findings: all 8 re-verified as still present, and filed
+      as private draft security advisories (the repository is public); see
+      `2026-10-03-security-findings-issues.md`
 - [ ] P4.0 Rebase on main (#271; re-check #186)
 - [ ] P4.1 `libs/civic/briefing-data-access`
 - [ ] P4.2 `libs/civic/briefing-ui` (SSR-safe DOMPurify)
@@ -706,3 +706,11 @@ clamav`).
   - **Not tested:** a live end-to-end request (P4.5).
     Next: P3.3 (filing the security findings as issues, which needs the
     owner's approval before anything is posted).
+- 2026-10-03: P3.3 is done; Phase 3 is complete. All eight platform
+  findings are still present at this branch. The repository is public, so
+  the owner chose private draft advisories over public issues:
+  GHSA-pm99-mq48-rjcm, GHSA-3h5g-92rf-v564, GHSA-63c8-f74f-w9q8,
+  GHSA-x5rv-7pmq-q5f7, GHSA-j87j-qx4j-6h8g, GHSA-h4x2-393w-v89h,
+  GHSA-q977-2c3p-65rw and GHSA-c9pw-rr3f-5rv2. The fixes are separate work
+  and haven't been scheduled. Next: Phase 4 (Towne Square pages), starting
+  with P4.0 (re-check PR #186 and rebase).

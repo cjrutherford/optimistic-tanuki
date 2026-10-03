@@ -35,8 +35,19 @@ and **all eight are still present**.
 8. Name stored files by content hash or uuid; never use the client's name in
    a path. Keep the original name as metadata.
 
-## Posting
+## Filed (2026-10-03)
 
-Each issue would be filed with `gh issue create` on
-`cjrutherford/optimistic-tanuki`, with the evidence and fix above and a link
-back to this plan. Labels: `security`, plus severity if such labels exist.
+The repository is public, so per the owner these were filed as **private
+draft security advisories**. Only maintainers can see them, and they are
+published once the fixes land.
+
+| #   | Advisory            | Severity |
+| --- | ------------------- | -------- |
+| 1   | GHSA-pm99-mq48-rjcm | high     |
+| 2   | GHSA-3h5g-92rf-v564 | medium   |
+| 3   | GHSA-63c8-f74f-w9q8 | high     |
+| 4   | GHSA-x5rv-7pmq-q5f7 | low      |
+| 5   | GHSA-j87j-qx4j-6h8g | medium   |
+| 6   | GHSA-h4x2-393w-v89h | medium   |
+| 7   | GHSA-q977-2c3p-65rw | medium   |
+| 8   | GHSA-c9pw-rr3f-5rv2 | high     |
