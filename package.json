@@ -63,7 +63,7 @@
     "pre:docker:up": "pnpm run build",
     "docker:dev:watch": "pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev",
     "db:setup": "sh ./scripts/setup-and-migrate.sh",
-    "get-openapi": "TS_NODE_PROJECT=tsconfig.base.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register -r tsconfig-paths/register tools/openapi/export-gateway-openapi.ts",
+    "get-openapi": "TS_NODE_PROJECT=tools/openapi/tsconfig.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register -r tsconfig-paths/register tools/openapi/export-gateway-openapi.ts",
     "validate:typeorm-migrations": "node ./scripts/validate-typeorm-migrations.mjs",
     "dev:ssr": "ng run christopherrutherford-net:serve-ssr",
     "serve:ssr": "node dist/apps/christopherrutherford-net/server/main.js",

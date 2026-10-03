@@ -1,29 +1,54 @@
+import { ApiProperty } from '@nestjs/swagger';
+
 /**
  * The published-briefing contract between civic-briefing, the gateway and
- * Towne Square's pages (plan slice P3.1). Plain data, no behaviour.
+ * Towne Square's pages (plan slice P3.1). Plain data, no behaviour; the web
+ * client is generated from these schemas.
  */
-export interface EditionSummary {
-  slug: string;
-  name: string;
-  state: string;
+export class EditionSummary {
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  state!: string;
+
   /** The newest published period's end date (YYYY-MM-DD), or null. */
-  latest: string | null;
+  @ApiProperty({ type: String, nullable: true })
+  latest!: string | null;
 }
 
-export interface BriefingSummary {
-  cadence: string;
-  periodStart: string;
-  periodEnd: string;
+export class BriefingSummary {
+  @ApiProperty()
+  cadence!: string;
+
+  @ApiProperty()
+  periodStart!: string;
+
+  @ApiProperty()
+  periodEnd!: string;
 }
 
-export interface EditionHistory extends EditionSummary {
-  briefings: BriefingSummary[];
+export class EditionHistory extends EditionSummary {
+  @ApiProperty({ type: [BriefingSummary] })
+  briefings!: BriefingSummary[];
 }
 
-export interface PublishedBriefing extends BriefingSummary {
-  slug: string;
-  name: string;
-  state: string;
-  createdAt: string;
-  markdown: string;
+export class PublishedBriefing extends BriefingSummary {
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  state!: string;
+
+  @ApiProperty()
+  createdAt!: string;
+
+  @ApiProperty()
+  markdown!: string;
 }

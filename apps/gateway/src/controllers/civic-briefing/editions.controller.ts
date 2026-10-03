@@ -8,7 +8,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CivicBriefingCommands,
   ServiceTokens,
@@ -20,6 +20,11 @@ import type {
 } from '@optimistic-tanuki/models';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Public } from '../../decorators/public.decorator';
+import {
+  EditionHistoryReply,
+  EditionListReply,
+  PublishedBriefingReply,
+} from './replies';
 
 /** How long a briefing read may take before the gateway gives up. */
 const READ_TIMEOUT_MS = 10_000;
@@ -41,6 +46,7 @@ export class EditionsController {
 
   @Get()
   @ApiOperation({ summary: 'Every town with a published briefing' })
+  @ApiResponse({ status: 200, type: EditionListReply })
   async editions(): Promise<{ data: EditionSummary[] }> {
     return {
       data: await this.read<EditionSummary[]>(
@@ -52,6 +58,7 @@ export class EditionsController {
 
   @Get(':slug')
   @ApiOperation({ summary: "A town's recent editions, newest first" })
+  @ApiResponse({ status: 200, type: EditionHistoryReply })
   async edition(
     @Param('slug') slug: string
   ): Promise<{ data: EditionHistory }> {
@@ -65,6 +72,7 @@ export class EditionsController {
 
   @Get(':slug/briefings/latest')
   @ApiOperation({ summary: "A town's newest briefing" })
+  @ApiResponse({ status: 200, type: PublishedBriefingReply })
   async latest(
     @Param('slug') slug: string
   ): Promise<{ data: PublishedBriefing }> {
@@ -75,6 +83,7 @@ export class EditionsController {
   @ApiOperation({
     summary: "A town's briefing for the period ending on a date",
   })
+  @ApiResponse({ status: 200, type: PublishedBriefingReply })
   async briefing(
     @Param('slug') slug: string,
     @Param('periodEnd') periodEnd: string

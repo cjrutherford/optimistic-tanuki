@@ -1,17 +1,24 @@
 # @optimistic-tanuki/civic-briefing-data-access
 
-Angular clients for the gateway's local-hub civic routes (plan slice P4.1),
-ported from the Daylight POC web app:
+Generated Angular client for the gateway's local-hub civic routes
+(`/api/local-hub/*`, orval `civic` project: the `civic-briefing`,
+`civic-community` and `civic-community-operations` tags). Do not edit
+`src/generated/` by hand.
 
-- `EditionsService`: the public edition and briefing routes
-  (`local-hub/editions/*`).
-- `CommunityService`: contributions, the community surface, contributor
-  pages, official applications and copyright notices.
-- `MembershipService`: the signed-in account's local-hub roles and
-  permissions (`local-hub/me`).
-- `OperationsService`: the operator routes (`local-hub/operations/*`).
-- `problem` and `problemCode`: what to tell someone when a request fails.
+```bash
+pnpm run get-openapi
+pnpm exec nx run civic-briefing-data-access:generate
+pnpm exec prettier --write libs/civic/briefing-data-access/src/generated/
+```
 
-The routes wrap every reply in `{ data }` and take a multipart upload, so
-these are written by hand rather than generated with orval. The response
-shapes come from `@optimistic-tanuki/models`.
+Every local-hub route is also served under `v1/`. The orval project drops
+those aliases and names each method after its controller method (`me`,
+`latest`, `submit`), so there is one method per route.
+
+The routes wrap each reply in `{ data }`; the generated reply types (for
+example `EditionListReply`) carry it.
+
+`src/lib/` holds what the generator doesn't produce: `problem` and
+`problemCode` (what to tell someone when a request fails), the contribution
+state and review-stage wording, `submissionKey`, `artifactUrl` and
+`DENSITY_TARGET`.

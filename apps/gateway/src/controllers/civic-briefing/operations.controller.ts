@@ -11,7 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CommunityCommands,
   type OfficialStanding,
@@ -28,6 +28,15 @@ import { User, type UserDetails } from '../../decorators/user.decorator';
 import { RequestTimeout } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { CivicContributionsClient } from './civic-contributions.client';
+import {
+  DensityReply,
+  OfficialStandingReply,
+  OutcomeSweepReply,
+  PromotionExportReply,
+  RereviewReply,
+  TakedownActionReply,
+  TakedownNoticeListReply,
+} from './replies';
 
 /** Upkeep may re-review many contributions through the review model. */
 const MAINTAIN_DEADLINE_MS = 10 * 60 * 1000;
@@ -59,6 +68,7 @@ export class CivicOperationsController {
   @Get(['density', 'operations/density'])
   @RequirePermissions('density.read')
   @ApiOperation({ summary: 'Per-town contributor density' })
+  @ApiResponse({ status: 200, type: DensityReply })
   async density() {
     return {
       data: await this.civic.call<{ rows: TownDensity[] }>(
@@ -73,6 +83,7 @@ export class CivicOperationsController {
   @HttpCode(200)
   @RequirePermissions('official.verify')
   @ApiOperation({ summary: "Confirm an official's callback" })
+  @ApiResponse({ status: 200, type: OfficialStandingReply })
   async confirmCallback(
     @User() user: UserDetails,
     @Body() body: ConfirmOfficialCallbackBody
@@ -93,6 +104,8 @@ export class CivicOperationsController {
   @Get('operations/takedown-notices')
   @RequirePermissions('takedown.manage')
   @ApiOperation({ summary: 'Copyright notices, optionally by state' })
+  @ApiQuery({ name: 'state', required: false })
+  @ApiResponse({ status: 200, type: TakedownNoticeListReply })
   async takedownNotices(@Query('state') state?: string) {
     return {
       data: await this.civic.call<unknown[]>(
@@ -106,6 +119,7 @@ export class CivicOperationsController {
   @HttpCode(200)
   @RequirePermissions('takedown.manage')
   @ApiOperation({ summary: 'Uphold, decline or restore after a notice' })
+  @ApiResponse({ status: 200, type: TakedownActionReply })
   async actOnTakedownNotice(
     @User() user: UserDetails,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -129,6 +143,7 @@ export class CivicOperationsController {
   @HttpCode(200)
   @RequirePermissions('community.maintain')
   @ApiOperation({ summary: 'Run the re-review sweep now' })
+  @ApiResponse({ status: 200, type: RereviewReply })
   async rereview() {
     return {
       data: await this.civic.call<{ changed: number }>(
@@ -144,6 +159,7 @@ export class CivicOperationsController {
   @HttpCode(200)
   @RequirePermissions('community.maintain')
   @ApiOperation({ summary: 'Compare reports against records published since' })
+  @ApiResponse({ status: 200, type: OutcomeSweepReply })
   async sweepOutcomes() {
     return {
       data: await this.civic.call<unknown>(
@@ -159,6 +175,7 @@ export class CivicOperationsController {
   @HttpCode(200)
   @RequirePermissions('community.maintain')
   @ApiOperation({ summary: 'Write the quotable-material snapshots' })
+  @ApiResponse({ status: 200, type: PromotionExportReply })
   async exportPromotions() {
     return {
       data: await this.civic.call<{ towns: unknown }>(

@@ -20,7 +20,15 @@ import {
 } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiHeader,
+  ApiOperation,
+  ApiProduces,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -50,6 +58,18 @@ import { RequestTimeout } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { CivicContributionsClient } from './civic-contributions.client';
 import { originOf } from './origin';
+import {
+  CommunitySurfaceReply,
+  ContributionListReply,
+  ContributionReply,
+  ContributionUpload,
+  ContributorPageReply,
+  CounterNoticeReply,
+  MembershipReply,
+  OfficialApplicationReply,
+  SubjectOptionsReply,
+  TakedownNoticeReceiptReply,
+} from './replies';
 
 /**
  * A submission waits on the virus scan and the review model, each bounded in
@@ -98,6 +118,7 @@ export class CivicCommunityController {
   /** The signed-in account's standing in local-hub: its roles and what they allow. */
   @Get('me')
   @ApiOperation({ summary: "The account's local-hub standing" })
+  @ApiResponse({ status: 200, type: MembershipReply })
   async me(@User() user: UserDetails) {
     const access = await this.civic.access(user.profileId);
     return {
@@ -116,6 +137,7 @@ export class CivicCommunityController {
   @ApiOperation({
     summary: 'Meetings and stories a contribution can attach to',
   })
+  @ApiResponse({ status: 200, type: SubjectOptionsReply })
   async subjects(@Param('slug') slug: string) {
     return {
       data: await this.civic.call<SubjectOption[]>(CommunityCommands.Subjects, {
@@ -139,6 +161,14 @@ export class CivicCommunityController {
     })
   )
   @ApiOperation({ summary: 'Submit an account or artifact for review' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: ContributionUpload })
+  @ApiHeader({
+    name: 'idempotency-key',
+    required: false,
+    description: 'Resending with the same key returns the first submission',
+  })
+  @ApiResponse({ status: 201, type: ContributionReply })
   async submit(
     @User() user: UserDetails,
     @Body('submission') raw: string | undefined,
@@ -207,6 +237,7 @@ export class CivicCommunityController {
   @Get('contributions/mine')
   @RequirePermissions('contribution.read')
   @ApiOperation({ summary: "The account's own contributions" })
+  @ApiResponse({ status: 200, type: ContributionListReply })
   async mine(@User() user: UserDetails) {
     const { actor } = await this.civic.actor(user);
     return {
@@ -220,6 +251,7 @@ export class CivicCommunityController {
   @HttpCode(200)
   @RequirePermissions('contribution.withdraw')
   @ApiOperation({ summary: "Withdraw one's own contribution" })
+  @ApiResponse({ status: 200, type: ContributionReply })
   async withdraw(
     @User() user: UserDetails,
     @Param('id', new ParseUUIDPipe()) id: string
@@ -239,6 +271,7 @@ export class CivicCommunityController {
   @ApiOperation({
     summary: 'Counter a copyright notice against a contribution',
   })
+  @ApiResponse({ status: 201, type: CounterNoticeReply })
   async counterNotice(
     @User() user: UserDetails,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -263,6 +296,7 @@ export class CivicCommunityController {
   @Post('officials/apply')
   @HttpCode(200)
   @ApiOperation({ summary: 'Apply for verified-official standing' })
+  @ApiResponse({ status: 200, type: OfficialApplicationReply })
   async applyOfficial(
     @User() user: UserDetails,
     @Body() body: OfficialApplicationRequest
@@ -292,6 +326,7 @@ export class CivicCommunityController {
   @Public()
   @Get('editions/:slug/community')
   @ApiOperation({ summary: "A town's community surface" })
+  @ApiResponse({ status: 200, type: CommunitySurfaceReply })
   async surface(@Param('slug') slug: string) {
     return {
       data: await this.civic.call<CommunitySurface>(CommunityCommands.Surface, {
@@ -304,6 +339,7 @@ export class CivicCommunityController {
   @Public()
   @Get('contributors/:id')
   @ApiOperation({ summary: "A contributor's public page" })
+  @ApiResponse({ status: 200, type: ContributorPageReply })
   async contributor(@Param('id', new ParseUUIDPipe()) id: string) {
     const page = await this.civic.call<ContributorPageView | null>(
       CommunityCommands.ContributorPage,
@@ -321,6 +357,11 @@ export class CivicCommunityController {
   @Public()
   @Get('artifacts/:sha256')
   @ApiOperation({ summary: 'An attachment, as a download' })
+  @ApiProduces('application/octet-stream')
+  @ApiResponse({
+    status: 200,
+    schema: { type: 'string', format: 'binary' },
+  })
   async artifact(@Param('sha256') sha256: string, @Res() response: Response) {
     const found = await this.civic.call<{
       mediaType: string;
@@ -343,6 +384,7 @@ export class CivicCommunityController {
   @Throttle(NOTICE_THROTTLE)
   @Post('copyright/notices')
   @ApiOperation({ summary: 'File a copyright notice' })
+  @ApiResponse({ status: 201, type: TakedownNoticeReceiptReply })
   async fileNotice(@Body() body: TakedownNoticeBody) {
     return {
       data: await this.civic.call<{ id: string; locatedContributions: number }>(

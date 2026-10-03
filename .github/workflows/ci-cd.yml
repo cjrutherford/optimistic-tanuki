@@ -306,8 +306,8 @@ jobs:
           # Orval emits unformatted output; committed clients are
           # prettier-formatted (format:check enforces it), so format before
           # the drift diff to compare semantic content, not whitespace.
-          pnpm exec prettier --write libs/billing-sdk/src/generated/ libs/chat-ui-data-access/src/generated/ libs/payments-ui-data-access/src/generated/ libs/store-data-access/src/generated/ libs/finance/data-access/src/generated/ libs/blogging-data-access/src/generated/ libs/social-data-access/src/generated/ libs/learning-ui-data-access/src/generated/ libs/profile-ui-data-access/src/generated/
-          git diff --exit-code -- libs/billing-sdk/src/generated/ libs/chat-ui-data-access/src/generated/ libs/payments-ui-data-access/src/generated/ libs/store-data-access/src/generated/ libs/finance/data-access/src/generated/ libs/blogging-data-access/src/generated/ libs/social-data-access/src/generated/ libs/learning-ui-data-access/src/generated/ libs/profile-ui-data-access/src/generated/
+          pnpm exec prettier --write libs/billing-sdk/src/generated/ libs/chat-ui-data-access/src/generated/ libs/payments-ui-data-access/src/generated/ libs/store-data-access/src/generated/ libs/finance/data-access/src/generated/ libs/blogging-data-access/src/generated/ libs/social-data-access/src/generated/ libs/learning-ui-data-access/src/generated/ libs/profile-ui-data-access/src/generated/ libs/civic/briefing-data-access/src/generated/
+          git diff --exit-code -- libs/billing-sdk/src/generated/ libs/chat-ui-data-access/src/generated/ libs/payments-ui-data-access/src/generated/ libs/store-data-access/src/generated/ libs/finance/data-access/src/generated/ libs/blogging-data-access/src/generated/ libs/social-data-access/src/generated/ libs/learning-ui-data-access/src/generated/ libs/profile-ui-data-access/src/generated/ libs/civic/briefing-data-access/src/generated/
 
       - name: Client UI heuristics
         run: pnpm run ui:heuristics:ci

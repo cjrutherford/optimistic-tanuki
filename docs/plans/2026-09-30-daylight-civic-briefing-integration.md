@@ -215,6 +215,7 @@ fixes stay with the lead agent.
 - [x] P4.0 Rebased on main (2026-10-03, after #269); PR #186 dropped from
       consideration (owner: it will not merge)
 - [x] P4.1 `libs/civic/briefing-data-access`
+- [x] P4.1b Generate the civic clients with orval (owner)
 - [ ] P4.2 `libs/civic/briefing-ui` (SSR-safe DOMPurify)
 - [ ] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
@@ -745,4 +746,40 @@ clamav`).
     reference. The Jest run type-checks the sources.
   - **Tests:** 16 new specs pass. civic-community, civic-contributions,
     gateway, models and local-hub still pass.
+    Next: P4.2 (`libs/civic/briefing-ui`).
+- 2026-10-03: P4.1b is done. The owner asked why P4.1 hand-wrote the
+  clients when the workspace generates them with orval. Nobody had decided
+  that: I made the call alone. The reasons given (the `{ data }` wrapper,
+  multipart) don't hold, since orval handles both. The real cause was that
+  P3's civic controllers had no Swagger annotations. The owner chose orval.
+  - **Swagger:** the edition and community reply shapes in `libs/models`
+    are now `@ApiProperty` classes (same structure, so the services are
+    unchanged). The request bodies are annotated. The gateway's
+    `civic-briefing/replies.ts` describes the `{ data }` envelopes and the
+    multipart upload. Every civic route has `@ApiResponse`.
+  - **Generated client:** an orval `civic` project writes
+    `libs/civic/briefing-data-access/src/generated/civic.ts`. An input
+    transformer drops the `v1/` aliases (and density's POC path), and an
+    `operationName` override names methods after the controller method
+    (`me`, `latest`, `submit`). The submission is one JSON part, as the
+    gateway expects. CI's codegen drift check now includes the directory,
+    and the lib has a `generate` target.
+  - **Hand-written code that stays:** `problem` and `problemCode`, the
+    state and stage wording, `submissionKey`, `artifactUrl` and
+    `DENSITY_TARGET`.
+  - **Two P3 bugs found and fixed:**
+    1. `civic-briefing` and `civic-contributions` were missing from
+       `GATEWAY_SERVICE_IDS`. Without a composition file, the gateway never
+       mounted any `local-hub/*` route.
+    2. `pnpm run get-openapi` failed, because ts-node couldn't resolve
+       civic-community's `.js` specifiers; CI's drift step would have
+       failed too. `tools/openapi/tsconfig.json` turns on
+       `ts-node.experimentalResolver`, and the script uses it.
+  - **SSR:** generated clients call relative `/api/...` URLs, like the
+    other generated libs. local-hub's SSR server proxies `/api` to the
+    gateway; P4.5 exercises it.
+  - **Tests:** the other nine generated clients don't drift. Typecheck and
+    tests pass for civic-community, civic-contributions, civic-briefing,
+    gateway (1,503), models, constants, local-hub, ai-orchestrator and the
+    data-access lib (10 specs), and lint passes.
     Next: P4.2 (`libs/civic/briefing-ui`).
