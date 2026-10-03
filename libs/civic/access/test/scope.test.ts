@@ -14,6 +14,12 @@ import {
 interface PermissionsSeed {
   app_scopes: { name: string }[];
   roles: { name: string; appScope?: string }[];
+  permissions: { name: string; appScope?: string }[];
+  role_permissions: {
+    role: string;
+    permission: string;
+    permissionAppScope?: string;
+  }[];
 }
 
 const permissionsSeed = JSON.parse(
@@ -84,18 +90,31 @@ describe('access model', () => {
     }
   });
 
-  it('extends roles the permissions seed declares and adds only the new one', () => {
+  it('is fully seeded by the permissions service (no drift)', () => {
     expect(permissionsSeed.app_scopes.map((scope) => scope.name)).toContain(
       APP_SCOPE
     );
-    const declared = new Set(
+    const roles = new Set(
       permissionsSeed.roles
         .filter((role) => role.appScope === APP_SCOPE)
         .map((role) => role.name)
     );
-    for (const role of ROLES) {
-      expect(declared.has(role)).toBe(EXISTING_ROLES.includes(role));
-    }
+    for (const role of ROLES) expect(roles.has(role)).toBe(true);
+    const permissions = new Set(
+      permissionsSeed.permissions
+        .filter((permission) => permission.appScope === APP_SCOPE)
+        .map((permission) => permission.name)
+    );
+    for (const permission of PERMISSIONS)
+      expect(permissions.has(permission.name)).toBe(true);
+    const grants = new Set(
+      permissionsSeed.role_permissions
+        .filter((grant) => grant.permissionAppScope === APP_SCOPE)
+        .map((grant) => `${grant.role} ${grant.permission}`)
+    );
+    for (const role of ROLES)
+      for (const permission of ROLE_PERMISSIONS[role])
+        expect(grants.has(`${role} ${permission}`)).toBe(true);
   });
 
   it('produces a seed carrying the scope, its permissions, and its roles', () => {

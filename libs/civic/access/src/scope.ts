@@ -112,6 +112,25 @@ export const PERMISSIONS: readonly PermissionRecord[] = [
     description: 'Add or change a town and its sources.',
   },
   {
+    name: 'official.verify',
+    resource: 'official',
+    action: 'verify',
+    description: "Confirm an official's application after the callback.",
+  },
+  {
+    name: 'takedown.manage',
+    resource: 'takedown',
+    action: 'manage',
+    description: 'Review copyright takedown notices and act on them.',
+  },
+  {
+    name: 'community.maintain',
+    resource: 'community',
+    action: 'maintain',
+    description:
+      'Run community upkeep: re-review held contributions, sweep outcomes, export promotions.',
+  },
+  {
     name: 'density.read',
     resource: 'density',
     action: 'read',
@@ -144,6 +163,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, readonly string[]>> = {
     'account.suspend',
     'town.configure',
     'density.read',
+    'official.verify',
+    'takedown.manage',
+    'community.maintain',
   ],
 };
 

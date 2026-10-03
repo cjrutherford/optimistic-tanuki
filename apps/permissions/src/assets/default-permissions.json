@@ -338,6 +338,11 @@
       "appScope": "local-hub"
     },
     {
+      "name": "local_hub_verified_official",
+      "description": "Submits official records for a town; verified by domain and roster, then a callback. Never corroborates (D20).",
+      "appScope": "local-hub"
+    },
+    {
       "name": "finance_member",
       "description": "Finance member with workspace read access and limited contribution rights",
       "appScope": "finance"
@@ -3363,6 +3368,126 @@
       "action": "publish",
       "targetId": null,
       "appScope": "configurable-client"
+    },
+    {
+      "name": "briefing.read",
+      "description": "Read published briefings and stories.",
+      "active": true,
+      "resource": "briefing",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "contribution.create",
+      "description": "Submit an artifact or an eyewitness account.",
+      "active": true,
+      "resource": "contribution",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "contribution.read",
+      "description": "Read contributions and their corroboration state.",
+      "active": true,
+      "resource": "contribution",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "contribution.withdraw",
+      "description": "Withdraw one's own contribution.",
+      "active": true,
+      "resource": "contribution",
+      "action": "withdraw",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "corroboration.create",
+      "description": "Corroborate another contributor's report.",
+      "active": true,
+      "resource": "corroboration",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "artifact.upload",
+      "description": "Attach a document, recording, or photograph.",
+      "active": true,
+      "resource": "artifact",
+      "action": "upload",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "official-record.submit",
+      "description": "Submit a record as a verified officeholder; grounds briefing claims.",
+      "active": true,
+      "resource": "official-record",
+      "action": "submit",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "contributor-profile.update",
+      "description": "Edit one's own handle, display mode, and disclosures.",
+      "active": true,
+      "resource": "contributor-profile",
+      "action": "update",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "review-decision.read",
+      "description": "Read automated review decisions and their recorded reasons.",
+      "active": true,
+      "resource": "review-decision",
+      "action": "read",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "account.suspend",
+      "description": "Suspend an account for abuse.",
+      "active": true,
+      "resource": "account",
+      "action": "suspend",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "town.configure",
+      "description": "Add or change a town and its sources.",
+      "active": true,
+      "resource": "town",
+      "action": "configure",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "official.verify",
+      "description": "Confirm an official's application after the callback.",
+      "active": true,
+      "resource": "official",
+      "action": "verify",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "takedown.manage",
+      "description": "Review copyright takedown notices and act on them.",
+      "active": true,
+      "resource": "takedown",
+      "action": "manage",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "community.maintain",
+      "description": "Run community upkeep: re-review held contributions, sweep outcomes, export promotions.",
+      "active": true,
+      "resource": "community",
+      "action": "maintain",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "density.read",
+      "description": "Read per-town contributor density and coverage.",
+      "active": true,
+      "resource": "density",
+      "action": "read",
+      "appScope": "local-hub"
     }
   ],
   "role_permissions": [
@@ -7825,6 +7950,111 @@
       "role": "configurable_client_owner",
       "permission": "blog.post.publish",
       "permissionAppScope": "configurable-client"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "briefing.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "contribution.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "contribution.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "contribution.withdraw",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "corroboration.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "artifact.upload",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "contributor-profile.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_verified_official",
+      "permission": "briefing.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_verified_official",
+      "permission": "contribution.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_verified_official",
+      "permission": "official-record.submit",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_verified_official",
+      "permission": "artifact.upload",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_verified_official",
+      "permission": "contributor-profile.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "briefing.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "contribution.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "review-decision.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "account.suspend",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "town.configure",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "density.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "official.verify",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "takedown.manage",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_admin",
+      "permission": "community.maintain",
+      "permissionAppScope": "local-hub"
     }
   ]
 }
