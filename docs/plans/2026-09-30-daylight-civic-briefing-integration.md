@@ -212,7 +212,8 @@ fixes stay with the lead agent.
 - [x] P3.3 Security findings: all 8 re-verified as still present, and filed
       as private draft security advisories (the repository is public); see
       `2026-10-03-security-findings-issues.md`
-- [ ] P4.0 Rebase on main (#271; re-check #186)
+- [x] P4.0 Rebased on main (2026-10-03, after #269); PR #186 dropped from
+      consideration (owner: it will not merge)
 - [ ] P4.1 `libs/civic/briefing-data-access`
 - [ ] P4.2 `libs/civic/briefing-ui` (SSR-safe DOMPurify)
 - [ ] P4.3 `localitySlug` on community (generated migration) + Briefing on
@@ -714,3 +715,13 @@ clamav`).
   GHSA-q977-2c3p-65rw and GHSA-c9pw-rr3f-5rv2. The fixes are separate work
   and haven't been scheduled. Next: Phase 4 (Towne Square pages), starting
   with P4.0 (re-check PR #186 and rebase).
+- 2026-10-03: P4.0 is done. The branch was rebased onto `main`, which had
+  gained #269 (dependency consolidation).
+  - **Conflicts:** only `package.json` and `pnpm-lock.yaml`. They were
+    resolved by keeping `main`'s versions plus the civic additions, and
+    regenerating the lockfile; `--frozen-lockfile` passes.
+  - **Tests:** all ten affected projects pass (gateway 1,503).
+  - **Commit hashes** quoted earlier in this log predate this rebase.
+  - **PR #186** won't merge (owner), so Phase 4 builds on `main`'s
+    local-hub.
+    Next: P4.1.
