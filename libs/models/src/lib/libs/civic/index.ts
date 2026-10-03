@@ -11,3 +11,4 @@ export {
   PublishBroadcastDto,
 } from './civic.dto';
 export * from './edition-contract';
+export * from './community.dto';

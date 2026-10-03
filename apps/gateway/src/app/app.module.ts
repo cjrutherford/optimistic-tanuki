@@ -96,6 +96,8 @@ import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { FlowController } from '../controllers/flow/flow.controller';
 import { CivicController } from '../controllers/civic/civic.controller';
 import { EditionsController } from '../controllers/civic-briefing/editions.controller';
+import { CivicCommunityController } from '../controllers/civic-briefing/community.controller';
+import { CivicOperationsController } from '../controllers/civic-briefing/operations.controller';
 import { NexusController } from '../controllers/nexus/nexus.controller';
 import { VaultController } from '../controllers/vault/vault.controller';
 import {
@@ -354,6 +356,16 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'civic-briefing',
         requiredServices: ['civic-briefing'],
         value: EditionsController,
+      },
+      {
+        id: 'civic-community',
+        requiredServices: ['civic-contributions'],
+        value: CivicCommunityController,
+      },
+      {
+        id: 'civic-community-operations',
+        requiredServices: ['civic-contributions'],
+        value: CivicOperationsController,
       },
       {
         id: 'vault',

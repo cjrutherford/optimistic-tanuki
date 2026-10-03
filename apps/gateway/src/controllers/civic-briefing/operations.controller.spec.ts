@@ -1,0 +1,105 @@
+import { of } from 'rxjs';
+import { CommunityCommands } from '@optimistic-tanuki/civic-community';
+import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
+import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
+import type { UserDetails } from '../../decorators/user.decorator';
+import { CivicOperationsController } from './operations.controller';
+
+const operator = { userId: 'admin-1', name: 'Admin' } as UserDetails;
+const id = '0b5f1c28-5b0e-4c61-9f27-5a3c1d4e8f10';
+
+function fixture() {
+  const sent: { cmd: string; payload: unknown }[] = [];
+  const contributions = {
+    send: jest.fn((pattern: { cmd: string }, payload: unknown) => {
+      sent.push({ cmd: pattern.cmd, payload });
+      return of({ ok: true });
+    }),
+  };
+  return {
+    controller: new CivicOperationsController(
+      contributions as never,
+      { send: jest.fn() } as never
+    ),
+    sent,
+  };
+}
+
+const metadata = (name: keyof CivicOperationsController, key: string) =>
+  Reflect.getMetadata(key, CivicOperationsController.prototype[name]);
+
+describe('CivicOperationsController', () => {
+  it('confirms a callback as the signed-in operator', async () => {
+    const { controller, sent } = fixture();
+    await controller.confirmCallback(operator, {
+      userId: id,
+      localitySlug: 'tifton-ga',
+      note: 'Called the clerk.',
+    });
+    expect(sent).toEqual([
+      {
+        cmd: CommunityCommands.ConfirmOfficialCallback,
+        payload: {
+          userId: id,
+          localitySlug: 'tifton-ga',
+          operator: 'admin-1',
+          note: 'Called the clerk.',
+        },
+      },
+    ]);
+  });
+
+  it('lists notices, filtered by state when given', async () => {
+    const { controller, sent } = fixture();
+    await controller.takedownNotices('received');
+    await controller.takedownNotices();
+    expect(sent.map((s) => s.payload)).toEqual([{ state: 'received' }, {}]);
+    expect(sent[0].cmd).toBe(CommunityCommands.ListTakedownNotices);
+  });
+
+  it('acts on a notice as the operator', async () => {
+    const { controller, sent } = fixture();
+    await controller.actOnTakedownNotice(operator, id, {
+      action: 'upheld',
+      note: 'Valid.',
+    });
+    expect(sent[0]).toEqual({
+      cmd: CommunityCommands.ActOnTakedownNotice,
+      payload: {
+        noticeId: id,
+        action: 'upheld',
+        operator: 'admin-1',
+        note: 'Valid.',
+      },
+    });
+  });
+
+  it('triggers upkeep and reads density', async () => {
+    const { controller, sent } = fixture();
+    await controller.rereview();
+    await controller.sweepOutcomes();
+    await controller.exportPromotions();
+    await controller.density();
+    expect(sent.map((s) => s.cmd)).toEqual([
+      CommunityCommands.Rereview,
+      CommunityCommands.SweepOutcomes,
+      CommunityCommands.ExportPromotions,
+      CommunityCommands.Density,
+    ]);
+  });
+
+  it.each([
+    ['density', 'density.read'],
+    ['confirmCallback', 'official.verify'],
+    ['takedownNotices', 'takedown.manage'],
+    ['actOnTakedownNotice', 'takedown.manage'],
+    ['rereview', 'community.maintain'],
+    ['sweepOutcomes', 'community.maintain'],
+    ['exportPromotions', 'community.maintain'],
+  ] as const)('%s requires %s and is not public', (route, permission) => {
+    expect(metadata(route, PERMISSIONS_KEY)).toEqual({
+      permissions: [permission],
+    });
+    expect(metadata(route, IS_PUBLIC_KEY)).toBeUndefined();
+  });
+});
