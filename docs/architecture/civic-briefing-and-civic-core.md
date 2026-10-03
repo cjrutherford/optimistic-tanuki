@@ -52,7 +52,7 @@ already a way for a municipality to publish.
    - **The name is normalised** as the .gov directory matcher normalises
      it: case, punctuation, and a leading "City of", "Town of" or
      "Village of".
-   - **A tenant must match exactly one edition locality.** If it matches
+   - **A tenant must match exactly one local-government locality (any town, city, village or county in the registry, edition or not; the owner chose the stricter pool).** If it matches
      none, or more than one, it isn't used, and the operator sees why.
      Namesakes in the same state (a Madison town and a Madison County)
      must be resolved by `kind` (city or town vs county), never guessed.

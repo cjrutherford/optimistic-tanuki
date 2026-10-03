@@ -194,9 +194,9 @@ fixes stay with the lead agent.
       Core becomes a first-party source; broadcasts become alerts and TIP
       projects become stories; tenants are matched to towns by name and
       state, with safeguards
-- [ ] P2.6a `civic-core` source adapter (TCP to `apps/civic`), tenant-to-town
-      matching (exact state, unique match, logged, overridable), broadcast
-      alerts and TIP stories. After Phase 3
+- [x] P2.6a Civic Core as a source: `civic_tenants` in apps/civic
+      (cb27a18e), the `civic-core` adapter and `matchTenants`, and adoption
+      during weekly sourcing (96c608f2)
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [ ] P3.1 Gateway briefing routes
 - [ ] P3.2 Gateway contribution and profile routes (actors always carry
@@ -658,3 +658,20 @@ clamav`).
   If Civic Core's tenant entity has no two-letter state, P2.6a adds one
   with a generated migration. Phase 2 is complete apart from P2.6a.
   Next: Phase 3 (gateway routes), starting with P3.1.
+- 2026-10-03: P2.6a is done.
+  - **Civic Core:** a `civic_tenants` table (generated migration) with
+    `CIVIC_REGISTER_TENANT` and `CIVIC_GET_TENANTS`.
+  - **The `civic-core` adapter:** agendas become meetings; active
+    broadcasts become alerts (expired ones are skipped); TIP projects become
+    `news` items tagged transportation and infrastructure.
+  - **`matchTenants`:** exact state, normalised name, kind agreement. It
+    matches against **all** local-government localities, edition or not
+    (the owner's choice: stricter against namesakes).
+  - **Adoption:** civic-briefing adopts a matched tenant during weekly
+    sourcing through discovery's logged `adopt()` path, and skips when Civic
+    Core is unreachable.
+  - **Known gap until SD.6:** a removed civic-core source is re-adopted the
+    next week. The owner chose to wait for the admin UI's block list rather
+    than add a stop-gap.
+  - **Tests:** adapters 124, briefing 31, civic 27.
+    Phase 2 is complete. Next: Phase 3, starting with P3.1.
