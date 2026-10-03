@@ -22,7 +22,7 @@ const MONACO_LANGUAGES: Record<string, string> = {
   rust: 'rust',
 };
 
-type MonacoApi = typeof import('monaco-editor/esm/vs/editor/editor.api');
+type MonacoApi = typeof import('monaco-editor/editor/editor.api');
 type MonacoEditor = ReturnType<MonacoApi['editor']['create']>;
 
 const THEME = 'learning-console';
@@ -286,16 +286,14 @@ export class CodeEditorComponent {
   private async mount(): Promise<void> {
     let monaco: MonacoApi;
     try {
-      monaco = await import('monaco-editor/esm/vs/editor/editor.api');
+      monaco = await import('monaco-editor/editor/editor.api');
       // Monarch grammars only. These need no web worker, unlike the full
       // language services, so the editor stays light and offline-safe.
       await Promise.all([
-        import('monaco-editor/esm/vs/basic-languages/go/go.contribution'),
-        import('monaco-editor/esm/vs/basic-languages/rust/rust.contribution'),
-        import('monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution'),
-        import(
-          'monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution'
-        ),
+        import('monaco-editor/languages/definitions/go/register'),
+        import('monaco-editor/languages/definitions/rust/register'),
+        import('monaco-editor/languages/definitions/cpp/register'),
+        import('monaco-editor/languages/definitions/typescript/register'),
       ]);
     } catch {
       // No editor. The textarea is already on screen and still works.
