@@ -287,6 +287,7 @@ describe('CivicCommunityController', () => {
       ['subjects', 'contribution.create'],
       ['submit', 'contribution.create'],
       ['withdraw', 'contribution.withdraw'],
+      ['mine', 'contribution.read'],
     ] as const)('%s requires %s', (route, permission) => {
       expect(metadata(route, PERMISSIONS_KEY)).toEqual({
         permissions: [permission],

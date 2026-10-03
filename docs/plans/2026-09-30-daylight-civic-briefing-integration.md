@@ -120,6 +120,12 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   projects as stories. A tenant is matched to a town by name and state
   (the owner's choice), with safeguards. See
   `docs/architecture/civic-briefing-and-civic-core.md`.
+- **D26** Operator triggers are guarded by three admin permissions:
+  `official.verify`, `takedown.manage` and `community.maintain`. "My
+  contributions" requires `contribution.read`. A counter-notice stays open
+  to any signed-in contributor, since it's a legal response right. The
+  official-callback route takes a userId; the admin UI picks the
+  applicant. `CIVIC_FINGERPRINT_KEY` is in the gateway's compose env.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -200,13 +206,9 @@ fixes stay with the lead agent.
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
 - [x] P3.1 Gateway briefing routes: public `GET local-hub/editions`,
       `:slug`, `:slug/briefings/latest`, `:slug/briefings/:periodEnd`
-- [ ] P3.2 Gateway contribution and profile routes (actors always carry
-      their local-hub roles, D23; operator actions as manual-trigger routes,
-      D24), permissions seeding: add
-      civic-access's permissions, the new `local_hub_verified_official` role and
-      the grants on `local_hub_member`/`local_hub_admin` to
-      `apps/permissions/src/assets/default-permissions.json`, and guard routes
-      with the dotted permission names
+- [x] P3.2 Gateway contribution, official and operator routes (actors carry
+      local-hub roles, D23; operator triggers under `local-hub/operations`,
+      D24); civic permissions, role and grants seeded with a drift test
 - [ ] P3.3 File the eight open security findings (the stub virus scanner is
       already fixed upstream) as issues (owner approves before
       anything is posted)
@@ -689,3 +691,18 @@ clamav`).
   - **Tests:** 3 DB tests and 4 controller tests.
   - **Not run:** an end-to-end request through a live gateway.
     Next: P3.2.
+- 2026-10-03: P3.2 is done (aae380a9 seeding, 80101696 routes, plus the
+  owner's follow-ups).
+  - **The full gateway suite** passes (107 suites, 1,502 tests), and the
+    gateway builds.
+  - **The seed** now has 15 civic permissions, the
+    `local_hub_verified_official` role and 21 grants, with a drift test in
+    civic-access.
+  - **Routes:** under `local-hub/` with `v1/` aliases. Every actor's roles
+    come from `GetUserRoles` (local-hub scope); a failed lookup answers 503.
+    A granted official application assigns `local_hub_verified_official`.
+  - **Dropped:** `PATCH me`. Profile edits use the existing profile routes,
+    and the service has no contributor-profile command.
+  - **Not tested:** a live end-to-end request (P4.5).
+    Next: P3.3 (filing the security findings as issues, which needs the
+    owner's approval before anything is posted).

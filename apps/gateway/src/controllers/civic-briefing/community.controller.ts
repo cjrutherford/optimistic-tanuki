@@ -205,6 +205,7 @@ export class CivicCommunityController {
   }
 
   @Get('contributions/mine')
+  @RequirePermissions('contribution.read')
   @ApiOperation({ summary: "The account's own contributions" })
   async mine(@User() user: UserDetails) {
     const { actor } = await this.civic.actor(user);

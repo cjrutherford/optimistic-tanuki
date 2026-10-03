@@ -400,6 +400,8 @@ services:
       SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
       SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
       JWT_SECRET: ${JWT_SECRET:-}
+      # Keys the corroboration origin hashes (sock-puppet checks); unset sends no origin.
+      CIVIC_FINGERPRINT_KEY: ${CIVIC_FINGERPRINT_KEY:-}
       OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
