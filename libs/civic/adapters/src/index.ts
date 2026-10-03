@@ -51,3 +51,23 @@ export { ImapMailbox } from './email/imap-mailbox.js';
 export type { ImapMailboxOptions } from './email/imap-mailbox.js';
 export { senderMatches } from './email/mailbox.js';
 export type { MailMessage, Mailbox } from './email/mailbox.js';
+
+// The civic-core adapter is not in ALL_ADAPTERS either: it reads over TCP
+// through a client the service supplies, e.g.
+// registerAdapter(createCivicCoreAdapter(new TcpCivicCoreClient(proxy)));
+export {
+  createCivicCoreAdapter,
+  parseCivicCoreConfig,
+} from './civic-core/index.js';
+export type {
+  CivicAgendaItemRecord,
+  CivicAgendaRecord,
+  CivicBroadcastRecord,
+  CivicCoreClient,
+  CivicCoreSourceConfig,
+  CivicTenantKind,
+  CivicTenantRecord,
+  CivicTipProjectRecord,
+} from './civic-core/index.js';
+export { matchTenants } from './civic-core/match.js';
+export type { TenantMatch } from './civic-core/match.js';

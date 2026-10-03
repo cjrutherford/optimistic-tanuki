@@ -41,6 +41,8 @@ import {
   sourcingDue,
 } from './plan';
 import type { ScheduleConfig } from './schedule.config';
+import type { CivicCoreClient } from '@optimistic-tanuki/civic-adapters';
+import { civicCoreDecisions } from '../civic-core/adoption';
 
 /**
  * The daily pipeline: every edition town, every day, without anyone running it.
@@ -82,7 +84,9 @@ export class DailySchedule {
     /** Set when model calls go through prompt-proxy rather than LLM_BASE_URL. */
     private readonly modelFetch?: FetchImplementation,
     /** The platform's virus-scanning blob store (D22); runs never use another. */
-    private readonly blobStore?: BlobStore
+    private readonly blobStore?: BlobStore,
+    /** Civic Core, when this deployment reads it: a matched tenant is adopted as the town's own source. */
+    private readonly civicCore?: CivicCoreClient
   ) {
     this.registry = this.loadRegistry();
     this.search = searchProviderFromEnvironment();
@@ -411,7 +415,7 @@ export class DailySchedule {
       ).sitesFor([town, ...ancestors, ...descendants]);
       for (const note of directories.notes)
         this.logger.warn(`${town.slug}: ${note}`);
-      const { decisions, searched, pagesRead } = await discoverSources({
+      const discovery = await discoverSources({
         locality: town,
         ancestors: [...ancestors, ...descendants],
         existing,
@@ -421,6 +425,20 @@ export class DailySchedule {
         governmentDomains: directories.governmentDomains,
         pageBudget: this.config.sourcingPageBudget,
       });
+      const { searched, pagesRead } = discovery;
+      const decisions = [...discovery.decisions];
+      if (this.civicCore) {
+        const civic = await civicCoreDecisions(
+          this.civicCore,
+          town,
+          this.registry.all()
+        );
+        if (civic.unreachable)
+          this.logger.warn(
+            `${town.slug}: Civic Core unreachable, skipped: ${civic.unreachable}`
+          );
+        decisions.push(...civic.decisions);
+      }
       const adopted = decisions.filter((decision) => decision.adopted);
       for (const decision of adopted) this.adopt(decision);
       this.log({

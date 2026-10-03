@@ -6,11 +6,19 @@ import {
 import { INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { getDataSourceToken } from '@nestjs/typeorm';
-import { preflightFoundationTarget } from '@optimistic-tanuki/civic-core';
+import {
+  preflightFoundationTarget,
+  registerAdapter,
+} from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
 import { DailySchedule, MODEL_TIMEOUT_MS } from './app/schedule/daily';
 import { promptProxyFetch } from './app/model/prompt-proxy-fetch';
+import { createCivicCoreAdapter } from '@optimistic-tanuki/civic-adapters';
+import {
+  TcpCivicCoreClient,
+  civicCoreEndpoint,
+} from './app/civic-core/civic-core.client';
 import { BLOB_STORE } from './app/tokens';
 import type { BlobStore } from '@optimistic-tanuki/civic-core';
 import { loadScheduleConfig } from './app/schedule/schedule.config';
@@ -48,12 +56,22 @@ function buildSchedule(app: INestApplicationContext): DailySchedule | null {
       : 'model calls direct to LLM_BASE_URL',
     'Bootstrap'
   );
+  // Civic Core is read over TCP; its adapter is registered here, not in
+  // ALL_ADAPTERS, because it needs this client.
+  const civicCore = new TcpCivicCoreClient(
+    ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: civicCoreEndpoint(),
+    })
+  );
+  registerAdapter(createCivicCoreAdapter(civicCore));
   return new DailySchedule(
     { ...config, localitiesDir: config.localitiesDir },
     app.get<DataSource>(getDataSourceToken(), { strict: false }),
     portedStages(app),
     modelFetch,
-    app.get<BlobStore>(BLOB_STORE)
+    app.get<BlobStore>(BLOB_STORE),
+    civicCore
   );
 }
 

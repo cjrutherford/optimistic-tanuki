@@ -11,7 +11,9 @@ describe('adapter registry', () => {
       .filter((entry) => entry.isDirectory())
       // `email` is registered by the service with its configured inbox: it
       // needs a mailbox at construction, so it cannot sit in ALL_ADAPTERS.
-      .filter((entry) => entry.name !== 'email')
+      // `civic-core` likewise: it reads over TCP through a client the service
+      // supplies, so it is registered by the service, not listed here.
+      .filter((entry) => entry.name !== 'email' && entry.name !== 'civic-core')
       .map((entry) => entry.name);
     const registered = ALL_ADAPTERS.map((adapter) =>
       adapter.name.replace(/-/gu, '')
