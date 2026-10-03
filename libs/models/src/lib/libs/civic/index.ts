@@ -10,3 +10,4 @@ export {
   EmergencyBroadcastDto,
   PublishBroadcastDto,
 } from './civic.dto';
+export * from './edition-contract';

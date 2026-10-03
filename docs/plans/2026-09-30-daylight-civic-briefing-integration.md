@@ -198,7 +198,8 @@ fixes stay with the lead agent.
       (cb27a18e), the `civic-core` adapter and `matchTenants`, and adoption
       during weekly sourcing (96c608f2)
 - [ ] P2.7 Source discovery: see "Source discovery strategy" (P1.7, SD.0–SD.7)
-- [ ] P3.1 Gateway briefing routes
+- [x] P3.1 Gateway briefing routes: public `GET local-hub/editions`,
+      `:slug`, `:slug/briefings/latest`, `:slug/briefings/:periodEnd`
 - [ ] P3.2 Gateway contribution and profile routes (actors always carry
       their local-hub roles, D23; operator actions as manual-trigger routes,
       D24), permissions seeding: add
@@ -675,3 +676,16 @@ clamav`).
     than add a stop-gap.
   - **Tests:** adapters 124, briefing 31, civic 27.
     Phase 2 is complete. Next: Phase 3, starting with P3.1.
+- 2026-10-03: P3.1 is done.
+  - **civic-briefing:** an editions query service (ported from the POC
+    gateway's BriefingStore), served as `CivicBriefingCommands.EDITIONS`,
+    `EDITION_HISTORY` and `BRIEFING`.
+  - **Gateway:** a public `EditionsController` at `local-hub/editions` (plus
+    a `v1/` alias), registered under the `civic-briefing` service. Empty
+    results become 404; an unreachable or timed-out service becomes 503.
+  - **The contract types** (`EditionSummary`, `EditionHistory`,
+    `PublishedBriefing`) live in `libs/models`, because importing civic-core
+    would pull the whole pipeline lib into the gateway's compilation.
+  - **Tests:** 3 DB tests and 4 controller tests.
+  - **Not run:** an end-to-end request through a live gateway.
+    Next: P3.2.

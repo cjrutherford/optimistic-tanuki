@@ -7,6 +7,7 @@ import { BriefingModule } from './briefing/briefing.module';
 import { CivicDatabaseModule } from './civic-database.module';
 import { CollateModule } from './collate/collate.module';
 import { CorpusModule } from './corpus/corpus.module';
+import { EditionsModule } from './editions/editions.module';
 import { GatherModule } from './gather/gather.module';
 import { ParseModule } from './parse/parse.module';
 import { PlatformModule } from './platform.module';
@@ -22,6 +23,7 @@ import { StoriesModule } from './stories/stories.module';
     }),
     CivicDatabaseModule,
     CorpusModule,
+    EditionsModule,
     PlatformModule,
     AdaptersModule,
     QuarantineModule,

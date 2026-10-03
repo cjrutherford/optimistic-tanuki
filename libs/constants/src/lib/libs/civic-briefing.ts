@@ -11,4 +11,10 @@ export const CivicBriefingCommands = {
   TOPIC_FOR: 'civic-briefing.corpus.topic-for',
   /** What a town's sources published on or after a day. */
   RECORDS_SINCE: 'civic-briefing.corpus.records-since',
+  /** Every town with a published briefing. */
+  EDITIONS: 'civic-briefing.editions.list',
+  /** A town's recent editions, newest first. */
+  EDITION_HISTORY: 'civic-briefing.editions.history',
+  /** One published briefing: a town's newest, or the one for a date. */
+  BRIEFING: 'civic-briefing.editions.briefing',
 } as const;
