@@ -1,0 +1,17 @@
+{
+  "name": "civic-briefing-ui",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/civic/briefing-ui/src",
+  "prefix": "civic",
+  "projectType": "library",
+  "tags": ["type:ui", "scope:civic", "platform:web", "visibility:internal"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/civic/briefing-ui/jest.config.ts"
+      }
+    }
+  }
+}

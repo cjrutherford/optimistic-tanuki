@@ -1,0 +1,128 @@
+// The reading column. Set in a book serif from the reader's own system —
+// Charter, Iowan, Georgia — so a civic page makes no third-party font request.
+:host {
+  display: block;
+  --reading-font: Charter, 'Bitstream Charter', 'Iowan Old Style', 'Sitka Text',
+    Cambria, Georgia, serif;
+}
+
+.briefing-text {
+  font-family: var(--reading-font);
+  font-size: 1.125rem;
+  line-height: 1.62;
+  max-width: 66ch;
+
+  ::ng-deep {
+    > p:first-child {
+      font-size: 1.3rem;
+      line-height: 1.45;
+      margin-top: 0;
+    }
+
+    // The provenance line and its model disclosure are small print.
+    > p:has(> em:only-child),
+    > blockquote {
+      font-size: 0.9rem;
+      color: var(
+        --foreground-muted,
+        color-mix(in srgb, var(--foreground) 65%, transparent)
+      );
+    }
+
+    > blockquote {
+      margin: 0 0 1.5rem;
+      padding: 0;
+      border: 0;
+    }
+
+    // The article's headline, then its sections (Coming up, Sources, Words
+    // worth knowing) as Towne Square's small uppercase section labels.
+    h2 {
+      font-family: var(--font-body, system-ui, sans-serif);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin: 2.4rem 0 0.7rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid
+        var(--border, color-mix(in srgb, var(--foreground) 12%, transparent));
+    }
+
+    > h2:first-child {
+      font-family: inherit;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-transform: none;
+      color: var(--foreground);
+      margin: 0 0 1rem;
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    h3 {
+      font-family: inherit;
+      font-size: 1.1rem;
+      margin: 1.6rem 0 0.4rem;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+      margin: 0.4rem 0 1rem;
+    }
+
+    li {
+      margin: 0.35rem 0;
+    }
+
+    li > ul {
+      font-size: 0.95em;
+      margin-top: 0.2rem;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.18em;
+    }
+
+    a:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+
+    details {
+      margin-top: 2.5rem;
+      font-family: var(--font-body, system-ui, sans-serif);
+      font-size: 0.9rem;
+      color: var(
+        --foreground-muted,
+        color-mix(in srgb, var(--foreground) 65%, transparent)
+      );
+    }
+
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+
+    details[open] summary {
+      margin-bottom: 0.6rem;
+    }
+
+    hr {
+      border: 0;
+      height: 1px;
+      background: var(
+        --border,
+        color-mix(in srgb, var(--foreground) 15%, transparent)
+      );
+      margin: 2rem 0;
+    }
+  }
+}

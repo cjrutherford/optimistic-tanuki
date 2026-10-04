@@ -216,7 +216,7 @@ fixes stay with the lead agent.
       consideration (owner: it will not merge)
 - [x] P4.1 `libs/civic/briefing-data-access`
 - [x] P4.1b Generate the civic clients with orval (owner)
-- [ ] P4.2 `libs/civic/briefing-ui` (SSR-safe DOMPurify)
+- [x] P4.2 `libs/civic/briefing-ui` (Angular sanitizer, owner)
 - [ ] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
 - [ ] P4.4 Contributor pages (report, watch, contributor, operations)
@@ -783,3 +783,28 @@ clamav`).
     gateway (1,503), models, constants, local-hub, ai-orchestrator and the
     data-access lib (10 specs), and lint passes.
     Next: P4.2 (`libs/civic/briefing-ui`).
+- 2026-10-03: P4.2 is done. `libs/civic/briefing-ui`
+  (`@optimistic-tanuki/civic-briefing-ui`, tags `type:ui`, `scope:civic`,
+  `platform:web`) has `<civic-briefing-body>`, `<civic-edition-strip>`,
+  `renderBriefing` and the calendar-day helpers, ported from the POC web app.
+  - **Sanitizing (owner):** not DOMPurify. On the server it needs jsdom,
+    which can't go in the SSR bundle (`apps/learning` hit the same limit).
+    `renderBriefing` escapes every raw HTML tag except the pipeline's
+    `<details>`/`<summary>`, keeps only http(s) links (new tab,
+    `rel="noopener noreferrer"`), and keeps an image's description but not
+    the image. The component binds the result as a plain string, so
+    Angular's sanitizer runs on the server and in the browser.
+  - **Changes from the POC:** no `referrerpolicy` attribute (Angular's
+    sanitizer drops it; `noreferrer` covers it). A quoted headline's raw
+    HTML shows as text rather than being stripped. The strip takes its link
+    prefix as an input (`route`), since the POC hard-coded `/towns`. The
+    `current` mark uses the theme's `--on-primary` instead of a `#fff`
+    fallback.
+  - **Checked against real output:** all 12 POC briefings render with
+    nothing escaped, every `<details>` and source link kept, and nothing
+    removed by Angular's sanitizer (so server and browser match). This was
+    a one-off check, not a committed test, since it reads the POC's data.
+  - **Tests:** 11 specs (the POC's rendering, date and strip tests, plus
+    two component tests through Angular's sanitizer); lint passes.
+    Next: P4.3 (`localitySlug` on community, and the Briefing section on
+    the city page).

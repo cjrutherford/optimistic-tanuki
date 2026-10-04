@@ -87,6 +87,9 @@
       "@optimistic-tanuki/civic-briefing-data-access": [
         "libs/civic/briefing-data-access/src/index.ts"
       ],
+      "@optimistic-tanuki/civic-briefing-ui": [
+        "libs/civic/briefing-ui/src/index.ts"
+      ],
       "@optimistic-tanuki/civic-community": [
         "libs/civic/community/src/index.ts"
       ],

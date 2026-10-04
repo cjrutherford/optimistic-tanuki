@@ -1,0 +1,114 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.strip {
+  overflow-x: auto;
+  // Newest days sit at the right edge; on a narrow screen the strip opens
+  // scrolled there (see the town page), so today is always in view.
+  scrollbar-width: thin;
+  padding: 1.4rem 0 0.4rem;
+}
+
+ol {
+  display: grid;
+  grid-auto-flow: column;
+  // Four weeks fit the reading width on a desktop; narrower screens scroll.
+  grid-auto-columns: 1.85rem;
+  gap: 0.2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  position: relative;
+}
+
+.month {
+  position: absolute;
+  top: -1.3rem;
+  left: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(
+    --foreground-muted,
+    color-mix(in srgb, var(--foreground) 65%, transparent)
+  );
+  white-space: nowrap;
+}
+
+li.month-start:not(:first-child) {
+  margin-left: 0.5rem;
+}
+
+.mark {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.35rem 0 0.45rem;
+  border-radius: 0.6rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-decoration: none;
+}
+
+.initial {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.date {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.published {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  transition: background-color 120ms ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--primary) 26%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+.current {
+  background: var(--primary);
+  color: var(--on-primary);
+
+  &:hover {
+    background: var(--primary);
+  }
+}
+
+// A day with no edition: present, so the gap is visible, but quiet.
+.missing {
+  color: color-mix(in srgb, var(--foreground) 35%, transparent);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    color-mix(in srgb, var(--foreground) 7%, transparent) 3px 4px
+  );
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .published {
+    transition: none;
+  }
+}
