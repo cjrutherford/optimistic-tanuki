@@ -15,7 +15,7 @@ import {
 
 test('the registry exposes the CI microservice and UI suites by kind', () => {
   assert.equal(listE2eTargets('microservice').length, 13);
-  assert.equal(listE2eTargets('ui').length, 9);
+  assert.equal(listE2eTargets('ui').length, 10);
   assert.equal(listE2eTargets('dedicated-overlay').length, 1);
 
   assert.deepEqual(
@@ -29,6 +29,7 @@ test('the registry exposes the CI microservice and UI suites by kind', () => {
       'christopherrutherford-net-e2e',
       'owner-console-e2e',
       'store-client-e2e',
+      'local-hub-e2e',
       'configurable-client-e2e',
     ]
   );
@@ -106,12 +107,22 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   const uiServiceSets = listE2eTargets('ui').map((entry) =>
     resolveE2eServices(entry).join(',')
   );
-  assert.equal(new Set(uiServiceSets).size, 9);
-  // client-interface is the largest closure at 15, since community creation
-  // provisions a workspace and the bug-report spec needs the bug-report service.
+  assert.equal(new Set(uiServiceSets).size, 10);
+  // local-hub is the largest closure at 19: Daylight adds civic-briefing,
+  // civic-contributions, ClamAV, the model stub and two fixture seeds to the
+  // classifieds, payments and social services the older local-hub suites
+  // drive.
+  // client-interface follows at 15 (community creation provisions a
+  // workspace, and the bug-report spec needs the bug-report service).
   assert.ok(
-    uiServiceSets.every((services) => services.split(',').length <= 15)
+    uiServiceSets.every((services) => services.split(',').length <= 19)
   );
+  assert.deepEqual(resolveE2eTarget('local-hub-e2e').completedServices, [
+    'db-setup',
+    'social-locality-seed',
+    'civic-briefing-seed',
+    'permissions-seed',
+  ]);
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });
 

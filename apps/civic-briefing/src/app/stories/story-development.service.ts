@@ -58,11 +58,6 @@ import {
   KIND_HEADINGS,
   storyTitle as evidenceTitle,
 } from '@optimistic-tanuki/civic-core';
-import type {
-  CanonicalStoryRevisionRow,
-  LlmCitation,
-  LlmStoryAnalysis,
-} from '@optimistic-tanuki/civic-core';
 
 /**
  * Writes the ongoing stories an edition links to.

@@ -37,7 +37,6 @@ import {
 } from '@optimistic-tanuki/civic-core';
 import { CollateService } from '../collate/collate.service';
 import { StoryDevelopmentService } from '../stories/story-development.service';
-import type { EditionMode, LlmCitation } from '@optimistic-tanuki/civic-core';
 
 /**
  * Assembles and publishes a town's edition.

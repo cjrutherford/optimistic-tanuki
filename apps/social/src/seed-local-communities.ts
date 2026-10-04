@@ -182,7 +182,21 @@ function localityRank(localityType: LocalityType) {
   return 4;
 }
 
+/**
+ * SEED_LOCALITY_SLUGS (comma-separated) seeds only those places, and
+ * SEED_SKIP_CHAT_ROOMS=true skips their chat rooms. The e2e stack uses both
+ * for the Daylight towns, without chat-collector.
+ */
+const ONLY_SLUGS = new Set(
+  (process.env['SEED_LOCALITY_SLUGS'] ?? '')
+    .split(',')
+    .map((slug) => slug.trim())
+    .filter(Boolean)
+);
+const SKIP_CHAT_ROOMS = process.env['SEED_SKIP_CHAT_ROOMS'] === 'true';
+
 const COMMUNITIES: SeedLocality[] = rawLocalities
+  .filter((locality) => ONLY_SLUGS.size === 0 || ONLY_SLUGS.has(locality.slug))
   .map(toSeedLocality)
   .sort((a, b) => localityRank(a.localityType) - localityRank(b.localityType));
 
@@ -213,7 +227,7 @@ async function main() {
   const chatClient = createChatCollectorClient();
 
   try {
-    await chatClient.connect();
+    if (!SKIP_CHAT_ROOMS) await chatClient.connect();
     const communityRepo = app.get<Repository<Community>>(
       getRepositoryToken(Community)
     );
@@ -254,13 +268,14 @@ async function main() {
           parentId: parent?.id ?? null,
         });
         await communityRepo.save(existing);
-        await ensureCommunityChatRoom(existing, {
-          createCommunityChat: (input) =>
-            createCommunityChat(input, chatClient),
-          setCommunityChatRoom: async (communityId, chatRoomId) => {
-            await communityRepo.update(communityId, { chatRoomId });
-          },
-        });
+        if (!SKIP_CHAT_ROOMS)
+          await ensureCommunityChatRoom(existing, {
+            createCommunityChat: (input) =>
+              createCommunityChat(input, chatClient),
+            setCommunityChatRoom: async (communityId, chatRoomId) => {
+              await communityRepo.update(communityId, { chatRoomId });
+            },
+          });
         updated++;
         console.log(`  Updated: ${data.name}`);
       } else {
@@ -290,13 +305,14 @@ async function main() {
           isSystemCommunity: true,
         });
         await communityRepo.save(community);
-        await ensureCommunityChatRoom(community, {
-          createCommunityChat: (input) =>
-            createCommunityChat(input, chatClient),
-          setCommunityChatRoom: async (communityId, chatRoomId) => {
-            await communityRepo.update(communityId, { chatRoomId });
-          },
-        });
+        if (!SKIP_CHAT_ROOMS)
+          await ensureCommunityChatRoom(community, {
+            createCommunityChat: (input) =>
+              createCommunityChat(input, chatClient),
+            setCommunityChatRoom: async (communityId, chatRoomId) => {
+              await communityRepo.update(communityId, { chatRoomId });
+            },
+          });
         created++;
         console.log(`  Created: ${data.name}`);
       }

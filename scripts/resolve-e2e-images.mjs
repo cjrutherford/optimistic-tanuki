@@ -26,6 +26,7 @@ export const LOCALLY_BUILT = new Set([
   'redis',
   'db-setup',
   'oauth-provider',
+  'model-stub',
 ]);
 /** Third-party images keep their published tag instead of receiving a CI SHA. */
 export const FIXED_IMAGES = new Set(['learning-runner-relay', 'clamav']);
