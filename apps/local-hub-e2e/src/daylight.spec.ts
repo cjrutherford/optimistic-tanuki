@@ -46,7 +46,9 @@ test.describe('Daylight briefings', () => {
       .getByRole('link', { name: 'Resident reports and past editions' })
       .click();
     await expect(page).toHaveURL('/city/adel-ga/briefing');
-    await expect(page.getByRole('heading', { name: 'Adel' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Adel', exact: true })
+    ).toBeVisible();
 
     await page
       .getByRole('navigation', { name: 'Editions from the last four weeks' })
@@ -118,10 +120,21 @@ test.describe('Becoming a Daylight contributor', () => {
         .check();
       await page.getByRole('button', { name: 'Send report' }).click();
 
+      // Review passes it. The copying check fails closed here, since the e2e
+      // stack loads no news corpus to compare against, so the report waits
+      // for evidence and says exactly why.
       const trail = page.locator('civic-review-trail');
-      await expect(trail).toContainText('Recorded.', { timeout: 60_000 });
+      await expect(trail).toContainText('Waiting for evidence.', {
+        timeout: 60_000,
+      });
+      await expect(trail).toContainText(
+        'Nothing in it needs to wait. It is recorded and can be corroborated.'
+      );
+      await expect(trail).toContainText(
+        'no published articles are loaded to compare against'
+      );
 
-      // The account's own list has it, accepted.
+      // The account's own list has it, with the same outcome.
       const mine = await context.request.get(
         apiUrl('/api/local-hub/contributions/mine'),
         { headers: localHubAuthHeaders(session.token) }
@@ -133,7 +146,7 @@ test.describe('Becoming a Daylight contributor', () => {
       }[];
       expect(
         reports.find((report) => report.subject.text === subject)?.state
-      ).toBe('accepted');
+      ).toBe('held');
     } finally {
       await context.close();
     }

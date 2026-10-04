@@ -253,13 +253,16 @@ export async function createCommunity(
   token: string,
   cityId: string
 ): Promise<LocalHubCommunity | undefined> {
-  const response = await request.post(apiUrl('/api/communities'), {
+  // The route local-hub's own CommunityService uses. No chat room: the e2e
+  // stack runs without chat-collector.
+  const response = await request.post(apiUrl('/api/social/community'), {
     headers: localHubAuthHeaders(token),
     data: {
       name: `Test Community ${Date.now()}`,
       description: 'E2E Test Community',
       parentId: cityId,
       localityType: 'neighborhood',
+      createChatRoom: false,
     },
   });
 
