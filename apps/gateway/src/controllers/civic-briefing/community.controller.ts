@@ -45,6 +45,7 @@ import {
 } from '@optimistic-tanuki/civic-community';
 import { ProfileCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
+  ContributorSignUpRequest,
   CounterNoticeBody,
   OfficialApplicationRequest,
   SubmissionRequest,
@@ -293,6 +294,38 @@ export class CivicCommunityController {
    * official role; the operator's callback later raises the standing but
    * changes no role.
    */
+  /**
+   * Sign up to contribute to Daylight (D27). Joining local-hub grants no
+   * contribution rights; this explicit agreement does, and only for an
+   * account whose email address is verified. Signing up again is harmless.
+   */
+  @Post('contributor')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Sign up as a Daylight contributor' })
+  @ApiResponse({ status: 200, type: MembershipReply })
+  async signUpAsContributor(
+    @User() user: UserDetails,
+    @Body() _body: ContributorSignUpRequest
+  ) {
+    if (user.emailVerified !== true) {
+      throw new ForbiddenException({
+        message:
+          'Verify your email address before signing up to contribute. Use the link we sent when you registered.',
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+      });
+    }
+    await this.civic.grantRole(user.profileId, 'local_hub_contributor');
+    const access = await this.civic.access(user.profileId);
+    return {
+      data: {
+        profileId: user.profileId,
+        handle: user.name,
+        emailVerified: true,
+        ...access,
+      },
+    };
+  }
+
   @Post('officials/apply')
   @HttpCode(200)
   @ApiOperation({ summary: 'Apply for verified-official standing' })

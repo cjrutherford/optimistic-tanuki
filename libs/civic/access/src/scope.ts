@@ -13,11 +13,13 @@ export const APP_SCOPE = 'local-hub';
 
 /**
  * Roles that carry civic permissions. Membership and administration are
- * local-hub's existing roles: every member may contribute and corroborate,
- * and admins operate the briefing service. Verified officials are new.
+ * local-hub's existing roles: members read, and admins operate the briefing
+ * service. Contributors and verified officials are new. Contributing is an
+ * explicit sign-up, never a side effect of joining local-hub (D27).
  */
 export const ROLES = [
   'local_hub_member',
+  'local_hub_contributor',
   'local_hub_verified_official',
   'local_hub_admin',
 ] as const;
@@ -140,7 +142,8 @@ export const PERMISSIONS: readonly PermissionRecord[] = [
 
 /** Each role's civic grants, declared explicitly so a grant is never implied. */
 export const ROLE_PERMISSIONS: Readonly<Record<RoleName, readonly string[]>> = {
-  local_hub_member: [
+  local_hub_member: ['briefing.read'],
+  local_hub_contributor: [
     'briefing.read',
     'contribution.read',
     'contribution.create',
@@ -171,8 +174,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<RoleName, readonly string[]>> = {
 
 /**
  * Permissions a role takes away even when another role grants them. Role
- * grants are additive and a verified official is also a member, but an
- * official corroborating a meeting they ran is not an independent witness.
+ * grants are additive and a verified official may also have signed up as a
+ * contributor, but an official corroborating a meeting they ran is not an
+ * independent witness.
  * civic-contributions enforces this; the permissions service cannot.
  */
 export const ROLE_DENIALS: Readonly<
@@ -204,7 +208,9 @@ export interface ScopeSeed {
 
 const ROLE_DESCRIPTIONS: Record<RoleName, string> = {
   local_hub_member:
-    'Standard member of a local-hub community; reads briefings, submits and corroborates reports.',
+    'Standard member of a local-hub community; reads briefings.',
+  local_hub_contributor:
+    'Signed up to contribute to Daylight: submits, withdraws and corroborates reports.',
   local_hub_verified_official:
     'Submits official records; verified by domain and roster, then a callback.',
   local_hub_admin:

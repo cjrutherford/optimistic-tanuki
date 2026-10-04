@@ -94,6 +94,15 @@ export class SubmissionRequest {
   representations!: SubmissionRepresentationsRequest;
 }
 
+/** Signing up to contribute to Daylight: an explicit agreement to the contributor terms (D27). */
+export class ContributorSignUpRequest {
+  @ApiProperty({
+    description: 'Must be true: the contributor terms are agreed.',
+  })
+  @Equals(true, { message: 'agree to the contributor terms' })
+  agreeToTerms!: boolean;
+}
+
 export class OfficialApplicationRequest {
   @ApiProperty()
   @IsString()

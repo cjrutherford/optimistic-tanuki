@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DaylightContributorTermsComponent } from '../../../components/daylight-terms/daylight-contributor-terms.component';
 import { injectDaylightTown } from '../daylight-town';
 
 /**
@@ -11,7 +12,7 @@ import { injectDaylightTown } from '../daylight-town';
  */
 @Component({
   selector: 'app-daylight-watch-page',
-  imports: [RouterLink],
+  imports: [RouterLink, DaylightContributorTermsComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daylight-watch.page.html',
   styleUrl: './daylight-watch.page.scss',

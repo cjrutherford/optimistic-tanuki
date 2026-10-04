@@ -60,12 +60,14 @@ describe('DaylightReportPage', () => {
 
   afterEach(() => http().verify());
 
-  it('tells a reader how to become a contributor instead of showing the form', async () => {
+  it('sends a reader to the contributor sign-up instead of showing the form', async () => {
     const fixture = await render([]);
     const page = fixture.nativeElement as HTMLElement;
     expect(page.querySelector('form')).toBeNull();
-    expect(page.querySelector('.notice-box')?.textContent).toContain(
-      'Your account can read but not report yet.'
+    const join = page.querySelector('.notice-box a');
+    expect(join?.textContent?.trim()).toBe('become a contributor');
+    expect(join?.getAttribute('href')).toBe(
+      '/contribute?returnUrl=%2Fcity%2Fadel-ga%2Freport'
     );
   });
 

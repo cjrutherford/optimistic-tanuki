@@ -124,7 +124,9 @@ describe('corroboration', () => {
     };
 
     it('lets a member corroborate', async () => {
-      const { report, result } = await corroboratorWith(['local_hub_member']);
+      const { report, result } = await corroboratorWith([
+        'local_hub_contributor',
+      ]);
       expect(contributionOf(result).state).toBe('accepted');
       expect((await statusOf(report.id))?.corroborations.length).toBe(1);
     });
@@ -142,7 +144,7 @@ describe('corroboration', () => {
 
     it('refuses an official who is also a member', async () => {
       const { report, result } = await corroboratorWith([
-        'local_hub_member',
+        'local_hub_contributor',
         'local_hub_verified_official',
       ]);
       expect(refusedOf(result).reasons.join(' ')).toMatch(
@@ -173,7 +175,7 @@ describe('corroboration', () => {
 
     it('refuses an official this service itself has verified, whatever roles it was sent', async () => {
       const report = contributionOf(await intake.submit(request(actor())));
-      const who = await veteran(['local_hub_member']);
+      const who = await veteran(['local_hub_contributor']);
       await officials.apply({
         actor: who,
         email: 'jdoe@town-ga.gov',

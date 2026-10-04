@@ -277,6 +277,11 @@ export interface CounterNoticeReply {
   data: CounterNoticeReceipt;
 }
 
+export interface ContributorSignUpRequest {
+  /** Must be true: the contributor terms are agreed. */
+  agreeToTerms: boolean;
+}
+
 export interface OfficialApplicationRequest {
   localitySlug: string;
 }
@@ -1174,6 +1179,57 @@ export class OptomisitcTanukiAPIService {
     return this.http.post<TData>(
       `/api/local-hub/contributions/${id}/counter-notice`,
       counterNoticeBody,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary Sign up as a Daylight contributor
+   */
+  signUpAsContributor<TData = MembershipReply>(
+    contributorSignUpRequest: ContributorSignUpRequest,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  signUpAsContributor<TData = MembershipReply>(
+    contributorSignUpRequest: ContributorSignUpRequest,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  signUpAsContributor<TData = MembershipReply>(
+    contributorSignUpRequest: ContributorSignUpRequest,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  signUpAsContributor<TData = MembershipReply>(
+    contributorSignUpRequest: ContributorSignUpRequest,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/contributor`,
+        contributorSignUpRequest,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/contributor`,
+        contributorSignUpRequest,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/contributor`,
+      contributorSignUpRequest,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),
         observe: 'body',

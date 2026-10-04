@@ -9,7 +9,9 @@ const actor = (roles?: readonly string[]) => ({
 
 describe('corroborationRefusal (D20)', () => {
   it('lets a member corroborate', () => {
-    expect(corroborationRefusal(actor(['local_hub_member']), false)).toBeNull();
+    expect(
+      corroborationRefusal(actor(['local_hub_contributor']), false)
+    ).toBeNull();
   });
 
   it('refuses a verified official', () => {
@@ -20,8 +22,8 @@ describe('corroborationRefusal (D20)', () => {
 
   it('refuses an official who is also a member, whichever order the roles come in', () => {
     for (const roles of [
-      ['local_hub_member', 'local_hub_verified_official'],
-      ['local_hub_verified_official', 'local_hub_member'],
+      ['local_hub_contributor', 'local_hub_verified_official'],
+      ['local_hub_verified_official', 'local_hub_contributor'],
     ]) {
       expect(corroborationRefusal(actor(roles), false)).toMatch(
         /verified official/u
@@ -39,7 +41,7 @@ describe('corroborationRefusal (D20)', () => {
   it('ignores roles it does not know', () => {
     expect(
       corroborationRefusal(
-        actor(['local_hub_member', 'some_other_role']),
+        actor(['local_hub_contributor', 'some_other_role']),
         false
       )
     ).toBeNull();
@@ -50,8 +52,8 @@ describe('corroborationRefusal (D20)', () => {
       /roles were not provided/u
     );
     expect(corroborationRefusal(actor(), true)).toMatch(/verified official/u);
-    expect(corroborationRefusal(actor(['local_hub_member']), true)).toMatch(
-      /verified official/u
-    );
+    expect(
+      corroborationRefusal(actor(['local_hub_contributor']), true)
+    ).toMatch(/verified official/u);
   });
 });

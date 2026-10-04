@@ -32,6 +32,11 @@ const OPERATOR_PERMISSIONS = [
     @if (canReadReports()) {
     <h3>Your reports</h3>
     <app-daylight-my-reports />
+    } @else {
+    <p class="join">
+      Contributors tell Daylight what happened at public meetings in their town.
+      <a routerLink="/contribute">Become a contributor</a>.
+    </p>
     }
     <h3>Town officials</h3>
     <app-daylight-official-application />
@@ -44,6 +49,8 @@ const OPERATOR_PERMISSIONS = [
     h3 { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }
     h3:first-child { margin-top: 0; }
     .operator { margin: 1.5rem 0 0; }
+    .join { margin: 0 0 1rem; line-height: 1.55; }
+    .join a { color: var(--primary); font-weight: 600; }
     .operator a { color: var(--primary); font-weight: 600; }
   `,
 })

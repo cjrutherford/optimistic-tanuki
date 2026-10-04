@@ -1,0 +1,50 @@
+<div class="daylight-page">
+  <p class="kicker">Daylight</p>
+  <h1>Become a contributor</h1>
+  <p class="lede">
+    Contributors tell Daylight what happened at public meetings in their town,
+    or send the documents, photographs and recordings that show it. Reading
+    Towne Square doesn't make you one; this does.
+  </p>
+
+  @if (membership(); as account) { @if (isContributor()) {
+  <div class="done" role="status">
+    <p>
+      <strong
+        >{{ joined() ? "You're a Daylight contributor." : "You're already a
+        Daylight contributor." }}</strong
+      >
+    </p>
+    @if (returnUrl(); as next) {
+    <p><a [routerLink]="next">Carry on where you were</a></p>
+    } @else {
+    <p><a routerLink="/cities">Choose a town</a> and use “Report something”.</p>
+    }
+  </div>
+  } @else if (!account.emailVerified) {
+  <p class="notice-box">
+    First, verify your email address with the link we sent when you registered.
+    If you can't find it, <a routerLink="/login">sign in</a> and use “Resend
+    verification”. Then come back here.
+  </p>
+  } @else {
+  <h2>What you are agreeing to</h2>
+  <app-daylight-contributor-terms />
+  <form (ngSubmit)="signUp()">
+    <label class="choice"
+      ><input type="checkbox" name="agreed" [(ngModel)]="agreed" /> I have read
+      these and want to contribute to Daylight.</label
+    >
+    @if (problem()) {
+    <p class="problem" role="alert">{{ problem() }}</p>
+    }
+    <otui-button type="submit" [disabled]="!agreed || pending()"
+      >{{ pending() ? 'Signing up…' : 'Become a contributor' }}</otui-button
+    >
+  </form>
+  } } @else if (failure()) {
+  <p class="problem" role="alert">{{ failure() }}</p>
+  } @else {
+  <p class="quiet" role="status">Checking your account…</p>
+  }
+</div>

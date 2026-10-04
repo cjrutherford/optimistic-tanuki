@@ -23,7 +23,7 @@ import {
 } from '@optimistic-tanuki/storage';
 import { of, throwError, type Observable } from 'rxjs';
 import { DataSource } from 'typeorm';
-import { createTestSchema } from '../../../../../libs/civic/core/test/db/helpers/postgres';
+import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 import loadConfig, {
   COMMUNITY_CONFIG,
   type CommunityConfig,
@@ -331,7 +331,7 @@ export async function createHarness(): Promise<Harness> {
 let counter = 0;
 /** A member by default, as the gateway sends every actor's roles; `null` sends none. */
 export const actor = (
-  roles: readonly string[] | null = ['local_hub_member']
+  roles: readonly string[] | null = ['local_hub_contributor']
 ): Actor => {
   counter += 1;
   const id = `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`;

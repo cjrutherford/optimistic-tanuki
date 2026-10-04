@@ -21,8 +21,11 @@ describe('Daylight pages', () => {
     const page = fixture.nativeElement as HTMLElement;
     expect(page.querySelector('h1')?.textContent).toBe('Watch Adel');
     expect(page.querySelector('a.start')?.getAttribute('href')).toBe(
-      '/city/adel-ga/report'
+      '/contribute?returnUrl=%2Fcity%2Fadel-ga%2Freport'
     );
+    expect(
+      page.querySelector('app-daylight-contributor-terms li')
+    ).not.toBeNull();
   });
 
   it("tells a contributor's record in a sentence, not a score", () => {

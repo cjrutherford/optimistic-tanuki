@@ -67,7 +67,7 @@ function fixture(
             ? throwError(() => new Error('permissions down'))
             : of(
                 options.roles ?? [
-                  assignment('local_hub_member', ['contribution.create']),
+                  assignment('local_hub_contributor', ['contribution.create']),
                   assignment('global_admin', ['x.y'], 'global'),
                 ]
               );
@@ -106,7 +106,7 @@ describe('CivicCommunityController', () => {
             userId: 'user-1',
             profileId: 'profile-1',
             handle: 'Ada',
-            roles: ['local_hub_member'],
+            roles: ['local_hub_contributor'],
           },
         },
       },
@@ -166,7 +166,7 @@ describe('CivicCommunityController', () => {
     expect(result).toEqual({ data: { id: 'c1' } });
     expect(contributions[0].cmd).toBe(CommunityCommands.Submit);
     expect(contributions[0].payload).toMatchObject({
-      actor: { roles: ['local_hub_member'] },
+      actor: { roles: ['local_hub_contributor'] },
       idempotencyKey: 'idem-key-12345',
       emailVerified: true,
       attachment: null,
@@ -241,6 +241,47 @@ describe('CivicCommunityController', () => {
     });
   });
 
+  it('refuses contributor sign-up until the email address is verified (D27)', async () => {
+    const { controller, permissions } = fixture();
+    const unverified = { ...user, emailVerified: false };
+    const refusal = await controller
+      .signUpAsContributor(unverified, { agreeToTerms: true })
+      .catch((error: unknown) => error);
+    expect(refusal).toBeInstanceOf(ForbiddenException);
+    expect((refusal as ForbiddenException).getResponse()).toMatchObject({
+      code: 'EMAIL_VERIFICATION_REQUIRED',
+    });
+    expect(permissions).toEqual([]);
+  });
+
+  it('grants local_hub_contributor on sign-up and returns the new standing', async () => {
+    const { controller, permissions } = fixture({
+      roles: [
+        assignment('local_hub_contributor', [
+          'briefing.read',
+          'contribution.create',
+        ]),
+      ],
+    });
+    const result = await controller.signUpAsContributor(user, {
+      agreeToTerms: true,
+    });
+    expect(permissions.map((p) => p.cmd)).toEqual([
+      AppScopeCommands.GetByName,
+      RoleCommands.GetByName,
+      RoleCommands.Assign,
+      RoleCommands.GetUserRoles,
+    ]);
+    expect(permissions[1].payload).toEqual({
+      name: 'local_hub_contributor',
+      appScope: 'local-hub',
+    });
+    expect(result.data).toMatchObject({
+      roles: ['local_hub_contributor'],
+      permissions: ['briefing.read', 'contribution.create'],
+    });
+  });
+
   it('assigns nothing when the application is not granted', async () => {
     const { controller, permissions } = fixture({
       reply: () => ({
@@ -261,7 +302,7 @@ describe('CivicCommunityController', () => {
         profileId: 'profile-1',
         handle: 'Ada',
         emailVerified: true,
-        roles: ['local_hub_member'],
+        roles: ['local_hub_contributor'],
         permissions: ['contribution.create'],
       },
     });

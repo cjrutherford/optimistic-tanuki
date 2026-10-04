@@ -60,10 +60,12 @@ describe('access model', () => {
     for (const role of ROLES) expect(role).toMatch(/^local_hub_[a-z_]+$/u);
   });
 
-  it('lets members corroborate but never a verified official, even as a member', () => {
+  it('lets contributors corroborate but never a verified official, even as a contributor', () => {
     // An official corroborating a meeting they ran is not a second witness.
     expect(
-      effectivePermissions(['local_hub_member']).has('corroboration.create')
+      effectivePermissions(['local_hub_contributor']).has(
+        'corroboration.create'
+      )
     ).toBe(true);
     expect(
       effectivePermissions(['local_hub_verified_official']).has(
@@ -71,12 +73,24 @@ describe('access model', () => {
       )
     ).toBe(false);
     const official = effectivePermissions([
-      'local_hub_member',
+      'local_hub_contributor',
       'local_hub_verified_official',
     ]);
     expect(official.has('corroboration.create')).toBe(false);
     expect(official.has('official-record.submit')).toBe(true);
     expect(official.has('contribution.create')).toBe(true);
+  });
+
+  it('makes nobody a contributor by membership alone (D27)', () => {
+    const member = effectivePermissions(['local_hub_member']);
+    expect(member.has('briefing.read')).toBe(true);
+    for (const permission of [
+      'contribution.create',
+      'contribution.withdraw',
+      'corroboration.create',
+      'artifact.upload',
+    ])
+      expect(member.has(permission)).toBe(false);
   });
 
   it("gives no role the power to moderate another person's contribution", () => {
@@ -115,6 +129,16 @@ describe('access model', () => {
     for (const role of ROLES)
       for (const permission of ROLE_PERMISSIONS[role])
         expect(grants.has(`${role} ${permission}`)).toBe(true);
+    // And nothing more: a stray seed grant would hand out a civic power the
+    // declaration withholds (D27: membership alone grants no contribution).
+    const civic = new Set(PERMISSIONS.map((permission) => permission.name));
+    for (const grant of grants) {
+      const [role, permission] = grant.split(' ');
+      if (!role || !permission || !civic.has(permission)) continue;
+      expect(
+        (ROLE_PERMISSIONS as Record<string, readonly string[]>)[role] ?? []
+      ).toContain(permission);
+    }
   });
 
   it('produces a seed carrying the scope, its permissions, and its roles', () => {

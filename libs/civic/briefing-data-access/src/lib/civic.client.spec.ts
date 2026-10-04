@@ -31,6 +31,7 @@ const METHODS = [
   'me',
   'mine',
   'rereview',
+  'signUpAsContributor',
   'subjects',
   'submit',
   'surface',

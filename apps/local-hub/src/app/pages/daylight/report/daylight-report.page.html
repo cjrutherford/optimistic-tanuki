@@ -15,10 +15,12 @@
 
   @if (canReport() === false) {
   <p class="notice-box">
-    Your account can read but not report yet. Accounts become contributors when
-    they confirm their email address with the link we send:
-    <a routerLink="/login">sign in</a> and use “Resend verification”, then
-    follow the link.
+    To report, sign up as a Daylight contributor first. It takes a minute:
+    <a
+      routerLink="/contribute"
+      [queryParams]="{ returnUrl: '/city/' + town.slug() + '/report' }"
+      >become a contributor</a
+    >, then come back here.
   </p>
   } @else if (result(); as contribution) {
   <section class="result" aria-labelledby="result-heading">

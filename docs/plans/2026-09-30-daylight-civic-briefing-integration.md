@@ -126,6 +126,20 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   to any signed-in contributor, since it's a legal response right. The
   official-callback route takes a userId; the admin UI picks the
   applicant. `CIVIC_FINGERPRINT_KEY` is in the gateway's compose env.
+- **D27** (owner, 2026-10-04) Becoming a Daylight contributor is an
+  explicit opt-in. Signing up for local-hub doesn't make anyone a
+  contributor. A signed-in user signs up from the UI: one page of
+  contributor terms (the watcher page's "what you should know") and an
+  "I agree" checkbox. The account's email must be verified first. Sign-up
+  grants a new role, `local_hub_contributor`, which carries the
+  contribution permissions; `local_hub_member` loses the contribution
+  grants D19 gave it. This replaces the POC rule that verifying an email
+  made you a contributor.
+- **D28** (owner, 2026-10-04) P4.5's e2e runs in the shared CI stack.
+  `local-hub-e2e` joins the manifest, and its older suites are repaired as
+  needed. Model review in e2e answers from a deterministic stub, and
+  briefings come from an e2e seed written through civic-briefing's
+  entities.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -221,6 +235,11 @@ fixes stay with the lead agent.
       city page
 - [x] P4.4 Contributor pages (report, watch, contributor, operations)
 - [ ] P4.5 SSR + local-hub-e2e: city → briefing → report
+  - [x] P4.5a Contributor sign-up (D27)
+  - [ ] P4.5b Shared e2e stack: civic services, model stub, briefing seed,
+        local-hub in the manifest (D28)
+  - [ ] P4.5c e2e: city → briefing → become a contributor → report; repair
+        the older local-hub-e2e suites
 - [ ] P5.1 Local-hub profile on upstream sign-in
 - [ ] P5.2 Model host config and alerts
 - [ ] P5.3 Open the PR to main (owner merges)
@@ -900,3 +919,37 @@ clamav`).
     lazy).
   - **Not yet seen in a browser:** that is P4.5.
     Next: P4.5 (SSR, and local-hub-e2e: city → briefing → report).
+- 2026-10-04: P4.5a is done: contributor sign-up (D27).
+  - **Roles:** a new `local_hub_contributor` holds the contribution
+    permissions. `local_hub_member` keeps only `briefing.read` among the
+    civic grants. The civic-access drift test now also fails on any extra
+    civic grant in the permissions seed, so a member can't quietly regain
+    contribution rights.
+  - **Gateway:** `POST local-hub/contributor` takes
+    `{ agreeToTerms: true }`. It answers 403 with
+    `EMAIL_VERIFICATION_REQUIRED` until the account's email is verified
+    (read live from the authentication service), then grants the role and
+    returns the new standing. The client is regenerated
+    (`signUpAsContributor`).
+  - **local-hub:**
+    - `/contribute` (sign-in required, and in the Express session gate)
+      shows the contributor terms and an "I agree" checkbox. It sends an
+      unverified account to verify first, and returns to a same-site
+      `returnUrl` only.
+    - The terms are one shared component, also used on the watch page,
+      whose "nothing to sign up for" line was corrected.
+    - The report page and the account page send non-contributors to the
+      sign-up.
+  - **Lint repair (separate commit):** lint had failed across five civic
+    projects since Phases 1–2; I hadn't run it on them. civic-core is now
+    tagged `type:util` (owner). Shared test helpers are behind
+    `@optimistic-tanuki/civic-core/testing`, inline `import()` types became
+    `import type`, and one regex was fixed. Lint now passes on all civic
+    projects, gateway, local-hub and models.
+  - **Tests:** gateway 1,505, local-hub 394, civic-access 8, permissions
+    110, the civic libs' unit tests, and the `test-db` suites for
+    civic-briefing, civic-contributions, civic-llm and civic-adapters all
+    pass.
+  - **Not done:** the terms agreement isn't stored apart from the role
+    assignment. A record of the terms version is for the owner to decide.
+    Next: P4.5b (the shared e2e stack).

@@ -70,6 +70,14 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'contribute',
+    loadComponent: () =>
+      import('./pages/daylight/contribute/daylight-contribute.page').then(
+        (m) => m.DaylightContributePage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'copyright',
     loadComponent: () =>
       import('./pages/daylight/copyright/daylight-copyright.page').then(

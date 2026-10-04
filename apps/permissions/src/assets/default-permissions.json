@@ -323,6 +323,11 @@
       "appScope": "local-hub"
     },
     {
+      "name": "local_hub_contributor",
+      "description": "Signed up to contribute to Daylight: submits, withdraws and corroborates reports.",
+      "appScope": "local-hub"
+    },
+    {
       "name": "local_hub_community_poster",
       "description": "Community-scoped poster for local-hub communities",
       "appScope": "local-hub"
@@ -7957,33 +7962,38 @@
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "contribution.read",
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "contribution.create",
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "contribution.withdraw",
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "corroboration.create",
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "artifact.upload",
       "permissionAppScope": "local-hub"
     },
     {
-      "role": "local_hub_member",
+      "role": "local_hub_contributor",
       "permission": "contributor-profile.update",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_contributor",
+      "permission": "briefing.read",
       "permissionAppScope": "local-hub"
     },
     {

@@ -9,6 +9,7 @@ const PROTECTED_ROUTES = [
   '/profile',
   '/city/:slug/report',
   '/operations',
+  '/contribute',
 ];
 
 const MEMBER_ROUTES = [
