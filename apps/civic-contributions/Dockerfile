@@ -17,6 +17,8 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
 COPY --from=builder /usr/src/app/dist/apps/civic-contributions/ ./
+# The service writes its artifacts and reports under data/, as the node user.
+RUN mkdir -p data && chown node:node data
 USER node
 EXPOSE 3029
 CMD ["dumb-init", "node", "main.js"]
