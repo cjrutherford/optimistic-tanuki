@@ -219,7 +219,7 @@ fixes stay with the lead agent.
 - [x] P4.2 `libs/civic/briefing-ui` (Angular sanitizer, owner)
 - [x] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
-- [ ] P4.4 Contributor pages (report, watch, contributor, operations)
+- [x] P4.4 Contributor pages (report, watch, contributor, operations)
 - [ ] P4.5 SSR + local-hub-e2e: city → briefing → report
 - [ ] P5.1 Local-hub profile on upstream sign-in
 - [ ] P5.2 Model host config and alerts
@@ -844,3 +844,59 @@ clamav`).
     that the initial bundle exceeds 1 MB predates this work.
   - **Not yet seen in a browser:** that waits for P4.5's running stack.
     Next: P4.4 (contributor pages: report, watch, contributor, operations).
+- 2026-10-04: P4.4 is done, in four commits (a–d).
+  - **Owner decisions:**
+    - The feature is named **Daylight** (the Daylight feed) inside Towne
+      Square. Page copy keeps the POC's "Daylight" wording, and the city
+      page section from P4.3 is now titled Daylight.
+    - The scope adds four pieces to report, watch, contributor and
+      operations: the resident-reports section, "Your reports" and the
+      official application on the account page, and a public copyright
+      page.
+    - The operator tools are a local-hub `/operations` page.
+  - **Shared components (a):** `civic-review-trail` and
+    `civic-contribution-quote` in `civic-briefing-ui`.
+  - **Public pages (b):**
+    - `city/:slug/report` (sign-in required) reports something, or
+      corroborates with `?corroborate=<id>`. It shows every refusal reason,
+      and tells a reader without `contribution.create` how to become a
+      contributor.
+    - `city/:slug/watch` is the watcher recruiting page.
+    - `contributors/:id` shows a contributor's record "in a sentence, not
+      a score".
+    - `copyright` takes DMCA notices.
+    - The briefing page shows the resident reports under the briefing,
+      with "I saw this too" for signed-in readers.
+    - The city section links to reports and past editions, the report
+      form, and the watch page.
+  - **Account page (c):** a Daylight section with "Your reports" (with
+    `contribution.read`: the review trail, withdraw, and a counter-notice
+    once taken down), the official application, and a link to operations
+    for operators.
+  - **Operations (d):** one panel per permission (`density.read`,
+    `takedown.manage`, `official.verify`, `community.maintain`): density
+    and where to recruit; notices to uphold, decline or restore, each with
+    a required reason; recording an official's callback; and running
+    re-review, the outcome sweep or the promotion export now. The gateway
+    checks each permission again.
+  - **Fixes found on the way:**
+    - The POC checked `contribution:create`; the port uses the dotted
+      `contribution.create`.
+    - `submissionKey` called `crypto.randomUUID`, which browsers expose
+      only on HTTPS or localhost. On plain HTTP the report page would have
+      crashed; it now falls back to `getRandomValues`.
+    - Both new sign-in routes (`city/:slug/report`, `operations`) are also
+      in the Express session gate, as `server-route-guard.spec` requires.
+  - **Deliberate gaps:**
+    - On a contributor page, "corroborated others' reports" names each
+      report but doesn't link it. Entries carry the civic locality slug,
+      and there is no lookup from a locality to its town page yet.
+    - Copy saying reports are "published once corroboration opens later
+      in the beta" is the POC's. It needs the owner's review against how
+      the gate is configured here.
+  - **Tests:** local-hub 390 (24 new Daylight specs), civic-briefing-ui 15,
+    civic-briefing-data-access 11, and lint passes. local-hub's production
+    build passes, and the initial bundle barely changed (the pages are
+    lazy).
+  - **Not yet seen in a browser:** that is P4.5.
+    Next: P4.5 (SSR, and local-hub-e2e: city → briefing → report).

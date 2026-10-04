@@ -62,6 +62,14 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'operations',
+    loadComponent: () =>
+      import('./pages/daylight/operations/daylight-operations.page').then(
+        (m) => m.DaylightOperationsPage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'copyright',
     loadComponent: () =>
       import('./pages/daylight/copyright/daylight-copyright.page').then(
