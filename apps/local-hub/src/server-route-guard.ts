@@ -7,6 +7,7 @@ const PROTECTED_ROUTES = [
   '/messages',
   '/messages/new',
   '/profile',
+  '/city/:slug/report',
 ];
 
 const MEMBER_ROUTES = [

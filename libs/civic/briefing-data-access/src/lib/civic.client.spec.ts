@@ -6,7 +6,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { OptomisitcTanukiAPIService } from '../generated/civic';
-import { artifactUrl } from './community';
+import { artifactUrl, submissionKey } from './community';
 import { problem, problemCode } from './errors';
 
 /**
@@ -113,6 +113,17 @@ describe('generated civic client', () => {
 
   it('links attachments as downloads', () => {
     expect(artifactUrl('ab12')).toBe('/api/local-hub/artifacts/ab12');
+  });
+});
+
+describe('submissionKey', () => {
+  it('builds a version 4 UUID where randomUUID is missing (plain HTTP)', () => {
+    const keys = new Set(Array.from({ length: 50 }, () => submissionKey()));
+    expect(keys.size).toBe(50);
+    for (const key of keys)
+      expect(key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
+      );
   });
 });
 

@@ -1,0 +1,41 @@
+// The reading column the Daylight pages share.
+
+:host {
+  display: block;
+}
+
+.daylight-page {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  letter-spacing: -0.02em;
+  margin: 1rem 0 0.8rem;
+  color: var(--foreground);
+}
+
+.lede,
+.intro p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--foreground-muted);
+}
+
+.quiet {
+  color: var(--foreground-muted);
+  line-height: 1.55;
+}
+
+.back-link {
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}

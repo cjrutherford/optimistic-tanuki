@@ -6,6 +6,7 @@ const serverRoutes: ServerRoute[] = [
   { path: 'c/:communitySlug/classifieds/new', renderMode: RenderMode.Client },
   { path: 'c/:communitySlug/classifieds/:id', renderMode: RenderMode.Client },
   { path: 'city/:slug', renderMode: RenderMode.Client },
+  { path: 'city/:slug/report', renderMode: RenderMode.Client },
   { path: 'city/:slug/classifieds', renderMode: RenderMode.Client },
   { path: 'city/:slug/classifieds/new', renderMode: RenderMode.Client },
   { path: 'city/:slug/classifieds/:id', renderMode: RenderMode.Client },

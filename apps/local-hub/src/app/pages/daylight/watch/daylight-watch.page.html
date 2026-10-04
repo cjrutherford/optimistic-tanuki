@@ -1,0 +1,80 @@
+<div class="daylight-page">
+  <a class="back-link" [routerLink]="['/city', town.slug()]">← {{ name() }}</a>
+  <h1>Watch {{ name() }}</h1>
+  <p class="lede">
+    Daylight builds {{ name() }}'s briefing from the town's own agendas, minutes
+    and notices. Those say what was scheduled and what was filed. They do not
+    say what happened in the room. That part only exists if someone who was
+    there writes it down.
+  </p>
+
+  <h2>What we are asking</h2>
+  <p>
+    Go to a meeting you were going to hear about anyway, and write a few
+    sentences about what happened, in your own words. Ten minutes. No schedule
+    to keep, nothing to sign up for, and you can withdraw anything you send at
+    any time. You are not being asked to investigate anyone or to become a
+    reporter.
+  </p>
+
+  <h2>Why one person is not enough</h2>
+  <p>
+    One account of a meeting is one person's account, and we publish it as
+    exactly that — your words, under your handle, never rewritten into ours. It
+    becomes part of the town's record only when people who do not know each
+    other say the same thing and a later document bears it out.
+  </p>
+  <p class="pull">
+    One person saying it is a rumour. Several people who don't know each other
+    saying it, and the minutes agreeing a fortnight later, is a record.
+  </p>
+  <p>
+    So the honest version of the ask: {{ name() }} needs several people doing
+    this, and we are asking you to be one.
+  </p>
+
+  <h2>What you should know before you start</h2>
+  <ul>
+    <li>
+      Your words are published as yours, under whatever handle you choose, and
+      are never rewritten.
+    </li>
+    <li>
+      Everything is reviewed automatically before it appears, and every decision
+      comes with its reason. A report that alleges wrongdoing, names a private
+      individual, or mentions a child waits for evidence rather than being
+      published on one account.
+    </li>
+    <li>
+      There is no human appeal. When the automated review gets it wrong, the
+      only recourse is more evidence.
+    </li>
+    <li>
+      Reposting a news article is refused automatically. Quoting a paragraph
+      with credit is fine.
+    </li>
+    <li>
+      If you have an interest in the matter — you applied for the permit, you
+      work for the department — say so. It does not disqualify your report.
+      Hiding it would.
+    </li>
+    <li>
+      A briefing quotes almost nothing that is sent. Only an officially
+      confirmed account, or a report that independent people corroborated
+      <em>and</em> a later record bore out, is ever quoted. Everything else
+      lives on the town's community page, labeled as what it is.
+    </li>
+  </ul>
+
+  <h2>Start</h2>
+  <p>
+    <a class="start" [routerLink]="['/city', town.slug(), 'report']"
+      >Send your first report</a
+    >
+    or
+    <a [routerLink]="['/city', town.slug(), 'briefing']"
+      >read today's {{ name() }} briefing</a
+    >
+    first.
+  </p>
+</div>

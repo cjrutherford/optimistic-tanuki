@@ -10,6 +10,7 @@ import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { longDate } from '@optimistic-tanuki/civic-briefing-ui';
 import { CityBriefingComponent } from '../../components/city-briefing/city-briefing.component';
+import { DaylightCommunityComponent } from '../../components/daylight-community/daylight-community.component';
 import { City, CommunityService } from '../../services/community.service';
 
 /**
@@ -18,7 +19,7 @@ import { City, CommunityService } from '../../services/community.service';
  */
 @Component({
   selector: 'app-city-briefing-page',
-  imports: [RouterLink, CityBriefingComponent],
+  imports: [RouterLink, CityBriefingComponent, DaylightCommunityComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './city-briefing-page.component.html',
   styleUrl: './city-briefing-page.component.scss',
@@ -47,8 +48,8 @@ export class CityBriefingPageComponent {
     if (!city) return;
     const date = this.date();
     const heading = date
-      ? `${city.name} briefing, ${longDate(date)}`
-      : `${city.name} briefing`;
+      ? `Daylight: ${city.name}, ${longDate(date)}`
+      : `Daylight: ${city.name}`;
     this.title.setTitle(`${heading} - Towne Square`);
     this.meta.updateTag({
       name: 'description',

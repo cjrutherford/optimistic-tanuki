@@ -1,0 +1,74 @@
+<div class="daylight-page">
+  <h1>Report a copyright problem</h1>
+  <p class="lede">
+    Daylight contributors post their own words, and may quote briefly with
+    credit. If you believe a contribution copies your work beyond that, tell us
+    here. A person reviews every notice; material is taken down when the notice
+    is upheld, and its contributor may answer.
+  </p>
+
+  @if (filed(); as receipt) {
+  <div class="done" role="status">
+    <p>
+      <strong>Notice received.</strong> Its number is {{ receipt.id }}. Keep it
+      for your records; we will reply by email.
+    </p>
+  </div>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="send()" novalidate>
+    <label class="field"
+      ><span>Your name</span>
+      <input type="text" formControlName="claimantName" autocomplete="name"
+    /></label>
+    <label class="field"
+      ><span>Email address</span>
+      <input type="email" formControlName="claimantEmail" autocomplete="email"
+    /></label>
+    <label class="field"
+      ><span>Postal address</span>
+      <textarea
+        formControlName="claimantAddress"
+        rows="2"
+        autocomplete="street-address"
+      ></textarea>
+    </label>
+    <label class="field"
+      ><span>The work you believe was copied</span>
+      <textarea
+        formControlName="work"
+        rows="3"
+        placeholder="Its title, where it was published, and when"
+      ></textarea>
+    </label>
+    <label class="field"
+      ><span
+        >Where the copy is
+        <span class="optional"
+          >(the address of each contribution, one per line)</span
+        ></span
+      >
+      <textarea formControlName="locations" rows="3"></textarea>
+    </label>
+    <label class="choice"
+      ><input type="checkbox" formControlName="goodFaith" /> I believe in good
+      faith that this use is not authorized by the owner, their agent, or the
+      law.</label
+    >
+    <label class="choice"
+      ><input type="checkbox" formControlName="accurateUnderPenalty" /> The
+      information in this notice is accurate, and under penalty of perjury I am
+      the owner or am authorized to act for the owner.</label
+    >
+    <label class="field"
+      ><span>Your full name, as a signature</span>
+      <input type="text" formControlName="signature"
+    /></label>
+    @if (error()) {
+    <p class="problem" role="alert">{{ error() }}</p>
+    }
+    <otui-button type="submit" [disabled]="pending()"
+      >{{ pending() ? 'Sending…' : 'Send notice' }}</otui-button
+    >
+  </form>
+  }
+</div>

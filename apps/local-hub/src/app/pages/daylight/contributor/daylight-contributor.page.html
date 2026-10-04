@@ -1,0 +1,60 @@
+<div class="daylight-page">
+  @if (page(); as view) {
+  <h1>{{ view.handle }}</h1>
+  @if (view.official) {
+  <p class="official">{{ view.official }}</p>
+  } @if (view.bio) {
+  <p class="bio">{{ view.bio }}</p>
+  } @if (history(); as told) {
+  <p class="history">{{ told }}</p>
+  }
+
+  <section aria-labelledby="reported-heading">
+    <h2 id="reported-heading">Reported</h2>
+    @for (item of view.reports; track item.id) {
+    <article class="entry">
+      <h3>
+        {{ item.subject.text }}{{ item.occurredOn ? ', ' +
+        longDate(item.occurredOn) : '' }}
+      </h3>
+      <p class="status" [attr.data-status]="item.status">
+        {{ item.status === 'corroborated' ? 'Corroborated' : 'Single report' }}
+      </p>
+      <civic-contribution-quote [contribution]="item" />
+      @for (outcome of item.outcomes; track outcome.title) {
+      <p class="outcome" [attr.data-verdict]="outcome.verdict">
+        {{ outcome.verdict === 'confirmed' ? 'Borne out by' : 'The record says
+        otherwise:' }} @if (outcome.url) {
+        <a [href]="outcome.url" target="_blank" rel="noopener noreferrer"
+          >{{ outcome.title }}</a
+        >
+        } @else { {{ outcome.title }} } @if (outcome.publisher) {
+        <span class="who">({{ outcome.publisher }})</span>
+        }
+      </p>
+      }
+    </article>
+    } @empty {
+    <p class="quiet">Nothing reported on the public page yet.</p>
+    }
+  </section>
+
+  @if (view.corroborated.length) {
+  <section aria-labelledby="corroborated-heading">
+    <h2 id="corroborated-heading">Corroborated others' reports</h2>
+    @for (entry of view.corroborated; track entry.contribution.id) {
+    <article class="entry">
+      <h3>{{ entry.report.subject }}</h3>
+      <civic-contribution-quote [contribution]="entry.contribution" />
+    </article>
+    }
+  </section>
+  } } @else if (loading()) {
+  <p class="quiet" role="status">Loading…</p>
+  } @else {
+  <h1>No such contributor</h1>
+  <p class="quiet">
+    <a routerLink="/cities">See the towns in Towne Square</a>.
+  </p>
+  }
+</div>

@@ -2,7 +2,8 @@
   @if (city(); as city) {
   <header class="briefing-masthead">
     <a class="back-link" [routerLink]="['/city', slug()]">← {{ city.name }}</a>
-    <h1>{{ city.name }} briefing</h1>
+    <p class="kicker">Daylight</p>
+    <h1>{{ city.name }}</h1>
   </header>
   @if (city.localitySlug) {
   <app-city-briefing
@@ -11,9 +12,21 @@
     [cityName]="city.name"
     [date]="date()"
   />
+  <p class="briefing-actions">
+    <a [routerLink]="['/city', slug(), 'report']"
+      >Report something from {{ city.name }}</a
+    >
+  </p>
+  <section class="briefing-community" aria-label="Resident reports">
+    <app-daylight-community
+      [citySlug]="slug()"
+      [localitySlug]="city.localitySlug"
+      [town]="city.name"
+    />
+  </section>
   } @else {
   <p class="briefing-page-status">
-    {{ city.name }} doesn't have briefings yet.
+    Daylight doesn't cover {{ city.name }} yet.
   </p>
   } } @else if (!loading()) {
   <p class="briefing-page-status">That town couldn't be found.</p>

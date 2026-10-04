@@ -12,7 +12,7 @@
   margin-bottom: 2rem;
 
   h1 {
-    margin: 0.5rem 0 0;
+    margin: 0.2rem 0 0;
     font-family: var(--font-heading);
     color: var(--foreground);
   }
@@ -26,6 +26,28 @@
   &:focus-visible {
     text-decoration: underline;
   }
+}
+
+.kicker {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.briefing-actions {
+  margin: 2rem 0 0;
+
+  a {
+    color: var(--primary);
+    font-weight: 600;
+  }
+}
+
+.briefing-community {
+  margin-top: 3rem;
 }
 
 .briefing-page-status {

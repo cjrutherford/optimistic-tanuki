@@ -16,9 +16,28 @@ export function artifactUrl(sha256: string): string {
  */
 export const DENSITY_TARGET = { low: 8, high: 12 } as const;
 
-/** A key for one submission attempt; resending the same form reuses it. */
+/**
+ * A key for one submission attempt; resending the same form reuses it.
+ * `randomUUID` exists only in secure contexts (HTTPS or localhost), so a
+ * site served over plain HTTP builds a version 4 UUID from
+ * `getRandomValues`, which every context has.
+ */
 export function submissionKey(): string {
-  return globalThis.crypto.randomUUID();
+  if (typeof globalThis.crypto.randomUUID === 'function')
+    return globalThis.crypto.randomUUID();
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'));
+  return [
+    hex.slice(0, 4),
+    hex.slice(4, 6),
+    hex.slice(6, 8),
+    hex.slice(8, 10),
+    hex.slice(10, 16),
+  ]
+    .map((part) => part.join(''))
+    .join('-');
 }
 
 /** A contribution's state in the contributor's terms. */

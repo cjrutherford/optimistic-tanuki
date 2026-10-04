@@ -1,0 +1,88 @@
+// Form styles shared by the Daylight pages. Colours come from the theme.
+
+form {
+  display: grid;
+  gap: 1.3rem;
+}
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+legend,
+.field > span:first-child {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.choice {
+  display: flex;
+  gap: 0.55rem;
+  align-items: baseline;
+  line-height: 1.45;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='date'],
+select,
+textarea {
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--personality-input-radius, 0.8rem);
+  border: 1px solid var(--border);
+  background: var(--surface, var(--background));
+  color: var(--foreground);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.link:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--foreground-muted);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--foreground-muted);
+}
+
+.problem {
+  color: var(--error);
+
+  p {
+    margin: 0 0 0.3rem;
+  }
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+a {
+  color: var(--primary);
+}

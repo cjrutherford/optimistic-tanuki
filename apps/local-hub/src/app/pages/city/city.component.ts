@@ -7,7 +7,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { PLATFORM_ID } from '@angular/core';
@@ -62,6 +62,7 @@ interface CommunityTreeNode {
   standalone: true,
   imports: [
     CityBriefingComponent,
+    RouterLink,
     CommonModule,
     MapComponent,
     DonationProgressComponent,

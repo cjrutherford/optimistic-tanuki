@@ -1,0 +1,55 @@
+@use '../daylight-page';
+@use '../daylight-forms';
+
+.intro {
+  margin: 0 0 2rem;
+}
+
+.short {
+  max-width: 14rem;
+}
+
+.affirm {
+  padding: 0.9rem 1rem;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.result h2 {
+  margin: 0 0 0.8rem;
+}
+
+.next {
+  margin-top: 1.2rem;
+}
+
+.notice-box {
+  padding: 0.9rem 1rem;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  line-height: 1.55;
+}
+
+.target {
+  padding: 1rem 1.1rem;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+
+  h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1rem;
+  }
+
+  .target-subject {
+    margin: 0 0 0.4rem;
+    font-weight: 600;
+  }
+
+  blockquote {
+    margin: 0 0 0.6rem;
+    padding-left: 0.9rem;
+    border-left: 3px solid
+      color-mix(in srgb, var(--foreground) 18%, transparent);
+    white-space: pre-line;
+  }
+}

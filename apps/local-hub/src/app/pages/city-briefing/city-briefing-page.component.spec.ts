@@ -8,6 +8,7 @@ import {
   provideRouter,
 } from '@angular/router';
 import { of } from 'rxjs';
+import { AuthStateService } from '../../services/auth-state.service';
 import { CommunityService } from '../../services/community.service';
 import { CityBriefingPageComponent } from './city-briefing-page.component';
 
@@ -31,6 +32,10 @@ describe('CityBriefingPageComponent', () => {
         provideRouter([]),
         { provide: CommunityService, useValue: communities },
         {
+          provide: AuthStateService,
+          useValue: { isAuthenticated$: of(false) },
+        },
+        {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap(params)) },
         },
@@ -47,10 +52,10 @@ describe('CityBriefingPageComponent', () => {
 
   it('titles the page with the town and the day', async () => {
     const page = await render({ slug: 'adel-ga', date: '2026-09-23' }, adel);
-    expect(page.querySelector('h1')?.textContent).toBe('Adel briefing');
+    expect(page.querySelector('h1')?.textContent).toBe('Adel');
     expect(page.querySelector('app-city-briefing')).not.toBeNull();
     expect(TestBed.inject(Title).getTitle()).toBe(
-      'Adel briefing, Wednesday, September 23, 2026 - Towne Square'
+      'Daylight: Adel, Wednesday, September 23, 2026 - Towne Square'
     );
   });
 
@@ -60,7 +65,7 @@ describe('CityBriefingPageComponent', () => {
       { name: 'Savannah', slug: 'savannah-ga', localitySlug: null }
     );
     expect(page.querySelector('app-city-briefing')).toBeNull();
-    expect(page.textContent).toContain("Savannah doesn't have briefings yet.");
+    expect(page.textContent).toContain("Daylight doesn't cover Savannah yet.");
   });
 
   it('says so when the town does not exist', async () => {

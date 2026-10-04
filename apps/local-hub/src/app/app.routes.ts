@@ -40,6 +40,35 @@ export const appRoutes: Route[] = [
       ),
   },
   {
+    path: 'city/:slug/report',
+    loadComponent: () =>
+      import('./pages/daylight/report/daylight-report.page').then(
+        (m) => m.DaylightReportPage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'city/:slug/watch',
+    loadComponent: () =>
+      import('./pages/daylight/watch/daylight-watch.page').then(
+        (m) => m.DaylightWatchPage
+      ),
+  },
+  {
+    path: 'contributors/:id',
+    loadComponent: () =>
+      import('./pages/daylight/contributor/daylight-contributor.page').then(
+        (m) => m.DaylightContributorPage
+      ),
+  },
+  {
+    path: 'copyright',
+    loadComponent: () =>
+      import('./pages/daylight/copyright/daylight-copyright.page').then(
+        (m) => m.DaylightCopyrightPage
+      ),
+  },
+  {
     path: 'city/:slug/classifieds',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(
