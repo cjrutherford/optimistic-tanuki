@@ -1,0 +1,32 @@
+<p>
+  If you hold office or work for one of these towns, you can submit its records
+  to Daylight as an official. Register with the address the town gave you, under
+  your name as the town publishes it; the check compares both with the town's
+  published roster. An operator then calls you back at the number the town
+  publishes before your records count as the official record.
+</p>
+<form class="apply" (ngSubmit)="apply()">
+  <label
+    >Town
+    <select [(ngModel)]="town" name="town">
+      <option value="" disabled>Choose a town</option>
+      @for (edition of editions(); track edition.slug) {
+      <option [value]="edition.slug">
+        {{ edition.name }}, {{ edition.state }}
+      </option>
+      }
+    </select>
+  </label>
+  <button type="submit" class="link" [disabled]="!town || pending()">
+    Check my account
+  </button>
+</form>
+@if (result(); as outcome) {
+<div class="outcome" [class.granted]="outcome.granted" role="status">
+  @for (reason of outcome.reasons; track $index) {
+  <p>{{ reason }}</p>
+  }
+</div>
+} @if (failure()) {
+<p class="problem" role="alert">{{ failure() }}</p>
+}

@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
@@ -32,6 +34,9 @@ describe('AccountComponent profile section', () => {
     await TestBed.configureTestingModule({
       imports: [AccountComponent, RouterTestingModule],
       providers: [
+        // The Daylight section asks the gateway for the account's standing.
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AuthStateService,
           useValue: {
