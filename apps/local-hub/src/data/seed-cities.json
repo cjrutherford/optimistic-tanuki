@@ -448,7 +448,8 @@
           "imageUrl": "https://picsum.photos/seed/2462/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "localitySlug": "tifton-ga"
     },
     {
       "name": "Dublin, GA",
@@ -12118,7 +12119,21 @@
           "imageUrl": "https://picsum.photos/seed/6514/800/600"
         }
       ],
-      "timezone": "UTC"
+      "timezone": "UTC",
+      "localitySlug": "nashville-ga"
+    },
+    {
+      "name": "Adel, GA",
+      "slug": "adel-ga",
+      "localityType": "town",
+      "city": "Adel",
+      "state": "GA",
+      "lat": 31.1374,
+      "lng": -83.4246,
+      "population": 5571,
+      "description": "Adel, Georgia is the Cook County seat, on I-75 between Tifton and Valdosta.",
+      "timezone": "America/New_York",
+      "localitySlug": "adel-ga"
     },
     {
       "name": "Pearson, GA",

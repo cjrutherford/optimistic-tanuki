@@ -33,6 +33,8 @@ type RawLocality = {
   description: string;
   highlights?: CityHighlight[];
   timezone?: string;
+  /** The civic-briefing locality this town's page shows briefings for. */
+  localitySlug?: string;
 };
 
 type NeighborhoodSeed = {
@@ -57,6 +59,7 @@ type SeedLocality = {
   highlights: CityHighlight[] | null;
   timezone: string;
   tags: { id: string; name: string }[];
+  localitySlug: string | null;
   parentSlug?: string;
 };
 
@@ -166,6 +169,7 @@ function toSeedLocality(locality: RawLocality): SeedLocality {
         : buildFallbackHighlights(locality),
     timezone: locality.timezone || 'America/New_York',
     tags: buildTags(locality),
+    localitySlug: locality.localitySlug ?? null,
     parentSlug: neighborhoodParentBySlug.get(locality.slug),
   };
 }
@@ -246,6 +250,7 @@ async function main() {
           highlights: data.highlights,
           timezone: data.timezone,
           tags: data.tags,
+          localitySlug: data.localitySlug,
           parentId: parent?.id ?? null,
         });
         await communityRepo.save(existing);
@@ -274,6 +279,7 @@ async function main() {
           highlights: data.highlights,
           timezone: data.timezone,
           tags: data.tags,
+          localitySlug: data.localitySlug,
           parentId: parent?.id ?? null,
           ownerId: 'system',
           ownerProfileId: 'system',

@@ -26,6 +26,20 @@ export const appRoutes: Route[] = [
       import('./pages/city/city.component').then((m) => m.CityComponent),
   },
   {
+    path: 'city/:slug/briefing',
+    loadComponent: () =>
+      import('./pages/city-briefing/city-briefing-page.component').then(
+        (m) => m.CityBriefingPageComponent
+      ),
+  },
+  {
+    path: 'city/:slug/briefing/:date',
+    loadComponent: () =>
+      import('./pages/city-briefing/city-briefing-page.component').then(
+        (m) => m.CityBriefingPageComponent
+      ),
+  },
+  {
     path: 'city/:slug/classifieds',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(

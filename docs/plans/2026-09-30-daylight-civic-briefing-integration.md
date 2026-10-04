@@ -217,7 +217,7 @@ fixes stay with the lead agent.
 - [x] P4.1 `libs/civic/briefing-data-access`
 - [x] P4.1b Generate the civic clients with orval (owner)
 - [x] P4.2 `libs/civic/briefing-ui` (Angular sanitizer, owner)
-- [ ] P4.3 `localitySlug` on community (generated migration) + Briefing on
+- [x] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
 - [ ] P4.4 Contributor pages (report, watch, contributor, operations)
 - [ ] P4.5 SSR + local-hub-e2e: city → briefing → report
@@ -808,3 +808,39 @@ clamav`).
     two component tests through Angular's sanitizer); lint passes.
     Next: P4.3 (`localitySlug` on community, and the Briefing section on
     the city page).
+- 2026-10-04: P4.3 is done. A city page shows its town's briefing.
+  - **Owner decisions:** `localitySlug` is set explicitly in the seed data,
+    never guessed. Adel, GA is added to the seed. SD.1's Census columns stay
+    out of this migration.
+  - **Social:** `Community.localitySlug` (varchar 64, nullable, unique).
+    Migration `1791073064173-AddCommunityLocalitySlug` was generated on a
+    fresh database and passes run, revert and run plus
+    `validate:typeorm-migrations`. The seed sets it for `tifton-ga`,
+    `nashville-ga` and the new `adel-ga`. Both copies of
+    `seed-cities.json` (social's, and local-hub's that the Dockerfile copies)
+    stay identical. `CommunityDto` documents the field; the social client
+    was regenerated (one field, no other drift).
+  - **Not in the migration: drift already on `main`.** The generator also
+    wanted to drop and recreate `community_member.status` and
+    `community_invite.status`: the entities declare an enum, while the
+    migrations created varchar. Running that would wipe every membership and
+    invite status, so those statements were removed. The drift is still
+    there and needs its own careful migration (owner to schedule).
+  - **local-hub:** `app-city-briefing` shows the latest edition (or one
+    day's) with the four-week strip. It says plainly when a town has no
+    briefing yet, when a day is missing, or when the service is down. The
+    city page shows it after the hero, but only for a town with a
+    `localitySlug`. New routes `city/:slug/briefing` and
+    `city/:slug/briefing/:date` give it a page with a masthead and title.
+    Those routes fall under `**`, so they are server-rendered, while
+    `city/:slug` stays client-rendered as before; P4.5 checks SSR.
+  - **The HTTP seeder** (`apps/local-hub/src/seed-http.ts`, local runs only)
+    sends explicit fields and doesn't set `localitySlug`. The deployed
+    seeder, `seed-local-communities.js`, does.
+  - **Tests:** 8 new specs (component and page). local-hub (376), social,
+    models, gateway (1,503), social-data-access and the civic libs all
+    pass, and lint passes. local-hub's production build passes. The
+    briefing code and marked land in a lazy chunk; the existing warning
+    that the initial bundle exceeds 1 MB predates this work.
+  - **Not yet seen in a browser:** that waits for P4.5's running stack.
+    Next: P4.4 (contributor pages: report, watch, contributor, operations).

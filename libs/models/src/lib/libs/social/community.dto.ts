@@ -166,6 +166,12 @@ export class CommunityDto {
   @IsString()
   timezone?: string | null;
 
+  /** The civic-briefing locality this town page shows briefings for, e.g. `adel-ga`. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  localitySlug?: string | null;
+
   @ApiProperty()
   @IsDateString()
   createdAt!: Date;

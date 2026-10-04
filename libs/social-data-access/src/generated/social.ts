@@ -425,6 +425,8 @@ export interface CommunityDto {
   highlights?: CityHighlight[];
   imageUrl?: string;
   timezone?: string;
+  /** @nullable */
+  localitySlug?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -49,6 +49,14 @@ export class Community {
   @OneToMany(() => Community, (community) => community.parent)
   subCommunities: Community[];
 
+  /**
+   * The civic-briefing locality this community is the town page for, such as
+   * `adel-ga`. Set explicitly, never guessed: a community without one has no
+   * briefing section.
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true })
+  localitySlug: string | null;
+
   /** When set, this community represents a real-world locality. */
   @Column({ type: 'varchar', length: 50, nullable: true })
   localityType: LocalityType | null;

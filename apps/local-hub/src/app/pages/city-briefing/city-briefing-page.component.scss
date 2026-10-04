@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.briefing-page {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.briefing-masthead {
+  margin-bottom: 2rem;
+
+  h1 {
+    margin: 0.5rem 0 0;
+    font-family: var(--font-heading);
+    color: var(--foreground);
+  }
+}
+
+.back-link {
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.briefing-page-status {
+  color: var(--foreground-muted);
+}

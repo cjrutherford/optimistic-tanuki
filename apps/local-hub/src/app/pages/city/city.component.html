@@ -98,6 +98,27 @@
         </div>
       </header>
 
+      <!-- ── Daily Briefing ───────────────────────────────────────────────────── -->
+      @if (city()!.localitySlug) {
+      <section class="city-briefing-section">
+        <div class="section-container">
+          <div class="section-header">
+            <div class="section-header-content">
+              <h2 class="section-title">Daily Briefing</h2>
+              <p class="section-subtitle">
+                What {{ city()!.name }}'s public records and local news said
+              </p>
+            </div>
+          </div>
+          <app-city-briefing
+            [citySlug]="city()!.slug"
+            [localitySlug]="city()!.localitySlug!"
+            [cityName]="city()!.name"
+          />
+        </div>
+      </section>
+      }
+
       <!-- ── Local Highlights ──────────────────────────────────────────────────── -->
       <section class="city-highlights-section">
         <div class="section-container">

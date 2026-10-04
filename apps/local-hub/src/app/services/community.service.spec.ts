@@ -112,6 +112,7 @@ describe('CommunityService', () => {
         timezone: 'America/New_York',
         highlights: [],
         communities: 1,
+        localitySlug: null,
       },
       {
         id: 'savannah',
@@ -129,6 +130,7 @@ describe('CommunityService', () => {
         timezone: 'America/New_York',
         highlights: [],
         communities: 2,
+        localitySlug: null,
       },
       {
         id: 'statesboro',
@@ -146,6 +148,7 @@ describe('CommunityService', () => {
         timezone: 'America/New_York',
         highlights: [],
         communities: 1,
+        localitySlug: null,
       },
     ]);
   });
