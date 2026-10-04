@@ -4,7 +4,7 @@ import {
   LocalitySchema,
 } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
-import { createTestSchema } from '../../../../../libs/civic/core/test/db/helpers/postgres';
+import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 import { EditionsQueryService } from './editions-query.service';
 
 describe('EditionsQueryService', () => {

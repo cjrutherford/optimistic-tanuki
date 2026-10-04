@@ -37,6 +37,7 @@ import {
 } from '@optimistic-tanuki/civic-core';
 import { CollateService } from '../collate/collate.service';
 import { StoryDevelopmentService } from '../stories/story-development.service';
+import type { EditionMode, LlmCitation } from '@optimistic-tanuki/civic-core';
 
 /**
  * Assembles and publishes a town's edition.
@@ -74,7 +75,7 @@ export class BriefingService {
     deferStoryRevisions = false,
     freshnessScope?: FreshnessScope,
     quietDay = false,
-    editionMode?: import('@optimistic-tanuki/civic-core').EditionMode,
+    editionMode?: EditionMode,
     /** Where the community service writes its snapshots; without it a briefing carries no community material. */
     communityDirectory?: string
   ): Promise<BriefResult> {
@@ -166,7 +167,7 @@ export class BriefingService {
       heading: string;
       summary: string;
       rawSummary: string;
-      citations?: import('@optimistic-tanuki/civic-core').LlmCitation[];
+      citations?: LlmCitation[];
       items: {
         title: string;
         date?: string;

@@ -19,7 +19,7 @@ import { loadLocalityRegistry } from '@optimistic-tanuki/civic-core';
 import {
   withTestDataSource,
   createTestSchema,
-} from '../../../core/test/db/helpers/postgres.js';
+} from '@optimistic-tanuki/civic-core/testing';
 import type {
   HttpClient,
   HttpResponse,
@@ -27,7 +27,7 @@ import type {
   SourceConfig,
   Summarizer,
 } from '@optimistic-tanuki/civic-core';
-import { articleHtml } from '../../../core/test/helpers/article-html.js';
+import { articleHtml } from '@optimistic-tanuki/civic-core/testing';
 
 // Restricted publishers are derived from the checked-in locality configuration.
 loadLocalityRegistry(

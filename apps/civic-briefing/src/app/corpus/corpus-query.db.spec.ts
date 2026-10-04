@@ -7,7 +7,7 @@ import {
   FoundationSourceSchema,
 } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
-import { createTestSchema } from '../../../../../libs/civic/core/test/db/helpers/postgres';
+import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 import { CorpusQueryService, DEFAULT_TOPIC } from './corpus-query.service';
 
 const words = (n: number) =>

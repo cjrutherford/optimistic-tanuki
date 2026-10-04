@@ -58,6 +58,11 @@ import {
   KIND_HEADINGS,
   storyTitle as evidenceTitle,
 } from '@optimistic-tanuki/civic-core';
+import type {
+  CanonicalStoryRevisionRow,
+  LlmCitation,
+  LlmStoryAnalysis,
+} from '@optimistic-tanuki/civic-core';
 
 /**
  * Writes the ongoing stories an edition links to.
@@ -210,9 +215,9 @@ export class StoryDevelopmentService {
       markdown: string;
       file: string;
       editionRules: Set<string>;
-      analysis?: import('@optimistic-tanuki/civic-core').LlmStoryAnalysis;
+      analysis?: LlmStoryAnalysis;
       generationId?: number;
-      existingRevision?: import('@optimistic-tanuki/civic-core').CanonicalStoryRevisionRow;
+      existingRevision?: CanonicalStoryRevisionRow;
       artifactToken: string;
     }[] = [];
     for (const thread of safeStoryThreads) {
@@ -349,35 +354,33 @@ export class StoryDevelopmentService {
             civicItemId: item.itemId ?? -1,
             snippetOnly: false,
           }))
-        ).map(
-          (citation: import('@optimistic-tanuki/civic-core').LlmCitation) => {
-            const cited = thread.items.find(
-              (item) =>
-                item.itemId === citation.civicItemId &&
-                (citation.agendaItemId === undefined ||
-                  item.agendaItemId === citation.agendaItemId) &&
-                (!citation.sourceKey || item.sourceKey === citation.sourceKey)
+        ).map((citation: LlmCitation) => {
+          const cited = thread.items.find(
+            (item) =>
+              item.itemId === citation.civicItemId &&
+              (citation.agendaItemId === undefined ||
+                item.agendaItemId === citation.agendaItemId) &&
+              (!citation.sourceKey || item.sourceKey === citation.sourceKey)
+          );
+          if (!cited)
+            throw new Error(
+              `story citation ${citation.sourceKey}/${citation.civicItemId} is not in the candidate evidence`
             );
-            if (!cited)
-              throw new Error(
-                `story citation ${citation.sourceKey}/${citation.civicItemId} is not in the candidate evidence`
-              );
-            const url = cited.canonicalUrl?.trim() || cited.uris[0];
-            if (analysis && !url)
-              throw new Error(
-                `story citation ${citation.sourceKey}/${citation.civicItemId} has no direct article URL`
-              );
-            return {
-              title: cited.itemTitle,
-              // This URL comes from the persisted candidate item, never the model.
-              url,
-              snippetOnly: citation.snippetOnly,
-              ...(citation.snippetOnly
-                ? { disclosure: snippetDisclosure(cited) }
-                : {}),
-            };
-          }
-        ),
+          const url = cited.canonicalUrl?.trim() || cited.uris[0];
+          if (analysis && !url)
+            throw new Error(
+              `story citation ${citation.sourceKey}/${citation.civicItemId} has no direct article URL`
+            );
+          return {
+            title: cited.itemTitle,
+            // This URL comes from the persisted candidate item, never the model.
+            url,
+            snippetOnly: citation.snippetOnly,
+            ...(citation.snippetOnly
+              ? { disclosure: snippetDisclosure(cited) }
+              : {}),
+          };
+        }),
         ...(analysis?.limitation ? { limitation: analysis.limitation } : {}),
         model,
         // The edition this revision belongs to, not the machine's clock: a replay
@@ -404,9 +407,7 @@ export class StoryDevelopmentService {
       if (!editionRules.size)
         editionRules.add(locality.ruleVersion ?? 'unversioned');
       let generationId: number | undefined;
-      let existingRevision:
-        | import('@optimistic-tanuki/civic-core').CanonicalStoryRevisionRow
-        | undefined;
+      let existingRevision: CanonicalStoryRevisionRow | undefined;
       if (analysis && runId !== undefined) {
         const generation = await this.dataSource
           .getRepository(LlmGenerationSchema)

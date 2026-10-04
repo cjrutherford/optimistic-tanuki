@@ -40,7 +40,7 @@ import {
 import {
   createTestDataSource,
   withTestDataSource,
-} from '../../../core/test/db/helpers/postgres.js';
+} from '@optimistic-tanuki/civic-core/testing';
 import type { LocalityRegistry } from '@optimistic-tanuki/civic-core';
 import type { SourceConfig, Summarizer } from '@optimistic-tanuki/civic-core';
 import { createOllamaSummarizer } from '../../src/index.js';

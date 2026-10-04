@@ -3,7 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/civic/core/src",
   "projectType": "library",
-  "tags": ["scope:civic", "type:domain"],
+  "tags": ["scope:civic", "type:util"],
   "targets": {
     "typecheck": {
       "executor": "nx:run-commands",

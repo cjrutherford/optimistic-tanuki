@@ -1,4 +1,4 @@
-import { createTestSchema } from '../../../core/test/db/helpers/postgres.js';
+import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 import { DataSource } from 'typeorm';
 import { createHash } from 'node:crypto';
 import {

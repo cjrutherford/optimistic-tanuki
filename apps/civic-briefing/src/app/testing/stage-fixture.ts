@@ -15,7 +15,7 @@ import {
 } from '@optimistic-tanuki/civic-core';
 import { registerAllAdapters } from '@optimistic-tanuki/civic-adapters';
 import type { DataSource, EntitySchema } from 'typeorm';
-import { createTestSchema } from '../../../../../libs/civic/core/test/db/helpers/postgres';
+import { createTestSchema } from '@optimistic-tanuki/civic-core/testing';
 
 /**
  * Shared set-up for the stage equivalence specs. Each one runs the original

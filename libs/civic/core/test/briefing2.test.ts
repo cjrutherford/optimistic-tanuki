@@ -69,7 +69,7 @@ describe('assembleOutsiderBriefing', () => {
     expect(md).not.toMatch(/week of|New this week/u);
     expect(md).toMatch(/## New today/u);
     expect(md).toMatch(
-      /## On the agenda\n\n- \*\*Agenda 09\/14\/2026\*\* \(2026-09-14\) \[source\]\(https:\/\/city\.example\/agenda\)\n  - Recovery Proclamation\n  - Millage Rate Tentative Proposal\n\n/u
+      /## On the agenda\n\n- \*\*Agenda 09\/14\/2026\*\* \(2026-09-14\) \[source\]\(https:\/\/city\.example\/agenda\)\n {2}- Recovery Proclamation\n {2}- Millage Rate Tentative Proposal\n\n/u
     );
     expect(md).not.toMatch(/Empty agenda/u);
   });
