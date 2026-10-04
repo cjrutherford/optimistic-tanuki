@@ -16,6 +16,8 @@ export type LocalHubCommunity = {
   slug?: string;
   localityType?: string;
   name?: string;
+  /** A town or city page the platform seeded; nobody joins it like a group. */
+  isSystemCommunity?: boolean;
 };
 
 export type AuthSession = {
@@ -90,8 +92,13 @@ export function findCity(
 export function findCommunity(
   communities: LocalHubCommunity[]
 ): LocalHubCommunity | undefined {
+  // An interest community, not a seeded locality page (a town, for example,
+  // is not a city but is still a place rather than a group).
   return communities.find(
-    (community) => community.slug && community.localityType !== 'city'
+    (community) =>
+      community.slug &&
+      community.localityType !== 'city' &&
+      !community.isSystemCommunity
   );
 }
 

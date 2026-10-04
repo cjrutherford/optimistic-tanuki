@@ -52,6 +52,7 @@ import {
   TakedownNoticeBody,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { Public } from '../../decorators/public.decorator';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, type UserDetails } from '../../decorators/user.decorator';
@@ -111,7 +112,8 @@ export class CivicCommunityController {
     contributions: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE) permissions: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
-    private readonly profiles: ClientProxy
+    private readonly profiles: ClientProxy,
+    private readonly permissionsCache: PermissionsCacheService
   ) {
     this.civic = new CivicContributionsClient(contributions, permissions);
   }
@@ -315,6 +317,9 @@ export class CivicCommunityController {
       });
     }
     await this.civic.grantRole(user.profileId, 'local_hub_contributor');
+    // The permission checks cache their answers; drop the denials cached
+    // before the grant (the report page asks before signing up).
+    await this.permissionsCache.invalidateProfile(user.profileId);
     const access = await this.civic.access(user.profileId);
     return {
       data: {
@@ -347,6 +352,7 @@ export class CivicCommunityController {
     );
     if (result.granted) {
       await this.civic.grantRole(user.profileId, 'local_hub_verified_official');
+      await this.permissionsCache.invalidateProfile(user.profileId);
     }
     return { data: result };
   }

@@ -20,6 +20,7 @@ interface Fixture {
   controller: CivicCommunityController;
   contributions: Sent[];
   permissions: Sent[];
+  invalidated: string[];
 }
 
 const user: UserDetails = {
@@ -80,14 +81,22 @@ function fixture(
     ),
   };
   const profilesClient = { send: jest.fn(() => of([{ bio: 'Hello' }])) };
+  const invalidated: string[] = [];
+  const permissionsCache = {
+    invalidateProfile: jest.fn(async (profileId: string) => {
+      invalidated.push(profileId);
+    }),
+  };
   return {
     controller: new CivicCommunityController(
       contributionsClient as never,
       permissionsClient as never,
-      profilesClient as never
+      profilesClient as never,
+      permissionsCache as never
     ),
     contributions,
     permissions,
+    invalidated,
   };
 }
 
@@ -215,7 +224,7 @@ describe('CivicCommunityController', () => {
   });
 
   it('assigns local_hub_verified_official in local-hub when an official is granted', async () => {
-    const { controller, permissions } = fixture({
+    const { controller, permissions, invalidated } = fixture({
       reply: () => ({
         granted: true,
         standing: 'submitting-official',
@@ -239,6 +248,7 @@ describe('CivicCommunityController', () => {
       profileId: 'profile-1',
       appScopeId: 'scope-1',
     });
+    expect(invalidated).toEqual(['profile-1']);
   });
 
   it('refuses contributor sign-up until the email address is verified (D27)', async () => {
@@ -255,7 +265,7 @@ describe('CivicCommunityController', () => {
   });
 
   it('grants local_hub_contributor on sign-up and returns the new standing', async () => {
-    const { controller, permissions } = fixture({
+    const { controller, permissions, invalidated } = fixture({
       roles: [
         assignment('local_hub_contributor', [
           'briefing.read',
@@ -280,6 +290,8 @@ describe('CivicCommunityController', () => {
       roles: ['local_hub_contributor'],
       permissions: ['briefing.read', 'contribution.create'],
     });
+    // Denials cached before the grant must not outlive it.
+    expect(invalidated).toEqual(['profile-1']);
   });
 
   it('assigns nothing when the application is not granted', async () => {
