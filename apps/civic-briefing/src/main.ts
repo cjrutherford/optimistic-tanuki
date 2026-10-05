@@ -139,7 +139,9 @@ async function bootstrap() {
   const mode = process.argv[2];
   if (mode && ONCE_MODES.includes(mode)) {
     await runOnce(mode as OnceMode, process.argv.slice(3));
-    return;
+    // The model and Civic Core clients are made outside Nest, so closing the
+    // app leaves their sockets open; a one-shot command ends here.
+    process.exit(process.exitCode ?? 0);
   }
 
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
