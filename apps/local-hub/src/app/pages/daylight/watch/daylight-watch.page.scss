@@ -1,24 +1,24 @@
 @use '../daylight-page';
 
 h2 {
-  font-size: 1.3rem;
+  font-size: var(--type-h3, 1.3rem);
   margin: 2.2rem 0 0.5rem;
 }
 
 p,
 li {
-  line-height: 1.65;
+  line-height: var(--line-height, 1.65);
 }
 
 .lede {
-  font-size: 1.1rem;
+  font-size: var(--type-body, 1.1rem);
 }
 
 .pull {
   margin: 1.2rem 0;
   padding: 0.9rem 1.1rem;
   border-left: 3px solid var(--primary);
-  font-size: 1.05rem;
+  font-size: var(--type-body, 1.05rem);
   background: color-mix(in srgb, var(--primary) 6%, transparent);
 }
 

@@ -12,8 +12,8 @@
 
 h1 {
   font-family: var(--font-heading);
-  font-size: clamp(2rem, 5vw, 2.8rem);
-  letter-spacing: -0.02em;
+  font-size: var(--type-h1, clamp(2rem, 5vw, 2.8rem));
+  letter-spacing: var(--heading-tracking, -0.02em);
   margin: 1rem 0 0.8rem;
   color: var(--foreground);
 }
@@ -21,13 +21,13 @@ h1 {
 .lede,
 .intro p {
   margin: 0;
-  line-height: 1.6;
+  line-height: var(--line-height, 1.6);
   color: var(--foreground-muted);
 }
 
 .quiet {
   color: var(--foreground-muted);
-  line-height: 1.55;
+  line-height: var(--line-height, 1.55);
 }
 
 .back-link {

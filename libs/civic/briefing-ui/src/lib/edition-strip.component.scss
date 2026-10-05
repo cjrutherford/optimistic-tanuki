@@ -30,7 +30,7 @@ li {
   position: absolute;
   top: -1.3rem;
   left: 0.15rem;
-  font-size: 0.75rem;
+  font-size: var(--type-small, 0.75rem);
   font-weight: 600;
   color: var(
     --foreground-muted,
@@ -48,19 +48,19 @@ li.month-start:not(:first-child) {
   justify-items: center;
   gap: 0.1rem;
   padding: 0.35rem 0 0.45rem;
-  border-radius: 0.6rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  line-height: var(--heading-line-height, 1.1);
   text-decoration: none;
 }
 
 .initial {
-  font-size: 0.65rem;
+  font-size: var(--type-small, 0.65rem);
   opacity: 0.7;
 }
 
 .date {
-  font-size: 0.9rem;
+  font-size: var(--type-small, 0.9rem);
   font-weight: 600;
 }
 

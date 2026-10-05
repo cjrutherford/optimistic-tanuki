@@ -1,12 +1,12 @@
 @use '../daylight-page';
 
 h2 {
-  font-size: 1.25rem;
+  font-size: var(--type-h3, 1.25rem);
   margin: 2.2rem 0 0.4rem;
 }
 
 h3 {
-  font-size: 1.05rem;
+  font-size: var(--type-h4, 1.05rem);
   margin: 0 0 0.3rem;
 }
 
@@ -16,12 +16,12 @@ h3 {
 }
 
 .bio {
-  line-height: 1.55;
+  line-height: var(--line-height, 1.55);
 }
 
 .history {
   margin: 0.2rem 0 0;
-  line-height: 1.55;
+  line-height: var(--line-height, 1.55);
   color: var(--foreground-muted);
 }
 
@@ -34,8 +34,8 @@ h3 {
   display: inline-block;
   margin: 0 0 0.5rem;
   padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
+  border-radius: 9999px;
+  font-size: var(--type-small, 0.8rem);
   font-weight: 600;
   background: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
@@ -46,10 +46,10 @@ h3 {
 
 .outcome {
   margin: 0.6rem 0 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: var(--type-small, 0.9rem);
+  line-height: var(--line-height, 1.5);
   padding: 0.45rem 0.7rem;
-  border-radius: 0.6rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
   background: color-mix(in srgb, var(--success) 12%, transparent);
 }
 

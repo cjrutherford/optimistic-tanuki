@@ -11,7 +11,7 @@
 
 .affirm {
   padding: 0.9rem 1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
   background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
@@ -25,19 +25,19 @@
 
 .notice-box {
   padding: 0.9rem 1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
   background: color-mix(in srgb, var(--warning) 16%, transparent);
-  line-height: 1.55;
+  line-height: var(--line-height, 1.55);
 }
 
 .target {
   padding: 1rem 1.1rem;
-  border-radius: 0.8rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
   background: color-mix(in srgb, var(--foreground) 5%, transparent);
 
   h2 {
     margin: 0 0 0.4rem;
-    font-size: 1rem;
+    font-size: var(--type-h4, 1rem);
   }
 
   .target-subject {

@@ -5,7 +5,7 @@
 .state {
   margin: 0 0 0.6rem;
   padding: 0.6rem 0.8rem;
-  border-radius: 0.6rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
   background: color-mix(in srgb, var(--foreground) 6%, transparent);
 }
 
@@ -25,8 +25,8 @@
 .steps {
   margin: 0;
   padding-left: 1.2rem;
-  font-size: 0.93rem;
-  line-height: 1.5;
+  font-size: var(--type-small, 0.93rem);
+  line-height: var(--line-height, 1.5);
 }
 
 .steps li {
