@@ -47,7 +47,10 @@
               <span class="quiet">No runs yet</span>
               }
             </td>
-            <td>{{ town.lastRun?.startedAt ?? '—' }}</td>
+            <td>
+              {{ town.lastRun ? (town.lastRun.startedAt | date : 'medium') : '—'
+              }}
+            </td>
             <td>
               @for (problem of town.problems; track problem.sourceId) {
               <div class="source-problem" [attr.data-status]="problem.status">
@@ -69,7 +72,7 @@
         </tbody>
       </table>
     </div>
-    <p class="quiet">Checked {{ report.checkedAt }}.</p>
+    <p class="quiet">Checked {{ report.checkedAt | date : 'medium' }}.</p>
     } } @else if (pipelineError()) {
     <p class="problem" role="alert">{{ pipelineError() }}</p>
     } @else {

@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -38,7 +39,7 @@ type NoticeAction = 'upheld' | 'declined' | 'restored';
  */
 @Component({
   selector: 'app-daylight-operations-page',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './daylight-operations.page.html',
   styleUrl: './daylight-operations.page.scss',
