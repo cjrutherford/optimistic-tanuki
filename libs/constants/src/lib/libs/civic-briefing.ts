@@ -11,6 +11,8 @@ export const CivicBriefingCommands = {
   TOPIC_FOR: 'civic-briefing.corpus.topic-for',
   /** What a town's sources published on or after a day. */
   RECORDS_SINCE: 'civic-briefing.corpus.records-since',
+  /** Each town's latest run and its failing or quiet sources (P5.2). */
+  PIPELINE_HEALTH: 'civic-briefing.health.pipeline',
   /** Every town with a published briefing. */
   EDITIONS: 'civic-briefing.editions.list',
   /** A town's recent editions, newest first. */

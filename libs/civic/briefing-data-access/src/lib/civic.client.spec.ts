@@ -30,6 +30,7 @@ const METHODS = [
   'latest',
   'me',
   'mine',
+  'pipelineHealth',
   'rereview',
   'signUpAsContributor',
   'subjects',

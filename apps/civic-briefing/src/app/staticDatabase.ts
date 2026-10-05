@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { FOUNDATION_SCHEMAS } from '@optimistic-tanuki/civic-core';
+import { BRIEFING_SCHEMAS } from './schemas';
 
 export default new DataSource({
   type: 'postgres',
@@ -8,6 +8,6 @@ export default new DataSource({
   username: process.env['POSTGRES_USER'] || 'postgres',
   password: process.env['POSTGRES_PASSWORD'] || 'postgres',
   database: process.env['POSTGRES_DB'] || 'ot_civic_briefing',
-  entities: FOUNDATION_SCHEMAS,
+  entities: BRIEFING_SCHEMAS,
   migrations: ['migrations/*.ts'],
 });

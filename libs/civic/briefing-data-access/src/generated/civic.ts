@@ -509,6 +509,56 @@ export interface TakedownNoticeReceiptReply {
   data: TakedownNoticeReceipt;
 }
 
+export interface PipelineRunSummary {
+  runId: number;
+  status: string;
+  cadence: string;
+  startedAt: string;
+  /** @nullable */
+  completedAt: string | null;
+  /** @nullable */
+  currentStage: string | null;
+  /** @nullable */
+  error: string | null;
+}
+
+export type PipelineSourceProblemStatus =
+  (typeof PipelineSourceProblemStatus)[keyof typeof PipelineSourceProblemStatus];
+
+export const PipelineSourceProblemStatus = {
+  failing: 'failing',
+  stale: 'stale',
+} as const;
+
+export interface PipelineSourceProblem {
+  sourceId: string;
+  adapter: string;
+  status: PipelineSourceProblemStatus;
+  /** @nullable */
+  stalenessDays: number | null;
+  consecutiveFailures: number;
+  /** @nullable */
+  lastSuccessAt: string | null;
+}
+
+export interface TownPipelineHealth {
+  slug: string;
+  name: string;
+  /** @nullable */
+  lastRun: PipelineRunSummary | null;
+  problems: PipelineSourceProblem[];
+}
+
+export interface PipelineHealthReport {
+  configured: boolean;
+  checkedAt: string;
+  towns: TownPipelineHealth[];
+}
+
+export interface PipelineHealthReply {
+  data: PipelineHealthReport;
+}
+
 export interface TownDensity {
   localitySlug: string;
   town: string;
@@ -1459,6 +1509,41 @@ export class OptomisitcTanukiAPIService {
         observe: 'body',
       }
     );
+  }
+
+  /**
+   * @summary Daylight's pipeline health
+   */
+  pipelineHealth<TData = PipelineHealthReply>(
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  pipelineHealth<TData = PipelineHealthReply>(
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  pipelineHealth<TData = PipelineHealthReply>(
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  pipelineHealth<TData = PipelineHealthReply>(
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/local-hub/operations/pipeline-health`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/local-hub/operations/pipeline-health`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/local-hub/operations/pipeline-health`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
   }
 
   /**

@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
-import { FOUNDATION_SCHEMAS } from '@optimistic-tanuki/civic-core';
+import { BRIEFING_SCHEMAS } from './schemas';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -11,7 +11,7 @@ const loadDatabase = (config: ConfigService) => {
     username: database.username,
     password: database.password,
     database: database.database || database.name,
-    entities: FOUNDATION_SCHEMAS,
+    entities: BRIEFING_SCHEMAS,
   };
   return ormConfig;
 };

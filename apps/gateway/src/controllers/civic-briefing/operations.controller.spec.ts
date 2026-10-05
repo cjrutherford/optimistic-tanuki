@@ -1,4 +1,6 @@
-import { of } from 'rxjs';
+import { ServiceUnavailableException } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+import { CivicBriefingCommands } from '@optimistic-tanuki/constants';
 import { CommunityCommands } from '@optimistic-tanuki/civic-community';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
@@ -8,8 +10,15 @@ import { CivicOperationsController } from './operations.controller';
 const operator = { userId: 'admin-1', name: 'Admin' } as UserDetails;
 const id = '0b5f1c28-5b0e-4c61-9f27-5a3c1d4e8f10';
 
-function fixture() {
+function fixture(briefingReply: () => unknown = () => of({ towns: [] })) {
   const sent: { cmd: string; payload: unknown }[] = [];
+  const briefingCalls: string[] = [];
+  const briefings = {
+    send: jest.fn((pattern: { cmd: string }) => {
+      briefingCalls.push(pattern.cmd);
+      return briefingReply();
+    }),
+  };
   const contributions = {
     send: jest.fn((pattern: { cmd: string }, payload: unknown) => {
       sent.push({ cmd: pattern.cmd, payload });
@@ -19,9 +28,11 @@ function fixture() {
   return {
     controller: new CivicOperationsController(
       contributions as never,
-      { send: jest.fn() } as never
+      { send: jest.fn() } as never,
+      briefings as never
     ),
     sent,
+    briefingCalls,
   };
 }
 
@@ -29,6 +40,23 @@ const metadata = (name: keyof CivicOperationsController, key: string) =>
   Reflect.getMetadata(key, CivicOperationsController.prototype[name]);
 
 describe('CivicOperationsController', () => {
+  it("reads Daylight's pipeline health from civic-briefing, for town.configure", async () => {
+    const report = { configured: true, checkedAt: 'now', towns: [] };
+    const { controller, briefingCalls } = fixture(() => of(report));
+    expect(await controller.pipelineHealth()).toEqual({ data: report });
+    expect(briefingCalls).toEqual([CivicBriefingCommands.PIPELINE_HEALTH]);
+    expect(metadata('pipelineHealth', PERMISSIONS_KEY)).toMatchObject({
+      permissions: ['town.configure'],
+    });
+  });
+
+  it('answers 503 when civic-briefing cannot say', async () => {
+    const { controller } = fixture(() => throwError(() => new Error('down')));
+    await expect(controller.pipelineHealth()).rejects.toBeInstanceOf(
+      ServiceUnavailableException
+    );
+  });
+
   it('confirms a callback as the signed-in operator', async () => {
     const { controller, sent } = fixture();
     await controller.confirmCallback(operator, {

@@ -248,6 +248,9 @@ fixes stay with the lead agent.
 - [x] P5.1 Local-hub profile on upstream sign-in
 - [ ] P5.2 Model host config and alerts
 - [ ] P5.3 Open the PR to main (owner merges)
+  - Owner, 2026-10-04: prepare the PR, but before opening it, make a
+    screenshot tour of the Daylight feature in Towne Square for the owner
+    to review. The PR opens only after that review.
 
 ## Source discovery strategy (owner, 2026-09-30)
 

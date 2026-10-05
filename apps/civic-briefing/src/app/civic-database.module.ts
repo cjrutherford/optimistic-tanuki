@@ -6,15 +6,13 @@ import {
 } from '@nestjs/common';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
-import { FOUNDATION_SCHEMAS } from '@optimistic-tanuki/civic-core';
-import type { DataSource, EntitySchema } from 'typeorm';
+import { BRIEFING_SCHEMAS } from './schemas';
+import type { DataSource } from 'typeorm';
 import loadDatabase from './loadDatabase';
 
 export const CIVIC_BRIEFING_CONNECTION = 'CIVIC_BRIEFING_CONNECTION';
 
-const repositories: Provider[] = (
-  FOUNDATION_SCHEMAS as readonly EntitySchema<unknown>[]
-).map((schema) => ({
+const repositories: Provider[] = BRIEFING_SCHEMAS.map((schema) => ({
   provide: getRepositoryToken(schema),
   useFactory: (dataSource: DataSource) => dataSource.getRepository(schema),
   inject: [CIVIC_BRIEFING_CONNECTION],
@@ -42,9 +40,7 @@ export class CivicDatabaseModule {
    * the stage tests open their own database and hand it to the stages.
    */
   static forDataSource(dataSource: DataSource): DynamicModule {
-    const provided: Provider[] = (
-      FOUNDATION_SCHEMAS as readonly EntitySchema<unknown>[]
-    ).map((schema) => ({
+    const provided: Provider[] = BRIEFING_SCHEMAS.map((schema) => ({
       provide: getRepositoryToken(schema),
       useValue: dataSource.getRepository(schema),
     }));

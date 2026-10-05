@@ -8,19 +8,25 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import type { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CommunityCommands,
   type OfficialStanding,
   type TownDensity,
 } from '@optimistic-tanuki/civic-community';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  CivicBriefingCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   ActOnTakedownNoticeBody,
   ConfirmOfficialCallbackBody,
+  type PipelineHealthReport,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -32,6 +38,7 @@ import {
   DensityReply,
   OfficialStandingReply,
   OutcomeSweepReply,
+  PipelineHealthReply,
   PromotionExportReply,
   RereviewReply,
   TakedownActionReply,
@@ -55,9 +62,39 @@ export class CivicOperationsController {
   constructor(
     @Inject(ServiceTokens.CIVIC_CONTRIBUTIONS_SERVICE)
     contributions: ClientProxy,
-    @Inject(ServiceTokens.PERMISSIONS_SERVICE) permissions: ClientProxy
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE) permissions: ClientProxy,
+    @Inject(ServiceTokens.CIVIC_BRIEFING_SERVICE)
+    private readonly briefings: ClientProxy
   ) {
     this.civic = new CivicContributionsClient(contributions, permissions);
+  }
+
+  /**
+   * Each town's latest pipeline run and the sources that are failing or have
+   * gone quiet (P5.2). The same problems are emailed to DAYLIGHT_ALERT_EMAIL.
+   */
+  @Get('operations/pipeline-health')
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: "Daylight's pipeline health" })
+  @ApiResponse({ status: 200, type: PipelineHealthReply })
+  async pipelineHealth() {
+    try {
+      return {
+        data: await firstValueFrom(
+          this.briefings
+            .send<PipelineHealthReport>(
+              { cmd: CivicBriefingCommands.PIPELINE_HEALTH },
+              {}
+            )
+            // The report walks every town's sources; give it time.
+            .pipe(timeout(30_000))
+        ),
+      };
+    } catch {
+      throw new ServiceUnavailableException(
+        'Pipeline health is unavailable right now. Try again shortly.'
+      );
+    }
   }
 
   /**
