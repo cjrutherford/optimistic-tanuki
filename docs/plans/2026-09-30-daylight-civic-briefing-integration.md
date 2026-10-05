@@ -145,6 +145,12 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   from then on. The sign-up prefills it, says it may be the registered
   (real) name, and lets the person change it. A change there also changes
   the display name.
+- **D30** (owner, 2026-10-05) Pipeline problems reach operators two ways:
+  a "Pipeline health" panel on `/operations` (`town.configure`), and one
+  email per new problem to `DAYLIGHT_ALERT_EMAIL` (a failed or blocked run,
+  or a source that turned failing or stale). The civic services are
+  deployed through `docker-compose.yaml`, `docker-compose.dev.yaml` and
+  k8s base plus overlays.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -246,7 +252,7 @@ fixes stay with the lead agent.
   - [x] P4.5c e2e: city → briefing → become a contributor → report; repair
         the older local-hub-e2e suites
 - [x] P5.1 Local-hub profile on upstream sign-in
-- [ ] P5.2 Model host config and alerts
+- [x] P5.2 Model host config and alerts
 - [ ] P5.3 Open the PR to main (owner merges)
   - Owner, 2026-10-04: prepare the PR, but before opening it, make a
     screenshot tour of the Daylight feature in Towne Square for the owner
@@ -1040,3 +1046,47 @@ clamav`).
     `local-hub-e2e` passes in the shared stack: 45 passed, 2 skipped
     (map). The journey now changes the prefilled real name to a handle.
     Next: P5.2 (model host config and alerts).
+- 2026-10-05: P5.2 is done (D30).
+  - **Model host:** the host is prompt-proxy's `OLLAMA_HOST` (in `.env`,
+    and in k8s through `prompt-proxy-config`). civic-briefing's
+    `LLM_PLANNER_MODEL`, `LLM_WRITER_MODEL`, `LLM_PRIMARY_MODEL` and
+    `LLM_FALLBACK_MODEL`, and civic-contributions' `REVIEW_MODEL`, are now
+    in compose and in the `civic-briefing-config` ConfigMap. Empty means
+    the code's defaults.
+  - **Alerts (a):**
+    - civic-briefing builds a pipeline report: each scheduled town's latest
+      run, and its failing or stale sources from civic-core's
+      `localityHealth`.
+    - Every `PIPELINE_ALERT_MS` (15 minutes) it records new problems in
+      `daylight_alerts` (migration `1791165718816-AddDaylightAlerts`,
+      generated) and emails them once through the platform's
+      `EmailService`. A problem resolves when it clears, so a recurrence
+      alerts again.
+    - Without `DAYLIGHT_ALERT_EMAIL`, problems are logged and recorded.
+      Alerts only run where the schedule runs, never in one-shot command
+      modes.
+    - The gateway serves `local-hub/operations/pipeline-health`
+      (`town.configure`); `/operations` shows it.
+  - **Deployment (b):**
+    - `docker-compose.yaml`: the model, alert and SMTP variables, and named
+      `data/` volumes for both civic services.
+    - `docker-compose.dev.yaml`: both services, from `dist` under nodemon.
+    - k8s: `civic`, `civic-briefing` and `civic-contributions`; one replica
+      each with a `Recreate` strategy (the briefing scheduler must not run
+      twice) and PVCs for `data/`. Also ClamAV, which k8s had lacked even
+      for assets, and placeholder secrets for `VAULT_STORAGE_KEK` and
+      `CIVIC_FINGERPRINT_KEY`.
+    - The overlays have image tags, and the deployment catalog
+      (`tools/admin-env-wizard`) and `package.json` build scripts list the
+      services. The parity and inventory validators pass, apart from
+      `compliance-audit`'s missing catalog entry, which is from `main`.
+  - **Still open:**
+    - `CIVIC_LOCALITIES_DIR` has no deployed source yet: where the town
+      registry lives in production is the earlier corpus-location
+      question. Without it, nothing is scheduled.
+    - k8s has no database setup or migration job for any service.
+  - **Tests:** civic-briefing `test-db` for health and alerts (6),
+    gateway 1,509, local-hub 398, Go catalog, and the manifest and parity
+    validators pass.
+    Next: P5.3, preparing the PR and then the screenshot tour for the
+    owner before it opens.
