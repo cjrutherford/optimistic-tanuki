@@ -234,11 +234,11 @@ fixes stay with the lead agent.
 - [x] P4.3 `localitySlug` on community (generated migration) + Briefing on
       city page
 - [x] P4.4 Contributor pages (report, watch, contributor, operations)
-- [ ] P4.5 SSR + local-hub-e2e: city → briefing → report
+- [x] P4.5 SSR + local-hub-e2e: city → briefing → report
   - [x] P4.5a Contributor sign-up (D27)
-  - [ ] P4.5b Shared e2e stack: civic services, model stub, briefing seed,
+  - [x] P4.5b Shared e2e stack: civic services, model stub, briefing seed,
         local-hub in the manifest (D28)
-  - [ ] P4.5c e2e: city → briefing → become a contributor → report; repair
+  - [x] P4.5c e2e: city → briefing → become a contributor → report; repair
         the older local-hub-e2e suites
 - [ ] P5.1 Local-hub profile on upstream sign-in
 - [ ] P5.2 Model host config and alerts
@@ -953,3 +953,55 @@ clamav`).
   - **Not done:** the terms agreement isn't stored apart from the role
     assignment. A record of the terms version is for the owner to decide.
     Next: P4.5b (the shared e2e stack).
+- 2026-10-04: P4.5b and P4.5c are done, so P4.5 is done. `local-hub-e2e`
+  passes locally in the shared CI stack: 45 passed, 0 flaky, and 2 skipped
+  (map tests that need a cluster of nearby cities, which the three-town
+  seed doesn't have).
+  - **Stack (b):**
+    - `e2e/docker-compose.e2e-stack.yaml` gains classifieds, payments,
+      civic-briefing, civic-contributions and `model-stub`. The stub is a
+      deterministic review model that echoes the prompt's answer shape with
+      every answer false.
+    - It also gains two one-shot seeds. `social-locality-seed` writes Adel,
+      Tifton and Nashville with their `localitySlug`; the social seeder got
+      `SEED_LOCALITY_SLUGS` and `SEED_SKIP_CHAT_ROOMS`.
+      `civic-briefing-seed` (`seed-e2e.js`, through civic-briefing's own
+      entities) writes three fixture briefings from
+      `e2e/fixtures/civic-briefings`, reformatted from the POC's published
+      ones.
+    - local-hub joins the manifest (20 services, including workspace) and
+      CI's Playwright contract check. `model-stub` is built locally like
+      `oauth-provider`. `AUTH_AUTO_VERIFY_EMAILS` covers the
+      verified-email rule for sign-up.
+  - **Suite (c):** `daylight.spec.ts` covers four things:
+    - a server-rendered briefing page;
+    - the town page, then moving between editions;
+    - a missing day;
+    - sign-up, report and review. The report is held, because no news
+      corpus is loaded for the copying check, and the test asserts that
+      outcome and its reasons.
+      The older suites had been skipping because no city was seeded; their
+      helpers now use the current `/api/social/community` routes.
+  - **Bugs the runs found, all fixed:**
+    - SSR resolved relative `/api` URLs against the page's own address. A
+      server-only interceptor in local-hub now sends them to the gateway.
+    - Both civic images ran as `node` under a root-owned app directory.
+      civic-contributions crashed at start; civic-briefing would have
+      failed at its first blob write.
+    - The gateway's permission cache wasn't cleared when a role was
+      granted, so a report was refused just after sign-up. The official
+      grant had the same gap.
+    - `local-hub-e2e`'s `ci` configuration passed `--env=[object Object]`
+      to Playwright.
+    - Community creation provisions a workspace, so local-hub-e2e needs it.
+      Without it, one test passed only on retry, over a half-created
+      community.
+  - **Found on `main`, not fixed here:**
+    - social's `CommunityElection` entity isn't in its DataSource (it logs
+      errors on city pages).
+    - Some `docker-service-planner` / `dev-seed.sh` script tests fail.
+      CI doesn't run that file.
+  - **Not run:** the suite in GitHub Actions. That waits for the push
+    (P5.3).
+    Next: Phase 5 (P5.1 is mostly covered by the contributor sign-up,
+    D27).
