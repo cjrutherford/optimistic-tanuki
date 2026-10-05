@@ -184,6 +184,8 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 
 **Slice:** RR-01.
 
+**RR-01 update (2026-10-05):** Copy remediated; see [findings](./findings/RR-01.md). This resolves the identified wording, not acceptance of the associated product behavior.
+
 ### F-002 — OT positioning does not fully reflect intended product model
 
 **Severity:** P1
@@ -197,6 +199,8 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 **Remediation:** Rewrite landing hierarchy and HAI app metadata after core behavior audit confirms claims.
 
 **Slice:** RR-01.
+
+**RR-01 update (2026-10-05):** Copy remediated; see [findings](./findings/RR-01.md). This resolves the identified wording, not acceptance of the associated product behavior.
 
 ### F-003 — OT HAI tag copy is architecture-oriented rather than user-oriented
 
@@ -225,6 +229,8 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 **Remediation:** Remove/hide unreleased claims until implementation is accepted; do not soften them into ambiguous present tense.
 
 **Slice:** RR-01.
+
+**RR-01 update (2026-10-05):** Copy remediated; see [findings](./findings/RR-01.md). This resolves the identified wording, not acceptance of the associated product behavior.
 
 ### F-005 — Daylight is not yet a released production capability
 
@@ -297,8 +303,8 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 
 | Slice | Title                                                                     | Initial status                   | Primary severity  |
 | ----- | ------------------------------------------------------------------------- | -------------------------------- | ----------------- |
-| RR-00 | Philosophy, scope, and release contract                                   | VERIFYING; see findings/RR-00.md | P0/P1 foundation  |
-| RR-01 | Product truth and public marketing audit                                  | GAP FOUND                        | P0                |
+| RR-00 | Philosophy, scope, and release contract                                   | ACCEPTED; see findings/RR-00.md  | P0/P1 foundation  |
+| RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md | P0                |
 | RR-02 | HAI ecosystem identity/tag/shared-login UX                                | PLANNED                          | P1                |
 | RR-03 | Authentication, registration, session, and account lifecycle              | PLANNED                          | P0                |
 | RR-04 | OT feed, discovery, follows, visibility, and privacy                      | PLANNED                          | P0                |
@@ -344,26 +350,28 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 
 ## RR-01 — Product truth and public marketing audit
 
+**Status:** VERIFYING. [Findings](./findings/RR-01.md) and [claim inventory](./findings/RR-01-CLAIMS.md). Live authenticated review remains outstanding.
+
 **Goal:** Reconcile every public claim through `VERIFY`, `COMPLETE`, `REWORD`, `RETRACT`, or `DEFER`, while preserving strategically valuable deferred features in the Deferred Feature Register.
 
 ### OT checks
 
-- [ ] Remove fabricated scale/social-proof claims.
-- [ ] Inventory every feature claim on `/`.
-- [ ] Map every claim to accepted behavior or remove/qualify it.
-- [ ] Reframe around "You are the social network."
-- [ ] Explain communities as optional shared nodes/spaces rather than the entire product.
-- [ ] Explain private/public community-post visibility accurately.
-- [ ] Distinguish primary feed from Explore/discovery.
+- [x] Remove fabricated scale/social-proof claims.
+- [x] Inventory every feature claim on `/`.
+- [x] Map every claim to accepted behavior or remove/qualify it.
+- [x] Reframe around "You are the social network."
+- [x] Explain communities as optional shared nodes/spaces rather than the entire product.
+- [x] Explain private/public community-post visibility accurately.
+- [x] Distinguish primary feed from Explore/discovery.
 - [ ] Confirm "free" language against actual monetization/account requirements.
 
 ### TS checks
 
-- [ ] Inventory every claim on `/`.
-- [ ] Remove/disable present-tense claims for unimplemented payments/donations/Pro analytics/moderation/reputation.
+- [x] Inventory every claim on `/`.
+- [x] Remove/disable present-tense claims for unimplemented payments/donations/Pro analytics/moderation/reputation.
 - [ ] Lead with local utility, communities, classifieds, and messaging that actually work.
-- [ ] Do not market Daylight as released until RR-07.
-- [ ] Confirm city/community statistics are live/real rather than placeholders before showing them as factual counts.
+- [x] Do not market Daylight as released until RR-07.
+- [x] Confirm city/community statistics are live/real rather than placeholders before showing them as factual counts.
 
 ### Acceptance evidence
 
@@ -913,13 +921,13 @@ This slice intentionally comes after the release gate work has established what 
 
 This table is a running summary. Add detail below the table or in a dedicated `DF-xxx` document when analysis becomes substantial.
 
-| ID     | Product               | Feature                                                                  | Value                                                                                               | Current state                                                                                                                                  | Impl.                                    | Validation | Primary reason deferred                                                                                                                                                                                                                        | Marketing                                     | Revisit trigger                                                                                                                     |
-| ------ | --------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| DF-001 | TS/OT                 | Reputation-driven moderation / automated restrictions                    | Helps communities scale trust and safety without central staff handling every decision              | A related untested prototype reportedly exists in private repo `cjrutherford/retumbl`; local checkout confirmed; full evaluation pending RR-14 | M/L pending prototype review             | XL         | Existing prototype may reduce implementation cost, but validation still requires policy, abuse modeling, moderator UX, auditability, appeals/override behavior, adversarial E2E, and cross-instance implications if federation proceeds        | DEFER pending RR-14                           | Revisit immediately when `retumbl` is available to the audit; RR-14 will re-estimate and decide reuse/adaptation/rejection          |
-| DF-002 | TS                    | Payments, donations, featured classifieds, paid business tiers/analytics | Potential sustainability and local-business tooling                                                 | Landing copy is ahead of accepted implementation                                                                                               | XL                                       | XL         | Payments introduce financial, refund, entitlement, webhook, tax/accounting, fraud, disclosure, and operational support requirements                                                                                                            | RETRACT/DEFER                                 | Revisit after core classifieds/community usage is validated and a monetization ADR defines exact business model                     |
-| DF-003 | OT/TS shared platform | Self-hosting and federation                                              | Long-term resilience, portability, community ownership, and continuity beyond the central HAI sites | Architectural aspiration; promoted into active feasibility analysis                                                                            | XL likely, but to be decomposed by RR-15 | XL         | Identity federation, canonical IDs, content addressing, moderation/trust boundaries, protocol/versioning, discovery, migration, security, cross-instance privacy, media delivery, abuse controls, and operations require explicit architecture | DEFER implementation; AUDIT NOW               | Revisit implementation after RR-15 produces an ADR, protocol recommendation, bounded MVP, and migration path                        |
-| DF-004 | OT                    | Per-community forums                                                     | Gives each community a durable "slow ring" for governance/policy discussion                         | Product intent established; implementation status unverified/likely absent                                                                     | M/L                                      | L          | Requires community-scoped forum authorization, navigation, moderation, notifications, search/privacy integration, and migration/UX decisions                                                                                                   | DEFER                                         | Revisit after RR-05 accepts the main forum and community permission model, then determine whether it can become a bounded follow-up |
-| DF-005 | TS                    | Daylight expansion beyond initial accepted localities                    | Scales civic utility beyond initial launch footprint                                                | PR/integration in progress for initial locality set                                                                                            | L                                        | XL         | Source diversity, ingestion adapters, OCR/source quality, locality rules, timezone/freshness validation, and ongoing source maintenance scale non-linearly                                                                                     | DEFER expansion; initial set handled in RR-07 | Revisit after RR-07 proves operational reliability and source-maintenance cost for the first supported localities                   |
+| ID     | Product               | Feature                                                                  | Value                                                                                               | Current state                                                                                                                                                   | Impl.                                    | Validation | Primary reason deferred                                                                                                                                                                                                                        | Marketing                                     | Revisit trigger                                                                                                                     |
+| ------ | --------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| DF-001 | TS/OT                 | Reputation-driven moderation / automated restrictions                    | Helps communities scale trust and safety without central staff handling every decision              | A related untested prototype reportedly exists in private repo `cjrutherford/retumbl`; local checkout confirmed; full evaluation pending RR-14                  | M/L pending prototype review             | XL         | Existing prototype may reduce implementation cost, but validation still requires policy, abuse modeling, moderator UX, auditability, appeals/override behavior, adversarial E2E, and cross-instance implications if federation proceeds        | DEFER pending RR-14                           | Revisit immediately when `retumbl` is available to the audit; RR-14 will re-estimate and decide reuse/adaptation/rejection          |
+| DF-002 | TS                    | Payments, donations, featured classifieds, paid business tiers/analytics | Potential sustainability and local-business tooling                                                 | Payment services/components exist but financial/entitlement behavior is unaccepted; RR-01 withdraws funding, tiers, featured placement, and analytics promotion | XL                                       | XL         | Payments introduce financial, refund, entitlement, webhook, tax/accounting, fraud, disclosure, and operational support requirements                                                                                                            | RETRACT/DEFER                                 | Revisit after core classifieds/community usage is validated and a monetization ADR defines exact business model                     |
+| DF-003 | OT/TS shared platform | Self-hosting and federation                                              | Long-term resilience, portability, community ownership, and continuity beyond the central HAI sites | Architectural aspiration; promoted into active feasibility analysis                                                                                             | XL likely, but to be decomposed by RR-15 | XL         | Identity federation, canonical IDs, content addressing, moderation/trust boundaries, protocol/versioning, discovery, migration, security, cross-instance privacy, media delivery, abuse controls, and operations require explicit architecture | DEFER implementation; AUDIT NOW               | Revisit implementation after RR-15 produces an ADR, protocol recommendation, bounded MVP, and migration path                        |
+| DF-004 | OT                    | Per-community forums                                                     | Gives each community a durable "slow ring" for governance/policy discussion                         | Product intent established; implementation status unverified/likely absent                                                                                      | M/L                                      | L          | Requires community-scoped forum authorization, navigation, moderation, notifications, search/privacy integration, and migration/UX decisions                                                                                                   | DEFER                                         | Revisit after RR-05 accepts the main forum and community permission model, then determine whether it can become a bounded follow-up |
+| DF-005 | TS                    | Daylight expansion beyond initial accepted localities                    | Scales civic utility beyond initial launch footprint                                                | PR/integration in progress for initial locality set                                                                                                             | L                                        | XL         | Source diversity, ingestion adapters, OCR/source quality, locality rules, timezone/freshness validation, and ongoing source maintenance scale non-linearly                                                                                     | DEFER expansion; initial set handled in RR-07 | Revisit after RR-07 proves operational reliability and source-maintenance cost for the first supported localities                   |
 
 ## Deferred-feature analysis rules
 
@@ -958,6 +966,8 @@ Use this section for concise status changes. Detailed evidence should live in sl
 
 | Date       | Item                    | Change                                                                                                                                                                                                |
 | ---------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                |
+| 2026-10-05 | RR-00 accepted          | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                  |
 | 2026-10-05 | Execution mapping       | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted. |
 | 2026-10-05 | Audit created           | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                 |
 | 2026-10-05 | Daylight                | Recorded PR #275 as open/unmerged; RR-07 blocked from production acceptance.                                                                                                                          |

@@ -1,17 +1,15 @@
 <section class="hero">
   <div class="hero-content">
     <div class="hero-copy">
-      <div class="hero-badge">
-        Towne Square | Local coordination for everyday life
-      </div>
+      <div class="hero-badge">Towne Square | Early access for local life</div>
       <h1 class="hero-title">
         Find your people, your market, and your
         <span class="highlight">neighborhood rhythm</span>
       </h1>
       <p class="hero-subtitle">
-        Towne Square brings neighborhood conversation, local commerce, and civic
-        participation into one place so nearby trade, communication, and
-        community life feel easier to coordinate.
+        Towne Square is organized around place: local communities, classifieds,
+        and neighbor-to-neighbor messaging. Explore the places that are part of
+        your life while we test these workflows in early access.
       </p>
       <div class="hero-actions">
         <button class="btn btn-primary" (click)="navigateToCities()">
@@ -50,24 +48,7 @@
         </div>
         <div class="trust-item">
           <strong>Coordinate together</strong>
-          <span
-            >Support projects, events, and everyday local needs in one
-            hub.</span
-          >
-        </div>
-      </div>
-      <div class="hero-stats">
-        <div class="stat">
-          <span class="stat-value">{{ totalCities() }}</span>
-          <span class="stat-label">Localities</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ totalCommunities() }}</span>
-          <span class="stat-label">Communities</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">{{ totalMembers() | number }}</span>
-          <span class="stat-label">Members</span>
+          <span>Start with the places you live, work, or visit often.</span>
         </div>
       </div>
     </div>
@@ -146,14 +127,15 @@
               <span class="visual-card-title"
                 >{{ city.name }}, {{ city.adminArea }}</span
               >
-              <span class="visual-card-subtitle"
-                >{{ city.population | number }} residents</span
-              >
             </div>
           </div>
         </article>
         }
       </div>
+    </div>
+    } @else if (loadError()) {
+    <div class="loading-placeholder" role="status">
+      <p>Localities could not be loaded. Please try again later.</p>
     </div>
     } @else {
     <div class="loading-placeholder">
@@ -167,18 +149,20 @@
   <div class="section-container">
     <div class="story-header">
       <p class="story-eyebrow">How Towne Square works</p>
-      <h2 class="section-title">Belong, trade, and coordinate close to home</h2>
+      <h2 class="section-title">Find the Places That Matter to You</h2>
       <p class="section-subtitle">
-        The platform is designed to feel useful before it feels complicated:
-        find your place, join the conversation, trade nearby, and take part in
-        neighborhood life as it happens.
+        Browse supported localities without an account. Create an account to try
+        community membership, classifieds, and messaging during early access.
+        These workflows are still being validated.
       </p>
     </div>
   </div>
 </section>
 
 <section class="features">
-  <h2 class="section-title">One platform for community and local commerce</h2>
+  <h2 class="section-title">
+    Local Communities, Classifieds, and Conversation
+  </h2>
   <div class="feature-grid">
     <div class="feature-card">
       <div class="feature-icon">
@@ -197,8 +181,8 @@
       </div>
       <h3>City, Town & Regional Communities</h3>
       <p>
-        Every community is tied to a real place so belonging starts with the
-        people and neighborhoods around you.
+        Explore supported localities and their communities. A place can be part
+        of your life because you live there, work nearby, or visit often.
       </p>
     </div>
     <div class="feature-card">
@@ -217,8 +201,8 @@
       </div>
       <h3>Local Classifieds</h3>
       <p>
-        Keep more exchanges local with listings that help neighbors buy, sell,
-        and share without leaving the community context.
+        Browse nearby listings and try posting your own. Listing creation and
+        seller contact are still being tested in early access.
       </p>
     </div>
     <div class="feature-card">
@@ -238,152 +222,9 @@
       </div>
       <h3>Direct Messaging</h3>
       <p>
-        Move from discovery to conversation without pushing people into
-        third-party channels immediately.
+        Try contacting a seller or starting a conversation. Message delivery and
+        replies are still being tested in early access.
       </p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        </svg>
-      </div>
-      <h3>Safe & Moderated</h3>
-      <p>
-        Moderation, reputation, and local accountability help the space stay
-        useful and trustworthy.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section class="support-local">
-  <div class="section-container">
-    <div class="support-grid">
-      <div class="support-content">
-        <h2 class="section-title">Support Your Community</h2>
-        <p class="section-subtitle">
-          Help fund local initiatives, events, and improvements. Every
-          contribution counts toward our shared goals.
-        </p>
-        <ul class="support-list">
-          <li>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-              ></path>
-            </svg>
-            Monthly goals for community projects
-          </li>
-          <li>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            Transparent tracking of contributions
-          </li>
-          <li>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-            Secure one-time or recurring donations
-          </li>
-        </ul>
-        <button class="btn btn-primary" (click)="navigateToCities()">
-          View Community Goals
-        </button>
-      </div>
-      <div class="support-visual">
-        <div class="goal-card">
-          <h3>Community Funding Goal</h3>
-          <app-donation-progress
-            [monthlyGoal]="donationGoal()?.monthlyGoal || 5000"
-          ></app-donation-progress>
-          <p class="goal-note">
-            Supported by {{ donationGoal()?.donorCount || 0 }} neighbors this
-            month
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="business-outreach">
-  <div class="section-container">
-    <div class="business-grid">
-      <div class="business-visual">
-        <div class="business-card-demo">
-          <div class="demo-badge">Pro Tier</div>
-          <div class="demo-header">
-            <div class="demo-logo"></div>
-            <div class="demo-info">
-              <h4>Local Market & Deli</h4>
-              <span>Downtown Neighborhood</span>
-            </div>
-          </div>
-          <div class="demo-body">
-            <p>
-              Fresh local produce and artisanal sandwiches delivered to your
-              door.
-            </p>
-          </div>
-          <div class="demo-footer">
-            <span class="demo-tag">Featured</span>
-            <span class="demo-tag">Open Now</span>
-          </div>
-        </div>
-      </div>
-      <div class="business-content">
-        <h2 class="section-title">
-          Grow your business where your customers already live
-        </h2>
-        <p class="section-subtitle">
-          Connect with customers right in your neighborhood. Create a
-          professional business page and reach a local audience inside the same
-          place-based network they already use.
-        </p>
-        <div class="tier-preview">
-          <div class="tier">
-            <strong>Basic</strong>
-            <span>Free listing for local shops</span>
-          </div>
-          <div class="tier featured">
-            <strong>Pro</strong>
-            <span>Featured placement & analytics</span>
-          </div>
-        </div>
-        <button class="btn btn-outline" (click)="navigateToRegister()">
-          Start My Business Page
-        </button>
-      </div>
     </div>
   </div>
 </section>
@@ -405,7 +246,9 @@
       <span class="step-number">2</span>
       <div class="step-content">
         <h3>Join a Community</h3>
-        <p>Sign up to join communities and unlock all features.</p>
+        <p>
+          Create an account to try community membership during early access.
+        </p>
       </div>
     </li>
     <li class="step">

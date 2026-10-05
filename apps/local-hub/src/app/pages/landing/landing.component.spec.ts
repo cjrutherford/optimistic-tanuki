@@ -49,12 +49,56 @@ describe('LandingComponent', () => {
     jest.restoreAllMocks();
   });
 
-  it('should create', async () => {
+  it('shows an empty locality set only after a successful empty response', async () => {
     jest.spyOn(communityService, 'getCommunities').mockResolvedValue([]);
 
     await renderComponent();
 
     expect(component).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain(
+      'No localities available yet.'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Localities could not be loaded'
+    );
+  });
+
+  it('keeps locality browsing available when the donation endpoint fails', async () => {
+    paymentServiceMock.getDonationGoal.mockRejectedValueOnce(
+      new Error('payments unavailable')
+    );
+    jest.spyOn(communityService, 'getCommunities').mockResolvedValue([
+      {
+        id: 'locality-1',
+        name: 'Savannah, GA',
+        slug: 'savannah-ga',
+        description: 'Local community',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 10,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      },
+    ]);
+
+    await renderComponent();
+
+    expect(component.cities().map((city) => city.name)).toEqual(['Savannah']);
+    expect(component.loading()).toBe(false);
+  });
+
+  it('distinguishes an unavailable locality API from an empty supported set', async () => {
+    jest
+      .spyOn(communityService, 'getCommunities')
+      .mockRejectedValue(new Error('offline'));
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await renderComponent();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Localities could not be loaded');
+    expect(text).not.toContain('No localities available yet.');
   });
 
   it('loads API cities in alphabetical order', async () => {
