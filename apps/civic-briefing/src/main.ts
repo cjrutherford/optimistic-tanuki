@@ -108,7 +108,7 @@ async function runOnce(mode: OnceMode, args: string[]) {
     if (days !== undefined && !(Number.isInteger(days) && days > 0))
       throw new Error(`--days must be a positive whole number`);
     const towns = args.filter(
-      (arg, index) => arg !== '--days' && index !== daysAt + 1
+      (arg, index) => arg !== '--days' && (daysAt < 0 || index !== daysAt + 1)
     );
     const work =
       mode === 'source'
