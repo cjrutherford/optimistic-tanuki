@@ -492,6 +492,8 @@ const UI_ENVIRONMENTS = [
       'permissions',
       'permissions-seed',
       'social',
+      // Creating a community provisions its workspace.
+      'workspace',
       'assets',
       'clamav',
       'classifieds',
