@@ -15,7 +15,9 @@
         Daylight contributor." }}</strong
       >
     </p>
-    @if (returnUrl(); as next) {
+    @if (joined() && account.handle) {
+    <p>Your reports are published as <strong>{{ account.handle }}</strong>.</p>
+    } @if (returnUrl(); as next) {
     <p><a [routerLink]="next">Carry on where you were</a></p>
     } @else {
     <p><a routerLink="/cities">Choose a town</a> and use “Report something”.</p>
@@ -31,6 +33,22 @@
   <h2>What you are agreeing to</h2>
   <app-daylight-contributor-terms />
   <form (ngSubmit)="signUp()">
+    <label class="field"
+      ><span>Your handle</span>
+      <input
+        type="text"
+        name="handle"
+        [(ngModel)]="handle"
+        minlength="2"
+        maxlength="40"
+        autocomplete="nickname"
+    /></label>
+    <p class="hint">
+      Every report you send is published under this name, and it can't be
+      changed later. It starts as your Towne Square display name, which may be
+      your real name; change it here if you'd rather not publish that. Changing
+      it also changes your display name.
+    </p>
     <label class="choice"
       ><input type="checkbox" name="agreed" [(ngModel)]="agreed" /> I have read
       these and want to contribute to Daylight.</label
@@ -38,7 +56,9 @@
     @if (problem()) {
     <p class="problem" role="alert">{{ problem() }}</p>
     }
-    <otui-button type="submit" [disabled]="!agreed || pending()"
+    <otui-button
+      type="submit"
+      [disabled]="!agreed || !handleIsValid() || pending()"
       >{{ pending() ? 'Signing up…' : 'Become a contributor' }}</otui-button
     >
   </form>

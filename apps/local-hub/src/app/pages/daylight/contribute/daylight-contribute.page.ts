@@ -71,6 +71,8 @@ export class DaylightContributePage {
   );
 
   protected agreed = false;
+  /** The name reports are published under: the local-hub display name, fixed once signed up (P5.1). */
+  protected handle = '';
   protected readonly pending = signal(false);
   protected readonly problem = signal('');
   protected readonly joined = signal(false);
@@ -90,25 +92,37 @@ export class DaylightContributePage {
           })
         )
       )
-      .subscribe((standing) => this.standing.set(standing));
+      .subscribe((standing) => {
+        this.standing.set(standing);
+        if (standing.status === 'ready')
+          this.handle = standing.membership.handle;
+      });
+  }
+
+  /** Two to forty characters on one line, as the gateway requires. */
+  protected handleIsValid(): boolean {
+    const handle = this.handle.trim();
+    return handle.length >= 2 && handle.length <= 40 && !/[\r\n]/u.test(handle);
   }
 
   protected signUp(): void {
-    if (!this.agreed) return;
+    if (!this.agreed || !this.handleIsValid()) return;
     this.pending.set(true);
     this.problem.set('');
-    this.civic.signUpAsContributor({ agreeToTerms: true }).subscribe({
-      next: (reply) => {
-        this.pending.set(false);
-        this.standing.set({ status: 'ready', membership: reply.data });
-        this.joined.set(true);
-      },
-      error: (error: unknown) => {
-        this.pending.set(false);
-        this.problem.set(
-          problem(error, 'The sign-up did not go through. Try again.')
-        );
-      },
-    });
+    this.civic
+      .signUpAsContributor({ agreeToTerms: true, handle: this.handle.trim() })
+      .subscribe({
+        next: (reply) => {
+          this.pending.set(false);
+          this.standing.set({ status: 'ready', membership: reply.data });
+          this.joined.set(true);
+        },
+        error: (error: unknown) => {
+          this.pending.set(false);
+          this.problem.set(
+            problem(error, 'The sign-up did not go through. Try again.')
+          );
+        },
+      });
   }
 }

@@ -5,6 +5,8 @@ import {
   type Actor,
   type ApplyOfficialRequest,
   type CounterNoticeRequest,
+  type RegisterContributorRequest,
+  type RegisterContributorResult,
   type SubmitRequest,
   type TakedownNoticeRequest,
 } from '@optimistic-tanuki/civic-community';
@@ -47,6 +49,17 @@ export class CommunityController {
   @MessagePattern({ cmd: CommunityCommands.Submit })
   submit(@Payload() data: SubmitRequest & { actor: ActorWithRoles }) {
     return this.guard(() => this.intake.submit(data));
+  }
+
+  /** Records a contributor at sign-up; the handle is fixed from then on. */
+  @MessagePattern({ cmd: CommunityCommands.RegisterContributor })
+  registerContributor(@Payload() data: RegisterContributorRequest) {
+    return this.guard(async (): Promise<RegisterContributorResult> => {
+      const { contributor, created } = await this.intake.registerContributor(
+        data.actor
+      );
+      return { handle: contributor.handle, created };
+    });
   }
 
   @MessagePattern({ cmd: CommunityCommands.Mine })

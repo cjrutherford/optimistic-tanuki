@@ -47,6 +47,7 @@ export const CommunityCommands = {
   SweepOutcomes: 'Community:SweepOutcomes',
   ExportPromotions: 'Community:ExportPromotions',
   Density: 'Community:Density',
+  RegisterContributor: 'Community:RegisterContributor',
 } as const;
 
 /** Who is acting, as the gateway established it. Never taken from the request body. */
@@ -126,4 +127,18 @@ export interface CounterNoticeRequest {
   consentToJurisdiction: boolean;
   underPenalty: boolean;
   signature: string;
+}
+
+/**
+ * Records a contributor at sign-up (D27, P5.1). The handle is fixed from
+ * then on: a contributor already on record keeps the handle they signed up
+ * with, and `created` says which happened.
+ */
+export interface RegisterContributorRequest {
+  actor: Actor;
+}
+
+export interface RegisterContributorResult {
+  handle: string;
+  created: boolean;
 }

@@ -50,6 +50,30 @@ beforeEach(async () => {
 });
 
 describe('intake', () => {
+  it('keeps the handle a contributor signed up with (P5.1)', async () => {
+    const who = actor();
+    const signedUp = await intake.registerContributor({
+      ...who,
+      handle: 'lovelaneWatcher',
+    });
+    expect(signedUp.created).toBe(true);
+    expect(signedUp.contributor.handle).toBe('lovelaneWatcher');
+
+    // A later request under another name (say, the account's real name)
+    // changes nothing: attribution stays with the handle chosen at sign-up.
+    const again = await intake.registerContributor({
+      ...who,
+      handle: 'Ada Lovelace',
+    });
+    expect(again.created).toBe(false);
+    expect(again.contributor.handle).toBe('lovelaneWatcher');
+    const view = contributionOf(
+      await intake.submit(request({ ...who, handle: 'Ada Lovelace' }))
+    );
+    expect(view.state).toBe('accepted');
+    expect((await intake.contributor(who)).handle).toBe('lovelaneWatcher');
+  });
+
   it('accepts a plain account and records every step', async () => {
     const view = contributionOf(await intake.submit(request(actor())));
     expect(view.state).toBe('accepted');

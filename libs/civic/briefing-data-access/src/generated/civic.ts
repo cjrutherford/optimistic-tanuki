@@ -280,6 +280,11 @@ export interface CounterNoticeReply {
 export interface ContributorSignUpRequest {
   /** Must be true: the contributor terms are agreed. */
   agreeToTerms: boolean;
+  /**
+   * @minLength 2
+   * @maxLength 40
+   */
+  handle: string;
 }
 
 export interface OfficialApplicationRequest {

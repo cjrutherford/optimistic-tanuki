@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { CommunityCommands } from '@optimistic-tanuki/civic-community';
-import { AppScopeCommands, RoleCommands } from '@optimistic-tanuki/constants';
+import {
+  AppScopeCommands,
+  ProfileCommands,
+  RoleCommands,
+} from '@optimistic-tanuki/constants';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 import type { UserDetails } from '../../decorators/user.decorator';
@@ -20,6 +24,7 @@ interface Fixture {
   controller: CivicCommunityController;
   contributions: Sent[];
   permissions: Sent[];
+  profileCalls: Sent[];
   invalidated: string[];
 }
 
@@ -80,7 +85,15 @@ function fixture(
       }
     ),
   };
-  const profilesClient = { send: jest.fn(() => of([{ bio: 'Hello' }])) };
+  const profileCalls: Sent[] = [];
+  const profilesClient = {
+    send: jest.fn(
+      (pattern: { cmd: string }, payload: Record<string, unknown>) => {
+        profileCalls.push({ cmd: pattern.cmd, payload });
+        return of([{ profileName: 'Ada Lovelace', bio: 'Hello' }]);
+      }
+    ),
+  };
   const invalidated: string[] = [];
   const permissionsCache = {
     invalidateProfile: jest.fn(async (profileId: string) => {
@@ -96,6 +109,7 @@ function fixture(
     ),
     contributions,
     permissions,
+    profileCalls,
     invalidated,
   };
 }
@@ -255,7 +269,7 @@ describe('CivicCommunityController', () => {
     const { controller, permissions } = fixture();
     const unverified = { ...user, emailVerified: false };
     const refusal = await controller
-      .signUpAsContributor(unverified, { agreeToTerms: true })
+      .signUpAsContributor(unverified, { agreeToTerms: true, handle: 'x1' })
       .catch((error: unknown) => error);
     expect(refusal).toBeInstanceOf(ForbiddenException);
     expect((refusal as ForbiddenException).getResponse()).toMatchObject({
@@ -265,16 +279,50 @@ describe('CivicCommunityController', () => {
   });
 
   it('grants local_hub_contributor on sign-up and returns the new standing', async () => {
-    const { controller, permissions, invalidated } = fixture({
+    const {
+      controller,
+      contributions,
+      permissions,
+      profileCalls,
+      invalidated,
+    } = fixture({
       roles: [
         assignment('local_hub_contributor', [
           'briefing.read',
           'contribution.create',
         ]),
       ],
+      reply: (cmd) =>
+        cmd === CommunityCommands.RegisterContributor
+          ? { handle: 'lovelaneWatcher', created: true }
+          : null,
     });
     const result = await controller.signUpAsContributor(user, {
       agreeToTerms: true,
+      handle: ' lovelaneWatcher ',
+    });
+    // The handle is recorded from the request, never the registered name.
+    expect(contributions).toEqual([
+      {
+        cmd: CommunityCommands.RegisterContributor,
+        payload: {
+          actor: {
+            userId: 'user-1',
+            profileId: 'profile-1',
+            handle: 'lovelaneWatcher',
+          },
+        },
+      },
+    ]);
+    // It becomes the local-hub display name, and the bio survives.
+    expect(profileCalls.map((call) => call.cmd)).toEqual([
+      ProfileCommands.GetAll,
+      ProfileCommands.Update,
+    ]);
+    expect(profileCalls[1].payload).toEqual({
+      id: 'profile-1',
+      name: 'lovelaneWatcher',
+      bio: 'Hello',
     });
     expect(permissions.map((p) => p.cmd)).toEqual([
       AppScopeCommands.GetByName,
@@ -287,11 +335,32 @@ describe('CivicCommunityController', () => {
       appScope: 'local-hub',
     });
     expect(result.data).toMatchObject({
+      handle: 'lovelaneWatcher',
       roles: ['local_hub_contributor'],
       permissions: ['briefing.read', 'contribution.create'],
     });
     // Denials cached before the grant must not outlive it.
     expect(invalidated).toEqual(['profile-1']);
+  });
+
+  it('keeps the handle a returning contributor signed up with (P5.1)', async () => {
+    const { controller, profileCalls } = fixture({
+      reply: (cmd) =>
+        cmd === CommunityCommands.RegisterContributor
+          ? { handle: 'firstChoice', created: false }
+          : null,
+    });
+    const result = await controller.signUpAsContributor(user, {
+      agreeToTerms: true,
+      handle: 'secondChoice',
+    });
+    expect(result.data.handle).toBe('firstChoice');
+    expect(profileCalls).toEqual([]);
+  });
+
+  it("reports the local-hub display name as the handle, never the account's name", async () => {
+    const { controller } = fixture();
+    expect((await controller.me(user)).data.handle).toBe('Ada Lovelace');
   });
 
   it('assigns nothing when the application is not granted', async () => {
@@ -312,7 +381,7 @@ describe('CivicCommunityController', () => {
     expect(await controller.me(user)).toEqual({
       data: {
         profileId: 'profile-1',
-        handle: 'Ada',
+        handle: 'Ada Lovelace',
         emailVerified: true,
         roles: ['local_hub_contributor'],
         permissions: ['contribution.create'],

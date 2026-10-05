@@ -101,6 +101,18 @@ export class ContributorSignUpRequest {
   })
   @Equals(true, { message: 'agree to the contributor terms' })
   agreeToTerms!: boolean;
+
+  /**
+   * The name every report is published under: the account's local-hub
+   * display name, reviewed at sign-up and fixed from then on (P5.1).
+   */
+  @ApiProperty({ minLength: 2, maxLength: 40 })
+  @IsString()
+  @Length(2, 40)
+  @Matches(/^\S(?:[^\r\n]*\S)?$/u, {
+    message: 'a handle is one line, without spaces at either end',
+  })
+  handle!: string;
 }
 
 export class OfficialApplicationRequest {

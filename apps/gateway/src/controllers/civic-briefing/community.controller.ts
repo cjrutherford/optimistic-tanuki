@@ -7,6 +7,7 @@ import {
   Headers,
   HttpCode,
   Inject,
+  Logger,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -38,6 +39,7 @@ import {
   CommunityCommands,
   type CommunitySurface,
   type ContributionView,
+  type RegisterContributorResult,
   type ContributorPageView,
   type OfficialApplicationResult,
   type SubjectOption,
@@ -105,6 +107,7 @@ const NOTICE_THROTTLE = { long: { limit: 5, ttl: 10 * 60 * 1000 } };
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller(['v1/local-hub', 'local-hub'])
 export class CivicCommunityController {
+  private readonly logger = new Logger(CivicCommunityController.name);
   private readonly civic: CivicContributionsClient;
 
   constructor(
@@ -123,11 +126,15 @@ export class CivicCommunityController {
   @ApiOperation({ summary: "The account's local-hub standing" })
   @ApiResponse({ status: 200, type: MembershipReply })
   async me(@User() user: UserDetails) {
-    const access = await this.civic.access(user.profileId);
+    const [access, profile] = await Promise.all([
+      this.civic.access(user.profileId),
+      this.localHubProfile(user.profileId),
+    ]);
     return {
       data: {
         profileId: user.profileId,
-        handle: user.name,
+        // The local-hub display name, never the account's registered name.
+        handle: profile?.profileName ?? '',
         emailVerified: user.emailVerified === true,
         ...access,
       },
@@ -307,7 +314,7 @@ export class CivicCommunityController {
   @ApiResponse({ status: 200, type: MembershipReply })
   async signUpAsContributor(
     @User() user: UserDetails,
-    @Body() _body: ContributorSignUpRequest
+    @Body() body: ContributorSignUpRequest
   ) {
     if (user.emailVerified !== true) {
       throw new ForbiddenException({
@@ -316,6 +323,21 @@ export class CivicCommunityController {
         code: 'EMAIL_VERIFICATION_REQUIRED',
       });
     }
+    // The handle is the local-hub display name, fixed at sign-up (P5.1). A
+    // contributor already on record keeps theirs; a new one's choice becomes
+    // their local-hub display name too.
+    const registered = await this.civic.call<RegisterContributorResult>(
+      CommunityCommands.RegisterContributor,
+      {
+        actor: {
+          userId: user.userId,
+          profileId: user.profileId,
+          handle: body.handle.trim(),
+        },
+      }
+    );
+    if (registered.created)
+      await this.rename(user.profileId, registered.handle);
     await this.civic.grantRole(user.profileId, 'local_hub_contributor');
     // The permission checks cache their answers; drop the denials cached
     // before the grant (the report page asks before signing up).
@@ -324,11 +346,34 @@ export class CivicCommunityController {
     return {
       data: {
         profileId: user.profileId,
-        handle: user.name,
+        handle: registered.handle,
         emailVerified: true,
         ...access,
       },
     };
+  }
+
+  /** Sets the local-hub display name, keeping the bio (an update without one clears it). */
+  private async rename(profileId: string, name: string): Promise<void> {
+    const profile = await this.localHubProfile(profileId);
+    if (!profile || profile.profileName === name) return;
+    try {
+      await firstValueFrom(
+        this.profiles
+          .send(
+            { cmd: ProfileCommands.Update },
+            { id: profileId, name, bio: profile.bio ?? '' }
+          )
+          .pipe(timeout(5_000))
+      );
+    } catch (error) {
+      // The handle is already recorded; only the display name lags.
+      this.logger.warn(
+        `contributor handle recorded but the local-hub name was not updated: ${String(
+          error
+        )}`
+      );
+    }
   }
 
   @Post('officials/apply')
@@ -435,18 +480,25 @@ export class CivicCommunityController {
 
   /** A contributor's public bio, from their local-hub profile; empty when unavailable. */
   private async bio(profileId: string): Promise<string> {
+    return (await this.localHubProfile(profileId))?.bio ?? '';
+  }
+
+  /** The account's local-hub profile: its display name and bio. Null when it can't be read. */
+  private async localHubProfile(
+    profileId: string
+  ): Promise<{ profileName?: string; bio?: string } | null> {
     try {
       const found = await firstValueFrom(
         this.profiles
-          .send<{ bio?: string }[]>(
+          .send<{ profileName?: string; bio?: string }[]>(
             { cmd: ProfileCommands.GetAll },
             { where: { id: profileId, appScope: 'local-hub' } }
           )
           .pipe(timeout(5_000))
       );
-      return found?.[0]?.bio ?? '';
+      return found?.[0] ?? null;
     } catch {
-      return '';
+      return null;
     }
   }
 }

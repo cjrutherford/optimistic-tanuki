@@ -90,12 +90,21 @@ test.describe('Becoming a Daylight contributor', () => {
       ).toBeVisible();
       const join = page.getByRole('button', { name: 'Become a contributor' });
       await expect(join).toBeDisabled();
+      // Reports are signed with the local-hub display name, which starts as
+      // the registered name; the contributor picks a handle instead (P5.1).
+      const handleField = page.getByLabel('Your handle');
+      await expect(handleField).toHaveValue('Test User');
+      const handle = `watcher${Date.now().toString(36)}`;
+      await handleField.fill(handle);
       await page
         .getByLabel('I have read these and want to contribute to Daylight.')
         .check();
       await join.click();
       await expect(
         page.getByText("You're a Daylight contributor.")
+      ).toBeVisible();
+      await expect(
+        page.getByText(`Your reports are published as ${handle}.`)
       ).toBeVisible();
 
       await page.getByRole('link', { name: 'Carry on where you were' }).click();

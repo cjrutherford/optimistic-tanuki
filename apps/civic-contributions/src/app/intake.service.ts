@@ -102,27 +102,32 @@ export class IntakeService implements OnModuleInit, OnApplicationShutdown {
     for (const timer of this.timers) clearInterval(timer);
   }
 
+  /**
+   * The acting contributor's record, created on first use. The handle is
+   * fixed once recorded (owner, P5.1): it is set when the contributor signs
+   * up and never follows later changes to the account's names.
+   */
   async contributor(actor: SubmitRequest['actor']): Promise<ContributorEntity> {
+    return (await this.registerContributor(actor)).contributor;
+  }
+
+  /** Records a contributor, or finds the one already on record. */
+  async registerContributor(
+    actor: SubmitRequest['actor']
+  ): Promise<{ contributor: ContributorEntity; created: boolean }> {
     const repository = this.db.getRepository(ContributorEntity);
     const existing = await repository.findOneBy({ userId: actor.userId });
     if (existing) {
-      if (
-        existing.handle !== actor.handle ||
-        existing.profileId !== actor.profileId
-      ) {
-        await repository.update(existing.id, {
-          handle: actor.handle,
-          profileId: actor.profileId,
-        });
+      if (existing.profileId !== actor.profileId) {
+        await repository.update(existing.id, { profileId: actor.profileId });
         return {
-          ...existing,
-          handle: actor.handle,
-          profileId: actor.profileId,
+          contributor: { ...existing, profileId: actor.profileId },
+          created: false,
         };
       }
-      return existing;
+      return { contributor: existing, created: false };
     }
-    return await repository.save(
+    const contributor = await repository.save(
       repository.create({
         userId: actor.userId,
         profileId: actor.profileId,
@@ -134,6 +139,7 @@ export class IntakeService implements OnModuleInit, OnApplicationShutdown {
         officialOffice: null,
       })
     );
+    return { contributor, created: true };
   }
 
   async submit(

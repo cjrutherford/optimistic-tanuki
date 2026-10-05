@@ -23,7 +23,7 @@ describe('DaylightContributePage', () => {
       .flush({
         data: {
           profileId: 'p1',
-          handle: 'ada',
+          handle: 'Ada Lovelace',
           roles: [],
           permissions: ['briefing.read'],
           ...membership,
@@ -61,13 +61,20 @@ describe('DaylightContributePage', () => {
     http().expectNone(`${API}/contributor`);
 
     fixture.componentInstance['agreed'] = true;
+    // The handle starts as the display name (here, the real name); the
+    // contributor changes it before signing up.
+    expect(fixture.componentInstance['handle']).toBe('Ada Lovelace');
+    fixture.componentInstance['handle'] = '  lovelaneWatcher ';
     form.dispatchEvent(new Event('submit'));
     const request = http().expectOne(`${API}/contributor`);
-    expect(request.request.body).toEqual({ agreeToTerms: true });
+    expect(request.request.body).toEqual({
+      agreeToTerms: true,
+      handle: 'lovelaneWatcher',
+    });
     request.flush({
       data: {
         profileId: 'p1',
-        handle: 'ada',
+        handle: 'lovelaneWatcher',
         emailVerified: true,
         roles: ['local_hub_contributor'],
         permissions: ['briefing.read', 'contribution.create'],
@@ -76,6 +83,9 @@ describe('DaylightContributePage', () => {
     fixture.detectChanges();
     expect(page.querySelector('.done')?.textContent).toContain(
       "You're a Daylight contributor."
+    );
+    expect(page.querySelector('.done')?.textContent).toContain(
+      'Your reports are published as lovelaneWatcher.'
     );
     expect(page.querySelector('.done a')?.getAttribute('href')).toBe(
       '/city/adel-ga/report'
