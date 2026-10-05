@@ -559,6 +559,39 @@ export interface PipelineHealthReply {
   data: PipelineHealthReport;
 }
 
+export interface BackfillRequest {
+  towns?: string[];
+  /**
+   * @minimum 1
+   * @maximum 366
+   */
+  days?: number;
+}
+
+export interface BackfillStep {
+  town: string;
+  action: string;
+}
+
+export interface BackfillStatus {
+  running: boolean;
+  configured: boolean;
+  towns: string[];
+  /** @nullable */
+  days: number | null;
+  /** @nullable */
+  startedAt: string | null;
+  /** @nullable */
+  finishedAt: string | null;
+  steps: BackfillStep[];
+  /** @nullable */
+  problem: string | null;
+}
+
+export interface BackfillStatusReply {
+  data: BackfillStatus;
+}
+
 export interface TownDensity {
   localitySlug: string;
   town: string;
@@ -1541,6 +1574,92 @@ export class OptomisitcTanukiAPIService {
     }
 
     return this.http.get<TData>(`/api/local-hub/operations/pipeline-health`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
+  }
+
+  /**
+   * @summary Pull and backfill Daylight editions
+   */
+  startBackfill<TData = BackfillStatusReply>(
+    backfillRequest: BackfillRequest,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  startBackfill<TData = BackfillStatusReply>(
+    backfillRequest: BackfillRequest,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  startBackfill<TData = BackfillStatusReply>(
+    backfillRequest: BackfillRequest,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  startBackfill<TData = BackfillStatusReply>(
+    backfillRequest: BackfillRequest,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/backfill`,
+        backfillRequest,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/local-hub/operations/backfill`,
+        backfillRequest,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/local-hub/operations/backfill`,
+      backfillRequest,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
+   * @summary The latest backfill's progress
+   */
+  backfillStatus<TData = BackfillStatusReply>(
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  backfillStatus<TData = BackfillStatusReply>(
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  backfillStatus<TData = BackfillStatusReply>(
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  backfillStatus<TData = BackfillStatusReply>(
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/local-hub/operations/backfill`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/local-hub/operations/backfill`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/local-hub/operations/backfill`, {
       ...(options as Omit<NonNullable<typeof options>, 'observe'>),
       observe: 'body',
     });

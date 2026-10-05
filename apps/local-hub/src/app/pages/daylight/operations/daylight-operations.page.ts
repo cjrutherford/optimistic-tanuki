@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   signal,
@@ -12,6 +13,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
+  type BackfillStatus,
   OptomisitcTanukiAPIService as CivicAPIService,
   DENSITY_TARGET,
   type PipelineHealthReport,
@@ -87,6 +89,12 @@ export class DaylightOperationsPage {
     return state.status === 'failed' ? state.message : '';
   });
 
+  // ── Backfill (D31) ─────────────────────────────────────────────────────
+  protected readonly backfill = signal<BackfillStatus | null>(null);
+  protected readonly backfillDays = signal(180);
+  protected readonly backfillMessage = signal('');
+  private backfillPoll: ReturnType<typeof setTimeout> | null = null;
+
   // ── Density ────────────────────────────────────────────────────────────
   protected readonly density = signal<Loaded<TownDensity[]>>({
     status: 'loading',
@@ -146,10 +154,14 @@ export class DaylightOperationsPage {
     effect(() => {
       if (this.checked()) untracked(() => this.loadPanels());
     });
+    inject(DestroyRef).onDestroy(() => this.stopBackfillPoll());
   }
 
   private loadPanels(): void {
-    if (this.canPipeline()) this.loadPipeline();
+    if (this.canPipeline()) {
+      this.loadPipeline();
+      this.loadBackfill();
+    }
     if (this.canDensity()) this.loadDensity();
     if (this.canTakedowns()) this.loadNotices();
   }
@@ -159,6 +171,44 @@ export class DaylightOperationsPage {
       this.civic.pipelineHealth().pipe(map((reply) => reply.data)),
       'Pipeline health could not be loaded.'
     ).subscribe((state) => this.pipeline.set(state));
+  }
+
+  protected setBackfillDays(event: Event): void {
+    const days = Number((event.target as HTMLInputElement).value);
+    if (Number.isInteger(days) && days >= 1 && days <= 366)
+      this.backfillDays.set(days);
+  }
+
+  /** Starts a pull and backfill of every scheduled town (D31). */
+  protected startBackfill(): void {
+    this.backfillMessage.set('');
+    this.civic.startBackfill({ days: this.backfillDays() }).subscribe({
+      next: (reply) => this.showBackfill(reply.data),
+      error: (error: unknown) => this.backfillMessage.set(problem(error)),
+    });
+  }
+
+  private loadBackfill(): void {
+    this.civic.backfillStatus().subscribe({
+      next: (reply) => this.showBackfill(reply.data),
+      error: () => this.backfill.set(null),
+    });
+  }
+
+  /** Shows a backfill's status, checking again while it runs. */
+  private showBackfill(status: BackfillStatus): void {
+    this.backfill.set(status);
+    this.stopBackfillPoll();
+    if (status.running)
+      this.backfillPoll = setTimeout(() => {
+        this.loadBackfill();
+        this.loadPipeline();
+      }, 15_000);
+  }
+
+  private stopBackfillPoll(): void {
+    if (this.backfillPoll) clearTimeout(this.backfillPoll);
+    this.backfillPoll = null;
   }
 
   /** A run status in plain words. */

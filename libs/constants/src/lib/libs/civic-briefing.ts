@@ -13,6 +13,10 @@ export const CivicBriefingCommands = {
   RECORDS_SINCE: 'civic-briefing.corpus.records-since',
   /** Each town's latest run and its failing or quiet sources (P5.2). */
   PIPELINE_HEALTH: 'civic-briefing.health.pipeline',
+  /** Pull towns' sources, then backfill their editions (D31). */
+  BACKFILL_START: 'civic-briefing.operations.backfill.start',
+  /** The latest backfill's progress. */
+  BACKFILL_STATUS: 'civic-briefing.operations.backfill.status',
   /** Every town with a published briefing. */
   EDITIONS: 'civic-briefing.editions.list',
   /** A town's recent editions, newest first. */

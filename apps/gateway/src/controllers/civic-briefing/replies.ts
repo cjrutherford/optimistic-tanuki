@@ -8,6 +8,7 @@ import {
   LocalHubMembership,
   OFFICIAL_STANDINGS,
   OfficialApplicationResult,
+  BackfillStatus,
   PipelineHealthReport,
   type OfficialStanding,
   PublishedBriefing,
@@ -191,6 +192,11 @@ export class PromotionExportResult {
 export class PromotionExportReply {
   @ApiProperty({ type: PromotionExportResult })
   data!: PromotionExportResult;
+}
+
+export class BackfillStatusReply {
+  @ApiProperty({ type: BackfillStatus })
+  data!: BackfillStatus;
 }
 
 export class PipelineHealthReply {

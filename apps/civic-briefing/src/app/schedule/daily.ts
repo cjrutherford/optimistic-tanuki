@@ -351,6 +351,26 @@ export class DailySchedule {
     return done;
   }
 
+  /** The scheduled towns' slugs. */
+  townSlugs(): string[] {
+    return this.editions().map((town) => town.slug);
+  }
+
+  /**
+   * Runs `work` while the schedule's own ticks wait, so an operator's
+   * backfill and a scheduled run never overlap. Refuses while a tick runs.
+   */
+  async exclusive<T>(work: () => Promise<T>): Promise<T> {
+    if (this.running)
+      throw new Error('A scheduled run is in progress; try again shortly.');
+    this.running = true;
+    try {
+      return await work();
+    } finally {
+      this.running = false;
+    }
+  }
+
   private towns(slugs: readonly string[]): readonly LocalityConfig[] {
     return this.editions().filter(
       (town) => !slugs.length || slugs.includes(town.slug)

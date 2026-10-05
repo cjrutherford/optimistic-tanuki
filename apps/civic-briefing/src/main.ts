@@ -12,6 +12,7 @@ import {
 } from '@optimistic-tanuki/civic-core';
 import type { DataSource } from 'typeorm';
 import { AppModule } from './app/app.module';
+import { BackfillService } from './app/health/backfill.service';
 import { PipelineHealthService } from './app/health/pipeline-health.service';
 import { DailySchedule, MODEL_TIMEOUT_MS } from './app/schedule/daily';
 import { promptProxyFetch } from './app/model/prompt-proxy-fetch';
@@ -164,6 +165,8 @@ async function bootstrap() {
     // Pipeline problems reach an operator (P5.2); only where runs happen.
     const health = app.get(PipelineHealthService);
     health.startAlerts();
+    // An operator's pull and backfill (D31) run on this schedule.
+    app.get(BackfillService).attach(schedule);
     const shutdown = async () => {
       schedule.stop();
       health.stopAlerts();

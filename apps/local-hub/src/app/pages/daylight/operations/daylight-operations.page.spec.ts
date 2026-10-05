@@ -20,6 +20,17 @@ const town = (name: string, active: number) => ({
   officials: 0,
 });
 
+const idle = {
+  running: false,
+  configured: true,
+  towns: [],
+  days: null,
+  startedAt: null,
+  finishedAt: null,
+  steps: [],
+  problem: null,
+};
+
 describe('DaylightOperationsPage', () => {
   async function render(permissions: string[]) {
     TestBed.configureTestingModule({
@@ -148,6 +159,7 @@ describe('DaylightOperationsPage', () => {
           ],
         },
       });
+    http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
     fixture.detectChanges();
     const row = page.querySelector('#pipeline-heading')?.closest('section');
     expect(row?.querySelector('.run')?.textContent?.trim()).toBe('Failed');
@@ -157,6 +169,60 @@ describe('DaylightOperationsPage', () => {
     expect(row?.querySelector('.source-problem')?.textContent?.trim()).toBe(
       'adel-agendas: failing, 4 attempts in a row'
     );
+  });
+
+  it('starts a pull and backfill and shows its progress', async () => {
+    const { fixture, page } = await render(['town.configure']);
+    http()
+      .expectOne(`${API}/operations/pipeline-health`)
+      .flush({
+        data: {
+          configured: true,
+          checkedAt: '2026-10-05T12:00:00Z',
+          towns: [],
+        },
+      });
+    http().expectOne(`${API}/operations/backfill`).flush({ data: idle });
+    fixture.detectChanges();
+
+    const days = page.querySelector('.days input') as HTMLInputElement;
+    days.value = '30';
+    days.dispatchEvent(new Event('input'));
+    const start = Array.from(page.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Pull and backfill every town'
+    ) as HTMLButtonElement;
+    start.click();
+    const request = http().expectOne(`${API}/operations/backfill`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ days: 30 });
+    request.flush({
+      data: {
+        ...idle,
+        running: true,
+        towns: ['adel-ga', 'moultrie-ga'],
+        days: 30,
+        startedAt: '2026-10-05T12:00:00Z',
+        steps: [
+          { town: 'adel-ga', action: 'pulled' },
+          {
+            town: 'adel-ga',
+            action: 'backfill of 30 days: 4 edition(s) written',
+          },
+        ],
+      },
+    });
+    fixture.detectChanges();
+    expect(page.textContent).toContain('Backfilling 2 towns since');
+    expect(page.textContent).toContain('2 steps done.');
+    expect(
+      Array.from(page.querySelectorAll('.backfill-steps li')).map((li) =>
+        li.textContent?.trim()
+      )
+    ).toEqual([
+      'adel-ga: pulled',
+      'adel-ga: backfill of 30 days: 4 edition(s) written',
+    ]);
+    expect(start.disabled).toBe(true);
   });
 
   it('runs the re-review now and reports what changed', async () => {

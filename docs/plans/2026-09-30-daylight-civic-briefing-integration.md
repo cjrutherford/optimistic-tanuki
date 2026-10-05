@@ -151,6 +151,14 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   or a source that turned failing or stale). The civic services are
   deployed through `docker-compose.yaml`, `docker-compose.dev.yaml` and
   k8s base plus overlays.
+- **D31** (owner, 2026-10-05) Before the PR opens: run source discovery and
+  a pull for every configured town, adding Moultrie, GA, in the dev stack,
+  then backfill six months of editions. The backfill is a feature in this
+  PR: a pull fetches and parses without publishing, then each past day is
+  planned in the town's own cadence (the schedule's daily/weekly rule) and
+  written from stored records. A backfilled edition shows what the day
+  itself would have shown: it reads only evidence published before its
+  day. The owner reviews the resulting briefings themselves.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -253,6 +261,8 @@ fixes stay with the lead agent.
         the older local-hub-e2e suites
 - [x] P5.1 Local-hub profile on upstream sign-in
 - [x] P5.2 Model host config and alerts
+- [ ] P5.4 Backfill (D31): pull and backfill modes, an operator route and
+      button; run for all towns plus Moultrie in the dev stack
 - [ ] P5.3 Open the PR to main (owner merges)
   - Owner, 2026-10-04: prepare the PR, but before opening it, make a
     screenshot tour of the Daylight feature in Towne Square for the owner
@@ -1090,3 +1100,18 @@ clamav`).
     validators pass.
     Next: P5.3, preparing the PR and then the screenshot tour for the
     owner before it opens.
+- 2026-10-05: P5.3's tour is done and shown to the owner (the operations
+  page now shows run times as dates). The owner then asked for D31 before
+  the PR opens.
+  - **Backfill:** `runPipeline` gains `pullOnly` (ensure, gather, parse; no
+    edition) and `fromStored` (no fetching; collate and brief read only
+    items published before the edition's day, via `knownBefore`).
+    `DailySchedule.pullNow` and `backfill` drive them, and civic-briefing
+    has `pull` and `backfill [--days n]` command-line modes.
+  - **Known limits:** an item without a publication date is kept (nothing
+    says it came later); a document revised after its day is read as it
+    stands now; story membership is not cut off by date, only the
+    evidence each edition reads.
+  - **Run registry:** the town registry still only exists as the test
+    fixtures, so the run copies them to `tmp/daylight-run/localities` and
+    adds Moultrie and Colquitt County there, with no hand-written sources.

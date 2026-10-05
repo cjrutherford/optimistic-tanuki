@@ -57,6 +57,30 @@ describe('CivicOperationsController', () => {
     );
   });
 
+  it('starts a backfill and reads its progress, for town.configure', async () => {
+    const status = { running: true, configured: true, towns: ['adel-ga'] };
+    const { controller, briefingCalls } = fixture(() => of(status));
+    expect(
+      await controller.startBackfill({ towns: ['adel-ga'], days: 30 })
+    ).toEqual({ data: status });
+    expect(await controller.backfillStatus()).toEqual({ data: status });
+    expect(briefingCalls).toEqual([
+      CivicBriefingCommands.BACKFILL_START,
+      CivicBriefingCommands.BACKFILL_STATUS,
+    ]);
+    for (const name of ['startBackfill', 'backfillStatus'] as const)
+      expect(metadata(name, PERMISSIONS_KEY)).toMatchObject({
+        permissions: ['town.configure'],
+      });
+  });
+
+  it('answers 503 when civic-briefing cannot start a backfill', async () => {
+    const { controller } = fixture(() => throwError(() => new Error('down')));
+    await expect(controller.startBackfill({})).rejects.toBeInstanceOf(
+      ServiceUnavailableException
+    );
+  });
+
   it('confirms a callback as the signed-in operator', async () => {
     const { controller, sent } = fixture();
     await controller.confirmCallback(operator, {

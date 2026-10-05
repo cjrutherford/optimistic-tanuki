@@ -73,7 +73,54 @@
       </table>
     </div>
     <p class="quiet">Checked {{ report.checkedAt | date : 'medium' }}.</p>
-    } } @else if (pipelineError()) {
+
+    <h3>Backfill</h3>
+    <p class="quiet">
+      Searches each town's sources, fetches its history, then writes the
+      editions it would have had over the past days, each from what had been
+      published by that day. Days that already have an edition are kept. It runs
+      in the background and can take hours; the schedule waits for it.
+    </p>
+    <div class="actions">
+      <label class="days"
+        >Days
+        <input
+          type="number"
+          min="1"
+          max="366"
+          [value]="backfillDays()"
+          (input)="setBackfillDays($event)"
+      /></label>
+      <button
+        type="button"
+        [disabled]="backfill()?.running"
+        (click)="startBackfill()"
+      >
+        Pull and backfill every town
+      </button>
+    </div>
+    @if (backfill(); as backfill) { @if (backfill.running) {
+    <p class="quiet" role="status">
+      Backfilling {{ backfill.towns.length }} town{{ backfill.towns.length === 1
+      ? '' : 's' }} since {{ backfill.startedAt | date : 'medium' }}: {{
+      backfill.steps.length }} step{{ backfill.steps.length === 1 ? '' : 's' }}
+      done.
+    </p>
+    } @else if (backfill.finishedAt) {
+    <p class="quiet">
+      The last backfill finished {{ backfill.finishedAt | date : 'medium' }}.
+    </p>
+    } @if (backfill.steps.length) {
+    <ul class="backfill-steps">
+      @for (step of backfill.steps; track $index) {
+      <li><strong>{{ step.town }}</strong>: {{ step.action }}</li>
+      }
+    </ul>
+    } @if (backfill.problem) {
+    <p class="problem" role="alert">{{ backfill.problem }}</p>
+    } } @if (backfillMessage()) {
+    <p class="problem" role="alert">{{ backfillMessage() }}</p>
+    } } } @else if (pipelineError()) {
     <p class="problem" role="alert">{{ pipelineError() }}</p>
     } @else {
     <p class="quiet" role="status">Loading…</p>

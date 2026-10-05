@@ -8,6 +8,7 @@ import {
   SmtpEmailProvider,
 } from '@optimistic-tanuki/email';
 import type { DataSource } from 'typeorm';
+import { BackfillService } from './backfill.service';
 import { HealthController } from './health.controller';
 import { PipelineHealthService } from './pipeline-health.service';
 
@@ -46,7 +47,8 @@ import { PipelineHealthService } from './pipeline-health.service';
         new PipelineHealthService(dataSource, email),
       inject: [getDataSourceToken(), EmailService],
     },
+    { provide: BackfillService, useValue: new BackfillService() },
   ],
-  exports: [PipelineHealthService],
+  exports: [PipelineHealthService, BackfillService],
 })
 export class HealthModule {}

@@ -25,6 +25,8 @@ import {
 } from '@optimistic-tanuki/constants';
 import {
   ActOnTakedownNoticeBody,
+  BackfillRequest,
+  type BackfillStatus,
   ConfirmOfficialCallbackBody,
   type PipelineHealthReport,
 } from '@optimistic-tanuki/models';
@@ -35,6 +37,7 @@ import { RequestTimeout } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { CivicContributionsClient } from './civic-contributions.client';
 import {
+  BackfillStatusReply,
   DensityReply,
   OfficialStandingReply,
   OutcomeSweepReply,
@@ -93,6 +96,50 @@ export class CivicOperationsController {
     } catch {
       throw new ServiceUnavailableException(
         'Pipeline health is unavailable right now. Try again shortly.'
+      );
+    }
+  }
+
+  /**
+   * Pulls towns' sources and backfills their past editions (D31), in the
+   * background: answers at once with the backfill's status. One runs at a
+   * time; a request while one runs gets that one's status.
+   */
+  @Post('operations/backfill')
+  @HttpCode(202)
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: 'Pull and backfill Daylight editions' })
+  @ApiResponse({ status: 202, type: BackfillStatusReply })
+  async startBackfill(@Body() body: BackfillRequest) {
+    return {
+      data: await this.briefingCall<BackfillStatus>(
+        CivicBriefingCommands.BACKFILL_START,
+        { towns: body.towns, days: body.days }
+      ),
+    };
+  }
+
+  @Get('operations/backfill')
+  @RequirePermissions('town.configure')
+  @ApiOperation({ summary: "The latest backfill's progress" })
+  @ApiResponse({ status: 200, type: BackfillStatusReply })
+  async backfillStatus() {
+    return {
+      data: await this.briefingCall<BackfillStatus>(
+        CivicBriefingCommands.BACKFILL_STATUS,
+        {}
+      ),
+    };
+  }
+
+  private async briefingCall<T>(cmd: string, payload: object): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.briefings.send<T>({ cmd }, payload).pipe(timeout(10_000))
+      );
+    } catch {
+      throw new ServiceUnavailableException(
+        'The briefing service is unavailable right now. Try again shortly.'
       );
     }
   }

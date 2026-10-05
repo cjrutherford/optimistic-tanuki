@@ -134,6 +134,28 @@ li {
   }
 }
 
+.days {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  input {
+    width: 5rem;
+    font: inherit;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: inherit;
+  }
+}
+
+.backfill-steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+}
+
 .run {
   font-weight: 600;
 }
