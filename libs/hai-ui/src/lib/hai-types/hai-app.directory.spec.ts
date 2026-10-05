@@ -181,4 +181,45 @@ describe('HAI app directory', () => {
       false
     );
   });
+  it.each([
+    'javascript:alert(1)',
+    '/towne-square',
+    'https://user:password@example.com',
+    '',
+  ])(
+    'does not publish unsafe or relative app destinations: %s',
+    (uiBaseUrl) => {
+      const links = resolveHaiAppLinks([
+        {
+          appId: 'local-hub',
+          name: 'TS',
+          domain: '',
+          uiBaseUrl,
+          apiBaseUrl: '',
+          appType: 'client',
+          visibility: 'public',
+        },
+      ]);
+      expect(
+        links.find((app) => app.appId === 'towne-square')?.runUrl
+      ).toBeUndefined();
+    }
+  );
+
+  it('does not publish internal app destinations', () => {
+    const links = resolveHaiAppLinks([
+      {
+        appId: 'local-hub',
+        name: 'TS',
+        domain: '',
+        uiBaseUrl: 'https://internal.example.com',
+        apiBaseUrl: '',
+        appType: 'client',
+        visibility: 'internal',
+      },
+    ]);
+    expect(
+      links.find((app) => app.appId === 'towne-square')?.runUrl
+    ).toBeUndefined();
+  });
 });

@@ -19,11 +19,10 @@ export interface HaiResolvedAppLink extends HaiRegistryApp {
    * Retained for backward compatibility with single-link consumers.
    */
   resolvedHref: string;
-  /** True when a public running application URL is available. */
+  /** True when the registry supplies a valid public app destination; not a health check. */
   isPublic: boolean;
   /**
-   * The running/preview application URL, present only when the app is publicly
-   * reachable. App cards should render this as the "Open app" link. When
+   * The running/preview application URL, present only when the registry publishes a public HTTP(S) destination. App cards should render this as the "Open app" link. When
    * undefined, only the repository link should be shown.
    */
   runUrl?: string;
@@ -35,7 +34,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     configName: 'client-interface',
     name: 'Optimistic Tanuki',
     tagline:
-      'General social media, identity, messaging, and utility workflows.',
+      'Early-access posts, conversations, and communities around your interests.',
     href: '/optimistic-tanuki',
     category: 'Social Platform',
     appPath: 'client-interface',
@@ -47,7 +46,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     appId: 'towne-square',
     configName: 'local-hub',
     name: 'Towne Square',
-    tagline: 'Local-first social media, classifieds, and business listings.',
+    tagline: 'Early-access locality discovery and local community connection.',
     href: '/towne-square',
     category: 'Local Community',
     appPath: 'local-hub',
@@ -143,7 +142,10 @@ export function resolveHaiAppLinks(
     const matchingApp = apps.find(
       (registryApp) => registryApp.appId === app.configName
     );
-    const runUrl = matchingApp?.uiBaseUrl || undefined;
+    const runUrl =
+      matchingApp?.visibility === 'public'
+        ? publicAppUrl(matchingApp.uiBaseUrl)
+        : undefined;
     const isPublic = !!runUrl;
     const resolvedHref = runUrl ?? app.repositoryUrl;
 
@@ -162,4 +164,21 @@ function isCurrentHaiApp(app: HaiRegistryApp, currentAppId?: string): boolean {
     !!currentAppId &&
     (app.appId === currentAppId || app.configName === currentAppId)
   );
+}
+
+function publicAppUrl(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    if (
+      ['http:', 'https:'].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+    ) {
+      // Preserve the published registry destination, including its path.
+      return value;
+    }
+  } catch {
+    /* An invalid registry destination has no public app link. */
+  }
+  return undefined;
 }

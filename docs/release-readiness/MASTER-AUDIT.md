@@ -216,6 +216,8 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 
 **Slice:** RR-02.
 
+**RR-02 update (2026-10-05):** Shared-surface remediation has frontend evidence; full acceptance remains VERIFYING. See [findings](./findings/RR-02.md).
+
 ### F-004 — Towne Square landing advertises functionality ahead of implementation
 
 **Severity:** P0 — truth-in-marketing
@@ -274,6 +276,8 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 
 **Slice:** RR-02.
 
+**RR-02 update (2026-10-05):** Shared-surface remediation has frontend evidence; full acceptance remains VERIFYING. See [findings](./findings/RR-02.md).
+
 ---
 
 ## Local private-repository dependency: `retumbl`
@@ -305,7 +309,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 | ----- | ------------------------------------------------------------------------- | -------------------------------- | ----------------- |
 | RR-00 | Philosophy, scope, and release contract                                   | ACCEPTED; see findings/RR-00.md  | P0/P1 foundation  |
 | RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md | P0                |
-| RR-02 | HAI ecosystem identity/tag/shared-login UX                                | PLANNED                          | P1                |
+| RR-02 | HAI ecosystem identity/tag/shared-login UX                                | VERIFYING                        | P1                |
 | RR-03 | Authentication, registration, session, and account lifecycle              | PLANNED                          | P0                |
 | RR-04 | OT feed, discovery, follows, visibility, and privacy                      | PLANNED                          | P0                |
 | RR-05 | OT communities, forum, chat, and messaging                                | GAP FOUND                        | P0                |
@@ -392,23 +396,25 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 ### Checks
 
 - [ ] HAI tag appears where intended in both apps.
-- [ ] Keyboard access and focus behavior work.
-- [ ] Touch/mobile placement does not obscure primary controls/content.
-- [ ] OT and TS app descriptions are user-facing and accurate.
+- [x] Keyboard access and focus behavior work.
+- [x] Touch/mobile placement does not obscure primary controls/content.
+- [x] OT and TS app descriptions are user-facing and accurate.
 - [ ] Sibling-app links resolve to correct public origins/routes.
-- [ ] Shared authentication claim is tested rather than assumed.
-- [ ] Switching products does not imply shared local state that is actually app-specific.
-- [ ] Logged-out behavior is understandable.
-- [ ] HAI tag does not create an accessibility trap or persistent nuisance.
+- [ ] Shared credentials and separate sign-in sessions are tested rather than assumed.
+- [x] Switching products does not imply shared local state that is actually app-specific.
+- [x] Logged-out behavior is understandable.
+- [x] HAI tag does not create an accessibility trap or persistent nuisance.
 
 ### Acceptance evidence
 
 - Desktop + mobile viewport E2E.
 - Keyboard-only interaction.
 - Cross-app navigation test.
-- Shared-login test from OT -> TS and TS -> OT.
+- Same-account login test with separate sign-in sessions, switching OT -> TS and TS -> OT (operator-confirmed product model).
 
 ---
+
+**RR-02 update (2026-10-05):** VERIFYING. Checked items have local frontend evidence; authenticated placement, live reverse navigation, and real same-account login remain open. See [findings](./findings/RR-02.md).
 
 ## RR-03 — Authentication, registration, session, and account lifecycle
 
@@ -964,16 +970,17 @@ RR-01 may make immediate copy removals before the rest of the audit; final copy 
 
 Use this section for concise status changes. Detailed evidence should live in slice-specific documents if a slice grows large.
 
-| Date       | Item                    | Change                                                                                                                                                                                                |
-| ---------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                |
-| 2026-10-05 | RR-00 accepted          | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                  |
-| 2026-10-05 | Execution mapping       | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted. |
-| 2026-10-05 | Audit created           | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                 |
-| 2026-10-05 | Daylight                | Recorded PR #275 as open/unmerged; RR-07 blocked from production acceptance.                                                                                                                          |
-| 2026-10-05 | OT messaging            | Recorded recursive `openChat` as P0 candidate pending reproduction.                                                                                                                                   |
-| 2026-10-05 | Marketing truth         | Recorded unsupported OT adoption claim and TS unreleased-feature claims as P0 truth gaps.                                                                                                             |
-| 2026-10-05 | Reputation + federation | Added RR-14 for `retumbl` prototype evaluation (blocked on connector access) and RR-15 for active federation/self-hosting feasibility. Updated DF-001/DF-003 accordingly.                             |
+| Date       | Item                    | Change                                                                                                                                                                                                              |
+| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
+| 2026-10-05 | RR-02 verification      | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
+| 2026-10-05 | RR-00 accepted          | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                                |
+| 2026-10-05 | Execution mapping       | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted.               |
+| 2026-10-05 | Audit created           | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                               |
+| 2026-10-05 | Daylight                | Recorded PR #275 as open/unmerged; RR-07 blocked from production acceptance.                                                                                                                                        |
+| 2026-10-05 | OT messaging            | Recorded recursive `openChat` as P0 candidate pending reproduction.                                                                                                                                                 |
+| 2026-10-05 | Marketing truth         | Recorded unsupported OT adoption claim and TS unreleased-feature claims as P0 truth gaps.                                                                                                                           |
+| 2026-10-05 | Reputation + federation | Added RR-14 for `retumbl` prototype evaluation (blocked on connector access) and RR-15 for active federation/self-hosting feasibility. Updated DF-001/DF-003 accordingly.                                           |
 
 ---
 

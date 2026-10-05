@@ -168,10 +168,12 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly haiAboutConfig = {
     appId: 'optimistic-tanuki',
     appName: 'Optimistic Tanuki',
-    appTagline: 'The broader HAI social and utility ecosystem.',
+    appTagline: 'Your people, conversations, and shared interests.',
     appDescription:
-      'Optimistic Tanuki is the social, messaging, and utility layer in the HAI ecosystem, connecting identity, community, and daily workflows.',
-    appUrl: '/optimistic-tanuki',
+      'Optimistic Tanuki is an early-access place to share posts, connect with people, and join communities around your interests.',
+    appUrl: '/',
+    accountNotice:
+      'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);

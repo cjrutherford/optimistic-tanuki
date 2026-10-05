@@ -1,10 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, of } from 'rxjs';
-import {
-  AppRegistryResponse,
-  DEFAULT_APP_REGISTRY,
-} from '@optimistic-tanuki/app-registry-backend';
+import { AppRegistryResponse } from '@optimistic-tanuki/app-registry-backend';
 import { resolveHaiAppLinks } from './hai-app.directory';
 
 @Injectable({ providedIn: 'root' })
@@ -15,13 +12,11 @@ export class HaiAppDirectoryService {
     return this.http.get<AppRegistryResponse>('/api/registry/apps').pipe(
       map((response) =>
         resolveHaiAppLinks(
-          response.success ? response.data.apps : DEFAULT_APP_REGISTRY.apps,
+          response.success ? response.data.apps : [],
           currentAppId
         )
       ),
-      catchError(() =>
-        of(resolveHaiAppLinks(DEFAULT_APP_REGISTRY.apps, currentAppId))
-      )
+      catchError(() => of(resolveHaiAppLinks([], currentAppId)))
     );
   }
 }

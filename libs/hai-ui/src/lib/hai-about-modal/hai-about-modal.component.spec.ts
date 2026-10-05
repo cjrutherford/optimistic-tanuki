@@ -126,9 +126,7 @@ describe('HaiAboutModalComponent', () => {
     expect(host.style.getPropertyValue('--local-hai-card-shadow')).toBe(
       'var(--personality-card-shadow, var(--shadow-lg))'
     );
-    expect(host.style.getPropertyValue('--local-hai-body')).toContain(
-      'color-mix(in srgb'
-    );
+    expect(host.style.getPropertyValue('--local-hai-body')).toBe('#17211b');
   });
 
   it('renders a run link that opens the live app safely in a new tab', () => {

@@ -144,3 +144,28 @@
     letter-spacing: 0.16em;
   }
 }
+
+// App shells can give the tag its own space instead of covering routed content.
+:host.inline {
+  position: relative;
+  display: block;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  padding: 1rem max(1rem, env(safe-area-inset-left));
+}
+
+.hai-tag:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hai-tag {
+    transition: none;
+  }
+  .hai-tag:hover,
+  .hai-tag:focus-visible {
+    transform: none;
+  }
+}

@@ -65,10 +65,12 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly haiAboutConfig = {
     appId: 'towne-square',
     appName: 'Towne Square',
-    appTagline: 'Neighborhood commerce and local community tools.',
+    appTagline: 'Connect around the places that matter to you.',
     appDescription:
-      'Towne Square is HAI software for local communities, neighborhood commerce, and civic connection that still feels human-scale.',
-    appUrl: '/towne-square',
+      'Towne Square is an early-access place to explore localities and connect with people where you live, work, or visit.',
+    appUrl: '/',
+    accountNotice:
+      'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
 
   get isBrowser(): boolean {
