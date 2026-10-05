@@ -1,8 +1,11 @@
 # OT + Towne Square Public Release Readiness Audit
 
-**Started:** 2026-10-05  
-**Scope:** `apps/client-interface` (Optimistic Tanuki), `apps/local-hub` (Towne Square), shared user-facing libraries/services required by their primary workflows, and the shared HAI product-navigation surface.  
-**Companion standard:** [HAI philosophy](../product/HAI-PUBLIC-GOOD-PHILOSOPHY.md)  
+**Started:** 2026-10-05
+
+**Scope:** `apps/client-interface` (Optimistic Tanuki), `apps/local-hub` (Towne Square), shared user-facing libraries/services required by their primary workflows, and the shared HAI product-navigation surface.
+
+**Companion standard:** [HAI philosophy](../product/HAI-PUBLIC-GOOD-PHILOSOPHY.md)
+
 **Status:** Active audit / execution plan
 **Product intent authority:** The owner-supplied audit and philosophy define the baseline below. RR-00 preserves that intent; runtime conformity is evaluated in later slices. Changes to product boundaries require an explicit documented owner decision/ADR.
 
@@ -169,65 +172,100 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 
 ### F-001 — OT landing page contains unsupported scale claim
 
-**Severity:** P0 — truth-in-marketing  
-**Area:** OT marketing  
-**Evidence:** Current OT landing copy includes language equivalent to "Join thousands of groups already building their own networks." Current project state does not support that adoption claim.  
-**Expected:** No invented user/community counts or fabricated social proof.  
-**Remediation:** Replace with honest early-stage invitation language.  
+**Severity:** P0 — truth-in-marketing
+
+**Area:** OT marketing
+
+**Evidence:** Current OT landing copy includes language equivalent to "Join thousands of groups already building their own networks." Current project state does not support that adoption claim.
+
+**Expected:** No invented user/community counts or fabricated social proof.
+
+**Remediation:** Replace with honest early-stage invitation language.
+
 **Slice:** RR-01.
 
 ### F-002 — OT positioning does not fully reflect intended product model
 
-**Severity:** P1  
-**Area:** OT positioning/onboarding  
-**Evidence:** Current landing emphasizes starting a group network, while intended product philosophy is "you are the social network": user-centered graph, relationships, optional communities, broader public network, separate discovery.  
-**Expected:** First-run/public copy explains the user-centered graph accurately.  
-**Remediation:** Rewrite landing hierarchy and HAI app metadata after core behavior audit confirms claims.  
+**Severity:** P1
+
+**Area:** OT positioning/onboarding
+
+**Evidence:** Current landing emphasizes starting a group network, while intended product philosophy is "you are the social network": user-centered graph, relationships, optional communities, broader public network, separate discovery.
+
+**Expected:** First-run/public copy explains the user-centered graph accurately.
+
+**Remediation:** Rewrite landing hierarchy and HAI app metadata after core behavior audit confirms claims.
+
 **Slice:** RR-01.
 
 ### F-003 — OT HAI tag copy is architecture-oriented rather than user-oriented
 
-**Severity:** P1  
-**Area:** Shared HAI ecosystem UI  
-**Evidence:** OT is described as "The broader HAI social and utility ecosystem" / a "social, messaging, and utility layer."  
-**Expected:** User-facing HAI tag explains what OT is useful for, not how it fits internal architecture.  
-**Remediation:** Rewrite after product language is accepted.  
+**Severity:** P1
+
+**Area:** Shared HAI ecosystem UI
+
+**Evidence:** OT is described as "The broader HAI social and utility ecosystem" / a "social, messaging, and utility layer."
+
+**Expected:** User-facing HAI tag explains what OT is useful for, not how it fits internal architecture.
+
+**Remediation:** Rewrite after product language is accepted.
+
 **Slice:** RR-02.
 
 ### F-004 — Towne Square landing advertises functionality ahead of implementation
 
-**Severity:** P0 — truth-in-marketing  
-**Area:** TS marketing  
-**Evidence:** Current TS landing includes moderation/reputation implications, community funding/donations, business "Pro Tier," featured placement, and analytics while the Local Hub product plan records moderation/reputation and payments as not implemented.  
-**Expected:** Public landing describes released behavior only.  
-**Remediation:** Remove/hide unreleased claims until implementation is accepted; do not soften them into ambiguous present tense.  
+**Severity:** P0 — truth-in-marketing
+
+**Area:** TS marketing
+
+**Evidence:** Current TS landing includes moderation/reputation implications, community funding/donations, business "Pro Tier," featured placement, and analytics while the Local Hub product plan records moderation/reputation and payments as not implemented.
+
+**Expected:** Public landing describes released behavior only.
+
+**Remediation:** Remove/hide unreleased claims until implementation is accepted; do not soften them into ambiguous present tense.
+
 **Slice:** RR-01.
 
 ### F-005 — Daylight is not yet a released production capability
 
-**Severity:** P1 until marketed; P0 if advertised as live before acceptance  
-**Area:** TS / civic briefing  
-**Evidence:** PR #275 "Integrate the Daylight feed into Local Hub" is open and not merged as of audit start.  
-**Expected:** Daylight appears in production marketing only after merge, deployment, and RR-07 acceptance.  
-**Remediation:** Treat as release candidate.  
+**Severity:** P1 until marketed; P0 if advertised as live before acceptance
+
+**Area:** TS / civic briefing
+
+**Evidence:** PR #275 "Integrate the Daylight feed into Local Hub" is open and not merged as of audit start.
+
+**Expected:** Daylight appears in production marketing only after merge, deployment, and RR-07 acceptance.
+
+**Remediation:** Treat as release candidate.
+
 **Slice:** RR-07.
 
 ### F-006 — OT floating-chat open method appears recursively self-calling
 
-**Severity:** P0 candidate; runtime verification required  
-**Area:** OT messaging  
-**Evidence:** `AppComponent.openChat(conversationId)` finds a matching contact and calls `this.openChat(contact.id)` again rather than delegating to a distinct selection/open action. If `contact.id === conversationId`, this is unbounded recursion.  
-**Expected:** Selecting a conversation opens it without recursion/crash.  
-**Remediation:** Reproduce with focused test/runtime, fix through the shared/appropriate chat API, then add regression coverage.  
+**Severity:** P0 candidate; runtime verification required
+
+**Area:** OT messaging
+
+**Evidence:** `AppComponent.openChat(conversationId)` finds a matching contact and calls `this.openChat(contact.id)` again rather than delegating to a distinct selection/open action. If `contact.id === conversationId`, this is unbounded recursion.
+
+**Expected:** Selecting a conversation opens it without recursion/crash.
+
+**Remediation:** Reproduce with focused test/runtime, fix through the shared/appropriate chat API, then add regression coverage.
+
 **Slice:** RR-05.
 
 ### F-007 — Shared HAI tag is already present in both app shells
 
-**Severity:** Informational / positive finding  
-**Area:** HAI ecosystem navigation  
-**Evidence:** Both OT and TS import/configure `HaiAboutTagComponent`.  
-**Expected:** Audit the existing mechanism rather than add a second persistent cross-product switcher.  
-**Remediation:** Validate links, copy, keyboard/touch accessibility, responsive behavior, and logged-in/logged-out behavior.  
+**Severity:** Informational / positive finding
+
+**Area:** HAI ecosystem navigation
+
+**Evidence:** Both OT and TS import/configure `HaiAboutTagComponent`.
+
+**Expected:** Audit the existing mechanism rather than add a second persistent cross-product switcher.
+
+**Remediation:** Validate links, copy, keyboard/touch accessibility, responsive behavior, and logged-in/logged-out behavior.
+
 **Slice:** RR-02.
 
 ---
@@ -282,7 +320,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 
 ## RR-00 — Philosophy, scope, and release contract
 
-**Status:** VERIFYING. [Findings and acceptance evidence](./findings/RR-00.md).
+**Status:** ACCEPTED. [Findings and acceptance evidence](./findings/RR-00.md).
 
 **Goal:** Enshrine shared product principles and define what "public ready" means.
 
@@ -296,11 +334,11 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 
 ### Acceptance criteria
 
-- [ ] Philosophy document is committed in a stable repo location.
-- [ ] `AGENTS.md` links to it and tells agents to treat it as normative.
-- [ ] OT and TS product intent in this audit matches owner intent.
-- [ ] RR slice registry is committed and becomes the release-readiness source of truth.
-- [ ] Any future exception to core philosophy requires an explicit project ADR or equivalent documented decision.
+- [x] Philosophy document is committed in a stable repo location.
+- [x] `AGENTS.md` links to it and tells agents to treat it as normative.
+- [x] OT and TS product intent in this audit matches owner intent.
+- [x] RR slice registry is committed and becomes the release-readiness source of truth.
+- [x] Any future exception to core philosophy requires an explicit project ADR or equivalent documented decision.
 
 ---
 

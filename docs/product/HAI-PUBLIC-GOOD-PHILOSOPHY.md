@@ -1,7 +1,9 @@
 # HAI Product & Public-Good Philosophy
 
-**Status:** Normative  
-**Applies to:** Hopeful Aspirations Industries (HAI) projects unless a project-specific ADR explicitly documents a justified exception.  
+**Status:** Normative
+
+**Applies to:** Hopeful Aspirations Industries (HAI) projects unless a project-specific ADR explicitly documents a justified exception.
+
 **Audience:** Contributors, maintainers, agents, reviewers, product/design work, and release planning.
 
 ---

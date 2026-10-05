@@ -1,10 +1,15 @@
 # Release-readiness execution map
 
-**Date:** 2026-10-05  
-**Branch:** `chore/ot-ts-release-readiness`  
-**Mapping baseline:** `efef92fec0fee2c8cb2879e98b08d046e9f3b0a3`, plus the existing uncommitted audit package.  
-**Goal:** Execute RR-00 through RR-15 in dependency order, presenting evidence and unresolved findings at the end of each slice.  
-**Architecture:** OT (`client-interface`) and TS (`local-hub`) are the release products. Shared libraries/services own common behavior; fixes should follow those owners rather than duplicate app patches. Reputation and federation are evaluation slices, with implementation deferred.  
+**Date:** 2026-10-05
+
+**Branch:** `chore/ot-ts-release-readiness`
+
+**Mapping baseline:** `efef92fec0fee2c8cb2879e98b08d046e9f3b0a3`, plus the existing uncommitted audit package.
+
+**Goal:** Execute RR-00 through RR-15 in dependency order, presenting evidence and unresolved findings at the end of each slice.
+
+**Architecture:** OT (`client-interface`) and TS (`local-hub`) are the release products. Shared libraries/services own common behavior; fixes should follow those owners rather than duplicate app patches. Reputation and federation are evaluation slices, with implementation deferred.
+
 **Tech stack:** Angular, NestJS, Nx/pnpm, TypeORM, Docker, and the checked-in browser/API E2E suites.
 
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
@@ -57,7 +62,7 @@ Synchronize status/evidence in `MASTER-AUDIT.md`, the slice, and the deferred re
 
 ## Mapping findings (not slice acceptance)
 
-- All 16 slices have written criteria; none has recorded acceptance. RR-01/RR-05 contain source-based gaps, including F-006 awaiting reproduction. Revalidate older findings before implementation.
+- At mapping, all 16 slices had written criteria and none had recorded acceptance. RR-00 closeout is recorded in [its findings](./findings/RR-00.md); use the master registry for current status. RR-01/RR-05 contain source-based gaps, including F-006 awaiting reproduction. Revalidate older findings before implementation.
 - At mapping, the package had stale `docs/untracked/` and philosophy links. RR-00 reconciles these to `docs/release-readiness/` and `docs/product/HAI-PUBLIC-GOOD-PHILOSOPHY.md`.
 - RR-13's slice file also contains copied master sections 7–11. RR-00 removes that duplicate after confirming the canonical master content, to prevent order/register drift.
 - The operator supplied `rebumbl` initially, then confirmed `retumbl`. Local access is available; RR-14 must not remain blocked on a GitHub connector.
