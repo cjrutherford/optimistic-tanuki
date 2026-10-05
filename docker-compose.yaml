@@ -544,6 +544,9 @@ services:
       CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
       # Every fetched document is virus-scanned before it is stored (D22).
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
       # Pipeline alerts (P5.2): new failed runs and failing or quiet sources.
       DAYLIGHT_ALERT_EMAIL: ${DAYLIGHT_ALERT_EMAIL:-}
       SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
@@ -577,6 +580,9 @@ services:
       LISTEN_PORT: 3029
       # Uploads are scanned fail-closed and stored envelope-encrypted.
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
       VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
       CIVIC_BRIEFING_HOST: civic-briefing
       CIVIC_BRIEFING_PORT: 3028

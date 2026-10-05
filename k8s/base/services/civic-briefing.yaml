@@ -51,6 +51,11 @@ spec:
               value: 'clamav'
             - name: CLAMAV_PORT
               value: '3310'
+            # Agenda packets are large PDFs: give clamd time to scan them.
+            - name: CLAMAV_SOCKET_TIMEOUT_MS
+              value: '30000'
+            - name: CLAMAV_SCAN_DEADLINE_MS
+              value: '120000'
             # Model calls go through prompt-proxy, whose OLLAMA_HOST is the
             # model host (prompt-proxy-config). The models are chosen in
             # civic-briefing-config; empty means the code's defaults.
