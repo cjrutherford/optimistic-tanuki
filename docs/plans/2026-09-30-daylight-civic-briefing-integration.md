@@ -140,6 +140,11 @@ discovery work (SD.\*) waits on the owner's choices from the benchmark.
   needed. Model review in e2e answers from a deterministic stub, and
   briefings come from an e2e seed written through civic-briefing's
   entities.
+- **D29** (owner, 2026-10-04) A contributor's public handle is their
+  local-hub profile display name, reviewed at contributor sign-up and fixed
+  from then on. The sign-up prefills it, says it may be the registered
+  (real) name, and lets the person change it. A change there also changes
+  the display name.
 - **D16** civic-core is Postgres only. SQLite and `better-sqlite3` are
   removed, and tests and parity replays need a Postgres database.
 
@@ -240,7 +245,7 @@ fixes stay with the lead agent.
         local-hub in the manifest (D28)
   - [x] P4.5c e2e: city → briefing → become a contributor → report; repair
         the older local-hub-e2e suites
-- [ ] P5.1 Local-hub profile on upstream sign-in
+- [x] P5.1 Local-hub profile on upstream sign-in
 - [ ] P5.2 Model host config and alerts
 - [ ] P5.3 Open the PR to main (owner merges)
 
@@ -957,6 +962,7 @@ clamav`).
   passes locally in the shared CI stack: 45 passed, 0 flaky, and 2 skipped
   (map tests that need a cluster of nearby cities, which the three-town
   seed doesn't have).
+
   - **Stack (b):**
     - `e2e/docker-compose.e2e-stack.yaml` gains classifieds, payments,
       civic-briefing, civic-contributions and `model-stub`. The stub is a
@@ -1005,3 +1011,29 @@ clamav`).
     (P5.3).
     Next: Phase 5 (P5.1 is mostly covered by the contributor sign-up,
     D27).
+
+- 2026-10-04: P5.1 is done. Sign-in already binds every session to the
+  account's `local-hub` profile (`RegisterAccountBootstrapService`), so the
+  POC's S6.1 was satisfied upstream.
+  - **The real gap:** reports, quotes and contributor pages were signed
+    with the token's `name`, the registered first and last name. That broke
+    the POC's "your name and email are never shown".
+  - **Fix (D29):**
+    - `/contribute` asks for a handle, prefilled with the display name.
+    - `POST local-hub/contributor` takes `handle` and calls the new
+      `Community:RegisterContributor`, which records it once. If the handle
+      is new, it also sets the local-hub display name, passing the existing
+      bio so the bio-wipe bug (GHSA-x5rv) can't clear it.
+    - `intake.contributor()` no longer overwrites a recorded handle.
+    - `local-hub/me` reports the display name instead of the registered
+      name.
+  - **Gaps:**
+    - A town official who applies before signing up as a contributor is
+      recorded under their registered name, so they can't choose a handle.
+      For officials, who are public by role, that's arguably right.
+    - Handles aren't unique.
+  - **Tests:** gateway 1,507, local-hub 397, civic-contributions `test-db`
+    54 (including the fixed handle), and lint and builds pass.
+    `local-hub-e2e` passes in the shared stack: 45 passed, 2 skipped
+    (map). The journey now changes the prefilled real name to a handle.
+    Next: P5.2 (model host config and alerts).
