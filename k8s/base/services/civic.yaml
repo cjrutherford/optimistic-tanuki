@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civic
+  namespace: optimistic-tanuki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: civic
+  template:
+    metadata:
+      labels:
+        app: civic
+    spec:
+      containers:
+        - name: civic
+          image: cjrutherford/optimistic_tanuki_civic:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3026
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: LISTEN_PORT
+              value: '3026'
+            - name: POSTGRES_HOST
+              value: 'postgres'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DB
+              value: 'ot_civic'
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          livenessProbe:
+            tcpSocket:
+              port: 3026
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3026
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civic
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: civic
+  ports:
+    - port: 3026
+      targetPort: 3026
+  clusterIP: None

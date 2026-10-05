@@ -9,6 +9,73 @@
     This page is for Daylight operators.
     <a routerLink="/cities">Back to the towns</a>.
   </p>
+  } @if (canPipeline()) {
+  <section aria-labelledby="pipeline-heading">
+    <h2 id="pipeline-heading">Pipeline health</h2>
+    <p class="lede">
+      Each town's latest run, and the sources that are failing or have gone
+      quiet. New problems are also emailed to the operators' address, once each.
+    </p>
+    @if (pipelineReport(); as report) { @if (!report.configured) {
+    <p class="quiet">
+      No towns are scheduled: civic-briefing has no locality registry
+      (CIVIC_LOCALITIES_DIR).
+    </p>
+    } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Town</th>
+            <th scope="col">Last run</th>
+            <th scope="col">Started</th>
+            <th scope="col">Sources needing attention</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (town of report.towns; track town.slug) {
+          <tr>
+            <th scope="row">{{ town.name }}</th>
+            <td>
+              @if (town.lastRun; as run) {
+              <span class="run" [attr.data-status]="run.status"
+                >{{ runWords(run.status) }}</span
+              >
+              @if (run.error) {
+              <span class="run-error">{{ run.error }}</span>
+              } } @else {
+              <span class="quiet">No runs yet</span>
+              }
+            </td>
+            <td>{{ town.lastRun?.startedAt ?? '—' }}</td>
+            <td>
+              @for (problem of town.problems; track problem.sourceId) {
+              <div class="source-problem" [attr.data-status]="problem.status">
+                {{ problem.sourceId }}: {{ problem.status === 'failing' ?
+                'failing, ' + problem.consecutiveFailures + ' attempts in a row'
+                : 'quiet' + (problem.stalenessDays !== null ? ', ' +
+                problem.stalenessDays + ' days' : '') }}
+              </div>
+              } @empty {
+              <span class="quiet">None</span>
+              }
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="4" class="quiet">No towns yet.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="quiet">Checked {{ report.checkedAt }}.</p>
+    } } @else if (pipelineError()) {
+    <p class="problem" role="alert">{{ pipelineError() }}</p>
+    } @else {
+    <p class="quiet" role="status">Loading…</p>
+    }
+  </section>
   } @if (canDensity()) {
   <section aria-labelledby="density-heading">
     <h2 id="density-heading">Contributor density</h2>

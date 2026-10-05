@@ -113,6 +113,52 @@ describe('DaylightOperationsPage', () => {
     );
   });
 
+  it("shows each town's last run and the sources needing attention", async () => {
+    const { fixture, page } = await render(['town.configure']);
+    http()
+      .expectOne(`${API}/operations/pipeline-health`)
+      .flush({
+        data: {
+          configured: true,
+          checkedAt: '2026-10-05T12:00:00.000Z',
+          towns: [
+            {
+              slug: 'adel-ga',
+              name: 'Adel',
+              lastRun: {
+                runId: 7,
+                status: 'failed',
+                cadence: 'daily',
+                startedAt: '2026-10-05T06:00:00.000Z',
+                completedAt: null,
+                currentStage: 'briefing',
+                error: 'model timed out',
+              },
+              problems: [
+                {
+                  sourceId: 'adel-agendas',
+                  adapter: 'civicplus',
+                  status: 'failing',
+                  stalenessDays: null,
+                  consecutiveFailures: 4,
+                  lastSuccessAt: null,
+                },
+              ],
+            },
+          ],
+        },
+      });
+    fixture.detectChanges();
+    const row = page.querySelector('#pipeline-heading')?.closest('section');
+    expect(row?.querySelector('.run')?.textContent?.trim()).toBe('Failed');
+    expect(row?.querySelector('.run-error')?.textContent).toBe(
+      'model timed out'
+    );
+    expect(row?.querySelector('.source-problem')?.textContent?.trim()).toBe(
+      'adel-agendas: failing, 4 attempts in a row'
+    );
+  });
+
   it('runs the re-review now and reports what changed', async () => {
     const { fixture, page } = await render(['community.maintain']);
     (page.querySelector('.actions button') as HTMLButtonElement).click();

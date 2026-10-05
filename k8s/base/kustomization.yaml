@@ -31,6 +31,10 @@ resources:
   - services/wellness.yaml
   - services/learning-service.yaml
   - services/learning-runner.yaml
+  - clamav.yaml
+  - services/civic.yaml
+  - services/civic-briefing.yaml
+  - services/civic-contributions.yaml
   - clients/business-site.yaml
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml
@@ -60,3 +64,16 @@ configMapGenerator:
   - name: prompt-proxy-config
     files:
       - config.yaml=config/prompt-proxy-config.yaml
+  # Daylight (P5.2). The model host is prompt-proxy's OLLAMA_HOST; these pick
+  # the models (empty means the code's defaults), where pipeline alerts go,
+  # and the town registry (without it nothing is scheduled).
+  - name: civic-briefing-config
+    literals:
+      - LLM_PLANNER_MODEL=
+      - LLM_WRITER_MODEL=
+      - LLM_PRIMARY_MODEL=
+      - LLM_FALLBACK_MODEL=
+      - REVIEW_MODEL=
+      - DAYLIGHT_ALERT_EMAIL=
+      - PIPELINE_ALERT_MS=900000
+      - CIVIC_LOCALITIES_DIR=

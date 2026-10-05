@@ -13,6 +13,7 @@ import { DaylightOfficialApplicationComponent } from './daylight-official-applic
 
 /** The permissions that open a panel on the operations page. */
 const OPERATOR_PERMISSIONS = [
+  'town.configure',
   'density.read',
   'takedown.manage',
   'official.verify',

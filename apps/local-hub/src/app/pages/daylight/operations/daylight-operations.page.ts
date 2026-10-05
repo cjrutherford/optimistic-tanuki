@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import {
   OptomisitcTanukiAPIService as CivicAPIService,
   DENSITY_TARGET,
+  type PipelineHealthReport,
   problem,
   type TakedownNoticeRecord,
   type TownDensity,
@@ -58,17 +59,32 @@ export class DaylightOperationsPage {
   private can(permission: string) {
     return computed(() => this.permissions()?.includes(permission) ?? false);
   }
+  protected readonly canPipeline = this.can('town.configure');
   protected readonly canDensity = this.can('density.read');
   protected readonly canTakedowns = this.can('takedown.manage');
   protected readonly canVerify = this.can('official.verify');
   protected readonly canMaintain = this.can('community.maintain');
   protected readonly anything = computed(
     () =>
+      this.canPipeline() ||
       this.canDensity() ||
       this.canTakedowns() ||
       this.canVerify() ||
       this.canMaintain()
   );
+
+  // ── Pipeline health ────────────────────────────────────────────────────
+  protected readonly pipeline = signal<Loaded<PipelineHealthReport>>({
+    status: 'loading',
+  });
+  protected readonly pipelineReport = computed(() => {
+    const state = this.pipeline();
+    return state.status === 'ready' ? state.value : null;
+  });
+  protected readonly pipelineError = computed(() => {
+    const state = this.pipeline();
+    return state.status === 'failed' ? state.message : '';
+  });
 
   // ── Density ────────────────────────────────────────────────────────────
   protected readonly density = signal<Loaded<TownDensity[]>>({
@@ -132,8 +148,29 @@ export class DaylightOperationsPage {
   }
 
   private loadPanels(): void {
+    if (this.canPipeline()) this.loadPipeline();
     if (this.canDensity()) this.loadDensity();
     if (this.canTakedowns()) this.loadNotices();
+  }
+
+  protected loadPipeline(): void {
+    this.track(
+      this.civic.pipelineHealth().pipe(map((reply) => reply.data)),
+      'Pipeline health could not be loaded.'
+    ).subscribe((state) => this.pipeline.set(state));
+  }
+
+  /** A run status in plain words. */
+  protected runWords(status: string): string {
+    const words: Record<string, string> = {
+      succeeded: 'Published',
+      partial_success: 'Published, with gaps',
+      failed: 'Failed',
+      blocked: 'Blocked',
+      running: 'Running',
+      'skipped-overlap': 'Skipped (another run was going)',
+    };
+    return words[status] ?? status;
   }
 
   protected loadDensity(): void {

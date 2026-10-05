@@ -36,6 +36,12 @@ images:
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_christopherrutherford-net
     newTag: latest
+  - name: cjrutherford/optimistic_tanuki_civic
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_civic_briefing
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_civic_contributions
+    newTag: latest
   - name: cjrutherford/optimistic_tanuki_classifieds
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_client-interface

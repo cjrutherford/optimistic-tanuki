@@ -133,3 +133,27 @@ li {
     }
   }
 }
+
+.run {
+  font-weight: 600;
+}
+
+.run[data-status='failed'],
+.run[data-status='blocked'] {
+  color: var(--error);
+}
+
+.run-error {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--foreground-muted);
+}
+
+.source-problem {
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.source-problem[data-status='failing'] {
+  color: var(--error);
+}

@@ -534,8 +534,27 @@ services:
       LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
       PROMPT_PROXY_HOST: prompt-proxy
       PROMPT_PROXY_PORT: 3009
+      # The model host is prompt-proxy's OLLAMA_HOST (set it in .env). These
+      # pick the models; empty means the code's defaults (P5.2).
+      LLM_PLANNER_MODEL: ${LLM_PLANNER_MODEL:-}
+      LLM_WRITER_MODEL: ${LLM_WRITER_MODEL:-}
+      LLM_PRIMARY_MODEL: ${LLM_PRIMARY_MODEL:-}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
+      # The town registry; without it nothing is scheduled.
+      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
       # Every fetched document is virus-scanned before it is stored (D22).
       CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Pipeline alerts (P5.2): new failed runs and failing or quiet sources.
+      DAYLIGHT_ALERT_EMAIL: ${DAYLIGHT_ALERT_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+    volumes:
+      # Fetched documents (blobs) outlive the container.
+      - civic_briefing_data:/usr/src/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -564,6 +583,11 @@ services:
       LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
       PROMPT_PROXY_HOST: prompt-proxy
       PROMPT_PROXY_PORT: 3009
+      REVIEW_MODEL: ${REVIEW_MODEL:-}
+      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
+    volumes:
+      # Contributed artifacts, promotions and density reports outlive the container.
+      - civic_contributions_data:/usr/src/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -1243,6 +1267,8 @@ volumes:
   postgres_data:
   video-processing-data:
   clamav-db:
+  civic_briefing_data:
+  civic_contributions_data:
 
 networks:
   learning-runner-control:
