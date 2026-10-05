@@ -22,12 +22,18 @@ import {
   extractAgenda,
   collate,
   type AgendaFixup,
+  type Cluster,
   type GatherSourceOutcome,
   sha256,
   contextEvidenceFingerprint,
   isCurrentStoryArtifactToken,
 } from './pipeline.js';
-import { isItemInLocalRange, projectItems, projectStories } from './edition.js';
+import {
+  isItemInLocalRange,
+  knownBefore,
+  projectItems,
+  projectStories,
+} from './edition.js';
 import { isEditoriallyEligibleBody } from './article-enrichment.js';
 import { backfillSince, localDate, periodFor } from './calendar.js';
 import {
@@ -124,6 +130,17 @@ export interface RunPipelineOptions {
    * context window, which is what every earlier caller gets.
    */
   gatherSince?: string;
+  /**
+   * Fetch and parse, then stop: no edition is written (D31). A backfill
+   * pulls once this way, then writes each past edition with `fromStored`.
+   */
+  pullOnly?: boolean;
+  /**
+   * Write the edition from stored records, without fetching (D31). Only
+   * evidence published before the edition's day is read, so a backfilled
+   * edition shows what the day itself would have shown.
+   */
+  fromStored?: boolean;
   /** Testable heartbeat cadence; production defaults to one third of the lease. */
   heartbeatIntervalMs?: number;
   outputDirectory?: string;
@@ -838,211 +855,245 @@ export async function runPipeline(
       await ensureLocality(options.dataSource, locality, options.registry);
       return { localities: 1, sources: initialSources.length };
     });
-    const gathered = await stage('gather', async () => {
-      const value = await stages.gather(options.dataSource, locality, {
-        httpClient,
-        blobStore,
-        runId: acquired.runId,
-        scopeSlug: scope.slug,
-        coverageRange: {
-          requestedStart: await gatherStart(
-            options,
-            initialSources,
-            windows.context.start
-          ),
-          requestedEnd: windows.context.end,
-        },
-      });
-      result.coverageRanges = value.coverageRanges;
-      result.sourceOutcomes = value.sourceOutcomes;
-      result.currentFetchAttemptIds = value.currentFetchAttemptIds;
-      result.currentLedgerIds = value.currentLedgerIds;
-      result.currentRawDocumentIds = value.currentRawDocumentIds;
-      result.currentRawVersionIds = value.currentRawVersionIds;
-      const coverageGaps = Object.entries(value.coverageRanges)
-        .map(([sourceKey, range]) => {
-          const gap = coverageGapForRange(sourceKey, range);
-          if (!gap) return null;
-          const source = initialSources.find(
-            (candidate) => candidate.sourceKey === sourceKey
-          );
-          const configuredDirect =
-            source?.config &&
-            [
-              source.config['publisherUrl'],
-              source.config['directPublisherUrl'],
-            ].find(
-              (url): url is string =>
-                typeof url === 'string' && /^https?:\/\//iu.test(url)
+    // A backfill (D31) builds its edition from what is already stored: it
+    // fetches nothing, so it sees only what the pull run before it saved.
+    if (!options.fromStored) {
+      const gathered = await stage('gather', async () => {
+        const value = await stages.gather(options.dataSource, locality, {
+          httpClient,
+          blobStore,
+          runId: acquired.runId,
+          scopeSlug: scope.slug,
+          coverageRange: {
+            requestedStart: await gatherStart(
+              options,
+              initialSources,
+              windows.context.start
+            ),
+            requestedEnd: windows.context.end,
+          },
+        });
+        result.coverageRanges = value.coverageRanges;
+        result.sourceOutcomes = value.sourceOutcomes;
+        result.currentFetchAttemptIds = value.currentFetchAttemptIds;
+        result.currentLedgerIds = value.currentLedgerIds;
+        result.currentRawDocumentIds = value.currentRawDocumentIds;
+        result.currentRawVersionIds = value.currentRawVersionIds;
+        const coverageGaps = Object.entries(value.coverageRanges)
+          .map(([sourceKey, range]) => {
+            const gap = coverageGapForRange(sourceKey, range);
+            if (!gap) return null;
+            const source = initialSources.find(
+              (candidate) => candidate.sourceKey === sourceKey
             );
-          return {
-            ...gap,
-            ...((source?.accessMode === 'snippet-only' ||
-              source?.aggregateDiscovery) &&
-            source?.name
-              ? { sourceName: source.name }
-              : {}),
-            ...(source?.accessRestrictionReason
-              ? { accessRestrictionReason: source.accessRestrictionReason }
-              : {}),
-            ...(source?.restrictionPolicyUrl
-              ? { restrictionPolicyUrl: source.restrictionPolicyUrl }
-              : {}),
-            ...(source?.aggregateDiscovery &&
-            (source.aggregateUrl ?? source.url)
-              ? { aggregateUrl: source.aggregateUrl ?? source.url }
-              : {}),
-            ...(configuredDirect
-              ? { directPublisherUrl: configuredDirect }
-              : {}),
-          };
-        })
-        .filter((gap): gap is NonNullable<typeof gap> => gap !== null);
-      const gaps = [
-        ...value.errors.map((error) => ({
+            const configuredDirect =
+              source?.config &&
+              [
+                source.config['publisherUrl'],
+                source.config['directPublisherUrl'],
+              ].find(
+                (url): url is string =>
+                  typeof url === 'string' && /^https?:\/\//iu.test(url)
+              );
+            return {
+              ...gap,
+              ...((source?.accessMode === 'snippet-only' ||
+                source?.aggregateDiscovery) &&
+              source?.name
+                ? { sourceName: source.name }
+                : {}),
+              ...(source?.accessRestrictionReason
+                ? { accessRestrictionReason: source.accessRestrictionReason }
+                : {}),
+              ...(source?.restrictionPolicyUrl
+                ? { restrictionPolicyUrl: source.restrictionPolicyUrl }
+                : {}),
+              ...(source?.aggregateDiscovery &&
+              (source.aggregateUrl ?? source.url)
+                ? { aggregateUrl: source.aggregateUrl ?? source.url }
+                : {}),
+              ...(configuredDirect
+                ? { directPublisherUrl: configuredDirect }
+                : {}),
+            };
+          })
+          .filter((gap): gap is NonNullable<typeof gap> => gap !== null);
+        const gaps = [
+          ...value.errors.map((error) => ({
+            sourceKey: error.sourceId,
+            reason: error.error,
+          })),
+          ...coverageGaps,
+        ];
+        const successful =
+          value.successfulSources > 0 || value.successfulRecords > 0;
+        await updateRun(options.dataSource, acquired.runId, {
+          coverageRanges: json(value.coverageRanges),
+        });
+        return {
+          ...value,
+          __status: gaps.length
+            ? successful
+              ? ('partial_success' as const)
+              : ('failed' as const)
+            : ('succeeded' as const),
+          __coverageGaps: gaps,
+        };
+      });
+      // A completely failed gather is an infrastructure failure, not an honest
+      // quiet day. Mixed/empty successful results still proceed to quiet mode.
+      if (
+        (gathered as typeof gathered & { __status?: string }).__status ===
+        'failed'
+      )
+        throw new Error('all enabled sources failed during gather');
+      const parsed = await stage('parse', async () => {
+        const value = await stages.parseAll(options.dataSource, locality, {
+          blobStore,
+          httpClient,
+          runId: acquired.runId,
+          scopeSlug: scope.slug,
+          registry: options.registry,
+          successfulSourceOutcomes: gathered.sourceOutcomes,
+          currentRawDocumentIds: gathered.currentRawDocumentIds,
+          contextRange: windows.context,
+        });
+        result.currentItemIds = value.currentItemIds;
+        const gaps = value.errors.map((error) => ({
           sourceKey: error.sourceId,
           reason: error.error,
-        })),
-        ...coverageGaps,
-      ];
-      const successful =
-        value.successfulSources > 0 || value.successfulRecords > 0;
-      await updateRun(options.dataSource, acquired.runId, {
-        coverageRanges: json(value.coverageRanges),
+        }));
+        const successful =
+          value.successfulSources > 0 || value.successfulRecords > 0;
+        return {
+          ...value,
+          __status: gaps.length
+            ? successful
+              ? ('partial_success' as const)
+              : ('failed' as const)
+            : ('succeeded' as const),
+          __coverageGaps: gaps,
+        };
       });
-      return {
-        ...value,
-        __status: gaps.length
-          ? successful
-            ? ('partial_success' as const)
-            : ('failed' as const)
-          : ('succeeded' as const),
-        __coverageGaps: gaps,
-      };
-    });
-    // A completely failed gather is an infrastructure failure, not an honest
-    // quiet day. Mixed/empty successful results still proceed to quiet mode.
-    if (
-      (gathered as typeof gathered & { __status?: string }).__status ===
-      'failed'
-    )
-      throw new Error('all enabled sources failed during gather');
-    const parsed = await stage('parse', async () => {
-      const value = await stages.parseAll(options.dataSource, locality, {
-        blobStore,
-        httpClient,
-        runId: acquired.runId,
-        scopeSlug: scope.slug,
-        registry: options.registry,
-        successfulSourceOutcomes: gathered.sourceOutcomes,
-        currentRawDocumentIds: gathered.currentRawDocumentIds,
-        contextRange: windows.context,
-      });
-      result.currentItemIds = value.currentItemIds;
-      const gaps = value.errors.map((error) => ({
-        sourceKey: error.sourceId,
-        reason: error.error,
-      }));
-      const successful =
-        value.successfulSources > 0 || value.successfulRecords > 0;
-      return {
-        ...value,
-        __status: gaps.length
-          ? successful
-            ? ('partial_success' as const)
-            : ('failed' as const)
-          : ('succeeded' as const),
-        __coverageGaps: gaps,
-      };
-    });
-    // A completely failed parse is an infrastructure failure; an empty but
-    // successful parse proceeds to a deterministic quiet edition.
-    if ((parsed as typeof parsed & { __status?: string }).__status === 'failed')
-      throw new Error('all records failed during parse');
-    // Aggregate fetches can contain many third-party results while yielding
-    // zero current/context civic items for the configured publisher. At
-    // gather time those rows look non-empty, so correct only this exact
-    // successful restricted-source case after parse; failures and sources
-    // with parsed records retain their original capability diagnostics.
-    const parsedItems = result.currentItemIds?.length
-      ? await options.dataSource
-          .getRepository('CivicItem')
-          .find({ where: { id: In(result.currentItemIds) } })
-      : [];
-    const parseFailureSourceIds = new Set(
-      parsed.errors.map((error) => error.sourceId)
-    );
-    if (options.dataSource.hasMetadata(FoundationQuarantineSchema)) {
-      const quarantines = await options.dataSource
-        .getRepository(FoundationQuarantineSchema)
-        .find({
-          where: { runId: String(acquired.runId), stage: 'parse' },
-          select: ['sourceId'],
+      // A completely failed parse is an infrastructure failure; an empty but
+      // successful parse proceeds to a deterministic quiet edition.
+      if (
+        (parsed as typeof parsed & { __status?: string }).__status === 'failed'
+      )
+        throw new Error('all records failed during parse');
+      // Aggregate fetches can contain many third-party results while yielding
+      // zero current/context civic items for the configured publisher. At
+      // gather time those rows look non-empty, so correct only this exact
+      // successful restricted-source case after parse; failures and sources
+      // with parsed records retain their original capability diagnostics.
+      const parsedItems = result.currentItemIds?.length
+        ? await options.dataSource
+            .getRepository('CivicItem')
+            .find({ where: { id: In(result.currentItemIds) } })
+        : [];
+      const parseFailureSourceIds = new Set(
+        parsed.errors.map((error) => error.sourceId)
+      );
+      if (options.dataSource.hasMetadata(FoundationQuarantineSchema)) {
+        const quarantines = await options.dataSource
+          .getRepository(FoundationQuarantineSchema)
+          .find({
+            where: { runId: String(acquired.runId), stage: 'parse' },
+            select: ['sourceId'],
+          });
+        for (const quarantine of quarantines)
+          if (quarantine.sourceId)
+            parseFailureSourceIds.add(quarantine.sourceId);
+      }
+      let correctedGatherCoverage = false;
+      for (const source of initialSources) {
+        if (!isRestrictedAggregateOnly(source)) continue;
+        const outcome = gathered.sourceOutcomes.find(
+          (candidate) => candidate.sourceKey === source.sourceKey
+        );
+        const range = result.coverageRanges?.[source.sourceKey];
+        if (
+          outcome?.outcome !== 'records' ||
+          range?.reason !== 'unsupported-capability'
+        )
+          continue;
+        // A parse error/quarantine is a source failure, not evidence of an
+        // empty publisher. Preserve the parse/source diagnostic in that case.
+        if (parseFailureSourceIds.has(source.sourceKey)) continue;
+        const sourceItems = parsedItems.filter(
+          (item) => item['sourceId'] === source.sourceKey
+        );
+        if (
+          sourceItems.some((item) =>
+            matchesConfiguredPublisherIdentity(item, source)
+          )
+        )
+          continue;
+        range.reason = 'no-dated-items';
+        correctedGatherCoverage = true;
+        for (const gap of result.coverageGaps) {
+          if (
+            gap.stage === 'gather' &&
+            gap.sourceKey === source.sourceKey &&
+            gap.reason ===
+              'source does not document date or pagination coverage capability'
+          )
+            gap.reason = 'no recent aggregate result';
+        }
+        const gatherStage = result.stages.find(
+          (stage) => stage.stage === 'gather'
+        );
+        for (const gap of gatherStage?.coverageGaps ?? []) {
+          if (
+            gap.sourceKey === source.sourceKey &&
+            gap.reason ===
+              'source does not document date or pagination coverage capability'
+          )
+            gap.reason = 'no recent aggregate result';
+        }
+      }
+      if (correctedGatherCoverage) {
+        const gatherStage = result.stages.find(
+          (stage) => stage.stage === 'gather'
+        );
+        // Keep the durable stage receipt in lockstep with the in-memory run
+        // receipt and later Markdown/acceptance/preview projections.
+        await options.dataSource.transaction(async (manager) => {
+          await manager
+            .getRepository(PipelineStageRunSchema)
+            .update(
+              { runId: acquired.runId, stage: 'gather' },
+              { coverageGaps: json(gatherStage?.coverageGaps ?? []) }
+            );
         });
-      for (const quarantine of quarantines)
-        if (quarantine.sourceId) parseFailureSourceIds.add(quarantine.sourceId);
-    }
-    let correctedGatherCoverage = false;
-    for (const source of initialSources) {
-      if (!isRestrictedAggregateOnly(source)) continue;
-      const outcome = gathered.sourceOutcomes.find(
-        (candidate) => candidate.sourceKey === source.sourceKey
-      );
-      const range = result.coverageRanges?.[source.sourceKey];
-      if (
-        outcome?.outcome !== 'records' ||
-        range?.reason !== 'unsupported-capability'
-      )
-        continue;
-      // A parse error/quarantine is a source failure, not evidence of an
-      // empty publisher. Preserve the parse/source diagnostic in that case.
-      if (parseFailureSourceIds.has(source.sourceKey)) continue;
-      const sourceItems = parsedItems.filter(
-        (item) => item['sourceId'] === source.sourceKey
-      );
-      if (
-        sourceItems.some((item) =>
-          matchesConfiguredPublisherIdentity(item, source)
-        )
-      )
-        continue;
-      range.reason = 'no-dated-items';
-      correctedGatherCoverage = true;
-      for (const gap of result.coverageGaps) {
-        if (
-          gap.stage === 'gather' &&
-          gap.sourceKey === source.sourceKey &&
-          gap.reason ===
-            'source does not document date or pagination coverage capability'
-        )
-          gap.reason = 'no recent aggregate result';
       }
-      const gatherStage = result.stages.find(
-        (stage) => stage.stage === 'gather'
-      );
-      for (const gap of gatherStage?.coverageGaps ?? []) {
-        if (
-          gap.sourceKey === source.sourceKey &&
-          gap.reason ===
-            'source does not document date or pagination coverage capability'
-        )
-          gap.reason = 'no recent aggregate result';
-      }
+      void gathered;
+      void parsed;
     }
-    if (correctedGatherCoverage) {
-      const gatherStage = result.stages.find(
-        (stage) => stage.stage === 'gather'
+    if (options.pullOnly) {
+      // A pull fetches and stores; editions come from later runs.
+      result.status = result.coverageGaps.length
+        ? 'partial_success'
+        : 'succeeded';
+      await finalizeRunAndRelease(
+        options.dataSource,
+        acquired.runId,
+        leaseScopeSlug,
+        options.cadence,
+        acquired.ownerId,
+        {
+          status: result.status,
+          completedAt: new Date().toISOString(),
+          currentStage: null,
+          counts: json(
+            Object.fromEntries(result.stages.map((s) => [s.stage, s.counts]))
+          ),
+          coverageGaps: json(result.coverageGaps),
+          coverageRanges: json(result.coverageRanges),
+        }
       );
-      // Keep the durable stage receipt in lockstep with the in-memory run
-      // receipt and later Markdown/acceptance/preview projections.
-      await options.dataSource.transaction(async (manager) => {
-        await manager
-          .getRepository(PipelineStageRunSchema)
-          .update(
-            { runId: acquired.runId, stage: 'gather' },
-            { coverageGaps: json(gatherStage?.coverageGaps ?? []) }
-          );
-      });
+      finalized = true;
+      return result;
     }
     // Determine whether the current daily interval has any parsed evidence
     // before enabling agenda repair. Long context-only agenda packets must
@@ -1121,26 +1172,35 @@ export async function runPipeline(
     // from the backfill window) while the requested daily edition has no
     // evidence.  Treat that as an intentional quiet/blocked run before any
     // summarization so it cannot fall through to canned prose.
-    const dailyClusters = await stages.collate(
-      options.dataSource,
-      locality.slug,
-      contextSince,
-      p.start,
-      ruleVersion,
-      locality.timezone,
-      p.end,
-      windows.context.end
+    // A backfilled edition reads only what had been published by its day.
+    const known = (clusters: Cluster[]): Cluster[] =>
+      options.fromStored
+        ? knownBefore(clusters, p.end, locality.timezone)
+        : clusters;
+    const dailyClusters = known(
+      await stages.collate(
+        options.dataSource,
+        locality.slug,
+        contextSince,
+        p.start,
+        ruleVersion,
+        locality.timezone,
+        p.end,
+        windows.context.end
+      )
     );
     const contextClusters = activeSummarizer.strict
-      ? await stages.collate(
-          options.dataSource,
-          locality.slug,
-          contextSince,
-          undefined,
-          ruleVersion,
-          locality.timezone,
-          undefined,
-          windows.context.end
+      ? known(
+          await stages.collate(
+            options.dataSource,
+            locality.slug,
+            contextSince,
+            undefined,
+            ruleVersion,
+            locality.timezone,
+            undefined,
+            windows.context.end
+          )
         )
       : dailyClusters;
     const contextFingerprint = contextEvidenceFingerprint(
@@ -1318,6 +1378,7 @@ export async function runPipeline(
         ...(options.communityDirectory
           ? { communityDirectory: options.communityDirectory }
           : {}),
+        ...(options.fromStored ? { publishedBefore: p.end } : {}),
         token: String(acquired.runId),
         runId: acquired.runId,
         freshnessScope: {
@@ -1345,8 +1406,6 @@ export async function runPipeline(
       result.markdownPath = publication.markdownPath;
       return { briefingId: publication.result.briefingId, markdown: 1 };
     });
-    void gathered;
-    void parsed;
     void briefing;
     if (heartbeatError) throw heartbeatError;
     await renew(

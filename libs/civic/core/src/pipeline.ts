@@ -109,6 +109,7 @@ import {
   itemLocalDate,
   isItemInEvidenceRange,
   isItemInLocalRange,
+  knownBefore,
   projectStories,
 } from './edition.js';
 import { isNotCivicRecord, scoreNewsworthiness } from './newsworthiness.js';
@@ -3838,19 +3839,29 @@ export async function brief(
   quietDay = false,
   editionMode?: import('./types.js').EditionMode,
   /** Where the community service writes its snapshots; without it a briefing carries no community material. */
-  communityDirectory?: string
+  communityDirectory?: string,
+  /** A backfill's day (D31): only evidence published before it is read. */
+  publishedBefore?: string
 ): Promise<BriefResult> {
+  const known = <C extends Cluster>(found: C[]): C[] =>
+    publishedBefore
+      ? knownBefore(found, publishedBefore, locality.timezone)
+      : found;
   const projectionRuleVersion = locality.ruleVersion ?? null;
   const clusters = projectionRuleVersion
-    ? await collate(
-        ds,
-        locality.slug,
-        contextSince ?? since,
-        periodStart,
-        projectionRuleVersion,
-        locality.timezone,
-        periodEnd,
-        coverageRange && 'end' in coverageRange ? coverageRange.end : undefined
+    ? known(
+        await collate(
+          ds,
+          locality.slug,
+          contextSince ?? since,
+          periodStart,
+          projectionRuleVersion,
+          locality.timezone,
+          periodEnd,
+          coverageRange && 'end' in coverageRange
+            ? coverageRange.end
+            : undefined
+        )
       )
     : [];
   // Quiet-day output is a strict/live contract. Legacy non-strict callers
@@ -3867,15 +3878,17 @@ export async function brief(
     : periodEnd;
   const contextClusters =
     summarizer.strict && contextSince
-      ? await collate(
-          ds,
-          locality.slug,
-          contextSince,
-          undefined,
-          projectionRuleVersion ?? undefined,
-          locality.timezone,
-          undefined,
-          contextEnd
+      ? known(
+          await collate(
+            ds,
+            locality.slug,
+            contextSince,
+            undefined,
+            projectionRuleVersion ?? undefined,
+            locality.timezone,
+            undefined,
+            contextEnd
+          )
         )
       : clusters;
   // A first (bootstrap) edition may have an empty edition day and still summarize its context window.

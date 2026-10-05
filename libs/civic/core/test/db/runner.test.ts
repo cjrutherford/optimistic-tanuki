@@ -1,5 +1,5 @@
 import { createTestDataSource, createTestSchema } from './helpers/postgres.js';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import {
   finalizeRunAndRelease,
   recoverExpired,
@@ -531,6 +531,117 @@ describe('unified pipeline runner', () => {
         result.coverageRanges
       );
       expect(await ds.getRepository('PipelineRunLease').count()).toBe(0);
+    } finally {
+      await ds.destroy();
+    }
+  });
+
+  it('pulls without an edition, then backfills a past day from stored records known by that day (D31)', async () => {
+    let fetches = 0;
+    registerAdapter({
+      name: 'runner-backfill',
+      async fetch(source) {
+        fetches += 1;
+        return [
+          {
+            kind: 'fetched',
+            status: 200,
+            url: source.url,
+            requestUrl: source.url,
+            contentType: 'text/plain',
+            fetchedAt: '2026-03-13T12:00:00.000Z',
+            payload: { kind: 'text', body: 'fixture' },
+          },
+        ];
+      },
+      async parse() {
+        return [
+          {
+            kind: 'news',
+            title: 'Adel council approves paving',
+            body: 'The Adel council approved paving on Love Avenue with enough detail.',
+            topics: ['general'],
+            uris: ['https://example.test/known'],
+            eventDate: '2026-03-07',
+            publishedAt: '2026-03-07T15:00:00.000Z',
+          },
+          {
+            kind: 'news',
+            title: 'Adel council paving, a week on',
+            body: 'Reported later: the Adel paving vote drew complaints with enough detail.',
+            topics: ['general'],
+            uris: ['https://example.test/later'],
+            eventDate: '2026-03-07',
+            publishedAt: '2026-03-12T15:00:00.000Z',
+          },
+        ];
+      },
+    });
+    const base = loadLocalityRegistry(
+      join(__dirname, '..', 'fixtures', 'localities')
+    );
+    const source = {
+      sourceKey: 'runner-backfill-source',
+      ownerSlug: 'adel-ga',
+      coverage: 'mentions' as const,
+      adapter: 'runner-backfill',
+      name: 'Fixture',
+      url: 'https://example.test/backfill',
+      kind: 'news' as const,
+    };
+    const testRegistry: LocalityRegistry = {
+      ...base,
+      sourcesForRun: (slug) => (slug === 'adel-ga' ? [source] : []),
+    };
+    const ds = await dataSource();
+    try {
+      const pull = await runPipeline({
+        registry: testRegistry,
+        localitySlug: 'adel-ga',
+        cadence: 'daily',
+        dataSource: ds,
+        summarizer,
+        now: new Date('2026-03-13T12:00:00.000Z'),
+        pullOnly: true,
+      });
+      expect(pull.stages.map((stage) => stage.stage)).toStrictEqual([
+        'ensure',
+        'gather',
+        'parse',
+      ]);
+      // The fixture adapter documents no coverage capability: a gap, not a failure.
+      expect(['succeeded', 'partial_success']).toContain(pull.status);
+      expect(await ds.getRepository('Briefing').count()).toBe(0);
+      expect(await ds.getRepository('CivicItem').count()).toBe(2);
+
+      const backfilled = await runPipeline({
+        registry: testRegistry,
+        localitySlug: 'adel-ga',
+        cadence: 'daily',
+        dataSource: ds,
+        summarizer,
+        now: new Date('2026-03-08T12:00:00.000Z'),
+        periodStart: '2026-03-07',
+        periodEnd: '2026-03-08',
+        fromStored: true,
+      });
+      expect(fetches).toBe(1);
+      expect(backfilled.stages.map((stage) => stage.stage)).toStrictEqual([
+        'ensure',
+        'extractAgenda',
+        'project',
+        'collate',
+        'brief',
+      ]);
+      const briefing = await ds
+        .getRepository('Briefing')
+        .findOneByOrFail({ periodEnd: '2026-03-08' });
+      const ids = JSON.parse(briefing['itemIds']) as number[];
+      const titles = (
+        await ds.getRepository('CivicItem').findBy({ id: In(ids) })
+      ).map((item) => item['title']);
+      // The follow-up was published on the 12th, after the edition's day.
+      expect(titles).toStrictEqual(['Adel council approves paving']);
     } finally {
       await ds.destroy();
     }

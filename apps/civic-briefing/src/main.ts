@@ -81,8 +81,18 @@ function buildSchedule(app: INestApplicationContext): DailySchedule | null {
  *
  *   civic-briefing source [town...]  search for sources now, then exit
  *   civic-briefing run [town...]     publish now, whatever the hour, then exit
+ *   civic-briefing pull [town...]    search, then fetch and parse the whole
+ *                                    history window without publishing
+ *   civic-briefing backfill [--days n] [town...]
+ *                                    write the editions the schedule would
+ *                                    have written over the last n days
+ *                                    (default PIPELINE_HISTORY_DAYS), from
+ *                                    what a pull stored (D31)
  */
-async function runOnce(mode: 'source' | 'run', towns: string[]) {
+type OnceMode = 'source' | 'run' | 'pull' | 'backfill';
+const ONCE_MODES: readonly string[] = ['source', 'run', 'pull', 'backfill'];
+
+async function runOnce(mode: OnceMode, args: string[]) {
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['log', 'error', 'warn'],
   });
@@ -92,10 +102,26 @@ async function runOnce(mode: 'source' | 'run', towns: string[]) {
       process.exitCode = 1;
       return;
     }
+    const daysAt = args.indexOf('--days');
+    const days = daysAt >= 0 ? Number(args[daysAt + 1]) : undefined;
+    if (days !== undefined && !(Number.isInteger(days) && days > 0))
+      throw new Error(`--days must be a positive whole number`);
+    const towns = args.filter(
+      (arg, index) => arg !== '--days' && index !== daysAt + 1
+    );
     const work =
-      mode === 'source' ? schedule.sourceNow(towns) : schedule.runNow(towns);
+      mode === 'source'
+        ? schedule.sourceNow(towns)
+        : mode === 'pull'
+        ? schedule.pullNow(towns)
+        : mode === 'backfill'
+        ? schedule.backfill(towns, days)
+        : schedule.runNow(towns);
     for (const { town, action } of await work) {
-      Logger.log(`${town}: ${action}`, mode === 'source' ? 'Sourcing' : 'Run');
+      Logger.log(
+        `${town}: ${action}`,
+        mode === 'source' ? 'Sourcing' : mode === 'run' ? 'Run' : mode
+      );
     }
   } finally {
     await app.close();
@@ -110,8 +136,8 @@ async function bootstrap() {
   await preflightFoundationTarget(databaseUrl(config));
 
   const mode = process.argv[2];
-  if (mode === 'source' || mode === 'run') {
-    await runOnce(mode, process.argv.slice(3));
+  if (mode && ONCE_MODES.includes(mode)) {
+    await runOnce(mode as OnceMode, process.argv.slice(3));
     return;
   }
 

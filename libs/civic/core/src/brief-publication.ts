@@ -79,6 +79,8 @@ export interface BriefPublicationOptions {
   briefingFilename: string;
   /** Where the community service writes its snapshots, when a run is given one. */
   communityDirectory?: string;
+  /** A backfill's day (D31): only evidence published before it is read. */
+  publishedBefore?: string;
   token: string;
   runId?: number;
   freshnessScope?: FreshnessScope;
@@ -382,7 +384,8 @@ export async function publishBriefing(
       options.freshnessScope,
       options.quietDay,
       options.editionMode,
-      options.communityDirectory
+      options.communityDirectory,
+      options.publishedBefore
     );
     const briefingMetadata = {
       ...(options.contextSince ? { contextSince: options.contextSince } : {}),

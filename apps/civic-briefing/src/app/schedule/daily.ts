@@ -14,6 +14,7 @@ import {
   discoverSources,
   discoveredSourcesPath,
   itemEvidenceLocalDate,
+  itemLocalDate,
   loadLocalityRegistry,
   OfficialDirectories,
   OutboundPolicy,
@@ -39,6 +40,7 @@ import {
   planFor,
   shiftDate,
   sourcingDue,
+  type RunPlan,
 } from './plan';
 import type { ScheduleConfig } from './schedule.config';
 import type { CivicCoreClient } from '@optimistic-tanuki/civic-adapters';
@@ -237,6 +239,124 @@ export class DailySchedule {
     return done;
   }
 
+  /**
+   * Searches for the named towns' sources (or every edition's), then fetches
+   * and parses their whole history window without writing an edition (D31).
+   * The first half of a backfill.
+   */
+  async pullNow(
+    slugs: readonly string[] = [],
+    now = new Date()
+  ): Promise<{ town: string; action: string }[]> {
+    const done: { town: string; action: string }[] = [];
+    for (const town of this.towns(slugs)) {
+      const { localDate } = localClock(now, town.timezone);
+      done.push({
+        town: town.slug,
+        action: await this.source(town, localDate),
+      });
+      done.push({
+        town: town.slug,
+        action: await this.run(town, 'daily', undefined, localDate, now, {
+          pullOnly: true,
+        }),
+      });
+    }
+    return done;
+  }
+
+  /**
+   * Writes the editions the schedule would have written over the last `days`
+   * days, up to and including today, from what a pull stored (D31). Each day
+   * is planned as the schedule would have planned it, in the town's own
+   * cadence, and each edition reads only what had been published by its day.
+   * Days that already have an edition are kept. A town stops after three
+   * failures in a row, so a model that is down is not asked 180 times.
+   */
+  async backfill(
+    slugs: readonly string[] = [],
+    days = this.config.historyDays,
+    now = new Date()
+  ): Promise<{ town: string; action: string }[]> {
+    const done: { town: string; action: string }[] = [];
+    for (const town of this.towns(slugs)) {
+      const today = localClock(now, town.timezone).localDate;
+      const existing = new Map(
+        (
+          await this.dataSource.getRepository(BriefingSchema).find({
+            where: { localitySlug: town.slug },
+            select: { periodEnd: true, cadence: true },
+          })
+        ).map((row) => [row.periodEnd, row.cadence as Cadence])
+      );
+      let last: { periodEnd: string; cadence: Cadence } | null = null;
+      for (const [periodEnd, cadence] of existing)
+        if (
+          periodEnd < shiftDate(today, -days) &&
+          periodEnd > (last?.periodEnd ?? '')
+        )
+          last = { periodEnd, cadence };
+      let written = 0;
+      let failures = 0;
+      for (
+        let day = shiftDate(today, -days);
+        day <= today;
+        day = shiftDate(day, 1)
+      ) {
+        const kept = existing.get(day);
+        if (kept) {
+          last = { periodEnd: day, cadence: kept };
+          continue;
+        }
+        const plan: RunPlan = planFor(
+          {
+            localDate: day,
+            localTime: this.config.dailyAt,
+            lastSuccess: last?.periodEnd ?? null,
+            lastCadence: last?.cadence ?? null,
+            failuresToday: 0,
+            recentItems: last
+              ? await this.recentItems(town, day, true)
+              : undefined,
+          },
+          this.config
+        );
+        if (!plan.due) continue;
+        const status = await this.run(
+          town,
+          plan.cadence,
+          undefined,
+          day,
+          new Date(`${day}T12:00:00Z`),
+          { periodEnd: day }
+        );
+        if (status === 'succeeded' || status === 'partial_success') {
+          last = { periodEnd: day, cadence: plan.cadence };
+          written += 1;
+          failures = 0;
+        } else if (++failures >= 3) {
+          done.push({
+            town: town.slug,
+            action: `backfill stopped at ${day} after 3 failures in a row; ${written} edition(s) written`,
+          });
+          break;
+        }
+      }
+      if (failures < 3)
+        done.push({
+          town: town.slug,
+          action: `backfill of ${days} days: ${written} edition(s) written`,
+        });
+    }
+    return done;
+  }
+
+  private towns(slugs: readonly string[]): readonly LocalityConfig[] {
+    return this.editions().filter(
+      (town) => !slugs.length || slugs.includes(town.slug)
+    );
+  }
+
   private editions(): readonly LocalityConfig[] {
     return this.registry.editions();
   }
@@ -268,7 +388,9 @@ export class DailySchedule {
    */
   private async recentItems(
     town: LocalityConfig,
-    localDate: string
+    localDate: string,
+    /** Count only what had been published before `localDate` (a backfill, D31). */
+    knownBefore = false
   ): Promise<number> {
     const slugs = [
       town.slug,
@@ -285,7 +407,13 @@ export class DailySchedule {
     });
     return rows.filter((row) => {
       const day = itemEvidenceLocalDate(row, town.timezone);
-      return day !== null && day >= since && day < localDate;
+      if (day === null || day < since || day >= localDate) return false;
+      if (!knownBefore) return true;
+      const published = itemLocalDate(
+        { eventDate: null, publishedAt: row.publishedAt },
+        town.timezone
+      );
+      return published === null || published < localDate;
     }).length;
   }
 
@@ -294,7 +422,8 @@ export class DailySchedule {
     cadence: Cadence,
     gatherSince: string | undefined,
     localDate: string,
-    now: Date
+    now: Date,
+    mode: RunMode = {}
   ): Promise<string> {
     const started = Date.now();
     try {
@@ -309,6 +438,17 @@ export class DailySchedule {
         outputRoot: this.config.artifacts,
         backfillDays: this.config.historyDays,
         ...(gatherSince ? { gatherSince } : {}),
+        ...(mode.pullOnly ? { pullOnly: true } : {}),
+        ...(mode.periodEnd
+          ? {
+              fromStored: true,
+              periodStart: shiftDate(
+                mode.periodEnd,
+                cadence === 'weekly' ? -7 : -1
+              ),
+              periodEnd: mode.periodEnd,
+            }
+          : {}),
         ...(this.config.communityDirectory
           ? { communityDirectory: this.config.communityDirectory }
           : {}),
@@ -359,8 +499,16 @@ export class DailySchedule {
         result.status === 'partial_success'
       ) {
         this.logger.log(
-          `${town.slug}: ${cadence} ${result.status} in ${seconds}s${
-            gatherSince
+          `${town.slug}: ${
+            mode.pullOnly
+              ? 'pull'
+              : mode.periodEnd
+              ? `${cadence} for ${mode.periodEnd} (backfill)`
+              : cadence
+          } ${result.status} in ${seconds}s${
+            mode.periodEnd
+              ? ''
+              : gatherSince
               ? ` reading since ${gatherSince}`
               : ` reading ${this.config.historyDays} days`
           }${gaps}`
@@ -548,4 +696,12 @@ export class DailySchedule {
     }
     return last;
   }
+}
+
+/** How a run differs from a scheduled one (D31). */
+interface RunMode {
+  /** Fetch and parse only; write no edition. */
+  pullOnly?: boolean;
+  /** Write the edition for this past local date from stored records. */
+  periodEnd?: string;
 }

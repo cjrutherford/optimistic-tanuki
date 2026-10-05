@@ -120,6 +120,29 @@ export function isDayInContextWindow(
   );
 }
 
+/**
+ * Drops evidence published on or after `day` (a local date), and clusters
+ * left empty (D31). A backfilled edition is written later from stored
+ * records; this keeps it to what had been published by its own day. An item
+ * without a publication date is kept: nothing says it came later.
+ */
+export function knownBefore<
+  C extends { items: Pick<CivicItemRow, 'publishedAt'>[] }
+>(clusters: readonly C[], day: string, timezone: string): C[] {
+  return clusters
+    .map((cluster) => ({
+      ...cluster,
+      items: cluster.items.filter((item) => {
+        const published = itemLocalDate(
+          { eventDate: null, publishedAt: item.publishedAt },
+          timezone
+        );
+        return published === null || published < day;
+      }),
+    }))
+    .filter((cluster) => cluster.items.length > 0);
+}
+
 /** Half-open local-calendar membership used by both edition and briefing views. */
 export function isItemInLocalRange(
   item: Pick<CivicItemRow, 'eventDate' | 'publishedAt'>,
