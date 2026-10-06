@@ -448,6 +448,8 @@ Auth bypass, stale-user data after logout, cross-account leakage, unusable regis
 
 **Status:** GAP FOUND. [Findings and real-stack privacy gates](./findings/RR-04.md). Anonymous post-read bypass repaired; private-community and realtime content disclosures remain P0. Following-feed, explicit audience, and source-sharing gaps also confirmed. No privacy acceptance or promotion waiver.
 
+**Implementation scheduled:** [RR04-I01–I03](./EXECUTION-PLAN.md#scheduled-implementation-queue). RR04-I01 (P0 community/realtime privacy) is next, before RR-05, in planned PR A. RR04-I02 (audience/sharing/following feed) follows RR-08 and precedes RR-09 in planned PR B; RR04-I03 completes RR-04 acceptance immediately afterward and repeats in RR-12. Queue state is PLANNED; no finding is waived or accepted by scheduling.
+
 **Goal:** Verify OT's defining control/visibility philosophy in real behavior.
 
 ### Checks
@@ -982,6 +984,7 @@ Use this section for concise status changes. Detailed evidence should live in sl
 
 | Date       | Item                    | Change                                                                                                                                                                                                              |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-06 | RR-04 repairs scheduled | Assigned unresolved findings to RR04-I01–I03: P0 privacy next before RR-05 (planned PR A), audience/sharing/feed after RR-08 before RR-09 (planned PR B), then full acceptance and RR-12 integrated recheck.        |
 | 2026-10-06 | RR-04 privacy audit     | Repaired anonymous read bypass and preserved reporter identity. Real multi-user gates expose private-community and realtime content; GAP FOUND with P0 release blockers. See findings/RR-04.md.                     |
 | 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
 | 2026-10-05 | RR-02 verification      | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
