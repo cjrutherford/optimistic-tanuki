@@ -865,7 +865,7 @@ services:
       retries: 12
 
   civic-briefing:
-    image: cjrutherford/optimistic_tanuki_civic_briefing:${E2E_IMAGE_TAG:-latest}
+    image: cjrutherford/optimistic_tanuki_civic-briefing:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/civic-briefing/Dockerfile
@@ -914,7 +914,7 @@ services:
   civic-briefing-seed:
     # Published briefings for the suites, through civic-briefing's own
     # entities (D28). The fixtures and the frozen localities are the repo's.
-    image: cjrutherford/optimistic_tanuki_civic_briefing:${E2E_IMAGE_TAG:-latest}
+    image: cjrutherford/optimistic_tanuki_civic-briefing:${E2E_IMAGE_TAG:-latest}
     environment:
       POSTGRES_HOST: db
       POSTGRES_DB: ot_civic_briefing
@@ -932,7 +932,7 @@ services:
     restart: 'no'
 
   civic-contributions:
-    image: cjrutherford/optimistic_tanuki_civic_contributions:${E2E_IMAGE_TAG:-latest}
+    image: cjrutherford/optimistic_tanuki_civic-contributions:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/civic-contributions/Dockerfile

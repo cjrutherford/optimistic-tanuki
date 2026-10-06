@@ -38,9 +38,9 @@ images:
     newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_civic
     newTag: sha-c925c64
-  - name: cjrutherford/optimistic_tanuki_civic_briefing
+  - name: cjrutherford/optimistic_tanuki_civic-briefing
     newTag: sha-c925c64
-  - name: cjrutherford/optimistic_tanuki_civic_contributions
+  - name: cjrutherford/optimistic_tanuki_civic-contributions
     newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_classifieds
     newTag: sha-c925c64

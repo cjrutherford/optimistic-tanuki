@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: civic-briefing
-          image: cjrutherford/optimistic_tanuki_civic_briefing:latest
+          image: cjrutherford/optimistic_tanuki_civic-briefing:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3028

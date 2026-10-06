@@ -672,7 +672,7 @@ func (c *Catalog) initServices() {
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
-			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_civic_briefing", Tag: "latest"},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_civic-briefing", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
 				{ServiceID: "clamav", Required: true},
@@ -706,7 +706,7 @@ func (c *Catalog) initServices() {
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
-			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_civic_contributions", Tag: "latest"},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_civic-contributions", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
 				{ServiceID: "clamav", Required: true},

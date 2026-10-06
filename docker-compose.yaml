@@ -524,7 +524,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/civic-briefing/Dockerfile
-    image: cjrutherford/optimistic_tanuki_civic_briefing:${PRODUCTION_IMAGE_TAG:-latest}
+    image: cjrutherford/optimistic_tanuki_civic-briefing:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
       - '${CIVIC_BRIEFING_PORT:-3028}:3028'
     environment:
@@ -571,7 +571,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/civic-contributions/Dockerfile
-    image: cjrutherford/optimistic_tanuki_civic_contributions:${PRODUCTION_IMAGE_TAG:-latest}
+    image: cjrutherford/optimistic_tanuki_civic-contributions:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
       - '${CIVIC_CONTRIBUTIONS_PORT:-3029}:3029'
     environment:

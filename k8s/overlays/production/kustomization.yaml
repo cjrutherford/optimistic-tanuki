@@ -38,9 +38,9 @@ images:
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_civic
     newTag: latest
-  - name: cjrutherford/optimistic_tanuki_civic_briefing
+  - name: cjrutherford/optimistic_tanuki_civic-briefing
     newTag: latest
-  - name: cjrutherford/optimistic_tanuki_civic_contributions
+  - name: cjrutherford/optimistic_tanuki_civic-contributions
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_classifieds
     newTag: latest

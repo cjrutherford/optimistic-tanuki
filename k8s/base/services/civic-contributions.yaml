@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: civic-contributions
-          image: cjrutherford/optimistic_tanuki_civic_contributions:latest
+          image: cjrutherford/optimistic_tanuki_civic-contributions:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3029
