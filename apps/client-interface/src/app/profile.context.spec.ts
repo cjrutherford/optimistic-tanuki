@@ -135,6 +135,7 @@ describe('ProfileContext', () => {
   it('delegates selectProfile to the profile service', () => {
     const ctx = configure('browser');
 
+    profileService.getCurrentUserProfile.mockReturnValue(profile('d'));
     ctx.selectProfile(profile('d'));
 
     expect(profileService.selectProfile).toHaveBeenCalledWith(profile('d'));

@@ -15,6 +15,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      // These forms render their own accessible errors. A failed login is
+      // not proof of an expired session, and duplicate toasts obscure the form.
+      if (/\/authentication\/(login|register)$/.test(req.url.split('?')[0])) {
+        return throwError(() => error);
+      }
+
       let errorMessage = 'An unexpected error occurred';
       let errorType: 'error' | 'warning' | 'info' = 'error';
 

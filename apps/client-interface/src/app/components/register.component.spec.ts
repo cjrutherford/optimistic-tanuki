@@ -126,7 +126,10 @@ describe('RegisterComponent behaviour', () => {
         component as unknown as {
           oauthService: { configureProviders: unknown };
         }
-      ).oauthService = { configureProviders } as never;
+      ).oauthService = {
+        configureProviders,
+        getEnabledProviders: jest.fn().mockReturnValue(['google']),
+      } as never;
 
       component.ngOnInit();
       httpMock.expectOne('/api/oauth/config').flush({ github: true });
@@ -136,7 +139,7 @@ describe('RegisterComponent behaviour', () => {
       expect(configureProviders).toHaveBeenCalledWith({ github: true });
     });
 
-    it('falls back to defaults when the request fails', async () => {
+    it('keeps OAuth providers hidden when configuration cannot be loaded', async () => {
       component.ngOnInit();
       httpMock
         .expectOne('/api/oauth/config')
@@ -144,9 +147,7 @@ describe('RegisterComponent behaviour', () => {
       await Promise.resolve();
       await Promise.resolve();
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'OAuth config not loaded from server, using defaults'
-      );
+      expect(component.enabledOAuthProviders).toEqual([]);
     });
   });
 
@@ -191,7 +192,9 @@ describe('RegisterComponent behaviour', () => {
 
       component.onSubmit(form);
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+      expect(component.errorMessage).toContain(
+        'Registration could not be completed'
+      );
       expect(router.navigate).not.toHaveBeenCalled();
     });
   });

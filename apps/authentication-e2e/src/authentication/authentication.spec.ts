@@ -300,4 +300,19 @@ describe('Authentication Microservice E2E', () => {
       }
     });
   });
+  describe('Logout', () => {
+    it('revokes a real issued token', async () => {
+      await firstValueFrom(
+        authClient.send({ cmd: AuthCommands.Logout }, { token: authToken })
+      );
+      await expect(
+        firstValueFrom(
+          authClient.send(
+            { cmd: AuthCommands.Validate },
+            { token: authToken, userId }
+          )
+        )
+      ).rejects.toBeDefined();
+    });
+  });
 });

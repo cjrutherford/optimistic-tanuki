@@ -145,6 +145,13 @@ describe('client HTTP interceptors', () => {
       });
     });
 
+    it.each(['/api/authentication/login', '/api/authentication/register'])(
+      'lets the form explain errors from %s without an expiry toast',
+      (url) => {
+        runError(url, new HttpErrorResponse({ status: 401 }));
+        expect(messages.addMessage).not.toHaveBeenCalled();
+      }
+    );
     it('shows a session-expired message for a 401 from a protected endpoint', () => {
       runError('/api/social/feed', new HttpErrorResponse({ status: 401 }));
 

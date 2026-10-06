@@ -47,6 +47,7 @@ import { AuthStateService } from '../../services/auth-state.service';
           callToAction="Create an account to join local communities."
           heroSource="assets/ts.png"
           (submitEvent)="onRegister($event)"
+          [enabledOAuthProviders]="enabledOAuthProviders"
           (oauthProviderSelected)="onOAuthProvider($event)"
         ></lib-register-block>
         @if (error) {
@@ -145,6 +146,7 @@ export class RegisterComponent {
   private oauthService = new OAuthService(this.http, '/api');
 
   error: string | null = null;
+  enabledOAuthProviders: string[] = [];
 
   constructor() {
     void this.loadOAuthConfig();
@@ -155,9 +157,10 @@ export class RegisterComponent {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch {
-      // Keep default provider config when the endpoint is unavailable.
+      // Keep unverified OAuth providers hidden when configuration is unavailable.
     }
   }
 
@@ -192,6 +195,11 @@ export class RegisterComponent {
 
       if (result.success) {
         await this.authState.restoreSession();
+        if (!this.authState.isAuthenticated) {
+          this.error =
+            'Sign-in could not restore your session. Please try again.';
+          return;
+        }
         await this.router.navigate(['/']);
         return;
       }
@@ -209,12 +217,20 @@ export class RegisterComponent {
 
         if (regResult.success) {
           await this.authState.restoreSession();
+          if (!this.authState.isAuthenticated) {
+            this.error =
+              'Sign-in could not restore your session. Please try again.';
+            return;
+          }
           await this.router.navigate(['/']);
           return;
         }
 
         this.error =
           regResult.error || 'OAuth registration failed. Please try again.';
+      } else {
+        this.error =
+          result.error || 'OAuth registration failed. Please try again.';
       }
     } catch {
       this.error = 'OAuth registration failed. Please try again.';

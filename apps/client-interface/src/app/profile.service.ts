@@ -26,6 +26,21 @@ export class ProfileService {
 
   /** The app scope identifier for this application */
   private readonly appScope = 'client-interface';
+  private identityGeneration = 0;
+
+  constructor() {
+    let previousUserId: string | undefined;
+    this.authState.decodedToken$.subscribe((user) => {
+      if (user?.userId !== previousUserId || !user) {
+        ++this.identityGeneration;
+        this.currentUserProfiles.set([]);
+        this.allProfiles.set([]);
+        this.discoverableProfiles.set([]);
+        this.currentUserProfile.set(null);
+      }
+      previousUserId = user?.userId;
+    });
+  }
 
   /**
    * Checks if a URL is an external asset URL (not yet stored on the server)
@@ -106,7 +121,7 @@ export class ProfileService {
 
   selectProfile(_p: ProfileDto) {
     const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
-    const selectedProfile = profile ?? _p;
+    const selectedProfile = profile;
     if (selectedProfile) {
       this.currentUserProfile.set(selectedProfile);
       this.authState.persistSelectedProfile(selectedProfile);
@@ -145,14 +160,17 @@ export class ProfileService {
   }
 
   async getAllProfiles() {
+    const generation = this.identityGeneration;
+    const userId = this.authState.getDecodedTokenValue()?.userId;
     const profiles = await firstValueFrom(
       this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile`)
     );
+    if (generation !== this.identityGeneration) return;
     this.allProfiles.set(profiles);
     // Filter profiles for current user that are either global or for this app scope
     const userProfiles = profiles.filter(
       (p) =>
-        p.userId === this.authState.getDecodedTokenValue()?.userId &&
+        p.userId === userId &&
         (this.isGlobalProfile(p) || this.isLocalProfile(p))
     );
     this.currentUserProfiles.set(userProfiles);
@@ -160,21 +178,31 @@ export class ProfileService {
   }
 
   async getDiscoverableProfiles() {
+    const generation = this.identityGeneration;
     const profiles = await firstValueFrom(
       this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile/discover`)
     );
-    this.discoverableProfiles.set(profiles);
+    if (generation === this.identityGeneration)
+      this.discoverableProfiles.set(profiles);
   }
 
   async getProfileById(id: string) {
+    const generation = this.identityGeneration;
     const profile = await firstValueFrom(
       this.http.get<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`)
     );
-    this.currentUserProfile.set(profile);
-    this.authState.persistSelectedProfile(profile);
+    if (
+      generation === this.identityGeneration &&
+      profile.userId === this.authState.getDecodedTokenValue()?.userId
+    ) {
+      this.currentUserProfile.set(profile);
+      this.authState.persistSelectedProfile(profile);
+    }
+    return profile;
   }
 
   async createProfile(profile: CreateProfileDto) {
+    const generation = this.identityGeneration;
     const originalProfilePic = profile.profilePic;
     const originalCoverPic = profile.coverPic;
     profile.profilePic = '';
@@ -186,6 +214,7 @@ export class ProfileService {
     const resp: any = await firstValueFrom(
       this.http.post(`${this.apiBaseUrl}/profile`, profile)
     );
+    if (generation !== this.identityGeneration) return;
     let newProfile: ProfileDto;
     // If the gateway issued a refreshed token including profileId, it will return { profile, newToken }
     if (resp && resp.newToken) {
@@ -247,6 +276,7 @@ export class ProfileService {
       );
     }
 
+    if (generation !== this.identityGeneration) return;
     this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
     this.currentUserProfile.set(newProfile);
     this.authState.persistProfiles(this.currentUserProfiles());
@@ -258,6 +288,7 @@ export class ProfileService {
    * If the user only has a global profile, creates a local profile for this app scope.
    */
   async updateProfile(id: string, profile: UpdateProfileDto) {
+    const generation = this.identityGeneration;
     // Check if this is a global profile and we need to create a local one
     const existingProfile = this.getCurrentUserProfiles().find(
       (p) => p.id === id
@@ -350,6 +381,7 @@ export class ProfileService {
     const updatedProfile = await firstValueFrom(
       this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
     );
+    if (generation !== this.identityGeneration) return;
     this.currentUserProfiles.update((profiles) =>
       profiles.map((p) => (p.id === id ? updatedProfile : p))
     );

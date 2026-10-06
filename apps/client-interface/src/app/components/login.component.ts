@@ -34,6 +34,8 @@ export class LoginComponent implements OnDestroy, OnInit {
   private readonly messageService = inject(MessageService);
   private readonly http = inject(HttpClient);
   private readonly platformId = inject(PLATFORM_ID);
+  errorMessage = '';
+  enabledOAuthProviders: string[] = [];
   themeSub?: Subscription;
   themeStyles!: {
     backgroundColor: string;
@@ -76,22 +78,25 @@ export class LoginComponent implements OnDestroy, OnInit {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config && this.oauthService) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch (e) {
-      console.log('OAuth config not loaded from server, using defaults');
+      console.log(
+        'OAuth configuration unavailable; provider buttons remain hidden'
+      );
     }
   }
 
   async onSubmit($event: LoginType) {
     const event = $event as any;
-    console.log(event);
+    this.errorMessage = '';
     const loginRequest: LoginRequest = {
       email: event.email,
       password: event.password,
     };
     try {
-      const response = await this.authStateService.login(loginRequest);
-      console.log(response);
+      await this.authStateService.login(loginRequest);
+
       if (this.authStateService.isAuthenticated) {
         const decoded = this.authStateService.getDecodedTokenValue();
         // If profileId is empty string, show only the profile creation modal
@@ -128,8 +133,11 @@ export class LoginComponent implements OnDestroy, OnInit {
           });
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      this.errorMessage =
+        err?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 

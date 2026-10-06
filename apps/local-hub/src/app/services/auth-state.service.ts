@@ -62,8 +62,15 @@ export class AuthStateService {
 
   async login(email: string, password: string): Promise<void> {
     const request: LoginRequest = { email, password };
+    const generation = ++this.restoreGeneration;
     await this.authService.login(request);
+    if (generation !== this.restoreGeneration)
+      throw new Error('Sign-in was cancelled.');
     await this.restoreSession();
+    if (!this.isAuthenticated)
+      throw new Error(
+        'Sign-in could not restore your session. Please try again.'
+      );
   }
 
   async restoreSession(): Promise<void> {
@@ -105,6 +112,8 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    ++this.restoreGeneration;
+    this.sessionRestorePromise = Promise.resolve();
     this.http
       .post('/api/authentication/logout', {}, { withCredentials: true })
       .subscribe({ error: () => undefined });

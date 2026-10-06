@@ -57,9 +57,7 @@ export class AuthStateService {
     this.tokenSubject = new BehaviorSubject<string | null>(null);
     this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
     this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
-    this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(
-      this.getPersistedSelectedProfile()
-    );
+    this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(null);
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
     this.currentProfile$ = this.currentProfileSubject.asObservable();
@@ -80,8 +78,19 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
+    const generation = ++this.sessionRestoreGeneration;
+    this.inflightRestore = undefined;
     const response = await this.authService.login(loginRequest);
-    await this.restoreSession();
+    if (generation !== this.sessionRestoreGeneration)
+      throw new Error('Sign-in was cancelled.');
+    // A pre-login anonymous probe must not satisfy the post-login restore.
+    ++this.sessionRestoreGeneration;
+    this.inflightRestore = undefined;
+    if (!(await this.restoreSession())) {
+      throw new Error(
+        'Sign-in could not restore your session. Please try again.'
+      );
+    }
     return response;
   }
 
@@ -125,10 +134,7 @@ export class AuthStateService {
       if (restoreGeneration !== this.sessionRestoreGeneration) {
         return this._isAuthenticated;
       }
-      this.tokenSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.decodedTokenSubject.next(null);
-      this._isAuthenticated = false;
+      this.clearClientSession();
       return false;
     }
   }
@@ -139,15 +145,25 @@ export class AuthStateService {
     }
     localStorage.removeItem(this.tokenKey);
     this.tokenSubject.next(null);
-    this.isAuthenticatedSubject.next(true);
-    this.decodedTokenSubject.next({ ...user, profileId: user.profileId ?? '' });
+    const saved = this.readStoredProfile<ProfileDto>(this.selectedProfileKey);
+    const cached = this.readStoredProfile<ProfileDto[]>(this.profilesKey);
+    if (
+      (saved && saved.userId !== user.userId) ||
+      (cached &&
+        (!Array.isArray(cached) ||
+          cached.some((p) => p?.userId !== user.userId)))
+    ) {
+      localStorage.removeItem(this.selectedProfileKey);
+      localStorage.removeItem(this.profilesKey);
+    }
     this._isAuthenticated = true;
+    this.decodedTokenSubject.next({ ...user, profileId: user.profileId ?? '' });
+    this.currentProfileSubject.next(this.getPersistedSelectedProfile());
+    this.isAuthenticatedSubject.next(true);
   }
 
   setToken(token: string) {
-    console.log('setToken called with token:', token);
     if (!isPlatformBrowser(this.platformId)) {
-      console.log('setToken called on non-browser platform');
       return;
     }
     ++this.sessionRestoreGeneration;
@@ -180,14 +196,28 @@ export class AuthStateService {
           console.error('Failed to invalidate session on gateway:', err),
       });
 
+    this.clearClientSession();
+  }
+
+  private clearClientSession() {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
+    this._isAuthenticated = false;
     this.tokenSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
     this.currentProfileSubject.next(null);
-    this._isAuthenticated = false;
+    this.isAuthenticatedSubject.next(false);
+  }
+
+  private readStoredProfile<T>(key: string): T | null {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? (JSON.parse(value) as T) : null;
+    } catch {
+      localStorage.removeItem(key);
+      return null;
+    }
   }
 
   private getDecodedToken(): UserData | null {
@@ -225,17 +255,19 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const profiles = localStorage.getItem(this.profilesKey);
-    if (profiles) {
-      return JSON.parse(profiles) as ProfileDto[];
-    }
-    return null;
+    const userId = this.decodedTokenSubject.value?.userId;
+    if (!this._isAuthenticated || !userId) return null;
+    const profiles = this.readStoredProfile<ProfileDto[]>(this.profilesKey);
+    if (!Array.isArray(profiles)) return null;
+    return profiles.filter((p) => p?.userId === userId);
   }
 
   persistSelectedProfile(profile: ProfileDto | null) {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    if (profile && profile.userId !== this.decodedTokenSubject.value?.userId)
+      return;
     if (profile) {
       localStorage.setItem(this.selectedProfileKey, JSON.stringify(profile));
       this.currentProfileSubject.next(profile);
@@ -249,10 +281,9 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const profile = localStorage.getItem(this.selectedProfileKey);
-    if (profile) {
-      return JSON.parse(profile) as ProfileDto;
-    }
-    return null;
+    const userId = this.decodedTokenSubject.value?.userId;
+    if (!this._isAuthenticated || !userId) return null;
+    const profile = this.readStoredProfile<ProfileDto>(this.selectedProfileKey);
+    return profile?.userId === userId ? profile : null;
   }
 }

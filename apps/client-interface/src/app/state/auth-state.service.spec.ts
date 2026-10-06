@@ -20,7 +20,7 @@ const USER: UserData = {
   profileId: 'p1',
 };
 
-const PROFILE = { id: 'p1', profileName: 'Ada' } as ProfileDto;
+const PROFILE = { id: 'p1', userId: 'u1', profileName: 'Ada' } as ProfileDto;
 
 describe('AuthStateService', () => {
   let httpMock: HttpTestingController;
@@ -88,19 +88,63 @@ describe('AuthStateService', () => {
       httpMock.verify();
     });
 
-    it('seeds currentProfile$ from the persisted selected profile', async () => {
+    it('restores an owned selected profile after session verification', async () => {
       localStorage.setItem(
         'ot-client-selectedProfile',
         JSON.stringify(PROFILE)
       );
       const service = configure('browser');
       httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
 
       await expect(firstValueFrom(service.currentProfile$)).resolves.toEqual(
         PROFILE
       );
     });
 
+    it('does not expose a saved profile before the session is verified', async () => {
+      localStorage.setItem(
+        'ot-client-selectedProfile',
+        JSON.stringify(PROFILE)
+      );
+      const service = configure('browser');
+      expect(await firstValueFrom(service.currentProfile$)).toBeNull();
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+      expect(await firstValueFrom(service.currentProfile$)).toEqual(PROFILE);
+    });
+
+    it('clears saved profiles after a rejected session probe', async () => {
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
+      service.persistProfiles([PROFILE]);
+      service.persistSelectedProfile(PROFILE);
+      const pending = service.restoreSession();
+      httpMock
+        .expectOne(SESSION_URL)
+        .flush({}, { status: 401, statusText: 'Unauthorized' });
+      await pending;
+      expect(localStorage.getItem('ot-client-selectedProfile')).toBeNull();
+      expect(localStorage.getItem('ot-client-profiles')).toBeNull();
+      expect(await firstValueFrom(service.currentProfile$)).toBeNull();
+    });
+
+    it('discards profile state belonging to a previous account', async () => {
+      localStorage.setItem(
+        'ot-client-selectedProfile',
+        JSON.stringify({ ...PROFILE, userId: 'other' })
+      );
+      localStorage.setItem(
+        'ot-client-profiles',
+        JSON.stringify([{ ...PROFILE, userId: 'other' }])
+      );
+      const service = configure('browser');
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await Promise.resolve();
+      expect(service.getPersistedSelectedProfile()).toBeNull();
+      expect(service.getPersistedProfiles()).toBeNull();
+    });
     it('logs in through the authentication service and then restores the session', async () => {
       const service = configure('browser');
       httpMock.expectOne(SESSION_URL).flush({ data: USER });

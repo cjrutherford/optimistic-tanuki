@@ -97,6 +97,58 @@ describe('AuthStateService', () => {
     expect(service.getUserData()?.userId).toBe('user-2');
   });
 
+  it('does not restore a signed-out user from a late session response', async () => {
+    let resolve!: (value: unknown) => void;
+    const currentSession = jest.fn(
+      () =>
+        new Promise((r) => {
+          resolve = r;
+        })
+    );
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    const pending = service.waitForSessionRestore();
+    service.logout();
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush({});
+    resolve({ data: { userId: 'old-user', email: 'old@example.test' } });
+    await pending;
+    expect(service.isAuthenticated).toBe(false);
+    expect(service.getUserData()).toBeNull();
+  });
+
+  it('rejects login when the session cannot be restored', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: AuthenticationService,
+          useValue: {
+            login: jest.fn().mockResolvedValue({}),
+            currentSession: jest
+              .fn()
+              .mockRejectedValue(new Error('no session')),
+          },
+        },
+      ],
+    });
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    await expect(
+      service.login('user@example.test', 'test-password')
+    ).rejects.toThrow();
+  });
   describe('server platform', () => {
     function setupServer(currentSession = jest.fn()) {
       TestBed.configureTestingModule({

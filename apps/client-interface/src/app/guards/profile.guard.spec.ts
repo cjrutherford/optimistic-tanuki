@@ -32,6 +32,7 @@ describe('ProfileGuard', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([]);
     authStateSubject.next(true);
     localStorage.clear();
 
@@ -54,6 +55,9 @@ describe('ProfileGuard', () => {
       JSON.stringify({ id: 'profile-1', profileName: 'User One' })
     );
 
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([
+      { id: 'profile-1', profileName: 'User One' } as ProfileDto,
+    ]);
     const result = await guard.canActivate();
 
     expect(result).toBe(true);
@@ -77,11 +81,35 @@ describe('ProfileGuard', () => {
 
   it('restores a cookie session before loading profiles when the guard starts unauthenticated', async () => {
     authStateSubject.next(false);
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([
+      { id: 'mine' } as ProfileDto,
+    ]);
 
     const result = await guard.canActivate();
 
     expect(result).toBe(true);
     expect(authStateServiceMock.restoreSession).toHaveBeenCalledTimes(1);
     expect(profileServiceMock.getAllProfiles).toHaveBeenCalledTimes(1);
+  });
+  it('routes an account without profiles to profile creation', async () => {
+    expect(await guard.canActivate()).toBe(false);
+    expect(routerMock.navigate).toHaveBeenCalledWith(
+      ['/settings'],
+      expect.anything()
+    );
+  });
+
+  it('does not select a saved profile outside the fresh account list', async () => {
+    localStorage.setItem(
+      'ot-client-selectedProfile',
+      JSON.stringify({ id: 'stale' })
+    );
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([
+      { id: 'mine' } as ProfileDto,
+    ]);
+    expect(await guard.canActivate()).toBe(true);
+    expect(profileServiceMock.selectProfile).toHaveBeenCalledWith({
+      id: 'mine',
+    });
   });
 });

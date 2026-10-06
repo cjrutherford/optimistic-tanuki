@@ -27,17 +27,21 @@ export class ProfileGuard implements CanActivate {
     if (this.isAuthenticated) {
       try {
         await this.profileService.getAllProfiles();
+        const profiles = this.profileService.getCurrentUserProfiles();
+        if (!profiles.length) {
+          this.router.navigate(['/settings'], {
+            state: {
+              showProfileModal: true,
+              profileMessage: 'Please create a profile to continue.',
+            },
+          });
+          return false;
+        }
         if (isPlatformBrowser(this.platformId)) {
-          const selectedProfile =
-            this.authStateService.getPersistedSelectedProfile();
-          if (selectedProfile) {
-            this.profileService.selectProfile(selectedProfile);
-          } else {
-            const [firstProfile] = this.profileService.getCurrentUserProfiles();
-            if (firstProfile) {
-              this.profileService.selectProfile(firstProfile);
-            }
-          }
+          const saved = this.authStateService.getPersistedSelectedProfile();
+          this.profileService.selectProfile(
+            profiles.find((p) => p.id === saved?.id) ?? profiles[0]
+          );
         }
         return true;
       } catch (error) {

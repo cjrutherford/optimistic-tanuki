@@ -180,7 +180,10 @@ describe('LoginComponent behaviour', () => {
         component as unknown as {
           oauthService: { configureProviders: unknown };
         }
-      ).oauthService = { configureProviders } as never;
+      ).oauthService = {
+        configureProviders,
+        getEnabledProviders: jest.fn().mockReturnValue(['google']),
+      } as never;
 
       const pending = (
         component as unknown as { loadOAuthConfig: () => Promise<void> }
@@ -191,7 +194,7 @@ describe('LoginComponent behaviour', () => {
       expect(configureProviders).toHaveBeenCalledWith({ google: true });
     });
 
-    it('falls back to defaults when the request fails', async () => {
+    it('keeps OAuth providers hidden when configuration cannot be loaded', async () => {
       const pending = (
         component as unknown as { loadOAuthConfig: () => Promise<void> }
       ).loadOAuthConfig();
@@ -200,9 +203,7 @@ describe('LoginComponent behaviour', () => {
         .flush(null, { status: 500, statusText: 'Server Error' });
       await pending;
 
-      expect(logSpy).toHaveBeenCalledWith(
-        'OAuth config not loaded from server, using defaults'
-      );
+      expect(component.enabledOAuthProviders).toEqual([]);
     });
   });
 
@@ -274,7 +275,9 @@ describe('LoginComponent behaviour', () => {
 
       await expect(component.onSubmit(credentials)).resolves.toBeUndefined();
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+      expect(component.errorMessage).toContain(
+        'Sign-in could not be completed'
+      );
       expect(router.navigate).not.toHaveBeenCalled();
     });
   });

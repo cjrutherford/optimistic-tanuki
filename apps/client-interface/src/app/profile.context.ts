@@ -89,7 +89,7 @@ export class ProfileContext {
 
   selectProfile(profile: ProfileDto): void {
     this.profileService.selectProfile(profile);
-    this.currentProfile.set(profile);
+    this.currentProfile.set(this.profileService.getCurrentUserProfile());
   }
 
   refreshProfile(): void {

@@ -45,6 +45,7 @@ import { AuthStateService } from '../../services/auth-state.service';
           heroSrc="assets/ts.png"
           heroAlt="Towne Square neighborhood illustration"
           (submitEvent)="onLogin($event)"
+          [enabledOAuthProviders]="enabledOAuthProviders"
           (oauthProviderSelected)="onOAuthProvider($event)"
         ></lib-login-block>
         @if (error) {
@@ -143,6 +144,7 @@ export class LoginComponent {
   private oauthService = new OAuthService(this.http, '/api');
 
   error: string | null = null;
+  enabledOAuthProviders: string[] = [];
 
   constructor() {
     void this.loadOAuthConfig();
@@ -153,9 +155,10 @@ export class LoginComponent {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch {
-      // Keep default provider config when the endpoint is unavailable.
+      // Keep unverified OAuth providers hidden when configuration is unavailable.
     }
   }
 
@@ -166,8 +169,11 @@ export class LoginComponent {
       const returnUrl =
         this.route.snapshot.queryParamMap.get('returnUrl') || '/';
       this.router.navigateByUrl(returnUrl);
-    } catch {
-      this.error = 'Invalid email or password. Please try again.';
+    } catch (error: any) {
+      this.error =
+        error?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 
@@ -183,6 +189,11 @@ export class LoginComponent {
 
       if (result.success) {
         await this.authState.restoreSession();
+        if (!this.authState.isAuthenticated) {
+          this.error =
+            'Sign-in could not restore your session. Please try again.';
+          return;
+        }
         const returnUrl =
           this.route.snapshot.queryParamMap.get('returnUrl') || '/';
         await this.router.navigateByUrl(returnUrl);
@@ -202,6 +213,11 @@ export class LoginComponent {
 
         if (regResult.success) {
           await this.authState.restoreSession();
+          if (!this.authState.isAuthenticated) {
+            this.error =
+              'Sign-in could not restore your session. Please try again.';
+            return;
+          }
           const returnUrl =
             this.route.snapshot.queryParamMap.get('returnUrl') || '/';
           await this.router.navigateByUrl(returnUrl);
@@ -209,6 +225,8 @@ export class LoginComponent {
         }
 
         this.error = regResult.error || 'OAuth login failed. Please try again.';
+      } else {
+        this.error = result.error || 'OAuth login failed. Please try again.';
       }
     } catch {
       this.error = 'OAuth login failed. Please try again.';

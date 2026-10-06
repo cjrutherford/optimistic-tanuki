@@ -28,6 +28,8 @@ export class RegisterComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly authStateService = inject(AuthStateService);
   private readonly profileService = inject(ProfileService);
+  errorMessage = '';
+  enabledOAuthProviders: string[] = [];
   private readonly messageService = inject(MessageService);
   private readonly platformId = inject(PLATFORM_ID);
   private oauthService: OAuthService;
@@ -48,15 +50,18 @@ export class RegisterComponent implements OnInit {
       const config: any = await this.http.get('/api/oauth/config').toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
+        this.enabledOAuthProviders = this.oauthService.getEnabledProviders();
       }
     } catch (e) {
-      console.log('OAuth config not loaded from server, using defaults');
+      console.log(
+        'OAuth configuration unavailable; provider buttons remain hidden'
+      );
     }
   }
 
   onSubmit($event: RegisterSubmitType) {
     const formValue = $event as any;
-    console.log('Form submitted:', formValue);
+    this.errorMessage = '';
     const registerRequest: RegisterRequest = {
       email: formValue.email,
       password: formValue.password,
@@ -68,11 +73,13 @@ export class RegisterComponent implements OnInit {
 
     this.authenticationService.register(registerRequest).subscribe({
       next: (response) => {
-        console.log(response);
         this.router.navigate(['/login']);
       },
       error: (error) => {
-        console.error(error);
+        this.errorMessage =
+          error?.status === 409
+            ? 'This email is already registered. Please sign in or reset your password.'
+            : 'Registration could not be completed. Please try again.';
       },
     });
   }

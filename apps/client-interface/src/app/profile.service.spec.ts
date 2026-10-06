@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -28,7 +29,9 @@ const makeProfile = (overrides: Partial<ProfileDto> = {}): ProfileDto =>
 describe('ProfileService', () => {
   let service: ProfileService;
   let httpMock: HttpTestingController;
+  let identity: BehaviorSubject<any>;
   let authState: {
+    decodedToken$: any;
     getDecodedTokenValue: jest.Mock;
     getPersistedSelectedProfile: jest.Mock;
     getPersistedProfiles: jest.Mock;
@@ -38,8 +41,10 @@ describe('ProfileService', () => {
   };
 
   beforeEach(() => {
+    identity = new BehaviorSubject({ userId: '123' });
     authState = {
-      getDecodedTokenValue: jest.fn(),
+      decodedToken$: identity.asObservable(),
+      getDecodedTokenValue: jest.fn().mockReturnValue({ userId: '123' }),
       getPersistedSelectedProfile: jest.fn().mockReturnValue(null),
       getPersistedProfiles: jest.fn().mockReturnValue(null),
       persistProfiles: jest.fn(),
@@ -61,6 +66,24 @@ describe('ProfileService', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  it('clears in-memory profile state when the account signs out', () => {
+    service.currentUserProfile.set(makeProfile());
+    service.currentUserProfiles.set([makeProfile()]);
+    identity.next(null);
+    expect(service.currentUserProfile()).toBeNull();
+    expect(service.currentUserProfiles()).toEqual([]);
+  });
+
+  it('does not repopulate profiles from a request started under another account', async () => {
+    authState.getDecodedTokenValue.mockReturnValue({ userId: '123' });
+    const pending = service.getAllProfiles();
+    identity.next({ userId: '999' });
+    httpMock.expectOne(`${API}/profile`).flush([makeProfile()]);
+    await pending;
+    expect(service.currentUserProfiles()).toEqual([]);
+    expect(service.allProfiles()).toEqual([]);
+    expect(authState.persistProfiles).not.toHaveBeenCalled();
+  });
   describe('getCurrentUserProfile', () => {
     it('should return the current user profile', () => {
       const mockProfile = makeProfile();
@@ -148,10 +171,11 @@ describe('ProfileService', () => {
       expect(authState.persistSelectedProfile).toHaveBeenCalledWith(known);
     });
 
-    it('falls back to the passed profile when it is unknown', () => {
+    it('does not select an unknown profile outside the loaded account list', () => {
       const unknown = makeProfile({ id: 'zzz' });
       service.selectProfile(unknown);
-      expect(service.currentUserProfile()).toEqual(unknown);
+      expect(service.currentUserProfile()).toBeNull();
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
     });
   });
 
@@ -238,6 +262,19 @@ describe('ProfileService', () => {
   });
 
   describe('createProfile', () => {
+    it('ignores a profile creation response after logout, including its refreshed token', async () => {
+      const pending = service.createProfile({ name: 'New' } as never);
+      identity.next(null);
+      httpMock
+        .expectOne(`${API}/profile`)
+        .flush({ newToken: 'old-user-token', profile: makeProfile() });
+      await pending;
+      expect(service.currentUserProfile()).toBeNull();
+      expect(service.currentUserProfiles()).toEqual([]);
+      expect(authState.setToken).not.toHaveBeenCalled();
+      expect(authState.persistSelectedProfile).not.toHaveBeenCalled();
+    });
+
     it('creates a profile without images', async () => {
       authState.getDecodedTokenValue.mockReturnValue({ userId: 'u-token' });
       const created = makeProfile({ id: 'new' });
