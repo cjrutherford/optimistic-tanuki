@@ -34,12 +34,19 @@ function lifecyclePhases({
           'db-setup',
           'permissions-seed',
           'store-seed',
+          'civic-briefing-seed',
+          'social-locality-seed',
           'app-configurator',
           'app-configurator-seed',
           'gateway',
         ].includes(service)
     )
   );
+  // The local-hub suite's fixtures: the Daylight towns' pages, and their
+  // published briefings, written once the databases are migrated.
+  add('local-hub-seed', ['social-locality-seed', 'civic-briefing-seed'], {
+    completion: 'completed-successfully',
+  });
   // store-seed runs against an already-started store, so it needs its own
   // phase after 'dependencies' rather than starting alongside it.
   add('store-seed', ['store-seed'], {
@@ -468,6 +475,42 @@ const UI_ENVIRONMENTS = [
     // store-seed populates the catalog; the suite asserts against those
     // products, so the app must not start browsing before it finishes.
     completedServices: ['db-setup', 'store-seed'],
+  },
+  {
+    project: 'local-hub-e2e',
+    app: 'local-hub',
+    baseUrl: 'http://127.0.0.1:8087',
+    port: 8087,
+    profile: 'local-hub',
+    environmentGroup: 'local-hub-daylight',
+    backendDependencies: [
+      'db',
+      'redis',
+      'db-setup',
+      'authentication',
+      'profile',
+      'permissions',
+      'permissions-seed',
+      'social',
+      // Creating a community provisions its workspace.
+      'workspace',
+      'assets',
+      'clamav',
+      'classifieds',
+      'payments',
+      // Daylight (P4.5, D28): briefings from a seed, review from a stub.
+      'model-stub',
+      'civic-briefing',
+      'civic-briefing-seed',
+      'civic-contributions',
+      'social-locality-seed',
+      'gateway',
+    ],
+    completedServices: [
+      'db-setup',
+      'social-locality-seed',
+      'civic-briefing-seed',
+    ],
   },
   {
     project: 'configurable-client-e2e',

@@ -33,7 +33,7 @@ async function createSessionWithCommunity(
   }
 
   if (community?.id) {
-    await request.post(apiUrl(`/api/communities/${community.id}/join`), {
+    await request.post(apiUrl(`/api/social/community/${community.id}/join`), {
       headers: localHubAuthHeaders(session.token),
     });
   }
@@ -47,7 +47,7 @@ test.describe('Authenticated community membership', () => {
     test.skip(!community?.id, 'No community is available for membership');
 
     const response = await request.post(
-      apiUrl(`/api/communities/${community.id}/join`),
+      apiUrl(`/api/social/community/${community.id}/join`),
       {
         headers: localHubAuthHeaders(session.token),
       }
@@ -253,7 +253,7 @@ test.describe('Authenticated pages', () => {
         withBrowserCookie: true,
       });
       const joinResponse = await browserContext.request.post(
-        apiUrl(`/api/communities/${community!.id}/join`),
+        apiUrl(`/api/social/community/${community!.id}/join`),
         { headers: localHubAuthHeaders(session.token) }
       );
       expect(joinResponse.status()).toBe(201);

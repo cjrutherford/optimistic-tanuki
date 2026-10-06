@@ -7,7 +7,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { PLATFORM_ID } from '@angular/core';
@@ -25,6 +25,7 @@ import {
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
+import { CityBriefingComponent } from '../../components/city-briefing/city-briefing.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
 import {
   CardComponent,
@@ -60,6 +61,8 @@ interface CommunityTreeNode {
   selector: 'app-city',
   standalone: true,
   imports: [
+    CityBriefingComponent,
+    RouterLink,
     CommonModule,
     MapComponent,
     DonationProgressComponent,

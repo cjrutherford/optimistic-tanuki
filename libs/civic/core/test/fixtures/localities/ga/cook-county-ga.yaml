@@ -1,0 +1,58 @@
+slug: cook-county-ga
+name: Cook County
+state: GA
+timezone: America/New_York
+lat: 31.25
+lon: -83.43
+kind: county
+parents: [south-georgia]
+excludePhrases: ['Cook County, Illinois', 'Cook County, Ill.']
+topics: [county-government, schools, roads, weather, news]
+sources:
+  - sourceKey: cook-news-discover
+    # Disabled 2026-09-21: news.google.com's robots.txt disallows crawlers,
+    # and this adapter discovers only through Google News search. Publishers'
+    # own sitemaps, feeds and search feeds carry discovery instead.
+    enabled: false
+    adapter: news-discover
+    name: Auto-discovered Cook County news
+    url: https://news.google.com/rss/search?q=Cook+County+Georgia
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Cook+County+Georgia
+    config:
+      query: Adel Georgia OR Cook County Georgia
+      matchNames: [Adel, Cook County, Cook, Sparks, Lenox, Cecil]
+      # Arrest-booking listings name individuals; they are not civic news.
+      excludePublishers: [The Georgia Gazette]
+  - sourceKey: cook-schools-board
+    adapter: http-scrape
+    name: Cook County Schools board of education
+    url: https://www.cook.k12.ga.us/boe
+    kind: meeting
+    desk: schools
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      linkPattern: eboardsolutions|simbli|agendas|minuts|minutes
+  - sourceKey: adel-news-tribune
+    # Disabled 2026-09-21: news.google.com's robots.txt disallows crawlers,
+    # and this adapter discovers only through Google News search. Publishers'
+    # own sitemaps, feeds and search feeds carry discovery instead.
+    enabled: false
+    adapter: news-discover
+    name: Adel News Tribune
+    url: https://news.google.com/rss/search?q=Adel+News+Tribune+Georgia
+    kind: news
+    desk: community-news
+    accessMode: snippet-only
+    accessRestrictionReason: The publisher's crawler policy disallows named AI crawlers from retrieving the article body; only aggregate headline and snippet metadata may be used.
+    restrictionPolicyUrl: https://www.adelnewstribune.com/robots.txt
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Adel+News+Tribune+Georgia
+    config:
+      query: Adel News Tribune Georgia
+      matchNames:
+        [Adel News Tribune, Adel, Cook County, Cook, Sparks, Lenox, Cecil]

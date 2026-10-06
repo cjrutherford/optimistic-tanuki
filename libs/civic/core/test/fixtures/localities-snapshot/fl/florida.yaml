@@ -1,0 +1,24 @@
+slug: florida
+name: Florida
+kind: state
+state: FL
+timezone: America/New_York
+lat: 28.6
+lon: -82.4
+parents: [us]
+broad: true
+topics: [government, legislation, news, weather]
+sources:
+  - sourceKey: florida-phoenix
+    adapter: rss
+    name: Florida Phoenix (state policy)
+    url: https://floridaphoenix.com/feed/
+    kind: legislation
+  - sourceKey: nws-alerts-fl
+    adapter: open-data
+    name: National Weather Service alerts (Florida)
+    url: https://api.weather.gov/alerts/active
+    kind: alert
+    desk: weather
+    config:
+      area: FL

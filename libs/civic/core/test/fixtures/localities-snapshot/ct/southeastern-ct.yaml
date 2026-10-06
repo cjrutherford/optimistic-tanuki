@@ -1,0 +1,48 @@
+# Connecticut has no county government; the planning region is the level
+# between the state and its towns.
+slug: southeastern-ct
+name: Southeastern Connecticut
+state: CT
+timezone: America/New_York
+lat: 41.42
+lon: -72.1
+kind: planning-region
+parents: [connecticut]
+broad: true
+topics: [news, roads, schools]
+sources:
+  - sourceKey: se-ct-news-discover
+    adapter: news-discover
+    name: Auto-discovered southeastern Connecticut news
+    url: https://news.google.com/rss/search?q=Groton+OR+Mystic+OR+Stonington+Connecticut&hl=en-US&gl=US&ceid=US:en
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Groton+OR+Mystic+OR+Stonington+Connecticut&hl=en-US&gl=US&ceid=US:en
+    config:
+      query: Groton OR Mystic OR Stonington Connecticut
+      matchNames:
+        [
+          Groton,
+          Mystic,
+          Stonington,
+          Noank,
+          Poquonnock Bridge,
+          Groton Long Point,
+        ]
+  - sourceKey: the-day
+    adapter: news-discover
+    name: The Day
+    url: https://news.google.com/rss/search?q=%22The+Day%22+Groton+OR+Mystic+New+London&hl=en-US&gl=US&ceid=US:en
+    kind: news
+    desk: local-reporting
+    accessMode: snippet-only
+    accessRestrictionReason: The publisher's crawler policy disallows named AI crawlers from retrieving the article body; only aggregate headline and snippet metadata may be used.
+    restrictionPolicyUrl: https://theday.com/robots.txt
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=%22The+Day%22+Groton+OR+Mystic+New+London&hl=en-US&gl=US&ceid=US:en
+    config:
+      query: The Day Groton Mystic New London
+      matchNames: [The Day, Groton, Mystic, Stonington, New London]
+      publisherNames: [The Day, theday.com]

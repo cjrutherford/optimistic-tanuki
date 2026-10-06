@@ -1029,6 +1029,10 @@ services:
         condition: service_started
       civic:
         condition: service_started
+      civic-briefing:
+        condition: service_started
+      civic-contributions:
+        condition: service_started
 
   civic:
     container_name: ot_civic
@@ -1071,6 +1075,54 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  civic-briefing:
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/civic-briefing:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+    environment:
+      - NODE_ENV=development
+
+  civic-contributions:
+    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/civic-contributions:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+    environment:
+      - NODE_ENV=development
 
   profile:
     container_name: ot_profile

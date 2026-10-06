@@ -1,0 +1,88 @@
+@if (surface(); as view) { @if (view.official.length) {
+<section class="block" aria-labelledby="official-heading">
+  <h3 id="official-heading">From {{ town() }} officials</h3>
+  @for (item of view.official; track item.id) {
+  <article class="entry">
+    <h4>
+      {{ item.subject.text
+      }}{{ item.occurredOn ? ', ' + longDate(item.occurredOn) : '' }}
+    </h4>
+    <p class="label" [class.record]="item.officialRecord">{{ item.label }}</p>
+    <civic-contribution-quote [contribution]="item" />
+  </article>
+  }
+</section>
+}
+
+<section class="block" aria-labelledby="residents-heading">
+  <h3 id="residents-heading">From residents</h3>
+  <p class="explain">
+    What residents saw and sent, in their own words. Daylight has not checked
+    these against the record. A corroborated report is supported by other
+    residents who saw it independently.
+  </p>
+  @for (item of view.items; track item.id) {
+  <article class="entry">
+    <h4>
+      {{ item.subject.text
+      }}{{ item.occurredOn ? ', ' + longDate(item.occurredOn) : '' }}
+    </h4>
+    <p class="status" [attr.data-status]="item.status">
+      {{
+        item.status === 'corroborated'
+          ? item.releasedByEvidence
+            ? 'Corroborated, with a document'
+            : 'Corroborated'
+          : 'Single report'
+      }}
+    </p>
+    <civic-contribution-quote [contribution]="item" />
+    @if (item.corroborations.length) {
+    <div class="also">
+      <p class="also-heading">Corroborated by</p>
+      @for (support of item.corroborations; track support.id) {
+      <civic-contribution-quote [contribution]="support" />
+      }
+    </div>
+    } @for (outcome of item.outcomes; track outcome.title) {
+    <p class="outcome" [attr.data-verdict]="outcome.verdict">
+      {{
+        outcome.verdict === 'confirmed'
+          ? 'Borne out by'
+          : 'The record says
+      otherwise:'
+      }}
+      @if (outcome.url) {
+      <a [href]="outcome.url" target="_blank" rel="noopener noreferrer">{{
+        outcome.title
+      }}</a>
+      } @else {
+      {{ outcome.title }}
+      } @if (outcome.publisher) {
+      <span class="who">({{ outcome.publisher }})</span>
+      }
+    </p>
+    } @if (auth.isAuthenticated$ | async) {
+    <a
+      class="corroborate"
+      [routerLink]="reportLink()"
+      [queryParams]="{ corroborate: item.id }"
+      >I saw this too</a
+    >
+    }
+  </article>
+  } @empty {
+  <p class="quiet">
+    No resident reports yet.
+    <a [routerLink]="reportLink()">Report something</a>.
+  </p>
+  }
+  <p class="quiet watch">
+    <a [routerLink]="['/city', citySlug(), 'watch']"
+      >What a civic watcher does</a
+    >, and why {{ town() }} needs more than one.
+  </p>
+</section>
+} @else if (failed()) {
+<p class="quiet">Resident reports could not be loaded.</p>
+}

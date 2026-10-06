@@ -400,6 +400,8 @@ services:
       SERVICE_COMPLIANCE_AUDIT_HOST: ${SERVICE_COMPLIANCE_AUDIT_HOST:-compliance-audit}
       SERVICE_COMPLIANCE_AUDIT_PORT: ${SERVICE_COMPLIANCE_AUDIT_PORT:-3025}
       JWT_SECRET: ${JWT_SECRET:-}
+      # Keys the corroboration origin hashes (sock-puppet checks); unset sends no origin.
+      CIVIC_FINGERPRINT_KEY: ${CIVIC_FINGERPRINT_KEY:-}
       OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
@@ -516,6 +518,89 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  civic-briefing:
+    container_name: ot_civic_briefing
+    build:
+      context: .
+      dockerfile: ./apps/civic-briefing/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic-briefing:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_BRIEFING_PORT:-3028}:3028'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_briefing
+      LISTEN_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
+      # The model host is prompt-proxy's OLLAMA_HOST (set it in .env). These
+      # pick the models; empty means the code's defaults (P5.2).
+      LLM_PLANNER_MODEL: ${LLM_PLANNER_MODEL:-}
+      LLM_WRITER_MODEL: ${LLM_WRITER_MODEL:-}
+      LLM_PRIMARY_MODEL: ${LLM_PRIMARY_MODEL:-}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
+      # The town registry; without it nothing is scheduled.
+      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
+      # Every fetched document is virus-scanned before it is stored (D22).
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
+      # Pipeline alerts (P5.2): new failed runs and failing or quiet sources.
+      DAYLIGHT_ALERT_EMAIL: ${DAYLIGHT_ALERT_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
+    volumes:
+      # Fetched documents (blobs) outlive the container.
+      - civic_briefing_data:/usr/src/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+
+  civic-contributions:
+    container_name: ot_civic_contributions
+    build:
+      context: .
+      dockerfile: ./apps/civic-contributions/Dockerfile
+    image: cjrutherford/optimistic_tanuki_civic-contributions:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${CIVIC_CONTRIBUTIONS_PORT:-3029}:3029'
+    environment:
+      <<: *service_db_env
+      POSTGRES_DB: ot_civic_contributions
+      LISTEN_PORT: 3029
+      # Uploads are scanned fail-closed and stored envelope-encrypted.
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      # Agenda packets are large PDFs: give clamd time to scan them.
+      CLAMAV_SOCKET_TIMEOUT_MS: ${CIVIC_CLAMAV_SOCKET_TIMEOUT_MS:-30000}
+      CLAMAV_SCAN_DEADLINE_MS: ${CIVIC_CLAMAV_SCAN_DEADLINE_MS:-120000}
+      VAULT_STORAGE_KEK: ${VAULT_STORAGE_KEK:-}
+      CIVIC_BRIEFING_HOST: civic-briefing
+      CIVIC_BRIEFING_PORT: 3028
+      LLM_TRANSPORT: ${CIVIC_LLM_TRANSPORT:-prompt-proxy}
+      PROMPT_PROXY_HOST: prompt-proxy
+      PROMPT_PROXY_PORT: 3009
+      REVIEW_MODEL: ${REVIEW_MODEL:-}
+      CIVIC_LOCALITIES_DIR: ${CIVIC_LOCALITIES_DIR:-}
+    volumes:
+      # Contributed artifacts, promotions and density reports outlive the container.
+      - civic_contributions_data:/usr/src/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
 
   lead-tracker:
     container_name: ot_lead_tracker
@@ -761,6 +846,8 @@ services:
       <<: *service_db_env
       OLLAMA_HOST: ${OLLAMA_HOST:-127.0.0.1}
       OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      # civic-briefing's model calls take up to 300 s; the proxy must outlast them.
+      PROMPT_PROXY_TIMEOUT_MS: ${PROMPT_PROXY_TIMEOUT_MS:-360000}
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
@@ -1186,6 +1273,8 @@ volumes:
   postgres_data:
   video-processing-data:
   clamav-db:
+  civic_briefing_data:
+  civic_contributions_data:
 
 networks:
   learning-runner-control:

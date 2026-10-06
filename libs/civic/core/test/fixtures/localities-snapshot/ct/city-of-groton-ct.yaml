@@ -1,0 +1,24 @@
+# The City of Groton is a municipality inside the Town of Groton.
+slug: city-of-groton-ct
+name: City of Groton
+state: CT
+timezone: America/New_York
+lat: 41.35
+lon: -72.08
+kind: city
+parents: [groton-ct]
+aliases: [Groton City]
+topics: [city-government, utilities, news]
+sources:
+  - sourceKey: city-of-groton-documents
+    adapter: document
+    name: City of Groton meeting agendas and minutes
+    url: https://www.cityofgroton.com/AgendaCenter
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://www.cityofgroton.com/AgendaCenter
+      linkPattern: ViewFile/(?:Agenda|Minutes)/
+      maxDocs: 30

@@ -12,7 +12,9 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
+  // marked (via civic-briefing-ui) ships ESM only, so it is transformed; the
+  // `.*` reaches past pnpm's node_modules/.pnpm/marked@x/node_modules/ nesting.
+  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|.*marked)'],
   snapshotSerializers: [
     'jest-preset-angular/build/serializers/no-ng-attributes',
     'jest-preset-angular/build/serializers/ng-snapshot',

@@ -1,0 +1,10 @@
+# National root. Sources that cover one state (for example, NWS alerts for a
+# state area) belong to that state's file.
+slug: us
+name: United States
+kind: country
+state: US
+timezone: America/New_York
+lat: 39.8
+lon: -98.6
+broad: true

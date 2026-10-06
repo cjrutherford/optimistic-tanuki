@@ -1,0 +1,26 @@
+{
+  "name": "civic-access",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/civic/access/src",
+  "projectType": "library",
+  "tags": ["scope:civic", "type:domain"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "tsc -p libs/civic/access/tsconfig.lib.json --noEmit",
+          "tsc -p libs/civic/access/tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/civic/access/jest.config.ts"
+      }
+    }
+  }
+}

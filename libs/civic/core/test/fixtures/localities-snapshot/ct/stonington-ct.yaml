@@ -1,0 +1,10 @@
+# Stonington borders Groton and shares the village of Mystic with it.
+slug: stonington-ct
+name: Stonington
+state: CT
+timezone: America/New_York
+lat: 41.33
+lon: -71.91
+kind: town
+parents: [southeastern-ct]
+topics: [town-government, news]

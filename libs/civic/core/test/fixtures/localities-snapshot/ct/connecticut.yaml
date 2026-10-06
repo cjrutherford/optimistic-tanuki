@@ -1,0 +1,31 @@
+slug: connecticut
+name: Connecticut
+state: CT
+timezone: America/New_York
+lat: 41.6
+lon: -72.7
+kind: state
+parents: [us]
+broad: true
+topics: [state-government, weather, news]
+sources:
+  - sourceKey: ct-mirror
+    adapter: rss
+    name: CT Mirror (state policy)
+    url: https://ctmirror.org/feed/
+    kind: legislation
+    desk: government
+  - sourceKey: ct-examiner
+    adapter: rss
+    name: CT Examiner
+    url: https://ctexaminer.com/feed/
+    kind: news
+    desk: local-reporting
+  - sourceKey: nws-alerts-ct
+    adapter: open-data
+    name: National Weather Service alerts (Connecticut)
+    url: https://api.weather.gov/alerts/active
+    kind: alert
+    desk: weather
+    config:
+      area: CT

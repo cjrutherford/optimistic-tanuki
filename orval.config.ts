@@ -165,4 +165,41 @@ export default defineConfig({
       clean: true,
     },
   },
+  civic: {
+    input: {
+      target: 'dist/openapi.json',
+      filters: {
+        tags: [
+          'civic-briefing',
+          'civic-community',
+          'civic-community-operations',
+        ],
+      },
+      override: {
+        // Each local-hub route is also served under `v1/` (and density under
+        // its POC path); generate one method per route, not one per alias.
+        transformer: (spec) => ({
+          ...spec,
+          paths: Object.fromEntries(
+            Object.entries(spec.paths ?? {}).filter(
+              ([path]) =>
+                !path.startsWith('/api/v1/local-hub/') &&
+                path !== '/api/local-hub/density'
+            )
+          ),
+        }),
+      },
+    },
+    output: {
+      target: 'libs/civic/briefing-data-access/src/generated/civic.ts',
+      client: 'angular',
+      clean: true,
+      override: {
+        // `CivicCommunityController_me[1]` → `me`: the aliases leave an index
+        // on every operation id.
+        operationName: (operation) =>
+          (operation.operationId ?? '').replace(/\[\d+\]$/u, '').split('_')[1],
+      },
+    },
+  },
 });

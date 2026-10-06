@@ -1,0 +1,13 @@
+@use '../daylight-page';
+@use '../daylight-forms';
+
+form {
+  margin-top: 1.5rem;
+}
+
+.done {
+  margin-top: 1.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}

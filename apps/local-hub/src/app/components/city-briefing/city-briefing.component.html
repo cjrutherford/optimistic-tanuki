@@ -1,0 +1,26 @@
+@if (ready(); as ready) {
+<article class="briefing">
+  <p class="briefing-dateline">
+    <time [attr.datetime]="ready.briefing.periodEnd">{{
+      longDate(ready.briefing.periodEnd)
+    }}</time>
+  </p>
+  <civic-briefing-body [markdown]="ready.briefing.markdown" />
+</article>
+<civic-edition-strip
+  [route]="route()"
+  [published]="ready.published"
+  [end]="ready.latest"
+  [current]="ready.briefing.periodEnd"
+/>
+} @else if (notice(); as notice) {
+<p
+  class="briefing-status"
+  [class.briefing-status--failed]="notice.status === 'failed'"
+  role="status"
+>
+  {{ notice.message }}
+</p>
+} @else if (loading()) {
+<p class="briefing-status" role="status">Loading the briefing…</p>
+}

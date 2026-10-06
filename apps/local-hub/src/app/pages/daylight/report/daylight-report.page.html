@@ -1,0 +1,201 @@
+<div class="daylight-page">
+  @if (town.city(); as city) { @if (town.localitySlug()) {
+  <header class="intro">
+    <a class="back-link" [routerLink]="['/city', town.slug()]"
+      >← {{ city.name }}</a
+    >
+    <h1>Report from {{ city.name }}</h1>
+    <p>
+      Tell Daylight what you saw at a public meeting, or send a document,
+      photograph or recording. Each report is checked automatically and kept.
+      Nothing is published yet: reports appear once corroboration opens later in
+      the beta.
+    </p>
+  </header>
+
+  @if (canReport() === false) {
+  <p class="notice-box">
+    To report, sign up as a Daylight contributor first. It takes a minute:
+    <a
+      routerLink="/contribute"
+      [queryParams]="{ returnUrl: '/city/' + town.slug() + '/report' }"
+      >become a contributor</a
+    >, then come back here.
+  </p>
+  } @else if (result(); as contribution) {
+  <section class="result" aria-labelledby="result-heading">
+    <h2 id="result-heading" tabindex="-1">Your report</h2>
+    <civic-review-trail [contribution]="contribution" />
+    <p class="next">
+      <button type="button" class="link" (click)="another()">
+        Report something else
+      </button>
+      or <a routerLink="/account">see all your reports</a>.
+    </p>
+  </section>
+  } @else {
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (target(); as report) {
+    <section class="target" aria-labelledby="target-heading">
+      <h2 id="target-heading">You are corroborating</h2>
+      <p class="target-subject">
+        {{ report.subject.text }}{{ report.occurredOn ? ', ' +
+        longDate(report.occurredOn) : '' }}
+      </p>
+      <blockquote>{{ report.body }}</blockquote>
+      <p class="hint">
+        Describe what you saw yourself, in your own words — not what you read
+        here. Your report counts only if it is independent: accounts that share
+        a network, a device, a file or a link count as one.
+      </p>
+    </section>
+    }
+    <fieldset>
+      <legend>What are you sending?</legend>
+      <label class="choice"
+        ><input type="radio" formControlName="kind" value="account" /> What I
+        saw or heard</label
+      >
+      <label class="choice"
+        ><input type="radio" formControlName="kind" value="artifact" /> A
+        document, photograph or recording</label
+      >
+    </fieldset>
+
+    @if (!target()) {
+    <label class="field">
+      <span>What is it about?</span>
+      <select formControlName="about">
+        <option value="">Something else</option>
+        @if (meetings().length) {
+        <optgroup label="Recent meetings">
+          @for (option of meetings(); track option.ref) {
+          <option [value]="'meeting:' + option.ref">
+            {{ option.title }}{{ option.date ? ', ' + longDate(option.date) : ''
+            }}
+          </option>
+          }
+        </optgroup>
+        } @if (stories().length) {
+        <optgroup label="Stories Daylight is following">
+          @for (option of stories(); track option.ref) {
+          <option [value]="'story:' + option.ref">{{ option.title }}</option>
+          }
+        </optgroup>
+        }
+      </select>
+    </label>
+
+    @if (!about()) {
+    <label class="field">
+      <span>In a few words</span>
+      <input
+        type="text"
+        formControlName="subjectText"
+        maxlength="200"
+        placeholder="For example: the new stop sign on Love Avenue"
+      />
+    </label>
+    } }
+
+    <label class="field short">
+      <span>When did it happen?</span>
+      <input type="date" formControlName="occurredOn" [max]="today" />
+    </label>
+
+    <div class="field">
+      <lib-text-area
+        formControlName="body"
+        [label]="kind() === 'artifact' ? 'What is it, and where did you find it?' : 'What happened?'"
+        [rows]="kind() === 'artifact' ? 4 : 8"
+      />
+      <p class="hint">
+        In your own words. You may quote a published article briefly — at most
+        75 words, and never more than a tenth of it — if you say where it is
+        from. A pasted article is turned away.
+      </p>
+    </div>
+
+    @if (kind() === 'artifact') {
+    <label class="field">
+      <span>The file</span>
+      <input
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.webp,.mp3,.m4a,.wav,.ogg,application/pdf,image/jpeg,image/png,image/webp,audio/*"
+        (change)="chooseFile($event)"
+      />
+      <span class="hint"
+        >A PDF, a photograph (JPEG, PNG or WebP) or a recording (MP3, M4A, WAV
+        or Ogg), up to 20 MB. Every file is scanned for viruses.</span
+      >
+    </label>
+    }
+
+    <label class="field">
+      <span>Links <span class="optional">(optional, one per line)</span></span>
+      <textarea
+        formControlName="links"
+        rows="2"
+        placeholder="https://"
+      ></textarea>
+    </label>
+
+    <label class="field">
+      <span
+        >Do you have a stake in this?
+        <span class="optional">(optional)</span></span
+      >
+      <input
+        type="text"
+        formControlName="disclosedInterest"
+        maxlength="500"
+        placeholder="For example: I serve on the planning board"
+      />
+      <span class="hint"
+        >If you hold office, work for the town, are a candidate, or are a party
+        to the matter, say so. It is shown with your report.</span
+      >
+    </label>
+
+    <fieldset class="affirm">
+      <legend>Before you send</legend>
+      @if (kind() === 'account') {
+      <label class="choice"
+        ><input type="checkbox" formControlName="witnessed" /> I saw or heard
+        this myself.</label
+      >
+      }
+      <label class="choice"
+        ><input type="checkbox" formControlName="ownWords" /> The words are
+        mine, apart from any quotation I have credited.</label
+      >
+      @if (attachment()) {
+      <label class="choice"
+        ><input type="checkbox" formControlName="rightsToAttachments" /> I have
+        the right to share the file I attached.</label
+      >
+      }
+    </fieldset>
+
+    @if (problems().length) {
+    <div class="problem" role="alert">
+      @for (item of problems(); track $index) {
+      <p>{{ item }}</p>
+      }
+    </div>
+    }
+
+    <otui-button type="submit" [disabled]="pending()"
+      >{{ pending() ? 'Sending and checking…' : 'Send report' }}</otui-button
+    >
+    @if (pending()) {
+    <p class="hint" role="status">Checking a report can take up to a minute.</p>
+    }
+  </form>
+  } } @else {
+  <h1>{{ city.name }}</h1>
+  <p class="quiet">Daylight doesn't cover {{ city.name }} yet.</p>
+  } } @else if (town.loaded()) {
+  <p class="quiet">That town couldn't be found.</p>
+  }
+</div>

@@ -1,0 +1,55 @@
+:host {
+  display: block;
+}
+
+.briefing-page {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.briefing-masthead {
+  margin-bottom: 2rem;
+
+  h1 {
+    margin: 0.2rem 0 0;
+    font-family: var(--font-heading);
+    color: var(--foreground);
+  }
+}
+
+.back-link {
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.kicker {
+  margin: 1rem 0 0;
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 800;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.briefing-actions {
+  margin: 2rem 0 0;
+
+  a {
+    color: var(--primary);
+    font-weight: 600;
+  }
+}
+
+.briefing-community {
+  margin-top: 3rem;
+}
+
+.briefing-page-status {
+  color: var(--foreground-muted);
+}

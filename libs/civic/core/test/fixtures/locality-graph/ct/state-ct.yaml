@@ -1,0 +1,9 @@
+slug: state-ct
+name: Connecticut
+state: CT
+timezone: America/New_York
+lat: 41.6
+lon: -72.7
+kind: state
+parents: [us]
+broad: true

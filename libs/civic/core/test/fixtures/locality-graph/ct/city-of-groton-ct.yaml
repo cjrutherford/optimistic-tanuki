@@ -1,0 +1,14 @@
+slug: city-of-groton-ct
+name: City of Groton
+state: CT
+timezone: America/New_York
+lat: 41.33
+lon: -72.08
+kind: city
+parents: [groton-ct]
+sources:
+  - sourceKey: city-of-groton-council
+    adapter: document
+    name: City of Groton council minutes
+    url: https://example.test/city-of-groton-council/
+    kind: meeting

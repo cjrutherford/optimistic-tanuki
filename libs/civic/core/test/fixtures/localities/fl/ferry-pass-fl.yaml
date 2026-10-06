@@ -1,0 +1,15 @@
+# Ferry Pass, Florida (population about 30,000): an unincorporated suburb north
+# of Pensacola in Escambia County. With no town government, its edition reads
+# the county's and the school district's record, and news that names it.
+slug: ferry-pass-fl
+name: Ferry Pass
+state: FL
+timezone: America/Chicago
+lat: 30.51
+lon: -87.21
+kind: census-designated place
+parents: [escambia-county-fl]
+edition: true
+topics: [county-government, schools, roads, news]
+cadence: [daily]
+sources: []

@@ -1,0 +1,100 @@
+:host {
+  display: block;
+  max-width: 66ch;
+}
+
+.block {
+  margin-bottom: 2.5rem;
+}
+
+h3 {
+  font-size: var(--type-h3, 1.35rem);
+  margin: 0 0 0.4rem;
+}
+
+h4 {
+  font-size: var(--type-h4, 1.05rem);
+  margin: 0 0 0.3rem;
+}
+
+.explain,
+.quiet {
+  font-size: var(--type-small, 0.93rem);
+  line-height: var(--line-height, 1.5);
+  color: var(--foreground-muted);
+}
+
+.entry {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.status {
+  display: inline-block;
+  margin: 0 0 0.6rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.status[data-status='corroborated'] {
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+}
+
+.label {
+  margin: 0 0 0.6rem;
+  font-size: var(--type-small, 0.88rem);
+  line-height: var(--line-height, 1.5);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.label.record {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.also {
+  margin: 0.9rem 0 0 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.also-heading {
+  margin: 0;
+  font-size: var(--type-small, 0.85rem);
+  font-weight: 600;
+}
+
+.outcome {
+  margin: 0.7rem 0 0;
+  font-size: var(--type-small, 0.9rem);
+  line-height: var(--line-height, 1.5);
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.outcome[data-verdict='contradicted'] {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+}
+
+.outcome .who {
+  color: var(--foreground-muted);
+}
+
+.corroborate {
+  display: inline-block;
+  margin-top: 0.7rem;
+  font-size: var(--type-small, 0.92rem);
+}
+
+.watch {
+  margin-top: 1.4rem;
+}
+
+a {
+  color: var(--primary);
+}

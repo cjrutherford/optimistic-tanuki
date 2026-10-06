@@ -37,6 +37,8 @@ export interface LocalCommunity {
   tags?: CommunityTag[];
   /** IANA timezone identifier, e.g. "America/New_York". */
   timezone?: string | null;
+  /** The civic-briefing locality this town page shows briefings for. */
+  localitySlug?: string | null;
   /** ID of the currently elected community manager (localities only). */
   managerId?: string | null;
   /** Display name of the currently elected community manager. */
@@ -105,6 +107,8 @@ export interface City {
   timezone: string;
   highlights: CityHighlight[];
   communities: number;
+  /** The civic-briefing locality, when this town has briefings. */
+  localitySlug?: string | null;
 }
 
 export interface CityPost {
@@ -170,6 +174,7 @@ export class CommunityService {
       timezone: community.timezone || '',
       highlights: community.highlights || [],
       communities: communitiesCount,
+      localitySlug: community.localitySlug ?? null,
     };
   }
 

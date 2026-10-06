@@ -1,0 +1,111 @@
+# Daylight's contributions service. One replica: contributed artifacts live
+# on a single ReadWriteOnce volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: civic-contributions-data
+  namespace: optimistic-tanuki
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: microk8s-hostpath
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: civic-contributions
+  namespace: optimistic-tanuki
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: civic-contributions
+  template:
+    metadata:
+      labels:
+        app: civic-contributions
+    spec:
+      containers:
+        - name: civic-contributions
+          image: cjrutherford/optimistic_tanuki_civic-contributions:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3029
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: LISTEN_PORT
+              value: '3029'
+            - name: POSTGRES_HOST
+              value: 'postgres'
+            - name: POSTGRES_PORT
+              value: '5432'
+            - name: POSTGRES_DB
+              value: 'ot_civic_contributions'
+            - name: CLAMAV_HOST
+              value: 'clamav'
+            - name: CLAMAV_PORT
+              value: '3310'
+            # Agenda packets are large PDFs: give clamd time to scan them.
+            - name: CLAMAV_SOCKET_TIMEOUT_MS
+              value: '30000'
+            - name: CLAMAV_SCAN_DEADLINE_MS
+              value: '120000'
+            - name: CIVIC_BRIEFING_HOST
+              value: 'civic-briefing'
+            - name: CIVIC_BRIEFING_PORT
+              value: '3028'
+            - name: LLM_TRANSPORT
+              value: 'prompt-proxy'
+            - name: PROMPT_PROXY_HOST
+              value: 'prompt-proxy'
+            - name: PROMPT_PROXY_PORT
+              value: '3009'
+          envFrom:
+            - configMapRef:
+                name: civic-briefing-config
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          volumeMounts:
+            - name: data
+              mountPath: /usr/src/app/data
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '100m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
+          livenessProbe:
+            tcpSocket:
+              port: 3029
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3029
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: civic-contributions-data
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civic-contributions
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: civic-contributions
+  ports:
+    - port: 3029
+      targetPort: 3029
+  clusterIP: None

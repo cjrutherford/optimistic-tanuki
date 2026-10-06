@@ -82,6 +82,22 @@
       "@optimistic-tanuki/chat-ui-data-access": [
         "libs/chat-ui-data-access/src/index.ts"
       ],
+      "@optimistic-tanuki/civic-access": ["libs/civic/access/src/index.ts"],
+      "@optimistic-tanuki/civic-adapters": ["libs/civic/adapters/src/index.ts"],
+      "@optimistic-tanuki/civic-briefing-data-access": [
+        "libs/civic/briefing-data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/civic-briefing-ui": [
+        "libs/civic/briefing-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/civic-community": [
+        "libs/civic/community/src/index.ts"
+      ],
+      "@optimistic-tanuki/civic-core": ["libs/civic/core/src/index.ts"],
+      "@optimistic-tanuki/civic-core/testing": [
+        "libs/civic/core/test/testing.ts"
+      ],
+      "@optimistic-tanuki/civic-llm": ["libs/civic/llm/src/index.ts"],
       "@optimistic-tanuki/classified-ui": ["libs/classified-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui": ["libs/common-ui/src/index.ts"],
       "@optimistic-tanuki/common-ui/*": ["libs/common-ui/src/lib/common-ui/*"],

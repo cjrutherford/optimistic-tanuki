@@ -98,6 +98,38 @@
         </div>
       </header>
 
+      <!-- ── Daylight ─────────────────────────────────────────────────────────── -->
+      @if (city()!.localitySlug) {
+      <section class="city-briefing-section">
+        <div class="section-container">
+          <div class="section-header">
+            <div class="section-header-content">
+              <h2 class="section-title">Daylight</h2>
+              <p class="section-subtitle">
+                What {{ city()!.name }}'s public records and local news said
+              </p>
+            </div>
+          </div>
+          <app-city-briefing
+            [citySlug]="city()!.slug"
+            [localitySlug]="city()!.localitySlug!"
+            [cityName]="city()!.name"
+          />
+          <nav class="daylight-actions" aria-label="Daylight">
+            <a [routerLink]="['/city', city()!.slug, 'briefing']"
+              >Resident reports and past editions</a
+            >
+            <a [routerLink]="['/city', city()!.slug, 'report']"
+              >Report something</a
+            >
+            <a [routerLink]="['/city', city()!.slug, 'watch']"
+              >Watch {{ city()!.name }}</a
+            >
+          </nav>
+        </div>
+      </section>
+      }
+
       <!-- ── Local Highlights ──────────────────────────────────────────────────── -->
       <section class="city-highlights-section">
         <div class="section-container">

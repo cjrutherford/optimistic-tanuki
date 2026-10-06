@@ -1,0 +1,61 @@
+# Tifton, GA (Tift County seat). All source URLs verified live 2026-09-11.
+slug: tifton-ga
+name: Tifton
+state: GA
+timezone: America/New_York
+lat: 31.4505
+lon: -83.508
+kind: town
+parents: [tift-county-ga]
+edition: true
+topics:
+  - council
+  - planning
+  - water
+  - roads
+  - weather
+  - schools
+cadence:
+  - daily
+  - weekly
+sources:
+  - sourceKey: tifton-documents
+    adapter: document
+    name: City of Tifton agenda center (CivicPlus)
+    url: https://tifton.net/AgendaCenter/City-Council-3
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    config:
+      indexUrl: https://tifton.net/AgendaCenter/City-Council-3
+      linkPattern: ViewFile/(Agenda|Minutes|Packet)/
+  - sourceKey: tifton-gazette
+    adapter: rss
+    name: Tifton Gazette
+    url: https://tiftongazette.com/feed/
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: false
+    coverageCapabilities:
+      # About ten stories per feed page, roughly a day and a half each: twenty
+      # pages cover a month, so 130 reach six months back on a town's first
+      # run. Paging stops once a page is older than the requested start, so a
+      # daily run reads a page or two.
+      pagination:
+        { mode: page, parameter: paged, maxPages: 130, untilCovered: true }
+    config:
+      # The city publishes agendas but no minutes, so the outcome of a vote is
+      # only on the record in the paper. These searches recover the decision
+      # coverage that the front-page feed has already scrolled past.
+      searchUrl: https://tiftongazette.com/?s={query}&feed=rss2
+      searchQueries:
+        - city council approves
+        - city council votes
+        - city council denies
+        - city council adopts
+        - county commission approves
+        - board of education votes
+        - millage rate
+        - rezoning

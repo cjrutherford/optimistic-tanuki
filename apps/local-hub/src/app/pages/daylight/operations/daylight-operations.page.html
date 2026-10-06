@@ -1,0 +1,311 @@
+<div class="daylight-page operations">
+  <p class="kicker">Daylight</p>
+  <h1>Operations</h1>
+
+  @if (!checked()) {
+  <p class="quiet" role="status">Checking your access…</p>
+  } @else if (!anything()) {
+  <p class="quiet">
+    This page is for Daylight operators.
+    <a routerLink="/cities">Back to the towns</a>.
+  </p>
+  } @if (canPipeline()) {
+  <section aria-labelledby="pipeline-heading">
+    <h2 id="pipeline-heading">Pipeline health</h2>
+    <p class="lede">
+      Each town's latest run, and the sources that are failing or have gone
+      quiet. New problems are also emailed to the operators' address, once each.
+    </p>
+    @if (pipelineReport(); as report) { @if (!report.configured) {
+    <p class="quiet">
+      No towns are scheduled: civic-briefing has no locality registry
+      (CIVIC_LOCALITIES_DIR).
+    </p>
+    } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Town</th>
+            <th scope="col">Last run</th>
+            <th scope="col">Started</th>
+            <th scope="col">Sources needing attention</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (town of report.towns; track town.slug) {
+          <tr>
+            <th scope="row">{{ town.name }}</th>
+            <td>
+              @if (town.lastRun; as run) {
+              <span class="run" [attr.data-status]="run.status"
+                >{{ runWords(run.status) }}</span
+              >
+              @if (run.error) {
+              <span class="run-error">{{ run.error }}</span>
+              } } @else {
+              <span class="quiet">No runs yet</span>
+              }
+            </td>
+            <td>
+              {{ town.lastRun ? (town.lastRun.startedAt | date : 'medium') : '—'
+              }}
+            </td>
+            <td>
+              @for (problem of town.problems; track problem.sourceId) {
+              <div class="source-problem" [attr.data-status]="problem.status">
+                {{ problem.sourceId }}: {{ problem.status === 'failing' ?
+                'failing, ' + problem.consecutiveFailures + ' attempts in a row'
+                : 'quiet' + (problem.stalenessDays !== null ? ', ' +
+                problem.stalenessDays + ' days' : '') }}
+              </div>
+              } @empty {
+              <span class="quiet">None</span>
+              }
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="4" class="quiet">No towns yet.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="quiet">Checked {{ report.checkedAt | date : 'medium' }}.</p>
+
+    <h3>Backfill</h3>
+    <p class="quiet">
+      Searches each town's sources, fetches its history, then writes the
+      editions it would have had over the past days, each from what had been
+      published by that day. Days that already have an edition are kept. It runs
+      in the background and can take hours; the schedule waits for it.
+    </p>
+    <div class="actions">
+      <label class="days"
+        >Days
+        <input
+          type="number"
+          min="1"
+          max="366"
+          [value]="backfillDays()"
+          (input)="setBackfillDays($event)"
+      /></label>
+      <button
+        type="button"
+        [disabled]="backfill()?.running"
+        (click)="startBackfill()"
+      >
+        Pull and backfill every town
+      </button>
+    </div>
+    @if (backfill(); as backfill) { @if (backfill.running) {
+    <p class="quiet" role="status">
+      Backfilling {{ backfill.towns.length }} town{{ backfill.towns.length === 1
+      ? '' : 's' }} since {{ backfill.startedAt | date : 'medium' }}: {{
+      backfill.steps.length }} step{{ backfill.steps.length === 1 ? '' : 's' }}
+      done.
+    </p>
+    } @else if (backfill.finishedAt) {
+    <p class="quiet">
+      The last backfill finished {{ backfill.finishedAt | date : 'medium' }}.
+    </p>
+    } @if (backfill.steps.length) {
+    <ul class="backfill-steps">
+      @for (step of backfill.steps; track $index) {
+      <li><strong>{{ step.town }}</strong>: {{ step.action }}</li>
+      }
+    </ul>
+    } @if (backfill.problem) {
+    <p class="problem" role="alert">{{ backfill.problem }}</p>
+    } } @if (backfillMessage()) {
+    <p class="problem" role="alert">{{ backfillMessage() }}</p>
+    } } } @else if (pipelineError()) {
+    <p class="problem" role="alert">{{ pipelineError() }}</p>
+    } @else {
+    <p class="quiet" role="status">Loading…</p>
+    }
+  </section>
+  } @if (canDensity()) {
+  <section aria-labelledby="density-heading">
+    <h2 id="density-heading">Contributor density</h2>
+    <p class="lede">
+      People, not contributions: a town with one prolific contributor has one
+      source, and the gate will never open for it. The target is {{ target.low
+      }}–{{ target.high }} active contributors a town, enough that two
+      independent accounts of the same meeting are ordinary. Thinnest first.
+    </p>
+    @switch (density().status) { @case ('loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @case ('failed') {
+    <p class="problem" role="alert">{{ densityError() }}</p>
+    } @case ('ready') {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Town</th>
+            <th scope="col">Active</th>
+            <th scope="col">Standing</th>
+            <th scope="col">Reports</th>
+            <th scope="col">Corroborations</th>
+            <th scope="col">Corroborated</th>
+            <th scope="col">Quotable</th>
+            <th scope="col">Meetings covered</th>
+            <th scope="col">Officials</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.localitySlug) {
+          <tr>
+            <th scope="row">{{ row.town }}</th>
+            <td class="number">{{ row.active }}</td>
+            <td>
+              <span class="standing" [attr.data-standing]="standing(row)"
+                >{{ standing(row) }}</span
+              >
+            </td>
+            <td class="number">{{ row.reports }}</td>
+            <td class="number">{{ row.corroborations }}</td>
+            <td class="number">{{ row.corroborated }}</td>
+            <td class="number">{{ row.quotable }}</td>
+            <td class="number">
+              {{ row.meetings ? row.meetingsWithContributions + '/' +
+              row.meetings : '—' }}
+            </td>
+            <td class="number">{{ row.officials }}</td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="9" class="quiet">No towns yet.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (recruit().length) {
+    <h3>Where to recruit</h3>
+    <ul>
+      @for (row of recruit(); track row.localitySlug) {
+      <li>
+        @if (row.active === 0) {
+        <strong>{{ row.town }}</strong> has nobody contributing. Nothing there
+        can be corroborated. } @else { <strong>{{ row.town }}</strong> needs {{
+        target.low - row.active }} more to reach the band; {{ row.active }} {{
+        row.active === 1 ? 'person is' : 'people are' }} watching it now. }
+      </li>
+      }
+    </ul>
+    }
+    <p class="quiet">
+      Against the record: {{ confirmed() }} report{{ confirmed() === 1 ? '' :
+      's' }} borne out by a later record, {{ contradicted() }} contradicted by
+      one.
+    </p>
+    } }
+  </section>
+  } @if (canTakedowns()) {
+  <section aria-labelledby="notices-heading">
+    <h2 id="notices-heading">Copyright notices</h2>
+    <label class="filter"
+      >Showing
+      <select [value]="noticeState()" (change)="setNoticeState($event)">
+        <option value="received">Waiting for a decision</option>
+        <option value="upheld">Upheld</option>
+        <option value="declined">Declined</option>
+        <option value="">All</option>
+      </select>
+    </label>
+    @switch (notices().status) { @case ('loading') {
+    <p class="quiet" role="status">Loading…</p>
+    } @case ('failed') {
+    <p class="problem" role="alert">{{ noticesError() }}</p>
+    } @case ('ready') { @for (notice of noticeList(); track notice.id) {
+    <article class="notice">
+      <h3>{{ notice.work }}</h3>
+      <p class="meta">
+        From {{ notice.claimantName }} ({{ notice.claimantEmail }}) · {{
+        notice.state }} · notice {{ notice.id }}
+      </p>
+      <p class="meta">
+        Locates {{ notice.contributionIds.length }} contribution{{
+        notice.contributionIds.length === 1 ? '' : 's' }}: {{
+        notice.contributionIds.join(', ') || 'none' }}
+      </p>
+      <label class="field"
+        ><span>Reason for the decision</span>
+        <textarea rows="2" (input)="noteFor(notice.id, $event)"></textarea>
+      </label>
+      <div class="actions">
+        @if (notice.state === 'received') {
+        <button type="button" (click)="act(notice, 'upheld')">
+          Uphold and take down
+        </button>
+        <button type="button" (click)="act(notice, 'declined')">Decline</button>
+        } @if (notice.state === 'upheld') {
+        <button type="button" (click)="act(notice, 'restored')">
+          Restore after a counter-notice
+        </button>
+        }
+      </div>
+    </article>
+    } @empty {
+    <p class="quiet">No notices here.</p>
+    } } } @if (noticeMessage()) {
+    <p role="status">{{ noticeMessage() }}</p>
+    }
+  </section>
+  } @if (canVerify()) {
+  <section aria-labelledby="callback-heading">
+    <h2 id="callback-heading">Confirm an official's callback</h2>
+    <p class="lede">
+      After calling the official back at the number the town publishes, record
+      it here. Their records then count as the town's official record.
+    </p>
+    <form [formGroup]="callback" (ngSubmit)="confirmCallback()">
+      <label class="field"
+        ><span>Account id</span> <input type="text" formControlName="userId"
+      /></label>
+      <label class="field"
+        ><span>Town (locality slug)</span>
+        <input type="text" formControlName="localitySlug" placeholder="adel-ga"
+      /></label>
+      <label class="field"
+        ><span>What was said, and the number called</span>
+        <textarea formControlName="note" rows="3"></textarea>
+      </label>
+      <div class="actions">
+        <button type="submit" [disabled]="callback.invalid">
+          Record the callback
+        </button>
+      </div>
+    </form>
+    @if (callbackMessage()) {
+    <p role="status">{{ callbackMessage() }}</p>
+    }
+  </section>
+  } @if (canMaintain()) {
+  <section aria-labelledby="maintenance-heading">
+    <h2 id="maintenance-heading">Run now</h2>
+    <p class="lede">
+      These run on their own schedule; run one now when you can't wait.
+    </p>
+    <div class="actions">
+      <button type="button" [disabled]="running()" (click)="run('rereview')">
+        Re-review held contributions
+      </button>
+      <button type="button" [disabled]="running()" (click)="run('sweep')">
+        Compare reports with new records
+      </button>
+      <button type="button" [disabled]="running()" (click)="run('export')">
+        Write quotable material
+      </button>
+    </div>
+    @if (running()) {
+    <p class="quiet" role="status">Running… this can take a few minutes.</p>
+    } @if (maintenanceMessage()) {
+    <p role="status">{{ maintenanceMessage() }}</p>
+    }
+  </section>
+  }
+</div>

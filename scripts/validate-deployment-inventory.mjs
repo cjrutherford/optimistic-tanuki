@@ -89,6 +89,8 @@ const actualResources = (baseKustomization.resources || [])
       resource !== 'ingress.yaml' &&
       resource !== 'tailscale-ingress.yaml' &&
       resource !== 'services/video-processing-data-pvc.yaml' &&
+      // Infrastructure, not an app image the inventory deploys.
+      resource !== 'clamav.yaml' &&
       resource !== 'observability'
   )
   .sort();

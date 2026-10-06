@@ -3,6 +3,7 @@ import { CivicAgenda } from './entities/civic-agenda.entity';
 import { CivicAgendaItem } from './entities/civic-agenda-item.entity';
 import { TipProject } from './entities/tip-project.entity';
 import { EmergencyBroadcast } from './entities/emergency-broadcast.entity';
+import { CivicTenant } from './entities/civic-tenant.entity';
 
 export default new DataSource({
   type: 'postgres',
@@ -11,6 +12,12 @@ export default new DataSource({
   username: process.env.POSTGRES_USER || 'postgres',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   database: process.env.POSTGRES_DB || 'ot_civic',
-  entities: [CivicAgenda, CivicAgendaItem, TipProject, EmergencyBroadcast],
+  entities: [
+    CivicAgenda,
+    CivicAgendaItem,
+    TipProject,
+    EmergencyBroadcast,
+    CivicTenant,
+  ],
   migrations: ['migrations/*.ts'],
 });

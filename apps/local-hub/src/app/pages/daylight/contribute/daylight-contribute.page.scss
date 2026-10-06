@@ -1,0 +1,39 @@
+@use '../daylight-page';
+@use '../daylight-forms';
+
+.kicker {
+  margin: 1rem 0 0;
+  font-size: var(--type-small, 0.8rem);
+  font-weight: 800;
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+h2 {
+  font-size: var(--type-h3, 1.2rem);
+  margin: 2rem 0 0.6rem;
+}
+
+form {
+  margin-top: 1.5rem;
+}
+
+.notice-box {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
+  background: color-mix(in srgb, var(--warning) 16%, transparent);
+  line-height: var(--line-height, 1.55);
+}
+
+.done {
+  margin-top: 1.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--personality-card-radius, 0.8rem);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+
+  p {
+    margin: 0.2rem 0;
+  }
+}

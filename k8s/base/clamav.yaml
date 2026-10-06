@@ -1,0 +1,60 @@
+# ClamAV for fail-closed scanning: every document Daylight fetches (D22) and
+# every upload. Signatures are re-downloaded on start (emptyDir).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clamav
+  namespace: optimistic-tanuki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clamav
+  template:
+    metadata:
+      labels:
+        app: clamav
+    spec:
+      containers:
+        - name: clamav
+          image: clamav/clamav:stable
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3310
+          volumeMounts:
+            - name: signatures
+              mountPath: /var/lib/clamav
+          resources:
+            requests:
+              memory: '1.5Gi'
+              cpu: '250m'
+            limits:
+              memory: '3Gi'
+              cpu: '1000m'
+          readinessProbe:
+            exec:
+              command: ['clamdcheck.sh']
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ['clamdcheck.sh']
+            initialDelaySeconds: 300
+            periodSeconds: 30
+      volumes:
+        - name: signatures
+          emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clamav
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: clamav
+  ports:
+    - port: 3310
+      targetPort: 3310
+  clusterIP: None

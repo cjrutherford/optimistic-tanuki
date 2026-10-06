@@ -1,0 +1,40 @@
+# Escambia County, Florida: the westernmost county, seat Pensacola. Ferry Pass
+# has no government of its own, so its public business is this county's and
+# the county school district's.
+slug: escambia-county-fl
+name: Escambia County
+state: FL
+timezone: America/Chicago
+lat: 30.61
+lon: -87.34
+kind: county
+parents: [florida]
+# Alabama has an Escambia County too, across the state line.
+excludePhrases:
+  [
+    'Escambia County, Alabama',
+    'Escambia County, Ala.',
+    'Escambia County, AL',
+    'Escambia County Alabama',
+    'Brewton',
+    'Atmore',
+    'Flomaton',
+  ]
+topics: [county-government, schools, roads, weather, news]
+sources:
+  - sourceKey: escambia-civicclerk
+    adapter: civicclerk
+    name: Escambia County commission and board meetings (CivicClerk)
+    url: https://escambiacofl.portal.civicclerk.com/
+    kind: meeting
+    desk: government
+    accessMode: full
+    aggregateDiscovery: false
+    # The portal is a script-built page over CivicClerk's public API, which
+    # lists meetings by date, pages its results, and serves each agenda and
+    # minutes as plain text. robots.txt (portal) allows all; the API has none.
+    coverageCapabilities:
+      dateQuery: { parameter: startDateTime, format: YYYY-MM-DD }
+      pagination: { mode: next-link, maxPages: 30 }
+    config:
+      maxDocs: 40

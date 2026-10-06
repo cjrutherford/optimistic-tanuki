@@ -1,0 +1,41 @@
+{
+  "name": "civic-adapters",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/civic/adapters/src",
+  "projectType": "library",
+  "tags": ["scope:civic", "type:domain"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "tsc -p libs/civic/adapters/tsconfig.lib.json --noEmit",
+          "tsc -p libs/civic/adapters/tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/civic/adapters/jest.config.ts"
+      }
+    },
+    "test-db": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/civic/adapters-db"],
+      "options": {
+        "jestConfig": "libs/civic/adapters/jest.db.config.ts"
+      }
+    },
+    "discovery-benchmark": {
+      "executor": "@nx/jest:jest",
+      "cache": false,
+      "options": {
+        "jestConfig": "libs/civic/adapters/jest.benchmark.config.ts",
+        "runInBand": true
+      }
+    }
+  }
+}

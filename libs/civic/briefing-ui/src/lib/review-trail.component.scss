@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.state {
+  margin: 0 0 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--personality-card-radius, 0.6rem);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.state[data-state='accepted'] {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.state[data-state='held'] {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+}
+
+.state[data-state='rejected'],
+.state[data-state='taken-down'] {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: var(--type-small, 0.93rem);
+  line-height: var(--line-height, 1.5);
+}
+
+.steps li {
+  margin: 0.35rem 0;
+}
+
+.stage {
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+
+.reason + .reason::before {
+  content: ' ';
+}

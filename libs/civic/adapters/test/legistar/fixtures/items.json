@@ -1,0 +1,39 @@
+{
+  "event": {
+    "EventId": 101,
+    "EventBodyName": "City Council",
+    "EventDate": "/Date(1788307200000)/"
+  },
+  "items": [
+    {
+      "EventItemId": 1,
+      "EventItemMatterId": 55,
+      "EventItemMatterName": "O2026-12",
+      "EventItemTitle": "Water rate increase",
+      "EventItemMatterType": "Ordinance"
+    },
+    {
+      "EventItemId": 2,
+      "EventItemMatterId": 56,
+      "EventItemMatterName": "R-2026-04",
+      "EventItemTitle": "Rezoning Hwy 129",
+      "EventItemMatterType": "Rezoning"
+    }
+  ],
+  "matters": [
+    {
+      "MatterId": 55,
+      "MatterName": "O2026-12",
+      "MatterTitle": "Water rate increase",
+      "MatterTypeName": "Ordinance",
+      "MatterStatusName": "Passed"
+    },
+    {
+      "MatterId": 56,
+      "MatterName": "R-2026-04",
+      "MatterTitle": "Rezoning Hwy 129",
+      "MatterTypeName": "Rezoning",
+      "MatterStatusName": "Referred"
+    }
+  ]
+}

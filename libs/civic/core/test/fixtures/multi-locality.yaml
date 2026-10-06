@@ -1,0 +1,125 @@
+localities:
+  - slug: georgia
+    name: Georgia
+    state: GA
+    timezone: America/New_York
+    lat: 32.7
+    lon: -83.3
+    kind: state
+    parents: [us]
+    broad: true
+    topics: [news, government, roads, agriculture]
+    cadence: [daily]
+    sources: []
+  - slug: us
+    name: United States
+    state: US
+    timezone: America/New_York
+    lat: 39.8
+    lon: -98.6
+    kind: country
+    parents: []
+    broad: true
+    topics: [news]
+    cadence: [daily]
+    sources:
+      - sourceKey: multi-us-wire
+        adapter: rss
+        name: Fixture national wire
+        url: https://fixtures.test/us-wire
+        kind: news
+        config: { fixture: global-feed.json }
+  - slug: south-georgia
+    name: South Georgia
+    state: GA
+    timezone: America/New_York
+    lat: 31.8
+    lon: -83.5
+    kind: region
+    parents: [georgia]
+    broad: true
+    topics: [news, roads, agriculture]
+    cadence: [daily]
+    sources: []
+  - slug: cook-county-ga
+    name: Cook County
+    state: GA
+    timezone: America/New_York
+    lat: 31.25
+    lon: -83.43
+    kind: county
+    parents: [south-georgia]
+    topics: [news, government, roads, agriculture]
+    cadence: [daily]
+    sources:
+      - sourceKey: multi-cook-county
+        adapter: rss
+        name: Cook County fixture desk
+        url: https://fixtures.test/cook-county
+        kind: news
+        config: { fixture: county-feed.json }
+  - slug: berrien-county-ga
+    name: Berrien County
+    state: GA
+    timezone: America/New_York
+    lat: 31.3
+    lon: -83.2
+    kind: county
+    parents: [south-georgia]
+    topics: [news, government, roads]
+    cadence: [daily]
+    sources:
+      - sourceKey: multi-berrien-county
+        adapter: rss
+        name: Berrien County fixture desk
+        url: https://fixtures.test/berrien-county
+        kind: news
+        config: { fixture: namesake-county-town-feed.json }
+  - slug: pineville-alpha-ga
+    name: Pineville
+    state: GA
+    timezone: America/New_York
+    lat: 31.2
+    lon: -83.5
+    kind: town
+    parents: [cook-county-ga]
+    edition: true
+    topics: [news, roads, agriculture]
+    cadence: [daily]
+    sources:
+      - sourceKey: multi-town-a
+        adapter: rss
+        name: Pineville fixture desk
+        url: https://fixtures.test/pineville-alpha
+        kind: news
+        config: { fixture: town-a-feed.json }
+  - slug: lakeview-alpha-ga
+    name: Lakeview
+    state: GA
+    timezone: America/New_York
+    lat: 31.22
+    lon: -83.48
+    kind: town
+    parents: [cook-county-ga]
+    edition: true
+    topics: [news, roads]
+    cadence: [daily]
+    sources:
+      - sourceKey: multi-town-b
+        adapter: rss
+        name: Lakeview fixture desk
+        url: https://fixtures.test/lakeview-alpha
+        kind: news
+        config: { fixture: town-b-feed.json }
+  - slug: pineville-beta-ga
+    name: Pineville
+    state: GA
+    timezone: America/New_York
+    lat: 31.35
+    lon: -83.18
+    kind: town
+    parents: [berrien-county-ga]
+    edition: true
+    topics: [news, roads]
+    cadence: [daily]
+    sources: []

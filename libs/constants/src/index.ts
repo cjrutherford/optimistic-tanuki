@@ -188,3 +188,4 @@ export * from './lib/libs/flow';
 export * from './lib/libs/vault';
 export * from './lib/libs/nexus';
 export * from './lib/libs/civic';
+export * from './lib/libs/civic-briefing';

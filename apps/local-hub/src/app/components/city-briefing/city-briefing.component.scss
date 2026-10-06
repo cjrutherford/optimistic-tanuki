@@ -1,0 +1,21 @@
+:host {
+  display: block;
+}
+
+.briefing-dateline {
+  margin: 0 0 1rem;
+  font-size: var(--type-small, 0.85rem);
+  font-weight: 600;
+  letter-spacing: var(--personality-label-letter-spacing, 0.04em);
+  text-transform: uppercase;
+  color: var(--foreground-muted);
+}
+
+.briefing-status {
+  margin: 0;
+  color: var(--foreground-muted);
+}
+
+.briefing-status--failed {
+  color: var(--error);
+}

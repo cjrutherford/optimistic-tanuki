@@ -1,0 +1,64 @@
+@if (failure()) {
+<p class="problem" role="alert">{{ failure() }}</p>
+} @for (report of reports(); track report.id) {
+<article class="report">
+  <h4>{{ report.subject.text }}</h4>
+  <p class="meta">
+    {{
+      report.kind === 'artifact'
+        ? 'Document, photograph or recording'
+        : 'Account'
+    }}
+    · sent {{ longDate(report.submittedAt.slice(0, 10))
+    }}{{ report.occurredOn ? ', about ' + longDate(report.occurredOn) : '' }}
+  </p>
+  <civic-review-trail [contribution]="report" />
+  @if (report.state === 'accepted' || report.state === 'held') {
+  <button type="button" class="link" (click)="withdraw(report)">
+    Withdraw this report
+  </button>
+  } @if (report.state === 'taken-down') { @if (countering() === report.id) {
+  <form [formGroup]="counter" (ngSubmit)="sendCounter(report)" class="counter">
+    <label
+      >Notice number
+      <input
+        type="text"
+        formControlName="noticeId"
+        placeholder="From the takedown message"
+    /></label>
+    <label
+      >Why the removal was a mistake<textarea
+        formControlName="statement"
+        rows="4"
+      ></textarea>
+    </label>
+    <label class="choice"
+      ><input type="checkbox" formControlName="underPenalty" /> I state under
+      penalty of perjury that I believe in good faith the material was removed
+      by mistake or misidentification.</label
+    >
+    <label class="choice"
+      ><input type="checkbox" formControlName="consentToJurisdiction" /> I
+      consent to the jurisdiction of the federal district court for my address,
+      and will accept service from the person who filed the notice.</label
+    >
+    <label
+      >Your full name, as a signature
+      <input type="text" formControlName="signature"
+    /></label>
+    <button type="submit" class="link">Send counter-notice</button>
+  </form>
+  } @else {
+  <button type="button" class="link" (click)="countering.set(report.id)">
+    Answer with a counter-notice
+  </button>
+  } }
+</article>
+} @empty { @if (!failure()) {
+<p class="quiet">
+  You haven't sent any reports. <a routerLink="/cities">Choose a town</a> and
+  use “Report something”.
+</p>
+} } @if (message()) {
+<p role="status">{{ message() }}</p>
+}

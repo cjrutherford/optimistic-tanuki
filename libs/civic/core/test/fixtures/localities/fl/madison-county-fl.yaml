@@ -1,0 +1,52 @@
+slug: madison-county-fl
+name: Madison County
+state: FL
+timezone: America/New_York
+lat: 30.45
+lon: -83.47
+kind: county
+parents: [florida]
+excludePhrases:
+  [
+    'Madison County, Georgia',
+    'Madison County, Ga.',
+    'Madison County, Alabama',
+    'Madison County, Mississippi',
+    'Madison County, Tennessee',
+    'Madison County, Illinois',
+    'Madison County, New York',
+    'Madison County, Indiana',
+  ]
+topics: [county-government, schools, roads, weather, news]
+sources:
+  - sourceKey: greene-publishing
+    adapter: rss
+    name: Greene Publishing (Madison County Carrier, Madison Enterprise-Recorder)
+    url: https://www.greenepublishing.com/feed/
+    kind: news
+    desk: local-reporting
+    accessMode: full
+  - sourceKey: wtxl-local
+    adapter: rss
+    name: WTXL ABC 27 local news (Tallahassee)
+    url: https://www.wtxl.com/news/local-news.rss
+    kind: news
+    desk: local-reporting
+    accessMode: full
+  - sourceKey: madison-county-fl-news-discover
+    # Disabled 2026-09-21: news.google.com's robots.txt disallows crawlers,
+    # and this adapter discovers only through Google News search. Publishers'
+    # own sitemaps, feeds and search feeds carry discovery instead.
+    enabled: false
+    adapter: news-discover
+    name: Auto-discovered Madison County, FL news
+    url: https://news.google.com/rss/search?q=Madison+County+Florida&hl=en-US&gl=US&ceid=US:en
+    kind: news
+    desk: local-reporting
+    accessMode: full
+    aggregateDiscovery: true
+    aggregateUrl: https://news.google.com/rss/search?q=Madison+County+Florida&hl=en-US&gl=US&ceid=US:en
+    config:
+      query: Madison County Florida OR "Madison, Fla"
+      matchNames: [Madison County, Madison, Greenville, Lee, Pinetta]
+      excludePublishers: [The Georgia Gazette]

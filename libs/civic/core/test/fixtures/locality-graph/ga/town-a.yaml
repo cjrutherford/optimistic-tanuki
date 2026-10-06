@@ -1,0 +1,17 @@
+slug: town-a
+name: Aville
+state: GA
+timezone: America/New_York
+lat: 31.1
+lon: -83.2
+kind: town
+parents: [county-a]
+edition: true
+excludePhrases: ['Aville, Tennessee']
+cadence: [daily]
+sources:
+  - sourceKey: town-a-news
+    adapter: rss
+    name: Aville News
+    url: https://example.test/town-a-news-feed/
+    kind: news

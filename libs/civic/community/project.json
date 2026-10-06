@@ -1,0 +1,26 @@
+{
+  "name": "civic-community",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/civic/community/src",
+  "projectType": "library",
+  "tags": ["scope:civic", "type:domain"],
+  "targets": {
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "tsc -p libs/civic/community/tsconfig.lib.json --noEmit",
+          "tsc -p libs/civic/community/tsconfig.spec.json --noEmit"
+        ],
+        "parallel": false
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/civic/community/jest.config.ts"
+      }
+    }
+  }
+}

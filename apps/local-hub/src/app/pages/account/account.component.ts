@@ -12,10 +12,16 @@ import {
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { PersonalitySelectorComponent } from '@optimistic-tanuki/theme-ui';
 
+import { DaylightAccountComponent } from '../../components/daylight-account/daylight-account.component';
+
 @Component({
   selector: 'app-account',
   standalone: true,
-  imports: [CommonModule, PersonalitySelectorComponent],
+  imports: [
+    CommonModule,
+    PersonalitySelectorComponent,
+    DaylightAccountComponent,
+  ],
   templateUrl: './account.component.html',
   styleUrls: ['./account.component.scss'],
 })

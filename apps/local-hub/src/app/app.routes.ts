@@ -26,6 +26,65 @@ export const appRoutes: Route[] = [
       import('./pages/city/city.component').then((m) => m.CityComponent),
   },
   {
+    path: 'city/:slug/briefing',
+    loadComponent: () =>
+      import('./pages/city-briefing/city-briefing-page.component').then(
+        (m) => m.CityBriefingPageComponent
+      ),
+  },
+  {
+    path: 'city/:slug/briefing/:date',
+    loadComponent: () =>
+      import('./pages/city-briefing/city-briefing-page.component').then(
+        (m) => m.CityBriefingPageComponent
+      ),
+  },
+  {
+    path: 'city/:slug/report',
+    loadComponent: () =>
+      import('./pages/daylight/report/daylight-report.page').then(
+        (m) => m.DaylightReportPage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'city/:slug/watch',
+    loadComponent: () =>
+      import('./pages/daylight/watch/daylight-watch.page').then(
+        (m) => m.DaylightWatchPage
+      ),
+  },
+  {
+    path: 'contributors/:id',
+    loadComponent: () =>
+      import('./pages/daylight/contributor/daylight-contributor.page').then(
+        (m) => m.DaylightContributorPage
+      ),
+  },
+  {
+    path: 'operations',
+    loadComponent: () =>
+      import('./pages/daylight/operations/daylight-operations.page').then(
+        (m) => m.DaylightOperationsPage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'contribute',
+    loadComponent: () =>
+      import('./pages/daylight/contribute/daylight-contribute.page').then(
+        (m) => m.DaylightContributePage
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'copyright',
+    loadComponent: () =>
+      import('./pages/daylight/copyright/daylight-copyright.page').then(
+        (m) => m.DaylightCopyrightPage
+      ),
+  },
+  {
     path: 'city/:slug/classifieds',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(

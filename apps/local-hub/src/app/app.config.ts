@@ -12,6 +12,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { authInterceptor } from './services/auth.interceptor';
+import { serverApiInterceptor } from './services/server-api.interceptor';
 import { bugReportTraceInterceptor } from '@optimistic-tanuki/bug-report-ui';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
@@ -38,7 +39,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideAnimationsAsync(),
     provideHttpClient(
-      withInterceptors([authInterceptor, bugReportTraceInterceptor])
+      withInterceptors([
+        serverApiInterceptor,
+        authInterceptor,
+        bugReportTraceInterceptor,
+      ])
     ),
     {
       provide: API_BASE_URL,
