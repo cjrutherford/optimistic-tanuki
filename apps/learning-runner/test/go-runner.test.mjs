@@ -19,6 +19,10 @@ test.before(async () => {
       PORT,
       LEARNING_SCRATCH_DIR: SCRATCH,
       LEARNING_RUNNER_TIMEOUT_MS: '7000',
+      // Every run builds the standard library into a fresh GOCACHE. On a CI
+      // runner shared with other test tasks that compile alone can pass the
+      // 30s default, so give it the server's 60s ceiling.
+      LEARNING_RUNNER_COMPILE_TIMEOUT_MS: '60000',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
