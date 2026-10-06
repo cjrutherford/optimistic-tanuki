@@ -258,17 +258,13 @@ export class AppController {
       }
     }
 
-    // When the gateway forwards an authenticated viewer, push the shared
-    // visibility scope into the query: followers-only posts are hidden from
-    // non-followers, other authors' scheduled posts are excluded, and blocked
-    // authors (both directions) are dropped. This subsumes the previous
-    // post-query blocked-author JS filter. Absent viewer (internal/system
-    // call) stays un-scoped, mirroring the project-access convention.
-    if (viewerProfileId) {
-      const scope = await this.buildPostVisibilityScope(viewerProfileId);
-      const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
-      searchOptions.where = visiblePostWhere(scope, baseWhere);
-    }
+    // Missing identity is an anonymous read, including public gateway routes.
+    // Internal callers must not gain unrestricted access by omitting a viewer.
+    const scope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+    const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
+    searchOptions.where = visiblePostWhere(scope, baseWhere);
 
     const posts = await this.postService.findAll(searchOptions);
 
@@ -306,13 +302,11 @@ export class AppController {
       ? (postSearchDtoToFindManyOptions(options) as FindOneOptions<Post>)
       : {};
 
-    // When an authenticated viewer is forwarded, enforce the shared visibility
-    // scope on the fetch: a post the viewer may not see resolves to null.
-    if (viewerProfileId) {
-      const scope = await this.buildPostVisibilityScope(viewerProfileId);
-      const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
-      search.where = visiblePostWhere(scope, baseWhere);
-    }
+    const scope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+    const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
+    search.where = visiblePostWhere(scope, baseWhere);
 
     return await this.postService.findOne(id, search);
   }

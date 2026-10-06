@@ -324,11 +324,48 @@ describe('AppController', () => {
     expect(postService.findAll).toHaveBeenCalled();
   });
 
+  it('limits anonymous post lists to public, visible, published posts', async () => {
+    postService.findAll.mockResolvedValue([]);
+    await controller.findAllPosts({} as any);
+    expect(postService.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: [
+          {
+            visibility: 'public',
+            moderationStatus: 'visible',
+            isScheduled: false,
+          },
+        ],
+      })
+    );
+  });
+
+  it('applies the anonymous audience policy to shared direct reads', async () => {
+    await controller.findOnePost('restricted-post');
+    expect(postService.findOne).toHaveBeenCalledWith('restricted-post', {
+      where: [
+        {
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
+    });
+  });
+
   it('should find one post', async () => {
     postService.findOne.mockResolvedValue({ id: 1 });
     const result = await controller.findOnePost('1');
     expect(result).toEqual({ id: 1 });
-    expect(postService.findOne).toHaveBeenCalledWith('1', {});
+    expect(postService.findOne).toHaveBeenCalledWith('1', {
+      where: [
+        {
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
+    });
   });
 
   it('should update a post', async () => {
@@ -556,7 +593,14 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      where: [
+        {
+          title: Like('%Test%'),
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
       take: 2,
       // skip: 0,
     });
@@ -587,7 +631,14 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      where: [
+        {
+          title: Like('%Test%'),
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
       take: 100, // Should be capped at MAX_LIMIT
     });
   });
@@ -599,7 +650,14 @@ describe('AppController', () => {
     );
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      where: [
+        {
+          title: Like('%Test%'),
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
       take: 20, // Should default to 20
     });
   });
@@ -608,7 +666,14 @@ describe('AppController', () => {
     const result = await controller.findAllPosts({ title: 'Test' }, undefined);
 
     expect(postService.findAll).toHaveBeenCalledWith({
-      where: { title: Like('%Test%') },
+      where: [
+        {
+          title: Like('%Test%'),
+          visibility: 'public',
+          moderationStatus: 'visible',
+          isScheduled: false,
+        },
+      ],
       take: 20, // Should default to 20
     });
   });

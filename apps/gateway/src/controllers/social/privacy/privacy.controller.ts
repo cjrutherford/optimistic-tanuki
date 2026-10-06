@@ -80,7 +80,8 @@ export class PrivacyController {
 
   private async resolveReportWorkspaceId(
     dto: ReportContentDto,
-    appScope: string
+    appScope: string,
+    viewerProfileId: string
   ): Promise<string | null> {
     let communityId: string | null = null;
 
@@ -101,7 +102,7 @@ export class PrivacyController {
       const post = await firstValueFrom(
         this.socialClient.send(
           { cmd: PostCommands.FIND },
-          { id: dto.contentId }
+          { id: dto.contentId, viewerProfileId }
         )
       );
       if (!post) {
@@ -114,7 +115,7 @@ export class PrivacyController {
       const comment = await firstValueFrom(
         this.socialClient.send(
           { cmd: CommentCommands.FIND },
-          { id: dto.contentId }
+          { id: dto.contentId, viewerProfileId }
         )
       );
       if (!comment) {
@@ -124,7 +125,7 @@ export class PrivacyController {
         const post = await firstValueFrom(
           this.socialClient.send(
             { cmd: PostCommands.FIND },
-            { id: comment.postId }
+            { id: comment.postId, viewerProfileId }
           )
         );
         if (!post) {
@@ -276,7 +277,11 @@ export class PrivacyController {
     @User() user: UserDetails,
     @AppScope() appScope: string
   ): Promise<any> {
-    const workspaceId = await this.resolveReportWorkspaceId(dto, appScope);
+    const workspaceId = await this.resolveReportWorkspaceId(
+      dto,
+      appScope,
+      user.profileId
+    );
 
     return await firstValueFrom(
       this.socialClient.send(

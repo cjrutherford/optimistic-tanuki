@@ -2,6 +2,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
 import {
   PostCommands,
+  CommentCommands,
   PrivacyCommands,
   WorkspaceCommands,
 } from '@optimistic-tanuki/constants';
@@ -46,6 +47,10 @@ describe('PrivacyController report workspace scope', () => {
       'client-interface'
     );
 
+    expect(socialClient.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      { id: 'post-1', viewerProfileId: 'reporter-profile-1' }
+    );
     expect(workspaceClient.send).toHaveBeenCalledWith(
       WorkspaceCommands.RESOLVE_BY_SOURCE,
       {
@@ -60,6 +65,35 @@ describe('PrivacyController report workspace scope', () => {
         appScope: 'client-interface',
         workspaceId: 'workspace-1',
       })
+    );
+  });
+
+  it('forwards the reporter on both reads when reporting a comment', async () => {
+    const socialClient = {
+      send: jest.fn((pattern: any) =>
+        of(
+          pattern.cmd === CommentCommands.FIND
+            ? { postId: 'post-1' }
+            : { id: 'post-1' }
+        )
+      ),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const controller = new (PrivacyController as any)(
+      socialClient,
+      {}
+    ) as PrivacyController;
+    await controller.reportContent(
+      { contentType: 'comment', contentId: 'comment-1', reason: 'spam' },
+      { profileId: 'reporter-profile-1' } as any,
+      'social'
+    );
+    expect(socialClient.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.FIND },
+      { id: 'comment-1', viewerProfileId: 'reporter-profile-1' }
+    );
+    expect(socialClient.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      { id: 'post-1', viewerProfileId: 'reporter-profile-1' }
     );
   });
 

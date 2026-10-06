@@ -311,7 +311,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 | RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md | P0                |
 | RR-02 | HAI ecosystem identity/tag/shared-login UX                                | VERIFYING                        | P1                |
 | RR-03 | Authentication, registration, session, and account lifecycle              | VERIFYING                        | P0                |
-| RR-04 | OT feed, discovery, follows, visibility, and privacy                      | PLANNED                          | P0                |
+| RR-04 | OT feed, discovery, follows, visibility, and privacy                      | GAP FOUND                        | P0                |
 | RR-05 | OT communities, forum, chat, and messaging                                | GAP FOUND                        | P0                |
 | RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | PLANNED                          | P0                |
 | RR-07 | Daylight civic feed release acceptance                                    | BLOCKED on PR/deployment         | P1/P0-if-marketed |
@@ -445,6 +445,8 @@ Auth bypass, stale-user data after logout, cross-account leakage, unusable regis
 ---
 
 ## RR-04 — OT feed, discovery, follows, visibility, and privacy
+
+**Status:** GAP FOUND. [Findings and real-stack privacy gates](./findings/RR-04.md). Anonymous post-read bypass repaired; private-community and realtime content disclosures remain P0. Following-feed, explicit audience, and source-sharing gaps also confirmed. No privacy acceptance or promotion waiver.
 
 **Goal:** Verify OT's defining control/visibility philosophy in real behavior.
 
@@ -980,6 +982,7 @@ Use this section for concise status changes. Detailed evidence should live in sl
 
 | Date       | Item                    | Change                                                                                                                                                                                                              |
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-06 | RR-04 privacy audit     | Repaired anonymous read bypass and preserved reporter identity. Real multi-user gates expose private-community and realtime content; GAP FOUND with P0 release blockers. See findings/RR-04.md.                     |
 | 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
 | 2026-10-05 | RR-02 verification      | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
 | 2026-10-05 | RR-03 verification      | Hardened session restoration, profile ownership/cache cleanup, form errors and OAuth provider visibility. Real service revocation and browser contract regressions passed; lifecycle acceptance remains VERIFYING.  |
