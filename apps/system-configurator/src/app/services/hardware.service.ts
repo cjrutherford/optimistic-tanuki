@@ -115,6 +115,13 @@ export interface Order {
   createdAt: Date;
 }
 
+/**
+ * Published labor rate in US dollars per hour (HAI D019). Kept equal to
+ * `HAI_LABOR_RATE_PER_HOUR` in system-configurator-api and the HAI website by
+ * `apps/hai/src/app/labor-rate-sync.spec.ts`.
+ */
+export const HAI_LABOR_RATE_PER_HOUR = 65;
+
 export interface CommercialQuote {
   id: string;
   sourceCost: number;
@@ -129,7 +136,10 @@ export interface CommercialQuote {
 export interface IssueCommercialQuoteRequest {
   tierId: 'tier1' | 'tier2' | 'tier3';
   items: Array<{ offerId: string; quantity: number }>;
-  monthlyRetainerRevenue: number;
+  freightAmount: number;
+  taxAmount: number;
+  setupHours: number;
+  monthlySupportHours: number;
   monthlyCloudCost: number;
   monthlySmsCost: number;
   monthlyNetworkCost: number;

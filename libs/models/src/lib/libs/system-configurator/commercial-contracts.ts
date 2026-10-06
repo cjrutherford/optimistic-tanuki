@@ -186,11 +186,33 @@ export class IssueCommercialQuoteDto {
   @Type(() => CommercialQuoteItemDto)
   items!: CommercialQuoteItemDto[];
 
+  /** Freight on the supplier order, at the actual amount. */
   @ApiProperty({ minimum: 0 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  monthlyRetainerRevenue!: number;
+  freightAmount!: number;
+
+  /** Sales tax on the supplier order, at the actual amount. */
+  @ApiProperty({ minimum: 0 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  taxAmount!: number;
+
+  /** Estimated setup and migration hours, billed at the published rate. */
+  @ApiProperty({ minimum: 0 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  setupHours!: number;
+
+  /** Agreed monthly support hours, billed at the published rate. */
+  @ApiProperty({ minimum: 0 })
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  monthlySupportHours!: number;
 
   @ApiProperty({ minimum: 0 })
   @Type(() => Number)

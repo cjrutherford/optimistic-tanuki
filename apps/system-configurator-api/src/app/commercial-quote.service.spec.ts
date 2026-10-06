@@ -25,7 +25,10 @@ describe('CommercialQuoteService', () => {
   const request = (overrides = {}) => ({
     tierId: 'tier1',
     items: [{ offerId: 'offer-a', quantity: 2 }],
-    monthlyRetainerRevenue: 100,
+    freightAmount: 12.5,
+    taxAmount: 14,
+    setupHours: 4,
+    monthlySupportHours: 1,
     monthlyCloudCost: 10,
     monthlySmsCost: 5,
     monthlyNetworkCost: 10,
@@ -62,7 +65,7 @@ describe('CommercialQuoteService', () => {
     expect(quote.sourceCost).toBe(200);
     expect(quote.currency).toBe('USD');
     expect(quote.validUntil.toISOString()).toBe('2026-10-27T12:00:00.000Z');
-    expect(quote.version).toBe('commercial-pricing-v1');
+    expect(quote.version).toBe('pass-through-v1');
     expect(quote.inputs).toMatchObject({
       tierId: 'tier1',
       sourceOffers: [
@@ -72,15 +75,31 @@ describe('CommercialQuoteService', () => {
           quantity: 2,
         }),
       ],
-      retainerMargin: expect.objectContaining({ meetsMinimumMargin: true }),
     });
-    expect(quote.pricingSnapshot).toMatchObject({
-      contingencyPlacement: 'reserve-only',
-      outrightPrice: expect.any(Number),
-      leases: [
-        expect.objectContaining({ termMonths: 24 }),
-        expect.objectContaining({ termMonths: 36 }),
-      ],
+    // Hardware 200 + freight 12.50 + tax 14 + 4 setup hours at $65.
+    expect(quote.pricingSnapshot).toEqual({
+      policyVersion: 'pass-through-v1',
+      pricingModel: 'pass-through',
+      hardwareCost: 200,
+      freightAmount: 12.5,
+      taxAmount: 14,
+      setupHours: 4,
+      laborRatePerHour: 65,
+      setupLabor: 260,
+      outrightPrice: 486.5,
+      // 1 support hour at $65 + cloud 10 + SMS 5 + network 10.
+      monthlySupport: {
+        supportHours: 1,
+        laborRatePerHour: 65,
+        supportLabor: 65,
+        passThroughCosts: 25,
+        monthlyTotal: 90,
+      },
+    });
+    expect(quote.terms).toMatchObject({
+      pricingModel: 'pass-through',
+      laborRatePerHour: 65,
+      billing: expect.stringContaining('actual amounts on the receipts'),
     });
     expect(quoteRepository.save).toHaveBeenCalledTimes(1);
   });
@@ -130,18 +149,38 @@ describe('CommercialQuoteService', () => {
     expect(quoteRepository.save).not.toHaveBeenCalled();
   });
 
-  it('enforces the minimum 70 percent retainer margin', async () => {
+  it('passes service costs through without a margin floor', async () => {
     const { service } = setup();
 
-    await expect(
-      service.issueQuote(
-        request({
-          monthlyCloudCost: 25,
-          monthlySmsCost: 3,
-          monthlyNetworkCost: 3,
-        })
-      )
-    ).rejects.toBeInstanceOf(BadRequestException);
+    const quote = await service.issueQuote(
+      request({
+        monthlySupportHours: 0,
+        monthlyCloudCost: 25,
+        monthlySmsCost: 3,
+        monthlyNetworkCost: 3,
+      })
+    );
+
+    expect(quote.pricingSnapshot['monthlySupport']).toMatchObject({
+      supportLabor: 0,
+      passThroughCosts: 31,
+      monthlyTotal: 31,
+    });
+  });
+
+  it('rejects negative freight, tax, or hours', async () => {
+    const { service } = setup();
+
+    for (const field of [
+      'freightAmount',
+      'taxAmount',
+      'setupHours',
+      'monthlySupportHours',
+    ]) {
+      await expect(
+        service.issueQuote(request({ [field]: -1 }))
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
   });
 
   it('returns an existing quote for an identical idempotency retry', async () => {
@@ -161,7 +200,7 @@ describe('CommercialQuoteService', () => {
     quoteRepository.findOne.mockResolvedValueOnce(first);
 
     await expect(
-      service.issueQuote(request({ monthlyRetainerRevenue: 101 }))
+      service.issueQuote(request({ setupHours: 5 }))
     ).rejects.toBeInstanceOf(ConflictException);
     expect(quoteRepository.save).toHaveBeenCalledTimes(1);
   });

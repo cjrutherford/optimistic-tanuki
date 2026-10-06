@@ -147,7 +147,10 @@ describe('System Configurator HardwareController', () => {
     const quoteRequest = {
       tierId: 'tier1',
       items: [{ offerId: 'offer-1', quantity: 1 }],
-      monthlyRetainerRevenue: 500,
+      freightAmount: 12.5,
+      taxAmount: 14,
+      setupHours: 4,
+      monthlySupportHours: 1,
       monthlyCloudCost: 50,
       monthlySmsCost: 10,
       monthlyNetworkCost: 10,

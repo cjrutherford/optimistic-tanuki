@@ -22,16 +22,6 @@ export interface HardwareTier {
   powerAndProtection: string;
   aiAccelerator?: string;
   targetUsers: string;
-  wholesaleCost: number;
-  marginRate: number;
-  marginAmount: number;
-  retailPrice: number;
-  retailPriceMax?: number;
-  leaseMonthlyRate: number;
-  softwareMonthlyRate?: number;
-  retainerMonthlyRate?: number;
-  retainerMonthlyRateMax?: number;
-  projectBuildPrice?: number;
   inStock: boolean;
   stockStatus: string;
   configuratorPreset: string;
@@ -53,12 +43,6 @@ export const DEFAULT_HARDWARE_TIERS: HardwareTier[] = [
     powerAndProtection:
       '12W draw. CyberPower CP685AVRG (685VA / 390W) pure sine-wave UPS with USB auto-shutdown daemon.',
     targetUsers: '10 to 50 users',
-    wholesaleCost: 522.22,
-    marginRate: 0.35,
-    marginAmount: 182.78,
-    retailPrice: 705,
-    leaseMonthlyRate: 99,
-    softwareMonthlyRate: 50,
     inStock: true,
     stockStatus: 'In stock',
     configuratorPreset: 'tier1',
@@ -78,14 +62,6 @@ export const DEFAULT_HARDWARE_TIERS: HardwareTier[] = [
     powerAndProtection:
       'APC Smart-UPS SMT1500C (1500VA / 1000W) pure sine-wave UPS with automated shutdown scripts.',
     targetUsers: '50 to 250 users',
-    wholesaleCost: 2111.11,
-    marginRate: 0.35,
-    marginAmount: 738.89,
-    retailPrice: 2850,
-    retailPriceMax: 3200,
-    leaseMonthlyRate: 199,
-    retainerMonthlyRate: 300,
-    retainerMonthlyRateMax: 500,
     inStock: true,
     stockStatus: 'In stock',
     configuratorPreset: 'tier2',
@@ -106,13 +82,6 @@ export const DEFAULT_HARDWARE_TIERS: HardwareTier[] = [
     powerAndProtection:
       'Redundant dual 650W Platinum power supplies + CyberPower OL2200RTXL2U (2000VA online double-conversion) rackmount UPS.',
     targetUsers: '250+ users, municipalities, commercial builders',
-    wholesaleCost: 2370.37,
-    marginRate: 0.35,
-    marginAmount: 829.63,
-    retailPrice: 3200,
-    projectBuildPrice: 40000,
-    leaseMonthlyRate: 349,
-    retainerMonthlyRate: 849,
     inStock: true,
     stockStatus: 'Available on build order',
     configuratorPreset: 'tier3',

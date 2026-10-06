@@ -101,8 +101,10 @@ enforces this on the header, homepage, and private-cloud pages.
 Hardware is billed at the actual price HAI pays, with no markup. This
 replaces the Slice 11 `raw cost × 1.08 × 1.35` customer price. Freight and
 tax are passed through at the actual amounts on the order, not a flat 8%
-allowance. The backend pricing engine, quotes, and Appliance Portal still use
-the old formula and need a separate change (see `11-PRICING-ASSESSMENT.md`).
+allowance. The backend pricing engine, quotes, proposals, and Appliance Portal
+were moved to this model on 2026-10-06 (`11-PRICING-ASSESSMENT.md` section 8).
+The rate is stated in three places (website, quote engine, portal) and
+`apps/hai/src/app/labor-rate-sync.spec.ts` keeps them equal.
 
 ## D019 — A published hourly labor rate
 

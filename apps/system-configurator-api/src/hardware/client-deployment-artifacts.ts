@@ -18,10 +18,18 @@ export interface ClientDeploymentArtifactInput {
     expiresAt: string;
     applianceTier: string;
     currency: string;
+    /** Pass-through breakdown (D018–D021): no markup, no lease figures. */
+    hardwareCents: number;
+    freightCents: number;
+    taxCents: number;
+    setupHours: number;
+    setupLaborCents: number;
     upfrontTotalCents: number;
-    lease24MonthlyCents: number;
-    lease36MonthlyCents: number;
-    maintenanceMonthlyCents: number;
+    laborRateCents: number;
+    monthlySupportHours: number;
+    monthlySupportLaborCents: number;
+    monthlyPassThroughCents: number;
+    monthlySupportTotalCents: number;
   };
   customer: {
     organization: string;
@@ -144,6 +152,9 @@ const escapeMarkdown = (value: string): string =>
     .replace(/\\/g, '\\\\')
     .replace(/([`*_{}[\]()#+.!|>])/g, '\\$1');
 
+const formatHours = (hours: number): string =>
+  `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+
 const formatMoney = (cents: number, currency: string): string =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -221,15 +232,28 @@ const validate = (input: ClientDeploymentArtifactInput): void => {
     );
   }
   for (const [label, amount] of [
+    ['Hardware', quote.hardwareCents],
+    ['Freight', quote.freightCents],
+    ['Tax', quote.taxCents],
+    ['Setup labor', quote.setupLaborCents],
     ['Upfront total', quote.upfrontTotalCents],
-    ['24-month lease', quote.lease24MonthlyCents],
-    ['36-month lease', quote.lease36MonthlyCents],
-    ['Monthly maintenance', quote.maintenanceMonthlyCents],
+    ['Labor rate', quote.laborRateCents],
+    ['Monthly support labor', quote.monthlySupportLaborCents],
+    ['Monthly service costs', quote.monthlyPassThroughCents],
+    ['Monthly support total', quote.monthlySupportTotalCents],
   ] as const) {
     if (!Number.isSafeInteger(amount) || amount < 0) {
       throw new Error(
         `${label} must be a non-negative integer number of cents.`
       );
+    }
+  }
+  for (const [label, hours] of [
+    ['Setup hours', quote.setupHours],
+    ['Monthly support hours', quote.monthlySupportHours],
+  ] as const) {
+    if (!Number.isFinite(hours) || hours < 0) {
+      throw new Error(`${label} must be a non-negative number.`);
     }
   }
 
@@ -581,24 +605,43 @@ export function compileClientDeploymentArtifacts(
     ``,
     `## Commercial terms`,
     ``,
-    `| Option | Amount |`,
+    `Hardware, freight, and tax are billed at the actual amounts we pay, with no markup, and you receive the receipts. Labor is billed at ${formatMoney(
+      quote.laborRateCents,
+      quote.currency
+    )} per hour.`,
+    ``,
+    `| Up front | Amount |`,
     `| --- | ---: |`,
-    `| Outright purchase | ${formatMoney(
-      quote.upfrontTotalCents,
+    `| Hardware at cost | ${formatMoney(
+      quote.hardwareCents,
       quote.currency
     )} |`,
-    `| 24-month lease | ${formatMoney(
-      quote.lease24MonthlyCents,
+    `| Freight | ${formatMoney(quote.freightCents, quote.currency)} |`,
+    `| Tax | ${formatMoney(quote.taxCents, quote.currency)} |`,
+    `| Setup labor (${formatHours(quote.setupHours)}) | ${formatMoney(
+      quote.setupLaborCents,
       quote.currency
-    )} / month |`,
-    `| 36-month lease | ${formatMoney(
-      quote.lease36MonthlyCents,
+    )} |`,
+    `| **Up-front total** | **${formatMoney(
+      quote.upfrontTotalCents,
       quote.currency
-    )} / month |`,
-    `| Monthly maintenance | ${formatMoney(
-      quote.maintenanceMonthlyCents,
+    )}** |`,
+    ``,
+    `| Monthly | Amount |`,
+    `| --- | ---: |`,
+    `| Support labor (${formatHours(
+      quote.monthlySupportHours
+    )}) | ${formatMoney(quote.monthlySupportLaborCents, quote.currency)} |`,
+    `| Service costs at actual amounts | ${formatMoney(
+      quote.monthlyPassThroughCents,
       quote.currency
-    )} / month |`,
+    )} |`,
+    `| **Monthly total** | **${formatMoney(
+      quote.monthlySupportTotalCents,
+      quote.currency
+    )}** |`,
+    ``,
+    `Leasing is available on request through a third-party lender, which sets its own terms.`,
     ``,
     `This proposal reflects the accepted quote snapshot identified above. Pricing expires at the stated timestamp.`,
     ``,

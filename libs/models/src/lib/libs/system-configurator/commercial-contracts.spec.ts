@@ -49,7 +49,10 @@ describe('commercial operator request DTOs', () => {
           quantity: 2,
         }),
       ],
-      monthlyRetainerRevenue: 500,
+      freightAmount: 24.5,
+      taxAmount: 70,
+      setupHours: 6,
+      monthlySupportHours: 2,
       monthlyCloudCost: 50,
       monthlySmsCost: 10,
       monthlyNetworkCost: 20,
@@ -74,7 +77,10 @@ describe('commercial operator request DTOs', () => {
           quantity: 0,
         }),
       ],
-      monthlyRetainerRevenue: -1,
+      freightAmount: -1,
+      taxAmount: 0,
+      setupHours: -2,
+      monthlySupportHours: 0,
       monthlyCloudCost: 0,
       monthlySmsCost: 0,
       monthlyNetworkCost: 0,
@@ -89,7 +95,12 @@ describe('commercial operator request DTOs', () => {
       quoteId: 'not-a-uuid',
     });
 
-    expect(validateSync(quote, { whitelist: true }).length).toBeGreaterThan(0);
+    const quoteErrors = validateSync(quote, { whitelist: true }).map(
+      (error) => error.property
+    );
+    expect(quoteErrors).toEqual(
+      expect.arrayContaining(['freightAmount', 'setupHours'])
+    );
     expect(validateSync(feed, { whitelist: true }).length).toBeGreaterThan(0);
     expect(validateSync(accept)).toHaveLength(1);
   });

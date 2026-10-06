@@ -72,11 +72,6 @@ const tiers = [
     inStock: true,
     stockStatus: 'In stock',
     configuratorPreset: 'tier1',
-    wholesaleCost: 522.22,
-    marginRate: 0.35,
-    marginAmount: 182.78,
-    retailPrice: 705,
-    leaseMonthlyRate: 99,
   },
   {
     id: 'tier2',
@@ -92,12 +87,6 @@ const tiers = [
     inStock: true,
     stockStatus: 'In stock',
     configuratorPreset: 'tier2',
-    wholesaleCost: 2111.11,
-    marginRate: 0.35,
-    marginAmount: 738.89,
-    retailPrice: 2850,
-    retailPriceMax: 3200,
-    leaseMonthlyRate: 199,
   },
   {
     id: 'tier3',
@@ -113,11 +102,6 @@ const tiers = [
     inStock: true,
     stockStatus: 'Available on build order',
     configuratorPreset: 'tier3',
-    wholesaleCost: 2370.37,
-    marginRate: 0.35,
-    marginAmount: 829.63,
-    retailPrice: 3200,
-    leaseMonthlyRate: 349,
   },
 ] as unknown as HardwareTier[];
 

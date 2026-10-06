@@ -10,9 +10,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, LessThanOrEqual, MoreThan, Repository } from 'typeorm';
 import type { CommercialQuote } from '@optimistic-tanuki/models';
 import {
+  HAI_LABOR_RATE_PER_HOUR,
   addQuoteExpiryDays,
-  assessRetainerMargin,
   calculateHardwareCommercialPricing,
+  calculateMonthlySupport,
 } from '../hardware/commercial-pricing';
 import { CommercialQuoteEntity } from '../hardware/entities/commercial-quote.entity';
 import { SupplierOfferEntity } from '../hardware/entities/supplier-offer.entity';
@@ -20,12 +21,15 @@ import { SupplierOfferEntity } from '../hardware/entities/supplier-offer.entity'
 export const COMMERCIAL_QUOTE_CLOCK = Symbol('COMMERCIAL_QUOTE_CLOCK');
 const MAX_OFFER_AGE_DAYS = 7;
 const MAX_OFFER_AGE_MS = MAX_OFFER_AGE_DAYS * 24 * 60 * 60 * 1000;
-const QUOTE_VERSION = 'commercial-pricing-v1';
+const QUOTE_VERSION = 'pass-through-v1';
 
 export interface IssueCommercialQuoteInput {
   tierId: string;
   items: Array<{ offerId: string; quantity: number }>;
-  monthlyRetainerRevenue: number;
+  freightAmount: number;
+  taxAmount: number;
+  setupHours: number;
+  monthlySupportHours: number;
   monthlyCloudCost: number;
   monthlySmsCost: number;
   monthlyNetworkCost: number;
@@ -143,24 +147,19 @@ export class CommercialQuoteService {
     }
     const sourceCost = sourceCostCents / 100;
     const pricing = calculateHardwareCommercialPricing({
-      costBasis: { kind: 'raw', wholesaleCost: sourceCost },
+      hardwareCost: sourceCost,
+      freightAmount: normalized.freightAmount,
+      taxAmount: normalized.taxAmount,
+      setupHours: normalized.setupHours,
+      laborRatePerHour: HAI_LABOR_RATE_PER_HOUR,
     });
-    if (normalized.monthlyRetainerRevenue <= 0) {
-      throw new BadRequestException(
-        'monthlyRetainerRevenue must be greater than zero.'
-      );
-    }
-    const retainerMargin = assessRetainerMargin({
-      monthlyRevenue: normalized.monthlyRetainerRevenue,
+    const monthlySupport = calculateMonthlySupport({
+      supportHours: normalized.monthlySupportHours,
+      laborRatePerHour: HAI_LABOR_RATE_PER_HOUR,
       monthlyCloudCost: normalized.monthlyCloudCost,
       monthlySmsCost: normalized.monthlySmsCost,
       monthlyNetworkCost: normalized.monthlyNetworkCost,
     });
-    if (!retainerMargin.meetsMinimumMargin) {
-      throw new BadRequestException(
-        'Monthly retainer gross margin must be at least 70%.'
-      );
-    }
 
     const validUntil = new Date(addQuoteExpiryDays(issuedAt));
     const quote = this.quoteRepository.create({
@@ -170,7 +169,6 @@ export class CommercialQuoteService {
         request: normalized,
         tierId: normalized.tierId,
         sourceOffers,
-        retainerMargin,
       },
       terms: {
         tierId: normalized.tierId,
@@ -178,12 +176,15 @@ export class CommercialQuoteService {
         issuedAt: issuedAt.toISOString(),
         validUntil: validUntil.toISOString(),
         offerFreshnessWindowDays: MAX_OFFER_AGE_DAYS,
-        minimumRetainerGrossMargin: 0.7,
+        pricingModel: pricing.pricingModel,
+        laborRatePerHour: HAI_LABOR_RATE_PER_HOUR,
+        billing:
+          'Hardware, freight, and tax are invoiced at the actual amounts on the receipts. Leasing is available on request through a third-party lender.',
       },
       pricingSnapshot: {
         policyVersion: QUOTE_VERSION,
-        contingencyPlacement: 'reserve-only',
         ...pricing,
+        monthlySupport,
       },
       issuedAt,
       validUntil,
@@ -294,9 +295,12 @@ export class CommercialQuoteService {
       );
     }
     const amounts = {
-      monthlyRetainerRevenue: this.validateMoney(
-        input.monthlyRetainerRevenue,
-        'monthlyRetainerRevenue'
+      freightAmount: this.validateMoney(input.freightAmount, 'freightAmount'),
+      taxAmount: this.validateMoney(input.taxAmount, 'taxAmount'),
+      setupHours: this.validateHours(input.setupHours, 'setupHours'),
+      monthlySupportHours: this.validateHours(
+        input.monthlySupportHours,
+        'monthlySupportHours'
       ),
       monthlyCloudCost: this.validateMoney(
         input.monthlyCloudCost,
@@ -329,6 +333,19 @@ export class CommercialQuoteService {
       );
     }
     return cents / 100;
+  }
+
+  private validateHours(value: number, name: string): number {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+      throw new BadRequestException(
+        `${name} must be a nonnegative finite number of hours.`
+      );
+    }
+    const hundredths = Math.round((value + Number.EPSILON) * 100);
+    if (!Number.isSafeInteger(hundredths) || hundredths > 100_000) {
+      throw new BadRequestException(`${name} is too large.`);
+    }
+    return hundredths / 100;
   }
 
   private toCents(value: unknown, name: string): number {

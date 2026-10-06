@@ -11,10 +11,17 @@ const validInput = (): ClientDeploymentArtifactInput => ({
     expiresAt: '2026-10-27T12:00:00.000Z',
     applianceTier: 'Tier 2',
     currency: 'USD',
-    upfrontTotalCents: 542999,
-    lease24MonthlyCents: 24850,
-    lease36MonthlyCents: 17800,
-    maintenanceMonthlyCents: 7200,
+    hardwareCents: 400000,
+    freightCents: 9999,
+    taxCents: 28000,
+    setupHours: 16,
+    setupLaborCents: 104000,
+    upfrontTotalCents: 541999,
+    laborRateCents: 6500,
+    monthlySupportHours: 2,
+    monthlySupportLaborCents: 13000,
+    monthlyPassThroughCents: 1850,
+    monthlySupportTotalCents: 14850,
   },
   customer: {
     organization: 'Example Systems',
@@ -195,10 +202,18 @@ describe('compileClientDeploymentArtifacts', () => {
       'October 27, 2026 at 12:00 PM UTC'
     );
     expect(artifacts['proposal.md']).not.toContain('(inclusive)');
-    expect(artifacts['proposal.md']).toContain('$5,429.99');
-    expect(artifacts['proposal.md']).toContain('$248.50');
-    expect(artifacts['proposal.md']).toContain('$178.00');
-    expect(artifacts['proposal.md']).toContain('$72.00');
+    const proposal = artifacts['proposal.md'];
+    expect(proposal).toContain('| Hardware at cost | $4,000.00 |');
+    expect(proposal).toContain('| Freight | $99.99 |');
+    expect(proposal).toContain('| Tax | $280.00 |');
+    expect(proposal).toContain('| Setup labor (16 hours) | $1,040.00 |');
+    expect(proposal).toContain('**$5,419.99**');
+    expect(proposal).toContain('| Support labor (2 hours) | $130.00 |');
+    expect(proposal).toContain('**$148.50**');
+    expect(proposal).toContain('$65.00 per hour');
+    expect(proposal).toContain('you receive the receipts');
+    expect(proposal).toContain('third-party lender');
+    expect(proposal).not.toMatch(/month lease|markup of|margin/i);
     expect(artifacts['proposal.md']).not.toMatch(
       /wholesale|marginAmount|wholesaleCost/i
     );

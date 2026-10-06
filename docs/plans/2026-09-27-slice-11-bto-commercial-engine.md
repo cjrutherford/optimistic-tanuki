@@ -1,3 +1,9 @@
+> **Pricing superseded 2026-10-06.** The customer price formula below
+> (`raw cost × 1.08 × 1.35`, 9.5% APR leases, 15% maintenance reserve, 70%
+> retainer floor) was replaced by pass-through pricing: hardware, freight,
+> and tax at actual amounts plus labor at $65/hour. See decisions D018–D022
+> in `docs/plans/hai-private-cloud/09-DECISION-LOG.md`.
+
 # Slice 11 BTO commercial engine implementation plan
 
 **Goal:** Turn the existing HAI Computer configurator into an auditable build-to-order quoting and proposal portal for the three commercial appliance tiers.

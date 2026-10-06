@@ -163,11 +163,18 @@ The owner answered section 5; the answers are D018–D022 in
 
 1. ~~Confirm the $65 rate~~ — confirmed 2026-10-06.
 2. ~~Confirm "you see the receipts"~~ — confirmed 2026-10-06.
-3. `commercial-pricing.ts` still applies `× 1.08 × 1.35`, a 9.5% APR lease,
-   and the 70% retainer floor; quotes and the Appliance Portal use it. It
-   needs its own change to actual-cost hardware, actual freight and tax, and
-   labor at the published rate.
-4. The gateway's `PRIVATE_TIER_FIELD` filter and the static tier seeds still
-   carry the old marked-up figures; they are no longer displayed by the HAI
-   site but should be cleaned up with item 3.
+3. ~~Backend formula~~ — done 2026-10-06. `commercial-pricing.ts` now
+   computes up front = hardware (supplier offers at cost) + actual freight +
+   actual tax + setup hours × $65, and monthly = support hours × $65 +
+   cloud, SMS, and network costs at actual amounts. The markup, flat 8%
+   allowance, internal reserve, lease amortization, maintenance reserve, and
+   70% retainer floor are gone. The quote request takes `freightAmount`,
+   `taxAmount`, `setupHours`, and `monthlySupportHours` instead of
+   `monthlyRetainerRevenue`; quotes are versioned `pass-through-v1`; the
+   proposal itemizes hardware, freight, tax, and labor and states the
+   receipts promise and leasing on request; the gateway passes the new
+   totals to Lead Tracker; the Appliance Portal operator form takes hours,
+   freight, and tax. Quote data is JSONB, so no migration was needed.
+4. ~~Static tier seeds~~ — done. The old price fields were removed from the
+   API tier seed and the HAI fallback tiers.
 5. Find a leasing partner (D020).
