@@ -28,6 +28,31 @@ describe('ContactFormComponent', () => {
     );
   });
 
+  it('shows a prefilled message in the message box', () => {
+    component.initialMessage = 'Please send me the comparison.';
+    fixture.detectChanges();
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea'
+    ) as HTMLTextAreaElement;
+
+    expect(textarea.value).toBe('Please send me the comparison.');
+  });
+
+  it('keeps edits the visitor makes to a prefilled message', () => {
+    component.initialMessage = 'Please send me the comparison.';
+    fixture.detectChanges();
+    const textarea = fixture.nativeElement.querySelector(
+      'textarea'
+    ) as HTMLTextAreaElement;
+
+    textarea.value = 'Please send me the comparison. We have 12 staff.';
+    textarea.dispatchEvent(new Event('input'));
+
+    expect(component.contactForm.value.message).toBe(
+      'Please send me the comparison. We have 12 staff.'
+    );
+  });
+
   it('ignores empty prefill messages', () => {
     component.initialMessage = '';
     fixture.detectChanges();

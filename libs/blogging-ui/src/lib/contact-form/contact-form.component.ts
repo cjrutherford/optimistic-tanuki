@@ -10,7 +10,12 @@ import {
   TextAreaComponent,
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+} from '@angular/forms';
 
 @Component({
   selector: 'lib-contact-form',
@@ -22,6 +27,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
     TextAreaComponent,
     HeadingComponent,
     SelectComponent,
+    ReactiveFormsModule,
   ],
   templateUrl: './contact-form.component.html',
   styleUrl: './contact-form.component.scss',
@@ -63,6 +69,11 @@ export class ContactFormComponent {
 
   onEmailChange(email: string) {
     this.contactForm.patchValue({ email });
+  }
+
+  /** Bound to the message box so a prefilled message is visible and editable. */
+  get messageControl(): FormControl<string> {
+    return this.contactForm.get('message') as FormControl<string>;
   }
 
   onMessageChange(message: string) {

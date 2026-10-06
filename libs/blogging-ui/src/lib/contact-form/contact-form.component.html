@@ -29,7 +29,7 @@
       }
       <lib-text-area
         [label]="'Your Message'"
-        (valueChange)="onMessageChange($event)"
+        [formControl]="messageControl"
       ></lib-text-area>
 
       <!-- Honeypot field -->
