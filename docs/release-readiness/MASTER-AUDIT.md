@@ -310,7 +310,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 | RR-00 | Philosophy, scope, and release contract                                   | ACCEPTED; see findings/RR-00.md  | P0/P1 foundation  |
 | RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md | P0                |
 | RR-02 | HAI ecosystem identity/tag/shared-login UX                                | VERIFYING                        | P1                |
-| RR-03 | Authentication, registration, session, and account lifecycle              | PLANNED                          | P0                |
+| RR-03 | Authentication, registration, session, and account lifecycle              | VERIFYING                        | P0                |
 | RR-04 | OT feed, discovery, follows, visibility, and privacy                      | PLANNED                          | P0                |
 | RR-05 | OT communities, forum, chat, and messaging                                | GAP FOUND                        | P0                |
 | RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | PLANNED                          | P0                |
@@ -416,27 +416,31 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 
 **RR-02 update (2026-10-05):** VERIFYING. Checked items have local frontend evidence; authenticated placement, live reverse navigation, and real same-account login remain open. See [findings](./findings/RR-02.md).
 
+**Delivery boundaries:** RR slices do not automatically require separate PRs or releases. Email transport is one shared repair; RR-05/RR-06 own product-level validation and only need repair PRs for confirmed blocking defects. See [PR boundaries and release gates](./EXECUTION-PLAN.md#pr-boundaries-and-release-gates).
+
 ## RR-03 — Authentication, registration, session, and account lifecycle
 
 **Goal:** Validate the identity foundation shared by both products.
 
 ### Checks
 
-- [ ] Registration works from fresh browser state.
-- [ ] Login works.
+- [x] Registration works from fresh browser state. (real development-stack browser evidence; auto-verified accounts).
+- [x] Login works. (real development-stack browser evidence; auto-verified accounts).
 - [ ] OAuth paths that are presented to users work.
 - [ ] Profile-required routing is understandable.
-- [ ] Session restore works after refresh.
+- [x] Session restore works after refresh. (real development-stack browser evidence; auto-verified accounts).
 - [ ] Expired/revoked session returns user to a safe state.
-- [ ] Logout clears expected client/session state.
-- [ ] Cross-app shared credentials/session behavior matches product claims.
-- [ ] Duplicate registration and invalid credentials show human-readable errors.
+- [x] Logout clears expected client/session state. (real development-stack browser evidence; auto-verified accounts).
+- [x] Cross-app shared credentials/session behavior matches product claims. (real development-stack browser evidence; auto-verified accounts).
+- [x] Duplicate registration and invalid credentials show human-readable errors (local browser contract evidence).
 - [ ] Password reset/email auth routes work if exposed.
-- [ ] Account deletion/export behavior is identified and documented (implementation may be RR-11).
+- [x] Account deletion/export behavior is identified and documented (implementation remains RR-11).
 
 ### P0 conditions
 
 Auth bypass, stale-user data after logout, cross-account leakage, unusable registration/login, or a misleading shared-login promise.
+
+**RR-03 update (2026-10-05):** VERIFYING. Session/profile safety regressions remediated; real authentication service, browser contract checks and three real development-stack browser flows passed. OAuth/email completion and full account lifecycle evidence remain open. Operator confirmed verification delivery; missing gateway SMTP environment wiring explains log-only invitations in Compose and is repaired here, with invite receipt/claim rechecks carried into RR-05/RR-06. See [findings](./findings/RR-03.md).
 
 ---
 
@@ -499,6 +503,8 @@ API authorization tests + browser E2E with at least two users and multiple commu
 
 Focused unit regression for confirmed defects plus two-user browser E2E.
 
+**Invite follow-up (2026-10-05):** Operator reports invite email only logs. RR-03 repairs omitted gateway SMTP environment wiring; this slice must validate actual invite receipt and claim behavior. See [RR-03 findings](./findings/RR-03.md).
+
 ---
 
 ## RR-06 — TS locality browsing, membership, classifieds, and messaging
@@ -539,6 +545,8 @@ Focused unit regression for confirmed defects plus two-user browser E2E.
 ### Acceptance evidence
 
 Logged-out browser path plus two-user member/buyer/seller E2E.
+
+**Invite follow-up (2026-10-05):** Operator reports invite email only logs. RR-03 repairs omitted gateway SMTP environment wiring; this slice must validate actual invite receipt and claim behavior. See [RR-03 findings](./findings/RR-03.md).
 
 ---
 
@@ -974,6 +982,7 @@ Use this section for concise status changes. Detailed evidence should live in sl
 | ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-05 | RR-01 remediation       | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
 | 2026-10-05 | RR-02 verification      | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
+| 2026-10-05 | RR-03 verification      | Hardened session restoration, profile ownership/cache cleanup, form errors and OAuth provider visibility. Real service revocation and browser contract regressions passed; lifecycle acceptance remains VERIFYING.  |
 | 2026-10-05 | RR-00 accepted          | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                                |
 | 2026-10-05 | Execution mapping       | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted.               |
 | 2026-10-05 | Audit created           | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                               |

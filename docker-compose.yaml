@@ -391,6 +391,13 @@ services:
     environment:
       <<: *service_db_env
       PORT: 3000
+      # Invitations use the same environment-controlled transport as auth mail.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_SECURE: ${SMTP_SECURE:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@christopherrutherford.net}
       LISTEN_PORT: ${GATEWAY_PORT:-3000}
       SOCKET_PORT: ${GATEWAY_CHAT_SOCKET_PORT:-3300}
       SOCIAL_SOCKET_PORT: ${GATEWAY_SOCIAL_SOCKET_PORT:-3301}
