@@ -1,0 +1,69 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.capabilities {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.heading-font;
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.capability-card p,
+.qualifier {
+  @include section.body-copy;
+  margin: 0;
+}
+
+.capability-list {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 3), minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capability-list li {
+  display: flex;
+  min-width: 0;
+}
+
+.capability-card {
+  flex: 1;
+}
+
+// Three items stay on one row until phone widths rather than leaving one
+// orphaned card at two columns.
+@media (max-width: 960px) {
+  .capability-list:not(.three-up) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .capability-list:not(.three-up),
+  .capability-list.three-up {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qualifier {
+  max-width: 44rem;
+  margin-top: 1.25rem;
+  font-style: italic;
+}

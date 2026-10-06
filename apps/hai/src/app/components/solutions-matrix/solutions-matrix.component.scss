@@ -49,7 +49,7 @@ h2 {
   flex-wrap: wrap;
   gap: 0.65rem;
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 40%, transparent);
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   padding-bottom: 0.75rem;
   margin-bottom: 1.5rem;
 }
@@ -57,8 +57,9 @@ h2 {
 :host ::ng-deep otui-tabs .tab-item {
   padding: 0.65rem 1.25rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
   color: color-mix(in srgb, var(--foreground) 75%, transparent);
   font-size: 0.92rem;
   font-weight: 600;
@@ -66,16 +67,16 @@ h2 {
   transition: all 160ms ease;
 
   &:hover:not(.active) {
-    background: rgba(45, 212, 191, 0.08);
-    border-color: rgba(45, 212, 191, 0.3);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
     color: var(--foreground);
   }
 
   &.active {
-    background: rgba(45, 212, 191, 0.16);
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
     border-color: var(--primary);
     color: var(--primary);
-    box-shadow: 0 0 16px rgba(45, 212, 191, 0.18);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 18%, transparent);
 
     &::after {
       display: none;
@@ -102,7 +103,7 @@ h2 {
 
 .panel-header {
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 40%, transparent);
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   padding-bottom: 1.25rem;
 }
 
@@ -113,6 +114,15 @@ h2 {
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 0.75rem;
+}
+
+// The industry badge can hold a long list; let it wrap instead of clipping.
+.title-row otui-badge {
+  max-width: 100%;
+}
+
+:host ::ng-deep .title-row otui-badge .badge {
+  white-space: normal;
 }
 
 .vertical-title {
@@ -150,8 +160,9 @@ h2 {
 .grid-card {
   padding: 1.25rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  background: color-mix(in srgb, var(--foreground) 2%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   display: flex;
   flex-direction: column;
 }
@@ -164,7 +175,7 @@ h2 {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--foreground) 65%, var(--primary));
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 30%, transparent);
+    color-mix(in srgb, var(--border, var(--primary)) 30%, transparent);
   padding-bottom: 0.5rem;
 }
 
@@ -199,7 +210,7 @@ h2 {
       margin-bottom: 1.25rem;
       padding-bottom: 1.25rem;
       border-bottom: 1px dashed
-        color-mix(in srgb, var(--border-color) 35%, transparent);
+        color-mix(in srgb, var(--border, var(--primary)) 35%, transparent);
     }
   }
 
@@ -271,7 +282,7 @@ h2 {
     gap: 0.2rem;
     padding-bottom: 0.65rem;
     border-bottom: 1px solid
-      color-mix(in srgb, var(--border-color) 25%, transparent);
+      color-mix(in srgb, var(--border, var(--primary)) 25%, transparent);
 
     &:last-child {
       border-bottom: none;
@@ -294,7 +305,8 @@ h2 {
 
 /* Panel footer */
 .panel-footer {
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  border-top: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   padding-top: 1.25rem;
   display: flex;
   align-items: center;
@@ -317,29 +329,12 @@ h2 {
   color: color-mix(in srgb, var(--foreground) 60%, transparent);
 }
 
-.investment-figures {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.upfront-cost {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--foreground);
-}
-
-.monthly-cost {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.project-cost {
+.pricing-line {
+  max-width: 44rem;
+  margin: 0.35rem 0 0;
   font-size: 0.95rem;
-  font-weight: 600;
-  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  line-height: 1.55;
+  color: var(--foreground);
 }
 
 .action-container {
@@ -371,11 +366,11 @@ h2 {
   text-decoration: none;
   text-align: center;
   transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--foreground) 20%, transparent);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(45, 212, 191, 0.3);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 30%, transparent);
     opacity: 0.95;
   }
 

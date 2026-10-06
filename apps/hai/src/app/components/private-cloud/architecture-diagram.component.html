@@ -1,0 +1,26 @@
+<section
+  class="architecture"
+  id="architecture"
+  aria-labelledby="architecture-heading"
+>
+  <p class="eyebrow">{{ eyebrow }}</p>
+  <h2 id="architecture-heading">{{ heading }}</h2>
+
+  <figure>
+    <ol class="tiers">
+      @for (tier of tiers; track tier.label) {
+      <li class="tier">
+        <h3>{{ tier.label }}</h3>
+        <ul>
+          @for (item of tier.items; track item) {
+          <li>{{ item }}</li>
+          }
+        </ul>
+      </li>
+      }
+    </ol>
+    @if (caption) {
+    <figcaption>{{ caption }}</figcaption>
+    }
+  </figure>
+</section>

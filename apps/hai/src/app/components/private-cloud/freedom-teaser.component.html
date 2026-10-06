@@ -1,0 +1,12 @@
+<section class="freedom" id="freedom" aria-labelledby="freedom-heading">
+  <p class="eyebrow">Freedom guarantee</p>
+  <h2 id="freedom-heading">{{ principle }}</h2>
+  <ul class="commitments">
+    @for (commitment of commitments; track commitment) {
+    <li>{{ commitment }}</li>
+    }
+  </ul>
+  @if (linkRoute) {
+  <a class="freedom-link" [routerLink]="linkRoute">{{ linkLabel }}</a>
+  }
+</section>

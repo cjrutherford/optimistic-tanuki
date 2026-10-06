@@ -1,0 +1,110 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.comparison {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.heading-font;
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  @include section.body-copy;
+}
+
+thead th {
+  @include section.eyebrow;
+  margin: 0;
+  padding: 0 1rem 0.75rem 0;
+  text-align: left;
+  color: var(--primary-text, var(--primary));
+}
+
+tbody th,
+td {
+  padding: 1rem 1rem 1rem 0;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
+  vertical-align: top;
+  text-align: left;
+}
+
+tbody th {
+  @include section.heading-font;
+  width: 14%;
+  font-size: 1.05rem;
+  color: var(--foreground);
+}
+
+td {
+  width: 43%;
+}
+
+.subscription-wins {
+  @include section.panel;
+  margin-top: 1.5rem;
+}
+
+.subscription-wins ul {
+  @include section.body-copy;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+// Narrow screens: each row becomes a card with labelled cells.
+@media (max-width: 760px) {
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  table,
+  tbody,
+  tr,
+  tbody th,
+  td {
+    display: block;
+    width: auto;
+  }
+
+  tr {
+    padding: 1rem 0;
+    border-top: 1px solid
+      color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
+  }
+
+  tbody th,
+  td {
+    padding: 0.25rem 0;
+    border: 0;
+  }
+
+  td::before {
+    content: attr(data-label);
+    display: block;
+    @include section.eyebrow;
+    margin: 0.5rem 0 0.25rem;
+    color: var(--primary-text, var(--primary));
+  }
+}

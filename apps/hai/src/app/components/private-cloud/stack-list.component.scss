@@ -1,0 +1,79 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.stack {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+.intro,
+.description {
+  @include section.body-copy;
+}
+
+.intro {
+  max-width: 44rem;
+  margin: 0;
+}
+
+.stack-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stack-item {
+  @include section.panel;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+h3 {
+  @include section.heading-font;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.project {
+  @include section.eyebrow;
+  margin: 0.5rem 0 0;
+  color: var(--primary-text, var(--primary));
+}
+
+.description {
+  margin: 0.75rem 0 0;
+}
+
+.project-link {
+  @include section.text-link;
+  margin-top: auto;
+  padding-top: 1rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 960px) {
+  .stack-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .stack-list {
+    grid-template-columns: 1fr;
+  }
+}

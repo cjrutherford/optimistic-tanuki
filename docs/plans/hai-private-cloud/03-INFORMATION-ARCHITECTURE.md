@@ -11,7 +11,7 @@ detail. Today all of that detail lives in homepage sections (see
 
 ```text
 /                          overview: headline per offering → deeper page
-├── private-cloud/
+├── private-cloud/         ← independent-infrastructure section (D014)
 │   ├── home/
 │   ├── organizations/
 │   ├── open-source-stack/
@@ -26,27 +26,32 @@ detail. Today all of that detail lives in homepage sections (see
 ```
 
 The independent-infrastructure section (`personal-cloud-section`, VPS and
-on-prem mini-servers) has no route yet. It overlaps private cloud; S002 must
-confirm with the owner whether it folds into `/private-cloud` or gets its own
-page. The ecosystem (app directory) section stays on the homepage.
+on-prem mini-servers) folds into `/private-cloud` (D014). The ecosystem (app
+directory) section stays on the homepage.
 
 ## Navigation
 
-Preferred structure if the current navigation can support a dropdown:
+The full tree lives in the `navigation-ui` drawer (`otui-nav-sidebar`),
+reachable from a menu button at every width (D015):
 
 ```text
 Home
 Solutions
   Private Cloud
+    Home private cloud
+    Organizations
+    Open-source stack
+    Assessment
   Turn-key Appliances
   Software Stacks
   Custom Software
+  Partners
 Cost Comparison
 How We Work
 Contact
 ```
 
-If the existing site does not use dropdown navigation, preserve its interaction pattern and fit the new private-cloud route cleanly into that system.
+The desktop header keeps a few direct links beside the menu button.
 
 ## Cross-linking rules
 

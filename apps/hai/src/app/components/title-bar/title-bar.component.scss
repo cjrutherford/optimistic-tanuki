@@ -81,9 +81,15 @@
     white-space: nowrap;
 
     &:hover,
-    &:focus-visible {
+    &:focus-visible,
+    &.active {
       opacity: 1;
-      color: var(--primary);
+      color: var(--primary-text, var(--primary));
+    }
+
+    &.active {
+      text-decoration: underline;
+      text-underline-offset: 0.35em;
     }
   }
 }
@@ -118,15 +124,18 @@
   }
 }
 
-.mobile-menu-btn {
-  display: none;
+.menu-btn {
+  display: inline-flex;
+  gap: 0.5rem;
   background: transparent;
   border: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   color: var(--foreground);
-  font-size: 1.25rem;
-  width: 2.5rem;
+  font: inherit;
+  font-weight: 600;
+  min-width: 2.5rem;
   height: 2.5rem;
+  padding: 0 0.75rem;
   border-radius: var(--personality-button-radius, 8px);
   cursor: pointer;
   align-items: center;
@@ -144,8 +153,8 @@
     display: none;
   }
 
-  .mobile-menu-btn {
-    display: inline-flex;
+  .menu-btn .menu-label {
+    display: none;
   }
 }
 

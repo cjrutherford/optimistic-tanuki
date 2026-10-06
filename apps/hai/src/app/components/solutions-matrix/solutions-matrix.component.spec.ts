@@ -59,7 +59,8 @@ describe('SolutionsMatrixComponent', () => {
     expect(text).toContain('Invoice Ninja v5');
     expect(text).toContain('Vikunja');
     expect(text).toContain('N8N');
-    expect(text).toContain('$50/mo software + $99/mo Mini-PC lease');
+    expect(text).toContain('labor at $65 per hour');
+    expect(text).not.toMatch(/\/mo|lease/i);
 
     const button = panel.querySelector('a.action-btn');
     expect(button.textContent.trim()).toBe('Configure Tier 1 Appliance');
@@ -82,8 +83,6 @@ describe('SolutionsMatrixComponent', () => {
     expect(text).toContain('Paperless-ngx');
     expect(text).toContain('DocuSeal');
     expect(text).toContain('Vaultwarden');
-    expect(text).toContain('$3,200 setup');
-    expect(text).toContain('$550/mo compliance retainer');
 
     const button = panel.querySelector('a.action-btn');
     expect(button.textContent.trim()).toBe('Configure Tier 2 Appliance');
@@ -105,8 +104,6 @@ describe('SolutionsMatrixComponent', () => {
     expect(text).toContain('Branded application tailored to your business');
     expect(text).toContain('Stalwart Mail Server');
     expect(text).toContain('DocuSeal');
-    expect(text).toContain('$2,850 setup');
-    expect(text).toContain('$650/mo defense retainer');
 
     const button = panel.querySelector('a.action-btn');
     expect(button.textContent.trim()).toBe('Configure Tier 2 Appliance');
@@ -131,9 +128,6 @@ describe('SolutionsMatrixComponent', () => {
     expect(text).toContain('Planka');
     expect(text).toContain('Stirling-PDF');
     expect(text).toContain('Local Ollama with Open WebUI');
-    expect(text).toContain('$3,200 setup');
-    expect(text).toContain('$849/mo retainer');
-    expect(text).toContain('$40,000 project build');
 
     const button = panel.querySelector('a.action-btn');
     expect(button.textContent.trim()).toBe('Configure Tier 3 Appliance');

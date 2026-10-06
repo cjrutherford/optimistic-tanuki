@@ -76,24 +76,8 @@
 
             <footer class="panel-footer">
               <div class="investment-summary">
-                <span class="investment-label">Commercial terms</span>
-                <div class="investment-figures">
-                  <span
-                    *ngIf="vertical.investment.upfront"
-                    class="upfront-cost"
-                  >
-                    {{ vertical.investment.upfront }}
-                  </span>
-                  <span class="monthly-cost">{{
-                    vertical.investment.monthly
-                  }}</span>
-                  <span
-                    *ngIf="vertical.investment.projectOption"
-                    class="project-cost"
-                  >
-                    or {{ vertical.investment.projectOption }}
-                  </span>
-                </div>
+                <span class="investment-label">Pricing</span>
+                <p class="pricing-line">{{ pricingSummary }}</p>
               </div>
 
               <div

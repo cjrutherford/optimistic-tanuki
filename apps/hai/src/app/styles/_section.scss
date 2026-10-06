@@ -1,0 +1,92 @@
+// Shared section typography and surfaces for HAI pages. Colour, radius,
+// border, and shadow all come from theme and personality variables.
+
+@mixin eyebrow {
+  margin: 0 0 0.8rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+@mixin heading-font {
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+}
+
+@mixin section-heading {
+  @include heading-font;
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+@mixin body-copy {
+  font: 400 1rem/1.75
+    var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+@mixin section-spacing {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
+}
+
+@mixin panel($background: var(--hai-panel-background)) {
+  padding: clamp(1.6rem, 3.5vw, 3rem);
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  background: $background;
+  box-shadow: var(--hai-shadow-panel);
+
+  @media (max-width: 640px) {
+    padding: 1.2rem;
+  }
+}
+
+@mixin primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.2rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: var(--hai-radius-pill);
+  border: var(--hai-border-width) var(--hai-border-style)
+    color-mix(in srgb, var(--primary) 20%, transparent);
+  color: var(--on-primary, var(--primary-foreground));
+  background: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  box-shadow: 0 20px 40px -18px color-mix(in srgb, var(--primary) 48%, transparent);
+  @include lift;
+}
+
+@mixin text-link {
+  font-weight: 700;
+  color: var(--primary-text, var(--primary));
+}
+
+// Hover/focus lift, removed for reduced motion.
+@mixin lift {
+  transition: transform var(--hai-transition), box-shadow var(--hai-transition);
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--hai-shadow-hover);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover,
+    &:focus-visible {
+      transform: none;
+    }
+  }
+}

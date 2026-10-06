@@ -6,6 +6,7 @@ import {
   HardwareTier,
 } from '../../services/hardware-catalog.service';
 import { Observable, map } from 'rxjs';
+import { LABOR_RATE_LABEL, PRICING_ONE_LINE } from '../../content/pricing';
 
 @Component({
   selector: 'hai-hardware-catalog',
@@ -18,6 +19,9 @@ export class HardwareCatalogComponent implements OnInit {
   private readonly catalogService = inject(HardwareCatalogService);
 
   @Input() tiersOverride?: HardwareTier[];
+
+  readonly pricingSummary = PRICING_ONE_LINE;
+  readonly laborRate = LABOR_RATE_LABEL;
 
   tiers$!: Observable<HardwareTier[]>;
 

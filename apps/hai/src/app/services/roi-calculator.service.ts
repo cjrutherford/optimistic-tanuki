@@ -1,159 +1,145 @@
 import { Injectable } from '@angular/core';
 
-export type RoiAcquisition = 'outright' | 'lease-24' | 'lease-36';
-
-export interface RoiTierInput {
-  id: string;
-  name: string;
-  retailPrice: number;
-  leaseMonthlyRate: number;
-  softwareMonthlyRate: number;
-  retainerMonthlyRate: number;
-}
-
-export interface RoiComparisonInput {
-  tier: RoiTierInput;
-  acquisition: RoiAcquisition;
+/**
+ * Five-year comparison of an owned system, priced the way HAI prices
+ * (hardware at actual cost, labor at the published hourly rate), against an
+ * existing cloud subscription. Every HAI-side figure comes from the
+ * visitor's own quote or estimate; nothing is assumed on their behalf.
+ */
+export interface OwnedCostInput {
+  /** Hardware cost from a quote or estimate, before the price buffer. */
+  hardwareCost: number;
+  setupHours: number;
+  monthlySupportHours: number;
+  /** Service costs passed through at actual amounts, e.g. backup storage. */
+  monthlyServiceCosts: number;
+  laborRatePerHour: number;
   currentMonthlySpend: number;
   annualUpliftPercent: number;
 }
 
 export interface RoiYearRow {
   year: number;
-  haiCumulative: number;
+  ownedCumulative: number;
   cloudCumulative: number;
 }
 
 export interface RoiComparisonResult {
   horizonMonths: number;
-  haiTotal: number;
-  haiHardwareTotal: number;
-  haiServiceTotal: number;
-  haiMonthlyLeasePayment: number | null;
+  ownedUpfront: number;
+  ownedMonthly: number;
+  ownedHardwareTotal: number;
+  ownedLaborTotal: number;
+  ownedServiceCostTotal: number;
+  ownedTotal: number;
   cloudTotal: number;
-  savings: number;
-  savingsPercent: number | null;
+  /** Cloud total minus owned total; negative when the subscription costs less. */
+  difference: number;
   breakEvenMonth: number | null;
   yearly: RoiYearRow[];
   assumptions: string[];
 }
 
 const HORIZON_MONTHS = 60;
-const CONTINGENCY_BUFFER = 0.1;
+/** Allowance for hardware prices moving between estimate and order. */
+const HARDWARE_PRICE_BUFFER = 0.1;
 
 @Injectable({ providedIn: 'root' })
 export class RoiCalculatorService {
-  compare(input: RoiComparisonInput): RoiComparisonResult {
+  compare(input: OwnedCostInput): RoiComparisonResult {
     this.requireInput(input);
-    const monthlyService =
-      input.tier.softwareMonthlyRate + input.tier.retainerMonthlyRate;
-    const hardwarePrincipal = input.tier.retailPrice * (1 + CONTINGENCY_BUFFER);
 
-    let leasePayment: number | null = null;
-    let leaseMonths = 0;
-    if (input.acquisition !== 'outright') {
-      leaseMonths = input.acquisition === 'lease-24' ? 24 : 36;
-      leasePayment = input.tier.leaseMonthlyRate;
-    }
-
+    const hardware = this.round2(
+      input.hardwareCost * (1 + HARDWARE_PRICE_BUFFER)
+    );
+    const setupLabor = this.round2(input.setupHours * input.laborRatePerHour);
+    const monthlyLabor = input.monthlySupportHours * input.laborRatePerHour;
+    const ownedMonthly = this.round2(monthlyLabor + input.monthlyServiceCosts);
     const monthlyUplift = Math.pow(1 + input.annualUpliftPercent / 100, 1 / 12);
-    let haiTotal = input.acquisition === 'outright' ? hardwarePrincipal : 0;
+
+    let ownedTotal = hardware + setupLabor;
     let cloudTotal = 0;
     let breakEvenMonth: number | null = null;
     const yearly: RoiYearRow[] = [];
-    let hardwareTotal =
-      input.acquisition === 'outright' ? hardwarePrincipal : 0;
 
     for (let month = 1; month <= HORIZON_MONTHS; month += 1) {
-      if (leasePayment !== null && month <= leaseMonths) {
-        haiTotal += leasePayment;
-        hardwareTotal += leasePayment;
-      }
-      haiTotal += monthlyService;
+      ownedTotal += ownedMonthly;
       cloudTotal +=
         input.currentMonthlySpend * Math.pow(monthlyUplift, month - 1);
-      if (breakEvenMonth === null && haiTotal <= cloudTotal) {
+      if (breakEvenMonth === null && ownedTotal <= cloudTotal) {
         breakEvenMonth = month;
       }
       if (month % 12 === 0) {
         yearly.push({
           year: month / 12,
-          haiCumulative: this.round2(haiTotal),
+          ownedCumulative: this.round2(ownedTotal),
           cloudCumulative: this.round2(cloudTotal),
         });
       }
     }
 
-    const haiServiceTotal = this.round2(haiTotal - hardwareTotal);
-    haiTotal = this.round2(haiTotal);
+    ownedTotal = this.round2(ownedTotal);
     cloudTotal = this.round2(cloudTotal);
-    const savings = this.round2(cloudTotal - haiTotal);
+    const rate = this.dollars(input.laborRatePerHour);
 
     return {
       horizonMonths: HORIZON_MONTHS,
-      haiTotal,
-      haiHardwareTotal: this.round2(hardwareTotal),
-      haiServiceTotal,
-      haiMonthlyLeasePayment:
-        leasePayment === null ? null : this.round2(leasePayment),
+      ownedUpfront: this.round2(hardware + setupLabor),
+      ownedMonthly,
+      ownedHardwareTotal: hardware,
+      ownedLaborTotal: this.round2(setupLabor + monthlyLabor * HORIZON_MONTHS),
+      ownedServiceCostTotal: this.round2(
+        input.monthlyServiceCosts * HORIZON_MONTHS
+      ),
+      ownedTotal,
       cloudTotal,
-      savings,
-      savingsPercent:
-        cloudTotal > 0 ? this.round2((savings / cloudTotal) * 100) : null,
+      difference: this.round2(cloudTotal - ownedTotal),
       breakEvenMonth,
       yearly,
       assumptions: [
         `Five-year horizon (${HORIZON_MONTHS} months).`,
-        leasePayment === null
-          ? `Outright hardware purchase is paid in month zero; $${hardwarePrincipal.toFixed(
-              2
-            )} includes a 10% quote contingency buffer.`
-          : `${leaseMonths}-month comparison uses the published catalog lease rate of $${leasePayment.toFixed(
-              2
-            )}/month; the catalog does not specify a lease term.`,
-        `Monthly service $${monthlyService.toFixed(
-          2
-        )} (software plus retainer).`,
-        `Cloud spend starts at $${input.currentMonthlySpend.toFixed(
-          2
-        )}/mo and grows ${input.annualUpliftPercent}% per year.`,
+        `Hardware is your estimate of ${this.dollars(
+          input.hardwareCost
+        )} plus a 10% buffer for price changes before ordering (${this.dollars(
+          hardware
+        )}), paid up front at actual cost.`,
+        `Setup is ${this.hours(
+          input.setupHours
+        )} at ${rate} an hour (${this.dollars(setupLabor)}), paid up front.`,
+        `Support is ${this.hours(
+          input.monthlySupportHours
+        )} a month at ${rate} an hour, plus ${this.dollars(
+          input.monthlyServiceCosts
+        )} a month in service costs at actual amounts.`,
+        `Your current subscriptions start at ${this.dollars(
+          input.currentMonthlySpend
+        )} a month and rise ${input.annualUpliftPercent}% a year.`,
+        'Not included: replacing or repairing hardware within five years, electricity, internet, or your own time.',
       ],
     };
   }
 
-  private requireInput(input: RoiComparisonInput): void {
+  private requireInput(input: OwnedCostInput): void {
     if (!input || typeof input !== 'object') {
       throw new Error('A comparison input is required.');
     }
-    if (
-      !input.tier ||
-      !Number.isFinite(input.tier.retailPrice) ||
-      input.tier.retailPrice <= 0
-    ) {
-      throw new Error('A valid hardware tier is required.');
-    }
-    if (
-      !Number.isFinite(input.tier.leaseMonthlyRate) ||
-      input.tier.leaseMonthlyRate < 0
-    ) {
-      throw new Error('Tier lease rates must be zero or positive.');
-    }
-    for (const rate of [
-      input.tier.softwareMonthlyRate,
-      input.tier.retainerMonthlyRate,
-    ]) {
-      if (!Number.isFinite(rate) || rate < 0) {
-        throw new Error('Tier service rates must be zero or positive.');
+    const checks: [number, string][] = [
+      [input.hardwareCost, 'Hardware cost'],
+      [input.setupHours, 'Setup hours'],
+      [input.monthlySupportHours, 'Monthly support hours'],
+      [input.monthlyServiceCosts, 'Monthly service costs'],
+      [input.currentMonthlySpend, 'Current monthly spend'],
+    ];
+    for (const [value, name] of checks) {
+      if (!Number.isFinite(value) || value < 0) {
+        throw new Error(`${name} must be zero or positive.`);
       }
     }
-    if (!['outright', 'lease-24', 'lease-36'].includes(input.acquisition)) {
-      throw new Error('A valid acquisition option is required.');
-    }
     if (
-      !Number.isFinite(input.currentMonthlySpend) ||
-      input.currentMonthlySpend < 0
+      !Number.isFinite(input.laborRatePerHour) ||
+      input.laborRatePerHour <= 0
     ) {
-      throw new Error('Current monthly spend must be zero or positive.');
+      throw new Error('A labor rate is required.');
     }
     if (
       !Number.isFinite(input.annualUpliftPercent) ||
@@ -164,7 +150,18 @@ export class RoiCalculatorService {
     }
   }
 
+  private hours(value: number): string {
+    return `${value} ${value === 1 ? 'hour' : 'hours'}`;
+  }
+
+  private dollars(value: number): string {
+    return `$${value.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+
   private round2(value: number): number {
-    return Math.round(value * 100) / 100;
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

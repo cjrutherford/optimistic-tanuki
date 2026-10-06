@@ -1,0 +1,85 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.architecture {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.eyebrow;
+  margin-bottom: 0.75rem;
+  color: var(--primary-text, var(--primary));
+}
+
+figure {
+  margin: 1.5rem 0 0;
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tier;
+}
+
+.tier {
+  @include section.panel;
+  position: relative;
+  min-width: 0;
+}
+
+// Arrow to the next tier: right on wide screens, down on narrow ones.
+.tier:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  top: 50%;
+  right: -1.9rem;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--primary-text, var(--primary));
+}
+
+.tier ul {
+  @include section.body-copy;
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+figcaption {
+  @include section.body-copy;
+  margin-top: 1.25rem;
+  font-style: italic;
+}
+
+@media (max-width: 1200px) {
+  .tiers {
+    grid-template-columns: 1fr;
+    gap: 2.25rem;
+  }
+
+  .tier:not(:last-child)::after {
+    content: '↓';
+    top: auto;
+    right: auto;
+    bottom: -1.95rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}

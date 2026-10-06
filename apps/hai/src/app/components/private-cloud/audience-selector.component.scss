@@ -1,0 +1,99 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.audiences {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.heading-font;
+  margin: 0;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.15;
+}
+
+.path-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 2), minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.path-card {
+  @include section.panel;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.path-card .eyebrow {
+  margin: 0;
+}
+
+.message {
+  @include section.body-copy;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.audience-list {
+  @include section.body-copy;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.audience-list li {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--hai-radius-pill);
+  background: color-mix(
+    in srgb,
+    var(--surface-variant, var(--muted)) 18%,
+    transparent
+  );
+  color: var(--foreground);
+  font-size: 0.92rem;
+}
+
+.path-link {
+  @include section.text-link;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.path-link::after {
+  content: ' →';
+}
+
+.note {
+  @include section.body-copy;
+  max-width: 44rem;
+  margin: 1.25rem 0 0;
+  font-style: italic;
+}
+
+@media (max-width: 960px) {
+  .path-grid.wide {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .path-grid {
+    grid-template-columns: 1fr;
+  }
+}

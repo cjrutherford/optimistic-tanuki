@@ -1,0 +1,42 @@
+<section
+  class="private-cloud-panel"
+  id="private-cloud"
+  aria-labelledby="private-cloud-heading"
+>
+  <div class="section-copy">
+    <p class="eyebrow">Private cloud</p>
+    <h2 id="private-cloud-heading">{{ intro.headline }}</h2>
+    <p>{{ intro.summary }}</p>
+  </div>
+
+  <ul class="capability-list">
+    @for (capability of capabilities; track capability.title) {
+    <li>
+      <otui-card
+        class="capability-card"
+        CardVariant="default"
+        tone="neutral"
+        emphasis="soft"
+      >
+        <h3>{{ capability.title }}</h3>
+        <p>{{ capability.description }}</p>
+      </otui-card>
+    </li>
+    }
+  </ul>
+
+  <div class="path-row">
+    <nav class="paths" aria-label="Private cloud by audience">
+      @for (path of paths; track path.route) {
+      <a class="path-link" [routerLink]="path.route">
+        <span class="path-label">{{ path.label }}</span>
+        <span class="path-description">{{ path.description }}</span>
+      </a>
+      }
+    </nav>
+
+    <a class="explore-link" routerLink="/private-cloud">
+      Explore private cloud
+    </a>
+  </div>
+</section>

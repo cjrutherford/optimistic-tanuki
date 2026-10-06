@@ -1,0 +1,13 @@
+<section class="pricing" id="pricing" aria-labelledby="pricing-heading">
+  <p class="eyebrow">How we price</p>
+  <h2 id="pricing-heading">{{ headline }}</h2>
+  <p class="summary">{{ summary }}</p>
+  <dl class="terms">
+    @for (term of terms; track term.title) {
+    <div class="term">
+      <dt>{{ term.title }}</dt>
+      <dd>{{ term.description }}</dd>
+    </div>
+    }
+  </dl>
+</section>

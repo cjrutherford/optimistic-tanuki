@@ -67,3 +67,70 @@ the default. Rounded or outlined panels are never hard-coded.
 
 The owner will produce the HAI mark without `dev`. Brand-mark slices wait for
 that asset rather than editing the existing PNGs.
+
+## D014 — Independent infrastructure folds into private cloud
+
+The independent-infrastructure section (VPS and on-premises mini-servers) is
+private-cloud content. It moves to `/private-cloud` rather than getting its
+own route.
+
+## D015 — Navigation uses the `navigation-ui` drawer
+
+The full page tree, including a Solutions group, lives in the shared
+`otui-nav-sidebar` drawer from `libs/navigation-ui`, available at every
+width. The header keeps only a few direct links.
+
+## D016 — Freedom commitments confirmed
+
+The owner confirmed the three commitments shown with the freedom principle:
+open-source software so data stays in formats other tools can read; accounts
+and admin access in the customer's name; documentation handed over so another
+qualified provider can take over. They live in `FREEDOM_COMMITMENTS`
+(`apps/hai/src/app/content/private-cloud.ts`) and may be reused on any page.
+
+## D017 — "Free audit" means the contact form; "assessment" means the assessment form
+
+A free audit is a call to action to fill out the contact form, so every
+"Schedule a free audit" link goes to `/contact`. "Start an assessment" goes
+to `/private-cloud/assessment`, which S013 builds as a dedicated
+private-cloud assessment form. `apps/hai/src/app/cta-conventions.spec.ts`
+enforces this on the header, homepage, and private-cloud pages.
+
+## D018 — Pass-through pricing replaces the 35% markup
+
+Hardware is billed at the actual price HAI pays, with no markup. This
+replaces the Slice 11 `raw cost × 1.08 × 1.35` customer price. Freight and
+tax are passed through at the actual amounts on the order, not a flat 8%
+allowance. The backend pricing engine, quotes, and Appliance Portal still use
+the old formula and need a separate change (see `11-PRICING-ASSESSMENT.md`).
+
+## D019 — A published hourly labor rate
+
+Labor (setup, migration, support) is billed at a published hourly rate. The
+rate targets roughly $30–40/hour for the technician plus capital accrual for
+HAI, and can be adjusted. **$65/hour**, confirmed by the owner on 2026-10-06 (derivation in
+`11-PRICING-ASSESSMENT.md`). It lives in one constant,
+`LABOR_RATE_PER_HOUR`. The owner also confirmed the promise that customers
+see the receipts for hardware they are billed for.
+
+## D020 — Leasing is available on request through a third-party lender
+
+HAI has no leasing in place. The site says leasing is available on request;
+a lender would buy the hardware at cost and set its own lease terms, which
+the customer sees before committing. No lease prices are published. Finding
+a lender is separate work.
+
+## D021 — Support and software fees are labor
+
+Ongoing support and monthly plans are billed at the labor rate for an agreed
+number of hours, plus any service costs (cloud, SMS, network) passed through
+at actual amounts. The Slice 11 70% retainer margin floor no longer applies.
+Existing fixed monthly figures ($50 software, $300–$849 retainers) are
+withdrawn until re-derived on this basis.
+
+## D022 — Honest pricing everywhere
+
+Show an actual price only where it can be stated confidently; always explain
+the pricing structure; and say plainly when something is quoted per job
+because no fixed price exists. Static or unsourced figures are not presented
+as prices.

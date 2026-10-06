@@ -1,0 +1,111 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.stack-summary {
+  @include section.section-spacing;
+  @include section.panel;
+}
+
+.eyebrow,
+h3 {
+  @include section.eyebrow;
+}
+
+h3 {
+  color: var(--primary-text, var(--primary));
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+.summary,
+.qualifier,
+.service-list span,
+.platform-list {
+  @include section.body-copy;
+}
+
+.summary,
+.qualifier {
+  max-width: 44rem;
+  margin: 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1.5rem 2.5rem;
+  margin-top: 1.5rem;
+}
+
+.service-list,
+.platform-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.service-list li {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(0, 2fr);
+  gap: 0.25rem 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 35%, transparent);
+}
+
+.platform-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.platform-list li {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--hai-radius-pill);
+  background: color-mix(
+    in srgb,
+    var(--surface-variant, var(--muted)) 18%,
+    transparent
+  );
+  color: var(--foreground);
+  font-size: 0.92rem;
+}
+
+.qualifier {
+  margin-top: 1.5rem;
+  font-style: italic;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.75rem;
+  margin: 1.25rem 0 0;
+}
+
+.links a {
+  @include section.text-link;
+}
+
+.links a::after {
+  content: ' →';
+}
+
+@media (max-width: 960px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .service-list li {
+    grid-template-columns: 1fr;
+  }
+}

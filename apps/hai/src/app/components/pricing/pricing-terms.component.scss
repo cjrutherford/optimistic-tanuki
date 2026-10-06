@@ -1,0 +1,63 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.pricing {
+  @include section.section-spacing;
+  @include section.panel(var(--hai-panel-strong));
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+.summary,
+dd {
+  @include section.body-copy;
+}
+
+.summary {
+  max-width: 44rem;
+  margin: 0;
+}
+
+.terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem 2rem;
+  margin: 1.5rem 0 0;
+}
+
+.term {
+  min-width: 0;
+  padding-left: 1rem;
+  border-left: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+dt {
+  @include section.heading-font;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+dd {
+  margin: 0.35rem 0 0;
+}
+
+@media (max-width: 960px) {
+  .terms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .terms {
+    grid-template-columns: 1fr;
+  }
+}

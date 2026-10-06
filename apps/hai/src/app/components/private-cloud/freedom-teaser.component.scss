@@ -1,0 +1,53 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.freedom {
+  @include section.section-spacing;
+  @include section.panel(var(--hai-panel-strong));
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+  max-width: 48rem;
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  line-height: 1.15;
+}
+
+.commitments {
+  @include section.body-copy;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 2rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.commitments li {
+  min-width: 0;
+  padding-left: 1rem;
+  border-left: 2px solid color-mix(in srgb, var(--secondary) 55%, transparent);
+}
+
+.freedom-link {
+  @include section.text-link;
+  display: inline-block;
+  margin-top: 1.5rem;
+}
+
+.freedom-link::after {
+  content: ' →';
+}
+
+@media (max-width: 960px) {
+  .commitments {
+    grid-template-columns: 1fr;
+  }
+}

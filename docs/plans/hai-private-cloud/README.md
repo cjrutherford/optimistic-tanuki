@@ -21,6 +21,7 @@ The agent must complete only the current slice, validate it, update completion n
 - `08-SLICE-EXECUTION-POLICY.md`
 - `09-DECISION-LOG.md`
 - `10-DESIGN-SYSTEM-INVENTORY.md` (written in S001)
+- `11-PRICING-ASSESSMENT.md` (pricing conflicts and open decisions)
 
 ## Slice status
 
@@ -28,17 +29,17 @@ The agent must complete only the current slice, validate it, update completion n
 | ----- | ------------------------------- | -------- |
 | S000  | Repository and site audit       | Complete |
 | S001  | Design-system inventory         | Complete |
-| S002  | Route and navigation foundation | Ready    |
-| S003  | Homepage positioning            | Planned  |
-| S004  | Homepage private-cloud section  | Planned  |
-| S005  | Private-cloud landing page      | Planned  |
-| S006  | Home private-cloud page         | Planned  |
-| S007  | Organization private-cloud page | Planned  |
-| S008  | Open-source stack page          | Planned  |
-| S009  | Turn-key appliance integration  | Planned  |
-| S010  | Software-stack integration      | Planned  |
-| S011  | Cost-comparison update          | Planned  |
-| S012  | Shared conversion components    | Planned  |
+| S002  | Route and navigation foundation | Complete |
+| S003  | Homepage positioning            | Complete |
+| S004  | Homepage private-cloud section  | Complete |
+| S005  | Private-cloud landing page      | Complete |
+| S006  | Home private-cloud page         | Complete |
+| S007  | Organization private-cloud page | Complete |
+| S008  | Open-source stack page          | Complete |
+| S009  | Turn-key appliance integration  | Complete |
+| S010  | Software-stack integration      | Complete |
+| S011  | Cost-comparison update          | Complete |
+| S012  | Shared conversion components    | Ready    |
 | S013  | Assessment flow                 | Planned  |
 | S014  | Analytics and campaign tracking | Planned  |
 | S015  | SEO and social metadata         | Planned  |

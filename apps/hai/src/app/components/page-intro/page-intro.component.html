@@ -1,0 +1,20 @@
+<header class="page-intro" data-theme-surface="hero">
+  <p class="eyebrow">{{ eyebrow }}</p>
+  <h1>{{ title }}</h1>
+  @if (summary) {
+  <p class="summary">{{ summary }}</p>
+  } @if (action) {
+  <a class="intro-action" [routerLink]="action.route">{{ action.label }}</a>
+  } @if (links.length) {
+  <nav class="intro-links" [attr.aria-label]="eyebrow + ' pages'">
+    @for (link of links; track link.label) {
+    <a
+      class="intro-link"
+      [routerLink]="link.route"
+      [fragment]="link.fragment"
+      >{{ link.label }}</a
+    >
+    }
+  </nav>
+  }
+</header>

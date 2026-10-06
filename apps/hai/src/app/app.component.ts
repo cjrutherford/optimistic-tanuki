@@ -1,5 +1,5 @@
 import { Component, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { ViewportScroller, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
@@ -32,6 +32,16 @@ export class AppComponent {
   };
 
   private readonly platformId = inject(PLATFORM_ID);
+
+  constructor() {
+    // Keep anchor targets clear of the sticky header.
+    inject(ViewportScroller).setOffset(() => {
+      const header = this.isBrowser
+        ? document.querySelector('hai-title-bar')
+        : null;
+      return [0, (header?.getBoundingClientRect().height ?? 0) + 16];
+    });
+  }
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
