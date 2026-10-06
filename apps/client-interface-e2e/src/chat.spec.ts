@@ -306,6 +306,8 @@ test.describe('Chat workflow', () => {
     const bobContext = await browser.newContext();
     const alicePage = await aliceContext.newPage();
     const bobPage = await bobContext.newPage();
+    expect(alicePage.viewportSize()).toEqual(testInfo.project.use.viewport);
+    expect(bobPage.viewportSize()).toEqual(testInfo.project.use.viewport);
     const aliceDiagnostics = collectBrowserDiagnostics(
       alicePage,
       'alice',

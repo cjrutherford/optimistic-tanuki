@@ -184,6 +184,8 @@ export class AppComponent implements OnInit, OnDestroy {
   chatContacts: ChatContact[] = [];
   chatConversations: ChatConversation[] = [];
   showChat = signal(false);
+  conversationToOpen = signal<{ id: string; requestId: number } | null>(null);
+  private conversationOpenRequestId = 0;
   chatInitialized = signal(false);
   isMobileViewport = signal(false);
 
@@ -375,7 +377,10 @@ export class AppComponent implements OnInit, OnDestroy {
   async openChat(conversationId: string) {
     const contact = this.chatContacts.find((c) => c.id === conversationId);
     if (contact) {
-      this.openChat(contact.id);
+      this.conversationToOpen.set({
+        id: contact.id,
+        requestId: ++this.conversationOpenRequestId,
+      });
     }
   }
 

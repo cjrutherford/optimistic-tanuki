@@ -67,6 +67,7 @@
         [contacts]="chatContacts"
         [conversations]="chatConversations"
         [currentUserId]="selectedProfile()?.id || ''"
+        [conversationToOpen]="conversationToOpen()"
         (messageSubmitted)="handleFloatingMessageSubmitted($event)"
       ></lib-chat-ui>
     </div>

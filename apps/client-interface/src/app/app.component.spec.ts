@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, PLATFORM_ID } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
 import { Router, RouterModule } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
@@ -14,7 +15,7 @@ import { ProfileService } from './profile.service';
 import { ProfileContext } from './profile.context';
 import { TitleService } from './title.service';
 import { ChatService } from './chat.service';
-import { SocketChatService } from '@optimistic-tanuki/chat-ui';
+import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
 import { NotificationService } from '@optimistic-tanuki/notification-ui';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
@@ -633,12 +634,89 @@ describe('AppComponent behaviour', () => {
       );
     });
 
-    // NOTE: openChat() currently calls itself with the same id whenever the
-    // contact is found, so it only terminates for an unknown conversation.
-    // Only the terminating branch is exercised here on purpose.
     it('openChat is a no-op for an unknown conversation', async () => {
       app.chatContacts = [];
       await expect(app.openChat('missing')).resolves.toBeUndefined();
+    });
+
+    it('selects a known conversation in the floating chat panel', () => {
+      app.isAuthenticated.set(true);
+      app.chatContacts = [
+        { id: 'c1', name: 'First' },
+        { id: 'c2', name: 'Second' },
+      ];
+      app.chatConversations = [
+        {
+          id: 'c1',
+          participants: [],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+        {
+          id: 'c2',
+          participants: [],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      app.showChat.set(true);
+      fixture.detectChanges();
+
+      app.openChat('c2');
+      fixture.detectChanges();
+
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('c2');
+    });
+
+    it('opens an existing direct conversation from startChatWithUser', async () => {
+      app.isAuthenticated.set(true);
+      app.chatInitialized.set(true);
+      app.chatContacts = [{ id: 'existing-conversation', name: 'Existing' }];
+      app.chatConversations = [
+        {
+          id: 'existing-conversation',
+          participants: ['profile-1', 'profile-2'],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      chatService.startDirectChat.mockResolvedValue(
+        conversation('existing-conversation', ['profile-1', 'profile-2'])
+      );
+
+      await app.startChatWithUser('profile-2');
+      fixture.detectChanges();
+
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('existing-conversation');
+    });
+
+    it('opens a newly created direct conversation after the floating panel mounts', async () => {
+      app.isAuthenticated.set(true);
+      const created = conversation('new-conversation', [
+        'profile-1',
+        'profile-2',
+      ]);
+      chatService.startDirectChat.mockResolvedValue(created);
+
+      const pending = app.startChatWithUser('profile-2');
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      const profileRequest = httpMock.expectOne('/api/profile/by-id/profile-2');
+      profileRequest.flush({ id: 'profile-2', profileName: 'New Contact' });
+      await pending;
+      fixture.detectChanges();
+
+      const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+        .componentInstance as ChatUiComponent;
+      expect(chatUi.selectedConversationId()).toBe('new-conversation');
     });
   });
 

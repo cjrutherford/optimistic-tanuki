@@ -248,17 +248,17 @@ These findings are based on repository source/plan evidence. Runtime acceptance 
 
 **Slice:** RR-07.
 
-### F-006 — OT floating-chat open method appears recursively self-calling
+### F-006 — OT floating-chat helper recursion
 
-**Severity:** P0 candidate; runtime verification required
+**Severity:** P1 — latent helper defect; repaired under RR-05. The original P0 candidate was not established on the current profile/message route.
 
 **Area:** OT messaging
 
-**Evidence:** `AppComponent.openChat(conversationId)` finds a matching contact and calls `this.openChat(contact.id)` again rather than delegating to a distinct selection/open action. If `contact.id === conversationId`, this is unbounded recursion.
+**Original evidence:** `AppComponent.openChat(conversationId)` called itself with the same contact ID. Its old test covered only an unknown ID.
 
-**Expected:** Selecting a conversation opens it without recursion/crash.
+**RR-05 result (2026-10-06):** The helper now delegates selection to the shared chat UI through a render-safe input. Known/existing/new conversation and lazy-panel tests pass. `startChatWithUser` has no current app source caller; the profile Message action routes to `/messages?userId=…`. Real two-user message-page checks pass, but they do not exercise this latent helper. See [RR-05 findings](./findings/RR-05.md).
 
-**Remediation:** Reproduce with focused test/runtime, fix through the shared/appropriate chat API, then add regression coverage.
+**Disposition:** COMPLETE for the bounded helper defect. This does not accept private chat authorization or full RR-05.
 
 **Slice:** RR-05.
 
@@ -448,7 +448,7 @@ Auth bypass, stale-user data after logout, cross-account leakage, unusable regis
 
 **Status:** GAP FOUND. [Findings and real-stack privacy gates](./findings/RR-04.md). Anonymous bypass and bounded private-community/realtime disclosures repaired; I01 targeted live gates pass (18/18). Following-feed, explicit audience, source-sharing and full privacy acceptance remain open. No promotion waiver.
 
-**Implementation scheduled:** [RR04-I01–I03](./EXECUTION-PLAN.md#scheduled-implementation-queue). RR04-I01 (P0 community/realtime privacy) implementation checkpoint is complete in planned PR A; RR-05 is next. RR04-I02 (audience/sharing/following feed) follows RR-08 and precedes RR-09 in planned PR B; RR04-I03 completes RR-04 acceptance immediately afterward and repeats in RR-12. RR04-I01 is VERIFYING with targeted gates passed ([checkpoint report](./findings/RR-04-I01.md)); I02/I03 remain PLANNED. No finding is waived or accepted by scheduling.
+**Implementation scheduled:** [RR04-I01–I03](./EXECUTION-PLAN.md#scheduled-implementation-queue). RR04-I01 (P0 community/realtime privacy) implementation checkpoint is complete in planned PR A; The RR-05 audit is complete; RR05-I01 is next before RR-06. RR04-I02 (audience/sharing/following feed) follows RR-08 and precedes RR-09 in planned PR B; RR04-I03 completes RR-04 acceptance immediately afterward and repeats in RR-12. RR04-I01 is VERIFYING with targeted gates passed ([checkpoint report](./findings/RR-04-I01.md)); I02/I03 remain PLANNED. No finding is waived or accepted by scheduling.
 
 **Goal:** Verify OT's defining control/visibility philosophy in real behavior.
 
@@ -475,6 +475,10 @@ API authorization tests + browser E2E with at least two users and multiple commu
 
 ## RR-05 — OT communities, forum, chat, and messaging
 
+**Status:** GAP FOUND — confirmed private discussion disclosures and socket message injection are P0 blockers. [Findings](./findings/RR-05.md). F-006 is repaired; full RR-05 is not accepted.
+
+**Implementation scheduled:** [RR05-I01](./EXECUTION-PLAN.md#scheduled-implementation-queue) is mandatory next, before RR-06, in planned PR C. Shared invitation transport remains the existing email gate.
+
 **Goal:** Verify the main relationship/discussion surfaces.
 
 ### Communities
@@ -491,14 +495,14 @@ API authorization tests + browser E2E with at least two users and multiple commu
 - [ ] Topic/reply permissions are enforced.
 - [ ] Durable URLs survive navigation/refresh.
 - [ ] Forum is usable as a slower long-form surface.
-- [ ] Document gap/plan for per-community forums if not implemented; do not market them as existing.
+- [x] Document gap/plan for per-community forums if not implemented; do not market them as existing.
 
 ### Messaging/chat
 
-- [ ] Reproduce or clear F-006 recursive `openChat` concern.
-- [ ] Conversation list loads.
-- [ ] Opening a conversation works.
-- [ ] Sending/receiving works across two users.
+- [x] Reproduce or clear F-006 recursive `openChat` concern.
+- [x] Conversation list loads.
+- [x] Opening a conversation works.
+- [x] Sending/receiving works across two users.
 - [ ] Reconnect does not duplicate/drop messages unexpectedly.
 - [ ] Read/typing/reaction claims are tested if marketed.
 - [ ] Block/privacy behavior affects messaging correctly.
@@ -982,21 +986,22 @@ RR-01 may make immediate copy removals before the rest of the audit; final copy 
 
 Use this section for concise status changes. Detailed evidence should live in slice-specific documents if a slice grows large.
 
-| Date       | Item                       | Change                                                                                                                                                                                                              |
-| ---------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-06 | RR04-I01 repair checkpoint | Shared membership/read/realtime enforcement and dependent-resource contracts repaired. 18 live checks pass; full build and affected verification pass. RR-04 remains GAP FOUND; I02/I03 required, RR-05 next.       |
-| 2026-10-06 | RR-04 repairs scheduled    | Assigned unresolved findings to RR04-I01–I03: P0 privacy next before RR-05 (planned PR A), audience/sharing/feed after RR-08 before RR-09 (planned PR B), then full acceptance and RR-12 integrated recheck.        |
-| 2026-10-06 | RR-04 privacy audit        | Repaired anonymous read bypass and preserved reporter identity. Real multi-user gates expose private-community and realtime content; GAP FOUND with P0 release blockers. See findings/RR-04.md.                     |
-| 2026-10-05 | RR-01 remediation          | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
-| 2026-10-05 | RR-02 verification         | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
-| 2026-10-05 | RR-03 verification         | Hardened session restoration, profile ownership/cache cleanup, form errors and OAuth provider visibility. Real service revocation and browser contract regressions passed; lifecycle acceptance remains VERIFYING.  |
-| 2026-10-05 | RR-00 accepted             | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                                |
-| 2026-10-05 | Execution mapping          | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted.               |
-| 2026-10-05 | Audit created              | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                               |
-| 2026-10-05 | Daylight                   | Recorded PR #275 as open/unmerged; RR-07 blocked from production acceptance.                                                                                                                                        |
-| 2026-10-05 | OT messaging               | Recorded recursive `openChat` as P0 candidate pending reproduction.                                                                                                                                                 |
-| 2026-10-05 | Marketing truth            | Recorded unsupported OT adoption claim and TS unreleased-feature claims as P0 truth gaps.                                                                                                                           |
-| 2026-10-05 | Reputation + federation    | Added RR-14 for `retumbl` prototype evaluation (blocked on connector access) and RR-15 for active federation/self-hosting feasibility. Updated DF-001/DF-003 accordingly.                                           |
+| Date       | Item                         | Change                                                                                                                                                                                                              |
+| ---------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-06 | RR-05 audit and repair queue | Repaired latent floating-chat recursion. Confirmed private discussion disclosures/socket injection and authoring gaps; mandatory RR05-I01 planned PR C precedes RR-06. RR-05 remains GAP FOUND.                     |
+| 2026-10-06 | RR04-I01 repair checkpoint   | Shared membership/read/realtime enforcement and dependent-resource contracts repaired. 18 live checks pass; full build and affected verification pass. RR-04 remains GAP FOUND; I02/I03 required, RR-05 next.       |
+| 2026-10-06 | RR-04 repairs scheduled      | Assigned unresolved findings to RR04-I01–I03: P0 privacy next before RR-05 (planned PR A), audience/sharing/feed after RR-08 before RR-09 (planned PR B), then full acceptance and RR-12 integrated recheck.        |
+| 2026-10-06 | RR-04 privacy audit          | Repaired anonymous read bypass and preserved reporter identity. Real multi-user gates expose private-community and realtime content; GAP FOUND with P0 release blockers. See findings/RR-04.md.                     |
+| 2026-10-05 | RR-01 remediation            | Inventoried public claims, withdrew unsupported promotion, qualified early access, and fixed landing data loading. VERIFYING pending real authenticated review; see findings/RR-01.md.                              |
+| 2026-10-05 | RR-02 verification           | Remediated copy, placement, keyboard focus, mobile tabs, contrast, and registry fallback. Operator confirmed shared credentials with separate sessions; live reverse navigation and real account tests remain open. |
+| 2026-10-05 | RR-03 verification           | Hardened session restoration, profile ownership/cache cleanup, form errors and OAuth provider visibility. Real service revocation and browser contract regressions passed; lifecycle acceptance remains VERIFYING.  |
+| 2026-10-05 | RR-00 accepted               | Foundation committed as 1a8f206a4; acceptance evidence committed as e16279992. Registry synchronized with the accepted slice report.                                                                                |
+| 2026-10-05 | Execution mapping            | Added execution map and per-slice findings protocol; operator confirmed local `retumbl` at `9f2c1cc76cad41208cdbe8104682d2bc0c196491`. RR-14 access unblocked, evaluation PLANNED. No slice accepted.               |
+| 2026-10-05 | Audit created                | Defined RR-00 through RR-13 and initial findings F-001 through F-007.                                                                                                                                               |
+| 2026-10-05 | Daylight                     | Recorded PR #275 as open/unmerged; RR-07 blocked from production acceptance.                                                                                                                                        |
+| 2026-10-05 | OT messaging                 | Recorded recursive `openChat` as P0 candidate pending reproduction.                                                                                                                                                 |
+| 2026-10-05 | Marketing truth              | Recorded unsupported OT adoption claim and TS unreleased-feature claims as P0 truth gaps.                                                                                                                           |
+| 2026-10-05 | Reputation + federation      | Added RR-14 for `retumbl` prototype evaluation (blocked on connector access) and RR-15 for active federation/self-hosting feasibility. Updated DF-001/DF-003 accordingly.                                           |
 
 ---
 

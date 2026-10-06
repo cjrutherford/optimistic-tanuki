@@ -172,6 +172,8 @@ export class ChatUiComponent implements OnInit, OnChanges {
     content: string;
   }>();
   @Input() autoOpenFirstConversation = false;
+  /** A conversation to select when its contact is present. */
+  @Input() conversationToOpen: { id: string; requestId: number } | null = null;
   /**
    * A signal that holds the state of each chat window.
    */
@@ -254,6 +256,14 @@ export class ChatUiComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['contacts'] || changes['conversations']) {
       this.syncWindowStates();
+    }
+    const conversationId = this.conversationToOpen?.id;
+    if (
+      changes['conversationToOpen'] &&
+      conversationId &&
+      this.contacts.some((contact) => contact.id === conversationId)
+    ) {
+      this.openChat(conversationId);
     }
   }
 

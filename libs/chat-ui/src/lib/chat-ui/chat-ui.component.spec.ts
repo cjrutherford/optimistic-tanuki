@@ -79,6 +79,36 @@ describe('ChatUiComponent', () => {
     expect(component.getConversation('room-2').id).toBe('room-2');
   });
 
+  it('selects the requested conversation from an input', () => {
+    fixture.componentRef.setInput('contacts', [
+      { id: 'room-1', name: 'General' },
+      { id: 'room-2', name: 'Moderators' },
+    ]);
+    fixture.componentRef.setInput('conversations', [
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'room-2',
+        participants: ['profile-1', 'profile-3'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    fixture.componentRef.setInput('conversationToOpen', {
+      id: 'room-2',
+      requestId: 1,
+    });
+    fixture.detectChanges();
+
+    expect(component.selectedConversationId()).toBe('room-2');
+  });
+
   it('uses embedded window state when embedded layout is selected', () => {
     component.layout = 'embedded';
     component.contacts = [{ id: 'room-1', name: 'General' }];
