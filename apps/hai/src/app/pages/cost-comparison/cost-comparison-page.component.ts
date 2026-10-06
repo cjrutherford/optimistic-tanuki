@@ -4,7 +4,7 @@ import { RoiCalculatorSectionComponent } from '../../components/landing/roi-calc
 import { PageIntroComponent } from '../../components/page-intro/page-intro.component';
 import { ComparisonTableComponent } from '../../components/cost-comparison/comparison-table.component';
 import { PricingTermsComponent } from '../../components/pricing/pricing-terms.component';
-import { CtaPanelComponent } from '../../components/private-cloud/cta-panel.component';
+import { CtaPanelComponent } from '../../components/shared/cta-panel.component';
 import { ContactRequestService } from '../../services/contact-request.service';
 import {
   COMPARISON_ROWS,

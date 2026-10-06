@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { PageIntroComponent } from '../../components/page-intro/page-intro.component';
-import { CapabilityGridComponent } from '../../components/private-cloud/capability-grid.component';
-import { FreedomTeaserComponent } from '../../components/private-cloud/freedom-teaser.component';
-import { CtaPanelComponent } from '../../components/private-cloud/cta-panel.component';
+import { CapabilityGridComponent } from '../../components/shared/capability-grid.component';
+import { FreedomTeaserComponent } from '../../components/shared/freedom-teaser.component';
+import { CtaPanelComponent } from '../../components/shared/cta-panel.component';
 import {
   CAPABILITY_QUALIFIER,
   FREEDOM_COMMITMENTS,

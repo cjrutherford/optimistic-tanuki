@@ -2,8 +2,8 @@ import { Component } from '@angular/core';
 import { PageIntroComponent } from '../../components/page-intro/page-intro.component';
 import { StackListComponent } from '../../components/private-cloud/stack-list.component';
 import { ArchitectureDiagramComponent } from '../../components/private-cloud/architecture-diagram.component';
-import { FreedomTeaserComponent } from '../../components/private-cloud/freedom-teaser.component';
-import { CtaPanelComponent } from '../../components/private-cloud/cta-panel.component';
+import { FreedomTeaserComponent } from '../../components/shared/freedom-teaser.component';
+import { CtaPanelComponent } from '../../components/shared/cta-panel.component';
 import {
   CORE_SERVICES,
   FREEDOM_COMMITMENTS,

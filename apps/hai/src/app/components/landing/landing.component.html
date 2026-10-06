@@ -105,23 +105,9 @@
     [apps]="(ecosystem$ | async) ?? []"
   ></hai-ecosystem-section>
 
-  <section class="closing-panel" aria-labelledby="closing-heading">
-    <p class="eyebrow">Next step</p>
-    <h2 id="closing-heading">Not sure where to start?</h2>
-    <p class="lede">
-      Book a free audit. We look at what you run today and suggest what to own,
-      what to keep renting, and what to leave alone.
-    </p>
-    <div class="hero-actions">
-      <a
-        class="cta primary"
-        routerLink="/contact"
-        data-tone="brand"
-        data-emphasis="solid"
-        data-size="lg"
-      >
-        Schedule Free Audit
-      </a>
-    </div>
-  </section>
+  <hai-cta-panel
+    title="Not sure where to start?"
+    text="Book a free audit. We look at what you run today and suggest what to own, what to keep renting, and what to leave alone."
+    [action]="{ label: 'Schedule Free Audit', route: '/contact' }"
+  ></hai-cta-panel>
 </div>

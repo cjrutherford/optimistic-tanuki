@@ -196,7 +196,7 @@ describe('LandingComponent', () => {
 
   it('closes with a single audit action', () => {
     const closing = (fixture.nativeElement as HTMLElement).querySelector(
-      '.closing-panel'
+      'hai-cta-panel'
     );
     const links = closing?.querySelectorAll('a') ?? [];
 

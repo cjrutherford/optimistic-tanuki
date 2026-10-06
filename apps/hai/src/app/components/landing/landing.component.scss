@@ -239,22 +239,6 @@ h1 {
   );
 }
 
-.closing-panel {
-  margin-top: clamp(2.5rem, 5vw, 4rem);
-  padding: clamp(1.6rem, 3.5vw, 3rem);
-  border-radius: var(--hai-radius-panel);
-  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
-  background: var(--hai-panel-strong);
-  box-shadow: var(--hai-shadow-panel);
-}
-
-.closing-panel h2 {
-  margin: 0;
-  font-family: var(--font-heading, var(--personality-font-family, serif));
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1;
-}
-
 @media (max-width: 960px) {
   .hero-panel {
     grid-template-columns: 1fr;
@@ -273,8 +257,7 @@ h1 {
 }
 
 @media (max-width: 640px) {
-  .hero-panel,
-  .closing-panel {
+  .hero-panel {
     padding: 1.2rem;
   }
 

@@ -3,6 +3,7 @@ import { ViewportScroller, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
+import { ContactStripComponent } from './components/shared/contact-strip.component';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -12,6 +13,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
   imports: [
     RouterModule,
     TitleBarComponent,
+    ContactStripComponent,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
     PersonalityBackdropComponent,

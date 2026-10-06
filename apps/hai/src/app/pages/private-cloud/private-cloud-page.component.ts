@@ -1,11 +1,11 @@
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { PageIntroComponent } from '../../components/page-intro/page-intro.component';
 import { PersonalCloudSectionComponent } from '../../components/landing/personal-cloud-section.component';
-import { CapabilityGridComponent } from '../../components/private-cloud/capability-grid.component';
-import { AudienceSelectorComponent } from '../../components/private-cloud/audience-selector.component';
-import { HowItWorksComponent } from '../../components/private-cloud/how-it-works.component';
-import { FreedomTeaserComponent } from '../../components/private-cloud/freedom-teaser.component';
-import { CtaPanelComponent } from '../../components/private-cloud/cta-panel.component';
+import { CapabilityGridComponent } from '../../components/shared/capability-grid.component';
+import { AudienceSelectorComponent } from '../../components/shared/audience-selector.component';
+import { HowItWorksComponent } from '../../components/shared/how-it-works.component';
+import { FreedomTeaserComponent } from '../../components/shared/freedom-teaser.component';
+import { CtaPanelComponent } from '../../components/shared/cta-panel.component';
 import { OWNERSHIP_NOTES } from '../../content/site-content';
 import {
   AUDIENCE_PATHS,

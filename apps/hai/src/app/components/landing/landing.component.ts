@@ -8,6 +8,7 @@ import {
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
 import { EcosystemSectionComponent } from './ecosystem-section.component';
+import { CtaPanelComponent } from '../shared/cta-panel.component';
 import { OfferingsSectionComponent } from './offerings-section.component';
 import { PrivateCloudSectionComponent } from './private-cloud-section.component';
 import {
@@ -31,6 +32,7 @@ import { prefersReducedMotion } from '../../services/reduced-motion';
     OfferingsSectionComponent,
     PrivateCloudSectionComponent,
     EcosystemSectionComponent,
+    CtaPanelComponent,
   ],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',

@@ -1,3 +1,5 @@
+@use '../../styles/section';
+
 :host {
   display: block;
 }
@@ -13,12 +15,7 @@
 }
 
 .eyebrow {
-  margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+  @include section.eyebrow;
 }
 
 h2,
@@ -30,9 +27,7 @@ h3 {
 }
 
 h2 {
-  margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1;
+  @include section.section-heading;
 }
 
 h3 {

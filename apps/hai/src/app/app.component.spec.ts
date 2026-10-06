@@ -62,4 +62,13 @@ describe('AppComponent', () => {
     expect(offset()).toEqual([0, 96]);
     fixture.nativeElement.remove();
   });
+
+  it('ends every page with the contact strip', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('main hai-contact-strip')
+    ).not.toBeNull();
+  });
 });

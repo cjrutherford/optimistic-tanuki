@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { HardwareCatalogComponent } from '../../components/hardware-catalog/hardware-catalog.component';
 import { PricingTermsComponent } from '../../components/pricing/pricing-terms.component';
 import { PageIntroComponent } from '../../components/page-intro/page-intro.component';
-import { AudienceSelectorComponent } from '../../components/private-cloud/audience-selector.component';
+import { AudienceSelectorComponent } from '../../components/shared/audience-selector.component';
 import {
   APPLIANCES_HERO,
   ASSESSMENT_ROUTE,

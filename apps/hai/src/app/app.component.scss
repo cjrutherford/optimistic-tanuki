@@ -29,7 +29,7 @@
   --hai-border-style: var(--personality-border-style, solid);
   --hai-shadow-panel: var(
     --personality-card-shadow,
-    0 28px 80px rgba(15, 23, 42, 0.14)
+    0 28px 80px color-mix(in srgb, var(--foreground) 14%, transparent)
   );
   --hai-shadow-hover: 0 30px 80px -28px color-mix(in srgb, var(--foreground) 34%, transparent),
     0 10px 26px -14px color-mix(in srgb, var(--primary) 18%, transparent);
