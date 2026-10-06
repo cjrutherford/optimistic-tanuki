@@ -198,8 +198,14 @@ export class AppService {
       // Parse response to extract TELOS data if present
       const { content, telosData } = this.parseTelosResponse(result.response);
 
+      const welcomeConversation = await firstValueFrom(
+        this.chatCollectorService.send(
+          { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+          { participantIds: [assistant.id, profile.id] }
+        )
+      );
       const newChatMessage: Partial<ChatMessage> = {
-        conversationId: '',
+        conversationId: welcomeConversation.id,
         senderId: assistant.id,
         senderName: assistant.name,
         recipientId: [profile.id],

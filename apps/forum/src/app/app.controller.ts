@@ -1,3 +1,7 @@
+import {
+  ForumAccessService,
+  ForumActor,
+} from './services/forum-access.service';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
@@ -30,7 +34,8 @@ export class AppController {
     private readonly threadService: ThreadService,
     private readonly forumPostService: ForumPostService,
     private readonly forumModerationService: ForumModerationService,
-    private readonly forumSeedService: ForumSeedService
+    private readonly forumSeedService: ForumSeedService,
+    private readonly access: ForumAccessService
   ) {}
 
   @MessagePattern({ cmd: ForumCommands.SEED_DEMO_TOPICS })
@@ -51,93 +56,86 @@ export class AppController {
 
   @MessagePattern({ cmd: TopicCommands.FIND_MANY })
   async findAllTopics(@Payload() options?: FindManyOptions<Topic>) {
-    return await this.topicService.findAll(options);
+    return await this.access.list('topic', options);
   }
 
   @MessagePattern({ cmd: TopicCommands.FIND })
-  async findOneTopic(@Payload() data: { id: string; appScope?: string }) {
-    return await this.topicService.findOne(data.id, {
-      where: {
-        id: data.id,
-        ...(data.appScope ? { appScope: data.appScope } : {}),
-      },
-    });
+  async findOneTopic(@Payload() data: { id: string } & ForumActor) {
+    return this.access.read('topic', data.id, data);
   }
 
   @MessagePattern({ cmd: TopicCommands.UPDATE })
   async updateTopic(
-    @Payload('id') id: string,
-    @Payload('data') data: UpdateTopicDto
+    @Payload() data: { id: string; data: UpdateTopicDto } & ForumActor
   ) {
-    return await this.topicService.update(id, data);
+    await this.access.owner('topic', data.id, data);
+    return this.topicService.update(data.id, data.data);
   }
 
   @MessagePattern({ cmd: TopicCommands.DELETE })
-  async removeTopic(@Payload('id') id: string) {
-    return await this.topicService.remove(id);
+  async removeTopic(@Payload() data: { id: string } & ForumActor) {
+    await this.access.owner('topic', data.id, data);
+    return this.topicService.remove(data.id);
   }
 
-  // Thread endpoints
   @MessagePattern({ cmd: ThreadCommands.CREATE })
   async createThread(@Payload() data: CreateThreadDto) {
+    await this.access.parent('topic', data.topicId, data);
     return await this.threadService.create(data);
   }
 
   @MessagePattern({ cmd: ThreadCommands.FIND_MANY })
   async findAllThreads(@Payload() options?: FindManyOptions<Thread>) {
-    return await this.threadService.findAll(options);
+    return await this.access.list('thread', options);
   }
 
   @MessagePattern({ cmd: ThreadCommands.FIND })
-  async findOneThread(@Payload() data: { id: string; appScope?: string }) {
-    return await this.threadService.findOne(data.id, {
-      where: {
-        id: data.id,
-        ...(data.appScope ? { appScope: data.appScope } : {}),
-      },
-    });
+  async findOneThread(@Payload() data: { id: string } & ForumActor) {
+    return this.access.read('thread', data.id, data, true);
   }
 
   @MessagePattern({ cmd: ThreadCommands.UPDATE })
   async updateThread(
-    @Payload('id') id: string,
-    @Payload('data') data: UpdateThreadDto
+    @Payload() data: { id: string; data: UpdateThreadDto } & ForumActor
   ) {
-    return await this.threadService.update(id, data);
+    await this.access.owner('thread', data.id, data);
+    return this.threadService.update(data.id, data.data);
   }
 
   @MessagePattern({ cmd: ThreadCommands.DELETE })
-  async removeThread(@Payload('id') id: string) {
-    return await this.threadService.remove(id);
+  async removeThread(@Payload() data: { id: string } & ForumActor) {
+    await this.access.owner('thread', data.id, data);
+    return this.threadService.remove(data.id);
   }
 
-  // Forum Post endpoints
   @MessagePattern({ cmd: ForumPostCommands.CREATE })
   async createForumPost(@Payload() data: CreateForumPostDto) {
+    await this.access.parent('thread', data.threadId, data);
     return await this.forumPostService.create(data);
   }
 
   @MessagePattern({ cmd: ForumPostCommands.FIND_MANY })
   async findAllForumPosts(@Payload() options?: FindManyOptions<ForumPost>) {
-    return await this.forumPostService.findAll(options);
+    return await this.access.list('post', options);
   }
 
   @MessagePattern({ cmd: ForumPostCommands.FIND })
-  async findOneForumPost(@Payload('id') id: string) {
-    return await this.forumPostService.findOne(id);
+  async findOneForumPost(@Payload() data: { id: string } & ForumActor) {
+    return this.access.read('post', data.id, data);
   }
 
   @MessagePattern({ cmd: ForumPostCommands.UPDATE })
   async updateForumPost(
-    @Payload('id') id: string,
-    @Payload('data') data: UpdateForumPostDto
+    @Payload() data: { id: string; data: UpdateForumPostDto } & ForumActor
   ) {
-    return await this.forumPostService.update(id, data);
+    await this.access.owner('post', data.id, data);
+    return this.forumPostService.update(data.id, data.data);
   }
 
   @MessagePattern({ cmd: ForumPostCommands.DELETE })
-  async removeForumPost(@Payload('id') id: string) {
-    return await this.forumPostService.remove(id);
+  async removeForumPost(@Payload() data: { id: string } & ForumActor) {
+    await this.access.owner('post', data.id, data);
+    return this.forumPostService.remove(data.id);
   }
 
   @MessagePattern({ cmd: ForumModerationCommands.REPORT_CONTENT })

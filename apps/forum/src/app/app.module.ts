@@ -1,3 +1,4 @@
+import { ForumAccessService } from './services/forum-access.service';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
@@ -30,6 +31,7 @@ import { ForumSeedService } from './services/forum-seed.service';
   ],
   controllers: [AppController],
   providers: [
+    ForumAccessService,
     TopicService,
     ThreadService,
     ForumPostService,

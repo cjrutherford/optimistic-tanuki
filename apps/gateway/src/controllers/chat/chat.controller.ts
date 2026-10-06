@@ -20,7 +20,11 @@ import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
-import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ChatCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { ProfileDto } from '@optimistic-tanuki/models';
 import {
@@ -40,7 +44,9 @@ export class ChatController {
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatService: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
-    private readonly profileService: ClientProxy
+    private readonly profileService: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialService: ClientProxy
   ) {}
 
   @Get('conversations/find')
@@ -124,7 +130,22 @@ export class ChatController {
   @Post('conversations/community')
   @ApiOperation({ summary: 'Create a community conversation' })
   @ApiResponse({ status: 201, type: ConversationDto })
-  async createCommunityChat(@Body() body: CreateCommunityChatDto) {
+  async createCommunityChat(
+    @Body() body: CreateCommunityChatDto,
+    @User() user: UserDetails
+  ) {
+    const members = await firstValueFrom(
+      this.socialService.send(
+        { cmd: CommunityCommands.GET_MEMBERS },
+        { communityId: body.communityId }
+      )
+    );
+    const actor = members?.find(
+      (m) => m.profileId === user.profileId && m.status === 'approved'
+    );
+    if (!actor || !['owner', 'admin', 'moderator'].includes(actor.role))
+      throw new ForbiddenException('Community management access is required');
+    body.ownerId = user.profileId;
     return this.forward(
       { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
       body,

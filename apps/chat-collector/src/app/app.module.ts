@@ -8,11 +8,31 @@ import loadConfig from './loadConfig';
 import loadDatabase from './loadDatabase';
 import { Conversation, Message } from './entities';
 import { DataSource } from 'typeorm';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 
 @Module({
   imports: [
     LoggerModule,
+    ClientsModule.register([
+      {
+        name: ServiceTokens.SOCIAL_SERVICE,
+        transport: Transport.TCP,
+        options: {
+          host: process.env.SOCIAL_HOST || 'social',
+          port: Number(process.env.SOCIAL_PORT || 3003),
+        },
+      },
+      {
+        name: ServiceTokens.PROJECT_PLANNING_SERVICE,
+        transport: Transport.TCP,
+        options: {
+          host: process.env.PROJECT_PLANNING_HOST || 'project-planning',
+          port: Number(process.env.PROJECT_PLANNING_PORT || 3006),
+        },
+      },
+    ]),
     ConfigModule.forRoot({
       load: [loadConfig],
       isGlobal: true,

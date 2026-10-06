@@ -103,7 +103,18 @@ export class ComposeForumPostComponent
   showNewTopicInput = false;
   showNewThreadInput = false;
 
+  private topicOptionCache?: {
+    source: TopicDto[];
+    options: { value: string; label: string }[];
+  };
+  private threadOptionCache?: {
+    source: ThreadDto[];
+    options: { value: string; label: string }[];
+  };
+
   get topicOptions() {
+    if (this.topicOptionCache?.source === this.availableTopics)
+      return this.topicOptionCache.options;
     const options: { value: string; label: string }[] = [
       { value: '', label: 'Select Topic' },
     ];
@@ -111,10 +122,13 @@ export class ComposeForumPostComponent
       options.push({ value: topic.id, label: topic.title });
     }
     options.push({ value: 'new', label: '+ Create New Topic' });
+    this.topicOptionCache = { source: this.availableTopics, options };
     return options;
   }
 
   get threadOptions() {
+    if (this.threadOptionCache?.source === this.availableThreads)
+      return this.threadOptionCache.options;
     const options: { value: string; label: string }[] = [
       { value: '', label: 'Select Thread' },
     ];
@@ -122,6 +136,7 @@ export class ComposeForumPostComponent
       options.push({ value: thread.id, label: thread.title });
     }
     options.push({ value: 'new', label: '+ Create New Thread' });
+    this.threadOptionCache = { source: this.availableThreads, options };
     return options;
   }
 

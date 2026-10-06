@@ -25,6 +25,8 @@ import {
 } from './sponsorship';
 import {
   CommunityDto,
+  CommunityRosterQueryDto,
+  CommunityChatMembershipsQueryDto,
   CommunityRefDto,
   CreateCommunityDto,
   JoinCommunityDto,
@@ -79,6 +81,20 @@ const COVERED: Array<{
   invalid: Record<string, unknown>;
   invalidProps: string[];
 }> = [
+  {
+    pattern: CommunityCommands.GET_VISIBLE_MEMBERS,
+    dto: CommunityRosterQueryDto,
+    valid: { communityId: 'community-1', requestingProfileId: 'profile-1' },
+    invalid: {},
+    invalidProps: ['communityId'],
+  },
+  {
+    pattern: CommunityCommands.GET_CHAT_MEMBERSHIPS,
+    dto: CommunityChatMembershipsQueryDto,
+    valid: { profileId: 'profile-1' },
+    invalid: {},
+    invalidProps: ['profileId'],
+  },
   {
     pattern: PostCommands.CREATE,
     dto: CreateSocialPostDto,

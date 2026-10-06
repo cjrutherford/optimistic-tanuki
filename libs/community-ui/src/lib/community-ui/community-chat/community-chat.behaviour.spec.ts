@@ -487,11 +487,11 @@ describe('CommunityChatComponent behaviour', () => {
     });
   });
 
-  it('tears the shared socket down on destroy', () => {
+  it('leaves the shared socket connected when its view is destroyed', () => {
     setup();
 
     component.ngOnDestroy();
 
-    expect(socketChatService.destroy).toHaveBeenCalledTimes(1);
+    expect(socketChatService.destroy).not.toHaveBeenCalled();
   });
 });

@@ -44,6 +44,16 @@ describe('ChatController', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
+          provide: ServiceTokens.SOCIAL_SERVICE,
+          useValue: {
+            send: jest.fn(() =>
+              of([
+                { profileId: 'profile-1', status: 'approved', role: 'owner' },
+              ])
+            ),
+          },
+        },
+        {
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
           useValue: chatService,
         },

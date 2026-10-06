@@ -243,7 +243,10 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
       const updatedMemberships = new Map(this.userMemberships());
       updatedMemberships.set(community.id, membership);
       this.userMemberships.set(updatedMemberships);
-      await Promise.all([this.loadTopActive(), this.loadAllCommunities()]);
+      await Promise.all([
+        this.loadTopActive(),
+        this.searchCommunities(this.searchControl.value || ''),
+      ]);
       await this.loadUserMemberships();
       if (typeof window !== 'undefined') {
         window.dispatchEvent(

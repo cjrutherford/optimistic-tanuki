@@ -1,6 +1,7 @@
 import { APIRequestContext, Page, expect, test } from '@playwright/test';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import { randomUUID } from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
 
 test.skip(
@@ -157,7 +158,7 @@ test('RR05 forum scope and writes: public durable discussion stays in its app an
       title: marker('HTTP thread'),
       description: 'Durable discussion',
       content: 'A real authenticated thread',
-      profileId: author.profileId,
+      profileId: other.profileId,
       topicId: fixture.topic.id,
     };
     const allowedThread = await authorContext.post(
@@ -165,6 +166,7 @@ test('RR05 forum scope and writes: public durable discussion stays in its app an
       { headers, data: threadData }
     );
     expect(allowedThread.status(), await allowedThread.text()).toBe(201);
+    expect((await allowedThread.json()).profileId).toBe(author.profileId);
     const wrongParent = await authorContext.post(origin + '/api/forum/thread', {
       headers,
       data: { ...threadData, topicId: sibling.topic.id },
@@ -180,6 +182,21 @@ test('RR05 forum scope and writes: public durable discussion stays in its app an
       const text = await response.text();
       expect(text).toContain(fixture.title);
       expect.soft(text, path).not.toContain(sibling.title);
+    }
+    for (const path of [
+      `topic/${sibling.topic.id}`,
+      `thread/${sibling.thread.id}`,
+      `post/${sibling.post.id}`,
+    ]) {
+      const response = await anonymous.get(origin + '/api/forum/' + path, {
+        headers,
+      });
+      expect
+        .soft([403, 404], 'sibling detail ' + path)
+        .toContain(response.status());
+      expect
+        .soft(await response.text(), 'sibling detail ' + path)
+        .not.toContain(sibling.title);
     }
     for (const reader of [anonymous, outsider]) {
       const update = await reader.put(
@@ -291,6 +308,20 @@ test('RR05 community browser: approved members exchange live messages and retain
       memberPage.locator('.message-text').filter({ hasText: content }).first(),
       'stored history after refresh'
     ).toBeVisible({ timeout: 15000 });
+    expect(
+      (
+        await memberPage.request.post(
+          origin + `/api/social/community/${community.id}/leave`,
+          { headers }
+        )
+      ).status()
+    ).toBe(201);
+    await expect(memberPage.locator('.community-chat')).not.toContainText(
+      content
+    );
+    await expect(
+      memberPage.locator('.community-chat textarea.compose-textarea')
+    ).toHaveCount(0);
   } finally {
     await memberContext.close();
   }
@@ -576,6 +607,18 @@ test('RR05 community permissions: private room access requires current membershi
     expect
       .soft(await roster.text(), 'private member roster')
       .not.toContain(member.profileId);
+    for (const path of [
+      `/api/social/community/${community.id}`,
+      `/api/social/community/slug/${community.slug}`,
+      '/api/social/community',
+      '/api/social/community/top-active?appScope=client-interface&limit=50',
+    ]) {
+      const metadata = await outsider.get(origin + path, { headers });
+      expect.soft(metadata.status(), 'community metadata ' + path).toBe(200);
+      expect
+        .soft(await metadata.text(), 'roster hidden in metadata ' + path)
+        .not.toContain(member.profileId);
+    }
     const outsiderRead = await outsider.get(
       origin + '/api/chat/messages/' + room.id,
       { headers }
@@ -693,6 +736,7 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
     );
     sockets.push(outsiderSocket);
     const legitimate = marker('authorized socket message');
+    const messageId = randomUUID();
     const received = new Promise<unknown>((resolve, reject) => {
       const deadline = setTimeout(
         () => reject(new Error('Authorized socket message not delivered')),
@@ -704,6 +748,7 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
       });
     });
     aliceSocket.emit('message', {
+      id: messageId,
       conversationId: conversation.id,
       senderId: alice.profileId,
       recipientIds: [bob.profileId],
@@ -711,6 +756,38 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
       type: 'chat',
     });
     expect(JSON.stringify(await received)).toContain(legitimate);
+    aliceSocket.disconnect();
+    const restored = await chatSocket(aliceContext, alice.profileId);
+    sockets.push(restored);
+    const resent = new Promise<void>((resolve, reject) => {
+      const deadline = setTimeout(
+        () => reject(new Error('Reconnect resend not acknowledged')),
+        10000
+      );
+      bobSocket.once('message', (payload) => {
+        clearTimeout(deadline);
+        expect(JSON.stringify(payload)).toContain(legitimate);
+        resolve();
+      });
+    });
+    restored.emit('message', {
+      id: messageId,
+      conversationId: conversation.id,
+      senderId: alice.profileId,
+      recipientIds: [bob.profileId],
+      content: legitimate,
+      type: 'chat',
+    });
+    await resent;
+    const history = await bobContext.get(
+      origin + '/api/chat/messages/' + conversation.id,
+      { headers }
+    );
+    expect(history.status()).toBe(200);
+    expect(
+      (await history.json()).filter((message) => message.id === messageId)
+    ).toHaveLength(1);
+
     const forged = marker('forged socket message');
     const messages: unknown[] = [];
     bobSocket.on('message', (payload) => messages.push(payload));
@@ -751,5 +828,339 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
       bobContext.dispose(),
       outsiderContext.dispose(),
     ]);
+  }
+});
+
+test('RR05 forum browser authoring: create a durable thread and long-form reply through the real UI', async ({
+  playwright,
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().startsWith('Global error:'))
+      browserErrors.push(message.text());
+  });
+  const request = await playwright.request.newContext();
+  try {
+    const author = await account(request, 'browser-author');
+    const fixture = await forumFixture(author, 'public');
+    await browserLogin(page, author.email);
+    await page.goto('/forum/topic/' + fixture.topic.id);
+    await page
+      .getByRole('button', { name: 'Create New Thread', exact: true })
+      .click();
+    const form = page.locator('lib-create-thread');
+    await expect(form).toBeVisible();
+    await form.locator('select').first().selectOption(fixture.topic.id);
+    const title = marker('browser durable thread');
+    const description =
+      'A discussion that remains understandable after refresh';
+    await form.locator('input[placeholder="Thread Title"]').fill(title);
+    await form.locator('input[placeholder="Description"]').fill(description);
+    await form
+      .locator('textarea[placeholder="Thread Content"]')
+      .fill('Initial long-form context');
+    const createResponse = page.waitForResponse(
+      (r) =>
+        r.url().endsWith('/api/forum/thread') && r.request().method() === 'POST'
+    );
+    await form
+      .getByRole('button', { name: 'Create Thread', exact: true })
+      .click();
+    const created = await createResponse;
+    expect(created.status(), await created.text()).toBe(201);
+    const thread = await created.json();
+    expect(thread.userId).toBe(author.userId);
+    expect(thread.profileId).toBe(author.profileId);
+    await expect(page).toHaveURL('/forum/thread/' + thread.id);
+    await expect(page.locator('.thread-detail')).toContainText(description);
+    await page.getByRole('button', { name: 'New Post', exact: true }).click();
+    const composer = page.locator('lib-compose-forum-post');
+    const reply =
+      marker('Long-form browser reply') +
+      ' — durable discussion with context, a proposal, and an explicit decision.';
+    await composer.locator('[contenteditable="true"]').fill(reply);
+    const postResponse = page.waitForResponse(
+      (r) =>
+        r.url().endsWith('/api/forum/post') && r.request().method() === 'POST'
+    );
+    await composer
+      .getByRole('button', { name: 'Post to Forum', exact: true })
+      .click();
+    const posted = await postResponse;
+    expect(posted.status(), await posted.text()).toBe(201);
+    expect((await posted.json()).profileId).toBe(author.profileId);
+    await expect(page.locator('.posts-list')).toContainText(reply);
+    await page.reload();
+    await expect(page.locator('.thread-detail')).toContainText(title);
+    await expect(page.locator('.posts-list')).toContainText(reply);
+    expect(browserErrors).toEqual([]);
+  } finally {
+    await request.dispose();
+  }
+});
+
+test('RR05 socket direct creation: verified app scope applies to recipient eligibility', async ({
+  playwright,
+}) => {
+  const aliceContext = await playwright.request.newContext();
+  const bobContext = await playwright.request.newContext();
+  const profileClient = ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: { host: '127.0.0.1', port: 3002 },
+  });
+  let socket: Socket | undefined;
+  try {
+    const alice = await account(aliceContext, 'socket-scope-alice');
+    const bob = await account(bobContext, 'socket-scope-bob');
+    await profileClient.connect();
+    const sibling = await firstValueFrom(
+      profileClient.send(
+        { cmd: 'Create:Profile' },
+        {
+          userId: bob.userId,
+          name: marker('sibling profile'),
+          description: '',
+          profilePic: '',
+          coverPic: '',
+          bio: '',
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+          appScope: 'forgeofwill',
+        }
+      )
+    );
+    expect(sibling.appScope).toBe('forgeofwill');
+    expect(sibling.id).not.toBe(bob.profileId);
+    const restDenied = await aliceContext.post(
+      origin + '/api/chat/conversations/direct/get-or-create',
+      { headers, data: { recipientProfileId: sibling.id } }
+    );
+    expect([403, 404]).toContain(restDenied.status());
+    socket = await chatSocket(aliceContext, alice.profileId);
+    const command = async (participantIds: string[]) =>
+      new Promise<{ event: string; payload: unknown }>((resolve, reject) => {
+        const deadline = setTimeout(() => {
+          cleanup();
+          reject(
+            new Error(
+              'Direct creation did not acknowledge acceptance or denial'
+            )
+          );
+        }, 10000);
+        const cleanup = () => {
+          clearTimeout(deadline);
+          socket?.off('conversation', accepted);
+          socket?.off('exception', denied);
+        };
+        const accepted = (payload: unknown) => {
+          cleanup();
+          resolve({ event: 'conversation', payload });
+        };
+        const denied = (payload: unknown) => {
+          cleanup();
+          resolve({ event: 'exception', payload });
+        };
+        socket!.once('conversation', accepted);
+        socket!.once('exception', denied);
+        socket!.emit('get_or_create_direct_chat', { participantIds });
+      });
+    const allowed = await command([alice.profileId, bob.profileId]);
+    expect(allowed.event, JSON.stringify(allowed.payload)).toBe('conversation');
+    expect(allowed.payload).toEqual(
+      expect.objectContaining({
+        participants: expect.arrayContaining([alice.profileId, bob.profileId]),
+      })
+    );
+    const denied = await command([alice.profileId, sibling.id]);
+    expect(denied.event, JSON.stringify(denied.payload)).toBe('exception');
+    const list = await aliceContext.get(
+      origin + '/api/chat/conversations/find',
+      { headers }
+    );
+    expect(list.status()).toBe(200);
+    expect(await list.text()).not.toContain(sibling.id);
+  } finally {
+    socket?.disconnect();
+    profileClient.close();
+    await Promise.all([aliceContext.dispose(), bobContext.dispose()]);
+  }
+});
+
+test('RR05 community browser journey: create, find, request membership and approve through the real UI', async ({
+  browser,
+  page,
+}) => {
+  test.setTimeout(90000);
+  const memberContext = await browser.newContext();
+  try {
+    const owner = await account(page.request, 'journey-owner');
+    const member = await account(memberContext.request, 'journey-member');
+    await browserLogin(page, owner.email);
+    await page.goto('/communities/create');
+    const form = page.locator('lib-create-community');
+    const name = marker('browser membership');
+    await form.getByLabel('Community Name', { exact: true }).fill(name);
+    await form
+      .getByLabel('Description', { exact: true })
+      .fill('A community with an explicit approval policy');
+    await form.locator('select').selectOption('approval_required');
+    const created = page.waitForResponse(
+      (r) =>
+        r.url().endsWith('/api/social/community') &&
+        r.request().method() === 'POST'
+    );
+    await form
+      .getByRole('button', { name: 'Create Community', exact: true })
+      .click();
+    const response = await created;
+    expect(response.status(), await response.text()).toBe(201);
+    const community = await response.json();
+    expect(community.isPrivate).toBe(false);
+    expect(community.joinPolicy).toBe('approval_required');
+    await expect(page).toHaveURL(
+      `/communities/manage/${community.slug}/members`
+    );
+    const memberPage = await memberContext.newPage();
+    await browserLogin(memberPage, member.email);
+    await memberPage.goto('/communities');
+    await memberPage
+      .locator('input[placeholder="Search by name or description..."]')
+      .fill(name);
+    const card = memberPage
+      .locator('.communities-grid .community-card')
+      .filter({ hasText: name });
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText('approval_required');
+    const joinResponse = memberPage.waitForResponse(
+      (r) =>
+        r.url().endsWith(`/api/social/community/${community.id}/join`) &&
+        r.request().method() === 'POST'
+    );
+    await card.getByRole('button', { name: 'Join', exact: true }).click();
+    const joined = await joinResponse;
+    expect(joined.status(), await joined.text()).toBe(201);
+    expect((await joined.json()).status).toBe('pending');
+    await expect(
+      card.getByRole('button', { name: 'Pending', exact: true })
+    ).toBeVisible();
+    const management = await memberPage.request.post(
+      origin + `/api/social/community/${community.id}/chat-room`,
+      { headers, data: { ownerId: member.profileId } }
+    );
+    expect([403, 404]).toContain(management.status());
+    await page.reload();
+    await page.getByRole('button', { name: /Pending Requests/ }).click();
+    const approval = page.waitForResponse(
+      (r) => r.url().endsWith('/approve') && r.request().method() === 'POST'
+    );
+    await page.getByRole('button', { name: 'Approve', exact: true }).click();
+    expect((await approval).status()).toBe(201);
+    await memberPage.reload();
+    await memberPage
+      .locator('input[placeholder="Search by name or description..."]')
+      .fill(name);
+    await expect(
+      card.getByRole('button', { name: 'View Posts', exact: true })
+    ).toBeVisible();
+    await card.getByRole('button', { name: 'View Posts', exact: true }).click();
+    await expect(memberPage).toHaveURL(`/communities/${community.slug}/posts`);
+  } finally {
+    await memberContext.close();
+  }
+});
+
+test('RR05 project membership: revocation immediately removes chat access without a remaining-member refresh', async ({
+  playwright,
+}) => {
+  const ownerContext = await playwright.request.newContext();
+  const memberContext = await playwright.request.newContext();
+  const projects = ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: { host: '127.0.0.1', port: 3006 },
+  });
+  const chats = ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: { host: '127.0.0.1', port: 3007 },
+  });
+  try {
+    const owner = await account(ownerContext, 'project-owner');
+    const member = await account(memberContext, 'project-member');
+    await Promise.all([projects.connect(), chats.connect()]);
+    const project = await firstValueFrom(
+      projects.send(
+        { cmd: 'project.create' },
+        {
+          owner: owner.profileId,
+          createdBy: owner.profileId,
+          members: [member.profileId],
+          name: marker('project'),
+          description: 'Local discussion gate',
+          status: 'PLANNING',
+          startDate: new Date().toISOString(),
+        }
+      )
+    );
+    const conversation = await firstValueFrom(
+      chats.send(
+        { cmd: 'GET_OR_CREATE_PROJECT_CHAT' },
+        {
+          projectId: project.id,
+          ownerId: owner.profileId,
+          participants: [member.profileId],
+          title: project.name,
+        }
+      )
+    );
+    const sent = await ownerContext.post(origin + '/api/chat/messages', {
+      headers,
+      data: {
+        conversationId: conversation.id,
+        content: marker('project context'),
+        recipientIds: [member.profileId],
+      },
+    });
+    expect(sent.status(), await sent.text()).toBe(201);
+    expect(
+      (
+        await memberContext.get(
+          origin + '/api/chat/messages/' + conversation.id,
+          { headers }
+        )
+      ).status()
+    ).toBe(200);
+    await firstValueFrom(
+      projects.send(
+        { cmd: 'projectMember.leave' },
+        { projectId: project.id, requestingUserId: member.profileId }
+      )
+    );
+    for (const path of ['/api/chat/messages/', '/api/chat/conversations/id/']) {
+      const denied = await memberContext.get(origin + path + conversation.id, {
+        headers,
+      });
+      expect([403, 404], path).toContain(denied.status());
+    }
+    const list = await memberContext.get(
+      origin + '/api/chat/conversations/find',
+      { headers }
+    );
+    expect(list.status()).toBe(200);
+    expect(await list.text()).not.toContain(conversation.id);
+    const denied = await memberContext.post(origin + '/api/chat/messages', {
+      headers,
+      data: {
+        conversationId: conversation.id,
+        content: 'revoked',
+        recipientIds: [owner.profileId],
+      },
+    });
+    expect([403, 404]).toContain(denied.status());
+  } finally {
+    projects.close();
+    chats.close();
+    await Promise.all([ownerContext.dispose(), memberContext.dispose()]);
   }
 });

@@ -175,6 +175,7 @@ export class SocketChatService {
       disconnect: () => socket,
       emit: () => false,
       on: () => socket,
+      off: () => socket,
     };
 
     return socket as unknown as Socket;
@@ -220,16 +221,20 @@ export class SocketChatService {
    * Registers a callback to be invoked when a message is received.
    * @param callback The callback function.
    */
-  onMessage(callback: (message: ChatMessage) => void): void {
-    this.socket.on('message', callback);
+  onMessage(callback: (message: ChatMessage) => void): () => void {
+    const listener = (message: ChatMessage) =>
+      callback({ ...message, timestamp: new Date(message.timestamp) });
+    this.socket.on('message', listener);
+    return () => this.socket.off('message', listener);
   }
 
   /**
    * Registers a callback to be invoked when a conversation is received.
    * @param callback The callback function.
    */
-  onConversations(callback: (data: ChatConversation[]) => void): void {
+  onConversations(callback: (data: ChatConversation[]) => void): () => void {
     this.socket.on('conversations', callback);
+    return () => this.socket.off('conversations', callback);
   }
 
   /**

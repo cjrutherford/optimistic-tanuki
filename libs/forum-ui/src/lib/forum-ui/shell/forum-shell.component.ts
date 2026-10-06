@@ -154,6 +154,7 @@ export class ForumShellComponent implements OnInit {
   private async loadThread(threadId: string) {
     try {
       const thread = await this.forumService.getThread(threadId);
+      await this.loadTopic(thread.topicId);
       this.currentThread.set(thread);
 
       const posts = await this.forumService.getPostsByThread(threadId);

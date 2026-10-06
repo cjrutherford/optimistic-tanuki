@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Body,
   Controller,
   Delete,
@@ -61,6 +62,7 @@ import { WorkspaceContext } from '../../../decorators/workspace-context.decorato
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 import { CommunityWorkspaceProvisioner } from '../../../app/community-provisioning/community-workspace-provisioner.service';
 import { CommunityInviteMailer } from './community-invite.mailer';
+import { ChatGateway } from '../../../app/chat-gateway/chat.gateway';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 @ApiBearerAuth()
@@ -89,7 +91,10 @@ export class CommunityController {
     @Optional() private readonly socialGateway?: SocialGateway
   ) {}
 
+  @Optional() @Inject(ChatGateway) private readonly chatGateway?: ChatGateway;
+
   private invalidateSocialContent(): void {
+    void this.chatGateway?.invalidateConversations();
     this.socialGateway?.broadcastSocialContentInvalidated();
   }
 
@@ -197,12 +202,17 @@ export class CommunityController {
   })
   async getTopActiveCommunities(
     @Query('limit') limit?: number,
-    @Query('appScope') appScope?: string
+    @Query('appScope') appScope?: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.GET_TOP_ACTIVE },
-        { limit: limit || 10, appScope: appScope || 'social' }
+        {
+          limit: limit || 10,
+          appScope: appScope || 'social',
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -216,10 +226,17 @@ export class CommunityController {
     type: CommunityDto,
   })
   async getCommunityBySlug(
-    @Param('slug') slug: string
+    @Param('slug') slug: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto | null> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND_BY_SLUG }, { slug })
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND_BY_SLUG },
+        {
+          slug,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
+      )
     );
   }
 
@@ -230,9 +247,18 @@ export class CommunityController {
     description: 'The community has been successfully retrieved.',
     type: CommunityDto,
   })
-  async getCommunity(@Param('id') id: string): Promise<CommunityDto> {
+  async getCommunity(
+    @Param('id') id: string,
+    @User() user?: UserDetails
+  ): Promise<CommunityDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND },
+        {
+          id,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
+      )
     );
   }
 
@@ -245,12 +271,17 @@ export class CommunityController {
   })
   async searchCommunities(
     @Body() criteria: SearchCommunityDto,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.FIND_MANY },
-        { criteria, appScope }
+        {
+          criteria,
+          appScope,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -265,12 +296,17 @@ export class CommunityController {
   @ApiQuery({ name: 'name', required: false })
   async listCommunities(
     @Query('name') name?: string,
-    @AppScope() appScope?: string
+    @AppScope() appScope?: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.FIND_MANY },
-        { criteria: { name }, appScope }
+        {
+          criteria: { name },
+          appScope,
+          ...(user?.profileId ? { requestingProfileId: user.profileId } : {}),
+        }
       )
     );
   }
@@ -394,13 +430,21 @@ export class CommunityController {
     description: 'The members have been successfully retrieved.',
     type: [CommunityMemberDto],
   })
-  async getMembers(@Param('id') id: string): Promise<CommunityMemberDto[]> {
+  async getMembers(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<CommunityMemberDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
-        { cmd: CommunityCommands.GET_MEMBERS },
-        { communityId: id }
+        { cmd: CommunityCommands.GET_VISIBLE_MEMBERS },
+        { communityId: id, requestingProfileId: user?.profileId }
       )
-    );
+    ).catch((error) => {
+      throw new HttpException(
+        { message: error?.message },
+        error?.statusCode ?? 503
+      );
+    });
   }
 
   @Get('user/communities')
@@ -432,7 +476,8 @@ export class CommunityController {
   })
   async getCommunitiesByProfileId(
     @Param('profileId') profileId: string,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user?: UserDetails
   ): Promise<CommunityDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
@@ -590,7 +635,12 @@ export class CommunityController {
         { cmd: CommunityCommands.ACCEPT_INVITE_BY_TOKEN },
         { token: dto.token, userId: user.userId, profileId: user.profileId }
       )
-    );
+    ).catch((error) => {
+      throw new HttpException(
+        { message: error?.message ?? 'Invitation unavailable' },
+        error?.statusCode ?? 503
+      );
+    });
     return community;
   }
 
@@ -1053,19 +1103,23 @@ export class CommunityController {
     description: 'The community chat room',
   })
   async getChatRoom(
-    @Param('id') communityId: string
+    @Param('id') communityId: string,
+    @User() user: UserDetails
   ): Promise<{ id: string } | null> {
     try {
       const result = await firstValueFrom(
         this.socialClient.send(
           { cmd: 'GET_COMMUNITY_CHAT_ROOM' },
-          { communityId }
+          { communityId, requestingProfileId: user.profileId }
         )
       );
       return result;
     } catch (err) {
       this.logger.error(`Failed to get chat room: ${err}`);
-      return null;
+      throw new HttpException(
+        { message: err?.message ?? 'Chat room unavailable' },
+        err?.statusCode ?? 503
+      );
     }
   }
 

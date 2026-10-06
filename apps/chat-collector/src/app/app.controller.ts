@@ -38,9 +38,20 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_CONVERSATION })
-  async getConversation(@Payload() data: { conversationId: string }) {
+  async getConversation(
+    @Payload()
+    data: {
+      conversationId: string;
+      requestingProfileId?: string;
+      deliverySenderId?: string;
+    }
+  ) {
     this.l.log(`Retrieving conversation for ID: ${data.conversationId}`);
-    return await this.appService.getConversation(data.conversationId);
+    return await this.appService.getConversation(
+      data.conversationId,
+      data.requestingProfileId,
+      data.deliverySenderId
+    );
   }
 
   @MessagePattern({ cmd: ChatCommands.CREATE_COMMUNITY_CHAT })

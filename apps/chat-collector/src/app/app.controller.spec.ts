@@ -107,7 +107,11 @@ describe('AppController', () => {
       expect(logger.log).toHaveBeenCalledWith(
         `Retrieving conversation for ID: ${conversationId}`
       );
-      expect(appService.getConversation).toHaveBeenCalledWith(conversationId);
+      expect(appService.getConversation).toHaveBeenCalledWith(
+        conversationId,
+        undefined,
+        undefined
+      );
       expect(result).toEqual(expectedResult);
     });
   });

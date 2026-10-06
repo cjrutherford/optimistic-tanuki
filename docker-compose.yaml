@@ -772,6 +772,10 @@ services:
       - '${CHAT_COLLECTOR_PORT:-3007}:3007'
     environment:
       <<: *service_db_env
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      PROJECT_PLANNING_HOST: project-planning
+      PROJECT_PLANNING_PORT: 3006
     depends_on:
       postgres:
         condition: service_healthy

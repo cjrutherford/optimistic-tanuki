@@ -798,6 +798,45 @@ describe('CommunityService', () => {
     });
   });
 
+  describe('discussion audience and invitation lifecycle', () => {
+    it('protects private rosters while retaining approved member access', async () => {
+      communityRepo.findOne.mockResolvedValue({
+        id: 'community',
+        isPrivate: true,
+      } as any);
+      memberRepo.find.mockResolvedValue([
+        { profileId: 'member', communityId: 'community', status: 'approved' },
+      ] as any);
+      await expect(
+        service.getVisibleMembers('community', 'outsider')
+      ).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+      await expect(
+        service.getVisibleMembers('community', 'member')
+      ).resolves.toHaveLength(1);
+    });
+    it('does not grant membership for cancelled or expired invitations', async () => {
+      for (const state of [
+        { status: 'rejected', expiresAt: new Date(Date.now() + 1000) },
+        { status: 'pending', expiresAt: new Date(Date.now() - 1000) },
+      ]) {
+        inviteRepo.findOne.mockResolvedValue({
+          id: 'invite',
+          communityId: 'community',
+          ...state,
+        } as any);
+        await expect(
+          service.acceptInviteByToken('token', 'guest', 'profile')
+        ).rejects.toMatchObject({
+          error: expect.objectContaining({ statusCode: 404 }),
+        });
+        expect(memberRepo.save).not.toHaveBeenCalled();
+        expect(inviteRepo.save).not.toHaveBeenCalled();
+      }
+    });
+  });
+
   describe('findInvitePreview', () => {
     it('returns the public preview without the token', async () => {
       inviteRepo.findOne.mockResolvedValue({

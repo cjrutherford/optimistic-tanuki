@@ -90,18 +90,23 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   currentUserId = '';
   isOwner = signal(false);
   private currentCommunityId: string | null = null;
+  private readonly listeners: (() => void)[] = [];
 
   async ngOnInit() {
     this.route.data.subscribe((data: any) => {
       this.currentUserId = data['currentUserId'] || '';
     });
 
-    this.socketChatService.onConversations(async (conversations: any[]) => {
-      await this.handleConversationsLoaded(conversations);
-    });
-    this.socketChatService.onMessage((message) => {
-      this.appendMessageToConversation(message);
-    });
+    this.listeners.push(
+      this.socketChatService.onConversations(async (conversations: any[]) => {
+        await this.handleConversationsLoaded(conversations);
+      })
+    );
+    this.listeners.push(
+      this.socketChatService.onMessage((message) => {
+        this.appendMessageToConversation(message);
+      })
+    );
 
     const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
     if (!communitySlug) {
@@ -245,6 +250,12 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     );
 
     if (communityConversations.length === 0) {
+      this.chatConversations.set([]);
+      this.chatContacts.set([]);
+      this.chatRoomId.set(null);
+      this.error.set(
+        'Community chat is unavailable. Approved membership is required.'
+      );
       return;
     }
 
@@ -348,7 +359,7 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.socketChatService.destroy();
+    this.listeners.forEach((dispose) => dispose?.());
   }
 
   async createChatRoom() {

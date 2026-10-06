@@ -331,6 +331,22 @@ describe('FindCommunitiesComponent behaviour', () => {
   });
 
   describe('joining', () => {
+    it('keeps the searched community visible while its join request becomes pending', async () => {
+      await initialise();
+      const community = buildCommunity({ id: 'searched-community' });
+      component.searchControl.setValue('searched', { emitEvent: false });
+      communityService.findAll.mockImplementation(async (query) =>
+        query.name === 'searched' ? [community] : []
+      );
+      communityService.join.mockResolvedValue({
+        communityId: community.id,
+        status: 'pending',
+      });
+      await component.joinCommunity(community);
+      expect(component.communities()).toEqual([community]);
+      expect(component.getMembershipStatus(community.id)).toBe('pending');
+    });
+
     it.each([
       {
         name: 'the rejection message',

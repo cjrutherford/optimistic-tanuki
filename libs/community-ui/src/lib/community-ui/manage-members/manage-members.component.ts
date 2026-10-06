@@ -167,8 +167,12 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   }
 
   isAdmin(): boolean {
-    const community = this.community();
-    return community?.ownerId === this.currentUserId;
+    return this.members().some(
+      (member) =>
+        member.profileId === this.currentUserId &&
+        member.status === 'approved' &&
+        ['owner', 'admin', 'moderator'].includes(member.role)
+    );
   }
 
   async approveRequest(member: CommunityMemberDto) {

@@ -895,13 +895,21 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: CommunityCommands.FIND })
-  async findCommunity(@Payload('id') id: string) {
-    return await this.communityService.findOne(id);
+  async findCommunity(
+    @Payload('id') id: string,
+    @Payload('requestingProfileId') requestingProfileId?: string
+  ) {
+    return await this.communityService.findOne(id, requestingProfileId);
   }
 
   @MessagePattern({ cmd: CommunityCommands.FIND_BY_SLUG })
-  async findCommunityBySlug(@Payload() data: { slug: string }) {
-    return await this.communityService.findBySlug(data.slug);
+  async findCommunityBySlug(
+    @Payload() data: { slug: string; requestingProfileId?: string }
+  ) {
+    return await this.communityService.findBySlug(
+      data.slug,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.LIST_LOCALITY })
@@ -921,16 +929,34 @@ export class AppController {
 
   @MessagePattern({ cmd: CommunityCommands.FIND_MANY })
   async findAllCommunities(
-    @Payload() data: { criteria: SearchCommunityDto; appScope: string }
+    @Payload()
+    data: {
+      criteria: SearchCommunityDto;
+      appScope: string;
+      requestingProfileId?: string;
+    }
   ) {
-    return await this.communityService.findAll(data.criteria, data.appScope);
+    return await this.communityService.findAll(
+      data.criteria,
+      data.appScope,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_TOP_ACTIVE })
   async getTopActiveCommunities(
-    @Payload() data: { limit: number; appScope: string }
+    @Payload()
+    data: {
+      limit: number;
+      appScope: string;
+      requestingProfileId?: string;
+    }
   ) {
-    return await this.communityService.getTopActive(data.limit, data.appScope);
+    return await this.communityService.getTopActive(
+      data.limit,
+      data.appScope,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.UPDATE })
@@ -968,6 +994,21 @@ export class AppController {
   ) {
     await this.communityService.leave(data.communityId, data.userId);
     return { success: true };
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_CHAT_MEMBERSHIPS })
+  async getChatMemberships(@Payload() data: { profileId: string }) {
+    return this.communityService.getChatMemberships(data.profileId);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.GET_VISIBLE_MEMBERS })
+  async getVisibleCommunityMembers(
+    @Payload() data: { communityId: string; requestingProfileId?: string }
+  ) {
+    return this.communityService.getVisibleMembers(
+      data.communityId,
+      data.requestingProfileId
+    );
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_MEMBERS })
@@ -1161,7 +1202,14 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: 'GET_COMMUNITY_CHAT_ROOM' })
-  async getCommunityChatRoom(@Payload() data: { communityId: string }) {
+  async getCommunityChatRoom(
+    @Payload() data: { communityId: string; requestingProfileId?: string }
+  ) {
+    if (data.requestingProfileId)
+      await this.communityService.assertChatMembership(
+        data.communityId,
+        data.requestingProfileId
+      );
     return await this.communityService.getCommunityChatRoom(data.communityId);
   }
 

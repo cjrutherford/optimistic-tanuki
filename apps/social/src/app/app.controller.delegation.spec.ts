@@ -942,7 +942,8 @@ describe('AppController delegation', () => {
         h.controller.findCommunityBySlug({ slug: 'my-community' })
       ).resolves.toEqual({ id: 'c1' });
       expect(h.communityService.findBySlug).toHaveBeenCalledWith(
-        'my-community'
+        'my-community',
+        undefined
       );
 
       await h.controller.listLocalityCommunities({
@@ -963,14 +964,19 @@ describe('AppController delegation', () => {
       });
       expect(h.communityService.findAll).toHaveBeenCalledWith(
         { name: 'x' },
-        'app'
+        'app',
+        undefined
       );
 
       await h.controller.getTopActiveCommunities({
         limit: 5,
         appScope: 'app',
       });
-      expect(h.communityService.getTopActive).toHaveBeenCalledWith(5, 'app');
+      expect(h.communityService.getTopActive).toHaveBeenCalledWith(
+        5,
+        'app',
+        undefined
+      );
 
       await h.controller.updateCommunity({
         id: 'c1',

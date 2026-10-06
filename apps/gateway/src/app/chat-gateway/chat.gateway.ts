@@ -11,6 +11,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import {
   ChatCommands,
@@ -167,7 +168,11 @@ export class ChatGateway {
     @MessageBody() payload: ChatMessage,
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const user = this.socketSessionAuth.getUser(client);
+    const user = await this.socketSessionAuth
+      .authenticate(client)
+      .catch((error) => {
+        throw new WsException(error.message);
+      });
     if (payload.senderId && payload.senderId !== user.profileId) {
       throw new UnauthorizedException('Message sender does not match session');
     }
@@ -175,13 +180,31 @@ export class ChatGateway {
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
-    // O26: canonical `recipientIds`; legacy singular `recipientId` still
-    // accepted from older clients.
-    const recipientIds =
-      payload.recipientIds ??
-      (payload as unknown as { recipientId?: string[] }).recipientId ??
-      [];
-    payload.recipientIds = recipientIds;
+    const conversation = await firstValueFrom(
+      this.chatCollectorClient.send(
+        { cmd: ChatCommands.GET_CONVERSATION },
+        {
+          conversationId: payload.conversationId,
+          requestingProfileId: senderId,
+        }
+      )
+    ).catch((error) => {
+      throw new WsException(error);
+    });
+    if (!conversation) throw new WsException('Conversation unavailable');
+    // The collector resolves current community recipients and validates every send.
+    payload.recipientIds = (conversation.participants ?? []).filter(
+      (id) => id !== senderId
+    );
+    const messageReceipt = await firstValueFrom(
+      this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload)
+    ).catch((error) => {
+      throw new WsException(error);
+    });
+    const storedMessage =
+      messageReceipt.messages.find((message) => message.id === payload.id) ??
+      messageReceipt.messages[messageReceipt.messages.length - 1];
+    const recipientIds = storedMessage.recipients ?? [];
     this.updateConnectedSockets(senderId, client, 'connect');
     this.l.log(`Sender ID: ${senderId} connected.`);
 
@@ -219,12 +242,6 @@ export class ChatGateway {
       });
     }
 
-    // Post the message
-    const messageReceipt = await firstValueFrom(
-      this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload)
-    );
-    this.l.log('Message Posted: ', messageReceipt);
-
     // Continue processing for AI recipients if any
     if (aiRecipients && aiRecipients.length > 0) {
       this.l.log('Sending to AI Orchestration Service');
@@ -238,10 +255,13 @@ export class ChatGateway {
       const aiPayload: ChatConversation = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATION },
-          { conversationId: payload.conversationId }
+          {
+            conversationId: payload.conversationId,
+            requestingProfileId: senderId,
+          }
         )
       );
-      aiPayload.messages.push(payload);
+
       this.l.debug(
         "Current ai payload: aiPayload='" +
           JSON.stringify(aiPayload) +
@@ -263,6 +283,19 @@ export class ChatGateway {
             );
 
             if (participantSocket) {
+              await this.socketSessionAuth.authenticate(
+                participantSocket.client
+              );
+              await firstValueFrom(
+                this.chatCollectorClient.send(
+                  { cmd: ChatCommands.GET_CONVERSATION },
+                  {
+                    conversationId,
+                    requestingProfileId: participantId,
+                    deliverySenderId: senderId,
+                  }
+                )
+              );
               const conversations = await firstValueFrom(
                 this.chatCollectorClient.send(
                   { cmd: ChatCommands.GET_CONVERSATIONS },
@@ -322,14 +355,66 @@ export class ChatGateway {
     );
     for (const id of recipientProfileIds) {
       this.l.log(`Notifying recipient: ${id}`);
-      this.server.to(id).emit('message', messageReceipt);
+      try {
+        await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATION },
+            { conversationId: payload.conversationId, requestingProfileId: id }
+          )
+        );
+      } catch {
+        continue;
+      }
       const conversations = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATIONS },
           { profileId: id }
         )
       );
-      this.server.to(id).emit('conversations', conversations || []);
+      for (const connected of this.connectedClients.filter(
+        (item) => item.id === id
+      )) {
+        try {
+          await this.socketSessionAuth.authenticate(connected.client);
+          await firstValueFrom(
+            this.chatCollectorClient.send(
+              { cmd: ChatCommands.GET_CONVERSATION },
+              {
+                conversationId: payload.conversationId,
+                requestingProfileId: id,
+                deliverySenderId: senderId,
+              }
+            )
+          );
+          connected.client.emit('message', {
+            ...storedMessage,
+            conversationId: payload.conversationId,
+            recipientIds: storedMessage.recipients,
+            recipientId: storedMessage.recipients,
+            timestamp: storedMessage.createdAt,
+          });
+          connected.client.emit('conversations', conversations ?? []);
+        } catch {
+          /* Membership, block or session changed before delivery. */
+        }
+      }
+    }
+  }
+
+  async invalidateConversations(): Promise<void> {
+    for (const { id, client } of this.connectedClients) {
+      try {
+        const conversations = await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATIONS },
+            { profileId: id }
+          )
+        );
+        await this.socketSessionAuth.authenticate(client);
+        client.emit('conversations', conversations ?? []);
+      } catch {
+        client.emit('conversations', []);
+      }
     }
   }
 
@@ -339,6 +424,7 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('starting the call to get conversations.');
+    await this.socketSessionAuth.authenticate(client);
     const senderId = this.socketSessionAuth.assertProfile(
       client,
       payload.profileId
@@ -369,12 +455,12 @@ export class ChatGateway {
     }
     if (type === 'connect') {
       this.connectedClients = this.connectedClients.filter(
-        (connectedClient) => connectedClient.id !== senderId
+        (connectedClient) => connectedClient.client !== client
       );
       this.connectedClients.push({ id: senderId, client });
     } else {
       this.connectedClients = this.connectedClients.filter(
-        (c) => c.id !== senderId
+        (c) => c.client !== client
       );
     }
     this.l.debug(
@@ -389,22 +475,49 @@ export class ChatGateway {
     @MessageBody() payload: { participantIds: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const user = this.socketSessionAuth.getUser(client);
-    if (!payload.participantIds.includes(user.profileId)) {
-      payload.participantIds = [user.profileId, ...payload.participantIds];
-    }
-    this.l.log(
-      `get_or_create_direct_chat for participants: ${payload.participantIds.join(
-        ', '
-      )}`
-    );
-    const conversation = await firstValueFrom(
-      this.chatCollectorClient.send(
-        { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
-        { participantIds: payload.participantIds }
+    const user = await this.socketSessionAuth
+      .authenticate(client)
+      .catch((error) => {
+        throw new WsException(error.message);
+      });
+    try {
+      const participants = [...new Set(payload.participantIds ?? [])];
+      const recipients = participants.filter((id) => id !== user.profileId);
+      if (recipients.length !== 1)
+        throw new Error('Exactly one recipient is required');
+      const senderProfile = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: user.profileId }
+        )
+      );
+      const recipient = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.Get },
+          { id: recipients[0] }
+        )
+      );
+      const scope =
+        senderProfile?.appScope === 'owner-console'
+          ? 'global'
+          : senderProfile?.appScope;
+      if (
+        !senderProfile ||
+        !recipient ||
+        recipient.userId === user.userId ||
+        ![scope, 'global', null].includes(recipient.appScope ?? null)
       )
-    );
-    client.emit('conversation', conversation);
+        throw new Error('Recipient is not available in this app');
+      const conversation = await firstValueFrom(
+        this.chatCollectorClient.send(
+          { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+          { participantIds: [user.profileId, recipient.id] }
+        )
+      );
+      client.emit('conversation', conversation);
+    } catch (error) {
+      throw new WsException(error instanceof Error ? error.message : error);
+    }
   }
 
   @SubscribeMessage('get_messages')
@@ -414,7 +527,11 @@ export class ChatGateway {
   ): Promise<void> {
     // The result was resolved and thrown away, so the socket path read any
     // conversation regardless of who was asking.
-    const user = this.socketSessionAuth.getUser(client);
+    const user = await this.socketSessionAuth
+      .authenticate(client)
+      .catch((error) => {
+        throw new WsException(error.message);
+      });
     this.l.log(`get_messages for conversation: ${payload.conversationId}`);
     const messages = await firstValueFrom(
       this.chatCollectorClient.send(
@@ -428,7 +545,6 @@ export class ChatGateway {
     client.emit('messages', messages || []);
   }
 
-  @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
     const disconnectedClient = this.connectedClients.find(
       (c) => c.client === client
@@ -443,18 +559,24 @@ export class ChatGateway {
   /**
    * Broadcast AI status updates to all clients in a conversation
    */
-  private broadcastToConversation(
+  private async broadcastToConversation(
     conversationId: string,
     event: string,
-    data: any
+    data: unknown
   ) {
-    this.l.debug(
-      `Broadcasting ${event} to conversation ${conversationId}:`,
-      data
-    );
-    // Send to all connected clients - in a real implementation, we'd filter by conversation participants
-    this.connectedClients.forEach(({ client }) => {
-      client.emit(event, data);
-    });
+    for (const { id, client } of this.connectedClients) {
+      try {
+        await firstValueFrom(
+          this.chatCollectorClient.send(
+            { cmd: ChatCommands.GET_CONVERSATION },
+            { conversationId, requestingProfileId: id }
+          )
+        );
+        await this.socketSessionAuth.authenticate(client);
+        client.emit(event, data);
+      } catch {
+        /* A revoked or unrelated profile receives no event. */
+      }
+    }
   }
 }

@@ -20,6 +20,7 @@ describe('SocketChatService', () => {
     mockSocket = {
       emit: jest.fn(),
       on: jest.fn(),
+      off: jest.fn(),
       disconnect: jest.fn(),
       connect: jest.fn(),
     };
@@ -86,8 +87,19 @@ describe('SocketChatService', () => {
 
   it('should register on message callback', () => {
     const callback = jest.fn();
-    service.onMessage(callback);
-    expect(mockSocket.on).toHaveBeenCalledWith('message', callback);
+    const dispose = service.onMessage(callback);
+    const listener = mockSocket.on.mock.calls.find(
+      ([event]: [string, unknown]) => event === 'message'
+    )[1];
+    listener({ id: 'm1', content: 'hello', timestamp: '2026-10-06T00:00:00Z' });
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'm1',
+        timestamp: new Date('2026-10-06T00:00:00Z'),
+      })
+    );
+    dispose();
+    expect(mockSocket.off).toHaveBeenCalledWith('message', listener);
   });
 
   it('should disconnect socket on destroy', () => {

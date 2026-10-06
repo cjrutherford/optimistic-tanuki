@@ -61,7 +61,9 @@ describe('ChatGateway', () => {
         {
           provide: SocketSessionAuthService,
           useValue: {
-            authenticate: jest.fn(),
+            authenticate: jest
+              .fn()
+              .mockResolvedValue({ userId: 'user-id', profileId: 'sender-id' }),
             getUser: jest.fn(() => ({
               userId: 'user-id',
               profileId: 'sender-id',
@@ -114,13 +116,30 @@ describe('ChatGateway', () => {
         type: 'chat',
         role: 'user',
       };
-      const messageReceipt = { id: 'msg-1' };
+      const messageReceipt = {
+        id: 'conv-id',
+        participants: ['sender-id', 'recipient-id'],
+        messages: [
+          {
+            id: 'msg-1',
+            senderId: 'sender-id',
+            recipients: ['recipient-id'],
+            content: 'hello',
+            createdAt: new Date(),
+          },
+        ],
+      };
       const aiRecipients = [];
       const conversations = [{ id: 'conv-id' }];
 
-      chatCollectorService.send
-        .mockReturnValueOnce(of(messageReceipt)) // post message
-        .mockReturnValueOnce(of(conversations)); // get conversations
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(
+          cmd === ChatCommands.POST_MESSAGE ||
+            cmd === ChatCommands.GET_CONVERSATION
+            ? messageReceipt
+            : [{ id: 'conv-id' }]
+        )
+      ); // get conversations
 
       telosDocsService.send.mockReturnValue(of(aiRecipients));
 
@@ -136,7 +155,10 @@ describe('ChatGateway', () => {
         { cmd: ChatCommands.GET_CONVERSATIONS },
         { profileId: 'sender-id' }
       );
-      expect(server.to).toHaveBeenCalledWith('sender-id');
+      expect(socket.emit).toHaveBeenCalledWith(
+        'message',
+        expect.objectContaining({ content: 'hello' })
+      );
     });
 
     it('still persists and broadcasts human messages when persona classification is unavailable', async () => {
@@ -152,15 +174,32 @@ describe('ChatGateway', () => {
         type: 'chat',
         role: 'user',
       };
-      const messageReceipt = { id: 'msg-1' };
+      const messageReceipt = {
+        id: 'conv-id',
+        participants: ['sender-id', 'recipient-id'],
+        messages: [
+          {
+            id: 'msg-1',
+            senderId: 'sender-id',
+            recipients: ['recipient-id'],
+            content: 'hello',
+            createdAt: new Date(),
+          },
+        ],
+      };
       const conversations = [{ id: 'conv-id' }];
 
       telosDocsService.send.mockReturnValue(
         throwError(() => new Error('TELOS unavailable'))
       );
-      chatCollectorService.send
-        .mockReturnValueOnce(of(messageReceipt))
-        .mockReturnValueOnce(of(conversations));
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(
+          cmd === ChatCommands.POST_MESSAGE ||
+            cmd === ChatCommands.GET_CONVERSATION
+            ? messageReceipt
+            : [{ id: 'conv-id' }]
+        )
+      );
 
       await expect(
         gateway.handleMessage(payload, socket)
@@ -175,7 +214,10 @@ describe('ChatGateway', () => {
         { cmd: ChatCommands.GET_CONVERSATIONS },
         { profileId: 'sender-id' }
       );
-      expect(server.to).toHaveBeenCalledWith('sender-id');
+      expect(socket.emit).toHaveBeenCalledWith(
+        'message',
+        expect.objectContaining({ content: 'hello' })
+      );
     });
 
     it('should handle a message with AI recipients', async () => {
@@ -191,15 +233,31 @@ describe('ChatGateway', () => {
         type: 'chat',
         role: 'user',
       };
-      const messageReceipt = { id: 'msg-1' };
+      const messageReceipt = {
+        id: 'conv-id',
+        participants: ['sender-id', 'recipient-id'],
+        messages: [
+          {
+            id: 'msg-1',
+            senderId: 'sender-id',
+            recipients: ['recipient-id'],
+            content: 'hello',
+            createdAt: new Date(),
+          },
+        ],
+      };
       const aiRecipients = [{ id: 'ai-recipient-id' }];
       const conversation = { id: 'conv-id', messages: [] };
       const conversations = [conversation];
 
-      chatCollectorService.send
-        .mockReturnValueOnce(of(messageReceipt)) // post message
-        .mockReturnValueOnce(of(conversation)) // get conversation
-        .mockReturnValueOnce(of(conversations)); // get conversations
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(
+          cmd === ChatCommands.POST_MESSAGE ||
+            cmd === ChatCommands.GET_CONVERSATION
+            ? messageReceipt
+            : [{ id: 'conv-id' }]
+        )
+      ); // get conversations
 
       telosDocsService.send.mockReturnValue(of(aiRecipients));
 

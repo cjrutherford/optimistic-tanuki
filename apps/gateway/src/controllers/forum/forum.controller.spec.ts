@@ -72,7 +72,8 @@ describe('ForumController', () => {
       {
         content: 'Updated content',
       },
-      { userId: 'user-1', profileId: 'profile-1' }
+      { userId: 'user-1', profileId: 'profile-1' },
+      'client-interface'
     );
 
     expect(forumClient.send).toHaveBeenCalledWith(
@@ -82,13 +83,14 @@ describe('ForumController', () => {
         data: { content: 'Updated content' },
         userId: 'user-1',
         profileId: 'profile-1',
+        appScope: 'client-interface',
       }
     );
   });
 
   it('uses the header scope instead of the DTO scope when creating a topic', async () => {
     await (forumController as any).createTopic(
-      { userId: 'user-1' },
+      { userId: 'user-1', profileId: 'profile-1' },
       { title: 'Scoped topic', appScope: 'attacker-scope' },
       'client-interface'
     );
@@ -99,6 +101,7 @@ describe('ForumController', () => {
         title: 'Scoped topic',
         appScope: 'client-interface',
         userId: 'user-1',
+        profileId: 'profile-1',
       }
     );
   });
@@ -128,7 +131,10 @@ describe('ForumController', () => {
 
     expect(forumClient.send).toHaveBeenCalledWith(
       { cmd: TopicCommands.FIND_MANY },
-      { where: { appScope: 'client-interface' } }
+      {
+        where: { appScope: 'client-interface' },
+        requestingProfileId: undefined,
+      }
     );
   });
 
@@ -139,12 +145,18 @@ describe('ForumController', () => {
     expect(forumClient.send).toHaveBeenNthCalledWith(
       1,
       { cmd: ThreadCommands.FIND_MANY },
-      { where: { topicId: 'topic-1', appScope: 'client-interface' } }
+      {
+        where: { topicId: 'topic-1', appScope: 'client-interface' },
+        requestingProfileId: undefined,
+      }
     );
     expect(forumClient.send).toHaveBeenNthCalledWith(
       2,
       { cmd: ForumPostCommands.FIND_MANY },
-      { where: { threadId: 'thread-1', appScope: 'client-interface' } }
+      {
+        where: { threadId: 'thread-1', appScope: 'client-interface' },
+        requestingProfileId: undefined,
+      }
     );
   });
 });
