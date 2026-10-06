@@ -147,10 +147,28 @@ describe('SocialController', () => {
       userId: mockUser.id,
       profileId: mockUser.profileId,
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
     await socialController.vote(mockUser, voteDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: VoteCommands.UPVOTE },
       voteDto
+    );
+  });
+
+  it('does not create a vote when the parent post is unavailable', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(null));
+    await expect(
+      socialController.vote(
+        mockUser as any,
+        {
+          value: 1,
+          postId: 'private-post',
+        } as any
+      )
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: VoteCommands.UPVOTE },
+      expect.anything()
     );
   });
 
@@ -161,10 +179,31 @@ describe('SocialController', () => {
       postId: '1',
       profileId: mockUser.profileId,
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
     await socialController.comment(mockUser, commentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.CREATE },
-      commentDto
+      expect.objectContaining({
+        ...commentDto,
+        profileId: mockUser.profileId,
+      })
+    );
+  });
+
+  it('does not create a comment when its parent post is unavailable', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(null));
+    await expect(
+      socialController.comment(
+        mockUser as any,
+        {
+          content: 'private text',
+          postId: 'private-post',
+        } as any
+      )
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: CommentCommands.CREATE },
+      expect.anything()
     );
   });
 
@@ -202,7 +241,11 @@ describe('SocialController', () => {
 
   it('should get a vote by id', async () => {
     const id = '1';
-    await socialController.getVote(id);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ id, post: { id: 'post-1' } })
+    );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
+    await socialController.getVote(id, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: VoteCommands.GET },
       { id }
@@ -210,6 +253,7 @@ describe('SocialController', () => {
   });
 
   it('should find the current user vote for a post', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
       of([
         {
@@ -245,6 +289,7 @@ describe('SocialController', () => {
 
   it('should return all votes when no user filter is provided', async () => {
     const votes = [{ id: 'vote-1', postId: 'post-1', userId: '1', value: 1 }];
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
     (clientProxy.send as jest.Mock).mockReturnValueOnce(of(votes));
 
     const result = await socialController.findVotes(mockUser as any, {
@@ -256,10 +301,27 @@ describe('SocialController', () => {
 
   it('should get an attachment by id', async () => {
     const id = '1';
-    await socialController.getAttachment(id);
+    const attachment = { id, post: { id: 'post-1' } };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(attachment));
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: 'post-1' }));
+    await expect(
+      socialController.getAttachment(id, mockUser as any)
+    ).resolves.toMatchObject(attachment);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND },
       { id }
+    );
+  });
+
+  it('rejects an attachment with no parent post without querying a post', async () => {
+    const id = 'orphan-attachment';
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id }));
+    await expect(
+      socialController.getAttachment(id, mockUser as any)
+    ).rejects.toThrow('Post not found');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND },
+      expect.anything()
     );
   });
 
@@ -388,7 +450,8 @@ describe('SocialController', () => {
       type: AttachmentType.IMAGE,
       description: '1',
     };
-    await socialController.searchAttachments(searchCriteria);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of([]));
+    await socialController.searchAttachments(searchCriteria, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND_MANY },
       searchCriteria
@@ -408,6 +471,7 @@ describe('SocialController', () => {
       name: 'Test',
       profileId: 'profile-1',
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id }));
     await socialController.updatePost(id, mockUser, updatePostDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.UPDATE },
@@ -427,10 +491,14 @@ describe('SocialController', () => {
       userId: '1',
       postId: '1',
     };
-    await socialController.updateComment(id, updateCommentDto);
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ id: 'comment-1', post: { id: '1' } })
+    );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of({ id: '1' }));
+    await socialController.updateComment(id, mockUser as any, updateCommentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.UPDATE },
-      { id, data: updateCommentDto }
+      { id, update: updateCommentDto }
     );
   });
 
@@ -466,7 +534,11 @@ describe('SocialController', () => {
 
   it('should delete a comment', async () => {
     const id = '1';
-    await socialController.deleteComment(id);
+    await socialController.deleteComment(id, mockUser as any);
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.FIND },
+      { id, viewerProfileId: mockUser.profileId }
+    );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.DELETE },
       { id }
@@ -480,5 +552,29 @@ describe('SocialController', () => {
       { cmd: AttachmentCommands.DELETE },
       { id }
     );
+  });
+
+  it('uses the owning comment update contract and invalidates after a void result', async () => {
+    const sender = {
+      send: jest.fn((pattern) => {
+        if (pattern.cmd === CommentCommands.FIND)
+          return of({ id: 'comment-1', post: { id: 'post-1' } });
+        if (pattern.cmd === PostCommands.FIND) return of({ id: 'post-1' });
+        return of(undefined);
+      }),
+    };
+    const gateway = {
+      broadcastSocialContentInvalidated: jest.fn(),
+      broadcastCommentUpdated: jest.fn(),
+    };
+    const controller = new SocialController(sender as any, gateway as any);
+    await controller.updateComment('comment-1', mockUser as any, {
+      content: 'edited',
+    });
+    expect(sender.send).toHaveBeenCalledWith(
+      { cmd: CommentCommands.UPDATE },
+      { id: 'comment-1', update: { content: 'edited' } }
+    );
+    expect(gateway.broadcastSocialContentInvalidated).toHaveBeenCalledTimes(1);
   });
 });

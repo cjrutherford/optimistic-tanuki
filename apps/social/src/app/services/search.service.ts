@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import {
   SearchHistory,
   SearchType,
@@ -83,9 +83,16 @@ export class SearchService {
       this.privacyService.getBlockedUsers(viewerProfileId),
       this.privacyService.getBlockersOf(viewerProfileId),
     ]);
+    const profile = await firstValueFrom(
+      this.profileClient
+        .send({ cmd: ProfileCommands.Get }, { id: viewerProfileId })
+        .pipe(timeout(3000))
+    ).catch(() => null);
 
     return {
       viewerProfileId,
+      viewerAccountId:
+        profile?.id === viewerProfileId ? profile.userId : undefined,
       followedProfileIds: (following || []).map((f) => f.followeeId),
       blockedProfileIds: [
         ...(blocked || []).map((b) => b.blockedId),

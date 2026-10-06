@@ -12,6 +12,7 @@ import {
   Logger,
   Get,
   Param,
+  NotFoundException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -83,6 +84,22 @@ export class SocialController {
     @Optional() private readonly socialGateway?: SocialGateway
   ) {}
 
+  private async requireVisiblePost(postId: string, viewerProfileId?: string) {
+    if (typeof postId !== 'string' || postId.trim().length === 0) {
+      throw new NotFoundException('Post not found');
+    }
+    const post = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id: postId, viewerProfileId }
+      )
+    );
+    if (!post || post.id !== postId) {
+      throw new NotFoundException('Post not found');
+    }
+    return post;
+  }
+
   @UseGuards(AuthGuard)
   @ApiTags('post')
   @ApiOperation({ summary: 'Create a new post' })
@@ -106,7 +123,7 @@ export class SocialController {
 
     // Broadcast post created event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastPostCreated(result);
+      await this.socialGateway.broadcastPostCreated(result);
     }
 
     return result;
@@ -129,6 +146,7 @@ export class SocialController {
   @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
     this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
+    await this.requireVisiblePost(voteDto.postId, user.profileId);
     voteDto.userId = user.userId;
     voteDto.profileId = user.profileId;
     const commandMap = {
@@ -145,7 +163,7 @@ export class SocialController {
 
     // Broadcast vote updated event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastVoteUpdated(result);
+      await this.socialGateway.broadcastVoteUpdated(result);
     }
 
     return result;
@@ -182,8 +200,10 @@ export class SocialController {
   @Public()
   @Get('reactions/post/:postId')
   async getReactionsByPost(
-    @Param('postId') postId: string
+    @Param('postId') postId: string,
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<ReactionDto[]> {
+    await this.requireVisiblePost(postId, req?.user?.profileId);
     return await firstValueFrom(
       this.socialClient.send({ cmd: ReactionCommands.GET_BY_POST }, { postId })
     );
@@ -198,8 +218,10 @@ export class SocialController {
   @Public()
   @Get('reactions/post/:postId/counts')
   async getReactionCounts(
-    @Param('postId') postId: string
+    @Param('postId') postId: string,
+    @Req() req?: { user?: { profileId?: string } }
   ): Promise<{ [value: number]: number }> {
+    await this.requireVisiblePost(postId, req?.user?.profileId);
     return await firstValueFrom(
       this.socialClient.send({ cmd: ReactionCommands.GET }, { postId })
     );
@@ -218,6 +240,7 @@ export class SocialController {
     @Param('postId') postId: string,
     @User() user: UserDetails
   ): Promise<ReactionDto | null> {
+    await this.requireVisiblePost(postId, user.profileId);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: ReactionCommands.GET_USER_REACTION },
@@ -241,9 +264,11 @@ export class SocialController {
     @User() user: UserDetails,
     @Body() commentDto: CreateCommentDto
   ) {
+    await this.requireVisiblePost(commentDto.postId, user.profileId);
     const finalComment: CreateCommentDto = {
       ...commentDto,
       userId: user.userId,
+      profileId: user.profileId,
     };
     console.log('🚀 ~ SocialController ~ comment ~ commentDto:', finalComment);
     const result = await firstValueFrom(
@@ -252,7 +277,7 @@ export class SocialController {
 
     // Broadcast comment created event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastCommentCreated(result);
+      await this.socialGateway.broadcastCommentCreated(result);
     }
 
     return result;
@@ -351,10 +376,17 @@ export class SocialController {
     type: VoteDto,
   })
   @Get('vote/:id')
-  async getVote(@Param('id') id: string): Promise<VoteDto> {
-    return await firstValueFrom(
+  async getVote(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<VoteDto> {
+    const vote = await firstValueFrom(
       this.socialClient.send({ cmd: VoteCommands.GET }, { id })
     );
+    if (!vote) throw new NotFoundException('Vote not found');
+    const parentPostId = vote.post?.id ?? vote.postId ?? vote.comment?.post?.id;
+    await this.requireVisiblePost(parentPostId, user.profileId);
+    return vote;
   }
 
   @UseGuards(AuthGuard)
@@ -385,6 +417,8 @@ export class SocialController {
       return [];
     }
 
+    await this.requireVisiblePost(body.postId, user.profileId);
+
     const votes = await firstValueFrom(
       this.socialClient.send({ cmd: VoteCommands.GET }, { postid: body.postId })
     );
@@ -413,10 +447,17 @@ export class SocialController {
     type: AttachmentDto,
   })
   @Get('attachment/:id')
-  async getAttachment(@Param('id') id: string): Promise<AttachmentDto> {
-    return await firstValueFrom(
+  async getAttachment(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<AttachmentDto> {
+    const attachment = await firstValueFrom(
       this.socialClient.send({ cmd: AttachmentCommands.FIND }, { id })
     );
+    if (!attachment) throw new NotFoundException('Attachment not found');
+    const parentPostId = attachment.post?.id ?? attachment.postId;
+    await this.requireVisiblePost(parentPostId, user.profileId);
+    return attachment;
   }
 
   @ApiTags('post')
@@ -529,13 +570,28 @@ export class SocialController {
   })
   @Post('attachments/find')
   async searchAttachments(
-    @Body() searchCriteria: SearchAttachmentDto
+    @Body() searchCriteria: SearchAttachmentDto,
+    @User() user: UserDetails
   ): Promise<AttachmentDto[]> {
-    return await firstValueFrom(
+    const attachments = await firstValueFrom(
       this.socialClient.send(
         { cmd: AttachmentCommands.FIND_MANY },
         searchCriteria
       )
+    );
+    const visible = await Promise.all(
+      (attachments ?? []).map(async (attachment) => {
+        try {
+          const parentPostId = attachment.post?.id ?? attachment.postId;
+          await this.requireVisiblePost(parentPostId, user.profileId);
+          return attachment;
+        } catch {
+          return null;
+        }
+      })
+    );
+    return visible.filter(
+      (attachment): attachment is AttachmentDto => !!attachment
     );
   }
 
@@ -554,6 +610,7 @@ export class SocialController {
     @User() user: UserDetails,
     @Body() updatePostDto: UpdatePostDto
   ): Promise<PostDto> {
+    await this.requireVisiblePost(id, user.profileId);
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
@@ -568,7 +625,7 @@ export class SocialController {
 
     // Broadcast post updated event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastPostUpdated(result);
+      await this.socialGateway.broadcastPostUpdated(result);
     }
 
     return result;
@@ -585,21 +642,34 @@ export class SocialController {
   @Put('comment/update/:id')
   async updateComment(
     @Param('id') id: string,
+    @User() user: UserDetails,
     @Body() updateCommentDto: UpdateCommentDto
   ): Promise<CommentDto> {
-    const result = await firstValueFrom(
+    const comment = await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND },
+        { id, viewerProfileId: user.profileId }
+      )
+    );
+    if (!comment) throw new NotFoundException('Comment not found');
+    await this.requireVisiblePost(
+      comment.post?.id ?? comment.postId,
+      user.profileId
+    );
+    await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.UPDATE },
-        { id, data: updateCommentDto }
+        { id, update: updateCommentDto }
       )
     );
 
-    // Broadcast comment updated event via WebSocket
-    if (this.socialGateway && result) {
-      this.socialGateway.broadcastCommentUpdated(result);
-    }
-
-    return result;
+    this.socialGateway?.broadcastSocialContentInvalidated();
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: CommentCommands.FIND },
+        { id, viewerProfileId: user.profileId }
+      )
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -644,7 +714,7 @@ export class SocialController {
 
     // Broadcast post deleted event via WebSocket
     if (this.socialGateway) {
-      this.socialGateway.broadcastPostDeleted(id);
+      await this.socialGateway.broadcastPostDeleted(id);
     }
 
     return result;
@@ -664,24 +734,20 @@ export class SocialController {
   @Delete('comment/:id')
   async deleteComment(
     @Param('id') id: string,
-    @Query('postId') postId?: string
+    @User() user: UserDetails,
+    @Query('postId') _postId?: string
   ): Promise<void> {
-    // If postId not provided, fetch comment first to get postId for broadcast
-    let commentPostId = postId;
-    if (!commentPostId) {
-      try {
-        const comment = await firstValueFrom(
-          this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
-        );
-        commentPostId = comment?.postId;
-      } catch (error) {
-        // Comment not found or error, continue with deletion
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        this.l.error(
-          `Error fetching comment for WebSocket broadcast: ${errorMessage}`
-        );
-      }
+    let commentPostId: string | undefined;
+    try {
+      const comment = await firstValueFrom(
+        this.socialClient.send(
+          { cmd: CommentCommands.FIND },
+          { id, viewerProfileId: user.profileId }
+        )
+      );
+      commentPostId = comment?.post?.id ?? comment?.postId;
+    } catch (error) {
+      this.l.warn('Unable to resolve comment parent before deletion');
     }
 
     const result = await firstValueFrom(
@@ -689,8 +755,12 @@ export class SocialController {
     );
 
     // Broadcast comment deleted event via WebSocket
-    if (this.socialGateway && commentPostId) {
-      this.socialGateway.broadcastCommentDeleted(id, commentPostId);
+    if (this.socialGateway) {
+      if (commentPostId) {
+        await this.socialGateway.broadcastCommentDeleted(id, commentPostId);
+      } else {
+        this.socialGateway.broadcastSocialContentInvalidated();
+      }
     }
 
     return result;

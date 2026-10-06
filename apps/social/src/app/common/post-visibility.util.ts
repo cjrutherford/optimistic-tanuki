@@ -1,8 +1,12 @@
 import {
+  And,
   Brackets,
+  Equal,
+  FindOperator,
   FindOptionsWhere,
   In,
   Not,
+  Raw,
   SelectQueryBuilder,
 } from 'typeorm';
 import { Post } from '../../entities/post.entity';
@@ -48,11 +52,31 @@ export interface PostVisibilityScope {
    * Empty emits no exclusion clause.
    */
   blockedProfileIds: string[];
+  /** Account identity used to check current approved membership in the read query. */
+  viewerAccountId?: string;
 }
 
 function uniqueDefined(values: (string | undefined)[]): string[] {
   return Array.from(
     new Set(values.filter((value): value is string => !!value))
+  );
+}
+
+function accessibleCommunityCondition(viewerAccountId?: string) {
+  return Raw(
+    (column) =>
+      `(${column} IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${column} AND (c."isPrivate" = false OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`,
+    viewerAccountId
+      ? { pv_account_id: viewerAccountId }
+      : { pv_account_id: '__anonymous__' }
+  );
+}
+
+function intersectCondition(existing: unknown, constraint: FindOperator<any>) {
+  if (existing === undefined) return constraint;
+  return And(
+    existing instanceof FindOperator ? existing : Equal(existing),
+    constraint
   );
 }
 
@@ -72,6 +96,18 @@ export function visiblePostWhere(
   const { viewerProfileId, followedProfileIds, blockedProfileIds } = scope;
   const blocked = uniqueDefined(blockedProfileIds);
   const branches: FindOptionsWhere<Post>[] = [];
+  const addCommunityScope = (branch: FindOptionsWhere<Post>) => {
+    const communityCondition = accessibleCommunityCondition(
+      scope.viewerAccountId
+    );
+    return {
+      ...branch,
+      communityId: intersectCondition(
+        (branch as any).communityId,
+        communityCondition
+      ),
+    };
+  };
 
   // Public, visible, unscheduled posts (visible to everyone).
   const publicBranch: FindOptionsWhere<Post> = {
@@ -81,9 +117,12 @@ export function visiblePostWhere(
     isScheduled: false,
   };
   if (blocked.length > 0) {
-    publicBranch.profileId = Not(In(blocked));
+    publicBranch.profileId = intersectCondition(
+      publicBranch.profileId,
+      Not(In(blocked))
+    ) as any;
   }
-  branches.push(publicBranch);
+  branches.push(addCommunityScope(publicBranch));
 
   // Followers-only posts, visible only to followers (and the viewer's own,
   // which is also covered by the author-own branch below).
@@ -92,18 +131,27 @@ export function visiblePostWhere(
     viewerProfileId,
   ]).filter((id) => !blocked.includes(id));
   if (followedAuthors.length > 0) {
-    branches.push({
+    const followersBranch: FindOptionsWhere<Post> = {
       ...base,
       visibility: 'followers',
       moderationStatus: 'visible',
       isScheduled: false,
-      profileId: In(followedAuthors),
-    });
+    };
+    followersBranch.profileId = intersectCondition(
+      followersBranch.profileId,
+      In(followedAuthors)
+    ) as any;
+    branches.push(addCommunityScope(followersBranch));
   }
 
   // Author always sees their own posts — including hidden and scheduled ones.
   if (viewerProfileId) {
-    branches.push({ ...base, profileId: viewerProfileId });
+    const ownBranch: FindOptionsWhere<Post> = { ...base };
+    ownBranch.profileId = intersectCondition(
+      ownBranch.profileId,
+      Equal(viewerProfileId)
+    ) as any;
+    branches.push(addCommunityScope(ownBranch));
   }
 
   return branches;
@@ -131,53 +179,61 @@ export function applyVisiblePostScope<T extends SelectQueryBuilder<Post>>(
 
   return qb.andWhere(
     new Brackets((outer) => {
-      // Everyone-visible arm: visible, unscheduled, not blocked, and either
-      // public or a followers-only post by a followed author.
       outer.where(
-        new Brackets((visible) => {
-          visible
-            .where(`${alias}.moderationStatus = :pv_visible`, {
-              pv_visible: 'visible',
-            })
-            .andWhere(`${alias}.isScheduled = :pv_scheduled`, {
-              pv_scheduled: false,
-            });
+        new Brackets((visibility) => {
+          // Everyone-visible arm: visible, unscheduled, not blocked, and either
+          // public or a followers-only post by a followed author.
+          visibility.where(
+            new Brackets((visible) => {
+              visible
+                .where(`${alias}.moderationStatus = :pv_visible`, {
+                  pv_visible: 'visible',
+                })
+                .andWhere(`${alias}.isScheduled = :pv_scheduled`, {
+                  pv_scheduled: false,
+                });
 
-          if (blocked.length > 0) {
-            visible.andWhere(`${alias}.profileId NOT IN (:...pv_blocked)`, {
-              pv_blocked: blocked,
-            });
-          }
-
-          visible.andWhere(
-            new Brackets((vis) => {
-              vis.where(`${alias}.visibility = :pv_public`, {
-                pv_public: 'public',
-              });
-              if (followedAuthors.length > 0) {
-                vis.orWhere(
-                  new Brackets((followers) => {
-                    followers
-                      .where(`${alias}.visibility = :pv_followers`, {
-                        pv_followers: 'followers',
-                      })
-                      .andWhere(`${alias}.profileId IN (:...pv_followed)`, {
-                        pv_followed: followedAuthors,
-                      });
-                  })
-                );
+              if (blocked.length > 0) {
+                visible.andWhere(`${alias}.profileId NOT IN (:...pv_blocked)`, {
+                  pv_blocked: blocked,
+                });
               }
+
+              visible.andWhere(
+                new Brackets((vis) => {
+                  vis.where(`${alias}.visibility = :pv_public`, {
+                    pv_public: 'public',
+                  });
+                  if (followedAuthors.length > 0) {
+                    vis.orWhere(
+                      new Brackets((followers) => {
+                        followers
+                          .where(`${alias}.visibility = :pv_followers`, {
+                            pv_followers: 'followers',
+                          })
+                          .andWhere(`${alias}.profileId IN (:...pv_followed)`, {
+                            pv_followed: followedAuthors,
+                          });
+                      })
+                    );
+                  }
+                })
+              );
             })
           );
+
+          // Author-own arm: the viewer always sees their own posts.
+          if (viewerProfileId) {
+            visibility.orWhere(`${alias}.profileId = :pv_viewer`, {
+              pv_viewer: viewerProfileId,
+            });
+          }
         })
       );
-
-      // Author-own arm: the viewer always sees their own posts.
-      if (viewerProfileId) {
-        outer.orWhere(`${alias}.profileId = :pv_viewer`, {
-          pv_viewer: viewerProfileId,
-        });
-      }
+      outer.andWhere(
+        `(${alias}.communityId IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${alias}.communityId AND (c."isPrivate" = false OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`,
+        { pv_account_id: scope.viewerAccountId ?? '__anonymous__' }
+      );
     })
   );
 }

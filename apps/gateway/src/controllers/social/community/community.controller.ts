@@ -10,12 +10,12 @@ import {
   Post,
   Put,
   Query,
+  Optional,
   Req,
   UseGuards,
   Logger,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { Optional } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
   ApiTags,
@@ -61,6 +61,7 @@ import { WorkspaceContext } from '../../../decorators/workspace-context.decorato
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 import { CommunityWorkspaceProvisioner } from '../../../app/community-provisioning/community-workspace-provisioner.service';
 import { CommunityInviteMailer } from './community-invite.mailer';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -84,8 +85,13 @@ export class CommunityController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly communityProvisioner: CommunityWorkspaceProvisioner,
-    private readonly inviteMailer: CommunityInviteMailer
+    private readonly inviteMailer: CommunityInviteMailer,
+    @Optional() private readonly socialGateway?: SocialGateway
   ) {}
+
+  private invalidateSocialContent(): void {
+    this.socialGateway?.broadcastSocialContentInvalidated();
+  }
 
   @Post()
   @RequirePermissions('community.create')
@@ -167,6 +173,7 @@ export class CommunityController {
       this.logger.error(`Failed to create chat room: ${err?.message || err}`);
     }
 
+    this.invalidateSocialContent();
     return community;
   }
 
@@ -289,12 +296,14 @@ export class CommunityController {
     @User() user: UserDetails,
     @Body() dto: UpdateCommunityDto
   ): Promise<CommunityDto> {
-    return await firstValueFrom(
+    const updated = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommunityCommands.UPDATE },
         { id, dto, userId: user.userId }
       )
     );
+    this.invalidateSocialContent();
+    return updated;
   }
 
   @Delete(':id')
@@ -322,6 +331,7 @@ export class CommunityController {
         { id, userId: user.userId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Post(':id/join')
@@ -348,6 +358,7 @@ export class CommunityController {
     );
 
     if (member?.status === CommunityMembershipStatus.APPROVED) {
+      this.invalidateSocialContent();
       await this.assignCommunityPostingRole(user.profileId, id, appScope);
     }
 
@@ -372,6 +383,7 @@ export class CommunityController {
       )
     );
 
+    this.invalidateSocialContent();
     await this.unassignCommunityPostingRole(user.profileId, id, appScope);
   }
 
@@ -652,6 +664,7 @@ export class CommunityController {
     );
 
     if (member?.status === CommunityMembershipStatus.APPROVED) {
+      this.invalidateSocialContent();
       await this.assignCommunityPostingRole(
         member.profileId,
         member.communityId,
@@ -688,6 +701,7 @@ export class CommunityController {
         { memberId, rejecterId: user.userId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Delete('members/:memberId')
@@ -718,6 +732,7 @@ export class CommunityController {
         { memberId, removerId: user.userId }
       )
     );
+    this.invalidateSocialContent();
 
     if (body.profileId && body.communityId) {
       await this.unassignCommunityPostingRole(
@@ -772,7 +787,7 @@ export class CommunityController {
     @User() user: UserDetails,
     @Req() request: any
   ) {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: 'SUSPEND_COMMUNITY_MEMBER' },
         {
@@ -782,6 +797,8 @@ export class CommunityController {
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 
   @Post('members/:memberId/reactivate')
@@ -800,7 +817,7 @@ export class CommunityController {
     @User() user: UserDetails,
     @Req() request: any
   ) {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: 'REACTIVATE_COMMUNITY_MEMBER' },
         {
@@ -810,6 +827,8 @@ export class CommunityController {
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 
   @Delete('invites/:inviteId')

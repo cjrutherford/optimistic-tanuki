@@ -19,8 +19,9 @@ export class AttachmentService {
     createAttachmentDto: CreateAttachmentDto,
     post: Post
   ): Promise<Attachment> {
-    const { url, type } = createAttachmentDto;
+    const { name, url, type } = createAttachmentDto;
     const att: Partial<Attachment> = {
+      name,
       post,
       filePath: url,
       type: type as AttachmentType,
@@ -37,7 +38,13 @@ export class AttachmentService {
     id: string,
     options?: FindOneOptions<Attachment>
   ): Promise<Attachment> {
-    return await this.attachmentRepo.findOne({ where: { id }, ...options });
+    const where = options?.where;
+    return await this.attachmentRepo.findOne({
+      ...options,
+      where: Array.isArray(where)
+        ? where.map((branch) => ({ ...branch, id }))
+        : { ...(where ?? {}), id },
+    });
   }
 
   async update(

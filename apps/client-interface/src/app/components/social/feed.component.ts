@@ -81,6 +81,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
+  private contentReadVersion = 0;
+  private readonly contentReadCancelled$ = new Subject<void>();
   posts = signal<PostDto[]>([]);
   loading = signal(true);
   loadingMore = signal(false);
@@ -188,17 +190,22 @@ export class FeedComponent implements OnInit, OnDestroy {
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
       if (this.focusedPostId()) {
-        this.postService
-          .getPost(this.focusedPostId())
-          .pipe(map((post) => (post ? [post] : [])))
+        this.socialWebSocketService.connect();
+        this.socialWebSocketService
+          .getConnectionStatus()
           .pipe(takeUntil(this.destroy$))
-          .subscribe((posts) => {
-            this.posts.set(posts);
-            this.loading.set(false);
-            this.loadProfiles(posts);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
+          .subscribe((connected) => {
+            if (connected) {
+              this.socialWebSocketService.subscribeToPosts(currentProfile.id, [
+                this.focusedPostId(),
+              ]);
+            }
           });
+        this.socialWebSocketService
+          .getContentInvalidated()
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(() => this.loadFocusedPost());
+        this.loadFocusedPost();
         return;
       }
 
@@ -227,6 +234,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         .getPosts()
         .pipe(takeUntil(this.destroy$))
         .subscribe((posts) => {
+          if (this.currentFeed !== 'public') return;
           console.log('Received posts from WebSocket:', posts.length);
           this.posts.set(posts);
           this.loading.set(false);
@@ -235,9 +243,28 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.loadCommunityInfo(posts);
         });
 
+      this.socialWebSocketService
+        .getContentInvalidated()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => {
+          this.clearContent();
+          this.loading.set(true);
+          if (this.currentFeed === 'following') {
+            this.loadFollowingFeed();
+          } else if (this.currentFeed === 'communities') {
+            this.loadCommunitiesFeed();
+          } else if (this.socialWebSocketService.isConnected()) {
+            this.socialWebSocketService.getFeed(currentProfile.id, 50, 0);
+          } else {
+            this.loadPublicFeed();
+          }
+        });
+
       // Fallback to HTTP if WebSocket doesn't connect within 5 seconds
+      const fallbackVersion = this.contentReadVersion;
       setTimeout(() => {
         if (
+          fallbackVersion === this.contentReadVersion &&
           !this.socialWebSocketService.isConnected() &&
           this.posts().length === 0
         ) {
@@ -250,18 +277,65 @@ export class FeedComponent implements OnInit, OnDestroy {
                 {},
                 { orderBy: 'createdAt', orderDirection: 'desc' }
               );
-          feedRequest.pipe(takeUntil(this.destroy$)).subscribe((posts) => {
-            this.posts.set(posts);
-            this.loading.set(false);
-            this.loadProfiles(posts);
-            this.loadCommunityInfo(posts);
-            this.loadReactionData(posts);
-          });
+          this.currentContentRead(feedRequest, fallbackVersion).subscribe(
+            (posts) => {
+              this.posts.set(posts);
+              this.loading.set(false);
+              this.loadProfiles(posts);
+              this.loadCommunityInfo(posts);
+              this.loadReactionData(posts);
+            }
+          );
         }
       }, 5000);
     } else {
       this.router.navigate(['/login']);
     }
+  }
+
+  private loadFocusedPost(): void {
+    const version = this.clearContent();
+    this.loading.set(true);
+    this.currentContentRead(
+      this.postService.getPost(this.focusedPostId()),
+      version
+    )
+      .pipe(map((post) => (post ? [post] : [])))
+      .subscribe({
+        next: (posts) => {
+          this.posts.set(posts);
+          this.loading.set(false);
+          this.loadProfiles(posts);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+        },
+        error: () => this.loading.set(false),
+      });
+  }
+
+  private clearContent(): number {
+    this.contentReadVersion++;
+    this.contentReadCancelled$.next();
+    this.posts.set([]);
+    this.postPendingDeletion.set(null);
+    this.userVotes.set({});
+    this.voteCounts.set({});
+    this.userReactions.set({});
+    this.reactionCounts.set({});
+    this.loadingMore.set(false);
+    this.currentPage = 0;
+    return this.contentReadVersion;
+  }
+
+  private currentContentRead<T>(
+    source: Observable<T>,
+    version = this.contentReadVersion
+  ): Observable<T> {
+    return source.pipe(
+      filter(() => version === this.contentReadVersion),
+      takeUntil(this.contentReadCancelled$),
+      takeUntil(this.destroy$)
+    );
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
 
@@ -498,6 +572,9 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.contentReadVersion++;
+    this.destroy$.next();
+    this.destroy$.complete();
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
       // Unsubscribe from WebSocket topics
@@ -505,9 +582,6 @@ export class FeedComponent implements OnInit, OnDestroy {
       // Disconnect WebSocket
       this.socialWebSocketService.disconnect();
     }
-
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   commented(newComment: CreateCommentDto, postIndex: number) {
@@ -897,6 +971,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   loadPublicFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'public';
     this.currentVisibility = 'public';
     this.currentPage = 0;
@@ -914,16 +989,20 @@ export class FeedComponent implements OnInit, OnDestroy {
             offset: 0,
           }
         );
-    feedRequest.subscribe((posts: PostDto[]) => {
-      this.posts.set(posts);
-      this.hasMorePosts.set(posts.length >= this.pageSize);
-      this.loadReactionData(posts);
-      this.loadCommunityInfo(posts);
-      this.loadProfiles(posts);
-    });
+    this.currentContentRead(feedRequest, version).subscribe(
+      (posts: PostDto[]) => {
+        this.posts.set(posts);
+        this.hasMorePosts.set(posts.length >= this.pageSize);
+        this.loadReactionData(posts);
+        this.loadCommunityInfo(posts);
+        this.loadProfiles(posts);
+        this.loading.set(false);
+      }
+    );
   }
 
   loadFollowingFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'following';
     this.currentVisibility = 'following';
     this.currentPage = 0;
@@ -935,20 +1014,26 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
 
     const loadPosts = () => {
-      this.socialFeedData
-        .loadFollowingFeed({ limit: this.pageSize, offset: 0 })
-        .subscribe((posts: PostDto[]) => {
-          const followingPosts = posts.filter(
-            (post) =>
-              this.followingIds.has(post.profileId) ||
-              post.profileId === currentProfile.id
-          );
-          this.posts.set(followingPosts);
-          this.hasMorePosts.set(followingPosts.length >= this.pageSize);
-          this.loadReactionData(posts);
-          this.loadCommunityInfo(posts);
-          this.loadProfiles(posts);
-        });
+      if (version !== this.contentReadVersion) return;
+      this.currentContentRead(
+        this.socialFeedData.loadFollowingFeed({
+          limit: this.pageSize,
+          offset: 0,
+        }),
+        version
+      ).subscribe((posts: PostDto[]) => {
+        const followingPosts = posts.filter(
+          (post) =>
+            this.followingIds.has(post.profileId) ||
+            post.profileId === currentProfile.id
+        );
+        this.posts.set(followingPosts);
+        this.hasMorePosts.set(followingPosts.length >= this.pageSize);
+        this.loadReactionData(posts);
+        this.loadCommunityInfo(posts);
+        this.loadProfiles(posts);
+        this.loading.set(false);
+      });
     };
 
     if (this.followingIds.size === 0) {
@@ -960,13 +1045,17 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   loadCommunitiesFeed() {
+    const version = this.clearContent();
     this.currentFeed = 'communities';
     this.currentVisibility = 'communities';
     this.currentPage = 0;
     this.hasMorePosts.set(true);
     this.loading.set(true);
 
-    this.socialFeedData.loadUserCommunities().subscribe({
+    this.currentContentRead(
+      this.socialFeedData.loadUserCommunities(),
+      version
+    ).subscribe({
       next: (communities) => {
         const communityIds = communities.map((c) => c.id);
         this.currentCommunityIds = communityIds;
@@ -976,22 +1065,26 @@ export class FeedComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.socialFeedData
-          .loadCommunityFeed(communityIds, { limit: this.pageSize, offset: 0 })
-          .subscribe({
-            next: (posts) => {
-              this.posts.set(posts);
-              this.hasMorePosts.set(posts.length >= this.pageSize);
-              this.loadReactionData(posts);
-              this.loadCommunityInfo(posts);
-              this.loading.set(false);
-              this.loadProfiles(posts);
-            },
-            error: (err) => {
-              console.error('Failed to load community posts:', err);
-              this.loading.set(false);
-            },
-          });
+        this.currentContentRead(
+          this.socialFeedData.loadCommunityFeed(communityIds, {
+            limit: this.pageSize,
+            offset: 0,
+          }),
+          version
+        ).subscribe({
+          next: (posts) => {
+            this.posts.set(posts);
+            this.hasMorePosts.set(posts.length >= this.pageSize);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+            this.loading.set(false);
+            this.loadProfiles(posts);
+          },
+          error: (err) => {
+            console.error('Failed to load community posts:', err);
+            this.loading.set(false);
+          },
+        });
       },
       error: (err) => {
         console.error('Failed to load user communities:', err);
@@ -1009,10 +1102,11 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.currentPage++;
 
     const offset = this.currentPage * this.pageSize;
+    const version = this.contentReadVersion;
 
     if (this.currentVisibility === 'public') {
-      this.socialFeedData
-        .loadPublicFeed(
+      this.currentContentRead(
+        this.socialFeedData.loadPublicFeed(
           { visibility: 'public', communityId: null as any },
           {
             orderBy: 'createdAt',
@@ -1020,61 +1114,64 @@ export class FeedComponent implements OnInit, OnDestroy {
             limit: this.pageSize,
             offset,
           }
-        )
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+        ),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else if (this.currentVisibility === 'following') {
-      this.socialFeedData
-        .loadFollowingFeed({ limit: this.pageSize, offset })
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+      this.currentContentRead(
+        this.socialFeedData.loadFollowingFeed({ limit: this.pageSize, offset }),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else if (
       this.currentVisibility === 'communities' &&
       this.currentCommunityIds.length > 0
     ) {
-      this.socialFeedData
-        .loadCommunityFeed(this.currentCommunityIds, {
+      this.currentContentRead(
+        this.socialFeedData.loadCommunityFeed(this.currentCommunityIds, {
           limit: this.pageSize,
           offset,
-        })
-        .subscribe({
-          next: (posts) => {
-            this.posts.update((current) => [...current, ...posts]);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loadProfiles(posts);
-            this.loadingMore.set(false);
-          },
-          error: () => {
-            this.currentPage--;
-            this.loadingMore.set(false);
-          },
-        });
+        }),
+        version
+      ).subscribe({
+        next: (posts) => {
+          this.posts.update((current) => [...current, ...posts]);
+          this.hasMorePosts.set(posts.length >= this.pageSize);
+          this.loadReactionData(posts);
+          this.loadCommunityInfo(posts);
+          this.loadProfiles(posts);
+          this.loadingMore.set(false);
+        },
+        error: () => {
+          this.currentPage--;
+          this.loadingMore.set(false);
+        },
+      });
     } else {
       this.loadingMore.set(false);
     }

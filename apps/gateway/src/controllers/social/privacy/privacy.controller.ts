@@ -13,6 +13,7 @@ import {
   UseGuards,
   Logger,
   Inject,
+  Optional,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthGuard } from '../../../auth/auth.guard';
@@ -35,6 +36,7 @@ import {
 } from '../../../decorators/permissions.decorator';
 import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
 import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
+import { SocialGateway } from '../../../app/social-gateway/social.gateway';
 
 export interface BlockUserDto {
   blockedId: string;
@@ -75,8 +77,13 @@ export class PrivacyController {
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
     @Inject(ServiceTokens.WORKSPACE_SERVICE)
-    private readonly workspaceClient: ClientProxy
+    private readonly workspaceClient: ClientProxy,
+    @Optional() private readonly socialGateway?: SocialGateway
   ) {}
+
+  private invalidateSocialContent(): void {
+    this.socialGateway?.broadcastSocialContentInvalidated();
+  }
 
   private async resolveReportWorkspaceId(
     dto: ReportContentDto,
@@ -167,6 +174,7 @@ export class PrivacyController {
         }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Delete('block/:blockedId')
@@ -182,6 +190,7 @@ export class PrivacyController {
         { blockerId: user.profileId, blockedId }
       )
     );
+    this.invalidateSocialContent();
   }
 
   @Get('blocked')
@@ -191,12 +200,13 @@ export class PrivacyController {
     description: 'Blocked users retrieved successfully.',
   })
   async getBlockedUsers(@User() user: UserDetails): Promise<any[]> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_BLOCKED_USERS },
         { blockerId: user.profileId }
       )
     );
+    return result;
   }
 
   @Get('blocked/:userId')
@@ -377,7 +387,7 @@ export class PrivacyController {
     @Body() dto: ModerateContentDto,
     @User() user: UserDetails
   ): Promise<{ success: boolean }> {
-    return await firstValueFrom(
+    const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.MODERATE_CONTENT },
         {
@@ -389,5 +399,7 @@ export class PrivacyController {
         }
       )
     );
+    this.invalidateSocialContent();
+    return result;
   }
 }

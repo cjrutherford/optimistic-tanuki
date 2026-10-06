@@ -11,10 +11,20 @@ function evalOperator(value: unknown, op: FindOperator<any>): boolean {
   switch (op.type) {
     case 'in':
       return Array.isArray(op.value) && op.value.includes(value);
+    case 'equal':
+      return value === op.value;
     case 'not':
       return Array.isArray(op.value)
         ? !op.value.includes(value)
         : value !== op.value;
+    case 'and':
+      return (op.value as FindOperator<any>[]).every((nested) =>
+        evalOperator(value, nested)
+      );
+    case 'raw':
+      // The in-memory repository fake has no community table. A null parent
+      // community is always in scope; community grants are covered by SQL tests.
+      return value === null || value === undefined;
     default:
       throw new Error(`unsupported FindOperator type: ${op.type}`);
   }

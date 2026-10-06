@@ -11,7 +11,7 @@ import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { OnDestroy } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommonModule } from '@angular/common';
@@ -113,6 +113,7 @@ describe('FeedComponent', () => {
       disconnect: jest.fn(),
       isConnected: jest.fn().mockReturnValue(false),
       getConnectionStatus: jest.fn().mockReturnValue(of(false)),
+      getContentInvalidated: jest.fn().mockReturnValue(of()),
       getPosts: jest.fn().mockReturnValue(of([])),
       getFeed: jest.fn(),
       subscribeToPosts: jest.fn(),
@@ -208,7 +209,7 @@ describe('FeedComponent', () => {
 
     fixture = TestBed.createComponent(FeedComponent);
     component = fixture.componentInstance;
-    postService = TestBed.inject(PostService);
+    postService = component.postService;
     profileService = TestBed.inject(ProfileService);
     router = TestBed.inject(Router);
   });
@@ -221,6 +222,54 @@ describe('FeedComponent', () => {
     fixture.detectChanges();
     tick();
     expect(component).toBeTruthy();
+  }));
+
+  it('does not restore a focused post response started before invalidation', () => {
+    const staleResponse = new Subject<any>();
+    const currentResponse = new Subject<any>();
+    jest
+      .spyOn(postService, 'getPost')
+      .mockReturnValueOnce(staleResponse as any)
+      .mockReturnValueOnce(currentResponse as any);
+
+    (component as any).loadFocusedPost();
+    (component as any).loadFocusedPost();
+    staleResponse.next({ id: 'private-post', content: 'stale' });
+    expect(component.posts()).toEqual([]);
+    currentResponse.next({ id: 'private-post', content: 'current' });
+    expect(component.posts().map((post) => post.content)).toEqual(['current']);
+  });
+
+  it('clears a focused post immediately while its scoped reload is pending', () => {
+    jest.spyOn(postService, 'getPost').mockReturnValue(new Subject<any>());
+    component.posts.set([{ id: 'private-post', content: 'private' } as any]);
+    (component as any).loadFocusedPost();
+    expect(component.posts()).toEqual([]);
+  });
+
+  it('keeps denied focused content empty and ends loading', () => {
+    jest
+      .spyOn(postService, 'getPost')
+      .mockReturnValue(throwError(() => new Error('Denied')));
+    component.posts.set([{ id: 'private-post', content: 'private' } as any]);
+    (component as any).loadFocusedPost();
+    expect(component.posts()).toEqual([]);
+    expect(component.loading()).toBe(false);
+  });
+
+  it('does not restore an HTTP feed response started before revocation', fakeAsync(() => {
+    const invalidated = new Subject<void>();
+    const staleResponse = new Subject<any[]>();
+    (
+      component.socialWebSocketService.getContentInvalidated as jest.Mock
+    ).mockReturnValue(invalidated);
+    fixture.detectChanges();
+    socialFeedData.loadPublicFeed.mockReturnValueOnce(staleResponse);
+    component.loadPublicFeed();
+    invalidated.next();
+    staleResponse.next([{ id: 'revoked-post', content: 'private' }]);
+    expect(component.posts()).toEqual([]);
+    tick(5001);
   }));
 
   it('loads the public tab through the shared social data-access layer', () => {

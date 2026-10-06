@@ -73,6 +73,7 @@ import {
 import { Post, postSearchDtoToFindManyOptions } from '../entities/post.entity';
 import {
   PostVisibilityScope,
+  applyVisiblePostScope,
   visiblePostWhere,
 } from './common/post-visibility.util';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
@@ -99,7 +100,7 @@ import { BusinessContentService } from './services/business-content.service';
 import { LinkService } from './services/link.service';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 interface UserBlock {
   id: string;
@@ -139,18 +140,33 @@ export class AppController {
   private async buildPostVisibilityScope(
     viewerProfileId: string
   ): Promise<PostVisibilityScope> {
-    const [following, blocked, blockers] = await Promise.all([
+    const [following, blocked, blockers, profile] = await Promise.all([
       this.followService.getFollowing(viewerProfileId),
       this.privacyService.getBlockedUsers(viewerProfileId),
       this.privacyService.getBlockersOf(viewerProfileId),
+      firstValueFrom(
+        this.profileClient
+          .send({ cmd: ProfileCommands.Get }, { id: viewerProfileId })
+          .pipe(timeout(3000))
+      ).catch(() => null),
     ]);
+    const accountId =
+      profile?.id === viewerProfileId ? profile.userId : undefined;
     return {
       viewerProfileId,
+      viewerAccountId: accountId,
       followedProfileIds: (following || []).map((f) => f.followeeId),
       blockedProfileIds: [
         ...(blocked || []).map((b) => b.blockedId),
         ...(blockers || []).map((b) => b.blockerId),
       ],
+    };
+  }
+
+  private async buildAnonymousPostVisibilityScope(): Promise<PostVisibilityScope> {
+    return {
+      followedProfileIds: [],
+      blockedProfileIds: [],
     };
   }
 
@@ -262,7 +278,7 @@ export class AppController {
     // Internal callers must not gain unrestricted access by omitting a viewer.
     const scope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
     const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
     searchOptions.where = visiblePostWhere(scope, baseWhere);
 
@@ -298,13 +314,17 @@ export class AppController {
     @Payload('options') options?: SearchPostDto,
     @Payload('viewerProfileId') viewerProfileId?: string
   ) {
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      return undefined;
+    }
+
     const search: FindOneOptions<Post> = options
       ? (postSearchDtoToFindManyOptions(options) as FindOneOptions<Post>)
       : {};
 
     const scope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
     const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
     search.where = visiblePostWhere(scope, baseWhere);
 
@@ -417,8 +437,20 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VoteCommands.GET })
-  async getVote(@Payload('postid') id: string) {
-    return await this.voteService.findAll({ where: { post: { id } } });
+  async getVote(
+    @Payload('postid') postId?: string,
+    @Payload('id') voteId?: string
+  ) {
+    if (voteId) {
+      return await this.voteService.findOne(voteId, {
+        relations: ['post', 'comment', 'comment.post'],
+      });
+    }
+    if (!postId) return [];
+    return await this.voteService.findAll({
+      where: { post: { id: postId } },
+      relations: ['post'],
+    });
   }
 
   @MessagePattern({ cmd: ReactionCommands.ADD })
@@ -547,7 +579,7 @@ export class AppController {
     // unscheduled only).
     const scope: PostVisibilityScope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
 
     return await this.commentService.findAllVisible(options, scope);
   }
@@ -559,10 +591,9 @@ export class AppController {
     @Payload('viewerProfileId') viewerProfileId?: string
   ) {
     const search = transformSearchCommentDtoToFindOptions(options);
-
     const scope: PostVisibilityScope = viewerProfileId
       ? await this.buildPostVisibilityScope(viewerProfileId)
-      : { followedProfileIds: [], blockedProfileIds: [] };
+      : await this.buildAnonymousPostVisibilityScope();
 
     return await this.commentService.findOneVisible(id, search, scope);
   }
@@ -573,7 +604,8 @@ export class AppController {
     @Payload('update') update: UpdateCommentDto
   ) {
     console.log('updateComment', id, update);
-    return await this.commentService.update(id, update);
+    await this.commentService.update(id, update);
+    return { success: true };
   }
 
   @MessagePattern({ cmd: CommentCommands.DELETE })
@@ -591,23 +623,27 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND_MANY })
-  async findAllAttachments(@Payload() options: SearchAttachmentDto) {
-    const search = toFindOptions(options);
-    return await this.attachmentService.findAll(
-      search as FindManyOptions<Attachment>
-    );
+  async findAllAttachments(@Payload() options: SearchAttachmentDto = {}) {
+    const search = toFindOptions(options ?? {});
+    return await this.attachmentService.findAll({
+      ...search,
+      relations: ['post'],
+    } as FindManyOptions<Attachment>);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND })
   async findAttachment(
     @Payload('id') id: string,
-    @Payload('options') opts: SearchAttachmentDto
+    @Payload('options') opts: SearchAttachmentDto = {}
   ) {
-    const search = toFindOptions(opts);
-    return await this.attachmentService.findOne(
-      id,
-      search as FindOneOptions<Attachment>
-    );
+    if (typeof id !== 'string' || id.trim().length === 0) {
+      return undefined;
+    }
+    const search = toFindOptions(opts ?? {});
+    return await this.attachmentService.findOne(id, {
+      ...search,
+      relations: ['post'],
+    } as FindOneOptions<Attachment>);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.UPDATE })
@@ -1196,7 +1232,11 @@ export class AppController {
       return [];
     }
 
-    qb.where(conditions.join(' OR '), params);
+    // Keep caller feed selection grouped before the mandatory visibility policy
+    // is appended with AND; otherwise SQL precedence lets an OR arm bypass it.
+    qb.where(`(${conditions.join(' OR ')})`, params);
+    const postScope = await this.buildPostVisibilityScope(data.profileId);
+    applyVisiblePostScope(qb, postScope, 'post');
     qb.orderBy('post.createdAt', 'DESC');
     qb.skip(offset).take(limit);
 

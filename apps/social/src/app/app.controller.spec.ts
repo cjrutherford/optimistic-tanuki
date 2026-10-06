@@ -22,6 +22,7 @@ import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { LinkService } from './services/link.service';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { of, throwError } from 'rxjs';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -133,6 +134,7 @@ describe('AppController', () => {
             getMembers: jest.fn(),
             isMember: jest.fn(),
             getUserCommunities: jest.fn(),
+            getPostAccessibleCommunityIds: jest.fn().mockResolvedValue([]),
             getCommunitiesByProfileId: jest.fn(),
             invite: jest.fn(),
             cancelInvite: jest.fn(),
@@ -281,7 +283,11 @@ describe('AppController', () => {
         },
         {
           provide: ServiceTokens.PROFILE_SERVICE,
-          useValue: { send: jest.fn() },
+          useValue: {
+            send: jest.fn((_pattern, payload) =>
+              of({ id: payload.id, userId: 'account-1' })
+            ),
+          },
         },
         {
           provide: BusinessContentService,
@@ -332,6 +338,7 @@ describe('AppController', () => {
         where: [
           {
             visibility: 'public',
+            communityId: expect.anything(),
             moderationStatus: 'visible',
             isScheduled: false,
           },
@@ -346,6 +353,7 @@ describe('AppController', () => {
       where: [
         {
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
@@ -361,11 +369,19 @@ describe('AppController', () => {
       where: [
         {
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
       ],
     });
+  });
+
+  it('does not query for a post when the FIND id is missing', async () => {
+    await expect(
+      controller.findOnePost(undefined as any)
+    ).resolves.toBeUndefined();
+    expect(postService.findOne).not.toHaveBeenCalled();
   });
 
   it('should update a post', async () => {
@@ -448,6 +464,15 @@ describe('AppController', () => {
     expect(result).toEqual(['vote']);
     expect(voteService.findAll).toHaveBeenCalledWith({
       where: { post: { id: '1' } },
+      relations: ['post'],
+    });
+  });
+
+  it('finds a vote by id with its post or comment parent loaded', async () => {
+    voteService.findOne.mockResolvedValue({ id: 'vote-1' } as any);
+    await controller.getVote(undefined, 'vote-1');
+    expect(voteService.findOne).toHaveBeenCalledWith('vote-1', {
+      relations: ['post', 'comment', 'comment.post'],
     });
   });
 
@@ -510,7 +535,7 @@ describe('AppController', () => {
     const privacyService = (controller as any).privacyService;
     privacyService.getBlockedUsers.mockResolvedValue([]);
 
-    const result = await controller.findOneComment('c1', {} as any, 'viewer-1');
+    const result = await controller.findOneComment('c1', undefined, 'viewer-1');
 
     expect(result).toBeUndefined();
     expect(commentService.findOneVisible).toHaveBeenCalledWith(
@@ -521,9 +546,9 @@ describe('AppController', () => {
   });
 
   it('should update a comment', async () => {
-    commentService.update.mockResolvedValue('updated');
+    commentService.update.mockResolvedValue(undefined);
     const result = await controller.updateComment('1', {} as any);
-    expect(result).toBe('updated');
+    expect(result).toEqual({ success: true });
     expect(commentService.update).toHaveBeenCalledWith('1', {});
   });
 
@@ -547,14 +572,20 @@ describe('AppController', () => {
     attachmentService.findAll.mockResolvedValue(['attachment']);
     const result = await controller.findAllAttachments({} as any);
     expect(result).toEqual(['attachment']);
-    expect(attachmentService.findAll).toHaveBeenCalled();
+    expect(attachmentService.findAll).toHaveBeenCalledWith({
+      where: {},
+      relations: ['post'],
+    });
   });
 
   it('should find an attachment', async () => {
     attachmentService.findOne.mockResolvedValue('attachment');
-    const result = await controller.findAttachment('1', {} as any);
+    const result = await controller.findAttachment('1', undefined);
     expect(result).toBe('attachment');
-    expect(attachmentService.findOne).toHaveBeenCalled();
+    expect(attachmentService.findOne).toHaveBeenCalledWith('1', {
+      where: {},
+      relations: ['post'],
+    });
   });
 
   it('should update an attachment', async () => {
@@ -597,6 +628,7 @@ describe('AppController', () => {
         {
           title: Like('%Test%'),
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
@@ -635,6 +667,7 @@ describe('AppController', () => {
         {
           title: Like('%Test%'),
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
@@ -654,6 +687,7 @@ describe('AppController', () => {
         {
           title: Like('%Test%'),
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
@@ -670,6 +704,7 @@ describe('AppController', () => {
         {
           title: Like('%Test%'),
           visibility: 'public',
+          communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
         },
@@ -704,9 +739,21 @@ describe('AppController', () => {
     expect(publicBranch.profileId?.value).toEqual(['blocked-1']);
   });
 
+  it('fails closed to private-community access when profile ownership lookup fails', async () => {
+    const profileClient = (controller as any).profileClient;
+    profileClient.send.mockReturnValue(throwError(() => new Error('offline')));
+    await controller.findAllPosts({} as any, {} as any, 'claimed-profile');
+    const branches = postService.findAll.mock.calls.at(-1)![0].where as any[];
+    const communityScope = branches[0].communityId;
+    expect(communityScope.objectLiteralParameters).toEqual({
+      pv_account_id: '__anonymous__',
+    });
+  });
+
   it('filters posts authored by blocked profiles from community feed results', async () => {
     const queryBuilder = {
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
@@ -720,7 +767,9 @@ describe('AppController', () => {
     (postService as any).postRepo = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
     };
-    followService.getFollowing.mockResolvedValue([] as any);
+    followService.getFollowing.mockResolvedValue([
+      { followeeId: 'followed-1' },
+    ] as any);
     const communityService = (controller as any).communityService;
     communityService.getUserCommunities.mockResolvedValue([]);
     voteService.findAll.mockResolvedValue([]);
@@ -737,9 +786,12 @@ describe('AppController', () => {
       profileId: 'viewer-1',
       appScope: 'client-interface',
       includePublic: true,
+      includeFollowing: true,
     });
 
     expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(queryBuilder.where.mock.calls[0][0]).toMatch(/^\(.* OR .*\)$/);
+    expect(queryBuilder.andWhere).toHaveBeenCalled();
     expect(result).toEqual([]);
   });
 

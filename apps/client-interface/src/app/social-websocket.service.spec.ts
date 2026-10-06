@@ -377,6 +377,15 @@ describe('SocialWebSocketService socket lifecycle', () => {
       handlers['feed']([post('7')]);
       expect(service['posts$'].value.map((p) => p.id)).toEqual(['7']);
     });
+
+    it('clears cached posts and announces a privacy invalidation', () => {
+      handlers['feed']([post('private-1')]);
+      const invalidations = jest.fn();
+      service.getContentInvalidated().subscribe(invalidations);
+      handlers['social_content_invalidated']({});
+      expect(service['posts$'].value).toEqual([]);
+      expect(invalidations).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('informational events', () => {

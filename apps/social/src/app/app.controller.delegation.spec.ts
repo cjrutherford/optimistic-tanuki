@@ -22,6 +22,7 @@ import { LinkService } from './services/link.service';
 
 interface QueryBuilderMock {
   where: jest.Mock;
+  andWhere: jest.Mock;
   orderBy: jest.Mock;
   skip: jest.Mock;
   take: jest.Mock;
@@ -31,12 +32,14 @@ interface QueryBuilderMock {
 function makeQueryBuilder(posts: unknown[]): QueryBuilderMock {
   const qb: QueryBuilderMock = {
     where: jest.fn(),
+    andWhere: jest.fn(),
     orderBy: jest.fn(),
     skip: jest.fn(),
     take: jest.fn(),
     getMany: jest.fn().mockResolvedValue(posts),
   };
   qb.where.mockReturnValue(qb);
+  qb.andWhere.mockReturnValue(qb);
   qb.orderBy.mockReturnValue(qb);
   qb.skip.mockReturnValue(qb);
   qb.take.mockReturnValue(qb);
@@ -125,6 +128,9 @@ function createHarness() {
     getMembers: jest.fn(),
     isMember: jest.fn(),
     getUserCommunities: jest.fn().mockResolvedValue([]),
+    getPostAccessibleCommunityIds: jest
+      .fn()
+      .mockResolvedValue(['public-community']),
     getCommunitiesByProfileId: jest.fn(),
     invite: jest.fn(),
     cancelInvite: jest.fn(),

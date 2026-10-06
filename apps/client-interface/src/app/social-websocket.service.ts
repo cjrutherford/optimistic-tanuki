@@ -19,6 +19,7 @@ export class SocialWebSocketService implements OnDestroy {
   private socket: Socket | null = null;
   private connected$ = new BehaviorSubject<boolean>(false);
   private posts$ = new BehaviorSubject<PostDto[]>([]);
+  private readonly contentInvalidated$ = new Subject<void>();
   private connectionError$ = new BehaviorSubject<string | null>(null);
   private typingIndicators = new Subject<{
     conversationId: string;
@@ -93,6 +94,8 @@ export class SocialWebSocketService implements OnDestroy {
       this.socket = null;
       this.connected$.next(false);
     }
+    this.clearCachedPosts();
+    this.contentInvalidated$.next();
   }
 
   private setupSocketListeners(): void {
@@ -102,11 +105,14 @@ export class SocialWebSocketService implements OnDestroy {
       console.log('Connected to Social WebSocket');
       this.connected$.next(true);
       this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      this.clearCachedPosts();
     });
 
     this.socket.on('disconnect', (reason) => {
       console.log('Disconnected from Social WebSocket:', reason);
       this.connected$.next(false);
+      this.clearCachedPosts();
+      this.contentInvalidated$.next();
 
       if (reason !== 'io client disconnect') {
         // Trigger backoff for unexpected disconnections
@@ -191,6 +197,11 @@ export class SocialWebSocketService implements OnDestroy {
       console.log('Post deleted:', data.postId);
       const currentPosts = this.posts$.value;
       this.posts$.next(currentPosts.filter((p) => p.id !== data.postId));
+    });
+
+    this.socket.on('social_content_invalidated', () => {
+      this.clearCachedPosts();
+      this.contentInvalidated$.next();
     });
 
     // Comment events
@@ -341,6 +352,14 @@ export class SocialWebSocketService implements OnDestroy {
    */
   getPosts(): Observable<PostDto[]> {
     return this.posts$.asObservable();
+  }
+
+  getContentInvalidated(): Observable<void> {
+    return this.contentInvalidated$.asObservable();
+  }
+
+  private clearCachedPosts(): void {
+    this.posts$.next([]);
   }
 
   /**

@@ -33,6 +33,7 @@ describe('AttachmentService', () => {
   describe('create', () => {
     it('should create and save an attachment', async () => {
       const dto: CreateAttachmentDto = {
+        name: 'test',
         url: 'file.png',
         type: AttachmentType.IMAGE,
         post: '1',
@@ -49,6 +50,7 @@ describe('AttachmentService', () => {
       repo.save.mockResolvedValue(created);
       const result = await service.create(dto, post);
       expect(repo.create).toHaveBeenCalledWith({
+        name: 'test',
         post,
         filePath: 'file.png',
         type: AttachmentType.IMAGE,
@@ -83,6 +85,18 @@ describe('AttachmentService', () => {
       await service.findOne('1', { relations: ['post'] });
       expect(repo.findOne).toHaveBeenCalledWith({
         where: { id: '1' },
+        relations: ['post'],
+      });
+    });
+
+    it('keeps the requested id when search options include a where clause', async () => {
+      repo.findOne.mockResolvedValue({ id: 'target' } as Attachment);
+      await service.findOne('target', {
+        where: { filePath: 'same-file.png' },
+        relations: ['post'],
+      });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 'target', filePath: 'same-file.png' },
         relations: ['post'],
       });
     });

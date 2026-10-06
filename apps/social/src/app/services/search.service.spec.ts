@@ -55,6 +55,11 @@ describe('SearchService (visibility scope wiring)', () => {
     followService.getFollowing.mockResolvedValue([{ followeeId: 'friend' }]);
     privacyService.getBlockedUsers.mockResolvedValue([{ blockedId: 'blk-a' }]);
     privacyService.getBlockersOf.mockResolvedValue([{ blockerId: 'blk-b' }]);
+    profileClient.send.mockImplementation((pattern, payload) =>
+      pattern?.cmd === ProfileCommands.Get
+        ? of({ id: payload.id, userId: 'account-1' })
+        : of([])
+    );
 
     await service.search('hello', { type: 'posts' }, 'viewer');
 
@@ -70,8 +75,11 @@ describe('SearchService (visibility scope wiring)', () => {
     const publicBranch = where.find((b) => b.visibility === 'public');
     expect(publicBranch.moderationStatus).toBe('visible');
     expect(publicBranch.isScheduled).toBe(false);
-    expect(publicBranch.profileId?.type).toBe('not');
-    expect(publicBranch.profileId?.value).toEqual(['blk-a', 'blk-b']);
+    expect(publicBranch.profileId).toBeDefined();
+    expect(publicBranch.communityId.type).toBe('raw');
+    expect(publicBranch.communityId.objectLiteralParameters).toEqual({
+      pv_account_id: 'account-1',
+    });
   });
 
   it('search() with no viewer restricts to public/visible/unscheduled only', async () => {
