@@ -5,8 +5,8 @@
 }
 
 .page-intro {
-  margin-top: 1rem;
-  padding: clamp(1.6rem, 3.5vw, 3rem);
+  margin-top: section.space(1);
+  padding: clamp(section.space(1.6), 3.5vw, section.space(3));
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
   background: var(--hai-panel-strong);
@@ -14,20 +14,19 @@
 }
 
 .eyebrow {
-  margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  margin: 0 0 section.space(0.8);
+  @include section.eyebrow-font;
+  letter-spacing: var(--personality-label-letter-spacing, 0.18em);
+  text-transform: var(--personality-label-text-transform, uppercase);
   color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
 }
 
 h1 {
+  @include section.heading-style;
   margin: 0;
-  max-width: 48rem;
-  font-family: var(--font-heading, var(--personality-font-family, serif));
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1.05;
+  max-width: var(--hai-measure-wide);
+  font-size: var(--hai-type-section);
+  line-height: section.leading('display');
   overflow-wrap: anywhere;
   color: color-mix(
     in srgb,
@@ -37,30 +36,31 @@ h1 {
 }
 
 .summary {
-  max-width: 44rem;
-  margin: 1rem 0 0;
-  font: 400 1.15rem/1.8
-    var(--font-body, var(--personality-font-family, sans-serif));
+  max-width: var(--hai-measure);
+  margin: section.space(1) 0 0;
+  @include section.copy-font('lede');
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .intro-action {
   @include section.primary-action;
-  margin-top: 1.5rem;
+  & {
+    margin-top: section.space(1.5);
+  }
 }
 
 .intro-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: section.space(0.75);
+  margin-top: section.space(1.5);
 }
 
 .intro-link {
   display: inline-flex;
   align-items: center;
   min-height: var(--touch-target, 44px);
-  padding: 0.6rem 1.2rem;
+  padding: section.space(0.6) section.space(1.2);
   border-radius: var(--hai-radius-pill);
   border: var(--hai-border-width) var(--hai-border-style)
     color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
@@ -70,20 +70,20 @@ h1 {
     transparent
   );
   color: var(--foreground);
-  font-weight: 700;
+  font-weight: var(--hai-weight-strong);
   text-decoration: none;
-  transition: transform var(--hai-transition), box-shadow var(--hai-transition);
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal');
 
   &:hover,
   &:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--hai-shadow-hover);
+    @include section.hover-lift;
   }
 }
 
 @media (max-width: 640px) {
   .page-intro {
-    padding: 1.2rem;
+    padding: section.space(1.2);
   }
 
   .intro-link,

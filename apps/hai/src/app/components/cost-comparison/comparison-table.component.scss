@@ -17,9 +17,9 @@ h2 {
 }
 
 h3 {
-  @include section.heading-font;
-  margin: 0 0 0.75rem;
-  font-size: 1.25rem;
+  @include section.heading-style;
+  margin: 0 0 section.space(0.75);
+  font-size: section.text-size('h4');
 }
 
 table {
@@ -31,14 +31,14 @@ table {
 thead th {
   @include section.eyebrow;
   margin: 0;
-  padding: 0 1rem 0.75rem 0;
+  padding: 0 section.space(1) section.space(0.75) 0;
   text-align: left;
   color: var(--primary-text, var(--primary));
 }
 
 tbody th,
 td {
-  padding: 1rem 1rem 1rem 0;
+  padding: section.space(1) section.space(1) section.space(1) 0;
   border-top: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
   vertical-align: top;
@@ -48,7 +48,7 @@ td {
 tbody th {
   @include section.heading-font;
   width: 14%;
-  font-size: 1.05rem;
+  font-size: section.text-size('body');
   color: var(--foreground);
 }
 
@@ -58,25 +58,23 @@ td {
 
 .subscription-wins {
   @include section.panel;
-  margin-top: 1.5rem;
+  & {
+    margin-top: section.space(1.5);
+  }
 }
 
 .subscription-wins ul {
   @include section.body-copy;
   display: grid;
-  gap: 0.4rem;
+  gap: section.space(0.4);
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: section.space(1.1);
 }
 
 // Narrow screens: each row becomes a card with labelled cells.
 @media (max-width: 760px) {
   thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    @include section.visually-hidden;
   }
 
   table,
@@ -89,14 +87,14 @@ td {
   }
 
   tr {
-    padding: 1rem 0;
+    padding: section.space(1) 0;
     border-top: 1px solid
       color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
   }
 
   tbody th,
   td {
-    padding: 0.25rem 0;
+    padding: section.space(0.25) 0;
     border: 0;
   }
 
@@ -104,7 +102,7 @@ td {
     content: attr(data-label);
     display: block;
     @include section.eyebrow;
-    margin: 0.5rem 0 0.25rem;
+    margin: section.space(0.5) 0 section.space(0.25);
     color: var(--primary-text, var(--primary));
   }
 }

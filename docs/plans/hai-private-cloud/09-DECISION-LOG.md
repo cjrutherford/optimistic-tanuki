@@ -136,3 +136,15 @@ Show an actual price only where it can be stated confidently; always explain
 the pricing structure; and say plainly when something is quoted per job
 because no fixed price exists. Static or unsourced figures are not presented
 as prices.
+
+## D023 — The personality shapes every page; the page canvas belongs to it
+
+Every HAI style reads theme and personality tokens, through the helpers and
+`--hai-*` tokens in `app/styles/_section.scss` and `app.component.scss`.
+Literals appear only as `var()` fallbacks or with a stated reason, and
+`style-tokens.spec.ts` enforces this. HAI no longer paints its own opaque
+page background, so each personality's pattern, atmosphere and scene show
+behind content. In exchange, any surface that carries text must be opaque
+enough to stay readable over them. The default personality stays
+`foundation` (D012). Its denser spacing, lighter heading weight and flatter
+shadows are now visible, by design (S020).

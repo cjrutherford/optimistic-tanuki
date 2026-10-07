@@ -1,64 +1,66 @@
+@use '../../styles/section';
+
 :host {
   display: block;
 }
 .partner-panel {
   display: block;
-  margin-top: 2rem;
+  margin-top: section.space(2);
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
-  padding: clamp(1.5rem, 5vw, 4rem);
+  padding: clamp(section.space(1.5), 5vw, section.space(4));
   border: 1px solid color-mix(in srgb, var(--secondary) 65%, var(--border));
-  border-radius: var(--personality-card-radius, 1.75rem);
+  border-radius: var(--hai-radius-panel);
   background: color-mix(
     in srgb,
     var(--surface, var(--background)) 86%,
     var(--secondary) 14%
   );
-  box-shadow: 1rem 1rem 0 color-mix(in srgb, var(--primary) 20%, transparent);
+  box-shadow: var(--hai-shadow-panel);
 }
 .partner-card {
   min-width: 0;
 }
 .partner-label {
   display: inline-flex;
-  margin-bottom: 1rem;
+  margin-bottom: section.space(1);
 }
 h2 {
   margin: 0;
-  max-width: 40rem;
-  font: 400 clamp(2.3rem, 5vw, 4.4rem) / 0.98
-    var(--font-heading, Georgia, serif);
+  max-width: var(--hai-measure-narrow);
+  @include section.heading-style('display');
+  font-size: var(--hai-type-feature);
 }
 p:not(.eyebrow) {
-  max-width: 40rem;
-  line-height: 1.7;
+  max-width: var(--hai-measure-narrow);
+  line-height: section.leading('copy');
 }
 .partner-benefits {
-  margin-top: clamp(1.75rem, 4vw, 2.75rem);
-  padding-top: 1.5rem;
+  margin-top: clamp(section.space(1.75), 4vw, section.space(2.75));
+  padding-top: section.space(1.5);
   border-top: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
 }
 .partner-benefits .eyebrow {
-  margin: 0 0 1rem;
+  margin: 0 0 section.space(1);
 }
 ul {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1rem 2rem;
+  gap: section.space(1) section.space(2);
   margin: 0;
   padding: 0;
   list-style: none;
-  font-weight: 700;
-  line-height: 1.45;
+  font-weight: var(--hai-weight-strong);
+  line-height: section.leading();
 }
 li {
-  padding-top: 0.75rem;
+  padding-top: section.space(0.75);
   border-top: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 30%, transparent);
 }
 @media (max-width: 760px) {
   ul {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

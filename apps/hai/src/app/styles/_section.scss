@@ -1,92 +1,304 @@
-// Shared section typography and surfaces for HAI pages. Colour, radius,
-// border, and shadow all come from theme and personality variables.
+// Shared tokens, typography, and surfaces for HAI pages.
+//
+// Every value here reads the theme and personality system. Literals appear
+// only as `var()` fallbacks, so changing the personality, mode, or palette
+// changes every page. `apps/hai/src/app/style-tokens.spec.ts` fails on new
+// literals in HAI stylesheets; see its header for the allowed exceptions.
 
-@mixin eyebrow {
-  margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+@use 'sass:map';
+@use 'personality' as p;
+
+// ---------------------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------------------
+
+/// Spacing on the personality's density scale: `$n` steps of `--spacing-md`
+/// (1rem in a personality with neutral density).
+@function space($n) {
+  @return calc(var(--spacing-md, 1rem) * #{$n});
 }
 
-@mixin heading-font {
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
+/// A step on the personality's type scale. `sm` sits halfway between `small`
+/// and `body`, for secondary text that is not fine print; `lede` sits
+/// halfway between `body` and `h4`, for introductory paragraphs.
+@function text-size($step) {
+  @if $step == 'sm' {
+    @return calc((var(--type-small, 0.833rem) + var(--type-body, 1rem)) / 2);
+  }
+
+  @if $step == 'lede' {
+    @return calc((var(--type-body, 1rem) + var(--type-h4, 1.2rem)) / 2);
+  }
+
+  $fallbacks: (
+    'small': 0.833rem,
+    'body': 1rem,
+    'h4': 1.2rem,
+    'h3': 1.44rem,
+    'h2': 1.728rem,
+    'h1': 2.074rem,
+    'display': 2.488rem,
+  );
+
+  @return var(--type-#{$step}, map.get($fallbacks, $step));
+}
+
+/// Fluid display size that follows the personality's type ratio. A 1.2 ratio
+/// (the default personality) renders the given values; larger ratios render
+/// proportionally larger headings.
+@function display($min, $fluid, $max) {
+  // The floor is not scaled: on small screens every personality shares it,
+  // so wide or uppercase faces still fit.
+  @return clamp(
+    #{$min},
+    calc(#{$fluid} * var(--type-ratio, 1.2) / 1.2),
+    calc(#{$max} * var(--type-ratio, 1.2) / 1.2)
   );
 }
 
-@mixin section-heading {
+/// Line height. `copy` is long-form reading text, slightly looser than the
+/// personality's interface leading; `display` is large headings.
+@function leading($kind: 'ui') {
+  @if $kind == 'copy' {
+    @return calc(var(--line-height, 1.5) * 1.15);
+  }
+
+  @if $kind == 'heading' {
+    @return var(--heading-line-height, 1.15);
+  }
+
+  @if $kind == 'display' {
+    @return max(0.95, calc(var(--heading-line-height, 1.15) * 0.85));
+  }
+
+  @return var(--line-height, 1.5);
+}
+
+/// Transition timing from the personality's motion tokens.
+@function timing($speed: 'fast') {
+  @return var(--animation-duration-#{$speed}, 150ms)
+    var(--animation-easing, ease);
+}
+
+// ---------------------------------------------------------------------------
+// Type
+// ---------------------------------------------------------------------------
+
+@mixin heading-font {
+  font-family: var(
+    --heading-family,
+    var(--font-heading, var(--personality-font-family, Georgia, serif))
+  );
+}
+
+/// The personality's heading treatment: family, weight, tracking, case and
+/// leading. Size is set separately.
+@mixin heading-style($leading: 'heading') {
   @include heading-font;
-  margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1;
+  font-weight: var(--heading-weight, 700);
+  letter-spacing: var(--heading-tracking, normal);
+  text-transform: var(--heading-transform, none);
+  line-height: leading($leading);
+  // Large personality type can exceed a narrow column; break only then.
+  overflow-wrap: break-word;
+}
+
+/// Type of the small uppercase label above a heading.
+@mixin eyebrow-font {
+  font-family: var(
+    --personality-label-font-family,
+    var(--font-body, var(--personality-font-family, sans-serif))
+  );
+  font-size: text-size('small');
+  // token-exempt: emphasis weight; the personality type scale has no label weight
+  font-weight: 700;
+  line-height: leading('heading');
+  letter-spacing: var(--personality-label-letter-spacing, 0.18em);
+  text-transform: var(--personality-label-text-transform, uppercase);
+}
+
+/// Small uppercase label above a heading.
+@mixin eyebrow {
+  @include eyebrow-font;
+  margin: 0 0 space(0.8);
+  color: color-mix(in srgb, var(--foreground) 75%, var(--secondary));
+}
+
+/// Small structural text (badges, table labels, metadata).
+@mixin label {
+  font-family: var(--personality-label-font-family, inherit);
+  font-size: text-size('small');
+  letter-spacing: var(--personality-label-letter-spacing, 0.1em);
+  text-transform: var(--personality-label-text-transform, uppercase);
+}
+
+@mixin section-heading {
+  @include heading-style('display');
+  margin: 0 0 space(1);
+  font-size: var(--hai-type-section);
   overflow-wrap: anywhere;
 }
 
-@mixin body-copy {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+/// Heading of a card or list item.
+@mixin card-heading($step: 'h4') {
+  @include heading-style;
+  margin: 0;
+  font-size: text-size($step);
+}
+
+/// Type of long-form reading text.
+@mixin copy-font($step: 'body') {
+  font-family: var(--font-body, var(--personality-font-family, sans-serif));
+  font-size: text-size($step);
+  font-weight: 400;
+  line-height: leading('copy');
+}
+
+@mixin body-copy($step: 'body') {
+  @include copy-font($step);
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
+// ---------------------------------------------------------------------------
+// Layout and surfaces
+// ---------------------------------------------------------------------------
+
+/// Present to assistive technology, hidden on screen.
+@mixin visually-hidden {
+  position: absolute;
+  // token-exempt: standard visually-hidden pattern
+  width: 1px;
+  // token-exempt: standard visually-hidden pattern
+  height: 1px;
+  padding: 0;
+  // token-exempt: standard visually-hidden pattern
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @mixin section-spacing {
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  margin-top: clamp(space(2.5), 5vw, space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
 @mixin panel($background: var(--hai-panel-background)) {
-  padding: clamp(1.6rem, 3.5vw, 3rem);
+  padding: clamp(space(1.6), 3.5vw, space(3));
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
   background: $background;
   box-shadow: var(--hai-shadow-panel);
 
   @media (max-width: 640px) {
-    padding: 1.2rem;
+    padding: space(1.2);
   }
 }
+
+/// Smaller bordered surface inside a section: cards, list items, steps.
+@mixin card($padding: 1.25) {
+  padding: space($padding);
+  border-radius: var(--hai-radius-card);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 86%,
+    transparent
+  );
+  box-shadow: var(--hai-shadow-card);
+}
+
+// ---------------------------------------------------------------------------
+// Actions and interaction
+// ---------------------------------------------------------------------------
 
 @mixin primary-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.2rem;
-  padding: 0.85rem 1.6rem;
+  min-height: var(--personality-control-height-lg, 3.2rem);
+  padding: space(0.85) space(1.6);
   border-radius: var(--hai-radius-pill);
   border: var(--hai-border-width) var(--hai-border-style)
     color-mix(in srgb, var(--primary) 20%, transparent);
   color: var(--on-primary, var(--primary-foreground));
-  background: var(--primary);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: var(--personality-button-font-weight, 700);
+  letter-spacing: var(--letter-spacing, 0.02em);
+  text-transform: var(--personality-button-text-transform, none);
   text-decoration: none;
-  box-shadow: 0 20px 40px -18px color-mix(in srgb, var(--primary) 48%, transparent);
+  box-shadow: var(--hai-shadow-raised);
+  @include p.primary-fill(var(--primary));
+  @include lift;
+}
+
+/// Secondary action: same shape as the primary action, outlined.
+@mixin secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--personality-control-height-lg, 3.2rem);
+  padding: space(0.85) space(1.6);
+  border-radius: var(--hai-radius-pill);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  color: var(--foreground);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 88%,
+    transparent
+  );
+  font-weight: var(--personality-button-font-weight, 700);
+  letter-spacing: var(--letter-spacing, 0.02em);
+  text-transform: var(--personality-button-text-transform, none);
+  text-decoration: none;
   @include lift;
 }
 
 @mixin text-link {
+  // token-exempt: emphasis weight; links stand out from body copy
   font-weight: 700;
   color: var(--primary-text, var(--primary));
 }
 
-// Hover/focus lift, removed for reduced motion.
+/// The personality's hover response for an interactive surface.
+@mixin hover-lift {
+  @include p.hover-lift(translateY(-2px), var(--hai-shadow-hover));
+}
+
+/// Hover/focus response from the personality, removed for reduced motion.
 @mixin lift {
-  transition: transform var(--hai-transition), box-shadow var(--hai-transition);
+  // Wrapped so the mixin can follow others that emit nested rules.
+  & {
+    transition: transform timing('normal'), box-shadow timing('normal');
+  }
 
   &:hover,
   &:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--hai-shadow-hover);
+    @include hover-lift;
+  }
+
+  &:active {
+    @include p.press(translateY(0), var(--hai-shadow-raised));
   }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 
     &:hover,
-    &:focus-visible {
+    &:focus-visible,
+    &:active {
       transform: none;
     }
+  }
+}
+
+/// Transition for colour and opacity changes on hover.
+@mixin fade($properties...) {
+  transition-property: $properties;
+  transition-duration: var(--animation-duration-fast, 150ms);
+  transition-timing-function: var(--animation-easing, ease);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 }

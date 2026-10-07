@@ -47,23 +47,7 @@ import {
       <a [routerLink]="assessmentRoute">Start an assessment</a>
     </p>
   `,
-  styles: `
-    .appliance-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.75rem;
-      margin: 1.5rem 0 0;
-    }
-
-    .appliance-links a {
-      font-weight: 700;
-      color: var(--primary-text, var(--primary));
-    }
-
-    .appliance-links a::after {
-      content: ' →';
-    }
-  `,
+  styleUrl: './turn-key-appliances-page.component.scss',
 })
 export class TurnKeyAppliancesPageComponent {
   readonly hero = APPLIANCES_HERO;

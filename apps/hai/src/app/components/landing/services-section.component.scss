@@ -7,8 +7,8 @@
 .story-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-  gap: 1.5rem;
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  gap: section.space(1.5);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
@@ -30,10 +30,7 @@
 
 h2,
 h3 {
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  @include section.heading-style;
 }
 
 h2 {
@@ -41,70 +38,68 @@ h2 {
 }
 
 h3 {
-  margin: 0 0 0.65rem;
-  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  margin: 0 0 section.space(0.65);
+  font-size: var(--hai-type-card-title);
 }
 
 .story-panel p,
 .service-card p,
 .proof-list {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 90%, transparent);
 }
 
 .proof-band {
   display: grid;
-  gap: 0.65rem;
-  margin-top: 1.2rem;
-  padding-top: 1rem;
+  gap: section.space(0.65);
+  margin-top: section.space(1.2);
+  padding-top: section.space(1);
   border-top: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 35%, transparent);
 }
 
 .proof-list {
   display: grid;
-  gap: 0.85rem;
+  gap: section.space(0.85);
   margin: 0;
-  padding-left: 1.1rem;
+  padding-left: section.space(1.1);
 }
 
 .service-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  gap: section.space(1);
 }
 
 .service-card {
   display: flex;
   flex-direction: column;
-  transition: transform var(--hai-transition), box-shadow var(--hai-transition),
-    border-color var(--hai-transition);
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal'), border-color section.timing('normal');
 }
 
 .card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.8rem;
-  height: 2.8rem;
-  margin-bottom: 1rem;
-  border-radius: calc(var(--hai-radius-panel) * 0.5);
+  width: var(--personality-control-height, 2.8rem);
+  height: var(--personality-control-height, 2.8rem);
+  margin-bottom: section.space(1);
+  border-radius: var(--hai-radius-chip);
   background: color-mix(in srgb, var(--primary) 12%, transparent);
   color: var(--primary-text, var(--primary));
-  font-size: 1.2rem;
-  line-height: 1;
+  font-size: section.text-size('h4');
+  line-height: section.leading('display');
 }
 
 .service-card:hover,
 .service-card:focus-within {
-  transform: translateY(-3px);
-  box-shadow: var(--hai-shadow-hover);
+  @include section.hover-lift;
 }
 
 @media (max-width: 960px) {
   .story-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .service-list {
@@ -114,7 +109,7 @@ h3 {
 
 @media (max-width: 640px) {
   .service-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

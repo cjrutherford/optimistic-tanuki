@@ -16,88 +16,88 @@ h2 {
 }
 .lede {
   @include section.body-copy;
-  max-width: 44rem;
-  margin: 0 0 1.5rem;
+  max-width: var(--hai-measure);
+  margin: 0 0 section.space(1.5);
 }
 .roi-grid {
   display: grid;
   grid-template-columns: 320px 1fr;
-  gap: 28px;
+  gap: section.space(1.75);
 }
 @media (max-width: 800px) {
   .roi-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .input-label {
   display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  margin: 14px 0 6px 0;
+  font-size: section.text-size('small');
+  font-weight: var(--hai-weight-strong);
+  text-transform: var(--personality-label-text-transform, uppercase);
+  margin: section.space(0.875) 0 section.space(0.375) 0;
 }
 .roi-input {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 12px;
-  font-size: 1rem;
-  border: 2px solid var(--border, var(--primary));
+  padding: section.space(0.625) section.space(0.75);
+  font-size: section.text-size('body');
+  border: var(--hai-border-strong) solid var(--border, var(--primary));
   border-radius: var(--personality-input-radius, 6px);
   color: var(--foreground);
   background: var(--surface, var(--background));
 }
 .error-banner {
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
-  border: 2px solid var(--danger);
+  border: var(--hai-border-strong) solid var(--danger);
   color: var(--danger);
   border-radius: var(--personality-input-radius, 6px);
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  font-weight: 600;
+  padding: section.space(0.625) section.space(0.875);
+  margin-bottom: section.space(0.875);
+  font-weight: var(--hai-weight-strong);
 }
 .result-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: section.space(0.75);
+  margin-bottom: section.space(1.125);
 }
 @media (max-width: 700px) {
   .result-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .result-card {
   border: 1px solid var(--border, var(--primary));
   border-radius: var(--hai-radius-panel);
-  padding: 14px;
+  padding: section.space(0.875);
 }
 .result-label {
   display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
+  font-size: section.text-size('small');
+  text-transform: var(--personality-label-text-transform, uppercase);
   color: var(--foreground-muted, var(--muted));
-  margin-bottom: 4px;
+  margin-bottom: section.space(0.25);
 }
 .result-value {
   display: block;
-  font-size: 1.4rem;
+  font-size: section.text-size('h3');
 }
 .result-meta {
   display: block;
-  font-size: 0.8rem;
+  font-size: section.text-size('small');
   color: var(--foreground-muted, var(--muted));
-  margin-top: 4px;
+  margin-top: section.space(0.25);
 }
 .yearly-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 14px;
-  font-size: 0.9rem;
+  margin-bottom: section.space(0.875);
+  font-size: section.text-size('sm');
 }
 .yearly-table th,
 .yearly-table td {
   text-align: right;
-  padding: 8px 10px;
+  padding: section.space(0.5) section.space(0.625);
   border-bottom: 1px solid var(--border, var(--primary));
 }
 .yearly-table th:first-child,
@@ -105,33 +105,25 @@ h2 {
   text-align: left;
 }
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  @include section.visually-hidden;
 }
 .assumptions-list {
-  font-size: 0.85rem;
+  font-size: section.text-size('sm');
   color: var(--foreground-muted, var(--muted));
-  margin: 0 0 16px 0;
-  padding-left: 20px;
-  line-height: 1.6;
+  margin: 0 0 section.space(1) 0;
+  padding-left: section.space(1.25);
+  line-height: section.leading('copy');
 }
 .needs-input {
   margin: 0;
-  line-height: 1.6;
+  line-height: section.leading('copy');
 }
 .btn-email {
   background: var(--primary);
   color: var(--on-primary, var(--primary-foreground));
   border: none;
   border-radius: var(--personality-input-radius, 6px);
-  padding: 12px 20px;
-  font-weight: 700;
+  padding: section.space(0.75) section.space(1.25);
+  font-weight: var(--hai-weight-strong);
   cursor: pointer;
 }

@@ -17,10 +17,9 @@ h2 {
 }
 
 h3 {
-  @include section.heading-font;
-  margin: 0 0 0.5rem;
-  font-size: 1.25rem;
-  line-height: 1.2;
+  @include section.heading-style;
+  margin: 0 0 section.space(0.5);
+  font-size: section.text-size('h4');
 }
 
 .capability-card p,
@@ -32,8 +31,8 @@ h3 {
 .capability-list {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 3), minmax(0, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0 0;
+  gap: section.space(1);
+  margin: section.space(1.5) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -58,12 +57,12 @@ h3 {
 @media (max-width: 640px) {
   .capability-list:not(.three-up),
   .capability-list.three-up {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .qualifier {
-  max-width: 44rem;
-  margin-top: 1.25rem;
+  max-width: var(--hai-measure);
+  margin-top: section.space(1.25);
   font-style: italic;
 }

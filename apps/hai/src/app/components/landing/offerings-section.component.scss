@@ -5,7 +5,7 @@
 }
 
 .offerings-panel {
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
@@ -16,10 +16,7 @@
 
 h2,
 .offering-headline {
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  @include section.heading-style;
 }
 
 h2 {
@@ -29,21 +26,20 @@ h2 {
 .section-copy p,
 .offering-summary,
 .comparison-note {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .section-copy p {
-  max-width: 44rem;
+  max-width: var(--hai-measure);
   margin: 0;
 }
 
 .offerings-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
-  margin: 1.5rem 0 0;
+  gap: section.space(1.25);
+  margin: section.space(1.5) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -57,45 +53,47 @@ h2 {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: section.space(0.3);
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 15rem;
-  padding: 1.4rem;
+  padding: section.space(1.4);
   color: var(--foreground);
   text-decoration: none;
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
   box-shadow: var(--hai-shadow-panel);
   background: var(--hai-panel-background);
-  transition: transform var(--hai-transition), box-shadow var(--hai-transition);
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal');
 }
 
 .offering-card:hover,
 .offering-card:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: var(--hai-shadow-hover);
+  @include section.hover-lift;
 }
 
 .offering-card:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary) 70%, var(--foreground));
+  outline: var(--hai-border-accent) solid
+    color-mix(in srgb, var(--primary) 70%, var(--foreground));
   outline-offset: 4px;
 }
 
 .offering-headline {
   display: block;
-  font-size: 1.5rem;
-  line-height: 1.2;
+  font-size: section.text-size('h3');
+  line-height: section.leading('heading');
   overflow-wrap: anywhere;
 }
 
 .offering-summary {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: section.space(0.35);
 }
 
 .offering-link {
   margin-top: auto;
-  padding-top: 1rem;
-  font-weight: 700;
+  padding-top: section.space(1);
+  font-weight: var(--hai-weight-strong);
   color: var(--primary-text, var(--primary));
 }
 
@@ -104,11 +102,11 @@ h2 {
 }
 
 .comparison-note {
-  margin: 1.5rem 0 0;
+  margin: section.space(1.5) 0 0;
 }
 
 .comparison-note a {
-  font-weight: 700;
+  font-weight: var(--hai-weight-strong);
   color: var(--primary-text, var(--primary));
 }
 
@@ -120,7 +118,7 @@ h2 {
 
 @media (max-width: 640px) {
   .offerings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .offering-card {

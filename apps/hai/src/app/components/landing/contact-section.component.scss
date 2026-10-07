@@ -15,9 +15,10 @@
 .contact-panel {
   position: relative;
   z-index: 1;
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
-  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.6rem, 3vw, 2.5rem);
+  padding: clamp(section.space(2.5), 5vw, section.space(4))
+    clamp(section.space(1.6), 3vw, section.space(2.5));
   text-align: center;
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
@@ -40,21 +41,20 @@ h2 {
 }
 
 .contact-panel p {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .contact-status {
-  margin: 1rem auto 0;
-  max-width: 36rem;
+  margin: section.space(1) auto 0;
+  max-width: var(--hai-measure-narrow);
   color: color-mix(in srgb, var(--foreground) 82%, transparent);
 }
 
 .sla-notice {
-  margin: 0 auto 1.5rem;
-  max-width: 36rem;
-  font-weight: 600;
+  margin: 0 auto section.space(1.5);
+  max-width: var(--hai-measure-narrow);
+  font-weight: var(--hai-weight-strong);
 }
 
 // otui-heading paints an inline white default; on the themed form panel it

@@ -67,21 +67,7 @@ import {
       [secondary]="{ label: 'Contact us', route: '/contact' }"
     ></hai-cta-panel>
   `,
-  styles: `
-    .stack-qualifier {
-      max-width: 44rem;
-      margin: 1.5rem 0 0;
-      padding: 1rem 1.25rem;
-      border-left: 3px solid var(--primary-text, var(--primary));
-      background: color-mix(
-        in srgb,
-        var(--surface, var(--background)) 86%,
-        transparent
-      );
-      font-weight: 600;
-      line-height: 1.6;
-    }
-  `,
+  styleUrl: './open-source-stack-page.component.scss',
 })
 export class OpenSourceStackPageComponent {
   readonly hero = STACK_HERO;

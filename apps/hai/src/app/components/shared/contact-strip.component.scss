@@ -16,7 +16,7 @@
 .channels {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem 2.5rem;
+  gap: section.space(1) section.space(2.5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -25,25 +25,25 @@
 .channels li {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: section.space(0.2);
   min-width: 0;
 }
 
 .label {
   @include section.body-copy;
-  font-size: 0.85rem;
+  font-size: section.text-size('sm');
 }
 
 .channels a {
   @include section.heading-font;
   @include section.text-link;
-  font-size: 1.15rem;
+  font-size: section.text-size('h4');
   // The email address is long; it must wrap rather than overflow.
   overflow-wrap: anywhere;
 }
 
 .website {
   @include section.body-copy;
-  margin: 1rem 0 0;
-  font-size: 0.85rem;
+  margin: section.space(1) 0 0;
+  font-size: section.text-size('sm');
 }

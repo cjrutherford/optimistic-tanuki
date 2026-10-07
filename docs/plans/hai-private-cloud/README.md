@@ -46,16 +46,17 @@ The agent must complete only the current slice, validate it, update completion n
 | S016  | Responsive and accessibility QA   | Complete |
 | S017  | Performance and browser QA        | Complete |
 | S019  | QR and campaign validation        | Ready    |
-| S020  | Theme and personality token audit | Planned  |
+| S020  | Theme and personality token audit | Complete |
 | S018  | Release pull request              | Planned  |
 
 ## Dependency order
 
-`S000 → S001 → S002 → S003 → S004 → S005 → S006 → S007 → S008 → S009 → S010 → S011 → S012 → S013 → S014 → S015 → S016 → S017 → S019 → S020 → S018`
+`S000 → S001 → S002 → S003 → S004 → S005 → S006 → S007 → S008 → S009 → S010 → S011 → S012 → S013 → S014 → S015 → S016 → S017 → S020 → S019 → S018`
 
 S018 runs last on purpose: the release PR carries the campaign URLs validated
 in S019 and the token audit from S020 (added at the owner's request on
-2026-10-07). The IDs were kept stable rather than renumbered.
+2026-10-07). The IDs were kept stable rather than renumbered. On 2026-10-07
+the owner moved S020 ahead of S019, which waits for a session with the owner.
 
 ## Standard launcher prompt
 

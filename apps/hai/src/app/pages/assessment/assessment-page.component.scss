@@ -1,0 +1,15 @@
+@use '../../styles/section';
+
+.next-steps {
+  margin-top: section.space(1.5);
+}
+.next-steps h2 {
+  margin: 0 0 section.space(0.5);
+  font-size: section.text-size('h4');
+}
+.next-steps ol {
+  margin: 0;
+  padding-left: section.space(1.25);
+  line-height: section.leading('copy');
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
+}

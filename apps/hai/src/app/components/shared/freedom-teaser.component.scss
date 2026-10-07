@@ -15,31 +15,32 @@
 
 h2 {
   @include section.section-heading;
-  max-width: 48rem;
-  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
-  line-height: 1.15;
+  max-width: var(--hai-measure-wide);
+  font-size: var(--hai-type-subsection);
+  line-height: section.leading('heading');
 }
 
 .commitments {
   @include section.body-copy;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem 2rem;
-  margin: 1.5rem 0 0;
+  gap: section.space(1) section.space(2);
+  margin: section.space(1.5) 0 0;
   padding: 0;
   list-style: none;
 }
 
 .commitments li {
   min-width: 0;
-  padding-left: 1rem;
-  border-left: 2px solid color-mix(in srgb, var(--secondary) 55%, transparent);
+  padding-left: section.space(1);
+  border-left: var(--hai-border-strong) solid
+    color-mix(in srgb, var(--secondary) 55%, transparent);
 }
 
 .freedom-link {
   @include section.text-link;
   display: inline-block;
-  margin-top: 1.5rem;
+  margin-top: section.space(1.5);
 }
 
 .freedom-link::after {
@@ -48,6 +49,6 @@ h2 {
 
 @media (max-width: 960px) {
   .commitments {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

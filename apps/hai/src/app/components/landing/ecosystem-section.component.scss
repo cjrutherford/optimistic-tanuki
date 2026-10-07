@@ -5,7 +5,7 @@
 }
 
 .ecosystem-panel {
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
@@ -22,10 +22,7 @@
 
 h2,
 .app-name {
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  @include section.heading-style;
 }
 
 h2 {
@@ -34,34 +31,34 @@ h2 {
 
 .section-copy p,
 .app-tagline {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .ecosystem-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1.25rem;
-  margin-top: 1.2rem;
+  gap: section.space(1.25);
+  margin-top: section.space(1.2);
 }
 
 .ecosystem-card {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 1.4rem;
+  gap: section.space(0.3);
+  padding: section.space(1.4);
   text-decoration: none;
   color: inherit;
   grid-column: span 3;
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 14rem;
   border-radius: var(--hai-radius-panel);
   border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
   box-shadow: var(--hai-shadow-panel);
   background: var(--hai-panel-background);
   backdrop-filter: blur(14px);
-  transition: transform var(--hai-transition), box-shadow var(--hai-transition),
-    border-color var(--hai-transition);
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal'), border-color section.timing('normal');
 }
 
 // Anchor cards use the same live theme tokens as common-ui without nesting an
@@ -87,21 +84,23 @@ h2 {
 }
 
 .ecosystem-card[data-size='lg'] {
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 16rem;
 }
 
 .ecosystem-card[data-size='md'] {
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 14rem;
 }
 
 .ecosystem-card:hover,
 .ecosystem-card:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: var(--hai-shadow-hover);
+  @include section.hover-lift;
 }
 
 .ecosystem-card:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary) 70%, var(--foreground));
+  outline: var(--hai-border-accent) solid
+    color-mix(in srgb, var(--primary) 70%, var(--foreground));
   outline-offset: 4px;
 }
 
@@ -111,13 +110,14 @@ h2 {
 
 .app-name {
   display: block;
-  font-size: 1.7rem;
-  margin-top: 0.15rem;
+  font-size: section.text-size('h2');
+  overflow-wrap: anywhere;
+  margin-top: section.space(0.15);
 }
 
 .app-tagline {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: section.space(0.35);
 }
 
 .ecosystem-card-featured .card-label,
@@ -133,18 +133,18 @@ h2 {
   display: inline-flex;
   width: fit-content;
   margin-top: auto;
-  padding: 0.34rem 0.64rem;
-  border-radius: 999px;
+  padding: section.space(0.34) section.space(0.64);
+  border-radius: var(--hai-radius-pill);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: color-mix(
     in srgb,
     var(--foreground) 78%,
     var(--primary-text, var(--primary))
   );
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: section.text-size('small');
+  font-weight: var(--hai-weight-strong);
+  letter-spacing: var(--letter-spacing, 0.04em);
+  text-transform: var(--personality-label-text-transform, uppercase);
 }
 
 .ecosystem-card-featured .app-link-state {
@@ -167,7 +167,11 @@ h2 {
 
 @media (max-width: 640px) {
   .ecosystem-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-name {
+    font-size: section.text-size('h3');
   }
 
   .ecosystem-card,

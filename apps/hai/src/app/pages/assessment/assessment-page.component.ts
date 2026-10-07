@@ -23,21 +23,7 @@ import { ASSESSMENT_NEXT_STEPS } from '../../content/assessment';
     </section>
     <hai-assessment-form></hai-assessment-form>
   `,
-  styles: `
-    .next-steps {
-      margin-top: 1.5rem;
-    }
-    .next-steps h2 {
-      margin: 0 0 0.5rem;
-      font-size: 1.25rem;
-    }
-    .next-steps ol {
-      margin: 0;
-      padding-left: 1.25rem;
-      line-height: 1.7;
-      color: color-mix(in srgb, var(--foreground) 80%, transparent);
-    }
-  `,
+  styleUrl: './assessment-page.component.scss',
 })
 export class AssessmentPageComponent {
   readonly nextSteps = ASSESSMENT_NEXT_STEPS;

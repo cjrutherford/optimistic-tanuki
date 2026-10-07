@@ -17,24 +17,25 @@ h2 {
 }
 
 h3 {
-  @include section.heading-font;
+  @include section.heading-style;
   margin: 0;
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.15;
+  font-size: var(--hai-type-card-title);
 }
 
 .path-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 2), minmax(0, 1fr));
-  gap: 1.25rem;
+  gap: section.space(1.25);
 }
 
 .path-card {
   @include section.panel;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  min-width: 0;
+  & {
+    display: flex;
+    flex-direction: column;
+    gap: section.space(0.75);
+    min-width: 0;
+  }
 }
 
 .path-card .eyebrow {
@@ -44,21 +45,21 @@ h3 {
 .message {
   @include section.body-copy;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: section.text-size('h4');
 }
 
 .audience-list {
   @include section.body-copy;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: section.space(0.5);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .audience-list li {
-  padding: 0.25rem 0.75rem;
+  padding: section.space(0.25) section.space(0.75);
   border-radius: var(--hai-radius-pill);
   background: color-mix(
     in srgb,
@@ -66,13 +67,13 @@ h3 {
     transparent
   );
   color: var(--foreground);
-  font-size: 0.92rem;
+  font-size: section.text-size('sm');
 }
 
 .path-link {
   @include section.text-link;
   margin-top: auto;
-  padding-top: 0.5rem;
+  padding-top: section.space(0.5);
 }
 
 .path-link::after {
@@ -81,19 +82,19 @@ h3 {
 
 .note {
   @include section.body-copy;
-  max-width: 44rem;
-  margin: 1.25rem 0 0;
+  max-width: var(--hai-measure);
+  margin: section.space(1.25) 0 0;
   font-style: italic;
 }
 
 @media (max-width: 960px) {
   .path-grid.wide {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 760px) {
   .path-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
