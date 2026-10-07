@@ -3,6 +3,7 @@ import {
   MAX_SITE_ANALYTICS_KEYS,
   SiteAnalyticsService,
 } from './site-analytics.service';
+import { MemorySiteAnalyticsStore } from './site-analytics.store';
 
 describe('SiteAnalyticsService', () => {
   let service: SiteAnalyticsService;
@@ -16,20 +17,20 @@ describe('SiteAnalyticsService', () => {
   };
 
   beforeEach(() => {
-    service = new SiteAnalyticsService();
+    service = new SiteAnalyticsService(new MemorySiteAnalyticsStore());
   });
 
-  it('counts identical events under one aggregate key', () => {
-    service.record(event);
-    service.record(event);
-    service.record({
+  it('counts identical events under one aggregate key', async () => {
+    await service.record(event);
+    await service.record(event);
+    await service.record({
       ...event,
       utmSource: undefined,
       utmMedium: '',
       utmCampaign: null,
     });
 
-    expect(service.summary('hai')).toEqual([
+    expect(await service.summary('hai')).toEqual([
       {
         appId: 'hai',
         name: 'page_view',
@@ -44,7 +45,7 @@ describe('SiteAnalyticsService', () => {
     ]);
   });
 
-  it('accepts every event the HAI site sends', () => {
+  it('accepts every event the HAI site sends', async () => {
     for (const [name, detail] of [
       ['page_view', undefined],
       ['cta_click', 'assessment'],
@@ -57,25 +58,25 @@ describe('SiteAnalyticsService', () => {
       ['phone_click', undefined],
       ['email_click', undefined],
     ]) {
-      expect(() =>
+      await expect(
         service.record({
           ...event,
           path: '/private-cloud/assessment',
           name,
           detail,
         })
-      ).not.toThrow();
+      ).resolves.toBeUndefined();
     }
   });
 
-  it('stores nothing about the visitor', () => {
-    service.record({
+  it('stores nothing about the visitor', async () => {
+    await service.record({
       ...event,
       // Extra fields a client might send are dropped, never stored.
       ...({ email: 'ada@example.com', ip: '10.0.0.1' } as object),
     });
 
-    expect(Object.keys(service.summary()[0]).sort()).toEqual(
+    expect(Object.keys((await service.summary())[0]).sort()).toEqual(
       [
         'appId',
         'count',
@@ -100,35 +101,51 @@ describe('SiteAnalyticsService', () => {
     ['an oversized UTM value', { ...event, utmCampaign: 'x'.repeat(65) }],
     ['a UTM value with an email', { ...event, utmSource: 'ada@example.com' }],
     ['a bad app id', { ...event, appId: 'HAI APP' }],
-  ])('rejects %s', (_label, input) => {
-    expect(() => service.record(input)).toThrow(BadRequestException);
-    expect(service.summary()).toEqual([]);
+  ])('rejects %s', async (_label, input) => {
+    await expect(service.record(input)).rejects.toThrow(BadRequestException);
+    expect(await service.summary()).toEqual([]);
   });
 
-  it('caps the number of distinct counters', () => {
+  it('caps the number of distinct counters', async () => {
     for (let i = 0; i < MAX_SITE_ANALYTICS_KEYS; i += 1) {
-      service.record({ ...event, detail: `d${i}` });
+      await service.record({ ...event, detail: `d${i}` });
     }
 
-    expect(() => service.record({ ...event, detail: 'one-more' })).toThrow(
-      'Analytics capacity reached.'
-    );
+    await expect(
+      service.record({ ...event, detail: 'one-more' })
+    ).rejects.toThrow('Analytics capacity reached.');
     // Existing counters still increment.
-    service.record({ ...event, detail: 'd0' });
+    await service.record({ ...event, detail: 'd0' });
     expect(
-      service.summary().find((entry) => entry.detail === 'd0')?.count
+      (await service.summary()).find((entry) => entry.detail === 'd0')?.count
     ).toBe(2);
   });
 
-  it('filters the summary by app and sorts by count', () => {
-    service.record({ ...event, appId: 'other' });
-    service.record({ ...event, name: 'phone_click' });
-    service.record({ ...event, name: 'phone_click' });
-    service.record(event);
+  it('filters the summary by app and sorts by count', async () => {
+    await service.record({ ...event, appId: 'other' });
+    await service.record({ ...event, name: 'phone_click' });
+    await service.record({ ...event, name: 'phone_click' });
+    await service.record(event);
 
-    expect(service.summary('hai').map((entry) => entry.name)).toEqual([
+    expect((await service.summary('hai')).map((entry) => entry.name)).toEqual([
       'phone_click',
       'page_view',
     ]);
+  });
+
+  it('exposes counters to Prometheus with every label', async () => {
+    await service.record(event);
+    await service.record(event);
+    await service.record({ ...event, name: 'cta_click', detail: 'assessment' });
+
+    const exposition = await service.prometheus();
+
+    expect(exposition).toContain('# TYPE ot_site_events_total counter');
+    expect(exposition).toContain(
+      'ot_site_events_total{app="hai",event="page_view",path="/private-cloud",detail="",utm_source="print",utm_medium="flyer",utm_campaign="private_cloud"} 2'
+    );
+    expect(exposition).toContain(
+      'event="cta_click",path="/private-cloud",detail="assessment"'
+    );
   });
 });

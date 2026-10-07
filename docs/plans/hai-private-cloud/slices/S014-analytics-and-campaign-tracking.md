@@ -124,10 +124,43 @@ Changed files:
 - `apps/hai/src/app/components/assessment/assessment-form.component.{ts,html}`
 - `docs/plans/hai-private-cloud/` (this slice, README, new S020)
 
+### Revision 2026-10-07: persistent counts on the existing analytics surface
+
+At the owner's direction, counts must survive a gateway reboot and should use
+the analytics surface already in the repository: Prometheus scrapes the
+gateway's `/api/performance/prometheus` endpoint (90-day retention on a
+persistent volume) and Grafana dashboards are provisioned from ConfigMaps.
+
+- Counters now live in Redis (`ot:site-analytics:counts`, one hash shared by
+  all gateway replicas) whenever `REDIS_HOST` is set, which it is in compose
+  and Kubernetes; local runs without Redis fall back to memory.
+  (`apps/gateway/src/analytics/site-analytics.store.ts`)
+- The performance exposition endpoint now also emits
+  `ot_site_events_total{app,event,path,detail,utm_source,utm_medium,
+utm_campaign}`; a store outage cannot take the performance metrics down.
+- New Grafana dashboard "HAI site analytics"
+  (`k8s/base/observability/site-analytics.yaml`, mounted in `grafana.yaml`):
+  landing, OSS stack, assessment start/submit, phone and email totals; home
+  vs organization interest; page views; calls to action; campaigns; events
+  per hour. Queries take `max` across instances because every replica
+  exposes the same Redis totals.
+- Event recording fails open: a store outage returns `{accepted: false}`
+  rather than an error; invalid events are still rejected.
+- Verified: store tests show counts surviving a simulated restart and adding
+  up across replicas; the real node-redis 5 client against a real Redis 7
+  server carried a count from 1 to 2 across two processes; `kubectl
+kustomize k8s/base/observability` builds; gateway 1,482 tests, lint, and
+  build pass.
+
 ## Deviations / Blockers
 
-- In-memory counts reset when the gateway restarts and are per replica. For
-  durable reporting, either persist the counters or swap the transport to a
-  self-hosted, cookieless tool (Plausible or Umami) — an owner decision; the
-  site only needs `ANALYTICS_TRANSPORT` replaced.
-- There is no dashboard yet beyond `GET /api/analytics/summary`.
+- Compose's `redis` service has no volume, so counts survive gateway and
+  Redis restarts but not `docker compose down` (or anything that recreates
+  the Redis container). Recommended: add a named volume at `/data` for the
+  `redis` service. Not changed here, since it affects every service using
+  that Redis.
+- Prometheus and Grafana are defined only for Kubernetes. Until there is a
+  cluster, counts are readable through `GET /api/analytics/summary`
+  (requires `security.observability.read`).
+- The PromQL in the dashboard was reviewed but not executed against a live
+  Prometheus.

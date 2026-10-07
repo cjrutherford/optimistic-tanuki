@@ -61,6 +61,11 @@ import { PerformanceTelemetryController } from '../performance/performance-telem
 import { PerformanceTelemetryService } from '../performance/performance-telemetry.service';
 import { SiteAnalyticsController } from '../analytics/site-analytics.controller';
 import { SiteAnalyticsService } from '../analytics/site-analytics.service';
+import {
+  MemorySiteAnalyticsStore,
+  RedisSiteAnalyticsStore,
+  SITE_ANALYTICS_STORE,
+} from '../analytics/site-analytics.store';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
@@ -480,6 +485,22 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     },
     PerformanceTelemetryService,
     SiteAnalyticsService,
+    {
+      // Redis keeps site-analytics counts across gateway restarts and shares
+      // them between replicas; without it (local runs) counts live in memory.
+      provide: SITE_ANALYTICS_STORE,
+      useFactory: () => {
+        const host = process.env.REDIS_HOST?.trim();
+        return host
+          ? RedisSiteAnalyticsStore.fromEnvironment(
+              host,
+              Number(process.env.REDIS_PORT || 6379),
+              process.env.REDIS_PASSWORD || undefined,
+              Number(process.env.REDIS_DB || 0)
+            )
+          : new MemorySiteAnalyticsStore();
+      },
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

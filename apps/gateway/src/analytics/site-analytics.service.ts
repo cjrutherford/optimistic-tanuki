@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  SITE_ANALYTICS_STORE,
+  SiteAnalyticsStore,
+} from './site-analytics.store';
 
 /**
  * First-party, aggregate-only site analytics (HAI S014).
@@ -6,7 +10,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
  * Each accepted event increments one counter keyed by app, event, page path,
  * an optional short detail, and the UTM campaign fields. Nothing about the
  * visitor is stored: no IP address, user agent, identifier, or timestamp per
- * event. Counts live in memory and reset when the gateway restarts.
+ * event. Counters live in the configured store (Redis in deployments, so they
+ * survive gateway restarts) and are exposed to Prometheus as
+ * `ot_site_events_total` on the performance exposition endpoint.
  */
 
 export const SITE_ANALYTICS_EVENTS = [
@@ -49,39 +55,83 @@ const UTM = /^[a-z0-9_.-]{1,64}$/;
 /** Upper bound on distinct counters, so junk input cannot grow memory. */
 export const MAX_SITE_ANALYTICS_KEYS = 5000;
 
+type SiteAnalyticsKey = Omit<SiteAnalyticsCount, 'count'>;
+
+const FIELDS = [
+  'appId',
+  'name',
+  'path',
+  'detail',
+  'utmSource',
+  'utmMedium',
+  'utmCampaign',
+] as const;
+
+const escapeLabel = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
 @Injectable()
 export class SiteAnalyticsService {
-  private readonly counts = new Map<string, SiteAnalyticsCount>();
+  constructor(
+    @Inject(SITE_ANALYTICS_STORE) private readonly store: SiteAnalyticsStore
+  ) {}
 
-  record(input: SiteAnalyticsEventInput): SiteAnalyticsCount {
+  async record(input: SiteAnalyticsEventInput): Promise<void> {
     const event = this.normalize(input);
-    const key = JSON.stringify([
-      event.appId,
-      event.name,
-      event.path,
-      event.detail,
-      event.utmSource,
-      event.utmMedium,
-      event.utmCampaign,
-    ]);
-    const existing = this.counts.get(key);
-    if (existing) {
-      existing.count += 1;
-      return existing;
-    }
-    if (this.counts.size >= MAX_SITE_ANALYTICS_KEYS) {
+    const key = JSON.stringify(FIELDS.map((field) => event[field]));
+    if (!(await this.store.increment(key, MAX_SITE_ANALYTICS_KEYS))) {
       throw new BadRequestException('Analytics capacity reached.');
     }
-    const created = { ...event, count: 1 };
-    this.counts.set(key, created);
-    return created;
   }
 
-  summary(appId?: string): SiteAnalyticsCount[] {
-    return [...this.counts.values()]
-      .filter((entry) => !appId || entry.appId === appId)
-      .map((entry) => ({ ...entry }))
-      .sort((a, b) => b.count - a.count);
+  async summary(appId?: string): Promise<SiteAnalyticsCount[]> {
+    const counts: SiteAnalyticsCount[] = [];
+    for (const [key, count] of await this.store.entries()) {
+      const entry = this.parse(key);
+      if (entry && (!appId || entry.appId === appId)) {
+        counts.push({ ...entry, count });
+      }
+    }
+    return counts.sort((a, b) => b.count - a.count);
+  }
+
+  /** Prometheus exposition for the shared performance scrape endpoint. */
+  async prometheus(): Promise<string> {
+    const lines = [
+      '# HELP ot_site_events_total Site analytics events by page and campaign.',
+      '# TYPE ot_site_events_total counter',
+    ];
+    for (const entry of await this.summary()) {
+      const labels = [
+        ['app', entry.appId],
+        ['event', entry.name],
+        ['path', entry.path],
+        ['detail', entry.detail ?? ''],
+        ['utm_source', entry.utmSource ?? ''],
+        ['utm_medium', entry.utmMedium ?? ''],
+        ['utm_campaign', entry.utmCampaign ?? ''],
+      ]
+        .map(([name, value]) => `${name}="${escapeLabel(value)}"`)
+        .join(',');
+      lines.push(`ot_site_events_total{${labels}} ${entry.count}`);
+    }
+    return `${lines.join('\n')}\n`;
+  }
+
+  private parse(key: string): SiteAnalyticsKey | null {
+    try {
+      const values = JSON.parse(key) as Array<string | null>;
+      if (!Array.isArray(values) || values.length !== FIELDS.length)
+        return null;
+      const entry = Object.fromEntries(
+        FIELDS.map((field, index) => [field, values[index]])
+      ) as unknown as SiteAnalyticsKey;
+      return (SITE_ANALYTICS_EVENTS as readonly string[]).includes(entry.name)
+        ? entry
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   private normalize(

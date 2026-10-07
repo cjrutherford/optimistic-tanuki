@@ -22,6 +22,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { RequirePermissions } from '../decorators/permissions.decorator';
 import { Public } from '../decorators/public.decorator';
+import { SiteAnalyticsService } from '../analytics/site-analytics.service';
 import {
   PerformanceRumInput,
   RuntimeObservationInput,
@@ -35,6 +36,7 @@ export class PerformanceTelemetryController {
 
   constructor(
     private readonly telemetry: PerformanceTelemetryService,
+    private readonly siteAnalytics: SiteAnalyticsService,
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authenticationClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
@@ -63,8 +65,14 @@ export class PerformanceTelemetryController {
   @Public()
   @Header('content-type', 'text/plain; version=0.0.4')
   @Get('prometheus')
-  prometheus(): string {
-    return this.telemetry.prometheus();
+  async prometheus(): Promise<string> {
+    let siteAnalytics = '';
+    try {
+      siteAnalytics = await this.siteAnalytics.prometheus();
+    } catch {
+      // A store outage must not take the performance metrics down with it.
+    }
+    return this.telemetry.prometheus() + siteAnalytics;
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
