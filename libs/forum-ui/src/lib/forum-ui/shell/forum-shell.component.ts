@@ -74,6 +74,10 @@ export class ForumShellComponent implements OnInit {
     return this.userValidPermissions.includes(permission);
   }
 
+  getUploadProfileId(): string {
+    return this.userProfile()?.id || this.currentUserId || '';
+  }
+
   ngOnInit() {
     // Read resolved data from route
     this.route.data.subscribe((data) => {

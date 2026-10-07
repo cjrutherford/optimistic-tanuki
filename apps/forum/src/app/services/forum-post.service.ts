@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForumPost } from '../../entities/forum-post.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
@@ -8,12 +8,14 @@ import {
 } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 import { withIdConstraint } from './find-options';
+import { ForumAccessService } from './forum-access.service';
 
 @Injectable()
 export class ForumPostService {
   constructor(
     @Inject(getRepositoryToken(ForumPost))
-    private readonly postRepo: Repository<ForumPost>
+    private readonly postRepo: Repository<ForumPost>,
+    @Optional() private readonly forumAccess?: ForumAccessService
   ) {}
 
   private sanitizeContent(content: string): string {
@@ -34,15 +36,23 @@ export class ForumPostService {
         'ol',
         'li',
         'a',
+        'img',
         'blockquote',
         'code',
         'pre',
       ],
-      ALLOWED_ATTR: ['href', 'target', 'class'],
+      ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
     });
   }
 
   async create(createPostDto: CreateForumPostDto): Promise<ForumPost> {
+    const audienceOwner = await this.forumAccess?.resolvePostAudienceOwner(
+      createPostDto.threadId
+    );
+    await this.forumAccess?.latchAssetReferences(
+      createPostDto.content,
+      audienceOwner
+    );
     const post = this.postRepo.create({
       ...createPostDto,
       content: this.sanitizeContent(createPostDto.content),
@@ -72,6 +82,15 @@ export class ForumPostService {
       throw new Error(`Forum post with ID ${id} not found`);
     }
 
+    const audienceOwner = await this.forumAccess?.resolvePostAudienceOwner(
+      post.threadId
+    );
+    await this.forumAccess?.latchAssetReferences(post.content, audienceOwner);
+    await this.forumAccess?.latchAssetReferences(
+      updatePostDto.content ?? post.content,
+      audienceOwner
+    );
+
     const updatedData: Partial<ForumPost> = {
       isEdited: true,
     };
@@ -84,8 +103,16 @@ export class ForumPostService {
     return await this.findOne(id);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.postRepo.delete(id);
+  async remove(id: string): Promise<{ id: string; deleted: boolean }> {
+    const post = await this.findOne(id);
+    if (post) {
+      const audienceOwner = await this.forumAccess?.resolvePostAudienceOwner(
+        post.threadId
+      );
+      await this.forumAccess?.latchAssetReferences(post.content, audienceOwner);
+    }
+    const result = await this.postRepo.delete(id);
+    return { id, deleted: (result.affected ?? 0) > 0 };
   }
 
   async moderate(

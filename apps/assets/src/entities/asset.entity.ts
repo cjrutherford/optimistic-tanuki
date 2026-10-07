@@ -1,5 +1,9 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { AssetType, StorageStrategy } from '@optimistic-tanuki/models';
+import {
+  AssetAudienceRestriction,
+  AssetType,
+  StorageStrategy,
+} from '@optimistic-tanuki/models';
 
 @Entity()
 export default class AssetEntity {
@@ -28,4 +32,8 @@ export default class AssetEntity {
   /** Monotonic community audiences; removing a content reference never clears these. */
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
   audienceCommunityIds: string[];
+
+  /** Monotonic, profile-based restrictions inherited from private content. */
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  audienceRestrictions: AssetAudienceRestriction[];
 }

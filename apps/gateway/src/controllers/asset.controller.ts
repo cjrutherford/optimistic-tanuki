@@ -22,6 +22,9 @@ import {
   AssetCommands,
   ClassifiedCommands,
   CommunityCommands,
+  FollowCommands,
+  ForumPostCommands,
+  PostCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -29,6 +32,7 @@ import {
   AssetListQuery,
   AssetType,
   CreateAssetDto,
+  AssetAudienceRestriction,
 } from '@optimistic-tanuki/models';
 import { Response } from 'express';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -56,7 +60,10 @@ export class AssetController {
     private readonly profileService?: ClientProxy,
     @Optional()
     @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
-    private readonly classifiedsService?: ClientProxy
+    private readonly classifiedsService?: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.FORUM_SERVICE)
+    private readonly forumService?: ClientProxy
   ) {}
 
   private toHttpException(
@@ -110,6 +117,9 @@ export class AssetController {
         throw new ForbiddenException(
           'Asset profile is not owned by this session'
         );
+      }
+      if (asset.audienceRestrictions?.length) {
+        this.assertUploadAudienceRestrictions(asset, user);
       }
       if (asset.communityId) {
         const audience = await this.assertUploadAudience(
@@ -167,7 +177,8 @@ export class AssetController {
     @Param('id') id: string,
     @Res() res: Response,
     @Headers('range') range?: string,
-    @User() user?: UserDetails
+    @User() user?: UserDetails,
+    @AppScope() appScope?: string | null
   ) {
     res.setHeader('Cache-Control', 'private, no-store');
     try {
@@ -175,7 +186,52 @@ export class AssetController {
         this.assetService
           .send({ cmd: AssetCommands.RETRIEVE }, { id })
           .pipe(timeout({ first: 5000 }))
-      )) as { profileId?: string; audienceCommunityIds?: string[] };
+      )) as {
+        profileId?: string;
+        audienceCommunityIds?: string[];
+        audienceRestrictions?: AssetAudienceRestriction[];
+      };
+      const legacyReferences = await this.getLegacyAssetAudienceReferences(
+        id,
+        asset.profileId,
+        appScope || undefined
+      );
+      const legacyRestrictions = legacyReferences.restrictions.filter(
+        (restriction) => restriction.profileId === asset.profileId
+      );
+      if (legacyRestrictions.length) {
+        await firstValueFrom(
+          this.assetService
+            .send(
+              { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+              { id, restrictions: legacyRestrictions }
+            )
+            .pipe(timeout({ first: 5000 }))
+        );
+      }
+      const storedRestrictions = Array.isArray(asset.audienceRestrictions)
+        ? asset.audienceRestrictions
+        : [];
+      if (
+        storedRestrictions.some(
+          (restriction) =>
+            restriction.profileId !== asset.profileId ||
+            !['owner', 'followers'].includes(restriction.type) ||
+            !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+              restriction.profileId
+            )
+        )
+      ) {
+        throw new NotFoundException('Asset not found');
+      }
+      const restrictions = [
+        ...new Map(
+          [...storedRestrictions, ...legacyRestrictions].map((restriction) => [
+            `${restriction.type}:${restriction.profileId}`,
+            restriction,
+          ])
+        ).values(),
+      ];
       const storedAudienceCommunityIds = new Set(
         Array.isArray(asset.audienceCommunityIds)
           ? asset.audienceCommunityIds
@@ -199,15 +255,33 @@ export class AssetController {
           )
         );
       }
-      const restrictedCommunityIds = new Set(
-        legacyAudiences.map((audience) => audience.communityId)
+      const restrictedCommunityIds = new Set([
+        ...legacyAudiences.map((audience) => audience.communityId),
+        ...legacyReferences.communityIds,
+      ]);
+      const newLegacyCommunityIds = [...legacyReferences.communityIds].filter(
+        (communityId) => !storedAudienceCommunityIds.has(communityId)
       );
+      if (newLegacyCommunityIds.length) {
+        await Promise.all(
+          newLegacyCommunityIds.map((communityId) =>
+            firstValueFrom(
+              this.assetService
+                .send(
+                  { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+                  { id, communityId }
+                )
+                .pipe(timeout({ first: 5000 }))
+            )
+          )
+        );
+      }
       for (const communityId of storedAudienceCommunityIds) {
         const community = await this.findCommunity(communityId);
         if (!community) throw new NotFoundException('Asset not found');
         if (community.isPrivate) restrictedCommunityIds.add(communityId);
       }
-      if (restrictedCommunityIds.size > 0) {
+      if (restrictedCommunityIds.size > 0 || restrictions.length > 0) {
         if (!user?.userId || !user.profileId) {
           throw new NotFoundException('Asset not found');
         }
@@ -236,6 +310,27 @@ export class AssetController {
             }
           }
         }
+        for (const restriction of restrictions) {
+          if (restriction.type === 'owner') {
+            if (
+              user.profileId !== restriction.profileId &&
+              !(await this.isProfileOwnedByUser(
+                restriction.profileId,
+                user.userId
+              ))
+            ) {
+              throw new NotFoundException('Asset not found');
+            }
+          } else if (
+            user.profileId !== restriction.profileId &&
+            !(await this.isProfileFollowing(
+              user.profileId,
+              restriction.profileId
+            ))
+          ) {
+            throw new NotFoundException('Asset not found');
+          }
+        }
       }
       const mediaUrl = this.configService.get<string>(
         'ASSETS_INTERNAL_MEDIA_URL'
@@ -259,6 +354,7 @@ export class AssetController {
       };
       if (
         restrictedCommunityIds.size > 0 ||
+        restrictions.length > 0 ||
         storedAudienceCommunityIds.size > 0
       ) {
         const timestamp = String(Date.now());
@@ -374,6 +470,94 @@ export class AssetController {
     if (!profileId) return false;
     const profile = await firstValueFrom(this.assetProfileRequest(profileId));
     return profile?.userId === userId;
+  }
+
+  private assertUploadAudienceRestrictions(
+    asset: CreateAssetDto,
+    user: UserDetails
+  ): void {
+    const restrictions = asset.audienceRestrictions ?? [];
+    if (!Array.isArray(restrictions)) {
+      throw new HttpException('Invalid asset audience restriction', 400);
+    }
+    for (const restriction of restrictions) {
+      if (
+        !restriction ||
+        !['owner', 'followers'].includes(restriction.type) ||
+        restriction.profileId !== asset.profileId ||
+        !user?.userId ||
+        !user.profileId
+      ) {
+        throw new ForbiddenException(
+          'Asset audience must match the authenticated asset owner'
+        );
+      }
+    }
+  }
+
+  private async getLegacyAssetAudienceReferences(
+    assetId: string,
+    assetProfileId: string | undefined,
+    appScope?: string
+  ): Promise<{
+    restrictions: AssetAudienceRestriction[];
+    communityIds: string[];
+  }> {
+    if (!this.socialService || !this.forumService) {
+      throw new BadGatewayException(
+        'Content audience authorization is unavailable'
+      );
+    }
+    if (!assetProfileId) throw new NotFoundException('Asset not found');
+    const [socialReferences, forumReferences] = await Promise.all([
+      firstValueFrom(
+        this.socialService
+          .send<{
+            restrictions?: AssetAudienceRestriction[];
+            communityIds?: string[];
+          }>(
+            { cmd: PostCommands.FIND_ASSET_AUDIENCES },
+            { assetId, assetProfileId }
+          )
+          .pipe(timeout({ first: 5000 }))
+      ),
+      firstValueFrom(
+        this.forumService
+          .send<{ restrictions?: AssetAudienceRestriction[] }>(
+            { cmd: ForumPostCommands.FIND_ASSET_AUDIENCES },
+            { assetId, appScope }
+          )
+          .pipe(timeout({ first: 5000 }))
+      ),
+    ]);
+    return {
+      restrictions: [
+        ...(socialReferences?.restrictions ?? []),
+        ...(forumReferences?.restrictions ?? []),
+      ],
+      communityIds: [...new Set(socialReferences?.communityIds ?? [])],
+    };
+  }
+
+  private async isProfileFollowing(
+    viewerProfileId: string,
+    ownerProfileId: string
+  ): Promise<boolean> {
+    if (!this.socialService) {
+      throw new BadGatewayException('Follower access cannot be verified');
+    }
+    const following = await firstValueFrom(
+      this.socialService
+        .send<Array<{ followeeId: string }>>(
+          { cmd: FollowCommands.GET_FOLLOWING },
+          { followerId: viewerProfileId }
+        )
+        .pipe(timeout({ first: 5000 }))
+    );
+    return (
+      Array.isArray(following) &&
+      following.some((entry) => entry.followeeId === ownerProfileId)
+    );
   }
 
   private async assertUploadAudience(

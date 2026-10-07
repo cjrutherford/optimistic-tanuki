@@ -4,6 +4,7 @@ export const PostCommands = {
   DELETE: 'DELETE_POST',
   FIND: 'FIND_POST',
   FIND_MANY: 'FIND_MANY_POST',
+  FIND_ASSET_AUDIENCES: 'FIND_POST_ASSET_AUDIENCES',
 };
 
 export const VoteCommands = {

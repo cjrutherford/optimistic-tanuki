@@ -5,4 +5,5 @@ export const AssetCommands = {
   READ: 'asset.read',
   LIST: 'asset.list',
   ADD_COMMUNITY_AUDIENCE: 'asset.addCommunityAudience',
+  ADD_AUDIENCE_RESTRICTIONS: 'asset.addAudienceRestrictions',
 };

@@ -6,8 +6,33 @@ import {
   MaxLength,
   MinLength,
   IsNotEmpty,
+  IsIn,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class AssetAudienceRestrictionDto {
+  @ApiProperty({ enum: ['owner', 'followers'] })
+  @IsIn(['owner', 'followers'])
+  type!: 'owner' | 'followers';
+
+  @ApiProperty({ description: 'Profile whose audience governs this asset' })
+  @IsString()
+  @IsUUID()
+  profileId!: string;
+}
+
+export type AssetAudienceRestriction = Pick<
+  AssetAudienceRestrictionDto,
+  'type' | 'profileId'
+>;
+
+export interface AssetContentAudienceReference {
+  restrictions: AssetAudienceRestriction[];
+  communityIds: string[];
+}
 
 export enum AssetType {
   IMAGE = 'image',
@@ -87,6 +112,14 @@ export class CreateAssetDto {
   @IsOptional()
   @IsUUID()
   classifiedAdId?: string;
+
+  /** Optional, server-validated private audience for an in-progress upload. */
+  @ApiProperty({ type: [AssetAudienceRestrictionDto], required: false })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssetAudienceRestrictionDto)
+  audienceRestrictions?: AssetAudienceRestriction[];
 }
 
 export class AssetDto {

@@ -208,6 +208,7 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
           'profile',
           'social',
           'classifieds',
+          'forum',
         ],
         value: AssetController,
       },

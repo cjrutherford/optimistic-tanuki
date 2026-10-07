@@ -110,6 +110,7 @@ describe('AppService', () => {
         type: 'image',
         profileId: undefined,
         audienceCommunityIds: [],
+        audienceRestrictions: [],
       });
       expect(storageAdapter.create).toHaveBeenCalledWith(asset);
       expect(assetRepo.save).toHaveBeenCalledWith({
@@ -153,6 +154,71 @@ describe('AppService', () => {
       );
       expect(assetRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ audienceCommunityIds: ['community-1'] })
+      );
+    });
+
+    it('persists typed audience restrictions before returning an uploaded asset', async () => {
+      const restriction = {
+        type: 'followers',
+        profileId: 'profile-1',
+      } as const;
+      const dto = {
+        name: 'followers.png',
+        type: 'image',
+        profileId: 'profile-1',
+        audienceRestrictions: [restriction],
+      } as any;
+      const asset = {
+        id: 'asset-1',
+        name: dto.name,
+        profileId: dto.profileId,
+        type: dto.type,
+        audienceRestrictions: [restriction],
+      } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        storageStrategy: asset.storageStrategy,
+        storagePath: 'followers.png',
+        profileId: asset.profileId,
+      } as any);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceRestrictions: [restriction] })
+      );
+      expect(assetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceRestrictions: [restriction] })
+      );
+    });
+
+    it('merges restrictions atomically and monotonically', async () => {
+      const owner = { type: 'owner', profileId: 'profile-1' } as const;
+      const followerAudience = {
+        type: 'followers',
+        profileId: 'profile-1',
+      } as const;
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceRestrictions: [owner, followerAudience] },
+      ]);
+
+      await appService.addAudienceRestrictions({
+        id: 'asset-1',
+        restrictions: [owner],
+      });
+      await appService.addAudienceRestrictions({
+        id: 'asset-1',
+        restrictions: [followerAudience],
+      });
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(assetRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('jsonb_agg(DISTINCT restriction)'),
+        [JSON.stringify([owner]), 'asset-1']
       );
     });
 

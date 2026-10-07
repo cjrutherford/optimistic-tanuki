@@ -40,7 +40,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PostProfileStub } from '@optimistic-tanuki/social-ui';
 import { SocialWebSocketService } from '../../social-websocket.service';
 import { AssetService } from '../../asset.service';
-import { CreateAssetDto, FollowDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  CreateAssetDto,
+  FollowDto,
+} from '@optimistic-tanuki/ui-models';
 import { FollowService } from '../../follow.service';
 import { HttpClient } from '@angular/common/http';
 import { CommunityService } from '../../community.service';
@@ -81,6 +85,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   styleUrls: ['./feed.component.scss'],
 })
 export class FeedComponent implements OnInit, OnDestroy {
+  /** Set by audience-aware compose hosts; defaults to public uploads. */
+  assetAudienceRestrictions: AssetAudienceRestriction[] = [];
   private contentReadVersion = 0;
   private readonly contentReadCancelled$ = new Subject<void>();
   posts = signal<PostDto[]>([]);
@@ -124,7 +130,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
     dataUrl: string,
-    fileName: string
+    fileName: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> => {
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
@@ -140,6 +147,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       type: 'image',
       content: dataUrl,
       fileExtension: fileExtension,
+      ...(audienceRestrictions?.length ? { audienceRestrictions } : {}),
     };
 
     try {

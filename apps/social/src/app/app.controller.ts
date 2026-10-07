@@ -331,6 +331,17 @@ export class AppController {
     return await this.postService.findOne(id, search);
   }
 
+  @MessagePattern({ cmd: PostCommands.FIND_ASSET_AUDIENCES })
+  async findAssetAudienceReferences(
+    @Payload('assetId') assetId: string,
+    @Payload('assetProfileId') assetProfileId: string
+  ) {
+    return this.postService.findAssetAudienceReferences(
+      assetId,
+      assetProfileId
+    );
+  }
+
   @MessagePattern({ cmd: PostCommands.UPDATE })
   async updatePost(
     @Payload('id') id: string,

@@ -1,4 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
+import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../../entities/post.entity';
 import { Attachment } from '../../entities/attachment.entity';
@@ -11,6 +14,7 @@ import {
   FindOperator,
   FindOptionsWhere,
   MoreThanOrEqual,
+  Like,
 } from 'typeorm';
 import {
   CreatePostDto,
@@ -33,8 +37,88 @@ export class PostService {
     private readonly attachmentRepo: Repository<Attachment>,
     @Inject(getRepositoryToken(Comment))
     private readonly commentRepo: Repository<Comment>,
-    private readonly communityService: CommunityService
+    private readonly communityService: CommunityService,
+    @Optional()
+    @Inject(ServiceTokens.ASSETS_SERVICE)
+    private readonly assetService?: ClientProxy
   ) {}
+
+  private async latchPrivateAssetReferences(post: {
+    content?: string;
+    profileId?: string;
+    visibility?: string;
+    communityId?: string;
+  }): Promise<void> {
+    // Older clients emitted /asset/:id while current clients use /api/asset/:id.
+    // Both forms must latch before a content mutation can remove the first read path.
+    const ids = [
+      ...new Set(
+        (post.content ?? '')
+          .match(
+            /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi
+          )
+          ?.map((match) => match.split('/').pop()!)
+      ),
+    ];
+    if (!ids.length) return;
+    if (!this.assetService)
+      throw new Error('Asset audience service unavailable');
+    const community = post.communityId
+      ? await this.communityService.findOne(post.communityId)
+      : undefined;
+    const isPrivate = post.visibility === 'followers' || !!community?.isPrivate;
+    for (const id of ids) {
+      const asset = await firstValueFrom(
+        this.assetService
+          .send({ cmd: AssetCommands.RETRIEVE }, { id })
+          .pipe(timeout({ first: 5000 }))
+      );
+      const storedRestrictions = Array.isArray(asset.audienceRestrictions)
+        ? asset.audienceRestrictions
+        : [];
+      const storedCommunities = Array.isArray(asset.audienceCommunityIds)
+        ? asset.audienceCommunityIds
+        : [];
+      const compatibleRestrictions = storedRestrictions.every(
+        (restriction) =>
+          restriction.type === 'followers' &&
+          post.visibility === 'followers' &&
+          restriction.profileId === post.profileId
+      );
+      const compatibleCommunities = storedCommunities.every(
+        (communityId) => !!community?.isPrivate && communityId === community.id
+      );
+      if (!compatibleRestrictions || !compatibleCommunities) {
+        throw new Error('Asset audience is narrower than this post audience');
+      }
+      if (asset.profileId !== post.profileId) continue;
+      if (isPrivate && post.visibility === 'followers') {
+        await firstValueFrom(
+          this.assetService
+            .send(
+              { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+              {
+                id,
+                restrictions: [
+                  { type: 'followers', profileId: post.profileId },
+                ],
+              }
+            )
+            .pipe(timeout({ first: 5000 }))
+        );
+      }
+      if (isPrivate && community?.isPrivate) {
+        await firstValueFrom(
+          this.assetService
+            .send(
+              { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+              { id, communityId: community.id }
+            )
+            .pipe(timeout({ first: 5000 }))
+        );
+      }
+    }
+  }
 
   private sanitizeContent(content: string): string {
     return DOMPurify.sanitize(content, {
@@ -82,6 +166,8 @@ export class PostService {
       }
     }
 
+    await this.latchPrivateAssetReferences(createPostDto);
+
     // Sanitize content before saving
     const sanitizedDto = {
       ...createPostDto,
@@ -115,6 +201,54 @@ export class PostService {
       finalOptions.where = { id };
     }
     return await this.postRepo.findOne(finalOptions);
+  }
+
+  async findAssetAudienceReferences(
+    assetId: string,
+    assetProfileId: string
+  ): Promise<{
+    restrictions: Array<{ type: 'owner' | 'followers'; profileId: string }>;
+    communityIds: string[];
+  }> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        assetId
+      )
+    ) {
+      throw new Error('Invalid asset id');
+    }
+    const candidates = await this.postRepo.find({
+      where: { content: Like(`%/asset/${assetId}%`) },
+    });
+    const exactReference = new RegExp(`/asset/${assetId}(?=$|[^A-Za-z0-9-])`);
+    const restrictions = new Map<
+      string,
+      { type: 'owner' | 'followers'; profileId: string }
+    >();
+    const communityIds = new Set<string>();
+
+    for (const post of candidates) {
+      if (!exactReference.test(post.content ?? '')) continue;
+      // A public asset owned by someone else must not become private because
+      // another author embedded its URL in a restricted post.
+      if (post.profileId !== assetProfileId) continue;
+      if (post.visibility === 'followers' && post.profileId) {
+        const key = `followers:${post.profileId}`;
+        restrictions.set(key, {
+          type: 'followers',
+          profileId: post.profileId,
+        });
+      }
+      if (post.communityId) {
+        const community = await this.communityService.findOne(post.communityId);
+        if (community?.isPrivate) communityIds.add(post.communityId);
+      }
+    }
+
+    return {
+      restrictions: [...restrictions.values()],
+      communityIds: [...communityIds],
+    };
   }
 
   async update(
@@ -156,6 +290,13 @@ export class PostService {
     }
 
     // Sanitize content if provided
+    await this.latchPrivateAssetReferences(post);
+    await this.latchPrivateAssetReferences({
+      ...post,
+      ...updatePostDto,
+      content: updatePostDto.content ?? post.content,
+      profileId: post.profileId,
+    });
     const sanitizedDto = {
       ...updatePostDto,
     };
@@ -201,6 +342,8 @@ export class PostService {
         throw new Error('You do not have permission to delete this post');
       }
     }
+
+    await this.latchPrivateAssetReferences(post);
 
     // Delete related entities first to avoid foreign key constraint errors
     try {

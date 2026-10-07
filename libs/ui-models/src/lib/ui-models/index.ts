@@ -10,7 +10,11 @@ export type { CreateProfileDto, UpdateProfileDto, ProfileDto } from './profile';
 export type { UserDto } from './User.dto';
 export type { RegisterSubmitType } from './register-types';
 export type { LoginType } from './login-types';
-export type { CreateAssetDto, AssetDto } from './asset';
+export type {
+  CreateAssetDto,
+  AssetDto,
+  AssetAudienceRestriction,
+} from './asset';
 export * from './project';
 export type {
   PermissionDto,

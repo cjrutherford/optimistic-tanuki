@@ -275,7 +275,7 @@ const COVERED: Array<{
 ];
 
 const DEFERRED_KEYS: Record<string, string[]> = {
-  PostCommands: ['UPDATE', 'DELETE', 'FIND_MANY'],
+  PostCommands: ['UPDATE', 'DELETE', 'FIND_MANY', 'FIND_ASSET_AUDIENCES'],
   CommunityCommands: [
     'UPDATE',
     'DELETE',

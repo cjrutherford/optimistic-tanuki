@@ -1,4 +1,6 @@
 import { ForumAccessService } from './forum-access.service';
+import { of } from 'rxjs';
+import { AssetCommands } from '@optimistic-tanuki/constants';
 
 describe('Forum audience and parent policy', () => {
   const scope = 'client-interface';
@@ -65,6 +67,101 @@ describe('Forum audience and parent policy', () => {
       );
     }
   );
+
+  it('derives an owner-only asset restriction from the private parent of a reply', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const privateTopic = {
+      id: 'private-topic',
+      profileId: 'topic-owner',
+      visibility: 'private',
+      title: 'Private images',
+      description: 'Private images',
+    };
+    const publicThread = {
+      id: 'public-thread',
+      topicId: 'private-topic',
+      profileId: 'thread-owner',
+      visibility: 'public',
+      title: 'Reply area',
+      description: 'Reply area',
+      content: 'Reply area',
+    };
+    const privateReply = {
+      id: 'private-reply',
+      threadId: 'public-thread',
+      profileId: 'reply-owner',
+      content: `<img src="https://local/api/asset/${assetId}">`,
+    };
+    const topics = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(privateTopic),
+    };
+    const threads = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(publicThread),
+    };
+    const posts = { find: jest.fn().mockResolvedValue([privateReply]) };
+    service = new ForumAccessService(
+      topics as any,
+      threads as any,
+      posts as any
+    );
+
+    await expect(service.findAssetAudienceReferences(assetId)).resolves.toEqual(
+      {
+        restrictions: [{ type: 'owner', profileId: 'topic-owner' }],
+      }
+    );
+  });
+  it('rejects malformed asset ids before searching content', async () => {
+    await expect(
+      service.findAssetAudienceReferences('asset-id')
+    ).rejects.toThrow('Invalid asset id');
+  });
+  it('latches a forum owner restriction for private content before persistence', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assets = {
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ profileId: 'topic-owner', audienceRestrictions: [] })
+        ),
+    };
+    (service as any).assets = assets;
+
+    await service.latchAssetReferences(
+      `<img src="/asset/${assetId}">`,
+      'topic-owner'
+    );
+
+    expect(assets.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [{ type: 'owner', profileId: 'topic-owner' }],
+      }
+    );
+  });
+  it('rejects a restricted asset when attached to a broader forum audience', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const assets = {
+      send: jest.fn().mockReturnValue(
+        of({
+          profileId: 'asset-owner',
+          audienceRestrictions: [{ type: 'owner', profileId: 'asset-owner' }],
+        })
+      ),
+    };
+    (service as any).assets = assets;
+
+    await expect(
+      service.latchAssetReferences(
+        `<img src="/api/asset/${assetId}">`,
+        undefined
+      )
+    ).rejects.toThrow('Asset audience is narrower than this forum audience');
+    expect(assets.send).toHaveBeenCalledTimes(1);
+  });
   it.each(['topic', 'thread', 'post'] as const)(
     'applies the same audience to %s lists',
     async (kind) => {

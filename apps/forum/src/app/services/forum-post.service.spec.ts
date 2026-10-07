@@ -73,14 +73,27 @@ describe('ForumPostService', () => {
       expect(repo.save).toHaveBeenCalledWith({ id: 'draft' });
     });
 
-    it('allows rich text markup but only href, target and class attributes', async () => {
+    it('allows safe inline images while limiting image attributes', async () => {
       await service.create(createDto);
 
       expect(sanitize).toHaveBeenCalledWith(
         createDto.content,
         expect.objectContaining({
-          ALLOWED_TAGS: expect.arrayContaining(['p', 'a', 'code', 'pre']),
-          ALLOWED_ATTR: ['href', 'target', 'class'],
+          ALLOWED_TAGS: expect.arrayContaining([
+            'p',
+            'a',
+            'code',
+            'pre',
+            'img',
+          ]),
+          ALLOWED_ATTR: expect.arrayContaining([
+            'href',
+            'target',
+            'class',
+            'src',
+            'alt',
+            'title',
+          ]),
         })
       );
     });
@@ -153,9 +166,46 @@ describe('ForumPostService', () => {
 
   describe('remove', () => {
     it('deletes the post by id', async () => {
-      await expect(service.remove('post-1')).resolves.toBeUndefined();
+      await expect(service.remove('post-1')).resolves.toEqual({
+        id: 'post-1',
+        deleted: true,
+      });
 
       expect(repo.delete).toHaveBeenCalledWith('post-1');
+    });
+
+    it('returns an explicit negative acknowledgement when the delete affects no rows', async () => {
+      repo.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(service.remove('post-1')).resolves.toEqual({
+        id: 'post-1',
+        deleted: false,
+      });
+    });
+
+    it('latches a private reply image before removing its reference', async () => {
+      const assetId = '123e4567-e89b-42d3-a456-426614174000';
+      const access = {
+        resolvePostAudienceOwner: jest.fn().mockResolvedValue('topic-owner'),
+        latchAssetReferences: jest.fn().mockResolvedValue(undefined),
+      };
+      (service as any).forumAccess = access;
+      repo.findOne.mockResolvedValue({
+        id: 'post-1',
+        threadId: 'thread-1',
+        content: `<img src="/api/asset/${assetId}">`,
+        moderationStatus: 'visible',
+      });
+
+      await service.remove('post-1');
+
+      expect(access.latchAssetReferences).toHaveBeenCalledWith(
+        `<img src="/api/asset/${assetId}">`,
+        'topic-owner'
+      );
+      expect(
+        access.latchAssetReferences.mock.invocationCallOrder[0]
+      ).toBeLessThan(repo.delete.mock.invocationCallOrder[0]);
     });
   });
 });

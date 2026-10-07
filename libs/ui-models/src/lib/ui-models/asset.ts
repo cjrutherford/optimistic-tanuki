@@ -1,9 +1,15 @@
+export interface AssetAudienceRestriction {
+  type: 'owner' | 'followers';
+  profileId: string;
+}
+
 export interface CreateAssetDto {
   name: string;
   profileId: string;
   type: 'image' | 'video' | 'audio' | 'document';
   content?: string; // Optional content for in-memory operations
   fileExtension?: string; // Optional file extension for in-memory operations
+  audienceRestrictions?: AssetAudienceRestriction[];
 }
 
 export declare type AssetDto = {

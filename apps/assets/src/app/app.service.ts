@@ -13,6 +13,7 @@ import {
   CreateAssetDto,
   StorageStrategy,
   AssetType,
+  AssetAudienceRestriction,
 } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import {
@@ -74,6 +75,7 @@ export class AppService {
         type: data.type,
         storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
         audienceCommunityIds: data.communityId ? [data.communityId] : [],
+        audienceRestrictions: data.audienceRestrictions ?? [],
       };
       const asset = this.assetRepo.create(entityAsset);
       data.id = asset.id; // Ensure the ID is set for the storage adapter
@@ -266,6 +268,26 @@ export class AppService {
     return updated[0];
   }
 
+  async addAudienceRestrictions(data: {
+    id: string;
+    restrictions: AssetAudienceRestriction[];
+  }): Promise<AssetEntity> {
+    const updated = (await this.assetRepo.query(
+      `UPDATE "asset_entity"
+       SET "audienceRestrictions" = (
+         SELECT COALESCE(jsonb_agg(DISTINCT restriction), '[]'::jsonb)
+         FROM jsonb_array_elements("audienceRestrictions" || $1::jsonb) restriction
+       )
+       WHERE "id" = $2
+       RETURNING *`,
+      [JSON.stringify(data.restrictions), data.id]
+    )) as AssetEntity[];
+    if (!updated.length) {
+      throw new RpcException(`Asset with id ${data.id} not found`);
+    }
+    return updated[0];
+  }
+
   async listAssets(data: AssetListQuery): Promise<AssetEntity[]> {
     return this.assetRepo.find({
       where: {
@@ -281,7 +303,10 @@ export class AppService {
 
   async readAsset(data: AssetHandle): Promise<string> {
     const asset = await this.retrieveAsset(data);
-    if (asset.audienceCommunityIds?.length) {
+    if (
+      asset.audienceCommunityIds?.length ||
+      asset.audienceRestrictions?.length
+    ) {
       throw new RpcException({
         statusCode: 403,
         message: 'Community assets must use the authorized media delivery path',

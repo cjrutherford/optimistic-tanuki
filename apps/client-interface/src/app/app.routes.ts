@@ -32,7 +32,9 @@ const forumUserIdResolver: ResolveFn<string> = () => {
   const authState = inject(AuthStateService);
   const profile = authState.getPersistedSelectedProfile();
   console.log('Forum userIdResolver, profile:', profile);
-  return profile?.id || '';
+  // Cookie-authenticated first-time sessions may not have a persisted profile
+  // selection yet. The session response carries the account's profile id.
+  return profile?.id || authState.getDecodedTokenValue()?.profileId || '';
 };
 
 const communityPermissionResolver: ResolveFn<string[]> = async () => {

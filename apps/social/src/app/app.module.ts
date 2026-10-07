@@ -108,6 +108,21 @@ import { BusinessContentService } from './services/business-content.service';
       inject: [ConfigService],
     },
     {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.assets');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),
       inject: ['SOCIAL_CONNECTION'],

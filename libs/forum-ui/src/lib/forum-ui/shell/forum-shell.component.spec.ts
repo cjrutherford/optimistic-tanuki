@@ -6,6 +6,25 @@ import { ForumShellComponent } from './forum-shell.component';
 import { ForumService } from '../services/forum.service';
 
 describe('Forum thread reply context', () => {
+  it('uses the cookie-session profile id when no legacy token profile is available', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ForumService, useValue: {} },
+        { provide: ProfileService, useValue: {} },
+        { provide: Router, useValue: {} },
+        { provide: ActivatedRoute, useValue: {} },
+        { provide: PLATFORM_ID, useValue: 'browser' },
+      ],
+    });
+    const shell = TestBed.runInInjectionContext(
+      () => new ForumShellComponent()
+    );
+    shell.currentUserId = 'session-profile-id';
+    expect(shell.getUploadProfileId()).toBe('session-profile-id');
+    shell.userProfile.set({ id: 'selected-profile-id' });
+    expect(shell.getUploadProfileId()).toBe('selected-profile-id');
+  });
+
   it('loads the owning topic and its threads before opening a contextual reply', async () => {
     const thread = { id: 'thread', topicId: 'topic' };
     const topic = { id: 'topic', title: 'Topic' };

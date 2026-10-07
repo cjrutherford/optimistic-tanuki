@@ -22,7 +22,10 @@ import {
   ControlValueAccessor,
   NG_VALUE_ACCESSOR,
 } from '@angular/forms';
-import { CreateAttachmentDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  CreateAttachmentDto,
+} from '@optimistic-tanuki/ui-models';
 import {
   InjectedComponentData,
   ComponentInjection,
@@ -84,7 +87,11 @@ export interface PostData {
 }
 
 export interface ImageUploadCallback {
-  (dataUrl: string, fileName: string): Promise<string>;
+  (
+    dataUrl: string,
+    fileName: string,
+    audienceRestrictions?: AssetAudienceRestriction[]
+  ): Promise<string>;
 }
 
 @Component({
@@ -127,6 +134,7 @@ export class ComposeComponent
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
+  @Input() assetAudienceRestrictions: AssetAudienceRestriction[] = [];
   @Input() submitLabel = 'Post';
   @Input() sectionKey = '';
   @Output() postSubmitted = new EventEmitter<PostData>();
@@ -542,7 +550,8 @@ export class ComposeComponent
             if (base64Src && this.imageUploadCallback) {
               const uploadedUrl = await this.imageUploadCallback(
                 base64Src,
-                file.name
+                file.name,
+                this.assetAudienceRestrictions
               );
               this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
             }
@@ -564,7 +573,8 @@ export class ComposeComponent
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
-          `social-image-${Date.now()}`
+          `social-image-${Date.now()}`,
+          this.assetAudienceRestrictions
         );
 
         this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -712,7 +722,8 @@ export class ComposeComponent
               if (base64Src) {
                 const uploadedUrl = await this.imageUploadCallback!(
                   base64Src,
-                  file.name
+                  file.name,
+                  this.assetAudienceRestrictions
                 );
                 this.editor
                   ?.chain()
@@ -737,7 +748,8 @@ export class ComposeComponent
           const assetUrl = await this.imageUploadService.uploadFile(
             file,
             this.profileId,
-            `social-drag-drop-${Date.now()}`
+            `social-drag-drop-${Date.now()}`,
+            this.assetAudienceRestrictions
           );
 
           this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -815,7 +827,8 @@ export class ComposeComponent
               .substring(2, 9)}`;
             const assetUrl = await this.imageUploadCallback(
               image.dataUrl,
-              fileName
+              fileName,
+              this.assetAudienceRestrictions
             );
             replacements.push({ dataUrl: image.dataUrl, assetUrl });
           } catch (error) {

@@ -90,6 +90,7 @@
       <input
         type="file"
         id="forumImageInput"
+        [attr.data-profile-ready]="profileId ? 'true' : 'false'"
         hidden
         (change)="onFileSelected($event)"
         accept="image/*"

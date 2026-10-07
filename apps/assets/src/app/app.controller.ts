@@ -31,6 +31,18 @@ export class AppController {
     }
   }
 
+  @MessagePattern({ cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS })
+  async addAudienceRestrictions(data: {
+    id: string;
+    restrictions: import('@optimistic-tanuki/models').AssetAudienceRestriction[];
+  }) {
+    try {
+      return await this.appService.addAudienceRestrictions(data);
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
   @MessagePattern({ cmd: AssetCommands.REMOVE })
   async removeAsset(data: AssetHandle) {
     try {

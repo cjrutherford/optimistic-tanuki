@@ -124,6 +124,11 @@ export class AppController {
     return this.access.read('post', data.id, data);
   }
 
+  @MessagePattern({ cmd: ForumPostCommands.FIND_ASSET_AUDIENCES })
+  async findAssetAudienceReferences(@Payload('assetId') assetId: string) {
+    return this.access.findAssetAudienceReferences(assetId);
+  }
+
   @MessagePattern({ cmd: ForumPostCommands.UPDATE })
   async updateForumPost(
     @Payload() data: { id: string; data: UpdateForumPostDto } & ForumActor

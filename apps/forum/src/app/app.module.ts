@@ -1,5 +1,7 @@
 import { ForumAccessService } from './services/forum-access.service';
 import { Module } from '@nestjs/common';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import loadConfig from '../config';
@@ -31,6 +33,17 @@ import { ForumSeedService } from './services/forum-seed.service';
   ],
   controllers: [AppController],
   providers: [
+    {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_ASSETS_HOST || 'assets',
+            port: Number(process.env.SERVICE_ASSETS_PORT || 3005),
+          },
+        }),
+    },
     ForumAccessService,
     TopicService,
     ThreadService,

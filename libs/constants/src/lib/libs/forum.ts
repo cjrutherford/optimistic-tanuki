@@ -20,6 +20,7 @@ export const ForumPostCommands = {
   DELETE: 'DELETE_FORUM_POST',
   FIND: 'FIND_FORUM_POST',
   FIND_MANY: 'FIND_MANY_FORUM_POST',
+  FIND_ASSET_AUDIENCES: 'FIND_FORUM_ASSET_AUDIENCES',
 };
 
 export const ForumModerationCommands = {

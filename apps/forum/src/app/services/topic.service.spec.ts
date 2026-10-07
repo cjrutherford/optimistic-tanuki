@@ -227,9 +227,21 @@ describe('TopicService', () => {
 
   describe('remove', () => {
     it('deletes the topic by id', async () => {
-      await expect(service.remove('topic-1')).resolves.toBeUndefined();
+      await expect(service.remove('topic-1')).resolves.toEqual({
+        id: 'topic-1',
+        deleted: true,
+      });
 
       expect(repo.delete).toHaveBeenCalledWith('topic-1');
+    });
+
+    it('returns an explicit negative acknowledgement when no topic was deleted', async () => {
+      repo.delete.mockResolvedValue({ affected: 0 });
+
+      await expect(service.remove('topic-1')).resolves.toEqual({
+        id: 'topic-1',
+        deleted: false,
+      });
     });
   });
 });

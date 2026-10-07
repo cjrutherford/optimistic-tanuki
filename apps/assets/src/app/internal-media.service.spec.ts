@@ -89,6 +89,21 @@ describe('InternalMediaService', () => {
     });
   });
 
+  it('requires a gateway authorization assertion before reading typed audience media', async () => {
+    (appService.retrieveAsset as jest.Mock).mockResolvedValue({
+      ...asset,
+      audienceRestrictions: [{ type: 'followers', profileId: 'owner-profile' }],
+    });
+
+    await expect(service.open('asset-1')).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+    expect(appService.readAssetContent).not.toHaveBeenCalled();
+    await expect(
+      service.open('asset-1', undefined, true)
+    ).resolves.toMatchObject({ statusCode: 200 });
+  });
+
   it.each([
     ['png', 'image/png'],
     ['jpg', 'image/jpeg'],

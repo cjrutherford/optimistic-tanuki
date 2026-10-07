@@ -16,3 +16,8 @@ services:
     transport: TCP
     host: profile
     port: 3002
+  assets:
+    name: assets
+    transport: TCP
+    host: assets
+    port: 3005

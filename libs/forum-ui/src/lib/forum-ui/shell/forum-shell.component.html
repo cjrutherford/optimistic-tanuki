@@ -57,6 +57,7 @@
     <lib-compose-forum-post
       [availableTopics]="topics()"
       [availableThreads]="threads()"
+      [profileId]="getUploadProfileId()"
       [preselectedTopicId]="currentTopic()?.id"
       [preselectedThreadId]="currentThread()?.id"
       (postSubmitted)="onPostSubmitted($event)"

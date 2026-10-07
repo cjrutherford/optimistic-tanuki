@@ -45,7 +45,11 @@ export class InternalMediaService {
     } catch {
       throw new NotFoundException(`Asset with id ${id} not found`);
     }
-    if (asset.audienceCommunityIds?.length && !viewerAuthorized) {
+    if (
+      (asset.audienceCommunityIds?.length ||
+        asset.audienceRestrictions?.length) &&
+      !viewerAuthorized
+    ) {
       throw new NotFoundException(`Asset with id ${id} not found`);
     }
     if (asset.storageStrategy !== StorageStrategy.LOCAL_BLOCK_STORAGE) {

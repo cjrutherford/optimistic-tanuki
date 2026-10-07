@@ -5,6 +5,8 @@ import {
   ServiceTokens,
   AssetCommands,
   ClassifiedCommands,
+  FollowCommands,
+  PostCommands,
 } from '@optimistic-tanuki/constants';
 import { JwtService } from '@nestjs/jwt';
 import { HttpException, Logger } from '@nestjs/common';
@@ -48,20 +50,24 @@ describe('AssetController', () => {
         {
           provide: ServiceTokens.SOCIAL_SERVICE,
           useValue: {
-            send: jest
-              .fn()
-              .mockReturnValue(
-                of({
-                  id: 'community-1',
-                  appScope: 'local-hub',
-                  isPrivate: false,
-                })
-              ),
+            send: jest.fn().mockReturnValue(
+              of({
+                id: 'community-1',
+                appScope: 'local-hub',
+                isPrivate: false,
+              })
+            ),
           },
         },
         {
           provide: ServiceTokens.CLASSIFIEDS_SERVICE,
           useValue: { send: jest.fn().mockReturnValue(of([])) },
+        },
+        {
+          provide: ServiceTokens.FORUM_SERVICE,
+          useValue: {
+            send: jest.fn().mockReturnValue(of({ restrictions: [] })),
+          },
         },
         { provide: JwtService, useValue: { verify: jest.fn() } },
         {
@@ -352,7 +358,7 @@ describe('AssetController', () => {
 
     assetService.send.mockImplementation((pattern: { cmd: string }) =>
       pattern.cmd === AssetCommands.RETRIEVE
-        ? of({ id: '1', audienceCommunityIds: [] })
+        ? of({ id: '1', profileId: 'profile-1', audienceCommunityIds: [] })
         : of([])
     );
     await controller.getAssetById('1', mockRes, 'bytes=0-10');
@@ -383,13 +389,18 @@ describe('AssetController', () => {
           key === 'ASSETS_INTERNAL_MEDIA_URL' ? 'http://assets:3006' : undefined
         ),
       } as any,
+      {
+        send: jest
+          .fn()
+          .mockReturnValue(of({ restrictions: [], communityIds: [] })),
+      } as any,
       undefined,
-      undefined,
-      { send: jest.fn().mockReturnValue(of([])) } as any
+      { send: jest.fn().mockReturnValue(of([])) } as any,
+      { send: jest.fn().mockReturnValue(of({ restrictions: [] })) } as any
     );
     assetService.send.mockImplementation((pattern: { cmd: string }) =>
       pattern.cmd === AssetCommands.RETRIEVE
-        ? of({ id: '1', audienceCommunityIds: [] })
+        ? of({ id: '1', profileId: 'profile-1', audienceCommunityIds: [] })
         : of([])
     );
     const mockRes = { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() };
@@ -555,6 +566,79 @@ describe('AssetController', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
+
+  it.each([
+    ['current follower', true],
+    ['former follower', false],
+  ])(
+    'checks the live follow graph for a %s typed asset',
+    async (_label, follows) => {
+      const social = (controller as any).socialService;
+      social.send.mockImplementation((pattern: { cmd: string }) =>
+        pattern.cmd === PostCommands.FIND_ASSET_AUDIENCES
+          ? of({ restrictions: [], communityIds: [] })
+          : pattern.cmd === FollowCommands.GET_FOLLOWING
+          ? of(
+              follows
+                ? [{ followeeId: '123e4567-e89b-42d3-a456-426614174001' }]
+                : []
+            )
+          : of({
+              id: 'community-1',
+              appScope: 'client-interface',
+              isPrivate: false,
+            })
+      );
+      (controller as any).classifiedsService.send.mockReturnValue(of([]));
+      (controller as any).profileService.send.mockReturnValue(
+        of({ userId: 'asset-owner-user' })
+      );
+      assetService.send.mockImplementation((pattern: { cmd: string }) =>
+        pattern.cmd === AssetCommands.RETRIEVE
+          ? of({
+              id: 'followers-asset',
+              profileId: '123e4567-e89b-42d3-a456-426614174001',
+              audienceCommunityIds: [],
+              audienceRestrictions: [
+                {
+                  type: 'followers',
+                  profileId: '123e4567-e89b-42d3-a456-426614174001',
+                },
+              ],
+            })
+          : of({})
+      );
+      const fetchSpy = jest
+        .spyOn(global, 'fetch')
+        .mockResolvedValue(new Response(Buffer.from('current follower image')));
+      const res = Object.assign(
+        new Writable({
+          write(_chunk, _encoding, callback) {
+            callback();
+          },
+        }),
+        { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() }
+      ) as any;
+      res.status.mockReturnValue(res);
+
+      const read = controller.getAssetById('followers-asset', res, undefined, {
+        userId: 'viewer-user',
+        profileId: 'viewer-profile',
+      } as any);
+      if (follows) {
+        await expect(read).resolves.toBeUndefined();
+        expect(fetchSpy).toHaveBeenCalled();
+      } else {
+        await expect(read).rejects.toMatchObject({ status: 404 });
+        expect(fetchSpy).not.toHaveBeenCalled();
+      }
+      expect(social.send).toHaveBeenCalledWith(
+        { cmd: FollowCommands.GET_FOLLOWING },
+        { followerId: 'viewer-profile' }
+      );
+      fetchSpy.mockRestore();
+    }
+  );
 
   it('allows anonymous reads when a persisted community audience is public now', async () => {
     assetService.send.mockImplementation((pattern: { cmd: string }) =>

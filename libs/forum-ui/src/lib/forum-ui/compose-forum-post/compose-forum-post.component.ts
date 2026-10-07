@@ -36,6 +36,7 @@ import {
   ThemeColors,
 } from '@optimistic-tanuki/theme-lib';
 import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
+import { AssetAudienceRestriction } from '@optimistic-tanuki/ui-models';
 
 import { TopicDto, ThreadDto } from '../models';
 
@@ -237,11 +238,12 @@ export class ComposeForumPostComponent
         'ol',
         'li',
         'a',
+        'img',
         'blockquote',
         'code',
         'pre',
       ],
-      ALLOWED_ATTR: ['href', 'target', 'class'],
+      ALLOWED_ATTR: ['href', 'target', 'class', 'src', 'alt', 'title'],
     });
   }
 
@@ -291,6 +293,28 @@ export class ComposeForumPostComponent
     }
   }
 
+  private getAssetAudienceRestrictions(): AssetAudienceRestriction[] {
+    const restrictions = new Map<string, AssetAudienceRestriction>();
+    const thread = this.availableThreads.find(
+      (item) => item.id === this.selectedThreadId
+    );
+    const topicId = thread?.topicId || this.selectedTopicId;
+    const topic = this.availableTopics.find((item) => item.id === topicId);
+    if (topic?.visibility === 'private') {
+      restrictions.set(topic.profileId, {
+        type: 'owner',
+        profileId: topic.profileId,
+      });
+    }
+    if (thread?.visibility === 'private') {
+      restrictions.set(thread.profileId, {
+        type: 'owner',
+        profileId: thread.profileId,
+      });
+    }
+    return [...restrictions.values()];
+  }
+
   async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) {
@@ -312,7 +336,8 @@ export class ComposeForumPostComponent
       const assetUrl = await this.imageUploadService.uploadFile(
         file,
         this.profileId,
-        `forum-image-${Date.now()}`
+        `forum-image-${Date.now()}`,
+        this.getAssetAudienceRestrictions()
       );
 
       if (assetUrl && this.editor) {
@@ -376,7 +401,8 @@ export class ComposeForumPostComponent
         const assetUrl = await this.imageUploadService.uploadFile(
           file,
           this.profileId,
-          `forum-drag-drop-${Date.now()}`
+          `forum-drag-drop-${Date.now()}`,
+          this.getAssetAudienceRestrictions()
         );
 
         if (assetUrl && this.editor) {
