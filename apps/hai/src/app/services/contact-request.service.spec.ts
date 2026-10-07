@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { ANALYTICS_TRANSPORT } from './analytics.service';
 import { of, throwError } from 'rxjs';
 import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
 import {
@@ -24,7 +26,11 @@ describe('ContactRequestService', () => {
   beforeEach(() => {
     api = { contactControllerCreateContact: jest.fn() };
     TestBed.configureTestingModule({
-      providers: [{ provide: OptomisitcTanukiAPIService, useValue: api }],
+      providers: [
+        provideRouter([]),
+        { provide: OptomisitcTanukiAPIService, useValue: api },
+        { provide: ANALYTICS_TRANSPORT, useValue: () => undefined },
+      ],
     });
     service = TestBed.inject(ContactRequestService);
   });

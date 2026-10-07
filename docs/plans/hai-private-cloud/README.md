@@ -25,35 +25,37 @@ The agent must complete only the current slice, validate it, update completion n
 
 ## Slice status
 
-| Slice | Description                     | Status   |
-| ----- | ------------------------------- | -------- |
-| S000  | Repository and site audit       | Complete |
-| S001  | Design-system inventory         | Complete |
-| S002  | Route and navigation foundation | Complete |
-| S003  | Homepage positioning            | Complete |
-| S004  | Homepage private-cloud section  | Complete |
-| S005  | Private-cloud landing page      | Complete |
-| S006  | Home private-cloud page         | Complete |
-| S007  | Organization private-cloud page | Complete |
-| S008  | Open-source stack page          | Complete |
-| S009  | Turn-key appliance integration  | Complete |
-| S010  | Software-stack integration      | Complete |
-| S011  | Cost-comparison update          | Complete |
-| S012  | Shared conversion components    | Complete |
-| S013  | Assessment flow                 | Complete |
-| S014  | Analytics and campaign tracking | Ready    |
-| S015  | SEO and social metadata         | Planned  |
-| S016  | Responsive and accessibility QA | Planned  |
-| S017  | Performance and browser QA      | Planned  |
-| S019  | QR and campaign validation      | Planned  |
-| S018  | Release pull request            | Planned  |
+| Slice | Description                       | Status   |
+| ----- | --------------------------------- | -------- |
+| S000  | Repository and site audit         | Complete |
+| S001  | Design-system inventory           | Complete |
+| S002  | Route and navigation foundation   | Complete |
+| S003  | Homepage positioning              | Complete |
+| S004  | Homepage private-cloud section    | Complete |
+| S005  | Private-cloud landing page        | Complete |
+| S006  | Home private-cloud page           | Complete |
+| S007  | Organization private-cloud page   | Complete |
+| S008  | Open-source stack page            | Complete |
+| S009  | Turn-key appliance integration    | Complete |
+| S010  | Software-stack integration        | Complete |
+| S011  | Cost-comparison update            | Complete |
+| S012  | Shared conversion components      | Complete |
+| S013  | Assessment flow                   | Complete |
+| S014  | Analytics and campaign tracking   | Complete |
+| S015  | SEO and social metadata           | Ready    |
+| S016  | Responsive and accessibility QA   | Planned  |
+| S017  | Performance and browser QA        | Planned  |
+| S019  | QR and campaign validation        | Planned  |
+| S020  | Theme and personality token audit | Planned  |
+| S018  | Release pull request              | Planned  |
 
 ## Dependency order
 
-`S000 → S001 → S002 → S003 → S004 → S005 → S006 → S007 → S008 → S009 → S010 → S011 → S012 → S013 → S014 → S015 → S016 → S017 → S019 → S018`
+`S000 → S001 → S002 → S003 → S004 → S005 → S006 → S007 → S008 → S009 → S010 → S011 → S012 → S013 → S014 → S015 → S016 → S017 → S019 → S020 → S018`
 
 S018 runs last on purpose: the release PR carries the campaign URLs validated
-in S019. The IDs were kept stable rather than renumbered.
+in S019 and the token audit from S020 (added at the owner's request on
+2026-10-07). The IDs were kept stable rather than renumbered.
 
 ## Standard launcher prompt
 

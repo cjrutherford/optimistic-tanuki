@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { NavigationService } from '@optimistic-tanuki/app-registry';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { AppComponent } from './app.component';
+import { ANALYTICS_TRANSPORT } from './services/analytics.service';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -13,6 +14,7 @@ describe('AppComponent', () => {
       imports: [AppComponent, RouterModule.forRoot([])],
       providers: [
         { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: ANALYTICS_TRANSPORT, useValue: () => undefined },
         {
           provide: HaiAppDirectoryService,
           useValue: { getResolvedApps: jest.fn().mockReturnValue(of([])) },

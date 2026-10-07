@@ -59,6 +59,8 @@ import {
 import { SecurityTelemetryService } from '../security/security-telemetry.service';
 import { PerformanceTelemetryController } from '../performance/performance-telemetry.controller';
 import { PerformanceTelemetryService } from '../performance/performance-telemetry.service';
+import { SiteAnalyticsController } from '../analytics/site-analytics.controller';
+import { SiteAnalyticsService } from '../analytics/site-analytics.service';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
@@ -451,6 +453,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     ...controllerEntries.map((entry) => entry.value),
     SecurityTelemetryController,
     PerformanceTelemetryController,
+    SiteAnalyticsController,
     WorkspaceClaimController,
     WorkspaceDiscoveryController,
   ],
@@ -476,6 +479,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
         }),
     },
     PerformanceTelemetryService,
+    SiteAnalyticsService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

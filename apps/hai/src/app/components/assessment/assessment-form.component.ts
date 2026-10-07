@@ -25,6 +25,7 @@ import {
 } from '../../content/assessment';
 import { CONTACT_DETAILS } from '../../content/contact-details';
 import { AssessmentRequestService } from '../../services/assessment-request.service';
+import { AnalyticsService } from '../../services/analytics.service';
 
 interface FieldError {
   id: string;
@@ -44,6 +45,7 @@ export class AssessmentFormComponent {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly injector = inject(Injector);
   readonly request = inject(AssessmentRequestService);
+  private readonly analytics = inject(AnalyticsService);
 
   readonly people = ASSESSMENT_PEOPLE;
   readonly keepOptions = ASSESSMENT_KEEP;
@@ -134,6 +136,11 @@ export class AssessmentFormComponent {
       notes: value.notes,
     };
     this.request.submit(answers, value.website);
+  }
+
+  /** First interaction with the form counts as starting the assessment. */
+  onStart(): void {
+    this.analytics.trackOnce('assessment_start');
   }
 
   focusField(id: string): void {

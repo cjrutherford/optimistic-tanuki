@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
+import { AnalyticsService } from './analytics.service';
 
 export interface ContactRequest {
   name: string;
@@ -21,6 +22,7 @@ export const CONTACT_FAILED_MESSAGE =
 @Injectable({ providedIn: 'root' })
 export class ContactRequestService {
   private readonly blogging = inject(OptomisitcTanukiAPIService);
+  private readonly analytics = inject(AnalyticsService);
 
   readonly submitting = signal(false);
   readonly status = signal<string | null>(null);
@@ -39,7 +41,7 @@ export class ContactRequestService {
       .contactControllerCreateContact({
         ...request,
         appScope: 'hai',
-        sourcePage,
+        sourcePage: `${sourcePage}${this.analytics.campaignQuery()}`,
         sourceLabel: 'HAI',
       })
       .subscribe({

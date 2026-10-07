@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
+import { AnalyticsService } from './analytics.service';
 import {
   AssessmentAnswers,
   buildAssessmentMessage,
@@ -14,6 +15,7 @@ export type AssessmentState = 'idle' | 'sending' | 'sent' | 'failed';
 @Injectable({ providedIn: 'root' })
 export class AssessmentRequestService {
   private readonly blogging = inject(OptomisitcTanukiAPIService);
+  private readonly analytics = inject(AnalyticsService);
 
   readonly state = signal<AssessmentState>('idle');
 
@@ -36,14 +38,17 @@ export class AssessmentRequestService {
         })`,
         message: buildAssessmentMessage(answers),
         appScope: 'hai',
-        sourcePage: '/private-cloud/assessment',
+        sourcePage: `/private-cloud/assessment${this.analytics.campaignQuery()}`,
         sourceLabel: 'HAI private cloud assessment',
         // Hidden field; people leave it empty and the server ignores
         // submissions that fill it.
         website: honeypot,
       })
       .subscribe({
-        next: () => this.state.set('sent'),
+        next: () => {
+          this.state.set('sent');
+          this.analytics.trackOnce('assessment_submit', answers.audience);
+        },
         error: () => this.state.set('failed'),
       });
   }

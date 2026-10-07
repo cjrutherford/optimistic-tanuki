@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { ContactStripComponent } from './components/shared/contact-strip.component';
+import { AnalyticsService } from './services/analytics.service';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -34,8 +35,10 @@ export class AppComponent {
   };
 
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly analytics = inject(AnalyticsService);
 
   constructor() {
+    this.analytics.start();
     // Keep anchor targets clear of the sticky header.
     inject(ViewportScroller).setOffset(() => {
       const header = this.isBrowser
