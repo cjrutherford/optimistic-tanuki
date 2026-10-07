@@ -1,15 +1,14 @@
 import { ConfigService } from '@nestjs/config';
-import { NotFoundException } from '@nestjs/common';
-import { createReadStream } from 'node:fs';
+import {
+  NotFoundException,
+  PayloadTooLargeException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { stat } from 'node:fs/promises';
 import { AssetType, StorageStrategy } from '@optimistic-tanuki/models';
 
 import { AppService } from './app.service';
 import { InternalMediaService } from './internal-media.service';
-
-jest.mock('node:fs', () => ({
-  createReadStream: jest.fn(),
-}));
 
 jest.mock('node:fs/promises', () => ({
   stat: jest.fn(),
@@ -23,13 +22,15 @@ describe('InternalMediaService', () => {
     storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
     type: AssetType.VIDEO,
   } as any;
-  const stream = { pipe: jest.fn() } as any;
-  let appService: Pick<AppService, 'retrieveAsset'>;
+  let appService: Pick<AppService, 'retrieveAsset' | 'readAssetContent'>;
   let configService: Pick<ConfigService, 'get'>;
   let service: InternalMediaService;
 
   beforeEach(() => {
-    appService = { retrieveAsset: jest.fn().mockResolvedValue(asset) };
+    appService = {
+      retrieveAsset: jest.fn().mockResolvedValue(asset),
+      readAssetContent: jest.fn().mockResolvedValue(Buffer.from('0123456789')),
+    };
     configService = {
       get: jest.fn().mockImplementation((key: string) => {
         if (key === 'storagePath') return '/srv/assets';
@@ -41,48 +42,81 @@ describe('InternalMediaService', () => {
       configService as ConfigService
     );
     (stat as jest.Mock).mockResolvedValue({ size: 100, isFile: () => true });
-    (createReadStream as jest.Mock).mockReturnValue(stream);
   });
 
-  it('opens a requested byte range as a partial MP4 stream', async () => {
-    const result = await service.open('asset-1', 'bytes=10-19');
+  it('opens a requested byte range over authenticated plaintext', async () => {
+    const result = await service.open('asset-1', 'bytes=2-5');
 
     expect(appService.retrieveAsset).toHaveBeenCalledWith({ id: 'asset-1' });
-    expect(createReadStream).toHaveBeenCalledWith(
-      '/srv/assets/assets/asset-1/episode.mp4',
-      { start: 10, end: 19 }
+    expect(appService.readAssetContent).toHaveBeenCalledWith(
+      { id: 'asset-1' },
+      25 * 1024 * 1024 + 64 * 1024
     );
-    expect(result).toEqual(
-      expect.objectContaining({
-        statusCode: 206,
-        contentType: 'video/mp4',
-        contentLength: 10,
-        contentRange: 'bytes 10-19/100',
-        stream,
-      })
-    );
+    expect(result).toMatchObject({
+      statusCode: 206,
+      contentType: 'video/mp4',
+      contentLength: 4,
+      contentRange: 'bytes 2-5/10',
+    });
   });
 
-  it('opens the full file when no byte range is requested', async () => {
+  it('returns plaintext bytes and plaintext length for a full response', async () => {
     const result = await service.open('asset-1');
-
-    expect(createReadStream).toHaveBeenCalledWith(
-      '/srv/assets/assets/asset-1/episode.mp4'
-    );
-    expect(result).toEqual(
-      expect.objectContaining({
-        statusCode: 200,
-        contentLength: 100,
-      })
-    );
+    expect(result).toMatchObject({ statusCode: 200, contentLength: 10 });
     expect(result).not.toHaveProperty('contentRange');
+    if ('stream' in result) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of result.stream) chunks.push(Buffer.from(chunk));
+      expect(Buffer.concat(chunks).toString()).toBe('0123456789');
+      expect(Buffer.concat(chunks).toString()).not.toContain('OTENV1:');
+    }
   });
+
+  it.each([
+    ['png', 'image/png'],
+    ['jpg', 'image/jpeg'],
+    ['jpeg', 'image/jpeg'],
+    ['gif', 'image/gif'],
+    ['webp', 'image/webp'],
+  ])(
+    'returns the safe raster media type for .%s uploads',
+    async (extension, contentType) => {
+      (appService.retrieveAsset as jest.Mock).mockResolvedValue({
+        ...asset,
+        name: `listing.${extension}`,
+      });
+
+      await expect(service.open('asset-1')).resolves.toMatchObject({
+        statusCode: 200,
+        contentType,
+      });
+    }
+  );
 
   it('returns an unsatisfied range response for bytes beyond the file', async () => {
     await expect(service.open('asset-1', 'bytes=100-')).resolves.toEqual({
       statusCode: 416,
-      contentRange: 'bytes */100',
+      contentRange: 'bytes */10',
     });
+  });
+
+  it('rejects an oversized stored object before reading or allocating it', async () => {
+    (stat as jest.Mock).mockResolvedValue({
+      size: 25 * 1024 * 1024 + 64 * 1024 + 1,
+      isFile: () => true,
+    });
+    await expect(service.open('asset-1')).rejects.toBeInstanceOf(
+      PayloadTooLargeException
+    );
+    expect(appService.readAssetContent).not.toHaveBeenCalled();
+  });
+
+  it('preserves authenticated storage failures instead of serving bytes or hiding them as missing', async () => {
+    const failure = new ServiceUnavailableException(
+      'Vault storage envelope failed AES-256-GCM authentication.'
+    );
+    (appService.readAssetContent as jest.Mock).mockRejectedValue(failure);
+    await expect(service.open('asset-1')).rejects.toBe(failure);
   });
 
   it('does not resolve storage paths outside local asset storage', async () => {

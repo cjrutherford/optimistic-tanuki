@@ -1346,9 +1346,13 @@ services:
       - '9217:9217'
     environment:
       - NODE_ENV=development
+      - SOCIAL_HOST=social
+      - SOCIAL_PORT=3003
     depends_on:
       postgres:
         condition: service_healthy
+      social:
+        condition: service_started
 
   payments:
     container_name: ot_payments
@@ -1491,7 +1495,16 @@ services:
 
   assets:
     container_name: ot_assets
-    user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'
+    # Existing named storage volumes may have been created by a root run.
+    # Repair storage ownership at startup, then run the service as node.
+    user: '0:0'
+    entrypoint:
+      [
+        'sh',
+        '-c',
+        'chown -R ${LOCAL_UID:-1000}:${LOCAL_GID:-1000} /usr/src/app/storage && exec su-exec ${LOCAL_UID:-1000}:${LOCAL_GID:-1000} "$@"',
+        '--',
+      ]
     build:
       context: .
       dockerfile: ./docker/dev/node-runtime.Dockerfile

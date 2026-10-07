@@ -50,6 +50,166 @@ async function registeredBrowserSession(
   };
 }
 
+test('RR06 asset diagnostic captures upload response and persisted listing URL', async ({
+  browser,
+}) => {
+  test.setTimeout(90_000);
+  const context = await browser.newContext({ baseURL: getBaseUrl() });
+  const marker = unique();
+  let communityId: string | undefined;
+  let listingId: string | undefined;
+  let assetId: string | undefined;
+  let sellerToken: string | undefined;
+  try {
+    const seller = await registeredBrowserSession(context.request, 'asset');
+    const login = await context.request.post(
+      apiUrl('/api/authentication/login'),
+      { headers: LOCAL_HUB_HEADERS, data: { email: seller.email, password } }
+    );
+    expect(login.status(), await login.text()).toBe(201);
+    sellerToken = (await login.json()).data.newToken as string;
+    const auth = {
+      ...LOCAL_HUB_HEADERS,
+      Authorization: `Bearer ${sellerToken}`,
+    };
+    const communityResponse = await context.request.post(
+      apiUrl('/api/social/community'),
+      {
+        headers: auth,
+        data: {
+          name: `RR06 asset ${marker}`,
+          slug: `rr06-asset-${marker.toLowerCase()}`,
+          description: 'Temporary RR06 image upload diagnostic',
+          localityType: 'city',
+          city: 'RR06 fixture',
+          countryCode: 'USA',
+          adminArea: 'RR06',
+        },
+      }
+    );
+    expect(communityResponse.status(), await communityResponse.text()).toBe(
+      201
+    );
+    const community = await communityResponse.json();
+    communityId = community.id;
+
+    const uploadResponses: Array<{
+      status: number;
+      body?: { id?: string };
+    }> = [];
+    const page = await context.newPage();
+    page.on('response', async (response) => {
+      const request = response.request();
+      if (
+        request.method() === 'POST' &&
+        new URL(response.url()).pathname.endsWith('/api/asset')
+      ) {
+        const body = await response.json().catch(() => undefined);
+        uploadResponses.push({ status: response.status(), body });
+      }
+    });
+    await page.goto(`/c/${community.slug}/classifieds/new`);
+    await expect(
+      page.getByRole('heading', { name: 'Post a New Listing' })
+    ).toBeVisible();
+    await page.locator('#title').fill(`RR06 image ${marker}`);
+    await page.locator('#description').fill('Image persistence diagnostic');
+    await page.locator('#price').fill('2');
+    await page.locator('input[type=file]').setInputFiles({
+      name: 'rr06-valid-fixture.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNkaPjPwMDAxMDAwMDAAAARHwGDXcgNqQAAAABJRU5ErkJggg==',
+        'base64'
+      ),
+    });
+    await expect(page.locator('.image-previews img')).toHaveCount(1);
+    await expect.poll(() => uploadResponses.length).toBe(1);
+    expect(
+      uploadResponses[0].status,
+      `asset upload response body: ${JSON.stringify(uploadResponses[0].body)}`
+    ).toBe(201);
+    assetId = uploadResponses[0].body?.id;
+    expect(assetId, 'asset create response should include an id').toBeTruthy();
+    await page.getByRole('button', { name: 'Post Listing' }).click();
+    await expect(page).toHaveURL(`/c/${community.slug}/classifieds`);
+
+    const listingsResponse = await context.request.get(
+      apiUrl(`/api/classifieds/community/${communityId}`),
+      { headers: auth }
+    );
+    expect(listingsResponse.status()).toBe(200);
+    const listings = await listingsResponse.json();
+    const listing = (Array.isArray(listings) ? listings : listings.data).find(
+      (item: { title: string; profileId: string }) =>
+        item.title === `RR06 image ${marker}` &&
+        item.profileId === seller.profileId
+    );
+    expect(listing).toBeTruthy();
+    listingId = listing.id;
+    expect(listing.imageUrls).toEqual([`/api/asset/${assetId}`]);
+    const imageResponse = await context.request.get(
+      `${getBaseUrl()}/api/asset/${assetId}`
+    );
+    expect(imageResponse.status()).toBe(200);
+    expect(imageResponse.headers()['content-type']).toContain('image/png');
+    const fullImage = await imageResponse.body();
+    expect(fullImage.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    );
+    const imageRange = await context.request.get(
+      `${getBaseUrl()}/api/asset/${assetId}`,
+      { headers: { Range: 'bytes=0-7' } }
+    );
+    expect(imageRange.status()).toBe(206);
+    expect(imageRange.headers()['content-range']).toBe(
+      `bytes 0-7/${fullImage.length}`
+    );
+    expect(Number(imageRange.headers()['content-length'])).toBe(8);
+    expect(await imageRange.body()).toEqual(fullImage.subarray(0, 8));
+    const invalidImageRange = await context.request.get(
+      `${getBaseUrl()}/api/asset/${assetId}`,
+      { headers: { Range: `bytes=${fullImage.length}-` } }
+    );
+    expect(invalidImageRange.status()).toBe(416);
+    expect(invalidImageRange.headers()['content-range']).toBe(
+      `bytes */${fullImage.length}`
+    );
+  } finally {
+    if (listingId && sellerToken) {
+      await context.request
+        .delete(apiUrl(`/api/classifieds/${listingId}`), {
+          headers: {
+            ...LOCAL_HUB_HEADERS,
+            Authorization: `Bearer ${sellerToken}`,
+          },
+        })
+        .catch(() => undefined);
+    }
+    if (assetId && sellerToken) {
+      await context.request
+        .delete(apiUrl(`/api/asset/${assetId}`), {
+          headers: {
+            ...LOCAL_HUB_HEADERS,
+            Authorization: `Bearer ${sellerToken}`,
+          },
+        })
+        .catch(() => undefined);
+    }
+    if (communityId && sellerToken) {
+      await context.request
+        .delete(apiUrl(`/api/social/community/${communityId}`), {
+          headers: {
+            ...LOCAL_HUB_HEADERS,
+            Authorization: `Bearer ${sellerToken}`,
+          },
+        })
+        .catch(() => undefined);
+    }
+    await context.close();
+  }
+});
+
 test('RR06 live locality, classified authorization, and buyer/seller flow', async ({
   browser,
   playwright,
@@ -58,13 +218,23 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
   const sellerContext = await browser.newContext({ baseURL: getBaseUrl() });
   const buyerContext = await browser.newContext({ baseURL: getBaseUrl() });
   const outsiderContext = await browser.newContext({ baseURL: getBaseUrl() });
+  const communityOwnerContext = await browser.newContext({
+    baseURL: getBaseUrl(),
+  });
   const anonymous = await playwright.request.newContext();
   let cityId: string | undefined;
   let communityId: string | undefined;
   let listingId: string | undefined;
   const unexpectedListingIds: Array<{ id: string; token: string }> = [];
+  const uploadedAssetIds: string[] = [];
   let sellerToken: string | undefined;
+  let communityOwnerToken: string | undefined;
   const marker = unique();
+  const cleanupEmails: string[] = [];
+  const auth = (token: string) => ({
+    ...LOCAL_HUB_HEADERS,
+    Authorization: `Bearer ${token}`,
+  });
 
   try {
     const seller = await registeredBrowserSession(
@@ -75,6 +245,16 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     const outsider = await registeredBrowserSession(
       outsiderContext.request,
       'nonmember'
+    );
+    const communityOwner = await registeredBrowserSession(
+      communityOwnerContext.request,
+      'community-owner'
+    );
+    cleanupEmails.push(
+      seller.email,
+      buyer.email,
+      outsider.email,
+      communityOwner.email
     );
 
     // The authenticated gateway creates a uniquely tagged root locality;
@@ -90,11 +270,10 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     sellerToken = await loginToken(sellerContext, seller.email);
     const buyerToken = await loginToken(buyerContext, buyer.email);
     const outsiderToken = await loginToken(outsiderContext, outsider.email);
-    const auth = (token: string) => ({
-      ...LOCAL_HUB_HEADERS,
-      Authorization: `Bearer ${token}`,
-    });
-
+    communityOwnerToken = await loginToken(
+      communityOwnerContext,
+      communityOwner.email
+    );
     const cityResponse = await sellerContext.request.post(
       apiUrl('/api/social/community'),
       {
@@ -116,15 +295,16 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     expect(city.localityType).toBe('city');
     expect(city.slug).toContain('rr06-city-');
 
-    const createCommunity = await sellerContext.request.post(
+    const createCommunity = await communityOwnerContext.request.post(
       apiUrl('/api/social/community'),
       {
-        headers: auth(sellerToken),
+        headers: auth(communityOwnerToken),
         data: {
           name: `RR06 community ${marker}`,
           description: 'Temporary RR06 child locality fixture',
           parentId: cityId,
           localityType: 'neighborhood',
+          isPrivate: true,
         },
       }
     );
@@ -213,16 +393,22 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       apiUrl('/api/classifieds'),
       { headers: auth(outsiderToken), data: payload }
     );
-    expect
-      .soft([401, 403], `nonmember create: ${await nonmemberCreate.text()}`)
-      .toContain(nonmemberCreate.status());
-    if (nonmemberCreate.status() === 201) {
-      const unexpected = await nonmemberCreate.json();
-      if (unexpected.id)
-        unexpectedListingIds.push({ id: unexpected.id, token: outsiderToken });
-    }
+    expect(
+      nonmemberCreate.status(),
+      `nonmember create: ${await nonmemberCreate.text()}`
+    ).toBe(403);
 
     const page = await sellerContext.newPage();
+    const assetUploads: Array<{ status: number; id?: string }> = [];
+    page.on('response', async (response) => {
+      if (
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname.endsWith('/api/asset')
+      ) {
+        const body = await response.json().catch(() => undefined);
+        assetUploads.push({ status: response.status(), id: body?.id });
+      }
+    });
     await page.goto(`/c/${community.slug}/classifieds/new`);
     await expect(
       page.getByRole('heading', { name: 'Post a New Listing' })
@@ -234,11 +420,15 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       name: 'rr06-fixture.png',
       mimeType: 'image/png',
       buffer: Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p3sAAAAASUVORK5CYII=',
+        'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNkaPjPwMDAxMDAwMDAAAARHwGDXcgNqQAAAABJRU5ErkJggg==',
         'base64'
       ),
     });
     await expect(page.locator('.image-previews img')).toHaveCount(1);
+    await expect.poll(() => assetUploads.length).toBe(1);
+    expect(assetUploads[0].status).toBe(201);
+    expect(assetUploads[0].id).toEqual(expect.any(String));
+    uploadedAssetIds.push(assetUploads[0].id!);
     await page.getByRole('button', { name: 'Post Listing' }).click();
     await expect(page).toHaveURL(`/c/${community.slug}/classifieds`);
     const card = page
@@ -246,6 +436,17 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       .filter({ hasText: payload.title })
       .filter({ hasText: 'RR06 seller' });
     await expect(card).toBeVisible();
+    expect(assetUploads[0].id).toEqual(expect.any(String));
+    const persistedImageResponse = await sellerContext.request.get(
+      `${getBaseUrl()}/api/asset/${assetUploads[0].id}`
+    );
+    expect(persistedImageResponse.status()).toBe(200);
+    expect(persistedImageResponse.headers()['content-type']).toContain(
+      'image/png'
+    );
+    expect((await persistedImageResponse.body()).subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    );
     const listingResponse = await sellerContext.request.get(
       apiUrl(`/api/classifieds/community/${communityId}`),
       { headers: auth(sellerToken) }
@@ -260,10 +461,31 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       listing,
       'UI-created listing should persist through the API'
     ).toBeTruthy();
-    expect
-      .soft(listing.imageUrls, 'uploaded image should persist on the listing')
-      .toHaveLength(1);
+    expect(
+      listing.imageUrls,
+      'uploaded image should persist on the listing'
+    ).toHaveLength(1);
     listingId = listing.id;
+
+    const buyerListingResponse = await buyerContext.request.post(
+      apiUrl('/api/classifieds'),
+      {
+        headers: auth(buyerToken),
+        data: {
+          title: `RR06 buyer private listing ${marker}`,
+          description: 'Second private-community listing for owner isolation',
+          price: 9,
+          category: 'for-sale',
+          communityId,
+        },
+      }
+    );
+    expect(
+      buyerListingResponse.status(),
+      await buyerListingResponse.text()
+    ).toBe(201);
+    const buyerListing = await buyerListingResponse.json();
+    unexpectedListingIds.push({ id: buyerListing.id, token: buyerToken });
 
     const deniedUpdate = await buyerContext.request.put(
       apiUrl(`/api/classifieds/${listingId}`),
@@ -272,28 +494,104 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         data: { title: 'RR06 unauthorized mutation' },
       }
     );
-    expect
-      .soft(
-        [401, 403, 404],
-        `unauthorized update response: ${await deniedUpdate.text()}`
-      )
-      .toContain(deniedUpdate.status());
+    expect(
+      [403, 404],
+      `unauthorized update response: ${await deniedUpdate.text()}`
+    ).toContain(deniedUpdate.status());
     const deniedDelete = await buyerContext.request.delete(
       apiUrl(`/api/classifieds/${listingId}`),
       { headers: auth(buyerToken) }
     );
-    expect
-      .soft(
-        [401, 403, 404],
-        `unauthorized delete response: ${await deniedDelete.text()}`
-      )
-      .toContain(deniedDelete.status());
-    const ownerRowAfterDeniedMutations = await anonymous.get(
+    expect(
+      [403, 404],
+      `unauthorized delete response: ${await deniedDelete.text()}`
+    ).toContain(deniedDelete.status());
+    const ownerRowAfterDeniedMutations = await sellerContext.request.get(
       apiUrl(`/api/classifieds/${listingId}`),
-      { headers: LOCAL_HUB_HEADERS }
+      { headers: auth(sellerToken) }
     );
     expect(ownerRowAfterDeniedMutations.status()).toBe(200);
     expect(await ownerRowAfterDeniedMutations.json()).toMatchObject({
+      id: listingId,
+      title: payload.title,
+      profileId: seller.profileId,
+      status: 'active',
+    });
+
+    const privateCommunityListings = await outsiderContext.request.get(
+      apiUrl(`/api/classifieds/community/${communityId}`),
+      { headers: auth(outsiderToken) }
+    );
+    expect(privateCommunityListings.status()).toBe(200);
+    expect(JSON.stringify(await privateCommunityListings.json())).not.toContain(
+      listingId
+    );
+    const memberPrivateList = await buyerContext.request.get(
+      apiUrl(`/api/classifieds/community/${communityId}`),
+      { headers: auth(buyerToken) }
+    );
+    expect(memberPrivateList.status()).toBe(200);
+    expect(JSON.stringify(await memberPrivateList.json())).toContain(listingId);
+    const memberPrivateIdRead = await buyerContext.request.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: auth(buyerToken) }
+    );
+    expect(memberPrivateIdRead.status()).toBe(200);
+    expect((await memberPrivateIdRead.json()).id).toBe(listingId);
+    const privateSearch = await outsiderContext.request.post(
+      apiUrl('/api/classifieds/search'),
+      {
+        headers: auth(outsiderToken),
+        data: { communityId, query: payload.title },
+      }
+    );
+    // Nest's POST route uses its standard 201 success status.
+    expect(privateSearch.status()).toBe(201);
+    expect(JSON.stringify(await privateSearch.json())).not.toContain(listingId);
+    const privateIdRead = await anonymous.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: LOCAL_HUB_HEADERS }
+    );
+    expect([403, 404], await privateIdRead.text()).toContain(
+      privateIdRead.status()
+    );
+    const publicCityControlRead = await anonymous.get(
+      apiUrl(`/api/classifieds/${cityControlListing.id}`),
+      { headers: LOCAL_HUB_HEADERS }
+    );
+    expect(publicCityControlRead.status()).toBe(200);
+    expect((await publicCityControlRead.json()).id).toBe(cityControlListing.id);
+
+    const missingScopeRead = await anonymous.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: { Authorization: '' } }
+    );
+    expect([400, 403, 404], await missingScopeRead.text()).toContain(
+      missingScopeRead.status()
+    );
+    const foreignScopeRead = await anonymous.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: { ...LOCAL_HUB_HEADERS, 'X-ot-appscope': 'client-interface' } }
+    );
+    expect([403, 404], await foreignScopeRead.text()).toContain(
+      foreignScopeRead.status()
+    );
+    const foreignScopeMutation = await sellerContext.request.put(
+      apiUrl(`/api/classifieds/${listingId}`),
+      {
+        headers: { ...auth(sellerToken), 'X-ot-appscope': 'client-interface' },
+        data: { title: 'RR06 wrong scope mutation' },
+      }
+    );
+    expect([403, 404], await foreignScopeMutation.text()).toContain(
+      foreignScopeMutation.status()
+    );
+    const scopedRowAfterForeignMutation = await sellerContext.request.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: auth(sellerToken) }
+    );
+    expect(scopedRowAfterForeignMutation.status()).toBe(200);
+    expect(await scopedRowAfterForeignMutation.json()).toMatchObject({
       id: listingId,
       title: payload.title,
       profileId: seller.profileId,
@@ -304,6 +602,67 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     // price and route must be present in the initial real conversation.
     const buyerPage = await buyerContext.newPage();
     await buyerPage.goto(`/c/${community.slug}/classifieds/${listingId}`);
+    buyerPage.on('request', (request) => {
+      const url = new URL(request.url());
+      if (!url.pathname.includes('/api/chat/')) return;
+      let bodyFields: string[] = [];
+      try {
+        const body = request.postDataJSON();
+        if (body && typeof body === 'object') bodyFields = Object.keys(body);
+      } catch {
+        // This diagnostic records field names only; it never prints message text.
+      }
+      console.log(
+        '[RR06 chat request]',
+        JSON.stringify({
+          method: request.method(),
+          path: url.pathname,
+          bodyFields,
+        })
+      );
+    });
+    buyerPage.on('response', async (response) => {
+      const url = new URL(response.url());
+      if (!url.pathname.includes('/api/chat/')) return;
+      const rawBody = await response.text().catch(() => '');
+      let bodySummary: Record<string, unknown> = {
+        bodyLength: rawBody.length,
+      };
+      try {
+        const body = JSON.parse(rawBody);
+        if (body && typeof body === 'object' && !Array.isArray(body)) {
+          bodySummary = {
+            bodyFields: Object.keys(body),
+            ...(typeof body.statusCode === 'number'
+              ? { statusCode: body.statusCode }
+              : {}),
+            ...(typeof body.message === 'string'
+              ? { message: body.message }
+              : {}),
+          };
+        }
+      } catch {
+        // Never include response content that could contain private messages.
+      }
+      console.log(
+        '[RR06 chat response]',
+        JSON.stringify({
+          method: response.request().method(),
+          path: url.pathname,
+          status: response.status(),
+          ...bodySummary,
+        })
+      );
+    });
+    const listingImage = buyerPage.locator('.image-gallery img').first();
+    await expect(listingImage).toBeVisible();
+    await expect
+      .poll(() =>
+        listingImage.evaluate(
+          (image) => (image as HTMLImageElement).naturalWidth
+        )
+      )
+      .toBeGreaterThan(0);
     const chatResponsePromise = buyerPage
       .waitForResponse(
         (response) =>
@@ -313,14 +672,12 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       .catch(() => undefined);
     await buyerPage.getByRole('button', { name: 'Contact Seller' }).click();
     const chatResponse = await chatResponsePromise;
-    expect
-      .soft(
-        chatResponse?.status(),
-        `Contact Seller chat bootstrap response: ${await chatResponse
-          ?.text()
-          .catch(() => 'request did not occur')}`
-      )
-      .toBe(201);
+    expect(
+      chatResponse?.status(),
+      `Contact Seller chat bootstrap response: ${await chatResponse
+        ?.text()
+        .catch(() => 'request did not occur')}`
+    ).toBe(201);
     if (chatResponse?.status() === 201) {
       await expect(
         buyerPage.getByRole('heading', { name: 'Conversation' })
@@ -332,13 +689,89 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       await expect(conversation).toContainText(
         `/c/${community.slug}/classifieds/${listingId}`
       );
-      await buyerPage.getByLabel('Message').fill(`RR06 buyer reply ${marker}`);
+      const conversationData = await chatResponse.json();
+      const conversationId = conversationData.id;
+      expect(conversationId).toEqual(expect.any(String));
+      const buyerMessage = `RR06 buyer opening ${marker}`;
+      await buyerPage.getByLabel('Message').fill(buyerMessage);
       await buyerPage.getByRole('button', { name: 'Send' }).click();
       await expect(
-        buyerPage
-          .locator('.message-content')
-          .filter({ hasText: `RR06 buyer reply ${marker}` })
+        buyerPage.locator('.message-content').filter({ hasText: buyerMessage })
       ).toBeVisible();
+
+      const sellerMessagesResponse = await sellerContext.request.get(
+        apiUrl(`/api/chat/messages/${conversationId}`),
+        { headers: auth(sellerToken) }
+      );
+      expect(
+        sellerMessagesResponse.status(),
+        await sellerMessagesResponse.text()
+      ).toBe(200);
+      expect(JSON.stringify(await sellerMessagesResponse.json())).toContain(
+        buyerMessage
+      );
+      const sellerReply = `RR06 seller reply ${marker}`;
+      const sendSellerReply = await sellerContext.request.post(
+        apiUrl('/api/chat/messages'),
+        {
+          headers: auth(sellerToken),
+          data: {
+            conversationId,
+            content: sellerReply,
+            recipientIds: [buyer.profileId],
+          },
+        }
+      );
+      expect(sendSellerReply.status(), await sendSellerReply.text()).toBe(201);
+      const buyerMessagesAfterApiReply = await buyerContext.request.get(
+        apiUrl(`/api/chat/messages/${conversationId}`),
+        { headers: auth(buyerToken) }
+      );
+      expect(buyerMessagesAfterApiReply.status()).toBe(200);
+      expect(JSON.stringify(await buyerMessagesAfterApiReply.json())).toContain(
+        sellerReply
+      );
+
+      const sellerMessagesPage = await sellerContext.newPage();
+      await sellerMessagesPage.goto('/messages');
+      await expect(
+        sellerMessagesPage.getByRole('heading', { name: 'Messages' })
+      ).toBeVisible();
+      // The seller also has community threads created by the listing journey.
+      // Select the direct buyer thread by participant identity, not list size.
+      const sellerConversation = sellerMessagesPage
+        .locator('.contact-item')
+        .filter({ hasText: /RR06 buyer/i });
+      await expect(sellerConversation).toHaveCount(1, { timeout: 15000 });
+      await sellerConversation.click();
+      await expect(
+        sellerMessagesPage
+          .locator('.message-text')
+          .filter({ hasText: buyerMessage })
+      ).toBeVisible({ timeout: 15000 });
+      const uiSellerReply = `RR06 seller UI reply ${marker}`;
+      await sellerMessagesPage
+        .locator('lib-compose-chat textarea')
+        .fill(uiSellerReply);
+      await sellerMessagesPage.locator('lib-compose-chat .send-button').click();
+      await expect(
+        sellerMessagesPage
+          .locator('.message-text')
+          .filter({ hasText: uiSellerReply })
+      ).toBeVisible({ timeout: 15000 });
+
+      const buyerMessagesPage = await buyerContext.newPage();
+      await buyerMessagesPage.goto('/messages');
+      const buyerConversation = buyerMessagesPage
+        .locator('.contact-item')
+        .filter({ hasText: /RR06 seller/i });
+      await expect(buyerConversation).toHaveCount(1, { timeout: 15000 });
+      await buyerConversation.click();
+      await expect(
+        buyerMessagesPage
+          .locator('.message-text')
+          .filter({ hasText: uiSellerReply })
+      ).toBeVisible({ timeout: 15000 });
     }
 
     // Owner actions exercise edit, sold status and removal through real APIs;
@@ -350,32 +783,95 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         data: { description: `RR06 edited ${marker}` },
       }
     );
-    expect.soft(edit.status(), `owner edit: ${await edit.text()}`).toBe(200);
+    expect(edit.status(), `owner edit: ${await edit.text()}`).toBe(200);
     const sold = await sellerContext.request.post(
       apiUrl(`/api/classifieds/${listingId}/sold`),
       { headers: auth(sellerToken) }
     );
-    expect
-      .soft([200, 201], `owner sold: ${await sold.text()}`)
-      .toContain(sold.status());
+    expect(sold.status(), `owner sold: ${await sold.text()}`).toBe(201);
+    await buyerPage.reload();
+    await expect(buyerPage.locator('.status-badge.status-sold')).toBeVisible();
+    await expect(
+      buyerPage.getByRole('button', { name: 'Contact Seller' })
+    ).toHaveCount(0);
     const removed = await sellerContext.request.delete(
       apiUrl(`/api/classifieds/${listingId}`),
       { headers: auth(sellerToken) }
     );
-    expect
-      .soft([200, 204], `owner remove: ${await removed.text()}`)
-      .toContain(removed.status());
-    const removalReadback = await anonymous.get(
+    expect([200, 204], `owner remove: ${await removed.text()}`).toContain(
+      removed.status()
+    );
+    const removalReadback = await sellerContext.request.get(
       apiUrl(`/api/classifieds/${listingId}`),
-      { headers: LOCAL_HUB_HEADERS }
+      { headers: auth(sellerToken) }
     );
     expect(removalReadback.status()).toBe(200);
     expect(await removalReadback.json()).toMatchObject({
       id: listingId,
       status: 'removed',
     });
+    await buyerPage.reload();
+    await expect(
+      buyerPage.locator('.status-badge.status-removed')
+    ).toBeVisible();
+    await expect(
+      buyerPage.getByRole('button', { name: 'Contact Seller' })
+    ).toHaveCount(0);
+    const sellerLeave = await sellerContext.request.post(
+      apiUrl(`/api/social/community/${communityId}/leave`),
+      { headers: auth(sellerToken) }
+    );
+    expect(sellerLeave.status(), await sellerLeave.text()).toBe(201);
+    const formerMemberEdit = await sellerContext.request.put(
+      apiUrl(`/api/classifieds/${listingId}`),
+      {
+        headers: auth(sellerToken),
+        data: { description: `RR06 owner edit after leaving ${marker}` },
+      }
+    );
+    expect(
+      formerMemberEdit.status(),
+      `former member owner edit: ${await formerMemberEdit.text()}`
+    ).toBe(200);
+    const ownerMyAds = await sellerContext.request.get(
+      apiUrl('/api/classifieds/profile/my-ads'),
+      { headers: auth(sellerToken) }
+    );
+    expect(ownerMyAds.status()).toBe(200);
+    const ownerAdsBody = await ownerMyAds.json();
+    expect(JSON.stringify(ownerAdsBody)).toContain(listingId);
+    expect(JSON.stringify(ownerAdsBody)).not.toContain(buyerListing.id);
+    const formerMemberOwnAd = await sellerContext.request.get(
+      apiUrl(`/api/classifieds/${listingId}`),
+      { headers: auth(sellerToken) }
+    );
+    expect(formerMemberOwnAd.status()).toBe(200);
+    expect(await formerMemberOwnAd.json()).toMatchObject({
+      id: listingId,
+      status: 'removed',
+      description: `RR06 owner edit after leaving ${marker}`,
+    });
+    const formerMemberOtherAd = await sellerContext.request.get(
+      apiUrl(`/api/classifieds/${buyerListing.id}`),
+      { headers: auth(sellerToken) }
+    );
+    expect([403, 404], await formerMemberOtherAd.text()).toContain(
+      formerMemberOtherAd.status()
+    );
     listingId = undefined;
   } finally {
+    console.log(
+      '[RR06 exact-fixture cleanup]',
+      JSON.stringify({
+        marker,
+        cityId,
+        communityId,
+        listingId,
+        uploadedAssetIds,
+        unexpectedListingIds: unexpectedListingIds.map(({ id }) => id),
+        accountEmails: cleanupEmails,
+      })
+    );
     // Clean only this run's exact listing and locality IDs. Never reset shared data.
     if (listingId && sellerToken) {
       await sellerContext.request
@@ -388,6 +884,15 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         .catch(() => undefined);
     }
     if (sellerToken) {
+      await Promise.all(
+        uploadedAssetIds.map((id) =>
+          sellerContext.request
+            .delete(apiUrl(`/api/asset/${id}`), {
+              headers: auth(sellerToken!),
+            })
+            .catch(() => undefined)
+        )
+      );
       await Promise.all(
         unexpectedListingIds.map(({ id, token }) =>
           outsiderContext.request
@@ -419,10 +924,10 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
                   )
                   .toContain(cookieCleanup.status());
               }
-              const readback = await anonymous.get(
+              const readback = await outsiderContext.request.get(
                 apiUrl(`/api/classifieds/${id}`),
                 {
-                  headers: LOCAL_HUB_HEADERS,
+                  headers: auth(token),
                 }
               );
               expect
@@ -439,13 +944,10 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         )
       );
     }
-    if (communityId && sellerToken) {
-      await sellerContext.request
+    if (communityId && communityOwnerToken) {
+      await communityOwnerContext.request
         .delete(apiUrl(`/api/social/community/${communityId}`), {
-          headers: {
-            ...LOCAL_HUB_HEADERS,
-            Authorization: `Bearer ${sellerToken}`,
-          },
+          headers: auth(communityOwnerToken),
         })
         .catch(() => undefined);
     }
@@ -463,6 +965,7 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       sellerContext.close(),
       buyerContext.close(),
       outsiderContext.close(),
+      communityOwnerContext.close(),
       anonymous.dispose(),
     ]);
   }

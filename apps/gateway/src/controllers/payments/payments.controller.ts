@@ -486,12 +486,16 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user payments' })
-  async getUserPayments(@User() user: UserDetails) {
+  async getUserPayments(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_USER_PAYMENTS },
         {
           userId: user.userId,
+          appScope,
         }
       )
     );
@@ -804,12 +808,17 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create an offer on a classified' })
-  async createOffer(@User() user: UserDetails, @Body() dto: CreateOfferDto) {
+  async createOffer(
+    @User() user: UserDetails,
+    @Body() dto: CreateOfferDto,
+    @AppScope() appScope: string
+  ) {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_OFFER },
         {
           buyerId: user.userId,
+          appScope,
           classifiedId: dto.classifiedId,
           sellerId: dto.sellerId,
           amount: dto.amount,

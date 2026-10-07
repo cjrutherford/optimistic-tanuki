@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  PayloadTooLargeException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StorageStrategy } from '@optimistic-tanuki/models';
-import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { basename, extname, resolve, sep } from 'node:path';
-import { ReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
 
 import { AppService } from './app.service';
 
@@ -13,7 +16,7 @@ export type MediaStreamResult = {
   contentType: string;
   contentLength: number;
   contentRange?: string;
-  stream: ReadStream;
+  stream: Readable;
 };
 
 export type UnsatisfiedMediaRange = {
@@ -23,6 +26,9 @@ export type UnsatisfiedMediaRange = {
 
 @Injectable()
 export class InternalMediaService {
+  private readonly maxPlaintextBytes = 25 * 1024 * 1024;
+  private readonly maxStoredBytes = this.maxPlaintextBytes + 64 * 1024;
+
   constructor(
     private readonly appService: AppService,
     private readonly configService: ConfigService
@@ -54,27 +60,39 @@ export class InternalMediaService {
       throw new NotFoundException(`Asset with id ${id} not found`);
     }
 
-    const byteRange = this.parseRange(range, fileStats.size);
+    if (fileStats.size > this.maxStoredBytes) {
+      throw new PayloadTooLargeException(
+        `Stored media exceeds the ${this.maxPlaintextBytes}-byte authenticated retrieval limit.`
+      );
+    }
+
+    // The adapter bounds the read from a single O_NOFOLLOW descriptor and
+    // authenticates/decrypts the complete envelope before this returns.
+    const content = await this.appService.readAssetContent(
+      { id },
+      this.maxStoredBytes
+    );
+    if (content.length > this.maxPlaintextBytes) {
+      throw new PayloadTooLargeException(
+        `Media exceeds the ${this.maxPlaintextBytes}-byte authenticated retrieval limit.`
+      );
+    }
+    const byteRange = this.parseRange(range, content.length);
     if (byteRange === null) {
-      return { statusCode: 416, contentRange: `bytes */${fileStats.size}` };
+      return { statusCode: 416, contentRange: `bytes */${content.length}` };
     }
 
-    if (!byteRange) {
-      return {
-        statusCode: 200,
-        contentType: this.getContentType(asset.name),
-        contentLength: fileStats.size,
-        stream: createReadStream(filePath),
-      };
-    }
-
-    const { start, end } = byteRange;
+    const start = byteRange?.start ?? 0;
+    const end = byteRange?.end ?? content.length - 1;
+    const body = content.subarray(start, end + 1);
     return {
-      statusCode: 206,
+      statusCode: byteRange ? 206 : 200,
       contentType: this.getContentType(asset.name),
-      contentLength: end - start + 1,
-      contentRange: `bytes ${start}-${end}/${fileStats.size}`,
-      stream: createReadStream(filePath, { start, end }),
+      contentLength: body.length,
+      ...(byteRange
+        ? { contentRange: `bytes ${start}-${end}/${content.length}` }
+        : {}),
+      stream: Readable.from([body]),
     };
   }
 
@@ -132,6 +150,11 @@ export class InternalMediaService {
 
   private getContentType(name: string): string {
     const contentTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
       '.mp4': 'video/mp4',
       '.m4v': 'video/mp4',
       '.webm': 'video/webm',

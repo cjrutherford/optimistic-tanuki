@@ -1,5 +1,5 @@
 FROM docker.io/node:24-alpine
-RUN apk add --no-cache dumb-init libc6-compat
+RUN apk add --no-cache dumb-init libc6-compat su-exec
 
 ARG APP_ROOT=/usr/src/app
 

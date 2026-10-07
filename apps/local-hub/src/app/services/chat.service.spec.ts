@@ -25,14 +25,14 @@ describe('ChatService', () => {
   });
 
   it('gets or creates a direct chat through the HTTP chat API', async () => {
-    const promise = service.getOrCreateDirectChat(['buyer-1', 'seller-1']);
+    const promise = service.getOrCreateDirectChat('seller-1');
 
     const request = httpMock.expectOne(
       '/api/chat/conversations/direct/get-or-create'
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
-      participantIds: ['buyer-1', 'seller-1'],
+      recipientProfileId: 'seller-1',
     });
 
     request.flush({
@@ -84,7 +84,7 @@ describe('ChatService', () => {
     ]);
   });
 
-  it('posts a message through the HTTP chat API', async () => {
+  it('sends only gateway DTO fields and uses the session-bound sender receipt', async () => {
     const promise = service.sendMessage({
       conversationId: 'conversation-1',
       content: 'Interested in this listing.',
@@ -98,15 +98,13 @@ describe('ChatService', () => {
     expect(request.request.body).toEqual({
       conversationId: 'conversation-1',
       content: 'Interested in this listing.',
-      senderId: 'buyer-1',
       recipientIds: ['seller-1'],
-      type: 'system',
     });
 
     request.flush({
       id: 'message-1',
       conversationId: 'conversation-1',
-      senderId: 'buyer-1',
+      senderId: 'session-bound-buyer',
       content: 'Interested in this listing.',
       type: 'system',
       recipients: ['seller-1'],
@@ -116,6 +114,7 @@ describe('ChatService', () => {
     await expect(promise).resolves.toMatchObject({
       id: 'message-1',
       conversationId: 'conversation-1',
+      senderId: 'session-bound-buyer',
       recipients: ['seller-1'],
     });
   });

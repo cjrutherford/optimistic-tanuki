@@ -128,7 +128,11 @@ describe('OfferService classified offer authorization', () => {
 
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: ClassifiedCommands.FIND_BY_ID },
-      { id: 'classified-1' }
+      {
+        id: 'classified-1',
+        appScope: 'local-hub',
+        requestingUserId: 'buyer-1',
+      }
     );
     expect(offerRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ sellerId: 'seller-1' })
@@ -265,7 +269,7 @@ describe('OfferService classified offer authorization', () => {
     );
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: ClassifiedCommands.FIND_BY_USER },
-      { userId: 'user-1' }
+      { userId: 'user-1', appScope: 'local-hub' }
     );
   });
 

@@ -308,10 +308,9 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     this.chatLoading.set(true);
     try {
-      let conversation = await this.chatService.getOrCreateDirectChat([
-        myProfileId,
-        sellerProfileId,
-      ]);
+      let conversation = await this.chatService.getOrCreateDirectChat(
+        sellerProfileId
+      );
       if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
         return;
 

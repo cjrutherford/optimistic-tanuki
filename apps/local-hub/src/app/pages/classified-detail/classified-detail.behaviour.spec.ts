@@ -647,10 +647,9 @@ describe('ClassifiedDetailComponent behaviour', () => {
 
       await component.onContactSeller();
 
-      expect(chatServiceMock.getOrCreateDirectChat).toHaveBeenCalledWith([
-        'buyer-1',
-        'seller-1',
-      ]);
+      expect(chatServiceMock.getOrCreateDirectChat).toHaveBeenCalledWith(
+        'seller-1'
+      );
       expect(chatServiceMock.sendMessage).not.toHaveBeenCalled();
       expect(component.conversationId()).toBe('conversation-1');
       expect(component.showChat()).toBe(true);

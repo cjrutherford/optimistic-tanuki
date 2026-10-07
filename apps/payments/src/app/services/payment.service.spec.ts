@@ -497,7 +497,11 @@ describe('PaymentService classified payment authorization', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: ClassifiedCommands.FIND_BY_ID },
-      { id: 'classified-1' }
+      {
+        id: 'classified-1',
+        appScope: 'local-hub',
+        requestingUserId: 'forged-seller',
+      }
     );
   });
 
@@ -600,7 +604,7 @@ describe('PaymentService classified payment authorization', () => {
     );
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: ClassifiedCommands.FIND_BY_USER },
-      { userId: 'user-1' }
+      { userId: 'user-1', appScope: 'local-hub' }
     );
   });
 
@@ -865,7 +869,11 @@ describe('PaymentService.createClassifiedPayment server-side price/seller deriva
 
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: 'classified.findById' },
-      { id: 'classified-1' }
+      {
+        id: 'classified-1',
+        appScope: 'local-hub',
+        requestingUserId: 'buyer-1',
+      }
     );
 
     const expectedFees = calculateNetAmount(250);

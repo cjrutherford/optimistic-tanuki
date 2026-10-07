@@ -33,7 +33,7 @@ describe('ClassifiedsController message handlers', () => {
       findByProfile: jest.fn().mockResolvedValue([{ id: 'ad-1' }]),
       search: jest.fn().mockResolvedValue([{ id: 'ad-1' }]),
       update: jest.fn().mockResolvedValue({ id: 'ad-1', title: 'Updated' }),
-      remove: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue({ id: 'ad-1', status: 'removed' }),
       markSold: jest.fn().mockResolvedValue({ id: 'ad-1', status: 'sold' }),
       feature: jest.fn().mockResolvedValue({ id: 'ad-1', isFeatured: true }),
       unfeature: jest.fn().mockResolvedValue({ id: 'ad-1', isFeatured: false }),
@@ -66,7 +66,7 @@ describe('ClassifiedsController message handlers', () => {
     );
   });
 
-  it('passes an absent appScope through as undefined so the service default applies', async () => {
+  it('passes an absent appScope through so the service fails closed', async () => {
     await controller.create({
       dto: { title: 'Guitar', description: 'Acoustic', price: 300 },
       profileId: 'profile-2',
@@ -82,10 +82,23 @@ describe('ClassifiedsController message handlers', () => {
   });
 
   it('resolves a single ad by id', async () => {
-    await expect(controller.findById({ id: 'ad-1' })).resolves.toEqual({
+    await expect(
+      controller.findById({ id: 'ad-1', appScope: 'local-hub' })
+    ).resolves.toEqual({
       id: 'ad-1',
     });
-    expect(service.findById).toHaveBeenCalledWith('ad-1');
+    expect(service.findById).toHaveBeenCalledWith(
+      'ad-1',
+      'local-hub',
+      undefined
+    );
+  });
+
+  it('scopes the user listing-id lookup', async () => {
+    await expect(
+      controller.findIdsByUser({ userId: 'seller-1', appScope: 'local-hub' })
+    ).resolves.toEqual(['ad-1']);
+    expect(service.findIdsByUser).toHaveBeenCalledWith('seller-1', 'local-hub');
   });
 
   it('resolves community ads with the requested scope', async () => {
@@ -93,49 +106,84 @@ describe('ClassifiedsController message handlers', () => {
       controller.findByCommunity({
         communityId: 'community-1',
         appScope: 'local-hub',
+        requestingUserId: 'user-1',
       })
     ).resolves.toEqual([{ id: 'ad-1' }]);
     expect(service.findByCommunity).toHaveBeenCalledWith(
       'community-1',
-      'local-hub'
+      'local-hub',
+      'user-1'
     );
   });
 
   it('resolves ads for a profile', async () => {
     await expect(
-      controller.findByProfile({ profileId: 'profile-1' })
+      controller.findByProfile({
+        profileId: 'profile-1',
+        appScope: 'local-hub',
+      })
     ).resolves.toEqual([{ id: 'ad-1' }]);
-    expect(service.findByProfile).toHaveBeenCalledWith('profile-1');
+    expect(service.findByProfile).toHaveBeenCalledWith(
+      'profile-1',
+      'local-hub',
+      undefined
+    );
   });
 
   it('passes the search payload straight through as the search dto', async () => {
     const dto = { query: 'bike', minPrice: 10, page: 2 };
 
     await expect(controller.search(dto)).resolves.toEqual([{ id: 'ad-1' }]);
-    expect(service.search).toHaveBeenCalledWith(dto);
+    expect(service.search).toHaveBeenCalledWith(dto, undefined);
   });
 
   it('forwards the update payload with the caller profile for the ownership check', async () => {
     const dto = { title: 'Updated' };
 
     await expect(
-      controller.update({ id: 'ad-1', dto, profileId: 'profile-1' })
+      controller.update({
+        id: 'ad-1',
+        dto,
+        profileId: 'profile-1',
+        appScope: 'local-hub',
+      })
     ).resolves.toEqual({ id: 'ad-1', title: 'Updated' });
-    expect(service.update).toHaveBeenCalledWith('ad-1', dto, 'profile-1');
+    expect(service.update).toHaveBeenCalledWith(
+      'ad-1',
+      dto,
+      'profile-1',
+      'local-hub'
+    );
   });
 
   it('forwards removal with the caller profile', async () => {
     await expect(
-      controller.remove({ id: 'ad-1', profileId: 'profile-1' })
-    ).resolves.toBeUndefined();
-    expect(service.remove).toHaveBeenCalledWith('ad-1', 'profile-1');
+      controller.remove({
+        id: 'ad-1',
+        profileId: 'profile-1',
+        appScope: 'local-hub',
+      })
+    ).resolves.toEqual({ id: 'ad-1', status: 'removed' });
+    expect(service.remove).toHaveBeenCalledWith(
+      'ad-1',
+      'profile-1',
+      'local-hub'
+    );
   });
 
   it('forwards the mark-sold command', async () => {
     await expect(
-      controller.markSold({ id: 'ad-1', profileId: 'profile-1' })
+      controller.markSold({
+        id: 'ad-1',
+        profileId: 'profile-1',
+        appScope: 'local-hub',
+      })
     ).resolves.toEqual({ id: 'ad-1', status: 'sold' });
-    expect(service.markSold).toHaveBeenCalledWith('ad-1', 'profile-1');
+    expect(service.markSold).toHaveBeenCalledWith(
+      'ad-1',
+      'profile-1',
+      'local-hub'
+    );
   });
 
   it('forwards the feature command including the duration', async () => {
@@ -143,22 +191,36 @@ describe('ClassifiedsController message handlers', () => {
       controller.feature({
         id: 'ad-1',
         profileId: 'profile-1',
+        appScope: 'local-hub',
         durationDays: 7,
       })
     ).resolves.toEqual({ id: 'ad-1', isFeatured: true });
-    expect(service.feature).toHaveBeenCalledWith('ad-1', 'profile-1', 7);
+    expect(service.feature).toHaveBeenCalledWith(
+      'ad-1',
+      'profile-1',
+      7,
+      'local-hub'
+    );
   });
 
   it('forwards the unfeature command', async () => {
     await expect(
-      controller.unfeature({ id: 'ad-1', profileId: 'profile-1' })
+      controller.unfeature({
+        id: 'ad-1',
+        profileId: 'profile-1',
+        appScope: 'local-hub',
+      })
     ).resolves.toEqual({
       id: 'ad-1',
       isFeatured: false,
     });
     // The owning profile travels with the command so the service can refuse a
     // caller who does not own the ad.
-    expect(service.unfeature).toHaveBeenCalledWith('ad-1', 'profile-1');
+    expect(service.unfeature).toHaveBeenCalledWith(
+      'ad-1',
+      'profile-1',
+      'local-hub'
+    );
   });
 
   it('surfaces service failures to the message broker', async () => {
@@ -166,8 +228,8 @@ describe('ClassifiedsController message handlers', () => {
       new Error('Classified ad ad-9 not found')
     );
 
-    await expect(controller.findById({ id: 'ad-9' })).rejects.toThrow(
-      'Classified ad ad-9 not found'
-    );
+    await expect(
+      controller.findById({ id: 'ad-9', appScope: 'local-hub' })
+    ).rejects.toThrow('Classified ad ad-9 not found');
   });
 });

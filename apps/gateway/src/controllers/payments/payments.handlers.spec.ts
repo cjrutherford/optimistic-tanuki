@@ -39,10 +39,13 @@ describe('Gateway PaymentsController handlers', () => {
     });
 
     it('lists the caller’s payments', async () => {
-      await controller.getUserPayments(user);
+      await controller.getUserPayments(user, 'local-hub');
 
       expect(lastPattern()).toEqual({ cmd: PaymentCommands.GET_USER_PAYMENTS });
-      expect(lastPayload()).toEqual({ userId: 'user-1' });
+      expect(lastPayload()).toEqual({
+        userId: 'user-1',
+        appScope: 'local-hub',
+      });
     });
 
     it('lists the caller’s transactions', async () => {
@@ -195,11 +198,11 @@ describe('Gateway PaymentsController handlers', () => {
     });
 
     it('creates an offer with the caller as buyer', async () => {
-      await controller.createOffer(user, { amount: 100 } as never);
+      await controller.createOffer(user, { amount: 100 } as never, 'local-hub');
 
       expect(lastPattern()).toEqual({ cmd: PaymentCommands.CREATE_OFFER });
       expect(lastPayload()).toEqual(
-        expect.objectContaining({ buyerId: 'user-1' })
+        expect.objectContaining({ buyerId: 'user-1', appScope: 'local-hub' })
       );
     });
 

@@ -8,10 +8,12 @@ import {
   Injectable,
   Logger,
   NotImplementedException,
+  PayloadTooLargeException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { existsSync, mkdirSync } from 'fs';
 import * as fs from 'fs/promises';
+import { constants as fsConstants } from 'node:fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import * as crypto from 'crypto';
@@ -167,6 +169,12 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async read(data: AssetDto): Promise<string> {
+    const fileContent = await this.readBuffer(data);
+    const mime = this.getMimeType(data.name, data.type);
+    return `data:${mime};base64,${fileContent.toString('base64')}`;
+  }
+
+  async readBuffer(data: AssetDto, maxStoredBytes?: number): Promise<Buffer> {
     this.ensureBasePathExists();
     this.l.log(
       `LocalStorageAdapter: Reading asset with data:`,
@@ -177,22 +185,87 @@ export class LocalStorageAdapter implements StorageAdapter {
     const absolutePath = path.join(this.basePath, data.storagePath);
 
     try {
-      // Read the file content
-      const stored = await fs.readFile(absolutePath);
+      // Media serving sets a strict bound and reads from one non-following
+      // descriptor so a path swap or concurrent growth cannot bypass it.
+      const stored =
+        maxStoredBytes === undefined
+          ? await fs.readFile(absolutePath)
+          : await this.readBoundedFile(absolutePath, maxStoredBytes);
       const fileContent = this.encryption.decrypt(stored);
+      if (maxStoredBytes !== undefined && fileContent.length > maxStoredBytes) {
+        throw new PayloadTooLargeException(
+          'Decrypted asset exceeds the supported retrieval size.'
+        );
+      }
       this.l.log(
         `LocalStorageAdapter: Asset content decrypted from ${absolutePath}: ${fileContent.length}`
       );
-      const mime = this.getMimeType(data.name, data.type);
-      const base64Content = `data:${mime};base64,${fileContent.toString(
-        'base64'
-      )}`;
-      return base64Content;
+      return fileContent;
     } catch (error: any) {
       this.l.error(
         `LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`
       );
       throw error; // Re-throw the error
+    }
+  }
+
+  private async readBoundedFile(
+    filePath: string,
+    maxStoredBytes: number
+  ): Promise<Buffer> {
+    const handle = await fs.open(
+      filePath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW
+    );
+    try {
+      const initial = await handle.stat();
+      if (!initial.isFile()) {
+        throw new ServiceUnavailableException(
+          'Stored asset is not a regular file.'
+        );
+      }
+      if (initial.size > maxStoredBytes) {
+        throw new PayloadTooLargeException(
+          'Stored asset exceeds the supported retrieval size.'
+        );
+      }
+
+      const stored = Buffer.alloc(initial.size + 1);
+      let offset = 0;
+      while (offset < initial.size) {
+        const { bytesRead } = await handle.read(
+          stored,
+          offset,
+          initial.size - offset,
+          offset
+        );
+        if (bytesRead === 0) break;
+        offset += bytesRead;
+      }
+      if (offset !== initial.size) {
+        throw new ServiceUnavailableException(
+          'Stored asset changed while being read.'
+        );
+      }
+      const { bytesRead: extraBytes } = await handle.read(
+        stored,
+        initial.size,
+        1,
+        initial.size
+      );
+      const final = await handle.stat();
+      if (
+        extraBytes !== 0 ||
+        final.size !== initial.size ||
+        final.mtimeMs !== initial.mtimeMs
+      ) {
+        throw new ServiceUnavailableException(
+          'Stored asset changed while being read.'
+        );
+      }
+      return stored.subarray(0, initial.size);
+    } finally {
+      await handle.close();
     }
   }
 

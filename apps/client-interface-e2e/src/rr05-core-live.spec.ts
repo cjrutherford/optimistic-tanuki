@@ -712,27 +712,53 @@ async function chatSocket(request: APIRequestContext, profileId: string) {
 test('RR05 socket authorization: a nonparticipant cannot persist or deliver a forged direct message', async ({
   playwright,
 }) => {
+  // Measured healthy execution is ~30s: three real registrations plus two
+  // authorized message roundtrips leave no scheduling headroom at 30s.
+  test.setTimeout(60_000);
   const aliceContext = await playwright.request.newContext();
   const bobContext = await playwright.request.newContext();
   const outsiderContext = await playwright.request.newContext();
   const sockets: Socket[] = [];
+  let alice!: Awaited<ReturnType<typeof account>>;
+  let bob!: Awaited<ReturnType<typeof account>>;
+  let outsider!: Awaited<ReturnType<typeof account>>;
+  let conversation!: { id: string };
+  const timedStep = async <T>(name: string, action: () => Promise<T>) => {
+    const startedAt = Date.now();
+    try {
+      return await test.step(name, action);
+    } finally {
+      console.log(`[RR05 socket timing] ${name}: ${Date.now() - startedAt}ms`);
+    }
+  };
   try {
-    const alice = await account(aliceContext, 'socket-alice');
-    const bob = await account(bobContext, 'socket-bob');
-    const outsider = await account(outsiderContext, 'socket-outsider');
-    const created = await aliceContext.post(
-      origin + '/api/chat/conversations/direct/get-or-create',
-      { headers, data: { recipientProfileId: bob.profileId } }
+    await timedStep('register Alice', async () => {
+      alice = await account(aliceContext, 'socket-alice');
+    });
+    await timedStep('register Bob', async () => {
+      bob = await account(bobContext, 'socket-bob');
+    });
+    await timedStep('register outsider', async () => {
+      outsider = await account(outsiderContext, 'socket-outsider');
+    });
+    await timedStep('create direct conversation', async () => {
+      const created = await aliceContext.post(
+        origin + '/api/chat/conversations/direct/get-or-create',
+        { headers, data: { recipientProfileId: bob.profileId } }
+      );
+      expect(created.status()).toBe(201);
+      conversation = await created.json();
+    });
+    const aliceSocket = await timedStep('authorize Alice socket', () =>
+      chatSocket(aliceContext, alice.profileId)
     );
-    expect(created.status()).toBe(201);
-    const conversation = await created.json();
-    const aliceSocket = await chatSocket(aliceContext, alice.profileId);
     sockets.push(aliceSocket);
-    const bobSocket = await chatSocket(bobContext, bob.profileId);
+    const bobSocket = await timedStep('authorize Bob socket', () =>
+      chatSocket(bobContext, bob.profileId)
+    );
     sockets.push(bobSocket);
-    const outsiderSocket = await chatSocket(
-      outsiderContext,
-      outsider.profileId
+    const outsiderSocket = await timedStep('authorize outsider socket', () =>
+      chatSocket(outsiderContext, outsider.profileId)
     );
     sockets.push(outsiderSocket);
     const legitimate = marker('authorized socket message');
@@ -747,17 +773,21 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
         resolve(payload);
       });
     });
-    aliceSocket.emit('message', {
-      id: messageId,
-      conversationId: conversation.id,
-      senderId: alice.profileId,
-      recipientIds: [bob.profileId],
-      content: legitimate,
-      type: 'chat',
+    await timedStep('send and receive authorized socket message', async () => {
+      aliceSocket.emit('message', {
+        id: messageId,
+        conversationId: conversation.id,
+        senderId: alice.profileId,
+        recipientIds: [bob.profileId],
+        content: legitimate,
+        type: 'chat',
+      });
+      expect(JSON.stringify(await received)).toContain(legitimate);
     });
-    expect(JSON.stringify(await received)).toContain(legitimate);
-    aliceSocket.disconnect();
-    const restored = await chatSocket(aliceContext, alice.profileId);
+    const restored = await timedStep('reconnect Alice socket', async () => {
+      aliceSocket.disconnect();
+      return chatSocket(aliceContext, alice.profileId);
+    });
     sockets.push(restored);
     const resent = new Promise<void>((resolve, reject) => {
       const deadline = setTimeout(
@@ -770,23 +800,30 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
         resolve();
       });
     });
-    restored.emit('message', {
-      id: messageId,
-      conversationId: conversation.id,
-      senderId: alice.profileId,
-      recipientIds: [bob.profileId],
-      content: legitimate,
-      type: 'chat',
+    await timedStep('retry authorized send after reconnect', async () => {
+      restored.emit('message', {
+        id: messageId,
+        conversationId: conversation.id,
+        senderId: alice.profileId,
+        recipientIds: [bob.profileId],
+        content: legitimate,
+        type: 'chat',
+      });
+      await resent;
     });
-    await resent;
-    const history = await bobContext.get(
-      origin + '/api/chat/messages/' + conversation.id,
-      { headers }
+    await timedStep(
+      'verify one durable authorized message in history',
+      async () => {
+        const history = await bobContext.get(
+          origin + '/api/chat/messages/' + conversation.id,
+          { headers }
+        );
+        expect(history.status()).toBe(200);
+        expect(
+          (await history.json()).filter((message) => message.id === messageId)
+        ).toHaveLength(1);
+      }
     );
-    expect(history.status()).toBe(200);
-    expect(
-      (await history.json()).filter((message) => message.id === messageId)
-    ).toHaveLength(1);
 
     const forged = marker('forged socket message');
     const messages: unknown[] = [];
@@ -802,32 +839,41 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
         resolve();
       });
     });
-    outsiderSocket.emit('message', {
-      conversationId: conversation.id,
-      senderId: outsider.profileId,
-      recipientIds: [alice.profileId, bob.profileId],
-      content: forged,
-      type: 'chat',
-    });
-    await settled;
-    expect
-      .soft(JSON.stringify(messages), 'forged realtime delivery')
-      .not.toContain(forged);
-    const stored = await bobContext.get(
-      origin + '/api/chat/messages/' + conversation.id,
-      { headers }
+    await timedStep(
+      'reject forged nonparticipant send and verify no delivery',
+      async () => {
+        outsiderSocket.emit('message', {
+          conversationId: conversation.id,
+          senderId: outsider.profileId,
+          recipientIds: [alice.profileId, bob.profileId],
+          content: forged,
+          type: 'chat',
+        });
+        await settled;
+        expect
+          .soft(JSON.stringify(messages), 'forged realtime delivery')
+          .not.toContain(forged);
+      }
     );
-    expect(stored.status()).toBe(200);
-    const body = await stored.text();
-    expect(body).toContain(legitimate);
-    expect.soft(body, 'forged persistence').not.toContain(forged);
+    await timedStep('verify forged message was not persisted', async () => {
+      const stored = await bobContext.get(
+        origin + '/api/chat/messages/' + conversation.id,
+        { headers }
+      );
+      expect(stored.status()).toBe(200);
+      const body = await stored.text();
+      expect(body).toContain(legitimate);
+      expect.soft(body, 'forged persistence').not.toContain(forged);
+    });
   } finally {
-    sockets.forEach((socket) => socket.disconnect());
-    await Promise.all([
-      aliceContext.dispose(),
-      bobContext.dispose(),
-      outsiderContext.dispose(),
-    ]);
+    await timedStep('disconnect sockets and dispose accounts', async () => {
+      sockets.forEach((socket) => socket.disconnect());
+      await Promise.all([
+        aliceContext.dispose(),
+        bobContext.dispose(),
+        outsiderContext.dispose(),
+      ]);
+    });
   }
 });
 

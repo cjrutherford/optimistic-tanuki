@@ -21,9 +21,12 @@ import {
 import { ClassifiedPayment } from '../../entities/classified-payment.entity';
 import { calculateNetAmount } from '../../app/utils/platform-fee.util';
 
+const CLASSIFIEDS_APP_SCOPE = 'local-hub';
+
 export interface CreateOfferDto {
   classifiedId: string;
   buyerId: string;
+  appScope?: string;
   // Legacy transport payloads may include this field. It is deliberately
   // ignored: seller ownership is derived from the classified service.
   sellerId?: string;
@@ -50,20 +53,30 @@ export class OfferService {
   ) {}
 
   private async findClassifiedSellerId(
-    classifiedId: string
+    classifiedId: string,
+    requestingUserId?: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
   ): Promise<string | null> {
     const classified = await firstValueFrom(
       this.classifiedsClient.send<{ userId?: string }>(
         { cmd: ClassifiedCommands.FIND_BY_ID },
-        { id: classifiedId }
+        { id: classifiedId, appScope, requestingUserId }
       )
     );
 
     return classified?.userId ?? null;
   }
 
-  private async getClassifiedSellerId(classifiedId: string): Promise<string> {
-    const sellerId = await this.findClassifiedSellerId(classifiedId);
+  private async getClassifiedSellerId(
+    classifiedId: string,
+    requestingUserId?: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
+  ): Promise<string> {
+    const sellerId = await this.findClassifiedSellerId(
+      classifiedId,
+      requestingUserId,
+      appScope
+    );
 
     if (!sellerId) {
       throw new NotFoundException('Classified not found');
@@ -75,9 +88,14 @@ export class OfferService {
   private async assertClassifiedSeller(
     classifiedId: string,
     callerId: string,
-    action: string
+    action: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
   ): Promise<string> {
-    const sellerId = await this.getClassifiedSellerId(classifiedId);
+    const sellerId = await this.getClassifiedSellerId(
+      classifiedId,
+      callerId,
+      appScope
+    );
 
     if (sellerId !== callerId) {
       throw new BadRequestException(
@@ -88,17 +106,24 @@ export class OfferService {
     return sellerId;
   }
 
-  private async findClassifiedIdsForUser(userId: string): Promise<string[]> {
+  private async findClassifiedIdsForUser(
+    userId: string,
+    appScope = CLASSIFIEDS_APP_SCOPE
+  ): Promise<string[]> {
     return firstValueFrom(
       this.classifiedsClient.send<string[]>(
         { cmd: ClassifiedCommands.FIND_BY_USER },
-        { userId }
+        { userId, appScope }
       )
     );
   }
 
   async createOffer(dto: CreateOfferDto): Promise<Offer> {
-    const sellerId = await this.getClassifiedSellerId(dto.classifiedId);
+    const sellerId = await this.getClassifiedSellerId(
+      dto.classifiedId,
+      dto.buyerId,
+      dto.appScope
+    );
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + DEFAULT_OFFER_EXPIRY_DAYS);
 
@@ -231,7 +256,7 @@ export class OfferService {
     classifiedId: string,
     userId: string
   ): Promise<Offer[]> {
-    const sellerId = await this.getClassifiedSellerId(classifiedId);
+    const sellerId = await this.getClassifiedSellerId(classifiedId, userId);
     const offers = await this.offerRepository.find({
       where: { classifiedId },
       order: { createdAt: 'DESC' },

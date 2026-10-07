@@ -34,33 +34,59 @@ export class ClassifiedsController {
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_ID })
-  async findById(@Payload() data: { id: string }) {
-    return this.classifiedsService.findById(data.id);
+  async findById(
+    @Payload() data: { id: string; appScope: string; requestingUserId?: string }
+  ) {
+    return this.classifiedsService.findById(
+      data.id,
+      data.appScope,
+      data.requestingUserId
+    );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_USER })
-  async findIdsByUser(@Payload() data: { userId: string }) {
-    return this.classifiedsService.findIdsByUser(data.userId);
+  async findIdsByUser(@Payload() data: { userId: string; appScope: string }) {
+    return this.classifiedsService.findIdsByUser(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_COMMUNITY })
   async findByCommunity(
-    @Payload() data: { communityId: string; appScope?: string }
+    @Payload()
+    data: {
+      communityId: string;
+      appScope: string;
+      requestingUserId?: string;
+    }
   ) {
     return this.classifiedsService.findByCommunity(
       data.communityId,
-      data.appScope
+      data.appScope,
+      data.requestingUserId
     );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_PROFILE })
-  async findByProfile(@Payload() data: { profileId: string }) {
-    return this.classifiedsService.findByProfile(data.profileId);
+  async findByProfile(
+    @Payload()
+    data: {
+      profileId: string;
+      appScope: string;
+      requestingUserId?: string;
+    }
+  ) {
+    return this.classifiedsService.findByProfile(
+      data.profileId,
+      data.appScope,
+      data.requestingUserId
+    );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.SEARCH })
-  async search(@Payload() dto: SearchClassifiedsDto) {
-    return this.classifiedsService.search(dto);
+  async search(
+    @Payload()
+    data: SearchClassifiedsDto & { requestingUserId?: string }
+  ) {
+    return this.classifiedsService.search(data, data.requestingUserId);
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.UPDATE })
@@ -70,34 +96,65 @@ export class ClassifiedsController {
       id: string;
       dto: UpdateClassifiedAdDto;
       profileId: string;
+      appScope: string;
     }
   ) {
-    return this.classifiedsService.update(data.id, data.dto, data.profileId);
+    return this.classifiedsService.update(
+      data.id,
+      data.dto,
+      data.profileId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.DELETE })
-  async remove(@Payload() data: { id: string; profileId: string }) {
-    return this.classifiedsService.remove(data.id, data.profileId);
+  async remove(
+    @Payload() data: { id: string; profileId: string; appScope: string }
+  ) {
+    return this.classifiedsService.remove(
+      data.id,
+      data.profileId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.MARK_SOLD })
-  async markSold(@Payload() data: { id: string; profileId: string }) {
-    return this.classifiedsService.markSold(data.id, data.profileId);
+  async markSold(
+    @Payload() data: { id: string; profileId: string; appScope: string }
+  ) {
+    return this.classifiedsService.markSold(
+      data.id,
+      data.profileId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.FEATURE })
   async feature(
-    @Payload() data: { id: string; profileId: string; durationDays: number }
+    @Payload()
+    data: {
+      id: string;
+      profileId: string;
+      durationDays: number;
+      appScope: string;
+    }
   ) {
     return this.classifiedsService.feature(
       data.id,
       data.profileId,
-      data.durationDays
+      data.durationDays,
+      data.appScope
     );
   }
 
   @MessagePattern({ cmd: ClassifiedCommands.UNFEATURE })
-  async unfeature(@Payload() data: { id: string; profileId: string }) {
-    return this.classifiedsService.unfeature(data.id, data.profileId);
+  async unfeature(
+    @Payload() data: { id: string; profileId: string; appScope: string }
+  ) {
+    return this.classifiedsService.unfeature(
+      data.id,
+      data.profileId,
+      data.appScope
+    );
   }
 }

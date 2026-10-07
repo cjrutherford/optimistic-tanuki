@@ -149,7 +149,9 @@ export class AppController {
       data.classifiedId,
       data.paymentMethod,
       data.amount,
-      data.sellerId
+      data.sellerId,
+      undefined,
+      data.appScope
     );
   }
 
@@ -193,8 +195,8 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_PAYMENTS })
-  async getUserPayments(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserPayments(data.userId);
+  async getUserPayments(@Payload() data: { userId: string; appScope: string }) {
+    return this.paymentService.getUserPayments(data.userId, data.appScope);
   }
 
   @MessagePattern({ cmd: PaymentCommands.MARK_INTERESTED_BUYER })
@@ -327,6 +329,7 @@ export class AppController {
     data: {
       classifiedId: string;
       buyerId: string;
+      appScope?: string;
       sellerId: string;
       amount: number;
       message?: string;
@@ -335,6 +338,7 @@ export class AppController {
     return this.offerService.createOffer({
       classifiedId: data.classifiedId,
       buyerId: data.buyerId,
+      appScope: data.appScope,
       amount: data.amount,
       message: data.message,
     });

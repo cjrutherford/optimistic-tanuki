@@ -210,6 +210,28 @@ describe('LocalStorageAdapter', () => {
       );
     });
 
+    it('returns bounded authenticated plaintext without exposing the stored envelope', async () => {
+      const payload = Buffer.from(
+        'image bytes that should not be encrypted on the response'
+      );
+      const created = await adapter.create({
+        name: 'bounded.png',
+        profileId: 'p',
+        type: AssetType.IMAGE,
+        content: payload,
+      } as never);
+      const stored = await fs.readFile(
+        path.join(basePath, created.storagePath)
+      );
+
+      await expect(adapter.readBuffer(created, stored.length)).resolves.toEqual(
+        payload
+      );
+      await expect(
+        adapter.readBuffer(created, stored.length - 1)
+      ).rejects.toThrow('exceeds the supported retrieval size');
+    });
+
     it('falls back to the asset type when the extension is unknown', async () => {
       const created = await adapter.create({
         name: 'clip.unknownext',

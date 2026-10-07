@@ -1078,6 +1078,8 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      social:
+        condition: service_started
 
   payments:
     container_name: ot_payments

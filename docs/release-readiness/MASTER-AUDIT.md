@@ -313,7 +313,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 | RR-03 | Authentication, registration, session, and account lifecycle              | VERIFYING                        | P0                |
 | RR-04 | OT feed, discovery, follows, visibility, and privacy                      | GAP FOUND                        | P0                |
 | RR-05 | OT communities, forum, chat, and messaging                                | VERIFYING                        | P0                |
-| RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | GAP FOUND                        | P0                |
+| RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | VERIFYING                        | P0                |
 | RR-07 | Daylight civic feed release acceptance                                    | BLOCKED on PR/deployment         | P1/P0-if-marketed |
 | RR-08 | Safety, reporting, blocking, moderation, and authorization boundaries     | PLANNED                          | P0                |
 | RR-09 | Accessibility, responsive/mobile, themes, and motion                      | PLANNED                          | P1                |
@@ -519,7 +519,7 @@ Focused unit regression for confirmed defects plus two-user browser E2E.
 
 ## RR-06 — TS locality browsing, membership, classifieds, and messaging
 
-**Status:** GAP FOUND — live audit reproduced target-community classified posting and Contact Seller blockers. Owner denials and successful removal return HTTP 500; image persistence needs diagnosis. RR06-I01 is required immediately after this audit, before RR-08. [Current evidence](./findings/RR-06.md). No RR-06 acceptance is claimed.
+**Status:** VERIFYING — RR06-I01 bounded repair is ACCEPTED: target membership/private listing reads, owner contracts, image delivery and buyer/seller UI reply pass. Independent units/build/review pass. Shared RR05 regression is 35/36 plus unchanged forum retry 3/3; its intermittent permission-state failure remains an RR-10 gate. Full TS acceptance requires RR08-A01, RR10-I01, shared email/operator upload configuration and RR06-V01 before RR-12. [Repair findings](./findings/RR-06-I01.md). No full RR-06 acceptance is claimed.
 
 **Goal:** Validate Towne Square's currently released core.
 
@@ -594,6 +594,8 @@ Per-locality source trace samples, failure-path tests, production-like E2E, and 
 
 **Goal:** Ensure advertised safety controls exist and access boundaries hold.
 
+**Required RR08-A01 asset gate:** Source-backed P0 candidate from [RR06-I01 review](./findings/RR-06-I01.md#remaining-rr-06-landscape-and-order): private classified image URLs use a public asset endpoint without content-audience enforcement. Reproduce anonymous/nonmember/revoked-member access, then implement owning-service association and authorization if confirmed; preserve public-media positives. Required before promotion. No live private-image disclosure is claimed from source review alone.
+
 ### OT
 
 - [ ] Block works.
@@ -647,6 +649,10 @@ Automated accessibility scan where available + manual keyboard/mobile checks.
 **Goal:** Make failure survivable and understandable.
 
 **Scheduled RR05-I01 follow-up:** Before RR-12 integration, investigate the four inconclusive parallel-run timeouts from [final repair verification](./findings/RR-05-I01.md#independent-final-verification-2026-10-06). Reproduce under controlled load, preserve failure artifacts and collect awaited-call/step durations. Establish the cause before deciding repairs or claiming capacity; the serial pass does not accept concurrency behavior.
+
+**Additional RR06-I01 regression evidence:** A serial tablet socket test hit its 30-second overall deadline; its instrumented independent retry passed, with three registrations ~6.4 seconds each and two message roundtrips ~5 seconds each. Only the overall fixture budget was raised to 60 seconds; 10-second operation deadlines remain. RR-10 must identify the cause of those latencies using step/service timings, and validate reliability under controlled load. No product latency fix or capacity acceptance is claimed by the retry or budget change. The final full shared run also had one desktop forum timeout with the permission-gated authoring button absent; the unchanged targeted retry passed all three viewports. Diagnose the auth/permission resolver state with preserved response/step timings and implement the identified repair; no product cause is proven and no full-green shared run is claimed.
+
+**Required implementation RR10-I01:** Complete scalable authenticated delivery of encrypted media above RR06-I01's bounded read limit, during RR-10 before RR06-V01/RR-12 release acceptance. The internal-media path returned encrypted-envelope bytes in the live RR06 image probe; video uploads have no size limit. Preserve authenticated plaintext range semantics and bound memory/disk/abort cleanup, with real large-object evidence. See [execution queue](./EXECUTION-PLAN.md) and [RR06 repair evidence](./findings/RR-06-I01.md). This is required pre-release implementation, not a post-launch deferral.
 
 ### Checks
 

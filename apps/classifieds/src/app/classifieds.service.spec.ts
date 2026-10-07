@@ -9,13 +9,12 @@ describe('ClassifiedsService ownership lookup', () => {
     };
     const service = new ClassifiedsService(repo as never);
 
-    await expect(service.findIdsByUser('seller-1')).resolves.toEqual([
-      'classified-1',
-      'classified-2',
-    ]);
+    await expect(
+      service.findIdsByUser('seller-1', 'local-hub')
+    ).resolves.toEqual(['classified-1', 'classified-2']);
     expect(repo.find).toHaveBeenCalledWith({
       select: { id: true },
-      where: { userId: 'seller-1' },
+      where: { userId: 'seller-1', appScope: 'local-hub' },
     });
   });
 });

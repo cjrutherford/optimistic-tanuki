@@ -28,4 +28,7 @@ export interface StorageAdapter {
    * @return A promise that resolves to the asset's content as a Buffer.
    */
   read(data: AssetDto): Promise<Buffer | string>;
+
+  /** Returns authenticated plaintext bytes without data-URL/base64 expansion. */
+  readBuffer?(data: AssetDto, maxStoredBytes?: number): Promise<Buffer>;
 }

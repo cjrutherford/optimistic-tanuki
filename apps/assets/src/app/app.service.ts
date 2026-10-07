@@ -279,4 +279,29 @@ export class AppService {
     this.l.log('Read asset content length:', assetBuffer.length);
     return assetBuffer as string;
   }
+
+  async readAssetContent(
+    data: AssetHandle,
+    maxStoredBytes?: number
+  ): Promise<Buffer> {
+    const asset = await this.retrieveAsset(data);
+    if (this.storageAdapter.readBuffer) {
+      return this.storageAdapter.readBuffer(asset, maxStoredBytes);
+    }
+    if (maxStoredBytes !== undefined) {
+      throw new Error(
+        'Storage adapter cannot perform a bounded authenticated read'
+      );
+    }
+
+    const content = await this.storageAdapter.read(asset);
+    if (Buffer.isBuffer(content)) return content;
+    const dataUrl = /^data:[^;,]+;base64,([\s\S]*)$/.exec(content);
+    if (!dataUrl) {
+      throw new Error(
+        'Storage adapter did not return binary or base64 asset content'
+      );
+    }
+    return Buffer.from(dataUrl[1], 'base64');
+  }
 }

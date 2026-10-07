@@ -39,11 +39,11 @@ export class ChatService {
    * Get or create a 1-to-1 direct conversation between the two participants.
    * Emits `get_or_create_direct_chat`; resolves when the gateway emits `conversation` back.
    */
-  getOrCreateDirectChat(participantIds: string[]): Promise<ChatConversation> {
+  getOrCreateDirectChat(recipientProfileId: string): Promise<ChatConversation> {
     return firstValueFrom(
       this.http.post<ChatConversation>(
         `${this.baseUrl}/conversations/direct/get-or-create`,
-        { participantIds }
+        { recipientProfileId }
       )
     );
   }
@@ -71,10 +71,9 @@ export class ChatService {
   }
 
   /**
-   * Send a message to an existing conversation.
-   * Emits the standard `message` event; the gateway updates all participants
-   * by broadcasting `conversations` — this method resolves once the server
-   * echoes back the updated conversations list so the caller can re-fetch.
+   * Send a message to an existing conversation over the gateway REST API.
+   * The gateway binds sender identity from the authenticated session and
+   * returns the persisted message.
    */
   sendMessage(payload: {
     conversationId: string;
@@ -83,8 +82,16 @@ export class ChatService {
     recipientIds: string[];
     type?: 'chat' | 'info' | 'warning' | 'system';
   }): Promise<ChatMessage> {
+    // The gateway binds senderId from the authenticated session and its
+    // SendMessageDto accepts only these three fields. Never forward caller
+    // supplied senderId or client-only message type to the REST boundary.
+    const { conversationId, content, recipientIds } = payload;
     return firstValueFrom(
-      this.http.post<ChatMessage>(`${this.baseUrl}/messages`, payload)
+      this.http.post<ChatMessage>(`${this.baseUrl}/messages`, {
+        conversationId,
+        content,
+        recipientIds,
+      })
     );
   }
 }
