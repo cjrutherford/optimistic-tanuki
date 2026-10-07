@@ -5,7 +5,12 @@ import {
   inject,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import {
+  TitleStrategy,
+  provideRouter,
+  withInMemoryScrolling,
+} from '@angular/router';
+import { SeoTitleStrategy } from './services/seo-title.strategy';
 import { appRoutes } from './app.routes';
 import {
   FontLoadingService,
@@ -27,6 +32,7 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     ThemeService,
+    { provide: TitleStrategy, useClass: SeoTitleStrategy },
     FontLoadingService,
   ],
 };

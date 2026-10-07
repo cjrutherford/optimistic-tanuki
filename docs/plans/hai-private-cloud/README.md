@@ -42,8 +42,8 @@ The agent must complete only the current slice, validate it, update completion n
 | S012  | Shared conversion components      | Complete |
 | S013  | Assessment flow                   | Complete |
 | S014  | Analytics and campaign tracking   | Complete |
-| S015  | SEO and social metadata           | Ready    |
-| S016  | Responsive and accessibility QA   | Planned  |
+| S015  | SEO and social metadata           | Complete |
+| S016  | Responsive and accessibility QA   | Ready    |
 | S017  | Performance and browser QA        | Planned  |
 | S019  | QR and campaign validation        | Planned  |
 | S020  | Theme and personality token audit | Planned  |
