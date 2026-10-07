@@ -36,12 +36,16 @@ export class InternalMediaService {
 
   async open(
     id: string,
-    range?: string
+    range?: string,
+    viewerAuthorized = false
   ): Promise<MediaStreamResult | UnsatisfiedMediaRange> {
     let asset: Awaited<ReturnType<AppService['retrieveAsset']>>;
     try {
       asset = await this.appService.retrieveAsset({ id });
     } catch {
+      throw new NotFoundException(`Asset with id ${id} not found`);
+    }
+    if (asset.audienceCommunityIds?.length && !viewerAuthorized) {
       throw new NotFoundException(`Asset with id ${id} not found`);
     }
     if (asset.storageStrategy !== StorageStrategy.LOCAL_BLOCK_STORAGE) {

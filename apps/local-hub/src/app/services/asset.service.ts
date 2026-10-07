@@ -19,6 +19,8 @@ export interface CreateAssetDto {
   type: string;
   content: string;
   fileExtension: string;
+  communityId?: string;
+  classifiedAdId?: string;
 }
 
 @Injectable({

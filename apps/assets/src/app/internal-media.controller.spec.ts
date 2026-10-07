@@ -1,5 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac } from 'node:crypto';
 
 import { InternalMediaController } from './internal-media.controller';
 import { InternalMediaService } from './internal-media.service';
@@ -42,11 +43,18 @@ describe('InternalMediaController', () => {
     await controller.stream(
       'asset-1',
       'gateway-secret',
+      undefined,
+      undefined,
+      undefined,
       'bytes=10-19',
       res as any
     );
 
-    expect(mediaService.open).toHaveBeenCalledWith('asset-1', 'bytes=10-19');
+    expect(mediaService.open).toHaveBeenCalledWith(
+      'asset-1',
+      'bytes=10-19',
+      false
+    );
     expect(res.status).toHaveBeenCalledWith(206);
     expect(res.setHeader).toHaveBeenCalledWith('Accept-Ranges', 'bytes');
     expect(res.setHeader).toHaveBeenCalledWith(
@@ -60,8 +68,42 @@ describe('InternalMediaController', () => {
 
   it('rejects requests without the configured internal media token', async () => {
     await expect(
-      controller.stream('asset-1', 'wrong-secret', undefined, response() as any)
+      controller.stream(
+        'asset-1',
+        'wrong-secret',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        response() as any
+      )
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('accepts only a fresh gateway-signed viewer assertion for private delivery', async () => {
+    (mediaService.open as jest.Mock).mockResolvedValue({
+      statusCode: 200,
+      contentType: 'image/png',
+      contentLength: 8,
+      stream,
+    });
+    const timestamp = String(Date.now());
+    const viewer = 'profile-1';
+    const signature = createHmac('sha256', 'gateway-secret')
+      .update(`asset-1:${viewer}:${timestamp}`)
+      .digest('hex');
+
+    await controller.stream(
+      'asset-1',
+      'gateway-secret',
+      viewer,
+      timestamp,
+      signature,
+      undefined,
+      response() as any
+    );
+
+    expect(mediaService.open).toHaveBeenCalledWith('asset-1', undefined, true);
   });
 
   it('returns a 416 response with the file size for an invalid byte range', async () => {
@@ -74,6 +116,9 @@ describe('InternalMediaController', () => {
     await controller.stream(
       'asset-1',
       'gateway-secret',
+      undefined,
+      undefined,
+      undefined,
       'bytes=100-',
       res as any
     );

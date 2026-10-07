@@ -37,6 +37,7 @@ describe('AppService', () => {
       find: jest.fn(),
       findOneBy: jest.fn(),
       remove: jest.fn(),
+      query: jest.fn(),
       // Add other methods as needed for your tests
     } as unknown as Repository<AssetEntity>;
     storageAdapter = {
@@ -108,6 +109,7 @@ describe('AppService', () => {
         storageStrategy: 'local_block_storage',
         type: 'image',
         profileId: undefined,
+        audienceCommunityIds: [],
       });
       expect(storageAdapter.create).toHaveBeenCalledWith(asset);
       expect(assetRepo.save).toHaveBeenCalledWith({
@@ -117,6 +119,88 @@ describe('AppService', () => {
         profileId: asset.profileId,
         storageStrategy: asset.storageStrategy,
       });
+    });
+
+    it('persists a community audience before the upload can be attached to content', async () => {
+      const dto = {
+        name: 'private.png',
+        type: 'image',
+        profileId: 'profile-1',
+        communityId: 'community-1',
+      } as any;
+      const asset = {
+        id: 'asset-1',
+        name: dto.name,
+        profileId: dto.profileId,
+        type: dto.type,
+        audienceCommunityIds: ['community-1'],
+      } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue({
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        storageStrategy: asset.storageStrategy,
+        storagePath: 'private.png',
+        profileId: asset.profileId,
+      } as any);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceCommunityIds: ['community-1'] })
+      );
+      expect(assetRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ audienceCommunityIds: ['community-1'] })
+      );
+    });
+
+    it('adds community audiences monotonically without removing an existing restriction', async () => {
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceCommunityIds: ['community-1', 'community-2'] },
+      ]);
+
+      await appService.addCommunityAudience({
+        id: 'asset-1',
+        communityId: 'community-2',
+      });
+      await appService.addCommunityAudience({
+        id: 'asset-1',
+        communityId: 'community-1',
+      });
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(assetRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('"audienceCommunityIds" || $1::jsonb'),
+        [JSON.stringify(['community-1']), 'asset-1']
+      );
+    });
+
+    it('serializes concurrent audience additions as atomic JSONB merges', async () => {
+      (assetRepo.query as jest.Mock).mockResolvedValue([
+        { id: 'asset-1', audienceCommunityIds: [] },
+      ]);
+
+      await Promise.all([
+        appService.addCommunityAudience({
+          id: 'asset-1',
+          communityId: 'community-1',
+        }),
+        appService.addCommunityAudience({
+          id: 'asset-1',
+          communityId: 'community-2',
+        }),
+      ]);
+
+      expect(assetRepo.query).toHaveBeenCalledTimes(2);
+      expect(
+        (assetRepo.query as jest.Mock).mock.calls.every(
+          ([sql]) =>
+            sql.includes('UPDATE "asset_entity"') &&
+            sql.includes('"audienceCommunityIds" || $1::jsonb')
+        )
+      ).toBe(true);
     });
 
     it('should log an error if asset creation fails', async () => {
@@ -154,11 +238,9 @@ describe('AppService', () => {
       await appService.createAsset(dto);
 
       expect(logSpy).toHaveBeenCalledWith(
-        'Creating asset with data:',
+        'Creating asset:',
         dto.name,
-        dto.profileId,
-        dto.type,
-        dto.content.length
+        dto.type
       );
     });
 
@@ -381,6 +463,21 @@ describe('AppService', () => {
     });
   });
 
+  describe('readAsset', () => {
+    it('does not return bytes for a community asset through the untrusted RPC read path', async () => {
+      jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue({
+        id: 'asset-1',
+        profileId: 'owner-profile',
+        audienceCommunityIds: ['community-1'],
+      } as AssetEntity);
+
+      await expect(
+        appService.readAsset({ id: 'asset-1', profileId: 'owner-profile' })
+      ).rejects.toThrow('authorized media delivery path');
+      expect(storageAdapter.read).not.toHaveBeenCalled();
+    });
+  });
+
   describe('removeAsset', () => {
     it('should remove an asset', async () => {
       const handle = { id: '1' } as any;
@@ -447,7 +544,7 @@ describe('AppService', () => {
 
       await appService.retrieveAsset(handle);
 
-      expect(logSpy).toHaveBeenCalledWith(
+      expect(logSpy).not.toHaveBeenCalledWith(
         'Retrieving asset with data:',
         handle
       );
@@ -490,12 +587,7 @@ describe('AppService', () => {
 
       await appService.readAsset(handle);
 
-      expect(logSpy).toHaveBeenCalledWith('Reading asset with data:', handle);
-      expect(logSpy).toHaveBeenCalledWith('Retrieved asset:', asset);
-      expect(logSpy).toHaveBeenCalledWith(
-        'Read asset content length:',
-        content.length
-      );
+      expect(logSpy).not.toHaveBeenCalledWith('Retrieved asset:', asset);
     });
   });
 

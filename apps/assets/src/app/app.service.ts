@@ -40,13 +40,7 @@ export class AppService {
       // Sanitize filename
       data.name = data.name.replace(/\s+/g, '_');
 
-      this.l.log(
-        'Creating asset with data:',
-        data.name,
-        data.profileId,
-        data.type,
-        data.content?.length || 0
-      );
+      this.l.log('Creating asset:', data.name, data.type);
 
       if (data.content || data.sourcePath) {
         const prepared = await this.prepareAssetPayload(data);
@@ -79,6 +73,7 @@ export class AppService {
         profileId: data.profileId,
         type: data.type,
         storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
+        audienceCommunityIds: data.communityId ? [data.communityId] : [],
       };
       const asset = this.assetRepo.create(entityAsset);
       data.id = asset.id; // Ensure the ID is set for the storage adapter
@@ -89,7 +84,6 @@ export class AppService {
       } as AssetEntity);
       return newAsset;
     } catch (error) {
-      console.error('Error creating asset:', error);
       this.l.error('Error creating asset:', error);
       if (error instanceof RpcException) {
         throw error;
@@ -244,7 +238,6 @@ export class AppService {
   }
 
   async retrieveAsset(data: AssetHandle): Promise<AssetEntity> {
-    this.l.log('Retrieving asset with data:', data);
     const asset = await this.assetRepo.findOneBy({ id: data.id });
     if (!asset) {
       this.l.error(`Asset with id ${data.id} not found`);
@@ -253,8 +246,27 @@ export class AppService {
     return asset;
   }
 
+  async addCommunityAudience(data: {
+    id: string;
+    communityId: string;
+  }): Promise<AssetEntity> {
+    const updated = (await this.assetRepo.query(
+      `UPDATE "asset_entity"
+       SET "audienceCommunityIds" = CASE
+         WHEN "audienceCommunityIds" @> $1::jsonb THEN "audienceCommunityIds"
+         ELSE "audienceCommunityIds" || $1::jsonb
+       END
+       WHERE "id" = $2
+       RETURNING *`,
+      [JSON.stringify([data.communityId]), data.id]
+    )) as AssetEntity[];
+    if (!updated.length) {
+      throw new RpcException(`Asset with id ${data.id} not found`);
+    }
+    return updated[0];
+  }
+
   async listAssets(data: AssetListQuery): Promise<AssetEntity[]> {
-    this.l.log('Listing assets with data:', data);
     return this.assetRepo.find({
       where: {
         profileId: data.profileId,
@@ -268,15 +280,18 @@ export class AppService {
   }
 
   async readAsset(data: AssetHandle): Promise<string> {
-    this.l.log('Reading asset with data:', data);
     const asset = await this.retrieveAsset(data);
-    this.l.log('Retrieved asset:', asset);
+    if (asset.audienceCommunityIds?.length) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Community assets must use the authorized media delivery path',
+      });
+    }
     const assetBuffer = await this.storageAdapter.read(asset);
     if (!assetBuffer) {
       this.l.error(`Failed to read asset with id ${data.id}`);
       throw new RpcException(`Failed to read asset with id ${data.id}`);
     }
-    this.l.log('Read asset content length:', assetBuffer.length);
     return assetBuffer as string;
   }
 

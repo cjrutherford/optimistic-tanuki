@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RpcException } from '@nestjs/microservices';
-import { CommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AssetCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { ClassifiedsService } from './classifieds.service';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
@@ -19,6 +23,7 @@ interface MockQueryBuilder {
   orderBy: jest.Mock;
   addOrderBy: jest.Mock;
   getMany: jest.Mock;
+  select: jest.Mock;
 }
 
 interface MockRepository {
@@ -40,6 +45,7 @@ function createMockQueryBuilder(): MockQueryBuilder {
   qb.orderBy = jest.fn(() => qb as MockQueryBuilder);
   qb.addOrderBy = jest.fn(() => qb as MockQueryBuilder);
   qb.getMany = jest.fn().mockResolvedValue([]);
+  qb.select = jest.fn(() => qb as MockQueryBuilder);
   return qb as MockQueryBuilder;
 }
 
@@ -74,6 +80,7 @@ describe('ClassifiedsService', () => {
   let repo: MockRepository;
   let qb: MockQueryBuilder;
   let socialClient: { send: jest.Mock };
+  let assetsClient: { send: jest.Mock };
 
   beforeEach(async () => {
     qb = createMockQueryBuilder();
@@ -97,12 +104,16 @@ describe('ClassifiedsService', () => {
         )
       ),
     };
+    assetsClient = {
+      send: jest.fn().mockReturnValue(of({ audienceCommunityIds: [] })),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ClassifiedsService,
         { provide: getRepositoryToken(ClassifiedAdEntity), useValue: repo },
         { provide: ServiceTokens.SOCIAL_SERVICE, useValue: socialClient },
+        { provide: ServiceTokens.ASSETS_SERVICE, useValue: assetsClient },
       ],
     }).compile();
 
@@ -270,6 +281,123 @@ describe('ClassifiedsService', () => {
       ).rejects.toMatchObject({ error: { statusCode: 404 } });
       expect(repo.save).not.toHaveBeenCalled();
     });
+
+    it('latches a private image audience before saving its classified reference', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+      assetsClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === AssetCommands.RETRIEVE
+            ? { audienceCommunityIds: [], profileId: 'profile-1' }
+            : {}
+        )
+      );
+
+      await service.create(
+        {
+          title: 'Private bike',
+          description: 'Only for members',
+          price: 10,
+          communityId: 'community-1',
+          imageUrls: [`/api/asset/${assetId}`],
+        },
+        'profile-1',
+        'user-1',
+        'local-hub'
+      );
+
+      expect(assetsClient.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        { id: assetId, communityId: 'community-1' }
+      );
+      expect(assetsClient.send.mock.invocationCallOrder[1]).toBeLessThan(
+        repo.save.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('rejects reusing a private asset in another or public audience before writing', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: ['another-private-community'] })
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Reused photo',
+            description: 'Cross audience',
+            price: 10,
+            communityId: 'community-1',
+            imageUrls: [`/asset/${assetId}?size=small`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects attaching a private asset to a community-free public listing', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: ['community-1'] })
+      );
+      await expect(
+        service.create(
+          {
+            title: 'Public re-use',
+            description: 'Must remain private',
+            price: 10,
+            imageUrls: [`https://api.example.test/api/asset/${assetId}?v=2`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('does not let a listing owner privatize another profile’s public asset', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      socialClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? { id: 'community-1', appScope: 'local-hub', isPrivate: true }
+            : true
+        )
+      );
+      assetsClient.send.mockReturnValue(
+        of({ audienceCommunityIds: [], profileId: 'another-profile' })
+      );
+
+      await expect(
+        service.create(
+          {
+            title: 'Borrowed photo',
+            description: 'Should not mutate audience',
+            price: 10,
+            communityId: 'community-1',
+            imageUrls: [`/api/asset/${assetId}`],
+          },
+          'profile-1',
+          'user-1',
+          'local-hub'
+        )
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(assetsClient.send).not.toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        expect.anything()
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('findById', () => {
@@ -292,6 +420,62 @@ describe('ClassifiedsService', () => {
       await expect(service.findById('missing-ad', 'local-hub')).rejects.toThrow(
         'Classified ad missing-ad not found'
       );
+    });
+  });
+
+  describe('legacy asset audience lookup', () => {
+    it('normalizes exact relative and absolute asset paths across scopes and lifecycle states', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      qb.getMany.mockResolvedValue([
+        createAd({
+          id: 'removed-ad',
+          status: 'removed',
+          imageUrls: [`/api/asset/${assetId}?width=320`],
+          communityId: 'local-private-community',
+          appScope: 'local-hub',
+        }),
+        createAd({
+          id: 'sold-ad',
+          status: 'sold',
+          imageUrls: [`https://media.example.test/asset/${assetId}`],
+          communityId: 'client-private-community',
+          appScope: 'client-interface',
+        }),
+        createAd({
+          id: 'substring-only',
+          imageUrls: [`https://evil.example.test/other/${assetId}`],
+          communityId: 'wrong-community',
+          appScope: 'unrelated',
+        }),
+      ]);
+
+      await expect(service.findAssetAudiences(assetId)).resolves.toEqual([
+        {
+          communityId: 'local-private-community',
+          appScope: 'local-hub',
+          ownerProfileId: 'profile-1',
+        },
+        {
+          communityId: 'client-private-community',
+          appScope: 'client-interface',
+          ownerProfileId: 'profile-1',
+        },
+      ]);
+      expect(repo.createQueryBuilder).toHaveBeenCalledWith('ad');
+      expect(qb.where).toHaveBeenCalledWith(
+        'ad.imageUrls LIKE :assetReference',
+        {
+          assetReference: `%${assetId}%`,
+        }
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith('ad.communityId IS NOT NULL');
+    });
+
+    it('ignores malformed asset identifiers without querying classified rows', async () => {
+      await expect(
+        service.findAssetAudiences('not-an-asset-id')
+      ).resolves.toEqual([]);
+      expect(repo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 
@@ -571,6 +755,35 @@ describe('ClassifiedsService', () => {
         expect(repo.save).not.toHaveBeenCalled();
       }
     );
+
+    it('latches removed legacy image URLs before the update drops the last reference', async () => {
+      const assetId = '6fa459ea-ee8a-3ca4-894e-db77e160355e';
+      const ad = createAd({
+        imageUrls: [`https://api.example.test/api/asset/${assetId}?w=320`],
+      });
+      repo.findOne.mockResolvedValue(ad);
+      socialClient.send.mockReturnValue(
+        of({ id: 'community-1', appScope: 'local-hub', isPrivate: true })
+      );
+      assetsClient.send.mockImplementation((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === AssetCommands.RETRIEVE
+            ? { audienceCommunityIds: [], profileId: 'profile-1' }
+            : {}
+        )
+      );
+
+      await service.update('ad-1', { imageUrls: [] }, 'profile-1', 'local-hub');
+
+      expect(assetsClient.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+        { id: assetId, communityId: 'community-1' }
+      );
+      expect(assetsClient.send.mock.invocationCallOrder[0]).toBeLessThan(
+        repo.save.mock.invocationCallOrder[0]
+      );
+      expect(ad.imageUrls).toEqual([]);
+    });
   });
 
   describe('remove', () => {

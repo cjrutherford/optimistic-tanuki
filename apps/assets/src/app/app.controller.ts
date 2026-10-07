@@ -16,11 +16,17 @@ export class AppController {
   @MessagePattern({ cmd: AssetCommands.CREATE })
   async createAsset(data: CreateAssetDto) {
     try {
-      const value = await this.appService.createAsset(data);
-      console.log('🚀 ~ AppController ~ createAsset ~ value:', value);
-      return value;
+      return await this.appService.createAsset(data);
     } catch (error) {
-      console.trace(error);
+      throw new RpcException(error);
+    }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE })
+  async addCommunityAudience(data: { id: string; communityId: string }) {
+    try {
+      return await this.appService.addCommunityAudience(data);
+    } catch (error) {
       throw new RpcException(error);
     }
   }
@@ -55,9 +61,7 @@ export class AppController {
   @MessagePattern({ cmd: AssetCommands.READ })
   async readAsset(data: AssetHandle) {
     try {
-      const asset = await this.appService.readAsset(data);
-      console.log('🚀 ~ AppController ~ readAsset ~ asset:', asset.length);
-      return asset;
+      return await this.appService.readAsset(data);
     } catch (error) {
       throw new RpcException(error);
     }

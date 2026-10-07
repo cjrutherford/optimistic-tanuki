@@ -100,6 +100,25 @@ describe('ClassifiedFormComponent', () => {
   });
 
   describe('onSubmit', () => {
+    it('omits communityId from edit updates because the target community is immutable', () => {
+      component.existingAd = existingAd;
+      component.ngOnInit();
+      const spy = jest.fn();
+      component.submitForm.subscribe(spy);
+
+      component.onSubmit();
+
+      expect(spy).toHaveBeenCalledWith({
+        title: 'Bike',
+        description: 'A nice bike',
+        price: 100,
+        currency: 'USD',
+        category: 'Sports',
+        condition: 'Good',
+        imageUrls: ['https://example.com/a.png'],
+      });
+    });
+
     it('rejects a blank title', () => {
       component.formData.title = '   ';
       component.formData.description = 'desc';

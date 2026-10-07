@@ -24,4 +24,8 @@ export default class AssetEntity {
 
   @Column()
   profileId: string;
+
+  /** Monotonic community audiences; removing a content reference never clears these. */
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  audienceCommunityIds: string[];
 }

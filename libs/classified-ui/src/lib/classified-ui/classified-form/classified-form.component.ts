@@ -456,11 +456,18 @@ export class ClassifiedFormComponent implements OnInit {
     }
 
     this.submitting.set(true);
-    const payload: CreateClassifiedAdDto | UpdateClassifiedAdDto = {
-      ...this.formData,
+    const editableFields: UpdateClassifiedAdDto = {
+      title: this.formData.title,
+      description: this.formData.description,
+      price: this.formData.price,
+      currency: this.formData.currency,
       category: this.formData.category || undefined,
       condition: this.formData.condition || undefined,
+      imageUrls: this.formData.imageUrls,
     };
+    const payload: CreateClassifiedAdDto | UpdateClassifiedAdDto = this.isEdit
+      ? editableFields
+      : { communityId: this.communityId, ...editableFields };
     this.submitForm.emit(payload);
     this.submitting.set(false);
   }

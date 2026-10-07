@@ -2,7 +2,11 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { CommunityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AssetCommands,
+  CommunityCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { ClassifiedAdEntity } from './entities/classified-ad.entity';
 import { firstValueFrom, timeout } from 'rxjs';
 
@@ -66,7 +70,10 @@ export class ClassifiedsService {
     private readonly repo: Repository<ClassifiedAdEntity>,
     @Optional()
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient?: ClientProxy
+    private readonly socialClient?: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.ASSETS_SERVICE)
+    private readonly assetsClient?: ClientProxy
   ) {}
 
   async create(
@@ -77,12 +84,23 @@ export class ClassifiedsService {
   ): Promise<ClassifiedAdEntity> {
     this.assertAllowedFields(dto, this.createFields);
     appScope = this.requireAppScope(appScope);
+    let privateTarget = false;
     if (dto.communityId) {
-      await this.assertCommunityPostingAllowed(
+      const community = await this.assertCommunityPostingAllowed(
         dto.communityId,
         userId,
         appScope
       );
+      privateTarget = community.isPrivate === true;
+    }
+    await this.assertAssetsCompatible(
+      dto.imageUrls || [],
+      dto.communityId || undefined,
+      profileId,
+      privateTarget
+    );
+    if (privateTarget && dto.communityId && dto.imageUrls?.length) {
+      await this.latchAssetAudiences(dto.imageUrls, dto.communityId);
     }
     const ad = this.repo.create({
       ...dto,
@@ -223,6 +241,27 @@ export class ClassifiedsService {
         message: 'Forbidden: not the owner of this classified ad',
       });
     }
+    const oldImageUrls = ad.imageUrls || [];
+    const privateTarget =
+      ad.communityId && dto.imageUrls !== undefined
+        ? await this.isPrivateCommunity(ad.communityId, appScope)
+        : false;
+    if (dto.imageUrls !== undefined) {
+      await this.assertAssetsCompatible(
+        [...oldImageUrls, ...dto.imageUrls],
+        ad.communityId || undefined,
+        profileId,
+        privateTarget
+      );
+    }
+    if (ad.communityId && privateTarget && dto.imageUrls !== undefined) {
+      // Latch both old and new references before saving. Removing or replacing
+      // an image never makes the underlying asset public again.
+      await this.latchAssetAudiences(
+        [...oldImageUrls, ...dto.imageUrls],
+        ad.communityId
+      );
+    }
     Object.assign(ad, dto);
     return this.repo.save(ad);
   }
@@ -337,7 +376,7 @@ export class ClassifiedsService {
     communityId: string,
     userId: string,
     appScope?: string
-  ): Promise<void> {
+  ): Promise<{ id: string; appScope?: string; isPrivate?: boolean }> {
     if (!this.socialClient || !appScope || !userId) {
       throw new RpcException({
         statusCode: 503,
@@ -348,7 +387,7 @@ export class ClassifiedsService {
       const [community, isMember] = await Promise.all([
         firstValueFrom(
           this.socialClient
-            .send<{ id: string; appScope?: string }>(
+            .send<{ id: string; appScope?: string; isPrivate?: boolean }>(
               { cmd: CommunityCommands.FIND },
               { id: communityId }
             )
@@ -376,6 +415,7 @@ export class ClassifiedsService {
             'Approved community membership is required to post a classified',
         });
       }
+      return community;
     } catch (error) {
       if (error instanceof RpcException) throw error;
       this.logger.error('Classified community membership lookup failed', error);
@@ -384,6 +424,155 @@ export class ClassifiedsService {
         message: 'Community membership could not be verified',
       });
     }
+  }
+
+  private async isPrivateCommunity(
+    communityId: string,
+    appScope: string
+  ): Promise<boolean> {
+    if (!this.socialClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Community visibility could not be verified',
+      });
+    }
+    const community = await firstValueFrom(
+      this.socialClient
+        .send<{ id: string; appScope?: string; isPrivate?: boolean }>(
+          { cmd: CommunityCommands.FIND },
+          { id: communityId }
+        )
+        .pipe(timeout({ first: 5000 }))
+    );
+    if (!community || community.appScope !== appScope) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Community not found in this app',
+      });
+    }
+    return community.isPrivate === true;
+  }
+
+  private async latchAssetAudiences(
+    imageUrls: string[],
+    communityId: string
+  ): Promise<void> {
+    if (!this.assetsClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Asset audience could not be secured',
+      });
+    }
+    const assetIds = [
+      ...new Set(imageUrls.map(assetIdFromUrl).filter(Boolean)),
+    ];
+    await Promise.all(
+      assetIds.map((id) =>
+        firstValueFrom(
+          this.assetsClient!.send(
+            { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+            { id, communityId }
+          ).pipe(timeout({ first: 5000 }))
+        )
+      )
+    );
+  }
+
+  private async assertAssetsCompatible(
+    imageUrls: string[],
+    targetCommunityId?: string,
+    ownerProfileId?: string,
+    privateTarget = false
+  ): Promise<void> {
+    const assetIds = [
+      ...new Set(imageUrls.map(assetIdFromUrl).filter(Boolean)),
+    ];
+    if (!assetIds.length) return;
+    if (!this.assetsClient) {
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Asset audience could not be verified',
+      });
+    }
+    const assets = await Promise.all(
+      assetIds.map((id) =>
+        firstValueFrom(
+          this.assetsClient!.send<{
+            audienceCommunityIds?: string[];
+            profileId?: string;
+          }>({ cmd: AssetCommands.RETRIEVE }, { id }).pipe(
+            timeout({ first: 5000 })
+          )
+        )
+      )
+    );
+    for (const asset of assets) {
+      const existing = asset.audienceCommunityIds || [];
+      if (
+        existing.length > 0 &&
+        (!targetCommunityId || existing.some((id) => id !== targetCommunityId))
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Asset belongs to a different community audience',
+        });
+      }
+      if (
+        privateTarget &&
+        existing.length === 0 &&
+        asset.profileId !== ownerProfileId
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Only the asset owner may add it to a private community',
+        });
+      }
+    }
+  }
+
+  async findAssetAudiences(assetId: string): Promise<
+    Array<{
+      communityId: string;
+      appScope: string;
+      ownerProfileId: string;
+    }>
+  > {
+    if (!isUuid(assetId)) return [];
+    const ads = await this.repo
+      .createQueryBuilder('ad')
+      .select(['ad.imageUrls', 'ad.communityId', 'ad.appScope', 'ad.profileId'])
+      .where('ad.imageUrls LIKE :assetReference', {
+        assetReference: `%${assetId}%`,
+      })
+      .andWhere('ad.communityId IS NOT NULL')
+      .getMany();
+
+    const uniqueAudiences = new Map<
+      string,
+      {
+        communityId: string;
+        appScope: string;
+        ownerProfileId: string;
+      }
+    >();
+    for (const ad of ads) {
+      if (
+        !ad.imageUrls?.some((imageUrl) => isAssetUrlForId(imageUrl, assetId)) ||
+        !ad.communityId
+      ) {
+        continue;
+      }
+      const audience = {
+        communityId: ad.communityId,
+        appScope: ad.appScope,
+        ownerProfileId: ad.profileId,
+      };
+      uniqueAudiences.set(
+        `${audience.appScope}:${audience.communityId}:${audience.ownerProfileId}`,
+        audience
+      );
+    }
+    return [...uniqueAudiences.values()];
   }
 
   private async canReadCommunity(
@@ -473,5 +662,36 @@ export class ClassifiedsService {
         readable.has(ad.communityId) ||
         (ad.userId === requestingUserId && ownerReadable.has(ad.communityId))
     );
+  }
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
+function isAssetUrlForId(value: string, assetId: string): boolean {
+  try {
+    const parsed = new URL(value, 'http://local-asset.invalid');
+    const pathname = decodeURIComponent(parsed.pathname).replace(/\/$/, '');
+    return (
+      pathname.toLowerCase() === `/api/asset/${assetId.toLowerCase()}` ||
+      pathname.toLowerCase() === `/asset/${assetId.toLowerCase()}`
+    );
+  } catch {
+    return false;
+  }
+}
+
+function assetIdFromUrl(value: string): string | undefined {
+  try {
+    const parsed = new URL(value, 'http://local-asset.invalid');
+    const pathname = decodeURIComponent(parsed.pathname).replace(/\/$/, '');
+    const match = /^\/(?:api\/)?asset\/([0-9a-f-]+)$/i.exec(pathname);
+    return match && isUuid(match[1]) ? match[1] : undefined;
+  } catch {
+    return undefined;
   }
 }

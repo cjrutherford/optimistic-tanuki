@@ -429,7 +429,9 @@ describe('ClassifiedDetailComponent behaviour', () => {
   });
 
   describe('image upload callback', () => {
-    it('stores the file as an asset and returns its url', async () => {
+    it('preserves private listing context for an owner uploading after leaving', async () => {
+      authStateMock.getActingProfileId.mockReturnValue('seller-1');
+      communityServiceMock.isMember.mockResolvedValue(false);
       assetServiceMock.fileToDataUrl.mockResolvedValue(
         'data:image/png;base64,AAA'
       );
@@ -442,10 +444,12 @@ describe('ClassifiedDetailComponent behaviour', () => {
       expect(assetServiceMock.fileToDataUrl).toHaveBeenCalledWith(file);
       expect(assetServiceMock.createAsset).toHaveBeenCalledWith({
         name: 'bike.png',
-        profileId: 'buyer-1',
+        profileId: 'seller-1',
         type: 'image',
         content: 'data:image/png;base64,AAA',
         fileExtension: 'png',
+        communityId: 'city-1',
+        classifiedAdId: 'ad-1',
       });
       expect(url).toBe('/api/asset/asset-1');
     });

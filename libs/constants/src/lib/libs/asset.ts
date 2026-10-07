@@ -4,4 +4,5 @@ export const AssetCommands = {
   RETRIEVE: 'asset.retrieve',
   READ: 'asset.read',
   LIST: 'asset.list',
+  ADD_COMMUNITY_AUDIENCE: 'asset.addCommunityAudience',
 };

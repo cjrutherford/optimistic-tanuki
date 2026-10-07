@@ -49,6 +49,11 @@ export class ClassifiedsController {
     return this.classifiedsService.findIdsByUser(data.userId, data.appScope);
   }
 
+  @MessagePattern({ cmd: ClassifiedCommands.FIND_ASSET_AUDIENCES })
+  async findAssetAudiences(@Payload() data: { assetId: string }) {
+    return this.classifiedsService.findAssetAudiences(data.assetId);
+  }
+
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_COMMUNITY })
   async findByCommunity(
     @Payload()

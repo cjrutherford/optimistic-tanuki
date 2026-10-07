@@ -38,6 +38,17 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
         }),
     },
     {
+      provide: ServiceTokens.ASSETS_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env['ASSETS_HOST'] || 'assets',
+            port: Number(process.env['ASSETS_PORT'] || 3005),
+          },
+        }),
+    },
+    {
       provide: getRepositoryToken(ClassifiedAdEntity),
       useFactory: (dataSource: any) =>
         dataSource.getRepository(ClassifiedAdEntity),

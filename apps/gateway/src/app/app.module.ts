@@ -199,7 +199,16 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
       },
       {
         id: 'asset',
-        requiredServices: ['assets', 'authentication', 'permissions'],
+        // Public media authorization also resolves the asset owner, current
+        // community membership, and legacy classified image references.
+        requiredServices: [
+          'assets',
+          'authentication',
+          'permissions',
+          'profile',
+          'social',
+          'classifieds',
+        ],
         value: AssetController,
       },
       { id: 'bug-reports', value: BugReportProxyController },

@@ -185,12 +185,15 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   uploadImage = async (file: File): Promise<string> => {
     const profileId = this.authState.getActingProfileId();
     const dataUrl = await this.assetService.fileToDataUrl(file);
+    const ad = this.ad();
     const asset = await this.assetService.createAsset({
       name: file.name,
       profileId,
       type: 'image',
       content: dataUrl,
       fileExtension: this.assetService.getFileExtension(dataUrl),
+      communityId: ad?.communityId || this.community()?.id,
+      classifiedAdId: ad?.id,
     });
     return this.assetService.getAssetUrl(asset.id);
   };

@@ -70,6 +70,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
       type: 'image',
       content: dataUrl,
       fileExtension: this.assetService.getFileExtension(dataUrl),
+      communityId: this.community()?.id,
     });
     return this.assetService.getAssetUrl(asset.id);
   };

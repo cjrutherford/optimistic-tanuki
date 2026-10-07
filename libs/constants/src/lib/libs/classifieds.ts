@@ -10,6 +10,7 @@ export const ClassifiedCommands = {
   FIND_BY_USER: 'classified.findByUser',
   FIND_BY_COMMUNITY: 'classified.findByCommunity',
   FIND_BY_PROFILE: 'classified.findByProfile',
+  FIND_ASSET_AUDIENCES: 'classified.findAssetAudiences',
   SEARCH: 'classified.search',
   // Lifecycle management
   MARK_SOLD: 'classified.markSold',

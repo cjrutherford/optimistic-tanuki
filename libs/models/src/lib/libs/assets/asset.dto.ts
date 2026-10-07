@@ -71,6 +71,22 @@ export class CreateAssetDto {
   @IsString()
   @MaxLength(10)
   fileExtension?: string;
+
+  /**
+   * Optional owning community for content that is private while an upload or
+   * edit is in progress. The gateway validates this against the session and
+   * current community before it reaches the asset service.
+   */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
+
+  /** Existing listing context for a profile-owned edit after community leave. */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  classifiedAdId?: string;
 }
 
 export class AssetDto {
