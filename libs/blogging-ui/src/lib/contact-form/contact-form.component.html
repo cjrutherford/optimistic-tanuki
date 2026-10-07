@@ -1,8 +1,10 @@
 <otui-card>
   <div class="row">
+    @if (bannerImage) {
     <div class="img">
-      <img [src]="bannerImage" alt="Newsletter Banner" />
+      <img [src]="bannerImage" [alt]="bannerAlt" loading="lazy" />
     </div>
+    }
     <div class="form">
       <otui-heading [text]="title"></otui-heading>
       <div class="row">

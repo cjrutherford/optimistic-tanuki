@@ -76,4 +76,24 @@ describe('ContactFormComponent', () => {
     expect(label.htmlFor).toBe('business-contact-subject');
     expect(select.id).toBe('business-contact-subject');
   });
+
+  it('shows no banner image unless one is supplied', () => {
+    expect(component.bannerImage).toBeNull();
+    expect(fixture.nativeElement.querySelector('img')).toBeNull();
+  });
+
+  it('shows a supplied banner with its alt text, decorative by default', () => {
+    component.bannerImage = 'assets/contact.webp';
+    fixture.detectChanges();
+    const image = fixture.nativeElement.querySelector(
+      'img'
+    ) as HTMLImageElement;
+
+    expect(image.getAttribute('src')).toBe('assets/contact.webp');
+    expect(image.getAttribute('alt')).toBe('');
+
+    component.bannerAlt = 'A small office server on a shelf';
+    fixture.detectChanges();
+    expect(image.getAttribute('alt')).toBe('A small office server on a shelf');
+  });
 });

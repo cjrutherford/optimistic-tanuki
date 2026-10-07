@@ -1,14 +1,9 @@
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   Component,
-  Directive,
-  ElementRef,
   EventEmitter,
   Input,
-  OnDestroy,
   Output,
-  Renderer2,
   computed,
   effect,
   inject,
@@ -178,23 +173,6 @@ export const businessLandingPageContrastStyles = `
         color: var(--business-public-dark-label-text) !important;
       }
 
-      .contact-form-panel ::ng-deep lib-contact-form .contact-media-fallback {
-        display: none;
-        min-height: 12rem;
-        place-items: center;
-        padding: 1rem;
-        border-radius: var(--border-radius-lg, 0.5rem);
-        background: #27322c;
-        color: var(--business-public-dark-label-text);
-        font-weight: 700;
-        text-align: center;
-      }
-
-      .contact-form-panel ::ng-deep
-        lib-contact-form .contact-media-fallback.is-visible {
-        display: grid;
-      }
-
       @media (prefers-reduced-motion: reduce) {
         .entrance,
         .cta-primary,
@@ -207,57 +185,6 @@ export const businessLandingPageContrastStyles = `
         }
       }
 `;
-
-@Directive({
-  selector: 'lib-contact-form[publicContactMediaFallback]',
-  standalone: true,
-})
-class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
-  private readonly host = inject(ElementRef<HTMLElement>);
-  private readonly document = inject(DOCUMENT);
-  private readonly renderer = inject(Renderer2);
-  private image: HTMLImageElement | null = null;
-  private fallback: HTMLSpanElement | null = null;
-
-  private readonly onImageError = () => {
-    if (!this.image || !this.fallback) {
-      return;
-    }
-
-    const image = this.image;
-    image.hidden = true;
-    image.setAttribute('aria-hidden', 'true');
-    this.renderer.removeChild(image.parentElement, image);
-    this.fallback.classList.add('is-visible');
-    this.fallback.removeAttribute('aria-hidden');
-  };
-
-  ngAfterViewInit(): void {
-    this.image = this.host.nativeElement.querySelector(
-      'img[alt="Newsletter Banner"]'
-    );
-    if (!this.image) {
-      return;
-    }
-
-    this.fallback = this.document.createElement('span');
-    this.fallback.className = 'contact-media-fallback';
-    this.fallback.setAttribute('role', 'img');
-    this.fallback.setAttribute('aria-label', 'Newsletter Banner');
-    this.fallback.setAttribute('aria-hidden', 'true');
-    this.fallback.textContent = 'Newsletter Banner';
-    this.image.insertAdjacentElement('afterend', this.fallback);
-    this.image.addEventListener('error', this.onImageError);
-
-    if (this.image.complete && this.image.naturalWidth === 0) {
-      this.onImageError();
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.image?.removeEventListener('error', this.onImageError);
-  }
-}
 
 @Component({
   selector: 'business-landing-page',
@@ -275,7 +202,6 @@ class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
     TopographicDriftComponent,
     ShimmerBeamComponent,
     ContactFormComponent,
-    PublicContactMediaFallbackDirective,
     ProductCardComponent,
     LandingHeaderComponent,
     LandingHeroComponent,
@@ -836,7 +762,6 @@ class PublicContactMediaFallbackDirective implements AfterViewInit, OnDestroy {
             </div>
             <div class="contact-column contact-form-panel">
               <lib-contact-form
-                publicContactMediaFallback
                 [title]="'Contact ' + site().brand.businessName"
                 [buttonText]="
                   contactSubmitting
