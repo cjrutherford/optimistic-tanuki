@@ -36,6 +36,9 @@ S019 (runs before S018 so the release PR includes it)
   convention).
 - Fix the common-ui badge "soft" emphasis, which puts `--primary-text` on
   an accent tint and falls below AA on tinted surfaces (found in S016).
+- Fix the title bar's translucency in dark mode: page headings show
+  through it while scrolling (found in S017). Its background should come
+  from surface tokens with enough opacity to keep its own text readable.
 - Record deliberate exceptions (for example layout breakpoints, grid
   fractions, and 1px hairlines) with a reason.
 - Add an automated guard that fails on new literals outside the allowed

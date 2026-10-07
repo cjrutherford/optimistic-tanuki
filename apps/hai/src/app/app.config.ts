@@ -6,6 +6,10 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
+  provideClientHydration,
+  withEventReplay,
+} from '@angular/platform-browser';
+import {
   TitleStrategy,
   provideRouter,
   withInMemoryScrolling,
@@ -23,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideScenePersonality(() => inject(ThemeService).personality$),
     provideProductTheme('hai'),
     provideZoneChangeDetection({ eventCoalescing: true }),
+    provideClientHydration(withEventReplay()),
     provideHttpClient(withFetch()),
     provideRouter(
       appRoutes,

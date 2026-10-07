@@ -26,6 +26,7 @@ import { HEADER_LINKS, SITE_NAVIGATION } from '../../content/navigation';
   ],
   templateUrl: './title-bar.component.html',
   styleUrl: './title-bar.component.scss',
+  host: { '[class.menu-open]': 'menuOpen()' },
 })
 export class TitleBarComponent {
   private readonly router = inject(Router);

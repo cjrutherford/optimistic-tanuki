@@ -6,6 +6,12 @@
   padding: 0.75rem clamp(0.75rem, 2vw, 1.5rem) 0;
 }
 
+// The drawer renders inside this stacking context, so while it is open the
+// bar must sit above other fixed elements such as the about tag.
+:host(.menu-open) {
+  z-index: var(--z-index-overlay, 1080);
+}
+
 .hai-header {
   position: relative;
   border-radius: var(--personality-card-radius, 1rem);

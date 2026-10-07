@@ -48,6 +48,21 @@ describe('TitleBarComponent', () => {
     ]);
   });
 
+  it('lifts the bar above other fixed elements only while the drawer is open', () => {
+    const fixture = TestBed.createComponent(TitleBarComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    fixture.detectChanges();
+    expect(host.classList).not.toContain('menu-open');
+
+    fixture.componentInstance.toggleMenu();
+    fixture.detectChanges();
+    expect(host.classList).toContain('menu-open');
+
+    fixture.componentInstance.menuOpen.set(false);
+    fixture.detectChanges();
+    expect(host.classList).not.toContain('menu-open');
+  });
+
   it('navigates to the route of a drawer item', () => {
     const component =
       TestBed.createComponent(TitleBarComponent).componentInstance;
