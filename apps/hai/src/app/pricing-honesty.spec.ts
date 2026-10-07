@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { LandingComponent } from './components/landing/landing.component';
@@ -16,7 +16,7 @@ import { PartnersPageComponent } from './pages/partners/partners-page.component'
 import { HowWeWorkPageComponent } from './pages/how-we-work/how-we-work-page.component';
 import { ContactPageComponent } from './pages/contact/contact-page.component';
 import { CostComparisonPageComponent } from './pages/cost-comparison/cost-comparison-page.component';
-import { PlaceholderPageComponent } from './pages/placeholder/placeholder-page.component';
+import { AssessmentPageComponent } from './pages/assessment/assessment-page.component';
 import { LABOR_RATE_PER_HOUR } from './content/pricing';
 
 /**
@@ -32,14 +32,6 @@ describe('honest pricing', () => {
         {
           provide: HaiAppDirectoryService,
           useValue: { getResolvedApps: () => of([]) },
-        },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              data: { eyebrow: 'x', title: 'x', summary: 'x', links: [] },
-            },
-          },
         },
       ],
     });
@@ -58,7 +50,7 @@ describe('honest pricing', () => {
     HowWeWorkPageComponent,
     ContactPageComponent,
     CostComparisonPageComponent,
-    PlaceholderPageComponent,
+    AssessmentPageComponent,
   ] as Type<unknown>[])('%p states no price but the labor rate', (page) => {
     const fixture = TestBed.createComponent(page);
     fixture.detectChanges();

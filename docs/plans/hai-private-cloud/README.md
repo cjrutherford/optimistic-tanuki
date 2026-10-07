@@ -40,8 +40,8 @@ The agent must complete only the current slice, validate it, update completion n
 | S010  | Software-stack integration      | Complete |
 | S011  | Cost-comparison update          | Complete |
 | S012  | Shared conversion components    | Complete |
-| S013  | Assessment flow                 | Ready    |
-| S014  | Analytics and campaign tracking | Planned  |
+| S013  | Assessment flow                 | Complete |
+| S014  | Analytics and campaign tracking | Ready    |
 | S015  | SEO and social metadata         | Planned  |
 | S016  | Responsive and accessibility QA | Planned  |
 | S017  | Performance and browser QA      | Planned  |

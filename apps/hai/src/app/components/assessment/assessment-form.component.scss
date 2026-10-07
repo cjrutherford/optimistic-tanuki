@@ -1,0 +1,187 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.assessment-form,
+.result.success {
+  @include section.section-spacing;
+  @include section.panel;
+}
+
+.assessment-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.field,
+.choice-group {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.choice-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+label,
+legend {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+}
+
+.required,
+.hint {
+  @include section.body-copy;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.hint {
+  margin: 0;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='tel'],
+select,
+textarea {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  border: 2px solid var(--border, var(--primary));
+  border-radius: var(--personality-input-radius, 6px);
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'],
+fieldset[aria-invalid='true'] .choices {
+  border-color: var(--danger);
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.choices.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+}
+
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: var(--touch-target, 44px);
+  font-weight: 400;
+}
+
+.choices input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.field-error {
+  margin: 0;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.error-summary,
+.result.failure {
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--danger);
+  border-radius: var(--personality-input-radius, 6px);
+  background: color-mix(
+    in srgb,
+    var(--danger) 8%,
+    var(--surface, var(--background))
+  );
+}
+
+.error-summary h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.error-summary ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.error-summary a,
+.result a {
+  @include section.text-link;
+  overflow-wrap: anywhere;
+}
+
+.result.failure p {
+  margin: 0;
+}
+
+.result.success h2 {
+  @include section.section-heading;
+}
+
+.result.success p {
+  @include section.body-copy;
+  max-width: 44rem;
+}
+
+.submit {
+  @include section.primary-action;
+  justify-self: start;
+  border-style: solid;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.submit[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+// Off-screen rather than display: none, which some bots skip.
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (max-width: 960px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .submit {
+    justify-self: stretch;
+  }
+}

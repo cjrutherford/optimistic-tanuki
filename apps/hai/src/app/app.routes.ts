@@ -1,14 +1,5 @@
 import { Route } from '@angular/router';
 import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
-import { PlaceholderPageData } from './pages/placeholder/placeholder-page.component';
-
-const loadPlaceholder = () =>
-  import('./pages/placeholder/placeholder-page.component').then(
-    (m) => m.PlaceholderPageComponent
-  );
-
-const backToPrivateCloud = { label: 'Private cloud', route: '/private-cloud' };
-const contactUs = { label: 'Contact us', route: '/contact' };
 
 export const appRoutes: Route[] = [
   ...oauthCallbackRoutes,
@@ -51,14 +42,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'private-cloud/assessment',
-    loadComponent: loadPlaceholder,
-    data: {
-      eyebrow: 'Private cloud',
-      title: 'Private cloud assessment',
-      summary:
-        'The assessment form is on its way. Until then, the contact page reaches us directly.',
-      links: [contactUs, backToPrivateCloud],
-    } satisfies PlaceholderPageData,
+    loadComponent: () =>
+      import('./pages/assessment/assessment-page.component').then(
+        (m) => m.AssessmentPageComponent
+      ),
   },
   {
     path: 'turn-key-appliances',

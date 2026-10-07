@@ -2,17 +2,13 @@ import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { ContactRequestService } from '../services/contact-request.service';
 import { CustomSoftwarePageComponent } from './custom-software/custom-software-page.component';
 import { PartnersPageComponent } from './partners/partners-page.component';
 import { HowWeWorkPageComponent } from './how-we-work/how-we-work-page.component';
 import { ContactPageComponent } from './contact/contact-page.component';
-import {
-  PlaceholderPageComponent,
-  PlaceholderPageData,
-} from './placeholder/placeholder-page.component';
 
 interface ContactRequestStub {
   submit: jest.Mock;
@@ -51,26 +47,6 @@ describe('offering pages', () => {
       }
     }
   );
-
-  it('placeholder page renders its route data', () => {
-    const data: PlaceholderPageData = {
-      eyebrow: 'Private cloud',
-      title: 'Private cloud for your home',
-      summary: 'Being written.',
-      links: [{ label: 'Contact us', route: '/contact' }],
-    };
-    configure([{ provide: ActivatedRoute, useValue: { snapshot: { data } } }]);
-    const element = render(PlaceholderPageComponent)
-      .nativeElement as HTMLElement;
-
-    expect(element.querySelector('h1')?.textContent).toBe(
-      'Private cloud for your home'
-    );
-    expect(element.textContent).toContain('Being written.');
-    expect(element.querySelector('.intro-link')?.getAttribute('href')).toBe(
-      '/contact'
-    );
-  });
 
   it('contact page shows a carried-over message and submits from /contact', () => {
     configure();
