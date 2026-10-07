@@ -12,9 +12,8 @@
   </p>
 </div>
 <lib-contact-form
+  [buttonText]="'Send message'"
   [subjects]="subjects"
-  [bannerImage]="
-    'https://fastly.picsum.photos/id/876/1200/300.jpg?hmac=PYu7elypyS9RmFSMJwEADHRZ9VoNICcFdVHC52lEq9Y'
-  "
+  [bannerImage]="'assets/contact-studio-desk.webp'"
   (formSubmit)="onContactFormSubmit($event)"
 ></lib-contact-form>
