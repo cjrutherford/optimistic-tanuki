@@ -67,7 +67,7 @@ h2 {
   &.active {
     background: color-mix(in srgb, var(--primary) 16%, transparent);
     border-color: var(--primary);
-    color: var(--primary);
+    color: var(--foreground);
     box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 18%, transparent);
 
     &::after {
@@ -176,7 +176,7 @@ h2 {
   .hardware-name {
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--foreground);
     line-height: 1.35;
     display: inline-block;
     margin-bottom: 0.85rem;
@@ -223,7 +223,7 @@ h2 {
   .customization-badge {
     font-size: 0.7rem;
     font-weight: 600;
-    color: var(--primary);
+    color: var(--foreground);
     background: color-mix(in srgb, var(--primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
     padding: 0.15rem 0.5rem;
@@ -291,7 +291,7 @@ h2 {
   .tool-role {
     font-size: 0.82rem;
     line-height: 1.45;
-    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+    color: color-mix(in srgb, var(--foreground) 88%, transparent);
   }
 }
 
@@ -318,7 +318,7 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
 }
 
 .pricing-line {

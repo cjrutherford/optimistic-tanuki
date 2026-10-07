@@ -1,6 +1,12 @@
 html {
-  scroll-behavior: smooth;
   color-scheme: light;
+}
+
+// Smooth scrolling only for visitors who have not asked for reduced motion.
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

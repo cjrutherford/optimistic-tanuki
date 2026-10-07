@@ -61,3 +61,14 @@ li {
     grid-template-columns: 1fr;
   }
 }
+
+// The brand card tints its background; keep its text on the foreground so it
+// clears AA (accent text on an accent tint measured about 4:1).
+.partner-card p,
+.partner-card li {
+  color: var(--foreground);
+}
+
+.partner-card .eyebrow {
+  color: color-mix(in srgb, var(--foreground) 85%, var(--secondary));
+}

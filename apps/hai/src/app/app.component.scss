@@ -87,3 +87,29 @@
       color-mix(in srgb, var(--surface, var(--background)) 96%, transparent)
     );
 }
+
+// Hidden until focused, then shown above the header.
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: var(
+    --hai-radius-pill,
+    var(--personality-button-radius, 999px)
+  );
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.page:focus {
+  outline: none;
+}

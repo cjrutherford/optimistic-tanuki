@@ -48,6 +48,18 @@ export class AppComponent {
     });
   }
 
+  /**
+   * Moves focus to the page content. Done in code because the site's
+   * <base href="/"> would turn a plain "#main-content" link into a navigation
+   * to the homepage.
+   */
+  skipToContent(event: Event): void {
+    event.preventDefault();
+    if (this.isBrowser) {
+      document.getElementById('main-content')?.focus();
+    }
+  }
+
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }

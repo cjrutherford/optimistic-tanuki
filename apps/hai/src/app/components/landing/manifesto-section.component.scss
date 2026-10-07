@@ -38,7 +38,7 @@ h2 {
 .manifesto-card p {
   font: 400 1rem/1.75
     var(--font-body, var(--personality-font-family, sans-serif));
-  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+  color: color-mix(in srgb, var(--foreground) 90%, transparent);
 }
 
 .manifesto-copy {
@@ -80,7 +80,7 @@ h2 {
 
 .manifesto-card p {
   margin: 0;
-  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+  color: var(--foreground);
 }
 
 @media (max-width: 960px) {
@@ -101,4 +101,16 @@ h2 {
   .manifesto-rail {
     padding: 1rem;
   }
+}
+
+// The outline card is transparent, so the shimmer graphic showed through the
+// text; a near-opaque surface keeps it readable under any personality.
+.manifesto-card {
+  display: block;
+  border-radius: var(--hai-radius-panel);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 92%,
+    transparent
+  );
 }

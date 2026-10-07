@@ -107,8 +107,10 @@
   justify-content: center;
   padding: 0.55rem 1.15rem;
   border-radius: var(--personality-button-radius, 999px);
-  background: var(--gradient-animated, var(--gradient-primary, var(--primary)));
-  color: color-mix(in srgb, var(--background) 90%, white 10%);
+  // Solid fill with its paired foreground: the old gradient put light text
+  // on light stops (as low as 1.8:1).
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.02em;

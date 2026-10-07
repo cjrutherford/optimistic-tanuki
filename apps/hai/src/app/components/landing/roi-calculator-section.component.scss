@@ -43,6 +43,8 @@ h2 {
   font-size: 1rem;
   border: 2px solid var(--border, var(--primary));
   border-radius: var(--personality-input-radius, 6px);
+  color: var(--foreground);
+  background: var(--surface, var(--background));
 }
 .error-banner {
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));

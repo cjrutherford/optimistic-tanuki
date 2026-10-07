@@ -199,7 +199,8 @@ h1 {
 
 .hero-signal .signal-kicker,
 .hero-signal ul {
-  color: color-mix(in srgb, var(--foreground) 78%, transparent);
+  // Full foreground: the card sits over moving scene graphics.
+  color: var(--foreground);
 }
 
 .hero-signal ul {

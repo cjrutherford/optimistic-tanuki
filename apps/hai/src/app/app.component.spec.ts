@@ -73,4 +73,19 @@ describe('AppComponent', () => {
       fixture.nativeElement.querySelector('main hai-contact-strip')
     ).not.toBeNull();
   });
+
+  it('offers a skip link that moves focus to the page content', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    document.body.appendChild(fixture.nativeElement);
+    const element = fixture.nativeElement as HTMLElement;
+    const link = element.querySelector('a.skip-link') as HTMLAnchorElement;
+
+    expect(element.firstElementChild?.nextElementSibling ?? link).toBeTruthy();
+    expect(link.textContent?.trim()).toBe('Skip to content');
+    link.click();
+
+    expect(document.activeElement?.id).toBe('main-content');
+    fixture.nativeElement.remove();
+  });
 });

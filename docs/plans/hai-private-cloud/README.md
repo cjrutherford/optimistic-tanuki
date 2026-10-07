@@ -43,8 +43,8 @@ The agent must complete only the current slice, validate it, update completion n
 | S013  | Assessment flow                   | Complete |
 | S014  | Analytics and campaign tracking   | Complete |
 | S015  | SEO and social metadata           | Complete |
-| S016  | Responsive and accessibility QA   | Ready    |
-| S017  | Performance and browser QA        | Planned  |
+| S016  | Responsive and accessibility QA   | Complete |
+| S017  | Performance and browser QA        | Ready    |
 | S019  | QR and campaign validation        | Planned  |
 | S020  | Theme and personality token audit | Planned  |
 | S018  | Release pull request              | Planned  |

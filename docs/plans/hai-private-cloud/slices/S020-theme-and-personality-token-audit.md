@@ -34,6 +34,8 @@ S019 (runs before S018 so the release PR includes it)
   and replace it, keeping a literal only as the fallback in
   `var(--token, fallback)` (see the `styles-favor-personality-tokens`
   convention).
+- Fix the common-ui badge "soft" emphasis, which puts `--primary-text` on
+  an accent tint and falls below AA on tinted surfaces (found in S016).
 - Record deliberate exceptions (for example layout breakpoints, grid
   fractions, and 1px hairlines) with a reason.
 - Add an automated guard that fails on new literals outside the allowed

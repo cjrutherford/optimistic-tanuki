@@ -50,7 +50,7 @@ h3 {
 .proof-list {
   font: 400 1rem/1.75
     var(--font-body, var(--personality-font-family, sans-serif));
-  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+  color: color-mix(in srgb, var(--foreground) 90%, transparent);
 }
 
 .proof-band {
@@ -127,4 +127,10 @@ h3 {
   .service-card:focus-within {
     transform: none;
   }
+}
+
+// Eyebrows inside the tinted story panel need more foreground than the
+// shared default to stay above 4.5:1.
+.story-panel .eyebrow {
+  color: color-mix(in srgb, var(--foreground) 85%, var(--secondary));
 }

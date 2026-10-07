@@ -92,13 +92,13 @@ h2 {
 }
 
 .stock-status.in-stock {
-  color: var(--success);
+  color: color-mix(in srgb, var(--success) 30%, var(--foreground));
   background: color-mix(in srgb, var(--success) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--success) 28%, transparent);
 }
 
 .stock-status.build-order {
-  color: var(--warning);
+  color: color-mix(in srgb, var(--warning) 30%, var(--foreground));
   background: color-mix(in srgb, var(--warning) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--warning) 28%, transparent);
 }
@@ -118,7 +118,7 @@ h2 {
   margin: 0;
   font-size: 0.88rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  color: color-mix(in srgb, var(--foreground) 88%, transparent);
 }
 
 .spec-section {
@@ -161,7 +161,7 @@ h2 {
 
 dt {
   font-weight: 600;
-  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  color: color-mix(in srgb, var(--foreground) 88%, transparent);
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -196,7 +196,7 @@ dd {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
 }
 
 .pricing-row dd {
