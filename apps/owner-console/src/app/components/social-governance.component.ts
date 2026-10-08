@@ -42,6 +42,22 @@ import {
 
       <div class="error" *ngIf="error">{{ error }}</div>
 
+      <section class="panel operator-review">
+        <div class="panel-heading">
+          <h2>Towne Square app reports</h2>
+          <p>
+            Review reports about Towne Square listings and sellers. This queue
+            is app-scoped and does not require a community workspace.
+          </p>
+          <button class="btn" (click)="loadLocalHubOperatorReports()">
+            Load Towne Square reports
+          </button>
+          <button class="btn" (click)="loadClientInterfaceOperatorReports()">
+            Load Optimistic Tanuki reports
+          </button>
+        </div>
+      </section>
+
       <app-operator-queue-panel
         [items]="queueItems"
         heading="Community Moderation Queue"
@@ -345,6 +361,7 @@ export class SocialGovernanceComponent implements OnInit {
     string,
     { status: ModerationReport['status']; adminNotes: string }
   > = {};
+  private operatorQueueAppScope: 'local-hub' | 'client-interface' | null = null;
 
   get pendingCount(): number {
     return this.reports.filter((report) => report.status === 'pending').length;
@@ -395,6 +412,7 @@ export class SocialGovernanceComponent implements OnInit {
   }
 
   loadReports(): void {
+    this.operatorQueueAppScope = null;
     this.socialGovernanceService.getReports().subscribe({
       next: (reports) => {
         this.reports = reports;
@@ -409,6 +427,42 @@ export class SocialGovernanceComponent implements OnInit {
       error: (err) => {
         this.error = 'Failed to load moderation reports';
         console.error(err);
+      },
+    });
+  }
+
+  loadLocalHubOperatorReports(): void {
+    this.loadOperatorReports('local-hub');
+  }
+
+  loadClientInterfaceOperatorReports(): void {
+    this.loadOperatorReports('client-interface');
+  }
+
+  private loadOperatorReports(
+    appScope: 'local-hub' | 'client-interface'
+  ): void {
+    this.operatorQueueAppScope = appScope;
+    this.error = null;
+    const productName =
+      appScope === 'local-hub' ? 'Towne Square' : 'Optimistic Tanuki';
+    const source =
+      appScope === 'local-hub'
+        ? this.socialGovernanceService.getLocalHubOperatorReports()
+        : this.socialGovernanceService.getClientInterfaceOperatorReports();
+    source.subscribe({
+      next: (reports) => {
+        this.reports = reports;
+        this.reportDrafts = {};
+        for (const report of reports) {
+          this.reportDrafts[report.id] = {
+            status: report.status,
+            adminNotes: report.adminNotes ?? '',
+          };
+        }
+      },
+      error: () => {
+        this.error = `Failed to load ${productName} app reports`;
       },
     });
   }
@@ -442,26 +496,33 @@ export class SocialGovernanceComponent implements OnInit {
 
   saveReport(report: ModerationReport): void {
     const draft = this.getDraft(report);
-    this.socialGovernanceService
-      .updateReport(report.id, {
-        status: draft.status,
-        adminNotes: draft.adminNotes,
-      })
-      .subscribe({
-        next: (updated) => {
-          this.reports = this.reports.map((existing) =>
-            existing.id === updated.id ? updated : existing
-          );
-          this.reportDrafts[updated.id] = {
-            status: updated.status,
-            adminNotes: updated.adminNotes ?? '',
-          };
-        },
-        error: (err) => {
-          this.error = 'Failed to update moderation report';
-          console.error(err);
-        },
-      });
+    const update =
+      this.operatorQueueAppScope === 'local-hub'
+        ? this.socialGovernanceService.updateLocalHubOperatorReport(
+            report.id,
+            draft
+          )
+        : this.operatorQueueAppScope === 'client-interface'
+        ? this.socialGovernanceService.updateClientInterfaceOperatorReport(
+            report.id,
+            draft
+          )
+        : this.socialGovernanceService.updateReport(report.id, draft);
+    update.subscribe({
+      next: (updated) => {
+        this.reports = this.reports.map((existing) =>
+          existing.id === updated.id ? updated : existing
+        );
+        this.reportDrafts[updated.id] = {
+          status: updated.status,
+          adminNotes: updated.adminNotes ?? '',
+        };
+      },
+      error: (err) => {
+        this.error = 'Failed to update moderation report';
+        console.error(err);
+      },
+    });
   }
 
   supportsContentModeration(report: ModerationReport): boolean {

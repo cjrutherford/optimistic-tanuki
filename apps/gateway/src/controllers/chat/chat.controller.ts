@@ -23,6 +23,7 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import {
   ChatCommands,
   CommunityCommands,
+  PrivacyCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
@@ -87,6 +88,7 @@ export class ChatController {
       user,
       appScope
     );
+    await this.ensureDirectParticipantsCanInteract(participantIds);
     return this.forward(
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
       { participantIds },
@@ -125,6 +127,30 @@ export class ChatController {
     }
 
     return [user.profileId, recipientProfileId];
+  }
+
+  private async ensureDirectParticipantsCanInteract(
+    participantIds: string[]
+  ): Promise<void> {
+    const [first, second] = [...new Set(participantIds)].sort();
+    if (!first || !second) return;
+    const [firstBlockedSecond, secondBlockedFirst] = await Promise.all([
+      firstValueFrom(
+        this.socialService.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: first, blockedId: second }
+        )
+      ),
+      firstValueFrom(
+        this.socialService.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: second, blockedId: first }
+        )
+      ),
+    ]);
+    if (firstBlockedSecond || secondBlockedFirst) {
+      throw new ForbiddenException('Direct messaging is unavailable');
+    }
   }
 
   @Post('conversations/community')
@@ -177,6 +203,22 @@ export class ChatController {
     body: SendMessageDto,
     @User() user: UserDetails
   ) {
+    const conversation = await this.forward<
+      any,
+      { type?: string; participants?: string[] }
+    >(
+      { cmd: ChatCommands.GET_CONVERSATION },
+      {
+        conversationId: body.conversationId,
+        requestingProfileId: user.profileId,
+      },
+      'Failed to get conversation'
+    );
+    if (conversation?.type === 'direct') {
+      await this.ensureDirectParticipantsCanInteract(
+        conversation.participants ?? []
+      );
+    }
     return this.forward(
       { cmd: ChatCommands.SEND_MESSAGE },
       { ...body, senderId: user.profileId },

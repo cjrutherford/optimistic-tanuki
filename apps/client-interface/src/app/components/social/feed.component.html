@@ -48,9 +48,12 @@
       [canFollow]="canFollow(post)"
       [isFollowing]="isFollowing(post)"
       [isBlocked]="isBlocked(post)"
+      [isMuted]="isMuted(post)"
       [ownedCommunities]="ownedCommunities()"
       (followToggle)="onFollowToggle(post)"
       (blockToggle)="onBlockToggle(post)"
+      (muteToggle)="onMuteToggle(post)"
+      (reportPost)="reportPost(post)"
       (profileClick)="onProfileClick($event)"
       (newCommentAdded)="commented($event, i)"
       [imageUploadCallback]="imageUploadCallback"
@@ -101,4 +104,12 @@
       >
     </div>
   </otui-modal>
+  @if (reportTargetPostId()) {
+  <app-report-dialog
+    contentType="post"
+    [contentId]="reportTargetPostId()!"
+    (closeDialog)="closeReportDialog()"
+    (reportSubmitted)="closeReportDialog()"
+  ></app-report-dialog>
+  }
 </div>

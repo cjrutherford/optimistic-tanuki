@@ -29,12 +29,10 @@ describe('SocialFeedDataService', () => {
   it('loads a descending public feed through the shared social endpoint', () => {
     service.loadPublicFeed().subscribe();
 
-    const request = httpMock.expectOne('/api/social/post/find');
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({
-      criteria: {},
-      opts: { orderBy: 'createdAt', orderDirection: 'desc' },
-    });
+    const request = httpMock.expectOne(
+      '/api/social/feed?includePublic=true&includeFollowing=false&includeCommunities=false&limit=20&offset=0'
+    );
+    expect(request.request.method).toBe('GET');
     request.flush([]);
   });
 
@@ -42,7 +40,7 @@ describe('SocialFeedDataService', () => {
     service.loadFollowingFeed({ limit: 20, offset: 40 }).subscribe();
 
     const request = httpMock.expectOne(
-      '/api/social/feed?includeFollowing=true&includePublic=false&limit=20&offset=40'
+      '/api/social/feed?includeFollowing=true&includePublic=false&includeCommunities=false&limit=20&offset=40'
     );
     expect(request.request.method).toBe('GET');
     request.flush([]);
@@ -59,16 +57,10 @@ describe('SocialFeedDataService', () => {
     service
       .loadCommunityFeed(['community-1'], { limit: 20, offset: 0 })
       .subscribe();
-    const postsRequest = httpMock.expectOne('/api/social/post/find');
-    expect(postsRequest.request.body).toEqual({
-      criteria: { communityIds: ['community-1'] },
-      opts: {
-        orderBy: 'createdAt',
-        orderDirection: 'desc',
-        limit: 20,
-        offset: 0,
-      },
-    });
+    const postsRequest = httpMock.expectOne(
+      '/api/social/feed?includePublic=false&includeFollowing=false&includeCommunities=true&communityIds=community-1&limit=20&offset=0'
+    );
+    expect(postsRequest.request.method).toBe('GET');
     postsRequest.flush([]);
   });
 });

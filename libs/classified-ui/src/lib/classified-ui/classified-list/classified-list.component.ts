@@ -37,8 +37,12 @@ import { ClassifiedCardComponent } from '../classified-card/classified-card.comp
         <lib-classified-card
           [ad]="ad"
           [showContact]="showContact"
+          [showSafetyActions]="showSafetyActions"
           (view)="viewAd.emit($event)"
           (contact)="contactSeller.emit($event)"
+          (reportListing)="reportListing.emit($event)"
+          (reportSeller)="reportSeller.emit($event)"
+          (blockSeller)="blockSeller.emit($event)"
         ></lib-classified-card>
         }
       </div>
@@ -110,8 +114,12 @@ export class ClassifiedListComponent {
   @Input() showPostButton = false;
   /** Whether to show "Contact Seller" on cards */
   @Input() showContact = false;
+  @Input() showSafetyActions = false;
 
   @Output() postNew = new EventEmitter<void>();
   @Output() viewAd = new EventEmitter<ClassifiedAdDto>();
   @Output() contactSeller = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportListing = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportSeller = new EventEmitter<ClassifiedAdDto>();
+  @Output() blockSeller = new EventEmitter<ClassifiedAdDto>();
 }

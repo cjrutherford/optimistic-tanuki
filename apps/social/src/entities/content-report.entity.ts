@@ -24,7 +24,14 @@ export class ContentReport {
   reporterId: string;
 
   @Column()
-  contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
+  contentType:
+    | 'post'
+    | 'comment'
+    | 'profile'
+    | 'community'
+    | 'message'
+    | 'classified'
+    | 'seller';
 
   @Column()
   contentId: string;

@@ -47,10 +47,6 @@ export class AppService {
       await this.participants(conversation, data.senderId)
     ).filter((id) => id !== data.senderId);
     await this.assertUnblocked(conversation, data.senderId, recipientIds);
-    conversation.messages = await this.getMessages(
-      conversation.id,
-      data.senderId
-    );
     if (data.id) {
       const existing = await this.messageRepository.findOne({
         where: { id: data.id },
@@ -83,9 +79,17 @@ export class AppService {
     this.l.debug('Created message entity:', JSON.stringify(message));
     await this.messageRepository.save(message);
 
-    conversation.messages = [...(conversation.messages || []), message];
     conversation.updatedAt = new Date();
-    await this.conversationRepository.save(conversation);
+    // Messages own the ManyToOne relation. Saving a stale OneToMany snapshot
+    // here can null out messages written concurrently by another socket.
+    // Update only the scalar timestamp, then return a fresh history snapshot.
+    await this.conversationRepository.update(conversation.id, {
+      updatedAt: conversation.updatedAt,
+    });
+    conversation.messages = await this.getMessages(
+      conversation.id,
+      data.senderId
+    );
 
     return conversation;
   }
@@ -118,7 +122,9 @@ export class AppService {
     await this.messageRepository.save(message);
 
     conversation.updatedAt = new Date();
-    await this.conversationRepository.save(conversation);
+    await this.conversationRepository.update(conversation.id, {
+      updatedAt: conversation.updatedAt,
+    });
 
     return message;
   }

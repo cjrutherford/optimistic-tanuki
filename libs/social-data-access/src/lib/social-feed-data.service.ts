@@ -7,11 +7,11 @@ import {
 } from '@optimistic-tanuki/models';
 import { API_BASE_URL, CommunityDto } from '@optimistic-tanuki/ui-models';
 import { Observable } from 'rxjs';
+import { of } from 'rxjs';
 
 /** Shared HTTP boundary for social feed reads. */
 @Injectable({ providedIn: 'root' })
 export class SocialFeedDataService {
-  private readonly postUrl: string;
   private readonly apiBaseUrl: string;
 
   constructor(
@@ -19,20 +19,23 @@ export class SocialFeedDataService {
     private readonly http: HttpClient
   ) {
     this.apiBaseUrl = apiBaseUrl;
-    this.postUrl = `${apiBaseUrl}/social/post`;
   }
 
   loadPublicFeed(
-    criteria: SearchPostDto = {},
+    _criteria: SearchPostDto = {},
     opts: SearchPostOptions = {
       orderBy: 'createdAt',
       orderDirection: 'desc',
     }
   ): Observable<PostDto[]> {
-    return this.http.post<PostDto[]>(`${this.postUrl}/find`, {
-      criteria,
-      opts,
+    const params = new URLSearchParams({
+      includePublic: 'true',
+      includeFollowing: 'false',
+      includeCommunities: 'false',
+      limit: String(opts.limit ?? 20),
+      offset: String(opts.offset ?? 0),
     });
+    return this.http.get<PostDto[]>(`${this.apiBaseUrl}/social/feed?${params}`);
   }
 
   loadFollowingFeed(options: {
@@ -42,6 +45,7 @@ export class SocialFeedDataService {
     const params = new URLSearchParams({
       includeFollowing: 'true',
       includePublic: 'false',
+      includeCommunities: 'false',
       limit: options.limit.toString(),
       offset: options.offset.toString(),
     });
@@ -58,14 +62,15 @@ export class SocialFeedDataService {
     communityIds: string[],
     options: { limit: number; offset: number }
   ): Observable<PostDto[]> {
-    return this.http.post<PostDto[]>(`${this.postUrl}/find`, {
-      criteria: { communityIds },
-      opts: {
-        orderBy: 'createdAt',
-        orderDirection: 'desc',
-        limit: options.limit,
-        offset: options.offset,
-      },
+    if (communityIds.length === 0) return of([]);
+    const params = new URLSearchParams({
+      includePublic: 'false',
+      includeFollowing: 'false',
+      includeCommunities: 'true',
+      communityIds: communityIds.join(','),
+      limit: options.limit.toString(),
+      offset: options.offset.toString(),
     });
+    return this.http.get<PostDto[]>(`${this.apiBaseUrl}/social/feed?${params}`);
   }
 }

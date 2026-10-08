@@ -77,6 +77,19 @@ describe('PostComponent', () => {
     expect(component.content.id).toBe('1');
   });
 
+  it('emits mute and report actions from the post safety menu', () => {
+    const mute = jest.fn();
+    const report = jest.fn();
+    component.muteToggle.subscribe(mute);
+    component.reportPost.subscribe(report);
+
+    component.onMuteToggle();
+    component.reportPost.emit();
+
+    expect(mute).toHaveBeenCalledTimes(1);
+    expect(report).toHaveBeenCalledTimes(1);
+  });
+
   it('should set the comments input', () => {
     const testComments: CommentDto[] = [
       { id: '1', content: 'Test Comment' } as CommentDto,

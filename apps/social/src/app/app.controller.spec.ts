@@ -191,6 +191,7 @@ describe('AppController', () => {
             muteUser: jest.fn(),
             unmuteUser: jest.fn(),
             getMutedUsers: jest.fn(),
+            getActiveMutedUsers: jest.fn(),
             reportContent: jest.fn(),
             getMyReports: jest.fn(),
           },
@@ -757,11 +758,7 @@ describe('AppController', () => {
       orderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
-      getMany: jest
-        .fn()
-        .mockResolvedValue([
-          { id: 'post-1', title: 'Post 1', profileId: 'blocked-1' },
-        ]),
+      getMany: jest.fn().mockResolvedValue([]),
     };
 
     (postService as any).postRepo = {
@@ -780,6 +777,9 @@ describe('AppController', () => {
     privacyService.getBlockedUsers.mockResolvedValue([
       { blockedId: 'blocked-1' },
     ]);
+    privacyService.getActiveMutedUsers.mockResolvedValue([
+      { mutedId: 'muted-1', duration: null, createdAt: new Date() },
+    ]);
 
     const result = await controller.getCommunityFeed({
       userId: 'user-1',
@@ -790,8 +790,12 @@ describe('AppController', () => {
     });
 
     expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(privacyService.getActiveMutedUsers).toHaveBeenCalledWith('viewer-1');
     expect(queryBuilder.where.mock.calls[0][0]).toMatch(/^\(.* OR .*\)$/);
-    expect(queryBuilder.andWhere).toHaveBeenCalled();
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'post.profileId NOT IN (:...suppressedProfileIds)',
+      { suppressedProfileIds: ['blocked-1', 'muted-1'] }
+    );
     expect(result).toEqual([]);
   });
 

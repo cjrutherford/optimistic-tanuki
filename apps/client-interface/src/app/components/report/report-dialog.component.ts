@@ -17,7 +17,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   standalone: true,
   imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent],
   template: `
-    <otui-modal [open]="true" (close)="cancel()">
+    <otui-modal [visible]="true" (close)="cancel()">
       <div class="dialog-header">
         <h2>Report {{ contentType | titlecase }}</h2>
         <button class="close-button" (click)="cancel()">
@@ -46,6 +46,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
               name="reason"
               [value]="option.value"
               [(ngModel)]="reason"
+              (ngModelChange)="selectedReason.set($event)"
             />
             <span class="radio-label">{{ option.label }}</span>
           </label>

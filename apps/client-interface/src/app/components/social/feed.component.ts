@@ -32,7 +32,14 @@ import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
-import { filter, firstValueFrom, Observable, Subject, takeUntil } from 'rxjs';
+import {
+  filter,
+  firstValueFrom,
+  forkJoin,
+  Observable,
+  Subject,
+  takeUntil,
+} from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
@@ -56,6 +63,7 @@ import { ActivityService } from '../../activity.service';
 import { PrivacyService } from '../../privacy.service';
 import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { ReportDialogComponent } from '../report/report-dialog.component';
 
 @Component({
   selector: 'app-feed',
@@ -68,6 +76,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
     PostComponent,
     InfiniteScrollDirective,
     LazyLoadDirective,
+    ReportDialogComponent,
   ],
   providers: [
     ThemeService,
@@ -99,6 +108,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   private currentCommunityIds: string[] = [];
   followingIds = new Set<string>();
   blockedIds = new Set<string>();
+  mutedIds = new Set<string>();
+  reportTargetPostId = signal<string | null>(null);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
   communityInfo = signal<{
     [key: string]: { id: string; name: string; logoUrl?: string };
@@ -126,6 +137,8 @@ export class FeedComponent implements OnInit, OnDestroy {
   private readonly privacyService = inject(PrivacyService);
   private readonly socialFeedData = inject(SocialFeedDataService);
   private readonly messageService = inject(MessageService);
+  private privacyPreferencesLoaded = false;
+  private pendingRealtimePosts: PostDto[] | null = null;
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
@@ -133,7 +146,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     fileName: string,
     audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> => {
-    const currentProfile = this.profileService.currentUserProfile();
+    const currentProfile = this.profileService.getCurrentUserProfile();
     if (!currentProfile) {
       throw new Error('No current profile found');
     }
@@ -195,8 +208,9 @@ export class FeedComponent implements OnInit, OnDestroy {
         };
       });
 
-    const currentProfile = this.profileService.currentUserProfile();
+    const currentProfile = this.profileService.getCurrentUserProfile();
     if (currentProfile) {
+      this.loadPrivacyPreferences();
       if (this.focusedPostId()) {
         this.socialWebSocketService.connect();
         this.socialWebSocketService
@@ -244,17 +258,16 @@ export class FeedComponent implements OnInit, OnDestroy {
         .subscribe((posts) => {
           if (this.currentFeed !== 'public') return;
           console.log('Received posts from WebSocket:', posts.length);
-          this.posts.set(posts);
-          this.loading.set(false);
-          this.loadProfiles(posts);
-          this.loadReactionData(posts);
-          this.loadCommunityInfo(posts);
+          this.receiveRealtimePosts(posts);
         });
 
       this.socialWebSocketService
         .getContentInvalidated()
         .pipe(takeUntil(this.destroy$))
         .subscribe(() => {
+          this.privacyPreferencesLoaded = false;
+          this.pendingRealtimePosts = null;
+          this.loadPrivacyPreferences();
           this.clearContent();
           this.loading.set(true);
           if (this.currentFeed === 'following') {
@@ -749,27 +762,129 @@ export class FeedComponent implements OnInit, OnDestroy {
     return this.blockedIds.has(post.profileId);
   }
 
+  isMuted(post: PostDto): boolean {
+    return this.mutedIds.has(post.profileId);
+  }
+
+  private loadPrivacyPreferences(): void {
+    forkJoin({
+      blocked: this.privacyService.getBlockedUsers(),
+      muted: this.privacyService.getMutedUsers(),
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ blocked, muted }) => {
+          this.blockedIds = new Set(blocked.map((item) => item.blockedId));
+          this.mutedIds = new Set(muted.map((item) => item.mutedId));
+          this.privacyPreferencesLoaded = true;
+          if (this.pendingRealtimePosts) {
+            this.setRealtimePosts(this.pendingRealtimePosts);
+            this.pendingRealtimePosts = null;
+          }
+        },
+        error: () => {
+          this.pendingRealtimePosts = null;
+          // Keep websocket deliveries gated until privacy preferences can be
+          // refreshed. The HTTP feed uses the server's privacy filters while
+          // this client-side safety state is unavailable.
+          this.privacyPreferencesLoaded = false;
+          this.loadPublicFeed();
+        },
+      });
+  }
+
+  private receiveRealtimePosts(posts: PostDto[]): void {
+    if (!this.privacyPreferencesLoaded) {
+      this.pendingRealtimePosts = posts;
+      return;
+    }
+    this.setRealtimePosts(posts);
+  }
+
+  private setRealtimePosts(posts: PostDto[]): void {
+    const suppressed = new Set([...this.blockedIds, ...this.mutedIds]);
+    const visiblePosts = posts.filter(
+      (post) => !suppressed.has(post.profileId)
+    );
+    this.posts.set(visiblePosts);
+    this.loading.set(false);
+    this.loadProfiles(visiblePosts);
+    this.loadReactionData(visiblePosts);
+    this.loadCommunityInfo(visiblePosts);
+  }
+
   onBlockToggle(post: PostDto) {
-    const currentProfile = this.profileService.currentUserProfile();
-    if (!currentProfile) return;
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (!currentProfile || currentProfile.id === post.profileId) return;
 
     if (this.isBlocked(post)) {
       this.privacyService.unblockUser(post.profileId).subscribe({
         next: () => {
           this.blockedIds.delete(post.profileId);
-          console.log('User unblocked:', post.profileId);
+          this.messageService.addMessage({
+            content: 'You unblocked this account.',
+            type: 'success',
+          });
         },
-        error: (err: any) => console.error('Failed to unblock user', err),
+        error: () =>
+          this.messageService.addMessage({
+            content: 'Could not unblock this account.',
+            type: 'error',
+          }),
       });
     } else {
       this.privacyService.blockUser({ blockedId: post.profileId }).subscribe({
         next: () => {
           this.blockedIds.add(post.profileId);
-          console.log('User blocked:', post.profileId);
+          this.messageService.addMessage({
+            content: 'You blocked this account.',
+            type: 'success',
+          });
         },
-        error: (err: any) => console.error('Failed to block user', err),
+        error: () =>
+          this.messageService.addMessage({
+            content: 'Could not block this account.',
+            type: 'error',
+          }),
       });
     }
+  }
+
+  onMuteToggle(post: PostDto): void {
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (!currentProfile || currentProfile.id === post.profileId) return;
+    const request = this.isMuted(post)
+      ? this.privacyService.unmuteUser(post.profileId)
+      : this.privacyService.muteUser({ mutedId: post.profileId });
+    request.subscribe({
+      next: () => {
+        if (this.isMuted(post)) this.mutedIds.delete(post.profileId);
+        else this.mutedIds.add(post.profileId);
+        this.mutedIds = new Set(this.mutedIds);
+        this.messageService.addMessage({
+          content: this.isMuted(post)
+            ? 'This account is muted from your feeds.'
+            : 'This account is unmuted in your feeds.',
+          type: 'success',
+        });
+        if (this.currentFeed === 'following') this.loadFollowingFeed();
+        else if (this.currentFeed === 'communities') this.loadCommunitiesFeed();
+        else this.loadPublicFeed();
+      },
+      error: () =>
+        this.messageService.addMessage({
+          content: 'Could not update this feed preference.',
+          type: 'error',
+        }),
+    });
+  }
+
+  reportPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeReportDialog(): void {
+    this.reportTargetPostId.set(null);
   }
 
   onInviteToCommunity(event: { post: PostDto; communityId: string }) {
@@ -902,7 +1017,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   getCurrentUserId(): string {
-    const profile = this.profileService.currentUserProfile();
+    const profile = this.profileService.getCurrentUserProfile();
     // console.log('[Feed] Current profile:', profile);
     return profile?.id || '';
   }

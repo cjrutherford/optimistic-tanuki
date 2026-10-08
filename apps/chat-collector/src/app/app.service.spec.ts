@@ -88,6 +88,11 @@ describe('AppService', () => {
     jest
       .spyOn(conversationRepository, 'save')
       .mockImplementation(async (entity) => entity as Conversation);
+    jest.spyOn(conversationRepository, 'update').mockResolvedValue({
+      affected: 1,
+      raw: [],
+      generatedMaps: [],
+    });
   });
 
   describe('postMessage', () => {
@@ -136,14 +141,46 @@ describe('AppService', () => {
       );
       expect(messageRepository.save).toHaveBeenCalled();
       expect(conversationRepository.create).not.toHaveBeenCalled();
-      expect(conversationRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'existing-conv-id',
-          messages: expect.any(Array),
-          updatedAt: expect.any(Date),
-        })
+      expect(conversationRepository.update).toHaveBeenCalledWith(
+        'existing-conv-id',
+        { updatedAt: expect.any(Date) }
       );
+      expect(conversationRepository.save).not.toHaveBeenCalled();
       expect(result).toBeInstanceOf(Conversation);
+    });
+
+    it('keeps concurrent message writes on the owning relation without saving stale history', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'concurrent-conversation',
+        participants: ['user1', 'user2'],
+        messages: [],
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+      const update = jest
+        .spyOn(conversationRepository, 'update')
+        .mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+
+      await Promise.all(
+        Array.from({ length: 60 }, (_, index) =>
+          service.postMessage({
+            ...mockChatMessage,
+            id: `concurrent-message-${index}`,
+            conversationId: conversation.id,
+            content: `Concurrent message ${index}`,
+          })
+        )
+      );
+
+      expect(messageRepository.save).toHaveBeenCalledTimes(60);
+      for (const [message] of (messageRepository.create as jest.Mock).mock
+        .calls) {
+        expect(message.conversation).toBe(conversation);
+      }
+      expect(update).toHaveBeenCalledTimes(60);
+      expect(conversationRepository.save).not.toHaveBeenCalled();
     });
 
     it('does not create a conversation after a repository failure', async () => {
@@ -702,6 +739,40 @@ describe('AppService', () => {
           conversation,
         })
       );
+      expect(conversationRepository.update).toHaveBeenCalledWith(
+        'conversation-1',
+        { updatedAt: expect.any(Date) }
+      );
+      expect(conversationRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('keeps concurrent HTTP message writes bound without saving stale conversation snapshots', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'http-concurrent-conversation',
+        participants: ['user-1', 'user-2'],
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+
+      await Promise.all(
+        Array.from({ length: 60 }, (_, index) =>
+          service.postMessageHttp({
+            conversationId: conversation.id,
+            content: `Concurrent HTTP message ${index}`,
+            senderId: 'user-1',
+            recipientIds: ['ignored-client-recipient'],
+          })
+        )
+      );
+
+      expect(messageRepository.save).toHaveBeenCalledTimes(60);
+      for (const [message] of (messageRepository.create as jest.Mock).mock
+        .calls) {
+        expect(message.conversation).toBe(conversation);
+      }
+      expect(conversationRepository.update).toHaveBeenCalledTimes(60);
+      expect(conversationRepository.save).not.toHaveBeenCalled();
     });
 
     it('refuses a missing conversation the same way as a forbidden one', async () => {

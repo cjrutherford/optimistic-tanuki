@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
 import { LoggerModule } from '@optimistic-tanuki/logger';
-import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ChatCommands,
+  PrivacyCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { Socket, Server } from 'socket.io';
 import { ChatMessage } from '@optimistic-tanuki/models';
@@ -13,6 +17,7 @@ describe('ChatGateway', () => {
   let chatCollectorService: any;
   let aiOrchestrationService: any;
   let telosDocsService: any;
+  let socialService: any;
   let socket: Socket;
   let server: Server;
 
@@ -26,6 +31,7 @@ describe('ChatGateway', () => {
     telosDocsService = {
       send: jest.fn(() => of({})),
     };
+    socialService = { send: jest.fn(() => of(false)) };
     socket = {
       emit: jest.fn(),
       disconnect: jest.fn(),
@@ -58,6 +64,7 @@ describe('ChatGateway', () => {
             send: jest.fn(() => of({})),
           },
         },
+        { provide: ServiceTokens.SOCIAL_SERVICE, useValue: socialService },
         {
           provide: SocketSessionAuthService,
           useValue: {
@@ -103,6 +110,59 @@ describe('ChatGateway', () => {
   });
 
   describe('handleMessage', () => {
+    it('limits writes by authenticated account across sockets before another lookup or POST', async () => {
+      const previousLimit = process.env.THROTTLE_CHAT_WRITE_LIMIT;
+      const previousProfile = process.env.THROTTLER_PROFILE;
+      const previousNodeEnv = process.env.NODE_ENV;
+      process.env.THROTTLE_CHAT_WRITE_LIMIT = '1';
+      process.env.THROTTLER_PROFILE = 'production';
+      process.env.NODE_ENV = 'production';
+      const secondSocket = {
+        emit: jest.fn(),
+        disconnect: jest.fn(),
+      } as unknown as Socket;
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(cmd === ChatCommands.GET_CONVERSATION ? null : {})
+      );
+      const payload = {
+        id: 'not-persisted',
+        senderId: 'sender-id',
+        userId: 'forged-user-id',
+        conversationId: 'missing-conversation',
+        content: 'rate-limit must run before POST',
+      } as unknown as ChatMessage;
+
+      try {
+        await expect(
+          gateway.handleMessage({ ...payload }, socket)
+        ).rejects.toThrow('Conversation unavailable');
+        await expect(
+          gateway.handleMessage({ ...payload }, secondSocket)
+        ).rejects.toThrow('Too many chat writes');
+
+        expect(chatCollectorService.send).toHaveBeenCalledTimes(1);
+        expect(chatCollectorService.send).toHaveBeenCalledWith(
+          { cmd: ChatCommands.GET_CONVERSATION },
+          {
+            conversationId: 'missing-conversation',
+            requestingProfileId: 'sender-id',
+          }
+        );
+        expect(chatCollectorService.send).not.toHaveBeenCalledWith(
+          { cmd: ChatCommands.POST_MESSAGE },
+          expect.anything()
+        );
+      } finally {
+        if (previousLimit === undefined)
+          delete process.env.THROTTLE_CHAT_WRITE_LIMIT;
+        else process.env.THROTTLE_CHAT_WRITE_LIMIT = previousLimit;
+        if (previousProfile === undefined) delete process.env.THROTTLER_PROFILE;
+        else process.env.THROTTLER_PROFILE = previousProfile;
+        if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = previousNodeEnv;
+      }
+    });
+
     it('should handle a message and notify recipients', async () => {
       const payload: ChatMessage = {
         id: 'msg-id',
@@ -158,6 +218,42 @@ describe('ChatGateway', () => {
       expect(socket.emit).toHaveBeenCalledWith(
         'message',
         expect.objectContaining({ content: 'hello' })
+      );
+    });
+
+    it('refuses websocket messages in an existing blocked direct conversation before persistence', async () => {
+      const payload: ChatMessage = {
+        id: 'msg-blocked',
+        senderId: 'sender-id',
+        senderName: 'sender-name',
+        recipientId: ['recipient-id'],
+        recipientName: ['recipient-name'],
+        conversationId: 'conv-id',
+        content: 'blocked websocket message',
+        timestamp: new Date(),
+        type: 'chat',
+        role: 'user',
+      };
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(
+          cmd === ChatCommands.GET_CONVERSATION
+            ? { type: 'direct', participants: ['sender-id', 'recipient-id'] }
+            : { messages: [] }
+        )
+      );
+      socialService.send.mockImplementation((pattern, body) =>
+        of(
+          pattern.cmd === PrivacyCommands.IS_USER_BLOCKED &&
+            body.blockerId === 'recipient-id'
+        )
+      );
+
+      await expect(
+        gateway.handleMessage(payload, socket)
+      ).rejects.toBeInstanceOf(Error);
+      expect(chatCollectorService.send).not.toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        payload
       );
     });
 

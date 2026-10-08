@@ -22,6 +22,7 @@ import { UserMute } from '../entities/user-mute.entity';
 import { UserPresence } from '../entities/user-presence.entity';
 import { ProfileView } from '../entities/profile-view.entity';
 import { ContentReport } from '../entities/content-report.entity';
+import { ContentModerationAction } from '../entities/content-moderation-action.entity';
 import { SearchHistory } from '../entities/search-history.entity';
 import { Event } from '../entities/event.entity';
 import { BusinessPageContent } from '../entities/business-page-content.entity';
@@ -54,6 +55,7 @@ const loadDatabase = (config: ConfigService) => {
     UserPresence,
     ProfileView,
     ContentReport,
+    ContentModerationAction,
     SearchHistory,
     Event,
     BusinessPageContent,

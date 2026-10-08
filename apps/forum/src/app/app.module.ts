@@ -13,6 +13,7 @@ import { Thread } from '../entities/thread.entity';
 import { ForumPost } from '../entities/forum-post.entity';
 import { ForumLink } from '../entities/forum-link.entity';
 import { ForumReport } from '../entities/forum-report.entity';
+import { ForumModerationAction } from '../entities/forum-moderation-action.entity';
 import { DataSource } from 'typeorm';
 import { TopicService } from './services/topic.service';
 import { ThreadService } from './services/thread.service';
@@ -73,6 +74,11 @@ import { ForumSeedService } from './services/forum-seed.service';
     {
       provide: getRepositoryToken(ForumReport),
       useFactory: (ds: DataSource) => ds.getRepository(ForumReport),
+      inject: ['FORUM_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ForumModerationAction),
+      useFactory: (ds: DataSource) => ds.getRepository(ForumModerationAction),
       inject: ['FORUM_CONNECTION'],
     },
   ],

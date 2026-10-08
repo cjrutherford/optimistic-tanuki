@@ -31,6 +31,16 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
+import { Throttle } from '@nestjs/throttler';
+
+const CLASSIFIED_CREATE_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_CLASSIFIED_CREATE_LIMIT', 10, 200, 1000),
+    ttl: 60000,
+  },
+};
 
 export interface CreateClassifiedAdDto {
   communityId?: string | null;
@@ -256,6 +266,8 @@ export class ClassifiedsController {
   // ─── Auth-gated write endpoints ───────────────────────────────────────────
 
   @Post()
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(CLASSIFIED_CREATE_THROTTLE)
   @RequirePermissions('classified.create')
   @ApiOperation({ summary: 'Create a classified ad (auth required)' })
   @ApiResponse({ status: 201, description: 'Classified ad created.' })

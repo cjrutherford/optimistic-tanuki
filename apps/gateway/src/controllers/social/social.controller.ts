@@ -63,13 +63,36 @@ import {
   RequirePermissions,
 } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
 
 // IMPORTANT: overrides must be keyed to a throttler NAME configured in the
 // gateway's ThrottlerModule (`short`/`medium`/`long` in app.module.ts). The
 // guard only consults metadata for configured names, so `{ default: ... }`
 // is silently ignored here. We override `long` (the 60s window throttler).
 const VOTE_THROTTLE = {
-  long: { limit: 20, ttl: 60000 }, // 20 votes per minute
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_VOTE_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
+};
+const POST_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_POST_LIMIT', 30, 500, 2000),
+    ttl: 60000,
+  },
+};
+const REACTION_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_REACTION_LIMIT', 60, 1000, 2000),
+    ttl: 60000,
+  },
+};
+const COMMENT_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_SOCIAL_COMMENT_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
 };
 
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -111,7 +134,8 @@ export class SocialController {
   @Post('post')
   @RequirePermissions('social.post.create')
   @PermissionTarget('body', 'communityId')
-  @Throttle({ default: { limit: 100, ttl: 60000 } }) // Increased for E2E
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(POST_THROTTLE)
   async post(@User() user, @Body() postDto: CreatePostDto) {
     this.l.log(`Creating post for user: ${user.userId}`);
     postDto.userId = user.userId;
@@ -142,6 +166,7 @@ export class SocialController {
     type: VoteDto,
   })
   @Post('vote')
+  @UseGuards(IdentityThrottlerGuard)
   @RequirePermissions('social.vote.create')
   @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
@@ -178,7 +203,8 @@ export class SocialController {
     type: ReactionDto,
   })
   @Post('reaction')
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 reactions per minute
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(REACTION_THROTTLE)
   async reaction(
     @User() user: UserDetails,
     @Body() reactionDto: CreateReactionDto
@@ -259,7 +285,8 @@ export class SocialController {
   })
   @Post('comment')
   @RequirePermissions('social.comment.create')
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 comments per minute
+  @UseGuards(IdentityThrottlerGuard)
+  @Throttle(COMMENT_THROTTLE)
   async comment(
     @User() user: UserDetails,
     @Body() commentDto: CreateCommentDto
@@ -516,6 +543,7 @@ export class SocialController {
     @Query('includePublic') includePublic?: string,
     @Query('includeFollowing') includeFollowing?: string,
     @Query('includeCommunities') includeCommunities?: string,
+    @Query('communityIds') communityIds?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string
   ): Promise<PostDto[]> {
@@ -529,6 +557,9 @@ export class SocialController {
           includePublic: includePublic !== 'false',
           includeFollowing: includeFollowing === 'true',
           includeCommunities: includeCommunities !== 'false',
+          communityIds: communityIds
+            ? communityIds.split(',').filter(Boolean)
+            : undefined,
           limit: limit ? parseInt(limit, 10) : undefined,
           offset: offset ? parseInt(offset, 10) : undefined,
         }

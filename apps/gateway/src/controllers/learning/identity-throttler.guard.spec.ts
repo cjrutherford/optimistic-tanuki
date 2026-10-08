@@ -20,10 +20,6 @@ describe('IdentityThrottlerGuard', () => {
     guard = Object.create(
       IdentityThrottlerGuard.prototype
     ) as IdentityThrottlerGuard;
-    // The base implementation is what the fallback delegates to.
-    Object.getPrototypeOf(IdentityThrottlerGuard.prototype).getTracker = (req: {
-      ip?: string;
-    }) => Promise.resolve(req.ip ?? 'unknown');
   });
 
   it('counts a signed-in learner against their own id', async () => {
@@ -63,14 +59,19 @@ describe('IdentityThrottlerGuard', () => {
   });
 
   it('falls back to the address when nobody is signed in', async () => {
-    expect(await trackerOf(guard, { ip: '10.0.0.1' })).toBe('ip:10.0.0.1');
+    expect(
+      await trackerOf(guard, { socket: { remoteAddress: '10.0.0.1' } })
+    ).toBe('ip:10.0.0.1');
   });
 
   it('does not treat a malformed user as an identity', async () => {
     for (const user of [{}, { userId: '' }, { userId: 42 }, null]) {
-      expect(await trackerOf(guard, { ip: '10.0.0.1', user })).toBe(
-        'ip:10.0.0.1'
-      );
+      expect(
+        await trackerOf(guard, {
+          socket: { remoteAddress: '10.0.0.1' },
+          user,
+        })
+      ).toBe('ip:10.0.0.1');
     }
   });
 
@@ -82,5 +83,14 @@ describe('IdentityThrottlerGuard', () => {
 
     expect(spoofed).toBe('user:10.0.0.1');
     expect(spoofed).not.toBe('ip:10.0.0.1');
+  });
+
+  it('ignores caller supplied forwarding headers for anonymous tracking', async () => {
+    expect(
+      await trackerOf(guard, {
+        socket: { remoteAddress: '10.0.0.1' },
+        headers: { 'x-forwarded-for': '203.0.113.99' },
+      })
+    ).toBe('ip:10.0.0.1');
   });
 });

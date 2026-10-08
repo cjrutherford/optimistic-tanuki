@@ -5,6 +5,38 @@ import { SeedData, validateSeedData } from './seed-permissions';
 const seedData = require('../assets/default-permissions.json') as SeedData;
 
 describe('permissions seed integrity', () => {
+  it('seeds forum moderation permissions and roles in Client Interface and Local Hub scopes', () => {
+    for (const [scope, roleName] of [
+      ['client-interface', 'client_interface_forum_moderator'],
+      ['local-hub', 'local_hub_forum_moderator'],
+    ]) {
+      expect(seedData.permissions).toContainEqual(
+        expect.objectContaining({ name: 'forum.moderate', appScope: scope })
+      );
+      expect(seedData.roles).toContainEqual(
+        expect.objectContaining({ name: roleName, appScope: scope })
+      );
+      expect(seedData.role_permissions).toContainEqual({
+        role: roleName,
+        permission: 'forum.moderate',
+        permissionAppScope: scope,
+      });
+    }
+
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'client_interface_forum_moderator',
+        permissionAppScope: 'forum',
+      })
+    );
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'local_hub_forum_moderator',
+        permissionAppScope: 'forum',
+      })
+    );
+  });
+
   it('grants Forge planners the exact delete permissions exposed by Forge project controls', () => {
     const plannerDeletePermissions = seedData.role_permissions
       .filter(

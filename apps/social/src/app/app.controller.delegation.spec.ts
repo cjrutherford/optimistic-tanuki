@@ -174,6 +174,7 @@ function createHarness() {
     unblockUser: jest.fn(),
     getBlockedUsers: jest.fn().mockResolvedValue([]),
     getBlockersOf: jest.fn().mockResolvedValue([]),
+    getActiveMutedUsers: jest.fn().mockResolvedValue([]),
     isUserBlocked: jest.fn(),
     muteUser: jest.fn(),
     unmuteUser: jest.fn(),
@@ -1227,7 +1228,6 @@ describe('AppController delegation', () => {
       h.communityService.getUserCommunities.mockResolvedValue([{ id: 'c1' }]);
       h.queryBuilder.getMany.mockResolvedValue([
         { id: 'p1', profileId: 'author-1' },
-        { id: 'p2', profileId: 'blocked-1' },
       ]);
       h.privacyService.getBlockedUsers.mockResolvedValue([
         { blockedId: 'blocked-1' },
@@ -1252,6 +1252,10 @@ describe('AppController delegation', () => {
       expect(where).toContain('post.communityId IN (:...communityIds)');
       expect(params.followingIds).toEqual(['followed-1']);
       expect(params.communityIds).toEqual(['c1']);
+      expect(h.queryBuilder.andWhere).toHaveBeenCalledWith(
+        'post.profileId NOT IN (:...suppressedProfileIds)',
+        { suppressedProfileIds: ['blocked-1'] }
+      );
       expect(h.queryBuilder.skip).toHaveBeenCalledWith(5);
       expect(h.queryBuilder.take).toHaveBeenCalledWith(100);
 
@@ -1345,7 +1349,7 @@ describe('AppController delegation', () => {
       h.privacyService.blockUser.mockResolvedValue({ id: 'b1' });
       h.privacyService.isUserBlocked.mockResolvedValue(true);
       h.privacyService.muteUser.mockResolvedValue({ id: 'mu1' });
-      h.privacyService.getMutedUsers.mockResolvedValue([{ id: 'mu1' }]);
+      h.privacyService.getActiveMutedUsers.mockResolvedValue([{ id: 'mu1' }]);
       h.privacyService.getBlockedUsers.mockResolvedValue([{ id: 'b1' }]);
 
       await h.controller.blockUser({
@@ -1410,38 +1414,59 @@ describe('AppController delegation', () => {
       );
 
       await expect(
-        h.controller.getMyReports({ reporterId: 'a' })
+        h.controller.getMyReports({
+          reporterId: 'a',
+          appScope: 'client-interface',
+        })
       ).resolves.toEqual([{ id: 'rep1' }]);
-      await expect(h.controller.getAllReports({})).resolves.toEqual([
-        { id: 'rep1' },
-      ]);
-      expect(h.privacyService.getAllReports).toHaveBeenCalledWith(undefined);
+      await expect(
+        h.controller.getAllReports({ appScope: 'client-interface' })
+      ).resolves.toEqual([{ id: 'rep1' }]);
+      expect(h.privacyService.getMyReports).toHaveBeenCalledWith(
+        'a',
+        'client-interface'
+      );
+      expect(h.privacyService.getAllReports).toHaveBeenCalledWith(
+        undefined,
+        'client-interface'
+      );
 
       await h.controller.updateReportStatus({
         id: 'rep1',
         status: 'reviewed',
         adminNotes: 'looked at it',
+        appScope: 'client-interface',
+        moderatedBy: 'moderator-1',
+        workspaceId: 'workspace-1',
       });
       expect(h.privacyService.updateReportStatus).toHaveBeenCalledWith(
         'rep1',
         'reviewed',
         'looked at it',
-        undefined
+        'workspace-1',
+        'client-interface',
+        'moderator-1'
       );
 
       await h.controller.moderateContent({
         contentType: 'post',
         contentId: 'p1',
+        reportId: 'rep1',
         moderationStatus: 'hidden',
         moderatedBy: 'admin',
         adminNotes: 'nope',
+        workspaceId: 'workspace-1',
+        appScope: 'client-interface',
       });
       expect(h.privacyService.moderateContent).toHaveBeenCalledWith(
         'post',
         'p1',
         'hidden',
         'admin',
-        'nope'
+        'nope',
+        'rep1',
+        'client-interface',
+        'workspace-1'
       );
     });
   });

@@ -112,6 +112,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() canFollow = false;
   @Input() isFollowing = false;
   @Input() isBlocked = false;
+  @Input() isMuted = false;
   @Input() ownedCommunities: { id: string; name: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
   @Input() communityInfo?: { id: string; name: string; logoUrl?: string };
@@ -121,6 +122,8 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Output() postDeleted = new EventEmitter<void>();
   @Output() followToggle = new EventEmitter<void>();
   @Output() blockToggle = new EventEmitter<void>();
+  @Output() muteToggle = new EventEmitter<void>();
+  @Output() reportPost = new EventEmitter<void>();
   @Output() startChat = new EventEmitter<string>();
   @Output() profileClick = new EventEmitter<string>();
   @Output() voteChange = new EventEmitter<{ postId: string; value: number }>();
@@ -166,6 +169,10 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   onBlockToggle() {
     this.blockToggle.emit();
+  }
+
+  onMuteToggle() {
+    this.muteToggle.emit();
   }
 
   onInviteToCommunity(communityId: string) {

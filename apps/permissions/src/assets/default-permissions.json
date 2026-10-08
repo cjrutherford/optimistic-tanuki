@@ -178,6 +178,16 @@
       "appScope": "client-interface"
     },
     {
+      "name": "client_interface_operator",
+      "description": "App-scoped client-interface report reviewer",
+      "appScope": "client-interface"
+    },
+    {
+      "name": "client_interface_forum_moderator",
+      "description": "App-scoped moderator for Client Interface forum content",
+      "appScope": "client-interface"
+    },
+    {
       "name": "leads_app_member",
       "description": "Standard user for Lead Command",
       "appScope": "leads-app"
@@ -345,6 +355,16 @@
     {
       "name": "local_hub_verified_official",
       "description": "Submits official records for a town; verified by domain and roster, then a callback. Never corroborates (D20).",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_operator",
+      "description": "App-scoped Local Hub report reviewer",
+      "appScope": "local-hub"
+    },
+    {
+      "name": "local_hub_forum_moderator",
+      "description": "App-scoped moderator for Local Hub forum content",
       "appScope": "local-hub"
     },
     {
@@ -789,6 +809,46 @@
       "action": "delete",
       "targetId": null,
       "appScope": "forum"
+    },
+    {
+      "name": "forum.moderate",
+      "description": "Review reports and moderate global forum content",
+      "resource": "forum",
+      "action": "moderate",
+      "targetId": null,
+      "appScope": "forum"
+    },
+    {
+      "name": "forum.moderate",
+      "description": "Review reports and moderate Client Interface forum content",
+      "resource": "forum",
+      "action": "moderate",
+      "targetId": null,
+      "appScope": "client-interface"
+    },
+    {
+      "name": "forum.moderate",
+      "description": "Review reports and moderate Local Hub forum content",
+      "resource": "forum",
+      "action": "moderate",
+      "targetId": null,
+      "appScope": "local-hub"
+    },
+    {
+      "name": "content.report.review",
+      "description": "Review app-scoped content reports",
+      "resource": "content.report",
+      "action": "review",
+      "targetId": null,
+      "appScope": "local-hub"
+    },
+    {
+      "name": "content.report.review",
+      "description": "Review app-scoped client-interface content reports",
+      "resource": "content.report",
+      "action": "review",
+      "targetId": null,
+      "appScope": "client-interface"
     },
     {
       "name": "project-planning.project.create",
@@ -4535,6 +4595,31 @@
       "role": "forum_moderator",
       "permission": "forum.post.delete",
       "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_moderator",
+      "permission": "forum.moderate",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "client_interface_forum_moderator",
+      "permission": "forum.moderate",
+      "permissionAppScope": "client-interface"
+    },
+    {
+      "role": "local_hub_forum_moderator",
+      "permission": "forum.moderate",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_operator",
+      "permission": "content.report.review",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "client_interface_operator",
+      "permission": "content.report.review",
+      "permissionAppScope": "client-interface"
     },
     {
       "role": "client_interface_user",

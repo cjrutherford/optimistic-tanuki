@@ -73,6 +73,16 @@ import { ClassifiedAdDto } from '../models/index';
           <button class="btn btn-secondary" (click)="contact.emit(ad)">
             Contact Seller
           </button>
+          } @if (showSafetyActions) {
+          <button class="btn btn-secondary" (click)="reportListing.emit(ad)">
+            Report listing
+          </button>
+          <button class="btn btn-secondary" (click)="reportSeller.emit(ad)">
+            Report seller
+          </button>
+          <button class="btn btn-secondary" (click)="blockSeller.emit(ad)">
+            Block seller
+          </button>
           }
         </div>
       </div>
@@ -288,8 +298,12 @@ export class ClassifiedCardComponent {
   @Input({ required: true }) ad!: ClassifiedAdDto;
   /** Whether to show the "Contact Seller" button */
   @Input() showContact = false;
+  @Input() showSafetyActions = false;
   @Output() view = new EventEmitter<ClassifiedAdDto>();
   @Output() contact = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportListing = new EventEmitter<ClassifiedAdDto>();
+  @Output() reportSeller = new EventEmitter<ClassifiedAdDto>();
+  @Output() blockSeller = new EventEmitter<ClassifiedAdDto>();
 
   get sellerInitials(): string {
     const source = this.ad?.sellerProfileName?.trim() || 'CM';

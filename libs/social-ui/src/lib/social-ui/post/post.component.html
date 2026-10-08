@@ -19,6 +19,12 @@
         <button class="dropdown-item" (click)="onBlockToggle()">
           {{ isBlocked ? 'Unblock' : 'Block' }}
         </button>
+        <button class="dropdown-item" (click)="onMuteToggle()">
+          {{ isMuted ? 'Unmute from feed' : 'Mute from feed' }}
+        </button>
+        <button class="dropdown-item" (click)="reportPost.emit()">
+          Report post
+        </button>
         @if (ownedCommunities.length > 0) {
         <div class="dropdown-submenu">
           <span class="dropdown-item">Invite to Community</span>

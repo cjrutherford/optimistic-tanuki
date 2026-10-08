@@ -15,6 +15,7 @@ import {
 } from '@nestjs/websockets';
 import {
   ChatCommands,
+  PrivacyCommands,
   ServiceTokens,
   AIOrchestrationCommands,
 } from '@optimistic-tanuki/constants';
@@ -30,6 +31,12 @@ import { firstValueFrom } from 'rxjs';
 import { AiOrchestrationReadinessInterceptor } from '../../interceptors/ai-orchestration-readiness.interceptor';
 import { Server, Socket } from 'socket.io';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
+import { gatewayWriteLimit } from '../throttler-config';
+
+const CHAT_WRITE_TTL_MS = 60_000;
+const CHAT_WRITE_PRODUCTION_LIMIT = 60;
+const CHAT_WRITE_RELAXED_LIMIT = 1000;
+const CHAT_WRITE_LIMIT_CEILING = 2000;
 
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
@@ -43,6 +50,11 @@ export class ChatGateway {
   server: Server;
 
   private connectedClients: { id: string; client: Socket }[] = [];
+  private readonly chatWriteBuckets = new Map<
+    string,
+    { windowStartedAt: number; count: number }
+  >();
+  private lastChatWritePruneAt = 0;
 
   constructor(
     private readonly l: Logger,
@@ -54,8 +66,62 @@ export class ChatGateway {
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
     private readonly socketSessionAuth: SocketSessionAuthService
   ) {}
+
+  private assertChatWriteAllowed(userId: string): void {
+    const now = Date.now();
+    if (now - this.lastChatWritePruneAt >= CHAT_WRITE_TTL_MS) {
+      for (const [key, bucket] of this.chatWriteBuckets) {
+        if (now - bucket.windowStartedAt >= CHAT_WRITE_TTL_MS) {
+          this.chatWriteBuckets.delete(key);
+        }
+      }
+      this.lastChatWritePruneAt = now;
+    }
+
+    const limit = gatewayWriteLimit(
+      'THROTTLE_CHAT_WRITE_LIMIT',
+      CHAT_WRITE_PRODUCTION_LIMIT,
+      CHAT_WRITE_RELAXED_LIMIT,
+      CHAT_WRITE_LIMIT_CEILING
+    );
+    let bucket = this.chatWriteBuckets.get(userId);
+    if (!bucket || now - bucket.windowStartedAt >= CHAT_WRITE_TTL_MS) {
+      bucket = { windowStartedAt: now, count: 0 };
+      this.chatWriteBuckets.set(userId, bucket);
+    }
+    if (bucket.count >= limit) {
+      throw new WsException('Too many chat writes. Please try again shortly.');
+    }
+    bucket.count += 1;
+  }
+
+  private async ensureDirectChatAllowed(
+    participantIds: string[]
+  ): Promise<void> {
+    const [first, second] = [...new Set(participantIds)].sort();
+    if (!first || !second) return;
+    const [firstBlockedSecond, secondBlockedFirst] = await Promise.all([
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: first, blockedId: second }
+        )
+      ),
+      firstValueFrom(
+        this.socialClient.send(
+          { cmd: PrivacyCommands.IS_USER_BLOCKED },
+          { blockerId: second, blockedId: first }
+        )
+      ),
+    ]);
+    if (firstBlockedSecond || secondBlockedFirst) {
+      throw new WsException('Direct messaging is unavailable');
+    }
+  }
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -78,6 +144,7 @@ export class ChatGateway {
       client,
       payload.profileId
     );
+    this.assertChatWriteAllowed(user.userId);
     payload.profileId = user.profileId;
     const profile: ProfileDto = await firstValueFrom(
       this.profileClient.send(
@@ -176,6 +243,7 @@ export class ChatGateway {
     if (payload.senderId && payload.senderId !== user.profileId) {
       throw new UnauthorizedException('Message sender does not match session');
     }
+    this.assertChatWriteAllowed(user.userId);
     payload.senderId = user.profileId;
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
@@ -192,6 +260,9 @@ export class ChatGateway {
       throw new WsException(error);
     });
     if (!conversation) throw new WsException('Conversation unavailable');
+    if (conversation.type === 'direct') {
+      await this.ensureDirectChatAllowed(conversation.participants ?? []);
+    }
     // The collector resolves current community recipients and validates every send.
     payload.recipientIds = (conversation.participants ?? []).filter(
       (id) => id !== senderId
@@ -480,6 +551,7 @@ export class ChatGateway {
       .catch((error) => {
         throw new WsException(error.message);
       });
+    this.assertChatWriteAllowed(user.userId);
     try {
       const participants = [...new Set(payload.participantIds ?? [])];
       const recipients = participants.filter((id) => id !== user.profileId);
@@ -508,6 +580,7 @@ export class ChatGateway {
         ![scope, 'global', null].includes(recipient.appScope ?? null)
       )
         throw new Error('Recipient is not available in this app');
+      await this.ensureDirectChatAllowed([user.profileId, recipient.id]);
       const conversation = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },

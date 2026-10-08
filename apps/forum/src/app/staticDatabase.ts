@@ -2,7 +2,14 @@ import { DataSource } from 'typeorm';
 import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
-import { ForumLink, ForumPost, Thread, Topic } from '../entities';
+import {
+  ForumLink,
+  ForumModerationAction,
+  ForumPost,
+  ForumReport,
+  Thread,
+  Topic,
+} from '../entities';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -22,7 +29,14 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [ForumLink, ForumPost, Thread, Topic];
+const entities = [
+  ForumLink,
+  ForumPost,
+  ForumModerationAction,
+  ForumReport,
+  Thread,
+  Topic,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',

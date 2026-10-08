@@ -8,6 +8,7 @@ import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { ChatController } from './chat.controller';
 import {
   ChatCommands,
+  PrivacyCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -17,6 +18,7 @@ describe('ChatController', () => {
   let controller: ChatController;
   let chatService: { send: jest.Mock };
   let profileService: { send: jest.Mock };
+  let socialService: { send: jest.Mock };
 
   const mockUser: UserDetails = {
     userId: 'user-1',
@@ -40,18 +42,27 @@ describe('ChatController', () => {
         })
       ),
     };
+    socialService = {
+      send: jest.fn((pattern) =>
+        of(
+          pattern.cmd === 'GET_MEMBERS'
+            ? [
+                {
+                  profileId: 'profile-1',
+                  status: 'approved',
+                  role: 'owner',
+                },
+              ]
+            : false
+        )
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: ServiceTokens.SOCIAL_SERVICE,
-          useValue: {
-            send: jest.fn(() =>
-              of([
-                { profileId: 'profile-1', status: 'approved', role: 'owner' },
-              ])
-            ),
-          },
+          useValue: socialService,
         },
         {
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
@@ -145,6 +156,35 @@ describe('ChatController', () => {
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
       { participantIds: ['profile-1', 'profile-2'] }
     );
+    expect(socialService.send).toHaveBeenCalledWith(
+      { cmd: PrivacyCommands.IS_USER_BLOCKED },
+      { blockerId: 'profile-1', blockedId: 'profile-2' }
+    );
+    expect(socialService.send).toHaveBeenCalledWith(
+      { cmd: PrivacyCommands.IS_USER_BLOCKED },
+      { blockerId: 'profile-2', blockedId: 'profile-1' }
+    );
+  });
+
+  it('refuses direct conversation creation when either participant blocked the other', async () => {
+    socialService.send.mockImplementation((pattern, payload) =>
+      of(
+        pattern.cmd === PrivacyCommands.IS_USER_BLOCKED &&
+          payload.blockerId === 'profile-2'
+      )
+    );
+
+    await expect(
+      controller.getOrCreateDirectChat(
+        { recipientProfileId: 'profile-2' },
+        mockUser,
+        'client-interface'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(chatService.send).not.toHaveBeenCalledWith(
+      { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
+      expect.anything()
+    );
   });
 
   it('rejects a recipient outside the current app scope', async () => {
@@ -163,7 +203,13 @@ describe('ChatController', () => {
   });
 
   it('should send message with senderId bound to auth user profile', async () => {
-    chatService.send.mockReturnValue(of({ id: 'message-1' }));
+    chatService.send.mockImplementation((pattern) =>
+      of(
+        pattern.cmd === ChatCommands.GET_CONVERSATION
+          ? { type: 'direct', participants: ['profile-1', 'profile-2'] }
+          : { id: 'message-1' }
+      )
+    );
 
     await controller.sendMessage(
       {
@@ -182,6 +228,37 @@ describe('ChatController', () => {
         recipientIds: ['profile-2'],
         senderId: 'profile-1',
       }
+    );
+  });
+
+  it('refuses to send into an existing direct conversation if either participant blocked the other', async () => {
+    chatService.send.mockImplementation((pattern) =>
+      of(
+        pattern.cmd === ChatCommands.GET_CONVERSATION
+          ? { type: 'direct', participants: ['profile-1', 'profile-2'] }
+          : { id: 'message-1' }
+      )
+    );
+    socialService.send.mockImplementation((pattern, payload) =>
+      of(
+        pattern.cmd === PrivacyCommands.IS_USER_BLOCKED &&
+          payload.blockerId === 'profile-2'
+      )
+    );
+
+    await expect(
+      controller.sendMessage(
+        {
+          conversationId: 'conv-1',
+          content: 'hello',
+          recipientIds: ['profile-2'],
+        },
+        mockUser
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(chatService.send).not.toHaveBeenCalledWith(
+      { cmd: ChatCommands.SEND_MESSAGE },
+      expect.anything()
     );
   });
 });

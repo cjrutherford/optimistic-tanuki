@@ -49,7 +49,10 @@ import {
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { PersonaController } from '../controllers/persona/persona.controller';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { gatewayThrottleLimits } from './throttler-config';
+import { GatewayBroadThrottlerGuard } from './gateway-broad-throttler.guard';
+import { IdentityThrottlerGuard } from '../controllers/learning/identity-throttler.guard';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestTimeoutInterceptor } from '../interceptors/request-timeout.interceptor';
 import {
@@ -421,23 +424,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       isGlobal: true,
       load: [loadConfig],
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'short',
-        ttl: 1000,
-        limit: 10000, // Increased for E2E
-      },
-      {
-        name: 'medium',
-        ttl: 10000,
-        limit: 50000, // Increased for E2E
-      },
-      {
-        name: 'long',
-        ttl: 60000,
-        limit: 100000, // Increased for E2E
-      },
-    ]),
+    ThrottlerModule.forRoot(gatewayThrottleLimits()),
     LoggerModule,
     EmailModule.forRootAsync({
       inject: [ConfigService],
@@ -513,7 +500,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: GatewayBroadThrottlerGuard,
     },
     {
       // Enforce a uniform request timeout across every gateway route so a

@@ -152,57 +152,76 @@ export class AppController {
       contentId: string;
       reason: string;
       description?: string;
+      appScope: string;
     }
   ) {
     return await this.forumModerationService.reportContent(data);
   }
 
   @MessagePattern({ cmd: ForumModerationCommands.GET_ALL_REPORTS })
-  async getAllForumReports(): Promise<ForumReport[]> {
-    return await this.forumModerationService.getAllReports();
+  async getAllForumReports(
+    @Payload('appScope') appScope: string
+  ): Promise<ForumReport[]> {
+    return await this.forumModerationService.getAllReports(appScope);
   }
 
   @MessagePattern({ cmd: ForumModerationCommands.UPDATE_REPORT_STATUS })
   async updateForumReportStatus(
-    @Payload('id') id: string,
-    @Payload('status')
-    status: 'pending' | 'reviewed' | 'actioned' | 'dismissed',
-    @Payload('adminNotes') adminNotes?: string
+    @Payload()
+    data: {
+      id: string;
+      status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+      adminNotes?: string;
+      appScope: string;
+      moderatedBy: string;
+    }
   ) {
     return await this.forumModerationService.updateReportStatus(
-      id,
-      status,
-      adminNotes
+      data.id,
+      data.status,
+      data.adminNotes,
+      data.appScope,
+      data.moderatedBy
     );
   }
 
   @MessagePattern({ cmd: ForumModerationCommands.MODERATE_THREAD })
   async moderateForumThread(
-    @Payload('id') id: string,
-    @Payload('moderationStatus') moderationStatus: 'visible' | 'hidden',
-    @Payload('moderatedBy') moderatedBy: string,
-    @Payload('adminNotes') adminNotes?: string
+    @Payload()
+    data: {
+      id: string;
+      moderationStatus: 'visible' | 'hidden';
+      moderatedBy: string;
+      adminNotes?: string;
+      appScope: string;
+    }
   ) {
     return await this.forumModerationService.moderateThread(
-      id,
-      moderationStatus,
-      moderatedBy,
-      adminNotes
+      data.id,
+      data.moderationStatus,
+      data.moderatedBy,
+      data.adminNotes,
+      data.appScope
     );
   }
 
   @MessagePattern({ cmd: ForumModerationCommands.MODERATE_POST })
   async moderateForumPost(
-    @Payload('id') id: string,
-    @Payload('moderationStatus') moderationStatus: 'visible' | 'hidden',
-    @Payload('moderatedBy') moderatedBy: string,
-    @Payload('adminNotes') adminNotes?: string
+    @Payload()
+    data: {
+      id: string;
+      moderationStatus: 'visible' | 'hidden';
+      moderatedBy: string;
+      adminNotes?: string;
+      appScope: string;
+    }
   ) {
     return await this.forumModerationService.moderatePost(
-      id,
-      moderationStatus,
-      moderatedBy,
-      adminNotes
+      data.id,
+      data.moderationStatus,
+      data.moderatedBy,
+      data.adminNotes,
+      data.appScope
     );
   }
 }

@@ -41,6 +41,8 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Public } from '../../decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { gatewayWriteLimit } from '../../app/throttler-config';
 
 interface ReportForumContentDto {
   contentType: 'thread' | 'post';
@@ -58,6 +60,36 @@ interface ModerateForumContentDto {
   moderationStatus: 'visible' | 'hidden';
   adminNotes?: string;
 }
+
+const REPORT_STATUSES = new Set([
+  'pending',
+  'reviewed',
+  'actioned',
+  'dismissed',
+]);
+const MODERATION_STATUSES = new Set(['visible', 'hidden']);
+const FORUM_REPORT_TYPES = new Set(['thread', 'post']);
+const FORUM_REPORT_REASONS = new Set([
+  'spam',
+  'harassment',
+  'hate_speech',
+  'violence',
+  'misinformation',
+  'inappropriate',
+  'other',
+]);
+const FORUM_WRITE_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_FORUM_WRITE_LIMIT', 20, 500, 2000),
+    ttl: 60000,
+  },
+};
+const FORUM_REPORT_THROTTLE = {
+  long: {
+    limit: gatewayWriteLimit('THROTTLE_FORUM_REPORT_LIMIT', 10, 200, 1000),
+    ttl: 60000,
+  },
+};
 
 @ApiTags('forum')
 @Controller('forum')
@@ -92,7 +124,7 @@ export class ForumController {
   }
 
   // Topic endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Create a new topic' })
   @ApiResponse({
@@ -102,7 +134,7 @@ export class ForumController {
   })
   @Post('topic')
   @RequirePermissions('forum.topic.create')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createTopic(
     @User() user,
     @Body() topicDto: CreateTopicDto,
@@ -180,7 +212,7 @@ export class ForumController {
     );
   }
 
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('topic')
   @ApiOperation({ summary: 'Update a topic by ID' })
   @ApiResponse({
@@ -189,6 +221,7 @@ export class ForumController {
     type: TopicDto,
   })
   @Put('topic/:id')
+  @Throttle(FORUM_WRITE_THROTTLE)
   @RequirePermissions('forum.topic.update')
   async updateTopic(
     @Param('id') id: string,
@@ -234,7 +267,7 @@ export class ForumController {
   }
 
   // Thread endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('thread')
   @ApiOperation({ summary: 'Create a new thread' })
   @ApiResponse({
@@ -244,7 +277,7 @@ export class ForumController {
   })
   @Post('thread')
   @RequirePermissions('forum.thread.create')
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createThread(
     @User() user,
     @Body() threadDto: CreateThreadDto,
@@ -378,7 +411,7 @@ export class ForumController {
   }
 
   // Forum Post endpoints
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @UseGuards(AuthGuard, PermissionsGuard, IdentityThrottlerGuard)
   @ApiTags('forum-post')
   @ApiOperation({ summary: 'Create a new forum post' })
   @ApiResponse({
@@ -388,7 +421,7 @@ export class ForumController {
   })
   @Post('post')
   @RequirePermissions('forum.post.create')
-  @Throttle({ default: { limit: 50, ttl: 60000 } })
+  @Throttle(FORUM_WRITE_THROTTLE)
   async createForumPost(
     @User() user,
     @Body() postDto: CreateForumPostDto,
@@ -409,7 +442,6 @@ export class ForumController {
     type: ForumPostDto,
   })
   @Public()
-  @UseGuards(AuthGuard)
   @Get('post/:id')
   async getForumPost(
     @Param('id') id: string,
@@ -434,7 +466,6 @@ export class ForumController {
     type: [ForumPostDto],
   })
   @Public()
-  @UseGuards(AuthGuard)
   @Get('posts')
   async getAllForumPosts(
     @AppScope() appScope: string,
@@ -502,14 +533,25 @@ export class ForumController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, IdentityThrottlerGuard)
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Report forum content for moderation review' })
   @Post('report')
+  @Throttle(FORUM_REPORT_THROTTLE)
   async reportForumContent(
     @Body() dto: ReportForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
+    if (
+      !FORUM_REPORT_TYPES.has(dto.contentType) ||
+      typeof dto.contentId !== 'string' ||
+      !dto.contentId.trim() ||
+      !FORUM_REPORT_REASONS.has(dto.reason) ||
+      (dto.description !== undefined && dto.description.length > 2000)
+    ) {
+      throw new BadRequestException('Invalid forum report target or reason.');
+    }
     return await this.forward(
       { cmd: ForumModerationCommands.REPORT_CONTENT },
       {
@@ -518,6 +560,7 @@ export class ForumController {
         contentId: dto.contentId,
         reason: dto.reason,
         description: dto.description,
+        appScope: this.requireAppScope(appScope),
       }
     );
   }
@@ -526,11 +569,11 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Get all forum moderation reports' })
   @Get('admin/reports')
-  @RequirePermissions('community.manage')
-  async getForumReports() {
+  @RequirePermissions('forum.moderate')
+  async getForumReports(@AppScope() appScope: string) {
     return await this.forward(
       { cmd: ForumModerationCommands.GET_ALL_REPORTS },
-      {}
+      { appScope: this.requireAppScope(appScope) }
     );
   }
 
@@ -538,17 +581,24 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Update a forum moderation report status' })
   @Put('admin/reports/:id')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async updateForumReportStatus(
     @Param('id') id: string,
-    @Body() dto: UpdateForumReportStatusDto
+    @Body() dto: UpdateForumReportStatusDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
+    if (!REPORT_STATUSES.has(dto.status)) {
+      throw new BadRequestException('Unsupported report status.');
+    }
     return await this.forward(
       { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
       {
         id,
         status: dto.status,
         adminNotes: dto.adminNotes,
+        appScope: this.requireAppScope(appScope),
+        moderatedBy: user.profileId,
       }
     );
   }
@@ -557,12 +607,16 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Soft moderate a forum thread' })
   @Put('admin/thread/:id/moderation')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async moderateForumThread(
     @Param('id') id: string,
     @Body() dto: ModerateForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
+    if (!MODERATION_STATUSES.has(dto.moderationStatus)) {
+      throw new BadRequestException('Unsupported moderation status.');
+    }
     return await this.forward(
       { cmd: ForumModerationCommands.MODERATE_THREAD },
       {
@@ -570,6 +624,7 @@ export class ForumController {
         moderationStatus: dto.moderationStatus,
         adminNotes: dto.adminNotes,
         moderatedBy: user.profileId,
+        appScope: this.requireAppScope(appScope),
       }
     );
   }
@@ -578,12 +633,16 @@ export class ForumController {
   @ApiTags('forum-moderation')
   @ApiOperation({ summary: 'Soft moderate a forum post' })
   @Put('admin/post/:id/moderation')
-  @RequirePermissions('community.manage')
+  @RequirePermissions('forum.moderate')
   async moderateForumPost(
     @Param('id') id: string,
     @Body() dto: ModerateForumContentDto,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
+    if (!MODERATION_STATUSES.has(dto.moderationStatus)) {
+      throw new BadRequestException('Unsupported moderation status.');
+    }
     return await this.forward(
       { cmd: ForumModerationCommands.MODERATE_POST },
       {
@@ -591,6 +650,7 @@ export class ForumController {
         moderationStatus: dto.moderationStatus,
         adminNotes: dto.adminNotes,
         moderatedBy: user.profileId,
+        appScope: this.requireAppScope(appScope),
       }
     );
   }

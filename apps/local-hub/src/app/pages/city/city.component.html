@@ -269,7 +269,11 @@
             [loading]="classifiedsLoading()"
             [showPostButton]="canPostClassified()"
             [showContact]="isAuthenticated()"
+            [showSafetyActions]="isAuthenticated()"
             (postNew)="openClassifiedForm()"
+            (reportListing)="reportClassified($event)"
+            (reportSeller)="reportClassifiedSeller($event)"
+            (blockSeller)="blockClassifiedSeller($event)"
           ></lib-classified-list>
         </div>
       </section>
@@ -663,4 +667,11 @@
   ></lib-classified-form>
   }
 </otui-modal>
-} }
+} } @if (safetyReport(); as report) {
+<app-safety-report-dialog
+  [contentType]="report.contentType"
+  [contentId]="report.contentId"
+  (cancel)="safetyReport.set(null)"
+  (submitted)="submitClassifiedSafetyReport($event)"
+></app-safety-report-dialog>
+}

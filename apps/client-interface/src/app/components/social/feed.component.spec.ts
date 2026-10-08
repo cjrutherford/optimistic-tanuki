@@ -26,6 +26,7 @@ import { ActivityService } from '../../activity.service';
 import { throwError } from 'rxjs';
 import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { PrivacyService } from '../../privacy.service';
 
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
@@ -40,6 +41,10 @@ describe('FeedComponent', () => {
     loadCommunityFeed: jest.Mock;
   };
   let messageService: { addMessage: jest.Mock };
+  let privacyService: {
+    getBlockedUsers: jest.Mock;
+    getMutedUsers: jest.Mock;
+  };
   let consoleLogSpy: jest.SpyInstance;
 
   class MockIntersectionObserver {
@@ -146,6 +151,10 @@ describe('FeedComponent', () => {
       loadCommunityFeed: jest.fn().mockReturnValue(of([])),
     };
     messageService = { addMessage: jest.fn() };
+    privacyService = {
+      getBlockedUsers: jest.fn().mockReturnValue(of([])),
+      getMutedUsers: jest.fn().mockReturnValue(of([])),
+    };
 
     TestBed.overrideComponent(FeedComponent, {
       set: {
@@ -183,6 +192,7 @@ describe('FeedComponent', () => {
           { provide: ActivityService, useValue: {} },
           { provide: SocialFeedDataService, useValue: socialFeedData },
           { provide: MessageService, useValue: messageService },
+          { provide: PrivacyService, useValue: privacyService },
         ],
       },
     });
@@ -264,13 +274,38 @@ describe('FeedComponent', () => {
       component.socialWebSocketService.getContentInvalidated as jest.Mock
     ).mockReturnValue(invalidated);
     fixture.detectChanges();
+    const refreshPrivacyPreferences = jest.spyOn(
+      component as any,
+      'loadPrivacyPreferences'
+    );
     socialFeedData.loadPublicFeed.mockReturnValueOnce(staleResponse);
     component.loadPublicFeed();
     invalidated.next();
+    expect(refreshPrivacyPreferences).toHaveBeenCalledTimes(1);
     staleResponse.next([{ id: 'revoked-post', content: 'private' }]);
     expect(component.posts()).toEqual([]);
     tick(5001);
   }));
+
+  it('keeps websocket posts gated and falls back to the filtered HTTP feed when privacy preferences fail', () => {
+    privacyService.getBlockedUsers.mockReturnValue(
+      throwError(() => new Error('Privacy service unavailable'))
+    );
+    const loadPublicFeed = jest.spyOn(component, 'loadPublicFeed');
+    const realtimePost = {
+      id: 'realtime-private',
+      profileId: 'muted-author',
+    } as any;
+
+    (component as any).loadPrivacyPreferences();
+    expect(loadPublicFeed).toHaveBeenCalledTimes(1);
+    expect((component as any).privacyPreferencesLoaded).toBe(false);
+
+    (component as any).receiveRealtimePosts([realtimePost]);
+
+    expect(component.posts()).toEqual([]);
+    expect((component as any).pendingRealtimePosts).toEqual([realtimePost]);
+  });
 
   it('loads the public tab through the shared social data-access layer', () => {
     component.loadPublicFeed();

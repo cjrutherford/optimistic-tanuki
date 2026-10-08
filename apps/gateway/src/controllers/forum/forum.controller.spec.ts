@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
 import {
+  ForumModerationCommands,
   ForumPostCommands,
   ThreadCommands,
   TopicCommands,
@@ -13,6 +14,8 @@ import { ForumController } from './forum.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
+import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
 
 describe('ForumController', () => {
   let forumController: ForumController;
@@ -59,6 +62,8 @@ describe('ForumController', () => {
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => of(true) })
       .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => of(true) })
+      .overrideGuard(IdentityThrottlerGuard)
       .useValue({ canActivate: () => of(true) })
       .compile();
 
@@ -158,5 +163,65 @@ describe('ForumController', () => {
         requestingProfileId: undefined,
       }
     );
+  });
+
+  it('scopes moderator report operations to the caller app scope and actor', async () => {
+    const reportsRoute = (ForumController.prototype as any).getForumReports;
+    const updateRoute = (ForumController.prototype as any)
+      .updateForumReportStatus;
+
+    expect(typeof reportsRoute).toBe('function');
+    expect(typeof updateRoute).toBe('function');
+
+    await (forumController as any).getForumReports('client-interface');
+    await (forumController as any).updateForumReportStatus(
+      'report-1',
+      { status: 'reviewed', adminNotes: 'Checked' },
+      { profileId: 'moderator-profile' },
+      'client-interface'
+    );
+
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, reportsRoute)).toEqual({
+      permissions: ['forum.moderate'],
+    });
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, updateRoute)).toEqual({
+      permissions: ['forum.moderate'],
+    });
+    expect(forumClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: ForumModerationCommands.GET_ALL_REPORTS },
+      { appScope: 'client-interface' }
+    );
+    expect(forumClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
+      {
+        id: 'report-1',
+        status: 'reviewed',
+        adminNotes: 'Checked',
+        appScope: 'client-interface',
+        moderatedBy: 'moderator-profile',
+      }
+    );
+  });
+
+  it('rejects unsupported moderation values before forwarding them', async () => {
+    await expect(
+      (forumController as any).updateForumReportStatus(
+        'report-1',
+        { status: 'concealed' },
+        { profileId: 'moderator-profile' },
+        'client-interface'
+      )
+    ).rejects.toThrow('Unsupported report status.');
+    await expect(
+      (forumController as any).moderateForumThread(
+        'thread-1',
+        { moderationStatus: 'concealed' },
+        { profileId: 'moderator-profile' },
+        'client-interface'
+      )
+    ).rejects.toThrow('Unsupported moderation status.');
+    expect(forumClient.send).not.toHaveBeenCalled();
   });
 });

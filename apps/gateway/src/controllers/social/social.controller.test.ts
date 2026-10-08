@@ -27,6 +27,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
+import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
 
 describe('SocialController', () => {
   let socialController: SocialController;
@@ -95,6 +96,8 @@ describe('SocialController', () => {
       .useValue({ canActivate: () => of(true) })
       .overrideGuard(PermissionsGuard)
       .useValue({ canActivate: () => of(true) }) // Mock PermissionsGuard
+      .overrideGuard(IdentityThrottlerGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     socialController = module.get<SocialController>(SocialController);

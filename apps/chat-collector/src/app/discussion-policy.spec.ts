@@ -27,6 +27,11 @@ describe('Discussion authorization', () => {
       findOne: jest.fn().mockResolvedValue({ ...room }),
       find: jest.fn().mockResolvedValue([{ ...room }]),
       save: jest.fn(async (data) => data),
+      update: jest.fn(async () => ({
+        affected: 1,
+        raw: [],
+        generatedMaps: [],
+      })),
     };
     social = { send: jest.fn(() => of(false)) };
     projects = { send: jest.fn(() => of({ owner: 'owner', members: [] })) };

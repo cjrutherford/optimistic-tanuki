@@ -1245,6 +1245,7 @@ export class AppController {
       includePublic?: boolean;
       includeFollowing?: boolean;
       includeCommunities?: boolean;
+      communityIds?: string[];
       limit?: number;
       offset?: number;
     }
@@ -1261,7 +1262,14 @@ export class AppController {
       data.userId,
       data.appScope
     );
-    const communityIds = userCommunities.map((c) => c.id);
+    const selectedCommunityIds = new Set(data.communityIds || []);
+    const communityIds = userCommunities
+      .map((c) => c.id)
+      .filter(
+        (communityId) =>
+          selectedCommunityIds.size === 0 ||
+          selectedCommunityIds.has(communityId)
+      );
 
     const postRepo = this.postService['postRepo'];
     const qb = postRepo.createQueryBuilder('post');
@@ -1294,24 +1302,29 @@ export class AppController {
     // Keep caller feed selection grouped before the mandatory visibility policy
     // is appended with AND; otherwise SQL precedence lets an OR arm bypass it.
     qb.where(`(${conditions.join(' OR ')})`, params);
+    if (data.profileId) {
+      const [blocked, muted] = await Promise.all([
+        this.privacyService.getBlockedUsers(data.profileId),
+        this.privacyService.getActiveMutedUsers(data.profileId),
+      ]);
+      const suppressedProfileIds = [
+        ...new Set([
+          ...(blocked || []).map((entry) => entry.blockedId),
+          ...(muted || []).map((entry) => entry.mutedId),
+        ]),
+      ];
+      if (suppressedProfileIds.length > 0) {
+        qb.andWhere('post.profileId NOT IN (:...suppressedProfileIds)', {
+          suppressedProfileIds,
+        });
+      }
+    }
     const postScope = await this.buildPostVisibilityScope(data.profileId);
     applyVisiblePostScope(qb, postScope, 'post');
     qb.orderBy('post.createdAt', 'DESC');
     qb.skip(offset).take(limit);
 
     const posts = await qb.getMany();
-
-    if (data.profileId) {
-      const blocked = await this.privacyService.getBlockedUsers(data.profileId);
-      const blockedIds = new Set(
-        (blocked || []).map((entry) => entry.blockedId)
-      );
-      posts.splice(
-        0,
-        posts.length,
-        ...posts.filter((post) => !blockedIds.has(post.profileId))
-      );
-    }
 
     for (const post of posts) {
       const votes = await this.voteService.findAll({
@@ -1562,7 +1575,7 @@ export class AppController {
 
   @MessagePattern({ cmd: PrivacyCommands.GET_MUTED_USERS })
   async getMutedUsers(@Payload() data: { muterId: string }) {
-    return await this.privacyService.getMutedUsers(data.muterId);
+    return await this.privacyService.getActiveMutedUsers(data.muterId);
   }
 
   @MessagePattern({ cmd: PrivacyCommands.REPORT_CONTENT })
@@ -1570,7 +1583,14 @@ export class AppController {
     @Payload()
     data: {
       reporterId: string;
-      contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
+      contentType:
+        | 'post'
+        | 'comment'
+        | 'profile'
+        | 'community'
+        | 'message'
+        | 'classified'
+        | 'seller';
       contentId: string;
       reason: string;
       description?: string;
@@ -1590,13 +1610,23 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PrivacyCommands.GET_MY_REPORTS })
-  async getMyReports(@Payload() data: { reporterId: string }) {
-    return await this.privacyService.getMyReports(data.reporterId);
+  async getMyReports(
+    @Payload() data: { reporterId: string; appScope: string }
+  ) {
+    return await this.privacyService.getMyReports(
+      data.reporterId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PrivacyCommands.GET_ALL_REPORTS })
-  async getAllReports(@Payload() data: { workspaceId?: string }) {
-    return await this.privacyService.getAllReports(data.workspaceId);
+  async getAllReports(
+    @Payload() data: { workspaceId?: string | null; appScope: string }
+  ) {
+    return await this.privacyService.getAllReports(
+      data.workspaceId,
+      data.appScope
+    );
   }
 
   @MessagePattern({ cmd: PrivacyCommands.UPDATE_REPORT_STATUS })
@@ -1606,14 +1636,18 @@ export class AppController {
       id: string;
       status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
       adminNotes?: string;
-      workspaceId?: string;
+      workspaceId?: string | null;
+      appScope: string;
+      moderatedBy: string;
     }
   ) {
     return await this.privacyService.updateReportStatus(
       data.id,
       data.status,
       data.adminNotes,
-      data.workspaceId
+      data.workspaceId,
+      data.appScope,
+      data.moderatedBy
     );
   }
 
@@ -1623,9 +1657,12 @@ export class AppController {
     data: {
       contentType: 'post' | 'comment';
       contentId: string;
+      reportId: string;
       moderationStatus: 'visible' | 'hidden';
       moderatedBy: string;
       adminNotes?: string;
+      workspaceId: string;
+      appScope: string;
     }
   ) {
     return await this.privacyService.moderateContent(
@@ -1633,7 +1670,10 @@ export class AppController {
       data.contentId,
       data.moderationStatus,
       data.moderatedBy,
-      data.adminNotes
+      data.adminNotes,
+      data.reportId,
+      data.appScope,
+      data.workspaceId
     );
   }
 
