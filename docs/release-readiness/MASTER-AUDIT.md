@@ -305,24 +305,24 @@ The intended outcome is a documented `reuse / adapt / rewrite / reject` decision
 
 The `RR-xx` namespace is intentionally separate from existing product/engineering slice numbers.
 
-| Slice | Title                                                                     | Initial status                   | Primary severity  |
-| ----- | ------------------------------------------------------------------------- | -------------------------------- | ----------------- |
-| RR-00 | Philosophy, scope, and release contract                                   | ACCEPTED; see findings/RR-00.md  | P0/P1 foundation  |
-| RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md | P0                |
-| RR-02 | HAI ecosystem identity/tag/shared-login UX                                | VERIFYING                        | P1                |
-| RR-03 | Authentication, registration, session, and account lifecycle              | VERIFYING                        | P0                |
-| RR-04 | OT feed, discovery, follows, visibility, and privacy                      | ACCEPTED — 2026-10-09            | P0                |
-| RR-05 | OT communities, forum, chat, and messaging                                | VERIFYING                        | P0                |
-| RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | VERIFYING                        | P0                |
-| RR-07 | Daylight civic feed release acceptance                                    | BLOCKED on PR/deployment         | P1/P0-if-marketed |
-| RR-08 | Safety, reporting, blocking, moderation, and authorization boundaries     | ACCEPTED                         | P0                |
-| RR-09 | Accessibility, responsive/mobile, themes, and motion                      | PLANNED                          | P1                |
-| RR-10 | Reliability, error recovery, uploads, sockets, and degraded states        | PLANNED                          | P0/P1             |
-| RR-11 | Legal/support/privacy/account deletion and public-operational basics      | PLANNED                          | P0/P1             |
-| RR-12 | End-to-end launch gate and regression matrix                              | PLANNED                          | P0                |
-| RR-13 | Final public positioning, onboarding, and launch marketing package        | PLANNED                          | P1                |
-| RR-14 | Reputation prototype evaluation and migration path (`retumbl`)            | PLANNED; local access confirmed  | P1/P2             |
-| RR-15 | Federation/self-hosting feasibility and architecture decision             | AUDITING                         | P1/P2 strategic   |
+| Slice | Title                                                                     | Initial status                                                                     | Primary severity  |
+| ----- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------- |
+| RR-00 | Philosophy, scope, and release contract                                   | ACCEPTED; see findings/RR-00.md                                                    | P0/P1 foundation  |
+| RR-01 | Product truth and public marketing audit                                  | VERIFYING; see findings/RR-01.md                                                   | P0                |
+| RR-02 | HAI ecosystem identity/tag/shared-login UX                                | VERIFYING                                                                          | P1                |
+| RR-03 | Authentication, registration, session, and account lifecycle              | VERIFYING                                                                          | P0                |
+| RR-04 | OT feed, discovery, follows, visibility, and privacy                      | ACCEPTED — 2026-10-09                                                              | P0                |
+| RR-05 | OT communities, forum, chat, and messaging                                | VERIFYING                                                                          | P0                |
+| RR-06 | TS locality browsing, membership, classifieds, and buyer/seller messaging | VERIFYING                                                                          | P0                |
+| RR-07 | Daylight civic feed release acceptance                                    | BLOCKED on PR/deployment                                                           | P1/P0-if-marketed |
+| RR-08 | Safety, reporting, blocking, moderation, and authorization boundaries     | ACCEPTED                                                                           | P0                |
+| RR-09 | Accessibility, responsive/mobile, themes, and motion                      | GAP FOUND; RR09-I01 → I02 → I03 → V01 required before RR-10; see findings/RR-09.md | P1                |
+| RR-10 | Reliability, error recovery, uploads, sockets, and degraded states        | PLANNED                                                                            | P0/P1             |
+| RR-11 | Legal/support/privacy/account deletion and public-operational basics      | PLANNED                                                                            | P0/P1             |
+| RR-12 | End-to-end launch gate and regression matrix                              | PLANNED                                                                            | P0                |
+| RR-13 | Final public positioning, onboarding, and launch marketing package        | PLANNED                                                                            | P1                |
+| RR-14 | Reputation prototype evaluation and migration path (`retumbl`)            | PLANNED; local access confirmed                                                    | P1/P2             |
+| RR-15 | Federation/self-hosting feasibility and architecture decision             | AUDITING                                                                           | P1/P2 strategic   |
 
 ---
 
@@ -626,6 +626,8 @@ Per-locality source trace samples, failure-path tests, production-like E2E, and 
 ---
 
 ## RR-09 — Accessibility, responsive/mobile, themes, and motion
+
+**Status:** GAP FOUND. Public OT/TS matrices and partial authenticated journey evidence confirm required work; acceptance is not met. Complete RR09-I01 (Towne Square responsive/accessibility), RR09-I02 (shared Appearance focus indicator), RR09-I03 (OT/shared authenticated accessible controls), then RR09-V01 (remaining authenticated and integrated verification) before RR-10. Per-criterion outcomes and evidence are in [RR-09 findings](./findings/RR-09.md).
 
 **Goal:** Ensure ordinary public use is not desktop/mouse-only.
 
@@ -1008,6 +1010,7 @@ Use this section for concise status changes. Detailed evidence should live in sl
 
 | Date       | Item                             | Change                                                                                                                                                                                                                                                                                                                                                         |
 | ---------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-09 | RR-09 audit checkpoint           | GAP FOUND. Public OT/TS route matrices (30/50 route-state rows), stable actual-theme checks, reduced-motion observations, HAI dialog keyboard checks, and partial authenticated journeys confirm RR09-I01 / I02 / I03 work. Acceptance remains NOT MET; RR09-I01 → I02 → I03 → V01 are required before RR-10. See [findings](./findings/RR-09.md).             |
 | 2026-10-09 | RR04-I03 full privacy acceptance | ACCEPTED. All 23 unique live cases, 1,959 affected tests/132 suites, three lint targets, the 48-project/29-task build, independent review and exact fixture cleanup/restoration pass. RR-04 is accepted; RR-09 is next, with RR-12 retaining the integrated recheck.                                                                                           |
 | 2026-10-09 | RR04-I02 bounded closeout        | ACCEPTED for audience selection, explicit public-community intent, safe shares and profile-based Following Feed. Final build, combined affected verification, 16 unique live cases, independent review, exact fixture cleanup and original asset-runtime restoration pass. RR-04 remains GAP FOUND; RR04-I03 is next and full privacy acceptance remains open. |
 | 2026-10-08 | RR08 full safety closeout        | Minimum safety accepted: scoped reporting/moderation with audit history, OT block/mute, TS seller safety and bounded public/chat quotas; collector concurrency defect repaired. 4,124 units, 12 lint targets, full build, migrations, independent live checks and scoped cleanup pass. RR04-I02 is next; existing email/reliability gates remain.              |
