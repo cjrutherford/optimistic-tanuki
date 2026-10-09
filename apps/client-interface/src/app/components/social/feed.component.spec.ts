@@ -11,7 +11,7 @@ import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of, Subject } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { OnDestroy } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommonModule } from '@angular/common';
@@ -286,6 +286,113 @@ describe('FeedComponent', () => {
     expect(component.posts()).toEqual([]);
     tick(5001);
   }));
+
+  it('keeps a delivered public post when an older public HTTP snapshot resolves later', () => {
+    const staleResponse = new Subject<any[]>();
+    const queryStarted = jest.fn();
+    const pendingQuery = new Observable<any[]>((subscriber) => {
+      queryStarted();
+      return staleResponse.subscribe(subscriber);
+    });
+    const publicPost = {
+      id: 'new-public-post',
+      profileId: 'author-profile',
+      visibility: 'public',
+      communityId: null,
+      content: 'published while feed request was pending',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const followerPost = {
+      id: 'following-only-post',
+      profileId: 'followed-profile',
+      visibility: 'followers',
+      communityId: null,
+      content: 'must not leak into the public feed',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const memberCommunityPost = {
+      id: 'member-community-post',
+      profileId: 'member-author',
+      visibility: 'community',
+      communityId: 'members-only-community',
+      publicAudienceExplicit: false,
+      content: 'must stay in the communities feed',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const legacyPublicCommunityPost = {
+      id: 'legacy-public-community-post',
+      profileId: 'community-author',
+      visibility: 'public',
+      communityId: 'community-id',
+      publicAudienceExplicit: false,
+      content: 'legacy community audience is not explicitly public',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    const explicitPublicCommunityPost = {
+      id: 'explicit-public-community-post',
+      profileId: 'community-author',
+      visibility: 'public',
+      communityId: 'community-id',
+      publicAudienceExplicit: true,
+      content: 'explicitly public community post',
+      comments: [],
+      votes: [],
+      attachments: [],
+    } as any;
+    socialFeedData.loadPublicFeed.mockReturnValueOnce(pendingQuery);
+    (component as any).privacyPreferencesLoaded = true;
+
+    component.loadPublicFeed();
+    expect(queryStarted).toHaveBeenCalledTimes(1);
+    (component as any).receiveRealtimePosts([
+      publicPost,
+      followerPost,
+      memberCommunityPost,
+      legacyPublicCommunityPost,
+      explicitPublicCommunityPost,
+    ]);
+    expect(component.posts().map((post) => post.id)).toEqual([
+      'new-public-post',
+      'explicit-public-community-post',
+    ]);
+    staleResponse.next([
+      {
+        ...publicPost,
+        content: 'older duplicate copy',
+      },
+      {
+        id: 'old-public-post',
+        profileId: 'another-author',
+        visibility: 'public',
+        communityId: null,
+        content: 'snapshot taken before publication',
+        comments: [],
+        votes: [],
+        attachments: [],
+      },
+    ]);
+
+    expect(component.posts().map((post) => post.id)).toEqual([
+      'new-public-post',
+      'explicit-public-community-post',
+      'old-public-post',
+    ]);
+    const publicPostIds = component.posts().map((post) => post.id);
+    expect(publicPostIds).not.toContain('following-only-post');
+    expect(publicPostIds).not.toContain('member-community-post');
+    expect(publicPostIds).not.toContain('legacy-public-community-post');
+    expect(
+      component.posts().find((post) => post.id === 'new-public-post')?.content
+    ).toBe('published while feed request was pending');
+  });
 
   it('keeps websocket posts gated and falls back to the filtered HTTP feed when privacy preferences fail', () => {
     privacyService.getBlockedUsers.mockReturnValue(

@@ -6,6 +6,8 @@ import { Post } from '../../entities/post.entity';
 import { FindOperator, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { PostVisibilityScope } from '../common/post-visibility.util';
+import { of } from 'rxjs';
+import { AssetCommands } from '@optimistic-tanuki/constants';
 
 function evalOperator(value: unknown, op: FindOperator<any>): boolean {
   switch (op.type) {
@@ -13,6 +15,8 @@ function evalOperator(value: unknown, op: FindOperator<any>): boolean {
       return Array.isArray(op.value) && op.value.includes(value);
     case 'equal':
       return value === op.value;
+    case 'isNull':
+      return value === null || value === undefined;
     case 'not':
       return Array.isArray(op.value)
         ? !op.value.includes(value)
@@ -56,6 +60,7 @@ describe('CommentService', () => {
   let service: CommentService;
   let commentRepo: Partial<Repository<Comment>>;
   let postRepo: Partial<Repository<Post>>;
+  let assetService: { send: jest.Mock };
 
   beforeEach(() => {
     commentRepo = {
@@ -69,9 +74,19 @@ describe('CommentService', () => {
     postRepo = {
       findOne: jest.fn(),
     };
+    assetService = {
+      send: jest.fn((pattern: { cmd: string }) =>
+        of(
+          pattern.cmd === AssetCommands.RETRIEVE
+            ? { profileId: 'commenter-profile', audienceRestrictions: [] }
+            : {}
+        )
+      ),
+    };
     service = new CommentService(
       commentRepo as Repository<Comment>,
-      postRepo as Repository<Post>
+      postRepo as Repository<Post>,
+      assetService as any
     );
   });
 
@@ -111,6 +126,119 @@ describe('CommentService', () => {
       expect(commentRepo.create).toHaveBeenCalledWith({ ...dto, post });
       expect(commentRepo.save).toHaveBeenCalledWith(created);
       expect(result).toBe(created);
+    });
+
+    it('keeps real comment images and intersects them with the parent followers audience', async () => {
+      const assetId = '123e4567-e89b-42d3-a456-426614174000';
+      const content = `<p>${'a'.repeat(
+        25
+      )}</p><img src="/api/asset/${assetId}">`;
+      const dto: CreateCommentDto = {
+        content,
+        userId: 'commenter-user',
+        postId: 'parent-post',
+        profileId: 'commenter-profile',
+      };
+      const post = {
+        id: dto.postId,
+        profileId: 'parent-author-profile',
+        visibility: 'followers',
+        communityId: null,
+      } as Post;
+      postRepo.findOne.mockResolvedValue(post);
+      commentRepo.create.mockImplementation((comment) => comment as Comment);
+      commentRepo.save.mockImplementation(
+        async (comment) => comment as Comment
+      );
+
+      const created = await service.create(dto);
+
+      expect(created.content).toContain(`/api/asset/${assetId}`);
+      expect(assetService.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+        {
+          id: assetId,
+          restrictions: [
+            { type: 'followers', profileId: 'parent-author-profile' },
+          ],
+        }
+      );
+    });
+
+    it('does not narrow a third-party public asset for a restricted parent post', async () => {
+      const assetId = '123e4567-e89b-42d3-a456-426614174000';
+      assetService.send.mockReturnValue(
+        of({ profileId: 'unrelated-owner-profile', audienceRestrictions: [] })
+      );
+      const dto: CreateCommentDto = {
+        content: `<img src="/api/asset/${assetId}">`,
+        userId: 'commenter-user',
+        postId: 'parent-post',
+        profileId: 'commenter-profile',
+      };
+      postRepo.findOne.mockResolvedValue({
+        id: dto.postId,
+        profileId: 'parent-author-profile',
+        visibility: 'followers',
+        communityId: null,
+      } as Post);
+
+      await expect(service.create(dto)).rejects.toMatchObject({
+        error: {
+          statusCode: 403,
+          message:
+            'Comment images must belong to the commenting profile for restricted posts',
+        },
+      });
+      expect(assetService.send).toHaveBeenCalledTimes(1);
+      expect(assetService.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.RETRIEVE },
+        { id: assetId }
+      );
+      expect(commentRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('latches membership for a comment image on an explicitly public private-community post', async () => {
+      const assetId = '123e4567-e89b-42d3-a456-426614174000';
+      (service as any).communityService = {
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ id: 'private-community', isPrivate: true }),
+      };
+      const dto: CreateCommentDto = {
+        content: `<img src="/api/asset/${assetId}">`,
+        userId: 'commenter-user',
+        postId: 'parent-post',
+        profileId: 'commenter-profile',
+      };
+      const post = {
+        id: dto.postId,
+        profileId: 'parent-author-profile',
+        visibility: 'public',
+        publicAudienceExplicit: true,
+        communityId: 'private-community',
+      } as Post;
+      postRepo.findOne.mockResolvedValue(post);
+      commentRepo.create.mockImplementation((comment) => comment as Comment);
+      commentRepo.save.mockImplementation(
+        async (comment) => comment as Comment
+      );
+
+      await service.create(dto);
+
+      expect(assetService.send).toHaveBeenCalledWith(
+        { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+        {
+          id: assetId,
+          restrictions: [
+            {
+              type: 'community',
+              profileId: 'commenter-profile',
+              communityId: 'private-community',
+            },
+          ],
+        }
+      );
     });
 
     it('should throw RpcException if post does not exist', async () => {

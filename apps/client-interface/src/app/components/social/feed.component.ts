@@ -96,6 +96,10 @@ import { ReportDialogComponent } from '../report/report-dialog.component';
 export class FeedComponent implements OnInit, OnDestroy {
   /** Set by audience-aware compose hosts; defaults to public uploads. */
   assetAudienceRestrictions: AssetAudienceRestriction[] = [];
+  postAudienceOptions = [
+    { label: 'Public', value: 'public' as const },
+    { label: 'Followers', value: 'followers' as const },
+  ];
   private contentReadVersion = 0;
   private readonly contentReadCancelled$ = new Subject<void>();
   posts = signal<PostDto[]>([]);
@@ -112,7 +116,12 @@ export class FeedComponent implements OnInit, OnDestroy {
   reportTargetPostId = signal<string | null>(null);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
   communityInfo = signal<{
-    [key: string]: { id: string; name: string; logoUrl?: string };
+    [key: string]: {
+      id: string;
+      name: string;
+      logoUrl?: string;
+      isPrivate?: boolean;
+    };
   }>({});
   themeStyles!: {
     backgroundColor: string;
@@ -440,6 +449,7 @@ export class FeedComponent implements OnInit, OnDestroy {
               [communityId]: {
                 id: community.id,
                 name: community.name,
+                isPrivate: community.isPrivate,
                 logoUrl: community.logoAssetId
                   ? `/api/asset/${community.logoAssetId}`
                   : community.logoUrl,
@@ -455,8 +465,14 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   async createdPost(postData: PostData) {
     console.log('[Feed] create called with postData:', postData);
-    const { title, content, attachments, links, injectedComponentsNew } =
-      postData;
+    const {
+      title,
+      content,
+      attachments,
+      links,
+      injectedComponentsNew,
+      visibility,
+    } = postData;
     const currentProfile = this.profileService.currentUserProfile();
     if (!currentProfile) {
       console.error('No current profile found');
@@ -467,6 +483,7 @@ export class FeedComponent implements OnInit, OnDestroy {
       title,
       content,
       profileId: currentProfile.id,
+      visibility,
     };
 
     let newPost: PostDto | null = null;
@@ -802,15 +819,24 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   private setRealtimePosts(posts: PostDto[]): void {
+    if (this.currentFeed !== 'public') return;
+
     const suppressed = new Set([...this.blockedIds, ...this.mutedIds]);
-    const visiblePosts = posts.filter(
-      (post) => !suppressed.has(post.profileId)
-    );
+    const visiblePosts = posts
+      .filter((post) => this.isPublicFeedPost(post))
+      .filter((post) => !suppressed.has(post.profileId));
     this.posts.set(visiblePosts);
     this.loading.set(false);
     this.loadProfiles(visiblePosts);
     this.loadReactionData(visiblePosts);
     this.loadCommunityInfo(visiblePosts);
+  }
+
+  private isPublicFeedPost(post: PostDto): boolean {
+    return (
+      post.visibility === 'public' &&
+      (!post.communityId || post.publicAudienceExplicit === true)
+    );
   }
 
   onBlockToggle(post: PostDto) {
@@ -1114,11 +1140,21 @@ export class FeedComponent implements OnInit, OnDestroy {
         );
     this.currentContentRead(feedRequest, version).subscribe(
       (posts: PostDto[]) => {
-        this.posts.set(posts);
+        const livePublicPosts = this.posts().filter((post) =>
+          this.isPublicFeedPost(post)
+        );
+        const livePublicPostIds = new Set(
+          livePublicPosts.map((post) => post.id)
+        );
+        const mergedPosts = [
+          ...livePublicPosts,
+          ...posts.filter((post) => !livePublicPostIds.has(post.id)),
+        ];
+        this.posts.set(mergedPosts);
         this.hasMorePosts.set(posts.length >= this.pageSize);
-        this.loadReactionData(posts);
-        this.loadCommunityInfo(posts);
-        this.loadProfiles(posts);
+        this.loadReactionData(mergedPosts);
+        this.loadCommunityInfo(mergedPosts);
+        this.loadProfiles(mergedPosts);
         this.loading.set(false);
       }
     );

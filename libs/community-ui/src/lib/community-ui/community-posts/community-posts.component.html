@@ -71,6 +71,8 @@
       <lib-social-compose
         [title]="'Create Post'"
         [profileId]="currentProfileId"
+        [communityId]="community()?.id"
+        [audienceOptions]="communityAudienceOptions"
         (postSubmitted)="createdPost($event)"
       ></lib-social-compose>
       } @else {

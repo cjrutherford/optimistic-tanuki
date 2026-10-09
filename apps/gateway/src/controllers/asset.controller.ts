@@ -119,7 +119,7 @@ export class AssetController {
         );
       }
       if (asset.audienceRestrictions?.length) {
-        this.assertUploadAudienceRestrictions(asset, user);
+        await this.assertUploadAudienceRestrictions(asset, user);
       }
       if (asset.communityId) {
         const audience = await this.assertUploadAudience(
@@ -197,7 +197,10 @@ export class AssetController {
         appScope || undefined
       );
       const legacyRestrictions = legacyReferences.restrictions.filter(
-        (restriction) => restriction.profileId === asset.profileId
+        (restriction) =>
+          restriction.type === 'community'
+            ? restriction.profileId === asset.profileId
+            : true
       );
       if (legacyRestrictions.length) {
         await firstValueFrom(
@@ -215,11 +218,15 @@ export class AssetController {
       if (
         storedRestrictions.some(
           (restriction) =>
-            restriction.profileId !== asset.profileId ||
-            !['owner', 'followers'].includes(restriction.type) ||
+            !['owner', 'followers', 'community'].includes(restriction.type) ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
               restriction.profileId
-            )
+            ) ||
+            (restriction.type === 'community' &&
+              (typeof restriction.communityId !== 'string' ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                  restriction.communityId
+                )))
         )
       ) {
         throw new NotFoundException('Asset not found');
@@ -227,7 +234,9 @@ export class AssetController {
       const restrictions = [
         ...new Map(
           [...storedRestrictions, ...legacyRestrictions].map((restriction) => [
-            `${restriction.type}:${restriction.profileId}`,
+            `${restriction.type}:${restriction.profileId}:${
+              'communityId' in restriction ? restriction.communityId : ''
+            }`,
             restriction,
           ])
         ).values(),
@@ -321,8 +330,22 @@ export class AssetController {
             ) {
               throw new NotFoundException('Asset not found');
             }
+          } else if (restriction.type === 'community') {
+            if (
+              restriction.profileId !== asset.profileId ||
+              !(await this.isCommunityMember(
+                restriction.communityId,
+                user.userId
+              ))
+            ) {
+              throw new NotFoundException('Asset not found');
+            }
           } else if (
             user.profileId !== restriction.profileId &&
+            !(await this.isProfileOwnedByUser(
+              restriction.profileId,
+              user.userId
+            )) &&
             !(await this.isProfileFollowing(
               user.profileId,
               restriction.profileId
@@ -472,10 +495,10 @@ export class AssetController {
     return profile?.userId === userId;
   }
 
-  private assertUploadAudienceRestrictions(
+  private async assertUploadAudienceRestrictions(
     asset: CreateAssetDto,
     user: UserDetails
-  ): void {
+  ): Promise<void> {
     const restrictions = asset.audienceRestrictions ?? [];
     if (!Array.isArray(restrictions)) {
       throw new HttpException('Invalid asset audience restriction', 400);
@@ -483,13 +506,30 @@ export class AssetController {
     for (const restriction of restrictions) {
       if (
         !restriction ||
-        !['owner', 'followers'].includes(restriction.type) ||
-        restriction.profileId !== asset.profileId ||
+        !['owner', 'followers', 'community'].includes(restriction.type) ||
+        (restriction.type === 'community' &&
+          restriction.profileId !== asset.profileId) ||
+        (restriction.type === 'followers' &&
+          (!restriction.profileId ||
+            (restriction.profileId !== asset.profileId &&
+              !(await this.isProfileFollowing(
+                user.profileId,
+                restriction.profileId
+              ))))) ||
         !user?.userId ||
         !user.profileId
       ) {
         throw new ForbiddenException(
           'Asset audience must match the authenticated asset owner'
+        );
+      }
+      if (
+        restriction.type === 'community' &&
+        (!restriction.communityId ||
+          !(await this.isCommunityMember(restriction.communityId, user.userId)))
+      ) {
+        throw new ForbiddenException(
+          'Asset audience requires approved community membership'
         );
       }
     }

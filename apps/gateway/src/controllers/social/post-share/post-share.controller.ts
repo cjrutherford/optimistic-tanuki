@@ -15,7 +15,11 @@ import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { PostShareCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreatePostShareDto, PostShareDto } from '@optimistic-tanuki/models';
+import {
+  CreatePostShareDto,
+  PostShareDto,
+  SharePostRequestDto,
+} from '@optimistic-tanuki/models';
 
 @UseGuards(AuthGuard)
 @ApiTags('post-shares')
@@ -38,17 +42,13 @@ export class PostShareController {
   })
   async sharePost(
     @Param('id') originalPostId: string,
-    @Body()
-    shareData: {
-      comment?: string;
-      visibility?: 'public' | 'followers' | 'community';
-      communityId?: string;
-    },
+    @Body() shareData: SharePostRequestDto,
     @User() user: UserDetails
   ): Promise<PostShareDto> {
-    const createPostShareDto: CreatePostShareDto = {
+    const createPostShareDto: CreatePostShareDto & { userId: string } = {
       originalPostId,
       sharedById: user.profileId,
+      userId: user.userId,
       comment: shareData.comment,
       visibility: shareData.visibility,
       communityId: shareData.communityId,
@@ -70,12 +70,13 @@ export class PostShareController {
     type: [PostShareDto],
   })
   async getPostShares(
-    @Param('id') originalPostId: string
+    @Param('id') originalPostId: string,
+    @User() user: UserDetails
   ): Promise<PostShareDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PostShareCommands.FIND_BY_POST },
-        { originalPostId }
+        { originalPostId, profileId: user.profileId, userId: user.userId }
       )
     );
   }
@@ -89,12 +90,13 @@ export class PostShareController {
     type: [PostShareDto],
   })
   async getSharedPosts(
-    @Param('profileId') sharedById: string
+    @Param('profileId') sharedById: string,
+    @User() user: UserDetails
   ): Promise<PostShareDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PostShareCommands.FIND_BY_PROFILE },
-        { sharedById }
+        { sharedById, profileId: user.profileId, userId: user.userId }
       )
     );
   }
@@ -106,9 +108,15 @@ export class PostShareController {
     status: 200,
     description: 'Post share deleted successfully.',
   })
-  async deleteShare(@Param('id') id: string): Promise<{ success: boolean }> {
+  async deleteShare(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<{ success: boolean }> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PostShareCommands.DELETE }, { id })
+      this.socialClient.send(
+        { cmd: PostShareCommands.DELETE },
+        { id, sharedById: user.profileId }
+      )
     );
   }
 }

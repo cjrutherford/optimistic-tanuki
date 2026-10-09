@@ -337,12 +337,19 @@ describe('AppController', () => {
     expect(postService.findAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: [
-          {
+          expect.objectContaining({
             visibility: 'public',
             communityId: expect.anything(),
             moderationStatus: 'visible',
             isScheduled: false,
-          },
+          }),
+          expect.objectContaining({
+            visibility: 'public',
+            publicAudienceExplicit: true,
+            communityId: expect.anything(),
+            moderationStatus: 'visible',
+            isScheduled: false,
+          }),
         ],
       })
     );
@@ -352,12 +359,19 @@ describe('AppController', () => {
     await controller.findOnePost('restricted-post');
     expect(postService.findOne).toHaveBeenCalledWith('restricted-post', {
       where: [
-        {
+        expect.objectContaining({
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
     });
   });
@@ -368,12 +382,19 @@ describe('AppController', () => {
     expect(result).toEqual({ id: 1 });
     expect(postService.findOne).toHaveBeenCalledWith('1', {
       where: [
-        {
+        expect.objectContaining({
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
     });
   });
@@ -626,13 +647,21 @@ describe('AppController', () => {
 
     expect(postService.findAll).toHaveBeenCalledWith({
       where: [
-        {
+        expect.objectContaining({
           title: Like('%Test%'),
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
       take: 2,
       // skip: 0,
@@ -665,13 +694,21 @@ describe('AppController', () => {
 
     expect(postService.findAll).toHaveBeenCalledWith({
       where: [
-        {
+        expect.objectContaining({
           title: Like('%Test%'),
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
       take: 100, // Should be capped at MAX_LIMIT
     });
@@ -685,13 +722,21 @@ describe('AppController', () => {
 
     expect(postService.findAll).toHaveBeenCalledWith({
       where: [
-        {
+        expect.objectContaining({
           title: Like('%Test%'),
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
       take: 20, // Should default to 20
     });
@@ -702,13 +747,21 @@ describe('AppController', () => {
 
     expect(postService.findAll).toHaveBeenCalledWith({
       where: [
-        {
+        expect.objectContaining({
           title: Like('%Test%'),
           visibility: 'public',
           communityId: expect.anything(),
           moderationStatus: 'visible',
           isScheduled: false,
-        },
+        }),
+        expect.objectContaining({
+          title: Like('%Test%'),
+          visibility: 'public',
+          publicAudienceExplicit: true,
+          communityId: expect.anything(),
+          moderationStatus: 'visible',
+          isScheduled: false,
+        }),
       ],
       take: 20, // Should default to 20
     });
@@ -746,7 +799,8 @@ describe('AppController', () => {
     await controller.findAllPosts({} as any, {} as any, 'claimed-profile');
     const branches = postService.findAll.mock.calls.at(-1)![0].where as any[];
     const communityScope = branches[0].communityId;
-    expect(communityScope.objectLiteralParameters).toEqual({
+    expect(communityScope.type).toBe('and');
+    expect(communityScope.value[1].objectLiteralParameters).toEqual({
       pv_account_id: '__anonymous__',
     });
   });
@@ -791,12 +845,170 @@ describe('AppController', () => {
 
     expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
     expect(privacyService.getActiveMutedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(followService.getFollowing).toHaveBeenCalledWith('viewer-1');
     expect(queryBuilder.where.mock.calls[0][0]).toMatch(/^\(.* OR .*\)$/);
+    expect(queryBuilder.where.mock.calls[0][0]).toContain(
+      'post.profileId IN (:...followingIds)'
+    );
+    expect(queryBuilder.where.mock.calls[0][0]).not.toContain(
+      'post.userId IN (:...followingIds)'
+    );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'post.profileId NOT IN (:...suppressedProfileIds)',
       { suppressedProfileIds: ['blocked-1', 'muted-1'] }
     );
     expect(result).toEqual([]);
+  });
+
+  it('rejects sharing a followers-only source with a public audience', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'sharer-profile',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      profileId: 'author',
+      visibility: 'followers',
+      communityId: null,
+    } as any);
+    const failure = await controller
+      .createPostShare({
+        originalPostId: 'source',
+        sharedById: 'sharer-profile',
+        userId: 'account',
+        visibility: 'public',
+      } as any)
+      .catch((error) => error);
+    expect(failure.getError()).toMatchObject({
+      statusCode: 403,
+      message: 'A restricted post cannot be shared publicly',
+    });
+    expect(postService.findOne).toHaveBeenCalledWith(
+      'source',
+      expect.objectContaining({ where: expect.any(Array) })
+    );
+    expect((controller as any).postShareService.create).not.toHaveBeenCalled();
+  });
+
+  it('uses a source-compatible default audience when sharing a followers-only post', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'sharer-profile',
+        followedProfileIds: ['author'],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      profileId: 'author',
+      visibility: 'followers',
+      communityId: null,
+    } as any);
+    const service = (controller as any).postShareService;
+    service.create.mockImplementation(async (input: any) => input);
+    await expect(
+      controller.createPostShare({
+        originalPostId: 'source',
+        sharedById: 'sharer-profile',
+        userId: 'account',
+      } as any)
+    ).resolves.toMatchObject({
+      visibility: 'followers',
+      sharedById: 'sharer-profile',
+    });
+  });
+
+  it('hides a share when its original post is no longer visible', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue(undefined);
+    const service = (controller as any).postShareService;
+    service.findByPost.mockResolvedValue([
+      {
+        id: 'share',
+        originalPostId: 'source',
+        sharedById: 'sharer',
+        visibility: 'public',
+      },
+    ]);
+    await expect(
+      controller.findPostSharesByPost({
+        originalPostId: 'source',
+        profileId: 'viewer',
+        userId: 'account',
+      } as any)
+    ).resolves.toEqual([]);
+    expect(postService.findOne).toHaveBeenCalledWith(
+      'source',
+      expect.objectContaining({ where: expect.any(Array) })
+    );
+  });
+
+  it('hides shares authored by a profile the viewer has blocked', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: ['sharer'],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      visibility: 'public',
+      communityId: null,
+    } as any);
+    const service = (controller as any).postShareService;
+    service.findByPost.mockResolvedValue([
+      {
+        id: 'share',
+        originalPostId: 'source',
+        sharedById: 'sharer',
+        visibility: 'public',
+      },
+    ]);
+    await expect(
+      controller.findPostSharesByPost({
+        originalPostId: 'source',
+        profileId: 'viewer',
+        userId: 'account',
+      } as any)
+    ).resolves.toEqual([]);
+    expect(postService.findOne).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unsupported share audience value', async () => {
+    jest
+      .spyOn(controller as any, 'buildPostVisibilityScope')
+      .mockResolvedValue({
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      });
+    postService.findOne.mockResolvedValue({
+      id: 'source',
+      visibility: 'public',
+      communityId: null,
+    } as any);
+    const failure = await controller
+      .createPostShare({
+        originalPostId: 'source',
+        sharedById: 'viewer',
+        userId: 'account',
+        visibility: 'everyone',
+      } as any)
+      .catch((error) => error);
+    expect(failure.getError()).toMatchObject({
+      statusCode: 400,
+      message: 'Invalid share visibility',
+    });
   });
 
   it('should call follow methods', async () => {

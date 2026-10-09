@@ -442,6 +442,7 @@ export class ForumController {
     type: ForumPostDto,
   })
   @Public()
+  @UseGuards(AuthGuard)
   @Get('post/:id')
   async getForumPost(
     @Param('id') id: string,

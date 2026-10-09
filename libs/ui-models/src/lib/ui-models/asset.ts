@@ -1,6 +1,7 @@
 export interface AssetAudienceRestriction {
-  type: 'owner' | 'followers';
+  type: 'owner' | 'followers' | 'community';
   profileId: string;
+  communityId?: string;
 }
 
 export interface CreateAssetDto {

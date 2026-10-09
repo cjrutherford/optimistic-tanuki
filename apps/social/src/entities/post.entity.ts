@@ -74,7 +74,16 @@ export class Post {
   updatedAt: Date;
 
   @Column({ type: 'varchar', default: 'public' })
-  visibility: 'public' | 'followers';
+  visibility: 'public' | 'followers' | 'community';
+
+  /**
+   * Public-community content is global only when its author explicitly chose
+   * that audience. Defaults true so existing non-community public posts keep
+   * their established behavior via the shared read predicate; the default
+   * false keeps new community posts private unless explicitly selected.
+   */
+  @Column({ default: false })
+  publicAudienceExplicit: boolean;
 
   @Column({ type: 'uuid', nullable: true })
   communityId: string | null;

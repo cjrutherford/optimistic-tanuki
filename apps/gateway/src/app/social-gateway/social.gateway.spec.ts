@@ -1,16 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SocialGateway } from './social.gateway';
 import { PostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { throwError, of, NEVER } from 'rxjs';
+import { throwError, of, NEVER, Subject } from 'rxjs';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
 describe('SocialGateway', () => {
   let gateway: SocialGateway;
   let mockSocialClient: any;
+  let mockSocketSessionAuth: any;
 
   beforeEach(async () => {
     mockSocialClient = {
       send: jest.fn().mockReturnValue(of([])),
+    };
+    mockSocketSessionAuth = {
+      authenticate: jest.fn(),
+      assertProfile: jest.fn((_client: unknown, profileId: string) => ({
+        userId: 'user-id',
+        profileId,
+      })),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -22,13 +30,7 @@ describe('SocialGateway', () => {
         },
         {
           provide: SocketSessionAuthService,
-          useValue: {
-            authenticate: jest.fn(),
-            assertProfile: jest.fn((_client: unknown, profileId: string) => ({
-              userId: 'user-id',
-              profileId,
-            })),
-          },
+          useValue: mockSocketSessionAuth,
         },
       ],
     }).compile();
@@ -38,6 +40,136 @@ describe('SocialGateway', () => {
 
   it('should be defined', () => {
     expect(gateway).toBeDefined();
+  });
+
+  it('waits for cookie-session authentication before accepting initial feed messages', async () => {
+    let resolveAuthentication!: (user: {
+      userId: string;
+      profileId: string;
+    }) => void;
+    const authentication = new Promise<{
+      userId: string;
+      profileId: string;
+    }>((resolve) => {
+      resolveAuthentication = resolve;
+    });
+    mockSocketSessionAuth.authenticate.mockImplementation(
+      async (client: any) => {
+        const user = await authentication;
+        client.data.user = user;
+        return user;
+      }
+    );
+    mockSocketSessionAuth.assertProfile.mockImplementation(
+      (client: any, requestedProfileId: string) => {
+        const user = client.data.user;
+        if (!user || user.profileId !== requestedProfileId) {
+          throw new Error('Socket session is not ready');
+        }
+        return user;
+      }
+    );
+    const client: any = {
+      id: 'socket-before-auth-ready',
+      data: {},
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    const feed = [{ id: 'public-post', visibility: 'public' }];
+    mockSocialClient.send.mockReturnValue(of(feed));
+
+    const connection = gateway.handleConnection(client);
+    const initialMessages = Promise.allSettled([
+      gateway.handleGetFeed({ profileId: 'reader' }, client),
+      gateway.handleSubscribePosts({ profileId: 'reader' }, client),
+    ]);
+    resolveAuthentication({ userId: 'reader-account', profileId: 'reader' });
+    await connection;
+    const messageResults = await initialMessages;
+
+    expect(messageResults.map((result) => result.status)).toEqual([
+      'fulfilled',
+      'fulfilled',
+    ]);
+    expect(client.emit).toHaveBeenCalledWith('feed', feed);
+    expect(client.emit).toHaveBeenCalledWith('subscribed', {
+      type: 'posts',
+      postIds: ['all'],
+    });
+  });
+
+  it('disconnects and never subscribes when cookie-session validation fails', async () => {
+    let rejectAuthentication!: (error: Error) => void;
+    const authentication = new Promise<never>((_resolve, reject) => {
+      rejectAuthentication = reject;
+    });
+    mockSocketSessionAuth.authenticate.mockReturnValue(authentication);
+    const client: any = {
+      id: 'socket-rejected-auth',
+      data: {},
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+
+    const connection = gateway.handleConnection(client);
+    const subscription = Promise.allSettled([
+      gateway.handleSubscribePosts({ profileId: 'reader' }, client),
+    ]);
+    rejectAuthentication(new Error('invalid session'));
+    await connection;
+    const [subscriptionResult] = await subscription;
+
+    expect(subscriptionResult.status).toBe('rejected');
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(client.emit).not.toHaveBeenCalledWith(
+      'subscribed',
+      expect.anything()
+    );
+    expect(gateway['connectedClients'].size).toBe(0);
+  });
+
+  it('does not register or serve messages when a socket disconnects during authentication', async () => {
+    let resolveAuthentication!: (user: {
+      userId: string;
+      profileId: string;
+    }) => void;
+    const authentication = new Promise<{
+      userId: string;
+      profileId: string;
+    }>((resolve) => {
+      resolveAuthentication = resolve;
+    });
+    mockSocketSessionAuth.authenticate.mockImplementation(
+      async (client: any) => {
+        const user = await authentication;
+        client.data.user = user;
+        return user;
+      }
+    );
+    const client: any = {
+      id: 'socket-disconnected-before-auth-ready',
+      data: {},
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+
+    const connection = gateway.handleConnection(client);
+    const pendingMessages = Promise.allSettled([
+      gateway.handleGetFeed({ profileId: 'reader' }, client),
+      gateway.handleSubscribePosts({ profileId: 'reader' }, client),
+    ]);
+    gateway.handleDisconnect(client);
+    resolveAuthentication({ userId: 'reader-account', profileId: 'reader' });
+    await connection;
+    const messageResults = await pendingMessages;
+
+    expect(messageResults.map((result) => result.status)).toEqual([
+      'rejected',
+      'rejected',
+    ]);
+    expect(mockSocialClient.send).not.toHaveBeenCalled();
+    expect(client.emit).not.toHaveBeenCalled();
+    expect(gateway['connectedClients'].size).toBe(0);
   });
 
   describe('handleGetFeed', () => {
@@ -77,6 +209,43 @@ describe('SocialGateway', () => {
 
       expect(mockClient.emit).toHaveBeenCalledWith('error', {
         message: 'Failed to fetch feed',
+      });
+    });
+
+    it('does not emit a feed snapshot started before creation and subscription', async () => {
+      const client: any = { emit: jest.fn() };
+      const staleFeed = new Subject<any[]>();
+      const newPost = { id: 'new-public-post', content: 'new' };
+      let markFeedStarted!: () => void;
+      const feedStarted = new Promise<void>((resolve) => {
+        markFeedStarted = resolve;
+      });
+      mockSocialClient.send.mockImplementation((pattern: any) => {
+        if (pattern.cmd === PostCommands.FIND_MANY) {
+          markFeedStarted();
+          return staleFeed;
+        }
+        return of(newPost);
+      });
+
+      const pendingFeed = gateway.handleGetFeed(
+        { profileId: 'reader' },
+        client
+      );
+      await feedStarted;
+      await gateway.broadcastPostCreated(newPost);
+      await gateway.handleSubscribePosts({ profileId: 'reader' }, client);
+      staleFeed.next([{ id: 'old-post', content: 'old snapshot' }]);
+      staleFeed.complete();
+      await pendingFeed;
+
+      expect(client.emit).not.toHaveBeenCalledWith('post_created', newPost);
+      expect(client.emit).not.toHaveBeenCalledWith('feed', [
+        { id: 'old-post', content: 'old snapshot' },
+      ]);
+      expect(client.emit).toHaveBeenCalledWith('subscribed', {
+        type: 'posts',
+        postIds: ['all'],
       });
     });
   });

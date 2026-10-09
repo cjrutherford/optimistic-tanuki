@@ -56,12 +56,105 @@ describe('PostComponent', () => {
       createdAt: new Date(),
       userId: '123',
       profileId: '456',
+      visibility: 'public',
     } as PostDto;
     fixture.detectChanges();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('restricts pending comment images to the parent audience using the active profile id', async () => {
+    const upload = jest.fn().mockResolvedValue('/api/asset/image-id');
+    component.profileId = 'commenter-profile';
+    component.currentUserId = 'account-id';
+    component.imageUploadCallback = upload as any;
+    component.content = {
+      ...component.content,
+      visibility: 'followers',
+      profileId: 'parent-author',
+    } as PostDto;
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [{ type: 'followers', profileId: 'parent-author' }]
+    );
+
+    component.content = {
+      ...component.content,
+      visibility: 'community',
+      communityId: 'community-id',
+    } as PostDto;
+    component.communityInfo = {
+      id: 'community-id',
+      name: 'Community',
+      isPrivate: false,
+    };
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenLastCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [
+        {
+          type: 'community',
+          profileId: 'commenter-profile',
+          communityId: 'community-id',
+        },
+      ]
+    );
+  });
+
+  it('fails closed while community privacy metadata has not loaded', async () => {
+    const upload = jest.fn().mockResolvedValue('/api/asset/image-id');
+    component.profileId = 'commenter-profile';
+    component.imageUploadCallback = upload as any;
+    component.content = {
+      ...component.content,
+      visibility: 'public',
+      publicAudienceExplicit: true,
+      communityId: 'private-community',
+    } as PostDto;
+
+    await expect(
+      component.commentImageUploadCallback!(
+        'data:image/png;base64,AA==',
+        'image.png',
+        []
+      )
+    ).rejects.toThrow('Community audience is still loading');
+    expect(upload).not.toHaveBeenCalled();
+
+    component.communityInfo = {
+      id: 'private-community',
+      name: 'Private Community',
+      isPrivate: true,
+    };
+    await component.commentImageUploadCallback!(
+      'data:image/png;base64,AA==',
+      'image.png',
+      []
+    );
+    expect(upload).toHaveBeenCalledWith(
+      'data:image/png;base64,AA==',
+      'image.png',
+      [
+        {
+          type: 'community',
+          profileId: 'commenter-profile',
+          communityId: 'private-community',
+        },
+      ]
+    );
   });
 
   it('should initialize profile with default values', () => {

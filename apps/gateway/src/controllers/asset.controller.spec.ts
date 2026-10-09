@@ -133,6 +133,70 @@ describe('AssetController', () => {
     );
   });
 
+  it('allows a commenter to upload an asset restricted to the followed parent author', async () => {
+    const social = (controller as any).socialService;
+    social.send.mockImplementation((pattern: { cmd: string }) =>
+      pattern.cmd === FollowCommands.GET_FOLLOWING
+        ? of([{ followeeId: '123e4567-e89b-42d3-a456-426614174001' }])
+        : of({ restrictions: [], communityIds: [] })
+    );
+    const upload = {
+      profileId: '123e4567-e89b-42d3-a456-426614174099',
+      audienceRestrictions: [
+        {
+          type: 'followers',
+          profileId: '123e4567-e89b-42d3-a456-426614174001',
+        },
+      ],
+    } as any;
+    await expect(
+      controller.createAsset(
+        upload,
+        {
+          userId: 'user-1',
+          profileId: upload.profileId,
+        } as any,
+        null
+      )
+    ).resolves.toEqual({});
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.CREATE },
+      upload
+    );
+  });
+
+  it('rejects a commenter upload restricted to an author they do not follow', async () => {
+    const social = (controller as any).socialService;
+    social.send.mockImplementation((pattern: { cmd: string }) =>
+      pattern.cmd === FollowCommands.GET_FOLLOWING
+        ? of([])
+        : of({ restrictions: [], communityIds: [] })
+    );
+    const upload = {
+      profileId: '123e4567-e89b-42d3-a456-426614174099',
+      audienceRestrictions: [
+        {
+          type: 'followers',
+          profileId: '123e4567-e89b-42d3-a456-426614174001',
+        },
+      ],
+    } as any;
+    await expect(
+      controller.createAsset(
+        upload,
+        {
+          userId: 'user-1',
+          profileId: upload.profileId,
+        } as any,
+        null
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(assetService.send).not.toHaveBeenCalledWith(
+      { cmd: AssetCommands.CREATE },
+      upload
+    );
+  });
+
   it('rejects HTTP sourcePath imports while preserving the trusted RPC contract', async () => {
     await expect(
       controller.createAsset(
@@ -568,21 +632,62 @@ describe('AssetController', () => {
   });
 
   it.each([
-    ['current follower', true],
-    ['former follower', false],
+    [
+      'current follower',
+      true,
+      '123e4567-e89b-42d3-a456-426614174001',
+      '123e4567-e89b-42d3-a456-426614174001',
+    ],
+    [
+      'former follower',
+      false,
+      '123e4567-e89b-42d3-a456-426614174001',
+      '123e4567-e89b-42d3-a456-426614174001',
+    ],
+    [
+      'commenter following the parent author',
+      true,
+      '123e4567-e89b-42d3-a456-426614174099',
+      '123e4567-e89b-42d3-a456-426614174001',
+    ],
+    [
+      'commenter after parent author unfollow',
+      false,
+      '123e4567-e89b-42d3-a456-426614174099',
+      '123e4567-e89b-42d3-a456-426614174001',
+    ],
+    [
+      'asset owner after parent author unfollow',
+      false,
+      'viewer-profile',
+      '123e4567-e89b-42d3-a456-426614174001',
+    ],
+    [
+      'parent author alternate profile',
+      false,
+      '123e4567-e89b-42d3-a456-426614174099',
+      '123e4567-e89b-42d3-a456-426614174001',
+      'alternate-profile',
+      'audience-owner-user',
+      true,
+    ],
   ])(
     'checks the live follow graph for a %s typed asset',
-    async (_label, follows) => {
+    async (
+      _label,
+      follows,
+      assetProfileId,
+      audienceProfileId,
+      viewerProfileId = 'viewer-profile',
+      viewerUserId = 'viewer-user',
+      alternateOwner = false
+    ) => {
       const social = (controller as any).socialService;
       social.send.mockImplementation((pattern: { cmd: string }) =>
         pattern.cmd === PostCommands.FIND_ASSET_AUDIENCES
           ? of({ restrictions: [], communityIds: [] })
           : pattern.cmd === FollowCommands.GET_FOLLOWING
-          ? of(
-              follows
-                ? [{ followeeId: '123e4567-e89b-42d3-a456-426614174001' }]
-                : []
-            )
+          ? of(follows ? [{ followeeId: audienceProfileId }] : [])
           : of({
               id: 'community-1',
               appScope: 'client-interface',
@@ -590,19 +695,25 @@ describe('AssetController', () => {
             })
       );
       (controller as any).classifiedsService.send.mockReturnValue(of([]));
-      (controller as any).profileService.send.mockReturnValue(
-        of({ userId: 'asset-owner-user' })
+      (controller as any).profileService.send.mockImplementation(
+        (_pattern: unknown, payload: { id: string }) =>
+          of({
+            userId:
+              alternateOwner && payload.id === audienceProfileId
+                ? 'audience-owner-user'
+                : 'asset-owner-user',
+          })
       );
       assetService.send.mockImplementation((pattern: { cmd: string }) =>
         pattern.cmd === AssetCommands.RETRIEVE
           ? of({
               id: 'followers-asset',
-              profileId: '123e4567-e89b-42d3-a456-426614174001',
+              profileId: assetProfileId,
               audienceCommunityIds: [],
               audienceRestrictions: [
                 {
                   type: 'followers',
-                  profileId: '123e4567-e89b-42d3-a456-426614174001',
+                  profileId: audienceProfileId,
                 },
               ],
             })
@@ -622,20 +733,27 @@ describe('AssetController', () => {
       res.status.mockReturnValue(res);
 
       const read = controller.getAssetById('followers-asset', res, undefined, {
-        userId: 'viewer-user',
-        profileId: 'viewer-profile',
+        userId: viewerUserId,
+        profileId: viewerProfileId,
       } as any);
-      if (follows) {
+      if (follows || alternateOwner) {
         await expect(read).resolves.toBeUndefined();
         expect(fetchSpy).toHaveBeenCalled();
       } else {
         await expect(read).rejects.toMatchObject({ status: 404 });
         expect(fetchSpy).not.toHaveBeenCalled();
       }
-      expect(social.send).toHaveBeenCalledWith(
-        { cmd: FollowCommands.GET_FOLLOWING },
-        { followerId: 'viewer-profile' }
-      );
+      if (alternateOwner) {
+        expect(social.send).not.toHaveBeenCalledWith(
+          { cmd: FollowCommands.GET_FOLLOWING },
+          expect.anything()
+        );
+      } else {
+        expect(social.send).toHaveBeenCalledWith(
+          { cmd: FollowCommands.GET_FOLLOWING },
+          { followerId: viewerProfileId }
+        );
+      }
       fetchSpy.mockRestore();
     }
   );

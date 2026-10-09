@@ -69,15 +69,19 @@ describe('SearchService (visibility scope wiring)', () => {
 
     const where = postRepo.find.mock.calls[0][0]?.where as any[];
     expect(Array.isArray(where)).toBe(true);
-    // Two base fragments (title, content) each expanded into
-    // public + followers + own branches for an authenticated viewer.
-    expect(where).toHaveLength(6);
-    const publicBranch = where.find((b) => b.visibility === 'public');
+    // Each title/content fragment is expanded across the separate
+    // non-community-public, explicit-community-public, member, legacy-member,
+    // follower and own visibility branches.
+    expect(where).toHaveLength(12);
+    const publicBranch = where.find(
+      (b) => b.visibility === 'public' && !b.publicAudienceExplicit
+    );
     expect(publicBranch.moderationStatus).toBe('visible');
     expect(publicBranch.isScheduled).toBe(false);
     expect(publicBranch.profileId).toBeDefined();
-    expect(publicBranch.communityId.type).toBe('raw');
-    expect(publicBranch.communityId.objectLiteralParameters).toEqual({
+    expect(publicBranch.communityId.type).toBe('and');
+    expect(publicBranch.communityId.value[1].type).toBe('raw');
+    expect(publicBranch.communityId.value[1].objectLiteralParameters).toEqual({
       pv_account_id: 'account-1',
     });
   });
@@ -86,14 +90,18 @@ describe('SearchService (visibility scope wiring)', () => {
     await service.search('hello', { type: 'posts' });
 
     const where = postRepo.find.mock.calls[0][0]?.where as any[];
-    // No viewer -> one public branch per base fragment (title, content).
-    expect(where).toHaveLength(2);
+    // Each title/content fragment has non-community and explicitly-public
+    // community branches; anonymous reads cannot see the member-default branch.
+    expect(where).toHaveLength(4);
     for (const branch of where) {
       expect(branch.visibility).toBe('public');
       expect(branch.moderationStatus).toBe('visible');
       expect(branch.isScheduled).toBe(false);
       expect(branch.profileId).toBeUndefined();
     }
+    expect(
+      where.filter((branch) => branch.publicAudienceExplicit === true)
+    ).toHaveLength(2);
   });
 
   it('getTrending() applies the visibility scope to the aggregate query', async () => {

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
+import { RpcException } from '@nestjs/microservices';
 import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Post } from '../../entities/post.entity';
@@ -48,6 +49,7 @@ export class PostService {
     profileId?: string;
     visibility?: string;
     communityId?: string;
+    publicAudienceExplicit?: boolean;
   }): Promise<void> {
     // Older clients emitted /asset/:id while current clients use /api/asset/:id.
     // Both forms must latch before a content mutation can remove the first read path.
@@ -66,7 +68,10 @@ export class PostService {
     const community = post.communityId
       ? await this.communityService.findOne(post.communityId)
       : undefined;
-    const isPrivate = post.visibility === 'followers' || !!community?.isPrivate;
+    const isPrivate =
+      post.visibility === 'followers' ||
+      post.visibility === 'community' ||
+      !!community?.isPrivate;
     for (const id of ids) {
       const asset = await firstValueFrom(
         this.assetService
@@ -81,9 +86,15 @@ export class PostService {
         : [];
       const compatibleRestrictions = storedRestrictions.every(
         (restriction) =>
-          restriction.type === 'followers' &&
-          post.visibility === 'followers' &&
-          restriction.profileId === post.profileId
+          (restriction.type === 'followers' &&
+            post.visibility === 'followers' &&
+            restriction.profileId === post.profileId) ||
+          (restriction.type === 'community' &&
+            (post.visibility === 'community' ||
+              (post.visibility === 'public' &&
+                post.publicAudienceExplicit === false)) &&
+            restriction.profileId === post.profileId &&
+            restriction.communityId === post.communityId)
       );
       const compatibleCommunities = storedCommunities.every(
         (communityId) => !!community?.isPrivate && communityId === community.id
@@ -107,6 +118,30 @@ export class PostService {
             .pipe(timeout({ first: 5000 }))
         );
       }
+      if (
+        (post.visibility === 'community' ||
+          (post.visibility === 'public' &&
+            post.publicAudienceExplicit === false)) &&
+        post.communityId
+      ) {
+        await firstValueFrom(
+          this.assetService
+            .send(
+              { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+              {
+                id,
+                restrictions: [
+                  {
+                    type: 'community',
+                    profileId: post.profileId,
+                    communityId: post.communityId,
+                  },
+                ],
+              }
+            )
+            .pipe(timeout({ first: 5000 }))
+        );
+      }
       if (isPrivate && community?.isPrivate) {
         await firstValueFrom(
           this.assetService
@@ -117,6 +152,78 @@ export class PostService {
             .pipe(timeout({ first: 5000 }))
         );
       }
+    }
+  }
+
+  private async getCommentAssetReferences(
+    post: Post
+  ): Promise<Array<{ id: string; profileId: string }>> {
+    const community = post.communityId
+      ? await this.communityService.findOne(post.communityId)
+      : undefined;
+    const memberOnly =
+      post.visibility === 'community' ||
+      (post.visibility === 'public' &&
+        post.publicAudienceExplicit === false &&
+        !!post.communityId) ||
+      !!community?.isPrivate;
+    if (post.visibility !== 'followers' && !memberOnly) return [];
+    const comments =
+      (await this.commentRepo.find({
+        where: { post: { id: post.id } },
+      })) ?? [];
+    const pattern =
+      /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi;
+    const references: Array<{ id: string; profileId: string }> = [];
+    for (const comment of comments) {
+      const ids = [
+        ...new Set(
+          (comment.content.match(pattern) ?? []).map(
+            (match) => match.split('/').pop()!
+          )
+        ),
+      ];
+      for (const id of ids) {
+        if (!this.assetService)
+          throw new Error('Asset audience service unavailable');
+        const asset = await firstValueFrom(
+          this.assetService
+            .send({ cmd: AssetCommands.RETRIEVE }, { id })
+            .pipe(timeout({ first: 5000 }))
+        );
+        // Only the commenter can authorize narrowing their asset. Reject the
+        // parent change rather than silently privatizing a third party's URL.
+        if (asset.profileId !== comment.profileId) {
+          throw new RpcException({
+            statusCode: 400,
+            message:
+              'Restricted posts cannot contain another profile’s comment image',
+          });
+        }
+        references.push({ id, profileId: comment.profileId });
+      }
+    }
+    return references;
+  }
+
+  private async latchCommentAssetReferences(
+    post: Post,
+    references: Array<{ id: string; profileId: string }>
+  ): Promise<void> {
+    if (references.length && !this.assetService) {
+      throw new Error('Asset audience service unavailable');
+    }
+    for (const { id, profileId } of references) {
+      const restriction =
+        post.visibility === 'followers'
+          ? { type: 'followers', profileId: post.profileId }
+          : { type: 'community', profileId, communityId: post.communityId };
+      await firstValueFrom(
+        this.assetService!.send(
+          { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+          { id, restrictions: [restriction] }
+        ).pipe(timeout({ first: 5000 }))
+      );
     }
   }
 
@@ -166,12 +273,27 @@ export class PostService {
       }
     }
 
-    await this.latchPrivateAssetReferences(createPostDto);
+    const visibility =
+      createPostDto.visibility ??
+      (createPostDto.communityId ? 'community' : 'public');
+    if (
+      !['public', 'followers', 'community'].includes(visibility) ||
+      (visibility === 'community' && !createPostDto.communityId)
+    ) {
+      throw new Error('Invalid post audience');
+    }
+    const normalizedDto = {
+      ...createPostDto,
+      visibility,
+      publicAudienceExplicit:
+        !!createPostDto.communityId && visibility === 'public',
+    };
+    await this.latchPrivateAssetReferences(normalizedDto);
 
     // Sanitize content before saving
     const sanitizedDto = {
-      ...createPostDto,
-      content: this.sanitizeContent(createPostDto.content || ''),
+      ...normalizedDto,
+      content: this.sanitizeContent(normalizedDto.content || ''),
     };
     const post = this.postRepo.create(sanitizedDto);
 
@@ -207,7 +329,10 @@ export class PostService {
     assetId: string,
     assetProfileId: string
   ): Promise<{
-    restrictions: Array<{ type: 'owner' | 'followers'; profileId: string }>;
+    restrictions: Array<
+      | { type: 'owner' | 'followers'; profileId: string }
+      | { type: 'community'; profileId: string; communityId: string }
+    >;
     communityIds: string[];
   }> {
     if (
@@ -223,7 +348,8 @@ export class PostService {
     const exactReference = new RegExp(`/asset/${assetId}(?=$|[^A-Za-z0-9-])`);
     const restrictions = new Map<
       string,
-      { type: 'owner' | 'followers'; profileId: string }
+      | { type: 'owner' | 'followers'; profileId: string }
+      | { type: 'community'; profileId: string; communityId: string }
     >();
     const communityIds = new Set<string>();
 
@@ -239,9 +365,64 @@ export class PostService {
           profileId: post.profileId,
         });
       }
+      if (
+        (post.visibility === 'community' ||
+          (post.visibility === 'public' &&
+            post.publicAudienceExplicit === false)) &&
+        post.profileId &&
+        post.communityId
+      ) {
+        const key = `community:${post.profileId}:${post.communityId}`;
+        restrictions.set(key, {
+          type: 'community',
+          profileId: post.profileId,
+          communityId: post.communityId,
+        });
+      }
       if (post.communityId) {
         const community = await this.communityService.findOne(post.communityId);
         if (community?.isPrivate) communityIds.add(post.communityId);
+      }
+    }
+
+    // Comments are independently addressable HTML references. Include them in
+    // live policy checks so pre-latch rows inherit the current parent audience.
+    const commentCandidates =
+      (await this.commentRepo.find({
+        where: { content: Like(`%/asset/${assetId}%`) },
+        relations: ['post'],
+      })) ?? [];
+    for (const comment of commentCandidates) {
+      if (!exactReference.test(comment.content ?? '') || !comment.post)
+        continue;
+      if (comment.profileId !== assetProfileId) continue;
+      const parent = comment.post;
+      if (parent.visibility === 'followers' && parent.profileId) {
+        const key = `followers:${parent.profileId}`;
+        restrictions.set(key, {
+          type: 'followers',
+          profileId: parent.profileId,
+        });
+      }
+      if (
+        (parent.visibility === 'community' ||
+          (parent.visibility === 'public' &&
+            parent.publicAudienceExplicit === false)) &&
+        parent.profileId &&
+        parent.communityId
+      ) {
+        const key = `community:${comment.profileId}:${parent.communityId}`;
+        restrictions.set(key, {
+          type: 'community',
+          profileId: comment.profileId,
+          communityId: parent.communityId,
+        });
+      }
+      if (parent.communityId) {
+        const community = await this.communityService.findOne(
+          parent.communityId
+        );
+        if (community?.isPrivate) communityIds.add(parent.communityId);
       }
     }
 
@@ -289,16 +470,49 @@ export class PostService {
       }
     }
 
+    if (
+      updatePostDto.communityId !== undefined &&
+      updatePostDto.communityId !== post.communityId
+    ) {
+      throw new Error('A post cannot be moved between communities');
+    }
+    if (updatePostDto.visibility === 'community' && !post.communityId) {
+      throw new Error('Community audience requires a community post');
+    }
+    if (
+      updatePostDto.visibility !== undefined &&
+      !['public', 'followers', 'community'].includes(updatePostDto.visibility)
+    ) {
+      throw new Error('Invalid post audience');
+    }
+
     // Sanitize content if provided
-    await this.latchPrivateAssetReferences(post);
-    await this.latchPrivateAssetReferences({
+    const updatedAudiencePost = {
       ...post,
       ...updatePostDto,
       content: updatePostDto.content ?? post.content,
       profileId: post.profileId,
-    });
-    const sanitizedDto = {
-      ...updatePostDto,
+    } as Post;
+    const commentAssetReferences = await this.getCommentAssetReferences(
+      updatedAudiencePost
+    );
+    await this.latchPrivateAssetReferences(post);
+    await this.latchPrivateAssetReferences(updatedAudiencePost);
+    await this.latchCommentAssetReferences(
+      updatedAudiencePost,
+      commentAssetReferences
+    );
+    const sanitizedDto: Partial<Post> = {
+      ...(updatePostDto.title !== undefined
+        ? { title: updatePostDto.title }
+        : {}),
+      ...(updatePostDto.visibility !== undefined
+        ? {
+            visibility: updatePostDto.visibility,
+            publicAudienceExplicit:
+              !!post.communityId && updatePostDto.visibility === 'public',
+          }
+        : { publicAudienceExplicit: post.publicAudienceExplicit ?? false }),
     };
     if (updatePostDto.content) {
       sanitizedDto.content = this.sanitizeContent(updatePostDto.content);

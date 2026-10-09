@@ -45,6 +45,7 @@ describe('PostService', () => {
       content: 'Test post',
       userId: '1',
       profileId: '1',
+      visibility: 'public',
       createdAt: new Date(),
     };
 
@@ -64,6 +65,7 @@ describe('PostService', () => {
       content: 'Test post',
       userId: '1',
       profileId: '1',
+      visibility: 'public',
       createdAt: new Date(),
     };
 
@@ -84,6 +86,7 @@ describe('PostService', () => {
       content: 'Updated post',
       userId: '1',
       profileId: '1',
+      visibility: 'public',
       createdAt: new Date(),
     };
 
@@ -115,6 +118,7 @@ describe('PostService', () => {
         content: 'Test post',
         userId: '1',
         profileId: '1',
+        visibility: 'public',
         createdAt: new Date(),
       },
     ];

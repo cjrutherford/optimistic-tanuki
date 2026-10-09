@@ -1248,7 +1248,7 @@ describe('AppController delegation', () => {
 
       const [where, params] = h.queryBuilder.where.mock.calls[0];
       expect(where).toContain('post.visibility = :public');
-      expect(where).toContain('post.userId IN (:...followingIds)');
+      expect(where).toContain('post.profileId IN (:...followingIds)');
       expect(where).toContain('post.communityId IN (:...communityIds)');
       expect(params.followingIds).toEqual(['followed-1']);
       expect(params.communityIds).toEqual(['c1']);
@@ -1654,27 +1654,95 @@ describe('AppController delegation', () => {
 
   describe('post shares', () => {
     it('delegates the post share surface', async () => {
+      jest
+        .spyOn(h.controller as any, 'buildPostVisibilityScope')
+        .mockResolvedValue({
+          viewerProfileId: 'pr1',
+          followedProfileIds: [],
+          blockedProfileIds: [],
+        });
+      h.postService.findOne.mockResolvedValue({
+        id: 'p1',
+        visibility: 'public',
+        communityId: null,
+      } as never);
       h.postShareService.create.mockResolvedValue({ id: 'ps1' });
-      h.postShareService.findByPost.mockResolvedValue([{ id: 'ps1' }]);
-      h.postShareService.findByProfile.mockResolvedValue([{ id: 'ps1' }]);
+      h.postShareService.findByPost.mockResolvedValue([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
+      h.postShareService.findByProfile.mockResolvedValue([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
 
-      const dto = { originalPostId: 'p1', sharedById: 'pr1' };
+      const dto = { originalPostId: 'p1', sharedById: 'pr1', userId: 'u1' };
       await expect(h.controller.createPostShare(dto as never)).resolves.toEqual(
         { id: 'ps1' }
       );
-      expect(h.postShareService.create).toHaveBeenCalledWith(dto);
+      expect(h.postShareService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ ...dto, visibility: 'public' })
+      );
 
-      await expect(h.controller.deletePostShare('ps1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.postShareService.remove).toHaveBeenCalledWith('ps1');
+      await expect(h.controller.deletePostShare('ps1', 'pr1')).resolves.toEqual(
+        {
+          success: true,
+        }
+      );
+      expect(h.postShareService.remove).toHaveBeenCalledWith('ps1', 'pr1');
 
-      await expect(h.controller.findPostSharesByPost('p1')).resolves.toEqual([
-        { id: 'ps1' },
+      await expect(
+        h.controller.findPostSharesByPost({
+          originalPostId: 'p1',
+          profileId: 'pr1',
+          userId: 'u1',
+        })
+      ).resolves.toEqual([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
       ]);
       await expect(
-        h.controller.findPostSharesByProfile('pr1')
-      ).resolves.toEqual([{ id: 'ps1' }]);
+        h.controller.findPostSharesByProfile({
+          sharedById: 'pr1',
+          profileId: 'pr1',
+          userId: 'u1',
+        })
+      ).resolves.toEqual([
+        {
+          id: 'ps1',
+          originalPostId: 'p1',
+          sharedById: 'pr1',
+          visibility: 'public',
+        },
+      ]);
+    });
+
+    it('preserves a status-bearing owner refusal across the social handler', async () => {
+      const refusal = new RpcException({
+        statusCode: 403,
+        message: 'Only the share owner can delete it',
+      });
+      h.postShareService.remove.mockRejectedValue(refusal);
+
+      await expect(
+        h.controller.deletePostShare('share-1', 'other-profile')
+      ).rejects.toBe(refusal);
+      expect(h.postShareService.remove).toHaveBeenCalledWith(
+        'share-1',
+        'other-profile'
+      );
     });
   });
 

@@ -41,7 +41,10 @@ import {
   CreateCommentDto,
   UpdatePostDto,
 } from '../../models';
-import { SocialComponentDto } from '@optimistic-tanuki/ui-models';
+import {
+  AssetAudienceRestriction,
+  SocialComponentDto,
+} from '@optimistic-tanuki/ui-models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { LinkType } from '../link/link.component';
 import { ImageUploadCallback } from '..';
@@ -115,8 +118,54 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() isMuted = false;
   @Input() ownedCommunities: { id: string; name: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
-  @Input() communityInfo?: { id: string; name: string; logoUrl?: string };
+  @Input() communityInfo?: {
+    id: string;
+    name: string;
+    logoUrl?: string;
+    isPrivate?: boolean;
+  };
   @Input() shareUrl: string = '';
+
+  get commentImageUploadCallback(): ImageUploadCallback | undefined {
+    if (!this.imageUploadCallback) return undefined;
+    if (
+      this.content?.communityId &&
+      typeof this.communityInfo?.isPrivate !== 'boolean'
+    ) {
+      // Community metadata is fetched asynchronously. Never create an
+      // unrestricted pending image while its membership policy is unknown.
+      return async () => {
+        throw new Error('Community audience is still loading');
+      };
+    }
+    const restrictions: AssetAudienceRestriction[] = [];
+    const memberOnly =
+      this.content?.visibility === 'community' ||
+      (this.content?.visibility === 'public' &&
+        this.content?.publicAudienceExplicit === false);
+    if (this.content?.visibility === 'followers' && this.content.profileId) {
+      restrictions.push({
+        type: 'followers',
+        profileId: this.content.profileId,
+      });
+    }
+    if (
+      (memberOnly || this.communityInfo?.isPrivate) &&
+      this.content?.communityId &&
+      this.profileId
+    ) {
+      restrictions.push({
+        type: 'community',
+        profileId: this.profileId,
+        communityId: this.content.communityId,
+      });
+    }
+    return (dataUrl, fileName, existingRestrictions) =>
+      this.imageUploadCallback!(dataUrl, fileName, [
+        ...(existingRestrictions ?? []),
+        ...restrictions,
+      ]);
+  }
   @Output() newCommentAdded: EventEmitter<CreateCommentDto> =
     new EventEmitter<CreateCommentDto>();
   @Output() postDeleted = new EventEmitter<void>();

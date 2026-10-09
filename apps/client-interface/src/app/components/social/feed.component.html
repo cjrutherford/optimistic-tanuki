@@ -32,6 +32,8 @@
       (postSubmitted)="createdPost($event)"
       [imageUploadCallback]="imageUploadCallback"
       [assetAudienceRestrictions]="assetAudienceRestrictions"
+      [profileId]="getCurrentUserId()"
+      [audienceOptions]="postAudienceOptions"
     >
     </lib-social-compose>
   </div>
@@ -61,6 +63,7 @@
         post.communityId ? communityInfo()[post.communityId] : undefined
       "
       [currentUserId]="getCurrentUserId()"
+      [profileId]="getCurrentUserId()"
       [userVote]="getUserVote(post.id)"
       [voteCount]="getVoteCount(post.id)"
       [userReaction]="getUserReaction(post.id)"

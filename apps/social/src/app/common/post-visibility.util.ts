@@ -5,6 +5,7 @@ import {
   FindOperator,
   FindOptionsWhere,
   In,
+  IsNull,
   Not,
   Raw,
   SelectQueryBuilder,
@@ -62,22 +63,64 @@ function uniqueDefined(values: (string | undefined)[]): string[] {
   );
 }
 
+function normalizeNullWhereValues<T extends FindOptionsWhere<Post>>(
+  where: T
+): T {
+  return Object.fromEntries(
+    Object.entries(where).map(([key, value]) => [
+      key,
+      value === null ? IsNull() : value,
+    ])
+  ) as T;
+}
+
 function accessibleCommunityCondition(viewerAccountId?: string) {
   return Raw(
-    (column) =>
-      `(${column} IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${column} AND (c."isPrivate" = false OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`,
+    (column) => {
+      const visibilityColumn = column.replace(/communityId"?$/, (name) =>
+        name.endsWith('"') ? 'visibility"' : 'visibility'
+      );
+      const explicitColumn = column.replace(/communityId"?$/, (name) =>
+        name.endsWith('"')
+          ? 'publicAudienceExplicit"'
+          : 'publicAudienceExplicit'
+      );
+      const memberOnly = `(${visibilityColumn} = 'community' OR (${visibilityColumn} = 'public' AND ${explicitColumn} = false))`;
+      return `(${column} IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${column} AND ((c."isPrivate" = false AND NOT ${memberOnly}) OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`;
+    },
     viewerAccountId
       ? { pv_account_id: viewerAccountId }
       : { pv_account_id: '__anonymous__' }
   );
 }
 
+function memberCommunityCondition(viewerAccountId?: string) {
+  return Raw(
+    (column) =>
+      `(${column} IS NOT NULL AND EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = ${column} AND cm."userId" = :pv_member_account_id AND cm.status = 'approved'))`,
+    { pv_member_account_id: viewerAccountId ?? '__anonymous__' }
+  );
+}
+
+function asFindOperator(value: unknown): FindOperator<any> {
+  if (value instanceof FindOperator) return value;
+  return value === null ? IsNull() : Equal(value as any);
+}
+
 function intersectCondition(existing: unknown, constraint: FindOperator<any>) {
   if (existing === undefined) return constraint;
-  return And(
-    existing instanceof FindOperator ? existing : Equal(existing),
-    constraint
-  );
+  return And(asFindOperator(existing), constraint);
+}
+
+function constrainWhere(
+  base: FindOptionsWhere<Post>,
+  key: keyof FindOptionsWhere<Post>,
+  constraint: unknown
+) {
+  const existing = base[key];
+  return existing === undefined
+    ? constraint
+    : And(asFindOperator(existing), asFindOperator(constraint));
 }
 
 /**
@@ -93,10 +136,12 @@ export function visiblePostWhere(
   scope: PostVisibilityScope,
   base: FindOptionsWhere<Post> = {}
 ): FindOptionsWhere<Post>[] {
+  base = normalizeNullWhereValues(base);
   const { viewerProfileId, followedProfileIds, blockedProfileIds } = scope;
   const blocked = uniqueDefined(blockedProfileIds);
   const branches: FindOptionsWhere<Post>[] = [];
   const addCommunityScope = (branch: FindOptionsWhere<Post>) => {
+    if (branch.communityId === null) return branch;
     const communityCondition = accessibleCommunityCondition(
       scope.viewerAccountId
     );
@@ -112,17 +157,87 @@ export function visiblePostWhere(
   // Public, visible, unscheduled posts (visible to everyone).
   const publicBranch: FindOptionsWhere<Post> = {
     ...base,
-    visibility: 'public',
-    moderationStatus: 'visible',
-    isScheduled: false,
+    visibility: constrainWhere(base, 'visibility', 'public') as any,
+    moderationStatus: constrainWhere(
+      base,
+      'moderationStatus',
+      'visible'
+    ) as any,
+    isScheduled: constrainWhere(base, 'isScheduled', false) as any,
+    communityId: constrainWhere(base, 'communityId', IsNull()) as any,
+  };
+  const explicitCommunityPublicBranch: FindOptionsWhere<Post> = {
+    ...base,
+    visibility: constrainWhere(base, 'visibility', 'public') as any,
+    publicAudienceExplicit: constrainWhere(
+      base,
+      'publicAudienceExplicit',
+      true
+    ) as any,
+    moderationStatus: constrainWhere(
+      base,
+      'moderationStatus',
+      'visible'
+    ) as any,
+    isScheduled: constrainWhere(base, 'isScheduled', false) as any,
+    communityId: intersectCondition(
+      base.communityId,
+      Raw((column) => `${column} IS NOT NULL`)
+    ) as any,
   };
   if (blocked.length > 0) {
     publicBranch.profileId = intersectCondition(
       publicBranch.profileId,
       Not(In(blocked))
     ) as any;
+    explicitCommunityPublicBranch.profileId = intersectCondition(
+      explicitCommunityPublicBranch.profileId,
+      Not(In(blocked))
+    ) as any;
   }
   branches.push(addCommunityScope(publicBranch));
+  branches.push(addCommunityScope(explicitCommunityPublicBranch));
+
+  // Ordinary community posts are member-visible. Legacy public community
+  // posts with an unconfirmed audience remain member-visible until edited.
+  if (scope.viewerAccountId) {
+    const communityBranch: FindOptionsWhere<Post> = {
+      ...base,
+      visibility: constrainWhere(base, 'visibility', 'community') as any,
+      moderationStatus: constrainWhere(
+        base,
+        'moderationStatus',
+        'visible'
+      ) as any,
+      isScheduled: constrainWhere(base, 'isScheduled', false) as any,
+      communityId: intersectCondition(
+        base.communityId,
+        memberCommunityCondition(scope.viewerAccountId)
+      ) as any,
+    };
+    branches.push(communityBranch);
+
+    const legacyCommunityBranch: FindOptionsWhere<Post> = {
+      ...base,
+      visibility: constrainWhere(base, 'visibility', 'public') as any,
+      publicAudienceExplicit: constrainWhere(
+        base,
+        'publicAudienceExplicit',
+        false
+      ) as any,
+      moderationStatus: constrainWhere(
+        base,
+        'moderationStatus',
+        'visible'
+      ) as any,
+      isScheduled: constrainWhere(base, 'isScheduled', false) as any,
+      communityId: intersectCondition(
+        base.communityId,
+        memberCommunityCondition(scope.viewerAccountId)
+      ) as any,
+    };
+    branches.push(legacyCommunityBranch);
+  }
 
   // Followers-only posts, visible only to followers (and the viewer's own,
   // which is also covered by the author-own branch below).
@@ -133,9 +248,13 @@ export function visiblePostWhere(
   if (followedAuthors.length > 0) {
     const followersBranch: FindOptionsWhere<Post> = {
       ...base,
-      visibility: 'followers',
-      moderationStatus: 'visible',
-      isScheduled: false,
+      visibility: constrainWhere(base, 'visibility', 'followers') as any,
+      moderationStatus: constrainWhere(
+        base,
+        'moderationStatus',
+        'visible'
+      ) as any,
+      isScheduled: constrainWhere(base, 'isScheduled', false) as any,
     };
     followersBranch.profileId = intersectCondition(
       followersBranch.profileId,
@@ -201,9 +320,18 @@ export function applyVisiblePostScope<T extends SelectQueryBuilder<Post>>(
 
               visible.andWhere(
                 new Brackets((vis) => {
-                  vis.where(`${alias}.visibility = :pv_public`, {
-                    pv_public: 'public',
-                  });
+                  vis.where(
+                    new Brackets((publicPosts) => {
+                      publicPosts
+                        .where(`${alias}.visibility = :pv_public`, {
+                          pv_public: 'public',
+                        })
+                        .andWhere(
+                          `(${alias}.communityId IS NULL OR ${alias}.publicAudienceExplicit = :pv_public_explicit)`,
+                          { pv_public_explicit: true }
+                        );
+                    })
+                  );
                   if (followedAuthors.length > 0) {
                     vis.orWhere(
                       new Brackets((followers) => {
@@ -214,6 +342,36 @@ export function applyVisiblePostScope<T extends SelectQueryBuilder<Post>>(
                           .andWhere(`${alias}.profileId IN (:...pv_followed)`, {
                             pv_followed: followedAuthors,
                           });
+                      })
+                    );
+                  }
+                  if (scope.viewerAccountId) {
+                    vis.orWhere(
+                      new Brackets((communityPosts) => {
+                        communityPosts
+                          .where(`${alias}.visibility = :pv_community`, {
+                            pv_community: 'community',
+                          })
+                          .andWhere(
+                            `${alias}.communityId IS NOT NULL AND EXISTS (SELECT 1 FROM community_member pv_cm WHERE pv_cm."communityId" = ${alias}.communityId AND pv_cm."userId" = :pv_member_account_id AND pv_cm.status = 'approved')`,
+                            { pv_member_account_id: scope.viewerAccountId }
+                          );
+                      })
+                    );
+                    vis.orWhere(
+                      new Brackets((legacyPosts) => {
+                        legacyPosts
+                          .where(`${alias}.visibility = :pv_legacy_public`, {
+                            pv_legacy_public: 'public',
+                          })
+                          .andWhere(
+                            `${alias}.publicAudienceExplicit = :pv_legacy_explicit`,
+                            { pv_legacy_explicit: false }
+                          )
+                          .andWhere(
+                            `${alias}.communityId IS NOT NULL AND EXISTS (SELECT 1 FROM community_member pv_legacy_cm WHERE pv_legacy_cm."communityId" = ${alias}.communityId AND pv_legacy_cm."userId" = :pv_member_account_id AND pv_legacy_cm.status = 'approved')`,
+                            { pv_member_account_id: scope.viewerAccountId }
+                          );
                       })
                     );
                   }
@@ -231,7 +389,7 @@ export function applyVisiblePostScope<T extends SelectQueryBuilder<Post>>(
         })
       );
       outer.andWhere(
-        `(${alias}.communityId IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${alias}.communityId AND (c."isPrivate" = false OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`,
+        `(${alias}.communityId IS NULL OR EXISTS (SELECT 1 FROM community c WHERE c.id = ${alias}.communityId AND ((c."isPrivate" = false AND NOT (${alias}.visibility = 'community' OR (${alias}.visibility = 'public' AND ${alias}.publicAudienceExplicit = false))) OR EXISTS (SELECT 1 FROM community_member cm WHERE cm."communityId" = c.id AND cm."userId" = :pv_account_id AND cm.status = 'approved'))))`,
         { pv_account_id: scope.viewerAccountId ?? '__anonymous__' }
       );
     })

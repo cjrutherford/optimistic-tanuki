@@ -9,25 +9,33 @@ import {
   IsIn,
   IsArray,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class AssetAudienceRestrictionDto {
-  @ApiProperty({ enum: ['owner', 'followers'] })
-  @IsIn(['owner', 'followers'])
-  type!: 'owner' | 'followers';
+  @ApiProperty({ enum: ['owner', 'followers', 'community'] })
+  @IsIn(['owner', 'followers', 'community'])
+  type!: 'owner' | 'followers' | 'community';
 
   @ApiProperty({ description: 'Profile whose audience governs this asset' })
   @IsString()
   @IsUUID()
   profileId!: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Community that can access this asset',
+  })
+  @ValidateIf((restriction) => restriction.type === 'community')
+  @IsUUID()
+  communityId?: string;
 }
 
-export type AssetAudienceRestriction = Pick<
-  AssetAudienceRestrictionDto,
-  'type' | 'profileId'
->;
+export type AssetAudienceRestriction =
+  | { type: 'owner' | 'followers'; profileId: string }
+  | { type: 'community'; profileId: string; communityId: string };
 
 export interface AssetContentAudienceReference {
   restrictions: AssetAudienceRestriction[];

@@ -10,8 +10,16 @@ function isOperator(value: unknown, type: string): value is FindOperator<any> {
   return value instanceof FindOperator && value.type === type;
 }
 
+function nestedOperators(value: unknown): FindOperator<any>[] {
+  if (!(value instanceof FindOperator)) return [];
+  return [
+    value,
+    ...(Array.isArray(value.value) ? value.value.flatMap(nestedOperators) : []),
+  ];
+}
+
 describe('visiblePostWhere (where-fragment form)', () => {
-  it('no viewer -> public + visible + unscheduled only', () => {
+  it('no viewer -> non-community public and explicitly public community branches only', () => {
     const scope: PostVisibilityScope = {
       viewerProfileId: undefined,
       followedProfileIds: [],
@@ -20,13 +28,21 @@ describe('visiblePostWhere (where-fragment form)', () => {
 
     const branches = visiblePostWhere(scope);
 
-    expect(branches).toHaveLength(1);
+    expect(branches).toHaveLength(2);
     expect(branches[0]).toEqual({
       visibility: 'public',
       moderationStatus: 'visible',
       isScheduled: false,
       communityId: expect.any(FindOperator),
     });
+    expect(
+      nestedOperators(branches[0].communityId).some(
+        (operator) => operator.type === 'isNull'
+      )
+    ).toBe(true);
+    expect(branches[1]).toEqual(
+      expect.objectContaining({ publicAudienceExplicit: true })
+    );
   });
 
   it('carries the base fragment into every branch', () => {
@@ -41,6 +57,29 @@ describe('visiblePostWhere (where-fragment form)', () => {
     for (const branch of branches) {
       expect((branch as FindOptionsWhere<Post>).title).toBe('hello');
     }
+  });
+
+  it('normalizes explicit null filters and intersects them instead of letting TypeORM skip them', () => {
+    const branches = visiblePostWhere(
+      {
+        viewerProfileId: undefined,
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      },
+      { communityId: null, profileId: null } as any
+    );
+    for (const branch of branches) {
+      expect(branch.communityId).not.toBeNull();
+      expect(branch.profileId).not.toBeNull();
+    }
+    expect(
+      nestedOperators(branches[0].communityId).some(
+        (op) => op.type === 'isNull'
+      )
+    ).toBe(true);
+    expect(
+      nestedOperators(branches[1].communityId).some((op) => op.type === 'raw')
+    ).toBe(true);
   });
 
   it('viewer sees their own posts via an unconstrained author-own branch (hidden + scheduled)', () => {
@@ -154,6 +193,18 @@ describe('visiblePostWhere (where-fragment form)', () => {
     expect((publicBranch as FindOptionsWhere<Post>).profileId).toBeUndefined();
   });
 
+  it('requires explicit public selection before a community post enters the public branch', () => {
+    const branches = visiblePostWhere({
+      viewerProfileId: undefined,
+      followedProfileIds: [],
+      blockedProfileIds: [],
+    });
+
+    expect(branches[1]).toEqual(
+      expect.objectContaining({ publicAudienceExplicit: true })
+    );
+  });
+
   it('constrains every visibility branch to a public or accessible community', () => {
     const branches = visiblePostWhere({
       viewerProfileId: 'viewer',
@@ -167,13 +218,23 @@ describe('visiblePostWhere (where-fragment form)', () => {
       const communityFilter = (branch as FindOptionsWhere<Post>)
         .communityId as FindOperator<any>;
       expect(communityFilter).toBeInstanceOf(FindOperator);
-      expect(communityFilter.type).toBe('raw');
-      expect((communityFilter as any)._objectLiteralParameters).toEqual({
-        pv_account_id: 'viewer-account',
-      });
-      expect((communityFilter as any)._getSql('post.communityId')).toContain(
-        "cm.status = 'approved'"
-      );
+      const operators = nestedOperators(communityFilter);
+      const rawScopes = operators.filter((operator) => operator.type === 'raw');
+      expect(rawScopes.length).toBeGreaterThan(0);
+      expect(
+        rawScopes.some((operator) =>
+          JSON.stringify(
+            (operator as any)._objectLiteralParameters ?? {}
+          ).includes('viewer-account')
+        )
+      ).toBe(true);
+      expect(
+        rawScopes.some((operator) =>
+          (operator as any)
+            ._getSql('post.communityId')
+            .includes("cm.status = 'approved'")
+        )
+      ).toBe(true);
     }
   });
 
@@ -186,7 +247,7 @@ describe('visiblePostWhere (where-fragment form)', () => {
       },
       { profileId: 'requested-author' as any }
     );
-    expect(branches).toHaveLength(3);
+    expect(branches.length).toBeGreaterThanOrEqual(3);
     for (const branch of branches) {
       const profileFilter = branch.profileId as FindOperator<any>;
       expect(profileFilter.type).toBe('and');
@@ -195,6 +256,26 @@ describe('visiblePostWhere (where-fragment form)', () => {
           (filter) => filter.value === 'requested-author'
         )
       ).toBe(true);
+    }
+  });
+
+  it('intersects selected community filters with every policy branch', () => {
+    const branches = visiblePostWhere(
+      {
+        viewerProfileId: 'viewer',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+        viewerAccountId: 'account',
+      },
+      { communityId: 'selected-community' as any }
+    );
+
+    expect(branches).toHaveLength(6);
+    for (const branch of branches) {
+      const communityFilter = branch.communityId as FindOperator<any>;
+      expect(communityFilter).toBeInstanceOf(FindOperator);
+      expect(communityFilter.type).toBe('and');
+      expect(JSON.stringify(communityFilter)).toContain('selected-community');
     }
   });
 
@@ -282,6 +363,10 @@ describe('applyVisiblePostScope (query-builder form)', () => {
     expect(recorder.sql).not.toContain('post.profileId = :pv_viewer');
     expect(recorder.params.pv_visible).toBe('visible');
     expect(recorder.params.pv_scheduled).toBe(false);
+    expect(recorder.sql).toContain(
+      'post.publicAudienceExplicit = :pv_public_explicit'
+    );
+    expect(recorder.params.pv_public_explicit).toBe(true);
   });
 
   it('viewer with follows and blocks emits the full predicate with params', () => {

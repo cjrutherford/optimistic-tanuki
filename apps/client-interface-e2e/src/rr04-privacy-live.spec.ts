@@ -1,5 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { writeFile } from 'node:fs/promises';
 import { firstValueFrom } from 'rxjs';
 import { io } from 'socket.io-client';
 
@@ -55,7 +56,9 @@ async function account(request: APIRequestContext, suffix: string) {
 }
 async function fixture(
   author: { userId: string; profileId: string },
-  community: boolean
+  community: boolean,
+  appScope = 'client-interface',
+  existingCommunityId?: string
 ) {
   const client = ClientProxyFactory.create({
     transport: Transport.TCP,
@@ -63,25 +66,27 @@ async function fixture(
   });
   await client.connect();
   try {
-    const communityId = community
-      ? (
-          await firstValueFrom(
-            client.send(
-              { cmd: 'CREATE_COMMUNITY' },
-              {
-                dto: {
-                  name: `RR04 private ${Date.now()}`,
-                  isPrivate: true,
-                  joinPolicy: 'invite_only',
-                },
-                userId: author.userId,
-                profileId: author.profileId,
-                appScope: 'social',
-              }
+    const communityId =
+      existingCommunityId ??
+      (community
+        ? (
+            await firstValueFrom(
+              client.send(
+                { cmd: 'CREATE_COMMUNITY' },
+                {
+                  dto: {
+                    name: `RR04 private ${Date.now()}`,
+                    isPrivate: true,
+                    joinPolicy: 'invite_only',
+                  },
+                  userId: author.userId,
+                  profileId: author.profileId,
+                  appScope,
+                }
+              )
             )
-          )
-        ).id
-      : undefined;
+          ).id
+        : undefined);
     const marker = `RR04 restricted marker ${Date.now()}`;
     const post = await firstValueFrom(
       client.send(
@@ -108,7 +113,74 @@ async function fixture(
           }
         )
       );
-    return { id: post.id, marker, communityId };
+    return { id: post.id, marker, communityId, authorId: author.userId };
+  } finally {
+    client.close();
+  }
+}
+
+async function publicCommunityPosts(author: {
+  userId: string;
+  profileId: string;
+}) {
+  const client = ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: { host: '127.0.0.1', port: 3003 },
+  });
+  await client.connect();
+  try {
+    const community = await firstValueFrom(
+      client.send(
+        { cmd: 'CREATE_COMMUNITY' },
+        {
+          dto: {
+            name: `RR04 public ${Date.now()}`,
+            isPrivate: false,
+            joinPolicy: 'open',
+          },
+          userId: author.userId,
+          profileId: author.profileId,
+          appScope: 'social',
+        }
+      )
+    );
+    const memberMarker = `RR04 members default ${Date.now()}`;
+    const memberPost = await firstValueFrom(
+      client.send(
+        { cmd: 'CREATE_POST' },
+        {
+          title: memberMarker,
+          content: memberMarker,
+          userId: author.userId,
+          profileId: author.profileId,
+          communityId: community.id,
+          appScope: 'social',
+        }
+      )
+    );
+    const publicMarker = `RR04 explicit public ${Date.now()}`;
+    const publicPost = await firstValueFrom(
+      client.send(
+        { cmd: 'CREATE_POST' },
+        {
+          title: publicMarker,
+          content: publicMarker,
+          visibility: 'public',
+          userId: author.userId,
+          profileId: author.profileId,
+          communityId: community.id,
+          appScope: 'social',
+        }
+      )
+    );
+    return {
+      communityId: community.id,
+      memberPost,
+      memberMarker,
+      publicPost,
+      publicMarker,
+      authorId: author.userId,
+    };
   } finally {
     client.close();
   }
@@ -187,18 +259,303 @@ test('RR04 API: anonymous and non-followers cannot read a followers-only post', 
   }
 });
 
+test('RR04 API: public-community posts default to members and require explicit public selection for broader reads', async ({
+  playwright,
+}) => {
+  const authorContext = await playwright.request.newContext();
+  const outsiderContext = await playwright.request.newContext();
+  const anonymous = await playwright.request.newContext();
+  let posts: Awaited<ReturnType<typeof publicCommunityPosts>> | undefined;
+  try {
+    const author = await account(authorContext, 'public-community-author');
+    await account(outsiderContext, 'public-community-outsider');
+    posts = await publicCommunityPosts(author);
+    expect(posts.memberPost.visibility).toBe('community');
+    expect(posts.publicPost.visibility).toBe('public');
+    for (const reader of [anonymous, outsiderContext]) {
+      const memberRead = await reader.get(
+        origin + `/api/social/post/${posts.memberPost.id}/shared`
+      );
+      expect(await memberRead.text()).not.toContain(posts.memberMarker);
+      const explicitRead = await reader.get(
+        origin + `/api/social/post/${posts.publicPost.id}/shared`
+      );
+      expect(await explicitRead.text()).toContain(posts.publicMarker);
+    }
+  } finally {
+    if (posts) {
+      for (const postId of [posts.memberPost.id, posts.publicPost.id]) {
+        const result = await socialFixtureCommand('DELETE_POST', {
+          id: postId,
+          userId: posts.authorId,
+        });
+        expect(result?.success).toBe(true);
+      }
+      const communityDelete = await socialFixtureCommand('DELETE_COMMUNITY', {
+        id: posts.communityId,
+        userId: posts.authorId,
+      });
+      expect(communityDelete?.success).toBe(true);
+    }
+    await Promise.all([
+      authorContext.dispose(),
+      outsiderContext.dispose(),
+      anonymous.dispose(),
+    ]);
+  }
+});
+
+test('RR04 browser: public community composer defaults to members and honors explicit public', async ({
+  browser,
+  playwright,
+}, testInfo) => {
+  test.setTimeout(60000);
+  const ownerContext = await browser.newContext({
+    viewport: testInfo.project.use.viewport,
+  });
+  const outsider = await playwright.request.newContext();
+  let communityId: string | undefined;
+  const postIds: string[] = [];
+  const assetIds: string[] = [];
+  try {
+    const owner = await account(
+      ownerContext.request,
+      'community-compose-owner'
+    );
+    await account(outsider, 'community-compose-outsider');
+    await ownerContext.clearCookies();
+    const page = await ownerContext.newPage();
+    await page.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Email', { exact: true }).fill(owner.email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login$/);
+
+    const slug = `rr04-public-${Date.now()}`;
+    const communityResponse = await ownerContext.request.post(
+      origin + '/api/social/community',
+      {
+        headers,
+        data: {
+          name: `RR04 public composer ${Date.now()}`,
+          slug,
+          description: 'RR04 browser audience fixture',
+          isPrivate: false,
+          joinPolicy: 'public',
+          localityType: 'city',
+          countryCode: 'US',
+          adminArea: 'New York',
+          city: 'New York',
+        },
+      }
+    );
+    expect(communityResponse.status(), await communityResponse.text()).toBe(
+      201
+    );
+    communityId = (await communityResponse.json()).id;
+    await page.goto(origin + `/communities/${slug}/posts`, {
+      waitUntil: 'domcontentloaded',
+    });
+    if (
+      !(await page
+        .getByLabel('Who can see this post?')
+        .isVisible()
+        .catch(() => false))
+    ) {
+      await page
+        .getByRole('button', { name: 'Create Post', exact: true })
+        .click();
+    }
+    await expect(page.getByLabel('Who can see this post?')).toHaveValue(
+      'community'
+    );
+
+    const publish = async (visibility: 'community' | 'public') => {
+      const marker = `RR04 community ${visibility} ${Date.now()}`;
+      const audienceSelector = page.getByLabel('Who can see this post?');
+      if (!(await audienceSelector.isVisible().catch(() => false))) {
+        await page
+          .getByRole('button', { name: 'Create Post', exact: true })
+          .click();
+      }
+      await expect(audienceSelector).toBeVisible();
+      await audienceSelector.selectOption(visibility);
+      await page
+        .getByRole('textbox', { name: 'Name your Masterpiece', exact: true })
+        .fill(marker);
+      await page.locator('tiptap-editor [contenteditable="true"]').fill(marker);
+      let imageReference: string | undefined;
+      if (visibility === 'community') {
+        const upload = page.waitForResponse(
+          (response) =>
+            response.request().method() === 'POST' &&
+            new URL(response.url()).pathname === '/api/asset'
+        );
+        await page.locator('#imageInput').setInputFiles({
+          name: 'rr04-public-community-member.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/7b8AAAAASUVORK5CYII=',
+            'base64'
+          ),
+        });
+        const uploaded = await upload;
+        expect(uploaded.status(), await uploaded.text()).toBe(201);
+        const pendingImage = page.locator('tiptap-editor img').first();
+        await expect(pendingImage).toBeVisible();
+        imageReference = (await pendingImage.getAttribute('src')) ?? undefined;
+        expect(imageReference).toBeTruthy();
+        const pendingUrl = new URL(imageReference!, origin).href;
+        expect(
+          (
+            await outsider.get(pendingUrl, {
+              headers: { 'x-ot-appscope': 'social' },
+            })
+          ).status()
+        ).toBe(404);
+        expect(
+          (
+            await ownerContext.request.get(pendingUrl, {
+              headers: { 'x-ot-appscope': 'social' },
+            })
+          ).status()
+        ).toBe(200);
+        const imageId = imageReference!.match(/[0-9a-f-]{36}/i)?.[0];
+        expect(imageId).toBeDefined();
+        assetIds.push(imageId!);
+      }
+      const created = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          new URL(response.url()).pathname === '/api/social/post'
+      );
+      await page.getByRole('button', { name: 'Post', exact: true }).click();
+      const response = await created;
+      expect(response.status()).toBe(201);
+      const post = await response.json();
+      postIds.push(post.id);
+      expect(post.visibility).toBe(visibility);
+      expect(post.communityId).toBe(communityId);
+      if (imageReference) {
+        expect(post.content).toContain(imageReference);
+        const postCard = page
+          .locator('.post-container')
+          .filter({ hasText: marker });
+        const persistedImage = postCard.locator(`img[src="${imageReference}"]`);
+        await expect(persistedImage).toBeVisible();
+        await expect
+          .poll(() =>
+            persistedImage.evaluate(
+              (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+            )
+          )
+          .toBe(true);
+        expect(
+          (
+            await outsider.get(new URL(imageReference, origin).href, {
+              headers: { 'x-ot-appscope': 'social' },
+            })
+          ).status()
+        ).toBe(404);
+      }
+      return { marker, post };
+    };
+
+    const membersOnly = await publish('community');
+    const explicitPublic = await publish('public');
+    const memberRead = await outsider.get(
+      origin + `/api/social/post/${membersOnly.post.id}/shared`
+    );
+    expect(await memberRead.text()).not.toContain(membersOnly.marker);
+    const publicRead = await outsider.get(
+      origin + `/api/social/post/${explicitPublic.post.id}/shared`
+    );
+    expect(await publicRead.text()).toContain(explicitPublic.marker);
+  } finally {
+    for (const id of postIds) {
+      const response = await ownerContext.request.delete(
+        origin + `/api/social/post/${id}`,
+        { headers }
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    }
+    for (const id of assetIds) {
+      const response = await ownerContext.request.delete(
+        origin + `/api/asset/${id}`,
+        { headers }
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    }
+    if (communityId) {
+      const response = await ownerContext.request.delete(
+        origin + `/api/social/community/${communityId}`,
+        { headers }
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    }
+    await Promise.allSettled([ownerContext.close(), outsider.dispose()]);
+  }
+});
+
 test('RR04 browser: private-community direct post is visible to its author and hidden from a non-member', async ({
   browser,
-}) => {
-  const authorContext = await browser.newContext();
-  const outsiderContext = await browser.newContext();
+}, testInfo) => {
+  test.setTimeout(60000);
+  const viewport = testInfo.project.use.viewport;
+  const authorContext = await browser.newContext({ viewport });
+  const outsiderContext = await browser.newContext({ viewport });
+  const memberContext = await browser.newContext({ viewport });
+  const anonymousContext = await browser.newContext({ viewport });
+  const anonymous = await anonymousContext.newPage();
+  let post: Awaited<ReturnType<typeof fixture>> | undefined;
+  let commentAssetId: string | undefined;
   try {
     const author = await account(authorContext.request, 'community-author');
     const outsider = await account(
       outsiderContext.request,
       'community-outsider'
     );
-    const post = await fixture(author, true);
+    const member = await account(memberContext.request, 'community-commenter');
+    const communitySlug = `rr04-private-media-${Date.now()}`;
+    const communityResponse = await authorContext.request.post(
+      origin + '/api/social/community',
+      {
+        headers,
+        data: {
+          name: `RR04 private media ${Date.now()}`,
+          slug: communitySlug,
+          description: 'RR04 private comment media fixture',
+          isPrivate: true,
+          joinPolicy: 'invite_only',
+          localityType: 'city',
+          countryCode: 'US',
+          adminArea: 'New York',
+          city: 'New York',
+        },
+      }
+    );
+    expect(communityResponse.status(), await communityResponse.text()).toBe(
+      201
+    );
+    const provisionedCommunityId = (await communityResponse.json())
+      .id as string;
+    post = await fixture(
+      author,
+      true,
+      'client-interface',
+      provisionedCommunityId
+    );
+    await socialFixtureCommand('UPDATE_POST', {
+      id: post.id,
+      data: { visibility: 'public' },
+      userId: author.userId,
+      profileId: author.profileId,
+    });
+    const membership = await joinFixture(
+      post.communityId!,
+      member,
+      author.userId
+    );
     expect(
       (
         await (
@@ -245,9 +602,987 @@ test('RR04 browser: private-community direct post is visible to its author and h
         );
       }
     }
+    await memberContext.clearCookies();
+    const memberPage = await memberContext.newPage();
+    await memberPage.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
+    await memberPage.getByLabel('Email', { exact: true }).fill(member.email);
+    await memberPage.getByLabel('Password', { exact: true }).fill(password);
+    await memberPage
+      .getByRole('button', { name: 'Login', exact: true })
+      .click();
+    await expect(memberPage).not.toHaveURL(/\/login$/);
+    const communityInfoLoaded = memberPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'GET' &&
+        new URL(r.url()).pathname ===
+          `/api/social/community/${post.communityId}`
+    );
+    await memberPage.goto(origin + `/feed/post/${post.id}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await communityInfoLoaded;
+    const postCard = memberPage
+      .locator('.post-container')
+      .filter({ hasText: post.marker });
+    await expect(postCard).toBeVisible();
+    await postCard
+      .getByRole('button', { name: 'Leave a Comment', exact: true })
+      .click();
+    const editor = postCard.locator(
+      'tiptap-editor.comment-editor [contenteditable="true"]'
+    );
+    await expect(editor).toBeVisible();
+    await editor.fill('RR04 private community comment image');
+    const uploaded = memberPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname === '/api/asset'
+    );
+    await postCard.locator('#commentImageInput').setInputFiles({
+      name: 'rr04-private-community-comment.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/7b8AAAAASUVORK5CYII=',
+        'base64'
+      ),
+    });
+    const uploadResponse = await uploaded;
+    expect(uploadResponse.status(), await uploadResponse.text()).toBe(201);
+    const image = editor.locator('img').first();
+    await expect(image).toBeVisible();
+    const imageReference = await image.getAttribute('src');
+    expect(imageReference).toBeTruthy();
+    commentAssetId = imageReference!.match(/[0-9a-f-]{36}/i)?.[0];
+    expect(commentAssetId).toBeDefined();
+    const imageUrl = new URL(imageReference!, origin).href;
+    expect(
+      (
+        await anonymousContext.request.get(imageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await outsiderContext.request.get(imageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await memberContext.request.get(imageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    const saved = memberPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname === '/api/social/comment'
+    );
+    await postCard.getByRole('button', { name: 'Submit', exact: true }).click();
+    const savedResponse = await saved;
+    expect(savedResponse.status()).toBe(201);
+    const comment = await savedResponse.json();
+    const commentId = comment.id;
+    const visibleComment = postCard
+      .locator('.comment-content')
+      .filter({ hasText: 'RR04 private community comment image' });
+    await expect(visibleComment.locator('img')).toHaveCount(1);
+    await expect
+      .poll(() =>
+        visibleComment
+          .locator('img')
+          .evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+          )
+      )
+      .toBe(true);
+    const removedBody = await memberContext.request.put(
+      origin + `/api/social/comment/update/${commentId}`,
+      {
+        headers: { 'x-ot-appscope': 'social' },
+        data: { content: 'RR04 image reference removed' },
+      }
+    );
+    expect(removedBody.status()).toBe(200);
+    expect(
+      (
+        await memberContext.request.get(imageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    const revoke = await authorContext.request.delete(
+      origin + `/api/social/community/members/${membership.id}`,
+      {
+        headers,
+        data: { profileId: member.profileId, communityId: post.communityId },
+      }
+    );
+    expect(revoke.status()).toBe(200);
+    expect(
+      (
+        await memberContext.request.get(imageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
   } finally {
-    await Promise.allSettled([authorContext.close(), outsiderContext.close()]);
+    if (commentAssetId) {
+      const assetDelete = await memberContext.request.delete(
+        origin + `/api/asset/${commentAssetId}`,
+        { headers }
+      );
+      expect(assetDelete.status(), await assetDelete.text()).toBe(200);
+    }
+    if (post) {
+      const postDelete = await socialFixtureCommand('DELETE_POST', {
+        id: post.id,
+        userId: post.authorId,
+      });
+      expect(postDelete?.success).toBe(true);
+      if (post.communityId) {
+        const communityDelete = await authorContext.request.delete(
+          origin + `/api/social/community/${post.communityId}`,
+          { headers }
+        );
+        expect(communityDelete.status(), await communityDelete.text()).toBe(
+          200
+        );
+      }
+    }
+    await Promise.allSettled([
+      authorContext.close(),
+      outsiderContext.close(),
+      memberContext.close(),
+      anonymousContext.close(),
+    ]);
   }
+});
+
+test('RR04 browser: compose publishes the selected audience and outsiders cannot widen it', async ({
+  browser,
+  playwright,
+}, testInfo) => {
+  test.setTimeout(120000);
+  const authorContext = await browser.newContext({
+    viewport: testInfo.project.use.viewport,
+  });
+  const outsider = await playwright.request.newContext();
+  const commentOutsider = await playwright.request.newContext();
+  const anonymous = await playwright.request.newContext();
+  const createdPostIds: string[] = [];
+  const createdAssets: Array<{ id: string; owner: APIRequestContext }> = [];
+  let createdShareId: string | undefined;
+  let readerContext: Awaited<ReturnType<typeof browser.newContext>> | undefined;
+  let primaryError: unknown;
+  try {
+    const author = await test.step('register compose author', () =>
+      account(authorContext.request, 'compose-audience-author'));
+    const reader = await test.step('register API share reader', () =>
+      account(outsider, 'compose-audience-reader'));
+    await test.step('register separate authenticated nonfollower', () =>
+      account(commentOutsider, 'compose-comment-outsider'));
+    readerContext = await browser.newContext({
+      viewport: testInfo.project.use.viewport,
+    });
+    const readerBrowserUser =
+      await test.step('register open-feed browser reader', () =>
+        account(readerContext!.request, 'compose-realtime-reader'));
+    await readerContext.clearCookies();
+    const readerPage = await readerContext.newPage();
+    let realtimeMarker = '';
+    let realtimePostId = '';
+    const realtimeSockets: Array<{
+      pageRole: 'reader';
+      socketIndex: number;
+      origin: string;
+      pathname: string;
+      namespace: 'social';
+      sid?: string;
+    }> = [];
+    const realtimeWireEvents: Array<{
+      socketIndex: number;
+      socketSid?: string;
+      direction: 'sent' | 'received';
+      event: string;
+      containsMarker: boolean;
+      containsPostId: boolean;
+    }> = [];
+    const recordRealtimeFrame = (
+      socket: (typeof realtimeSockets)[number],
+      direction: 'sent' | 'received',
+      frame: string | Buffer
+    ) => {
+      const raw = String(frame);
+      const arrayStart = raw.indexOf('[');
+      if (arrayStart < 0) return;
+      try {
+        const packet = JSON.parse(raw.slice(arrayStart));
+        if (!Array.isArray(packet) || typeof packet[0] !== 'string') return;
+        const event = packet[0] as string;
+        if (
+          ![
+            'feed',
+            'post_created',
+            'social_content_invalidated',
+            'GET_FEED',
+            'SUBSCRIBE_POSTS',
+            'subscribed',
+            'UNSUBSCRIBE_POSTS',
+            'unsubscribed',
+            'error',
+            'exception',
+            'connect_error',
+          ].includes(event)
+        ) {
+          return;
+        }
+        const serializedData = JSON.stringify(packet[1] ?? null);
+        realtimeWireEvents.push({
+          socketIndex: socket.socketIndex,
+          ...(socket.sid ? { socketSid: socket.sid } : {}),
+          direction,
+          event,
+          containsMarker:
+            !!realtimeMarker && serializedData.includes(realtimeMarker),
+          containsPostId:
+            !!realtimePostId && serializedData.includes(realtimePostId),
+        });
+      } catch {
+        // Socket.IO control frames are intentionally ignored.
+      }
+    };
+    let realtimeSocketIndex = 0;
+    readerPage.on('websocket', (socket) => {
+      const socketUrl = new URL(socket.url());
+      if (
+        socketUrl.port !== '3301' ||
+        !socketUrl.pathname.startsWith('/socket.io')
+      ) {
+        return;
+      }
+      let connection: (typeof realtimeSockets)[number] | undefined;
+      const recordFrame = (
+        direction: 'sent' | 'received',
+        payload: string | Buffer
+      ) => {
+        const raw = String(payload);
+        const namespacePacket = '40/social,';
+        if (raw.startsWith(namespacePacket)) {
+          if (!connection) {
+            connection = {
+              pageRole: 'reader',
+              socketIndex: ++realtimeSocketIndex,
+              origin: socketUrl.origin,
+              pathname: socketUrl.pathname,
+              namespace: 'social',
+            };
+            realtimeSockets.push(connection);
+          }
+          if (direction === 'received') {
+            try {
+              const connectData = JSON.parse(raw.slice(namespacePacket.length));
+              if (typeof connectData?.sid === 'string') {
+                connection.sid = connectData.sid;
+              }
+            } catch {
+              // No handshake metadata is emitted unless sid parses cleanly.
+            }
+          }
+          return;
+        }
+        if (!connection) return;
+        recordRealtimeFrame(connection, direction, payload);
+      };
+      socket.on('framesent', (frame) => recordFrame('sent', frame.payload));
+      socket.on('framereceived', (frame) =>
+        recordFrame('received', frame.payload)
+      );
+      socket.on('close', () => {
+        if (!connection) return;
+        realtimeWireEvents.push({
+          socketIndex: connection.socketIndex,
+          ...(connection.sid ? { socketSid: connection.sid } : {}),
+          direction: 'received',
+          event: 'socket_close',
+          containsMarker: false,
+          containsPostId: false,
+        });
+      });
+      socket.on('socketerror', () => {
+        if (!connection) return;
+        realtimeWireEvents.push({
+          socketIndex: connection.socketIndex,
+          ...(connection.sid ? { socketSid: connection.sid } : {}),
+          direction: 'received',
+          event: 'socket_error',
+          containsMarker: false,
+          containsPostId: false,
+        });
+      });
+    });
+    await readerPage.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
+    await readerPage
+      .getByLabel('Email', { exact: true })
+      .fill(readerBrowserUser.email);
+    await readerPage.getByLabel('Password', { exact: true }).fill(password);
+    await readerPage
+      .getByRole('button', { name: 'Login', exact: true })
+      .click();
+    await expect(readerPage).not.toHaveURL(/\/login$/);
+    await readerPage.goto(origin + '/feed', { waitUntil: 'domcontentloaded' });
+    await authorContext.clearCookies();
+    const page = await authorContext.newPage();
+    await page.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Email', { exact: true }).fill(author.email);
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login$/);
+    await page.goto(origin + '/feed', { waitUntil: 'domcontentloaded' });
+
+    const marker = `RR04 browser audience ${Date.now()}`;
+    await page.getByLabel('Who can see this post?').selectOption('followers');
+    await page
+      .getByRole('textbox', { name: 'Name your Masterpiece', exact: true })
+      .fill(marker);
+    await page.locator('tiptap-editor [contenteditable="true"]').fill(marker);
+    const imageUpload = page.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname === '/api/asset'
+    );
+    await page.locator('#imageInput').setInputFiles({
+      name: 'rr04-pending.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/7b8AAAAASUVORK5CYII=',
+        'base64'
+      ),
+    });
+    const imageUploadResponse = await imageUpload;
+    expect(imageUploadResponse.status(), await imageUploadResponse.text()).toBe(
+      201
+    );
+    const pendingImage = page.locator('tiptap-editor img').first();
+    await expect(pendingImage).toBeVisible();
+    const imageReference = await pendingImage.getAttribute('src');
+    expect(imageReference).toBeTruthy();
+    const imageId = imageReference!.match(/[0-9a-f-]{36}$/i)?.[0];
+    expect(imageId).toBeDefined();
+    createdAssets.push({ id: imageId!, owner: authorContext.request });
+    const pendingImageUrl = new URL(imageReference!, origin).href;
+    for (const context of [anonymous, outsider]) {
+      expect(
+        (
+          await context.get(pendingImageUrl, {
+            headers: { 'x-ot-appscope': 'social' },
+          })
+        ).status()
+      ).toBe(404);
+    }
+    expect(
+      (
+        await authorContext.request.get(pendingImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    await expect
+      .poll(() =>
+        pendingImage.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+        )
+      )
+      .toBe(true);
+    const created = page.waitForResponse((response) => {
+      const request = response.request();
+      return (
+        request.method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/social/post'
+      );
+    });
+    await page.getByRole('button', { name: 'Post', exact: true }).click();
+    const response = await created;
+    expect(response.status()).toBe(201);
+    const createdPost = await response.json();
+    createdPostIds.push(createdPost.id);
+    expect(createdPost.visibility).toBe('followers');
+    expect(createdPost.profileId).toBe(author.profileId);
+    expect(createdPost.content).toContain(imageReference);
+
+    for (const context of [anonymous, outsider]) {
+      const direct = await context.get(
+        origin + `/api/social/post/${createdPost.id}/shared`
+      );
+      expect(await direct.text()).not.toContain(marker);
+    }
+    const follow = {
+      followerId: reader.profileId,
+      followeeId: author.profileId,
+    };
+    expect(
+      (
+        await outsider.post(origin + '/api/social/follow', { data: follow })
+      ).status()
+    ).toBe(201);
+    expect(
+      await (
+        await outsider.get(origin + `/api/social/post/${createdPost.id}/shared`)
+      ).text()
+    ).toContain(marker);
+    const browserFollow = {
+      followerId: readerBrowserUser.profileId,
+      followeeId: author.profileId,
+    };
+    expect(
+      (
+        await readerContext.request.post(origin + '/api/social/follow', {
+          data: browserFollow,
+        })
+      ).status()
+    ).toBe(201);
+    await readerPage
+      .getByRole('button', { name: 'Following Feed', exact: true })
+      .click();
+    const followedPost = readerPage
+      .locator('.post-container')
+      .filter({ hasText: marker });
+    await expect(followedPost).toBeVisible();
+    await expect
+      .poll(() =>
+        followedPost
+          .locator('img')
+          .first()
+          .evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+          )
+      )
+      .toBe(true);
+
+    await followedPost
+      .getByRole('button', { name: 'Leave a Comment', exact: true })
+      .click();
+    const commentEditor = followedPost.locator(
+      'tiptap-editor.comment-editor [contenteditable="true"]'
+    );
+    await expect(commentEditor).toBeVisible();
+    await commentEditor.fill('RR04 different-author comment image');
+    const commentUpload = readerPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' &&
+        new URL(r.url()).pathname === '/api/asset'
+    );
+    await followedPost.locator('#commentImageInput').setInputFiles({
+      name: 'rr04-comment.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/7b8AAAAASUVORK5CYII=',
+        'base64'
+      ),
+    });
+    expect((await commentUpload).status()).toBe(201);
+    const pendingCommentImage = commentEditor.locator('img').first();
+    await expect(pendingCommentImage).toBeVisible();
+    const commentImageReference = await pendingCommentImage.getAttribute('src');
+    expect(commentImageReference).toBeTruthy();
+    const commentAssetId = commentImageReference!.match(/[0-9a-f-]{36}/i)?.[0];
+    expect(commentAssetId).toBeDefined();
+    createdAssets.push({ id: commentAssetId!, owner: readerContext.request });
+    const commentImageUrl = new URL(commentImageReference!, origin).href;
+    expect(
+      (
+        await anonymous.get(commentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await commentOutsider.get(commentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await readerContext.request.get(commentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    await expect(followedPost).toBeVisible();
+    const submitComment = followedPost.getByRole('button', {
+      name: 'Submit',
+      exact: true,
+    });
+    await expect(submitComment).toBeVisible();
+    await expect(submitComment).toBeEnabled();
+    const savedCommentResponse = readerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/social/comment'
+    );
+    await submitComment.click();
+    expect((await savedCommentResponse).status()).toBe(201);
+    const savedComment = followedPost
+      .locator('.comment-content')
+      .filter({ hasText: 'RR04 different-author comment image' });
+    await expect(savedComment).toBeVisible();
+    await expect(savedComment.locator('img')).toHaveCount(1);
+    await expect
+      .poll(() =>
+        savedComment
+          .locator('img')
+          .evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+          )
+      )
+      .toBe(true);
+    await readerPage.reload();
+    await readerPage
+      .getByRole('button', { name: 'Following Feed', exact: true })
+      .click();
+    const persistedComment = readerPage
+      .locator('.post-container')
+      .filter({ hasText: marker })
+      .locator('.comment-content')
+      .filter({ hasText: 'RR04 different-author comment image' });
+    await expect(persistedComment.locator('img')).toHaveCount(1);
+    await expect
+      .poll(() =>
+        persistedComment
+          .locator('img')
+          .evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+          )
+      )
+      .toBe(true);
+    expect(
+      (
+        await readerContext.request.post(
+          origin + '/api/social/follow/unfollow',
+          { data: browserFollow }
+        )
+      ).status()
+    ).toBe(201);
+    await readerPage
+      .getByRole('button', { name: 'Public Feed', exact: true })
+      .click();
+    await readerPage
+      .getByRole('button', { name: 'Following Feed', exact: true })
+      .click();
+    await expect(
+      readerPage.locator('.post-container').filter({ hasText: marker })
+    ).toHaveCount(0);
+    expect(
+      (
+        await readerContext.request.get(commentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    await readerPage
+      .getByRole('button', { name: 'Public Feed', exact: true })
+      .click();
+    const authorizedAsset = await outsider.get(
+      new URL(imageReference!, origin).href,
+      { headers: { 'x-ot-appscope': 'social' } }
+    );
+    expect(authorizedAsset.status()).toBe(200);
+    const invalidAudience = await outsider.post(
+      origin + `/api/posts/${createdPost.id}/share`,
+      {
+        data: { visibility: 'everyone' },
+      }
+    );
+    expect(invalidAudience.status()).toBe(400);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${createdPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    const wideningAttempt = await outsider.post(
+      origin + `/api/posts/${createdPost.id}/share`,
+      {
+        data: { visibility: 'public' },
+      }
+    );
+    expect(wideningAttempt.status()).toBe(403);
+    const spoofedShare = await outsider.post(
+      origin + `/api/posts/${createdPost.id}/share`,
+      {
+        data: { sharedById: author.userId },
+      }
+    );
+    expect(spoofedShare.status()).toBe(400);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${createdPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    const shareResponse = await outsider.post(
+      origin + `/api/posts/${createdPost.id}/share`,
+      { data: {} }
+    );
+    expect(shareResponse.status()).toBe(201);
+    const share = await shareResponse.json();
+    createdShareId = share.id;
+    expect(share.sharedById).toBe(reader.profileId);
+    expect(share.visibility).toBe('followers');
+    const listedShares = await outsider.get(
+      origin + `/api/posts/${createdPost.id}/shares`
+    );
+    expect(
+      (await listedShares.json()).map((item: { id: string }) => item.id)
+    ).toContain(share.id);
+    const nonOwnerDelete = await authorContext.request.delete(
+      origin + `/api/posts/shares/${share.id}`
+    );
+    expect(nonOwnerDelete.status()).toBe(403);
+    const unfollow = await outsider.post(
+      origin + '/api/social/follow/unfollow',
+      {
+        data: { followerId: reader.profileId, followeeId: author.profileId },
+      }
+    );
+    expect(unfollow.status()).toBe(201);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${createdPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    expect(
+      (
+        await outsider.post(origin + '/api/social/follow', { data: follow })
+      ).status()
+    ).toBe(201);
+    const deleteOwnedShare = await outsider.delete(
+      origin + `/api/posts/shares/${share.id}`
+    );
+    expect(deleteOwnedShare.status()).toBe(200);
+    const deleteMissingShare = await outsider.delete(
+      origin + `/api/posts/shares/${share.id}`
+    );
+    expect(deleteMissingShare.status()).toBe(404);
+    createdShareId = undefined;
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${createdPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    const removedReference = await authorContext.request.put(
+      origin + `/api/social/post/update/${createdPost.id}`,
+      {
+        headers: { ...headers, 'x-ot-appscope': 'social' },
+        data: { content: marker },
+      }
+    );
+    expect(removedReference.status()).toBe(200);
+    const afterReferenceRemoval = await outsider.get(
+      new URL(imageReference!, origin).href,
+      { headers: { 'x-ot-appscope': 'social' } }
+    );
+    expect(afterReferenceRemoval.status()).toBe(200);
+    const anonymousAsset = await anonymous.get(
+      new URL(imageReference!, origin).href,
+      { headers: { 'x-ot-appscope': 'social' } }
+    );
+    expect(anonymousAsset.status()).toBe(404);
+    const publicMarker = `RR04 realtime public ${Date.now()}`;
+    realtimeMarker = publicMarker;
+    await page.getByLabel('Who can see this post?').selectOption('public');
+    await page
+      .getByRole('textbox', { name: 'Name your Masterpiece', exact: true })
+      .fill(publicMarker);
+    await page
+      .locator('tiptap-editor [contenteditable="true"]')
+      .fill(publicMarker);
+    const publicCreated = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/social/post'
+    );
+    await page.getByRole('button', { name: 'Post', exact: true }).click();
+    const publicResponse = await publicCreated;
+    expect(publicResponse.status()).toBe(201);
+    const publicPost = await publicResponse.json();
+    createdPostIds.push(publicPost.id);
+    realtimePostId = publicPost.id;
+    expect(publicPost.visibility).toBe('public');
+    const readerDirectPost = await readerContext.request.get(
+      origin + `/api/social/post/${publicPost.id}`,
+      { headers }
+    );
+    expect(readerDirectPost.status()).toBe(200);
+    expect((await readerDirectPost.json()).content).toContain(publicMarker);
+    const anonymousDirectPost = await anonymous.get(
+      origin + `/api/social/post/${publicPost.id}/shared`,
+      { headers: { 'x-ot-appscope': 'social' } }
+    );
+    expect(anonymousDirectPost.status()).toBe(200);
+    expect((await anonymousDirectPost.json()).content).toContain(publicMarker);
+    // This reader had the feed open before the server committed the new post.
+    let realtimeAssertionError: unknown;
+    try {
+      await expect(
+        readerPage.locator('.post-container').filter({ hasText: publicMarker })
+      ).toBeVisible({ timeout: 15000 });
+    } catch (error) {
+      realtimeAssertionError = error;
+    } finally {
+      console.log(
+        'RR04_SAFE_REALTIME_WIRE',
+        JSON.stringify(realtimeWireEvents)
+      );
+      console.log(
+        'RR04_SAFE_REALTIME_SOCKETS',
+        JSON.stringify({ pageRole: 'reader', sockets: realtimeSockets })
+      );
+      await writeFile(
+        testInfo.outputPath('rr04-safe-realtime-wire.json'),
+        JSON.stringify(
+          {
+            pageRole: 'reader',
+            sockets: realtimeSockets,
+            events: realtimeWireEvents,
+          },
+          null,
+          2
+        )
+      );
+      await testInfo.attach('rr04-safe-realtime-wire-events', {
+        body: Buffer.from(JSON.stringify(realtimeWireEvents, null, 2)),
+        contentType: 'application/json',
+      });
+    }
+    if (realtimeAssertionError) throw realtimeAssertionError;
+    const publicPostCard = readerPage
+      .locator('.post-container')
+      .filter({ hasText: publicMarker });
+    await publicPostCard
+      .getByRole('button', { name: 'Leave a Comment', exact: true })
+      .click();
+    const publicCommentEditor = publicPostCard.locator(
+      'tiptap-editor.comment-editor [contenteditable="true"]'
+    );
+    await expect(publicCommentEditor).toBeVisible();
+    await publicCommentEditor.fill('RR04 personal public comment image');
+    const publicCommentUpload = readerPage.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/api/asset'
+    );
+    await publicPostCard.locator('#commentImageInput').setInputFiles({
+      name: 'rr04-public-comment.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/7b8AAAAASUVORK5CYII=',
+        'base64'
+      ),
+    });
+    const publicCommentUploadResponse = await publicCommentUpload;
+    expect(
+      publicCommentUploadResponse.status(),
+      await publicCommentUploadResponse.text()
+    ).toBe(201);
+    const pendingPublicCommentImage = publicCommentEditor
+      .locator('img')
+      .first();
+    await expect(pendingPublicCommentImage).toBeVisible();
+    const publicCommentImageReference =
+      await pendingPublicCommentImage.getAttribute('src');
+    expect(publicCommentImageReference).toBeTruthy();
+    const publicCommentAssetId =
+      publicCommentImageReference!.match(/[0-9a-f-]{36}/i)?.[0];
+    expect(publicCommentAssetId).toBeDefined();
+    createdAssets.push({
+      id: publicCommentAssetId!,
+      owner: readerContext.request,
+    });
+    const publicCommentImageUrl = new URL(publicCommentImageReference!, origin)
+      .href;
+    expect(
+      (
+        await anonymous.get(publicCommentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    await expect
+      .poll(() =>
+        pendingPublicCommentImage.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+        )
+      )
+      .toBe(true);
+    await publicPostCard
+      .getByRole('button', { name: 'Submit', exact: true })
+      .click();
+    const savedPublicComment = publicPostCard
+      .locator('.comment-content')
+      .filter({ hasText: 'RR04 personal public comment image' });
+    await expect(savedPublicComment.locator('img')).toHaveCount(1);
+    await expect
+      .poll(() =>
+        savedPublicComment
+          .locator('img')
+          .evaluate(
+            (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+          )
+      )
+      .toBe(true);
+    expect(
+      (
+        await anonymous.get(publicCommentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    const publicParentEdit = await authorContext.request.put(
+      origin + `/api/social/post/update/${publicPost.id}`,
+      {
+        headers: { ...headers, 'x-ot-appscope': 'social' },
+        data: { title: `${publicMarker} edited`, content: publicMarker },
+      }
+    );
+    expect(publicParentEdit.status()).toBe(200);
+    expect(
+      (
+        await anonymous.get(publicCommentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(200);
+    const spoofedPublicShare = await outsider.post(
+      origin + `/api/posts/${publicPost.id}/share`,
+      {
+        data: { sharedById: author.userId },
+      }
+    );
+    expect(spoofedPublicShare.status()).toBe(400);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${publicPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    const persistedShare = await outsider.post(
+      origin + `/api/posts/${publicPost.id}/share`,
+      { data: {} }
+    );
+    expect(persistedShare.status()).toBe(201);
+    const persistedShareBody = await persistedShare.json();
+    createdShareId = persistedShareBody.id;
+    expect(persistedShareBody.sharedById).toBe(reader.profileId);
+    const stopFollowing = await outsider.post(
+      origin + '/api/social/follow/unfollow',
+      {
+        data: { followerId: reader.profileId, followeeId: author.profileId },
+      }
+    );
+    expect(stopFollowing.status()).toBe(201);
+    const narrowSource = await authorContext.request.put(
+      origin + `/api/social/post/update/${publicPost.id}`,
+      {
+        headers: { ...headers, 'x-ot-appscope': 'social' },
+        data: { visibility: 'followers' },
+      }
+    );
+    expect(narrowSource.status()).toBe(200);
+    expect(
+      await (
+        await outsider.get(origin + `/api/social/post/${publicPost.id}/shared`)
+      ).text()
+    ).not.toContain(publicMarker);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${publicPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+    expect(
+      (
+        await anonymous.get(publicCommentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await readerContext.request.get(publicCommentImageUrl, {
+          headers: { 'x-ot-appscope': 'social' },
+        })
+      ).status()
+    ).toBe(404);
+    expect(
+      (
+        await outsider.delete(origin + `/api/posts/shares/${createdShareId}`)
+      ).status()
+    ).toBe(200);
+    createdShareId = undefined;
+    const deletedSource = await authorContext.request.delete(
+      origin + `/api/social/post/${publicPost.id}`,
+      { headers }
+    );
+    expect(deletedSource.status()).toBe(200);
+    createdPostIds.splice(createdPostIds.indexOf(publicPost.id), 1);
+    expect(
+      await (
+        await outsider.get(origin + `/api/posts/${publicPost.id}/shares`)
+      ).json()
+    ).toEqual([]);
+  } catch (error) {
+    primaryError = error;
+  }
+  const cleanupErrors: unknown[] = [];
+  const cleanup = async (action: () => Promise<unknown>) => {
+    try {
+      await action();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  };
+  if (createdShareId) {
+    await cleanup(async () => {
+      const response = await outsider.delete(
+        origin + `/api/posts/shares/${createdShareId}`
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    });
+  }
+  for (const id of createdPostIds) {
+    await cleanup(async () => {
+      const response = await authorContext.request.delete(
+        origin + `/api/social/post/${id}`,
+        { headers }
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    });
+  }
+  for (const asset of createdAssets) {
+    await cleanup(async () => {
+      const response = await asset.owner.delete(
+        origin + `/api/asset/${asset.id}`,
+        { headers }
+      );
+      expect(response.status(), await response.text()).toBe(200);
+    });
+  }
+  await Promise.allSettled([
+    authorContext.close(),
+    outsider.dispose(),
+    commentOutsider.dispose(),
+    anonymous.dispose(),
+    readerContext?.close(),
+  ]);
+  if (cleanupErrors.length) {
+    const errors = primaryError
+      ? [primaryError, ...cleanupErrors]
+      : cleanupErrors;
+    throw new AggregateError(errors, 'RR04 compose test cleanup failed');
+  }
+  if (primaryError) throw primaryError;
 });
 
 test('RR04 realtime: a non-follower does not receive followers-only updates', async ({
@@ -361,14 +1696,18 @@ async function joinFixture(
 test('RR04 I01 API: membership, alternate profiles, comments and search use the same private-community policy', async ({
   playwright,
 }) => {
+  test.setTimeout(90_000);
   const ownerContext = await playwright.request.newContext();
   const memberContext = await playwright.request.newContext();
   const outsiderContext = await playwright.request.newContext();
   let alternateContext: APIRequestContext | undefined;
   try {
-    const owner = await account(ownerContext, 'matrix-owner');
-    const member = await account(memberContext, 'matrix-member');
-    const outsider = await account(outsiderContext, 'matrix-outsider');
+    const owner = await test.step('initialize owner account', () =>
+      account(ownerContext, 'matrix-owner'));
+    const member = await test.step('initialize member account', () =>
+      account(memberContext, 'matrix-member'));
+    const outsider = await test.step('initialize outsider account', () =>
+      account(outsiderContext, 'matrix-outsider'));
     const post = await fixture(owner, true);
     expect(post.communityId).toBeTruthy();
     const membership = await joinFixture(post.communityId!, member);
@@ -491,18 +1830,16 @@ test('RR04 I01 API: membership, alternate profiles, comments and search use the 
     const personalizedFeed =
       origin +
       '/api/social/feed?includePublic=true&includeCommunities=true&limit=100';
-    expect(
-      await (
-        await memberContext.get(personalizedFeed, {
-          headers: { 'x-ot-appscope': 'social' },
-        })
-      ).text()
-    ).toContain(post.marker);
-    expect(
-      await privacyText(outsiderContext, personalizedFeed, {
-        'x-ot-appscope': 'social',
-      })
-    ).not.toContain(post.marker);
+    const memberFeed = await memberContext.get(personalizedFeed, {
+      headers: { 'x-ot-appscope': 'client-interface' },
+    });
+    expect(memberFeed.status()).toBe(200);
+    expect(await memberFeed.text()).toContain(post.marker);
+    const outsiderFeed = await outsiderContext.get(personalizedFeed, {
+      headers: { 'x-ot-appscope': 'client-interface' },
+    });
+    expect(outsiderFeed.status()).toBe(200);
+    expect(await outsiderFeed.text()).not.toContain(post.marker);
     expect(
       await privacyText(
         outsiderContext,
@@ -518,13 +1855,11 @@ test('RR04 I01 API: membership, alternate profiles, comments and search use the 
       appScope: 'social',
       moderationStatus: 'hidden',
     });
-    expect(
-      await (
-        await memberContext.get(personalizedFeed, {
-          headers: { 'x-ot-appscope': 'social' },
-        })
-      ).text()
-    ).not.toContain(hiddenMarker);
+    const hiddenMemberFeed = await memberContext.get(personalizedFeed, {
+      headers: { 'x-ot-appscope': 'client-interface' },
+    });
+    expect(hiddenMemberFeed.status()).toBe(200);
+    expect(await hiddenMemberFeed.text()).not.toContain(hiddenMarker);
     expect(await (await memberContext.get(search)).text()).toContain(
       post.marker
     );
@@ -612,7 +1947,7 @@ test('RR04 I01 API: membership, alternate profiles, comments and search use the 
       expect(await privacyText(reader, search)).not.toContain(post.marker);
       expect(
         await privacyText(reader, personalizedFeed, {
-          'x-ot-appscope': 'social',
+          'x-ot-appscope': 'client-interface',
         })
       ).not.toContain(post.marker);
       for (const componentUrl of componentUrls)
@@ -637,7 +1972,7 @@ test('RR04 I01 browser: leaving a private community removes content from an open
   try {
     const owner = await account(ownerContext.request, 'cache-owner');
     const member = await account(memberContext.request, 'cache-member');
-    const post = await fixture(owner, true);
+    const post = await fixture(owner, true, 'social');
     await joinFixture(post.communityId!, member, owner.userId);
     await memberContext.clearCookies();
     const page = await memberContext.newPage();
@@ -654,8 +1989,56 @@ test('RR04 I01 browser: leaving a private community removes content from an open
     ).toBeVisible();
     // Establish a working content-free channel before the mutation. A probe
     // follow triggers the same cache invalidation without changing membership.
+    type DirectPostRefreshDiagnostic = {
+      requestCount: number;
+      status: number;
+      postIdMatches: boolean;
+      visibility: string | null;
+      markerPresent: boolean;
+    };
+    const directPostRefreshes: Promise<DirectPostRefreshDiagnostic>[] = [];
+    page.on('response', (response) => {
+      if (
+        response.request().method() !== 'GET' ||
+        new URL(response.url()).pathname !== `/api/social/post/${post.id}`
+      ) {
+        return;
+      }
+      const requestCount = directPostRefreshes.length + 1;
+      directPostRefreshes.push(
+        (async () => {
+          let postIdMatches = false;
+          let visibility: string | null = null;
+          let markerPresent = false;
+          try {
+            const body = await response.json();
+            if (body && typeof body === 'object' && !Array.isArray(body)) {
+              const postBody = body as Record<string, unknown>;
+              postIdMatches = postBody.id === post.id;
+              visibility =
+                typeof postBody.visibility === 'string'
+                  ? postBody.visibility
+                  : null;
+              markerPresent =
+                typeof postBody.content === 'string' &&
+                postBody.content.includes(post.marker);
+            }
+          } catch {
+            // A non-JSON error response still contributes status and count.
+          }
+          return {
+            requestCount,
+            status: response.status(),
+            postIdMatches,
+            visibility,
+            markerPresent,
+          };
+        })()
+      );
+    });
     const refresh = page.waitForResponse(
       (response) =>
+        response.request().method() === 'GET' &&
         new URL(response.url()).pathname === `/api/social/post/${post.id}`,
       { timeout: 10000 }
     );
@@ -664,11 +2047,18 @@ test('RR04 I01 browser: leaving a private community removes content from an open
     });
     expect(follow.status()).toBe(201);
     await refresh;
+    console.log(
+      'RR04_DIRECT_POST_REFRESH',
+      JSON.stringify(await Promise.all(directPostRefreshes))
+    );
     await expect(
       page.getByText(post.marker, { exact: true }).first()
     ).toBeVisible();
     const feedPage = await memberContext.newPage();
     await feedPage.goto(origin + '/feed', { waitUntil: 'domcontentloaded' });
+    await feedPage
+      .getByRole('button', { name: 'My Communities', exact: true })
+      .click();
     await expect(
       feedPage.getByText(post.marker, { exact: true }).first()
     ).toBeVisible();

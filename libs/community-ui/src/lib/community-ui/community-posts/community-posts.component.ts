@@ -60,6 +60,10 @@ export class CommunityPostsComponent extends Variantable {
   error = signal<string | null>(null);
   activeTab = signal<'posts' | 'create' | 'manage'>('posts');
   isOwnerOrManager = signal(false);
+  readonly communityAudienceOptions = [
+    { label: 'Community members', value: 'community' as const },
+    { label: 'Public', value: 'public' as const },
+  ];
 
   userVotes = signal<{ [postId: string]: number }>({});
   voteCounts = signal<{ [postId: string]: number }>({});
@@ -345,7 +349,7 @@ export class CommunityPostsComponent extends Variantable {
   }
 
   async createdPost(postData: PostData) {
-    const { title, content, attachments } = postData;
+    const { title, content, attachments, visibility } = postData;
     const community = this.community();
 
     if (!this.currentProfileId) {
@@ -367,6 +371,7 @@ export class CommunityPostsComponent extends Variantable {
         profileId: this.currentProfileId,
         communityId: community.id,
         attachmentIds,
+        visibility,
       });
 
       const postWithProfile: PostDto = {

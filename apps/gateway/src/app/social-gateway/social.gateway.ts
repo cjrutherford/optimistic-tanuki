@@ -17,7 +17,10 @@ import {
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
+import {
+  SocketSessionAuthService,
+  SocketSessionUser,
+} from '../../auth/socket-session-auth.service';
 
 interface ConnectedClient {
   id: string;
@@ -40,6 +43,10 @@ export class SocialGateway {
   private readonly l = new Logger(SocialGateway.name);
   private connectedClients: Map<string, Set<ConnectedClient>> = new Map();
   private clientToProfileMap: Map<Socket, string> = new Map();
+  private readonly authenticationReady = new WeakMap<
+    Socket,
+    Promise<SocketSessionUser>
+  >();
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
@@ -48,13 +55,21 @@ export class SocialGateway {
   ) {}
 
   async handleConnection(client: Socket): Promise<void> {
+    const authentication = this.socketSessionAuth.authenticate(client);
+    this.authenticationReady.set(client, authentication);
     try {
-      const user = await this.socketSessionAuth.authenticate(client);
+      const user = await authentication;
+      if (this.authenticationReady.get(client) !== authentication) {
+        return;
+      }
       const connectedClient = this.registerClient(user.profileId, client);
       connectedClient.contentRevision++;
       client.emit('social_content_invalidated', {});
     } catch {
-      client.disconnect(true);
+      if (this.authenticationReady.get(client) === authentication) {
+        this.authenticationReady.delete(client);
+        client.disconnect(true);
+      }
     }
   }
 
@@ -64,9 +79,8 @@ export class SocialGateway {
     payload: { profileId: string; limit?: number; offset?: number },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`Getting feed for profile: ${profileId}`);
 
@@ -111,9 +125,8 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; postIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    const profileId = this.socketSessionAuth.assertProfile(
-      client,
-      payload.profileId
+    const profileId = (
+      await this.assertProfileAfterAuthentication(client, payload.profileId)
     ).profileId;
     this.l.log(`User ${profileId} subscribing to posts`);
 
@@ -346,11 +359,11 @@ export class SocialGateway {
 
   @SubscribeMessage('disconnect')
   handleDisconnect(@ConnectedSocket() client: Socket): void {
+    this.authenticationReady.delete(client);
     // Use reverse mapping for efficient lookup
     const profileId = this.clientToProfileMap.get(client);
 
     if (profileId) {
-      this.l.log(`Client disconnected: ${profileId}`);
       const clients = this.connectedClients.get(profileId);
       const connected = this.clientToConnectedClient(client);
       if (connected) {
@@ -364,6 +377,7 @@ export class SocialGateway {
   // Helper methods for broadcasting updates
   async broadcastPostCreated(post: any): Promise<void> {
     this.l.log(`Broadcasting post created: ${post.id}`);
+    this.advanceRealtimeFeedRevision();
     await this.broadcastAuthorizedPost(
       'posts:all',
       'post_created',
@@ -493,11 +507,9 @@ export class SocialGateway {
               )
               .pipe(timeout(3000))
           );
-          if (
-            post &&
-            !Array.isArray(post) &&
-            connected.contentRevision === contentRevision
-          ) {
+          const authorized = !!post && !Array.isArray(post);
+          const revisionCurrent = connected.contentRevision === contentRevision;
+          if (authorized && revisionCurrent) {
             client.emit(
               event,
               event.startsWith('comment_') || event === 'vote_updated'
@@ -576,6 +588,28 @@ export class SocialGateway {
           (entry) => entry.client === client
         )
       : undefined;
+  }
+
+  private advanceRealtimeFeedRevision(): void {
+    for (const clients of this.connectedClients.values()) {
+      for (const connected of clients) {
+        connected.contentRevision++;
+      }
+    }
+  }
+
+  private async assertProfileAfterAuthentication(
+    client: Socket,
+    requestedProfileId?: string
+  ): Promise<SocketSessionUser> {
+    const authentication = this.authenticationReady.get(client);
+    if (authentication) {
+      await authentication;
+      if (this.authenticationReady.get(client) !== authentication) {
+        throw new Error('Socket disconnected before authentication completed');
+      }
+    }
+    return this.socketSessionAuth.assertProfile(client, requestedProfileId);
   }
 
   private broadcastToSubscribers(

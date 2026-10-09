@@ -52,6 +52,7 @@ import {
   CreateSocialPostDto,
   SocialPostDto,
   SocialPostRefDto,
+  UpdateSocialPostDto,
 } from './social-post';
 
 const validPost = {
@@ -399,8 +400,49 @@ describe('social-contract-parity', () => {
       ...validPost,
       appScope: 'social',
       visibility: 'public',
+      publicAudienceExplicit: false,
     });
     expect(await validate(dto)).toEqual([]);
+  });
+
+  it('supports community post visibility and keeps the explicit-public marker read-only', async () => {
+    const create = plainToInstance(CreateSocialPostDto, {
+      ...validPost,
+      visibility: 'community',
+    });
+    expect(await validate(create)).toEqual([]);
+
+    const update = plainToInstance(UpdateSocialPostDto, {
+      visibility: 'community',
+    });
+    expect(await validate(update)).toEqual([]);
+
+    const read = plainToInstance(SocialPostDto, {
+      ...validPost,
+      appScope: 'social',
+      visibility: 'community',
+      publicAudienceExplicit: false,
+    });
+    expect(await validate(read)).toEqual([]);
+
+    const forgedCreate = plainToInstance(CreateSocialPostDto, {
+      ...validPost,
+      visibility: 'public',
+      publicAudienceExplicit: true,
+    });
+    const forgedUpdate = plainToInstance(UpdateSocialPostDto, {
+      visibility: 'public',
+      publicAudienceExplicit: true,
+    });
+    for (const dto of [forgedCreate, forgedUpdate]) {
+      const errors = await validate(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
+      expect(errors.map((error) => error.property)).toContain(
+        'publicAudienceExplicit'
+      );
+    }
   });
 
   it('SocialEventDto accepts the canonical read shape', async () => {

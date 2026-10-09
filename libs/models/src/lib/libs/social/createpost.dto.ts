@@ -6,6 +6,7 @@ import {
   IsArray,
   MaxLength,
   MinLength,
+  IsIn,
 } from 'class-validator';
 
 export class CreatePostDto {
@@ -61,4 +62,14 @@ export class CreatePostDto {
   @IsOptional()
   @IsUUID()
   communityId?: string;
+
+  @ApiProperty({
+    description:
+      'Who can read the post. Community posts default to community members; public must be selected explicitly to reach outside the community.',
+    enum: ['public', 'followers', 'community'],
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(['public', 'followers', 'community'])
+  visibility?: 'public' | 'followers' | 'community';
 }

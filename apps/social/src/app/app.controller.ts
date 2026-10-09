@@ -1255,7 +1255,7 @@ export class AppController {
     const limit = data.limit ? Math.min(data.limit, MAX_LIMIT) : DEFAULT_LIMIT;
     const offset = data.offset || 0;
 
-    const following = await this.followService.getFollowing(data.userId);
+    const following = await this.followService.getFollowing(data.profileId);
     const followingIds = following.map((f) => f.followeeId);
 
     const userCommunities = await this.communityService.getUserCommunities(
@@ -1278,15 +1278,13 @@ export class AppController {
     const params: any = { userId: data.userId, followingIds, communityIds };
 
     if (data.includePublic !== false) {
-      conditions.push(
-        '(post.visibility = :public AND post.communityId IS NULL)'
-      );
+      conditions.push('post.visibility = :public');
       params.public = 'public';
     }
 
     if (data.includeFollowing && followingIds.length > 0) {
       conditions.push(
-        '(post.userId IN (:...followingIds) AND post.visibility = :followers)'
+        '(post.profileId IN (:...followingIds) AND post.visibility = :followers)'
       );
       params.followers = 'followers';
     }
@@ -1862,26 +1860,146 @@ export class AppController {
 
   // PostShare handlers
   @MessagePattern({ cmd: PostShareCommands.CREATE })
-  async createPostShare(data: CreatePostShareDto) {
+  async createPostShare(data: CreatePostShareDto & { userId: string }) {
+    if (!data.sharedById || !data.userId) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Authenticated share identity is required',
+      });
+    }
+    const scope = await this.buildPostVisibilityScope(data.sharedById);
+    const source = await this.postService.findOne(data.originalPostId, {
+      where: visiblePostWhere(scope),
+    });
+    if (!source)
+      throw new RpcException({
+        statusCode: 404,
+        message: 'The original post is not available to share',
+      });
+    const sourceCommunity = source.communityId
+      ? await this.communityService.findOne(source.communityId)
+      : undefined;
+    const sourceMemberOnly =
+      !!source.communityId &&
+      (!!sourceCommunity?.isPrivate ||
+        source.visibility === 'community' ||
+        (source.visibility === 'public' &&
+          source.publicAudienceExplicit === false));
+    const safeDefault = sourceMemberOnly
+      ? 'community'
+      : source.visibility === 'followers'
+      ? 'followers'
+      : 'public';
+    const requestedVisibility = data.visibility ?? safeDefault;
+    if (!['public', 'followers', 'community'].includes(requestedVisibility)) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Invalid share visibility',
+      });
+    }
+    if (
+      requestedVisibility === 'public' &&
+      (sourceMemberOnly || source.visibility === 'followers')
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'A restricted post cannot be shared publicly',
+      });
+    }
+    if (requestedVisibility === 'community') {
+      const targetCommunityId = data.communityId ?? source.communityId;
+      if (!targetCommunityId) {
+        throw new RpcException({
+          statusCode: 400,
+          message: 'Community shares require a target community',
+        });
+      }
+      if (sourceMemberOnly && targetCommunityId !== source.communityId) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'A member-only post can only be shared in its community',
+        });
+      }
+      if (
+        !(await this.communityService.isMember(targetCommunityId, data.userId))
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'Community membership is required to share here',
+        });
+      }
+      data.communityId = targetCommunityId;
+    } else {
+      data.communityId = undefined;
+    }
+    data.visibility = requestedVisibility;
     return await this.postShareService.create(data);
   }
 
   @MessagePattern({ cmd: PostShareCommands.DELETE })
-  async deletePostShare(@Payload('id') id: string) {
-    await this.postShareService.remove(id);
+  async deletePostShare(
+    @Payload('id') id: string,
+    @Payload('sharedById') sharedById: string
+  ) {
+    await this.postShareService.remove(id, sharedById);
     return { success: true };
   }
 
   @MessagePattern({ cmd: PostShareCommands.FIND_BY_POST })
-  async findPostSharesByPost(
-    @Payload('originalPostId') originalPostId: string
-  ) {
-    return await this.postShareService.findByPost(originalPostId);
+  async findPostSharesByPost(data: {
+    originalPostId: string;
+    profileId?: string;
+    userId?: string;
+  }) {
+    return this.filterVisibleShares(
+      await this.postShareService.findByPost(data.originalPostId),
+      data.profileId,
+      data.userId
+    );
   }
 
   @MessagePattern({ cmd: PostShareCommands.FIND_BY_PROFILE })
-  async findPostSharesByProfile(@Payload('sharedById') sharedById: string) {
-    return await this.postShareService.findByProfile(sharedById);
+  async findPostSharesByProfile(data: {
+    sharedById: string;
+    profileId?: string;
+    userId?: string;
+  }) {
+    return this.filterVisibleShares(
+      await this.postShareService.findByProfile(data.sharedById),
+      data.profileId,
+      data.userId
+    );
+  }
+
+  private async filterVisibleShares(
+    shares: any[],
+    profileId?: string,
+    userId?: string
+  ) {
+    if (!profileId || !userId) return [];
+    const scope = await this.buildPostVisibilityScope(profileId);
+    const visible: any[] = [];
+    for (const share of shares) {
+      if (scope.blockedProfileIds.includes(share.sharedById)) continue;
+      const source = await this.postService.findOne(share.originalPostId, {
+        where: visiblePostWhere(scope),
+      });
+      if (!source) continue;
+      if (
+        share.visibility === 'followers' &&
+        share.sharedById !== profileId &&
+        !scope.followedProfileIds.includes(share.sharedById)
+      )
+        continue;
+      if (
+        share.visibility === 'community' &&
+        (!share.communityId ||
+          !(await this.communityService.isMember(share.communityId, userId)))
+      )
+        continue;
+      visible.push(share);
+    }
+    return visible;
   }
 
   // Event handlers

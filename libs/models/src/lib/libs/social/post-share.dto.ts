@@ -1,4 +1,18 @@
-import { IsString, IsOptional, IsEnum, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsUUID, IsIn } from 'class-validator';
+
+export class SharePostRequestDto {
+  @IsOptional()
+  @IsString()
+  comment?: string;
+
+  @IsOptional()
+  @IsIn(['public', 'followers', 'community'])
+  visibility?: 'public' | 'followers' | 'community';
+
+  @IsOptional()
+  @IsUUID()
+  communityId?: string;
+}
 
 export class CreatePostShareDto {
   @IsString()

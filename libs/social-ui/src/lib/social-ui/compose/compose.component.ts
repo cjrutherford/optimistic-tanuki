@@ -84,6 +84,12 @@ export interface PostData {
   injectedComponents?: InjectedComponentInstance[]; // Old format (backward compat)
   injectedComponentsNew?: InjectedComponentData[]; // New format for DB persistence
   themeConfig?: PostThemeConfig;
+  visibility?: 'public' | 'followers' | 'community';
+}
+
+export interface PostAudienceOption {
+  label: string;
+  value: 'public' | 'followers' | 'community';
 }
 
 export interface ImageUploadCallback {
@@ -131,6 +137,20 @@ export class ComposeComponent
 {
   @Input() title = '';
   @Input() profileId?: string; // Profile ID for asset uploads
+  @Input() communityId?: string;
+  private _audienceOptions: PostAudienceOption[] = [
+    { label: 'Public', value: 'public' },
+    { label: 'Followers', value: 'followers' },
+  ];
+  @Input()
+  set audienceOptions(options: PostAudienceOption[]) {
+    this._audienceOptions = options?.length ? options : [];
+    this.visibility = this._audienceOptions[0]?.value ?? 'public';
+  }
+  get audienceOptions(): PostAudienceOption[] {
+    return this._audienceOptions;
+  }
+  visibility: 'public' | 'followers' | 'community' = 'public';
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
@@ -153,6 +173,21 @@ export class ComposeComponent
   selectedComponentType: string | null = null;
   selectedComponentProps: Record<string, unknown> = {};
   componentConfig = COMPONENT_PROPERTY_DEFINITIONS;
+
+  getUploadAudienceRestrictions(): AssetAudienceRestriction[] {
+    const restrictions = [...this.assetAudienceRestrictions];
+    if (this.visibility === 'followers' && this.profileId) {
+      restrictions.push({ type: 'followers', profileId: this.profileId });
+    }
+    if (this.visibility === 'community' && this.profileId && this.communityId) {
+      restrictions.push({
+        type: 'community',
+        profileId: this.profileId,
+        communityId: this.communityId,
+      });
+    }
+    return restrictions;
+  }
 
   // Theme properties
   override background = '#ffffff';
@@ -551,7 +586,7 @@ export class ComposeComponent
               const uploadedUrl = await this.imageUploadCallback(
                 base64Src,
                 file.name,
-                this.assetAudienceRestrictions
+                this.getUploadAudienceRestrictions()
               );
               this.editor?.chain().focus().setImage({ src: uploadedUrl }).run();
             }
@@ -574,7 +609,7 @@ export class ComposeComponent
           file,
           this.profileId,
           `social-image-${Date.now()}`,
-          this.assetAudienceRestrictions
+          this.getUploadAudienceRestrictions()
         );
 
         this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -723,7 +758,7 @@ export class ComposeComponent
                 const uploadedUrl = await this.imageUploadCallback!(
                   base64Src,
                   file.name,
-                  this.assetAudienceRestrictions
+                  this.getUploadAudienceRestrictions()
                 );
                 this.editor
                   ?.chain()
@@ -749,7 +784,7 @@ export class ComposeComponent
             file,
             this.profileId,
             `social-drag-drop-${Date.now()}`,
-            this.assetAudienceRestrictions
+            this.getUploadAudienceRestrictions()
           );
 
           this.editor?.chain().focus().setImage({ src: assetUrl }).run();
@@ -828,7 +863,7 @@ export class ComposeComponent
             const assetUrl = await this.imageUploadCallback(
               image.dataUrl,
               fileName,
-              this.assetAudienceRestrictions
+              this.getUploadAudienceRestrictions()
             );
             replacements.push({ dataUrl: image.dataUrl, assetUrl });
           } catch (error) {
@@ -855,6 +890,7 @@ export class ComposeComponent
     this.postSubmitted.emit({
       title: this.title,
       content: finalContent,
+      visibility: this.visibility,
       links: this.links,
       attachments: this.attachments,
       injectedComponents: this.getActiveComponents(), // Old format (backward compat)
