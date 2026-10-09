@@ -178,12 +178,21 @@ describe('NotificationController', () => {
     it('should mark a notification as read', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.markAsRead('notif-1');
+      await controller.markAsRead('notif-1', {
+        profileId: 'recipient-1',
+      } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.MARK_READ },
-        { id: 'notif-1' }
+        { id: 'notif-1', recipientId: 'recipient-1' }
       );
+    });
+
+    it('rejects a missing authenticated profile before sending a mutation', async () => {
+      await expect(
+        controller.markAsRead('notif-1', {} as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 
@@ -211,12 +220,19 @@ describe('NotificationController', () => {
     it('should delete a notification', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.delete('notif-1');
+      await controller.delete('notif-1', { profileId: 'recipient-1' } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.DELETE },
-        { id: 'notif-1' }
+        { id: 'notif-1', recipientId: 'recipient-1' }
       );
+    });
+
+    it('rejects a missing authenticated profile before sending a mutation', async () => {
+      await expect(
+        controller.delete('notif-1', {} as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 });

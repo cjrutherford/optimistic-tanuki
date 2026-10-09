@@ -147,12 +147,14 @@ export class NotificationController {
     description: 'The notification has been successfully marked as read.',
   })
   async markAsRead(
-    @Param('notificationId') notificationId: string
+    @Param('notificationId') notificationId: string,
+    @User() user: UserDetails
   ): Promise<void> {
+    const recipientId = this.getAuthenticatedProfileId(user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.MARK_READ },
-        { id: notificationId }
+        { id: notificationId, recipientId }
       )
     );
   }
@@ -182,11 +184,15 @@ export class NotificationController {
     status: 200,
     description: 'The notification has been successfully deleted.',
   })
-  async delete(@Param('notificationId') notificationId: string): Promise<void> {
+  async delete(
+    @Param('notificationId') notificationId: string,
+    @User() user: UserDetails
+  ): Promise<void> {
+    const recipientId = this.getAuthenticatedProfileId(user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.DELETE },
-        { id: notificationId }
+        { id: notificationId, recipientId }
       )
     );
   }

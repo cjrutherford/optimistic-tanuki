@@ -1454,8 +1454,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: NotificationCommands.MARK_READ })
-  async markNotificationRead(@Payload('id') id: string) {
-    await this.notificationService.markAsRead(id);
+  async markNotificationRead(
+    @Payload() payload?: { id?: string; recipientId?: string }
+  ) {
+    await this.notificationService.markAsRead(
+      payload?.id as string,
+      payload?.recipientId as string
+    );
     return { success: true };
   }
 
@@ -1466,8 +1471,13 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: NotificationCommands.DELETE })
-  async deleteNotification(@Payload('id') id: string) {
-    await this.notificationService.delete(id);
+  async deleteNotification(
+    @Payload() payload?: { id?: string; recipientId?: string }
+  ) {
+    await this.notificationService.delete(
+      payload?.id as string,
+      payload?.recipientId as string
+    );
     return { success: true };
   }
 

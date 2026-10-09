@@ -1290,20 +1290,24 @@ describe('AppController delegation', () => {
         h.controller.findNotificationsByRecipient('r1')
       ).resolves.toEqual([{ id: 'n1' }]);
 
-      await expect(h.controller.markNotificationRead('n1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.notificationService.markAsRead).toHaveBeenCalledWith('n1');
+      const notificationMutation = { id: 'n1', recipientId: 'r1' };
+      await expect(
+        h.controller.markNotificationRead(notificationMutation)
+      ).resolves.toEqual({ success: true });
+      expect(h.notificationService.markAsRead).toHaveBeenCalledWith(
+        'n1',
+        'r1'
+      );
 
       await expect(
         h.controller.markAllNotificationsRead('r1')
       ).resolves.toEqual({ success: true });
       expect(h.notificationService.markAllAsRead).toHaveBeenCalledWith('r1');
 
-      await expect(h.controller.deleteNotification('n1')).resolves.toEqual({
-        success: true,
-      });
-      expect(h.notificationService.delete).toHaveBeenCalledWith('n1');
+      await expect(
+        h.controller.deleteNotification(notificationMutation)
+      ).resolves.toEqual({ success: true });
+      expect(h.notificationService.delete).toHaveBeenCalledWith('n1', 'r1');
 
       await expect(
         h.controller.getUnreadNotificationCount('r1')

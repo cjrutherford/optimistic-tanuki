@@ -157,13 +157,14 @@ describe('NotificationService', () => {
 
   describe('markAsRead', () => {
     it('should mark notification as read', async () => {
-      notificationRepo.update.mockResolvedValue({} as any);
+      notificationRepo.update.mockResolvedValue({ affected: 1 } as any);
 
-      await service.markAsRead('notif-1');
+      await service.markAsRead('notif-1', 'user1');
 
-      expect(notificationRepo.update).toHaveBeenCalledWith('notif-1', {
-        isRead: true,
-      });
+      expect(notificationRepo.update).toHaveBeenCalledWith(
+        { id: 'notif-1', recipientId: 'user1' },
+        { isRead: true }
+      );
     });
   });
 
@@ -182,11 +183,14 @@ describe('NotificationService', () => {
 
   describe('delete', () => {
     it('should delete notification', async () => {
-      notificationRepo.delete.mockResolvedValue({} as any);
+      notificationRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
-      await service.delete('notif-1');
+      await service.delete('notif-1', 'user1');
 
-      expect(notificationRepo.delete).toHaveBeenCalledWith('notif-1');
+      expect(notificationRepo.delete).toHaveBeenCalledWith({
+        id: 'notif-1',
+        recipientId: 'user1',
+      });
     });
   });
 
@@ -219,5 +223,72 @@ describe('NotificationService', () => {
 
       expect(result).toEqual({ count: 3 });
     });
+  });
+});
+
+describe('NotificationService recipient-scoped mutations', () => {
+  it('prevents a different profile from marking or deleting a notification', async () => {
+    let row: { id: string; recipientId: string; isRead: boolean } | undefined =
+      {
+        id: 'fixture-notification',
+        recipientId: 'fixture-owner',
+        isRead: false,
+      };
+    const matches = (criteria: unknown) => {
+      if (!row) return false;
+      if (typeof criteria === 'string') return row.id === criteria;
+      return Object.entries(criteria as Record<string, unknown>).every(
+        ([key, value]) => (row as any)[key] === value
+      );
+    };
+    const repo = {
+      update: jest.fn(async (criteria, changes) => {
+        const matched = matches(criteria);
+        if (matched) Object.assign(row!, changes);
+        return { affected: matched ? 1 : 0 };
+      }),
+      delete: jest.fn(async (criteria) => {
+        const matched = matches(criteria);
+        if (matched) row = undefined;
+        return { affected: matched ? 1 : 0 };
+      }),
+    };
+    const service = new NotificationService(repo as any);
+
+    await expect(
+      service.markAsRead('fixture-notification', 'attacker-profile')
+    ).rejects.toMatchObject({ error: { statusCode: 404 } });
+    expect(row?.isRead).toBe(false);
+
+    await expect(
+      service.delete('fixture-notification', 'attacker-profile')
+    ).rejects.toMatchObject({ error: { statusCode: 404 } });
+    expect(row?.recipientId).toBe('fixture-owner');
+
+    await service.markAsRead('fixture-notification', 'fixture-owner');
+    expect(row?.isRead).toBe(true);
+    await service.delete('fixture-notification', 'fixture-owner');
+    expect(row).toBeUndefined();
+  });
+
+  it('rejects missing recipient identity before issuing a repository mutation', async () => {
+    const repo = {
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+    const service = new NotificationService(repo as any);
+
+    await expect(
+      service.markAsRead('fixture-notification', '')
+    ).rejects.toMatchObject({
+      error: { statusCode: 403 },
+    });
+    await expect(
+      service.delete('fixture-notification', undefined as any)
+    ).rejects.toMatchObject({
+      error: { statusCode: 403 },
+    });
+    expect(repo.update).not.toHaveBeenCalled();
+    expect(repo.delete).not.toHaveBeenCalled();
   });
 });

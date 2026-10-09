@@ -388,6 +388,11 @@ export class SocialGateway {
 
   async broadcastPostUpdated(post: any): Promise<void> {
     this.l.log(`Broadcasting post updated: ${post.id}`);
+    // Any post update can change feed eligibility (audience, moderation,
+    // scheduling, or community scope). Advance in-flight feed reads and make
+    // active clients fetch the current authorized snapshot before applying
+    // per-post updates.
+    this.broadcastSocialContentInvalidated();
     await this.broadcastAuthorizedPost(
       `post:${post.id}`,
       'post_updated',

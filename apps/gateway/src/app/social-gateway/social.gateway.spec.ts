@@ -248,6 +248,57 @@ describe('SocialGateway', () => {
         postIds: ['all'],
       });
     });
+
+    it('drops a feed read started before audience narrowing and recovers on the next authorized read', async () => {
+      const client: any = { emit: jest.fn() };
+      const pendingRead = new Subject<any[]>();
+      const previouslyVisible = {
+        id: 'followers-post',
+        content: 'must not return after narrowing',
+      };
+      const freshAuthorizedFeed = [
+        { id: 'public-post', content: 'still authorized' },
+      ];
+      let feedRequests = 0;
+      let markReadStarted!: () => void;
+      const readStarted = new Promise<void>((resolve) => {
+        markReadStarted = resolve;
+      });
+      mockSocialClient.send.mockImplementation((pattern: any) => {
+        if (pattern.cmd === PostCommands.FIND_MANY) {
+          feedRequests++;
+          if (feedRequests === 1) {
+            markReadStarted();
+            return pendingRead;
+          }
+          return of(freshAuthorizedFeed);
+        }
+        return of(null);
+      });
+
+      const staleRequest = gateway.handleGetFeed(
+        { profileId: 'reader' },
+        client
+      );
+      await readStarted;
+      await gateway.broadcastPostUpdated({
+        id: previouslyVisible.id,
+        visibility: 'private',
+      });
+      pendingRead.next([previouslyVisible]);
+      pendingRead.complete();
+      await staleRequest;
+
+      expect(client.emit).toHaveBeenCalledWith(
+        'social_content_invalidated',
+        {}
+      );
+      expect(client.emit).not.toHaveBeenCalledWith('feed', [previouslyVisible]);
+
+      await gateway.handleGetFeed({ profileId: 'reader' }, client);
+      expect(client.emit).toHaveBeenCalledWith('feed', freshAuthorizedFeed);
+      expect(client.emit).not.toHaveBeenCalledWith('feed', [previouslyVisible]);
+    });
   });
 
   describe('handleSubscribePosts', () => {

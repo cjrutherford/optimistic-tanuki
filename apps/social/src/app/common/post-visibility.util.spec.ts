@@ -182,6 +182,33 @@ describe('visiblePostWhere (where-fragment form)', () => {
     ]);
   });
 
+  it('excludes authors blocked in either direction from community and legacy community branches', () => {
+    const branches = visiblePostWhere({
+      viewerProfileId: 'viewer',
+      followedProfileIds: ['friend', 'blocked-friend'],
+      blockedProfileIds: ['blocked-friend', 'i-blocked-viewer'],
+      viewerAccountId: 'viewer-account',
+    });
+
+    const communityBranches = branches.filter(
+      (branch) =>
+        ['community', 'public'].includes(
+          (branch as FindOptionsWhere<Post>).visibility as string
+        ) &&
+        ((branch as FindOptionsWhere<Post>).visibility === 'community' ||
+          (branch as FindOptionsWhere<Post>).publicAudienceExplicit === false)
+    ) as FindOptionsWhere<Post>[];
+
+    expect(communityBranches).toHaveLength(2);
+    for (const branch of communityBranches) {
+      expect(isOperator(branch.profileId, 'not')).toBe(true);
+      expect((branch.profileId as FindOperator<any>).value).toEqual([
+        'blocked-friend',
+        'i-blocked-viewer',
+      ]);
+    }
+  });
+
   it('empty block list emits no exclusion clause on the public branch', () => {
     const scope: PostVisibilityScope = {
       viewerProfileId: undefined,

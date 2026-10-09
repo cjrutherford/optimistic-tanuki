@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -107,8 +108,13 @@ export class NotificationService {
     return await this.notificationRepo.findOne({ where: { id } });
   }
 
-  async markAsRead(id: string): Promise<void> {
-    await this.notificationRepo.update(id, { isRead: true });
+  async markAsRead(id: string, recipientId: string): Promise<void> {
+    this.assertMutationIdentity(id, recipientId);
+    const result = await this.notificationRepo.update(
+      { id, recipientId },
+      { isRead: true }
+    );
+    this.assertMutationMatched(result.affected);
   }
 
   async markAllAsRead(recipientId: string): Promise<void> {
@@ -118,8 +124,10 @@ export class NotificationService {
     );
   }
 
-  async delete(id: string): Promise<void> {
-    await this.notificationRepo.delete(id);
+  async delete(id: string, recipientId: string): Promise<void> {
+    this.assertMutationIdentity(id, recipientId);
+    const result = await this.notificationRepo.delete({ id, recipientId });
+    this.assertMutationMatched(result.affected);
   }
 
   async getUnreadCount(recipientId: string): Promise<number> {
@@ -133,5 +141,23 @@ export class NotificationService {
   ): Promise<{ count: number }> {
     const count = await this.getUnreadCount(recipientId);
     return { count };
+  }
+
+  private assertMutationIdentity(id: string, recipientId: string): void {
+    if (!id?.trim() || !recipientId?.trim()) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Notification recipient identity is required',
+      });
+    }
+  }
+
+  private assertMutationMatched(affected: number | undefined): void {
+    if (!affected) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Notification not found',
+      });
+    }
   }
 }

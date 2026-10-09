@@ -215,6 +215,12 @@ export function visiblePostWhere(
         memberCommunityCondition(scope.viewerAccountId)
       ) as any,
     };
+    if (blocked.length > 0) {
+      communityBranch.profileId = intersectCondition(
+        communityBranch.profileId,
+        Not(In(blocked))
+      ) as any;
+    }
     branches.push(communityBranch);
 
     const legacyCommunityBranch: FindOptionsWhere<Post> = {
@@ -236,6 +242,12 @@ export function visiblePostWhere(
         memberCommunityCondition(scope.viewerAccountId)
       ) as any,
     };
+    if (blocked.length > 0) {
+      legacyCommunityBranch.profileId = intersectCondition(
+        legacyCommunityBranch.profileId,
+        Not(In(blocked))
+      ) as any;
+    }
     branches.push(legacyCommunityBranch);
   }
 
