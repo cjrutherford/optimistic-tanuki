@@ -383,6 +383,23 @@ describe('ToggleComponent', () => {
     );
   });
 
+  it('keeps the native theme checkbox directly paired with its visible slider', () => {
+    component.toggleControls();
+    fixture.detectChanges();
+
+    const checkbox = appearanceMenu()?.querySelector(
+      '.switch input[type="checkbox"]'
+    ) as HTMLInputElement | null;
+    expect(checkbox).toBeTruthy();
+    expect(checkbox?.getAttribute('aria-label')).toContain('theme selected');
+    expect(checkbox?.nextElementSibling?.classList.contains('slider')).toBe(
+      true
+    );
+
+    checkbox?.focus();
+    expect(document.activeElement).toBe(checkbox);
+  });
+
   it('closes the rendered appearance menu from its close button', () => {
     component.toggleControls();
     fixture.detectChanges();
