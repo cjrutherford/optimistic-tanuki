@@ -51,4 +51,16 @@ describe('ReportDialogComponent', () => {
       })
     );
   });
+
+  it('names the modal from its heading and names the close control', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const dialog = host.querySelector('.modal-dialog');
+    const labelledBy = dialog?.getAttribute('aria-labelledby');
+    const title = labelledBy ? host.querySelector(`#${labelledBy}`) : null;
+    const closeButton = host.querySelector('.close-button');
+
+    expect(dialog?.getAttribute('role')).toBe('alertdialog');
+    expect(title?.textContent?.trim()).toBe('Report Post');
+    expect(closeButton?.getAttribute('aria-label')).toBe('Close report');
+  });
 });

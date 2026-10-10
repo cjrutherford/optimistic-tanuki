@@ -88,6 +88,13 @@ describe('ButtonComponent', () => {
     expect(btn().getAttribute('data-size')).toBe('lg');
   });
 
+  it('forwards an explicit accessible name to its native button', () => {
+    component.ariaLabel = 'Notifications';
+    fixture.detectChanges();
+
+    expect(btn().getAttribute('aria-label')).toBe('Notifications');
+  });
+
   it('should flag the gradient path for brand+solid when useGradient is true', () => {
     component.variant = 'primary';
     component.useGradient = true;

@@ -79,6 +79,15 @@ describe('NotificationBellComponent', () => {
       expect(icon).toBeTruthy();
     });
 
+    it('gives the bell button an accessible name', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const button = compiled.querySelector(
+        '.icon-button button'
+      ) as HTMLButtonElement | null;
+
+      expect(button?.getAttribute('aria-label')).toBe('Notifications');
+    });
+
     it('should show badge when unread count > 0', () => {
       component.unreadCount = signal(5);
       fixture.detectChanges();

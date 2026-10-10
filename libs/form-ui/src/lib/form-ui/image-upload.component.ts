@@ -14,10 +14,15 @@ import {
   template: `
     <div class="upload-container" [class.dragover]="isDragOver">
       <input
+        [id]="inputId"
         type="file"
         accept="image/*"
+        [attr.aria-label]="label || 'Upload image'"
         (change)="handleImageChange($event)"
       />
+      <label class="upload-label" [for]="inputId">{{
+        label || 'Upload image'
+      }}</label>
       <div
         class="drop-target"
         (drop)="handleDrop($event)"
@@ -66,6 +71,11 @@ import {
         color: var(--muted);
         font-family: var(--font-body);
       }
+      .upload-label {
+        align-self: flex-start;
+        color: var(--foreground);
+        font-weight: 600;
+      }
       .drop-target:hover {
         color: var(--foreground);
       }
@@ -86,6 +96,9 @@ import {
   ],
 })
 export class ImageUploadComponent implements OnInit {
+  private static nextInputId = 0;
+  @Input() label = 'Upload image';
+  readonly inputId = `otui-image-upload-${++ImageUploadComponent.nextInputId}`;
   @Output() imageUpload = new EventEmitter<string>();
   @Input() currentImage: string | null = null;
   image: string | null = null;

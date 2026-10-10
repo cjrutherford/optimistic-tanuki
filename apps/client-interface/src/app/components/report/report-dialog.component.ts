@@ -17,10 +17,17 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
   standalone: true,
   imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent],
   template: `
-    <otui-modal [visible]="true" (close)="cancel()">
+    <otui-modal
+      [visible]="true"
+      [heading]="'Report ' + (contentType | titlecase)"
+      (close)="cancel()"
+    >
       <div class="dialog-header">
-        <h2>Report {{ contentType | titlecase }}</h2>
-        <button class="close-button" (click)="cancel()">
+        <button
+          class="close-button"
+          aria-label="Close report"
+          (click)="cancel()"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"

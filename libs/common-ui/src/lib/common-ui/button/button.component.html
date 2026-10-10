@@ -1,4 +1,5 @@
 <button
+  [attr.aria-label]="ariaLabel || null"
   [disabled]="disabled"
   (click)="onClick()"
   [ngClass]="variant"

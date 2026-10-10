@@ -165,7 +165,7 @@
   }
 
   .no-groups {
-    color: var(--local-complement);
+    color: var(--local-foreground);
     text-align: center;
     padding: var(--spacing-md) 0;
     @include p.small-text(var(--font-size-sm, 0.9rem));

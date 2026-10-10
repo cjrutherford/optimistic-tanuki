@@ -51,6 +51,7 @@ export type ButtonVariant =
 })
 export class ButtonComponent extends Themeable {
   @Input() disabled = false;
+  @Input() ariaLabel = '';
 
   /** Canonical semantic tone. */
   @Input() tone: Tone = 'brand';

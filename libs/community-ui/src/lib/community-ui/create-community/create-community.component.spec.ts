@@ -110,6 +110,28 @@ describe('CreateCommunityComponent upload contract', () => {
     expect(JSON.stringify(dto)).not.toContain('data:');
   });
 
+  it('associates Join Policy and each image upload prompt with its control', () => {
+    const select = fixture.nativeElement.querySelector(
+      'lib-select select'
+    ) as HTMLSelectElement;
+    const selectLabel = fixture.nativeElement.querySelector(
+      'lib-select label'
+    ) as HTMLLabelElement | null;
+    const host = fixture.nativeElement as HTMLElement;
+    const fileInputs = Array.from(
+      host.querySelectorAll<HTMLInputElement>('input[type="file"]')
+    );
+
+    expect(selectLabel?.textContent?.trim()).toBe('Join Policy');
+    expect(select.labels?.[0]?.textContent?.trim()).toBe('Join Policy');
+    expect(fileInputs).toHaveLength(2);
+    expect(fileInputs.every((input) => input.id.length > 0)).toBe(true);
+    expect(new Set(fileInputs.map((input) => input.id)).size).toBe(2);
+    expect(
+      fileInputs.map((input) => input.labels?.[0]?.textContent?.trim())
+    ).toEqual(['Community Logo', 'Community Banner']);
+  });
+
   it('does not re-upload on retry/resubmit', async () => {
     await startSelect(component.onLogoSelect, 'logo.png');
     httpMock.expectOne('/api/asset').flush({ id: 'logo-1' });
