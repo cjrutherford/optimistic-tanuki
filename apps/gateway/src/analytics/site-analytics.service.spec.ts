@@ -1,7 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import {
-  MAX_SITE_ANALYTICS_KEYS,
+  MAX_SITE_ANALYTICS_CAMPAIGN_KEYS,
+  MAX_SITE_ANALYTICS_PAGE_KEYS,
+  SITE_ANALYTICS_OVERFLOW,
   SiteAnalyticsService,
+  siteAnalyticsAppsFromEnv,
 } from './site-analytics.service';
 import { MemorySiteAnalyticsStore } from './site-analytics.store';
 
@@ -101,27 +104,90 @@ describe('SiteAnalyticsService', () => {
     ['an oversized UTM value', { ...event, utmCampaign: 'x'.repeat(65) }],
     ['a UTM value with an email', { ...event, utmSource: 'ada@example.com' }],
     ['a bad app id', { ...event, appId: 'HAI APP' }],
+    ['an app that is not allowlisted', { ...event, appId: 'someone-else' }],
   ])('rejects %s', async (_label, input) => {
     await expect(service.record(input)).rejects.toThrow(BadRequestException);
     expect(await service.summary()).toEqual([]);
   });
 
-  it('caps the number of distinct counters', async () => {
-    for (let i = 0; i < MAX_SITE_ANALYTICS_KEYS; i += 1) {
-      await service.record({ ...event, detail: `d${i}` });
+  it('counts into a fixed overflow once the campaign budget is full', async () => {
+    for (let i = 0; i < MAX_SITE_ANALYTICS_CAMPAIGN_KEYS; i += 1) {
+      await service.record({ ...event, utmCampaign: `junk-${i}` });
     }
 
-    await expect(
-      service.record({ ...event, detail: 'one-more' })
-    ).rejects.toThrow('Analytics capacity reached.');
-    // Existing counters still increment.
-    await service.record({ ...event, detail: 'd0' });
+    // A new campaign no longer gets its own counter, but it is still counted,
+    // under labels the caller cannot choose.
+    await service.record({ ...event, path: '/contact', utmCampaign: 'late' });
+    await service.record({ ...event, path: '/partners', utmCampaign: 'later' });
+    const summary = await service.summary();
+    expect(summary.find((entry) => entry.utmCampaign === 'late')).toBe(
+      undefined
+    );
     expect(
-      (await service.summary()).find((entry) => entry.detail === 'd0')?.count
+      summary.find((entry) => entry.path === SITE_ANALYTICS_OVERFLOW)
+    ).toEqual(
+      expect.objectContaining({
+        name: 'page_view',
+        utmCampaign: SITE_ANALYTICS_OVERFLOW,
+        count: 2,
+      })
+    );
+    // Existing campaign counters still increment.
+    await service.record({ ...event, utmCampaign: 'junk-0' });
+    expect(
+      (await service.summary()).find((entry) => entry.utmCampaign === 'junk-0')
+        ?.count
     ).toBe(2);
   });
 
+  it('keeps room for pages when campaign values are flooded', async () => {
+    for (let i = 0; i < MAX_SITE_ANALYTICS_CAMPAIGN_KEYS + 50; i += 1) {
+      await service.record({ ...event, utmCampaign: `junk-${i}` });
+    }
+    const page = {
+      appId: 'hai',
+      name: 'page_view',
+      path: '/how-we-work',
+    };
+
+    await service.record(page);
+
+    expect(
+      (await service.summary()).find((entry) => entry.path === '/how-we-work')
+    ).toEqual(expect.objectContaining({ utmCampaign: null, count: 1 }));
+  });
+
+  it('bounds page counters the same way', async () => {
+    for (let i = 0; i < MAX_SITE_ANALYTICS_PAGE_KEYS; i += 1) {
+      await service.record({
+        appId: 'hai',
+        name: 'page_view',
+        path: `/p${i}`,
+      });
+    }
+
+    await service.record({ appId: 'hai', name: 'page_view', path: '/new' });
+
+    const summary = await service.summary();
+    expect(summary).toHaveLength(MAX_SITE_ANALYTICS_PAGE_KEYS + 1);
+    expect(
+      summary.find((entry) => entry.path === SITE_ANALYTICS_OVERFLOW)
+    ).toEqual(expect.objectContaining({ utmSource: null, count: 1 }));
+  });
+
+  it('reads the app allowlist from the environment', () => {
+    expect(siteAnalyticsAppsFromEnv(undefined)).toEqual(['hai']);
+    expect(siteAnalyticsAppsFromEnv('hai, forge ,BAD APP')).toEqual([
+      'hai',
+      'forge',
+    ]);
+  });
+
   it('filters the summary by app and sorts by count', async () => {
+    service = new SiteAnalyticsService(new MemorySiteAnalyticsStore(), [
+      'hai',
+      'other',
+    ]);
     await service.record({ ...event, appId: 'other' });
     await service.record({ ...event, name: 'phone_click' });
     await service.record({ ...event, name: 'phone_click' });

@@ -1,7 +1,13 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Optional,
+} from '@nestjs/common';
 import {
   SITE_ANALYTICS_STORE,
   SiteAnalyticsStore,
+  SiteAnalyticsTier,
 } from './site-analytics.store';
 
 /**
@@ -13,6 +19,14 @@ import {
  * event. Counters live in the configured store (Redis in deployments, so they
  * survive gateway restarts) and are exposed to Prometheus as
  * `ot_site_events_total` on the performance exposition endpoint.
+ *
+ * The endpoint is anonymous, so its storage is bounded against junk input:
+ * - only allowlisted apps are counted;
+ * - page counters and campaign (UTM) counters have separate budgets, so
+ *   made-up campaign values cannot use up the room for page paths;
+ * - an event that would need a new counter in a full tier is still counted,
+ *   in a per-app, per-event "(other)" counter whose labels callers cannot
+ *   set, so a flood degrades detail but never drops real totals.
  */
 
 export const SITE_ANALYTICS_EVENTS = [
@@ -52,8 +66,32 @@ const APP_ID = /^[a-z0-9-]{1,40}$/;
 const PATH = /^\/[a-z0-9/-]{0,119}$/;
 const DETAIL = /^[a-z0-9/_-]{1,80}$/;
 const UTM = /^[a-z0-9_.-]{1,64}$/;
-/** Upper bound on distinct counters, so junk input cannot grow memory. */
-export const MAX_SITE_ANALYTICS_KEYS = 5000;
+/** Budget for counters without campaign fields. */
+export const MAX_SITE_ANALYTICS_PAGE_KEYS = 4000;
+/** Budget for counters that carry UTM campaign fields. */
+export const MAX_SITE_ANALYTICS_CAMPAIGN_KEYS = 1000;
+/**
+ * Upper bound on detailed counters across both tiers. Overflow counters add
+ * at most two per allowlisted app and event on top.
+ */
+export const MAX_SITE_ANALYTICS_KEYS =
+  MAX_SITE_ANALYTICS_PAGE_KEYS + MAX_SITE_ANALYTICS_CAMPAIGN_KEYS;
+/** Label value for counts that did not fit their tier's budget. */
+export const SITE_ANALYTICS_OVERFLOW = '(other)';
+
+/** Apps whose events are counted; anything else is rejected. */
+export const SITE_ANALYTICS_APPS = Symbol('SITE_ANALYTICS_APPS');
+
+/** `SITE_ANALYTICS_APPS=hai,other` widens the allowlist; default is HAI. */
+export function siteAnalyticsAppsFromEnv(
+  value = process.env['SITE_ANALYTICS_APPS']
+): string[] {
+  const apps = (value ?? '')
+    .split(',')
+    .map((app) => app.trim())
+    .filter((app) => APP_ID.test(app));
+  return apps.length ? apps : ['hai'];
+}
 
 type SiteAnalyticsKey = Omit<SiteAnalyticsCount, 'count'>;
 
@@ -72,16 +110,42 @@ const escapeLabel = (value: string) =>
 
 @Injectable()
 export class SiteAnalyticsService {
+  private readonly apps: ReadonlySet<string>;
+
   constructor(
-    @Inject(SITE_ANALYTICS_STORE) private readonly store: SiteAnalyticsStore
-  ) {}
+    @Inject(SITE_ANALYTICS_STORE) private readonly store: SiteAnalyticsStore,
+    @Optional() @Inject(SITE_ANALYTICS_APPS) apps?: readonly string[]
+  ) {
+    this.apps = new Set(apps?.length ? apps : siteAnalyticsAppsFromEnv());
+  }
 
   async record(input: SiteAnalyticsEventInput): Promise<void> {
     const event = this.normalize(input);
-    const key = JSON.stringify(FIELDS.map((field) => event[field]));
-    if (!(await this.store.increment(key, MAX_SITE_ANALYTICS_KEYS))) {
-      throw new BadRequestException('Analytics capacity reached.');
-    }
+    const campaign = Boolean(
+      event.utmSource || event.utmMedium || event.utmCampaign
+    );
+    const tier: SiteAnalyticsTier = campaign ? 'campaigns' : 'pages';
+    // Built only from the allowlisted app and event, so the set of overflow
+    // counters stays small whatever callers send.
+    const overflow: SiteAnalyticsKey = {
+      appId: event.appId,
+      name: event.name,
+      path: SITE_ANALYTICS_OVERFLOW,
+      detail: null,
+      utmSource: campaign ? SITE_ANALYTICS_OVERFLOW : null,
+      utmMedium: campaign ? SITE_ANALYTICS_OVERFLOW : null,
+      utmCampaign: campaign ? SITE_ANALYTICS_OVERFLOW : null,
+    };
+    await this.store.increment(
+      tier,
+      this.key(event),
+      this.key(overflow),
+      campaign ? MAX_SITE_ANALYTICS_CAMPAIGN_KEYS : MAX_SITE_ANALYTICS_PAGE_KEYS
+    );
+  }
+
+  private key(event: SiteAnalyticsKey): string {
+    return JSON.stringify(FIELDS.map((field) => event[field]));
   }
 
   async summary(appId?: string): Promise<SiteAnalyticsCount[]> {
@@ -141,6 +205,9 @@ export class SiteAnalyticsService {
       throw new BadRequestException('An analytics event is required.');
     }
     const appId = this.match(input.appId, APP_ID, 'appId');
+    if (!this.apps.has(appId)) {
+      throw new BadRequestException('Unknown analytics app.');
+    }
     if (
       typeof input.name !== 'string' ||
       !(SITE_ANALYTICS_EVENTS as readonly string[]).includes(input.name)

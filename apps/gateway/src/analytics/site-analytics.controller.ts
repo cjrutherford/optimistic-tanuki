@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { RequirePermissions } from '../decorators/permissions.decorator';
@@ -17,6 +18,18 @@ import {
   SiteAnalyticsService,
 } from './site-analytics.service';
 
+/**
+ * Per-client limit for the anonymous event endpoint. The gateway does not
+ * trust forwarding headers, so behind the HAI server or an ingress many
+ * visitors share one tracked address; the limits are generous for that
+ * reason. They are defence in depth: storage is bounded by the service's
+ * per-tier budgets and overflow counters, not by this limit.
+ */
+const EVENT_THROTTLE = {
+  short: { limit: 25, ttl: 1000 },
+  long: { limit: 600, ttl: 60000 },
+};
+
 @ApiTags('analytics')
 @Controller('analytics')
 export class SiteAnalyticsController {
@@ -25,6 +38,7 @@ export class SiteAnalyticsController {
   constructor(private readonly analytics: SiteAnalyticsService) {}
 
   @Public()
+  @Throttle(EVENT_THROTTLE)
   @Post('events')
   async record(
     @Body() input: SiteAnalyticsEventInput
