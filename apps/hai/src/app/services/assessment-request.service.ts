@@ -11,8 +11,12 @@ export type AssessmentState = 'idle' | 'sending' | 'sent' | 'failed';
 /**
  * Sends a private-cloud assessment through the public contact intake, the
  * same path the contact form uses.
+ *
+ * Provided by each assessment form rather than the root injector, so its
+ * state lives as long as the form: coming back to the page after a
+ * successful submission shows a fresh form, not the old thank-you.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class AssessmentRequestService {
   private readonly blogging = inject(OptomisitcTanukiAPIService);
   private readonly analytics = inject(AnalyticsService);

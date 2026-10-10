@@ -31,6 +31,7 @@ describe('AssessmentRequestService', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        AssessmentRequestService,
         { provide: OptomisitcTanukiAPIService, useValue: api },
         { provide: ANALYTICS_TRANSPORT, useValue: () => undefined },
       ],

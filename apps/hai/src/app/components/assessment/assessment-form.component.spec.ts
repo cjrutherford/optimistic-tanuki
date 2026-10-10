@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
+import { OptomisitcTanukiAPIService } from '@optimistic-tanuki/blogging-data-access';
+import { ANALYTICS_TRANSPORT } from '../../services/analytics.service';
 import { AssessmentFormComponent } from './assessment-form.component';
 import {
   AssessmentRequestService,
@@ -51,10 +54,12 @@ describe('AssessmentFormComponent', () => {
     request = { state: signal<AssessmentState>('idle'), submit: jest.fn() };
     TestBed.configureTestingModule({
       imports: [AssessmentFormComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AssessmentRequestService, useValue: request },
-      ],
+      providers: [provideRouter([])],
+    });
+    TestBed.overrideComponent(AssessmentFormComponent, {
+      set: {
+        providers: [{ provide: AssessmentRequestService, useValue: request }],
+      },
     });
     fixture = TestBed.createComponent(AssessmentFormComponent);
     fixture.detectChanges();
@@ -196,5 +201,42 @@ describe('AssessmentFormComponent', () => {
     expect(
       (element.querySelector('#assessment-name') as HTMLInputElement).value
     ).toBe('Ada Lovelace');
+  });
+});
+
+describe('AssessmentFormComponent revisits', () => {
+  interface BloggingApiStub {
+    contactControllerCreateContact: jest.Mock;
+  }
+
+  it('shows a fresh form when the page is opened again after sending', () => {
+    const api: BloggingApiStub = {
+      contactControllerCreateContact: jest.fn().mockReturnValue(of({})),
+    };
+    TestBed.configureTestingModule({
+      imports: [AssessmentFormComponent],
+      providers: [
+        provideRouter([]),
+        { provide: OptomisitcTanukiAPIService, useValue: api },
+        { provide: ANALYTICS_TRANSPORT, useValue: () => undefined },
+      ],
+    });
+
+    const first = TestBed.createComponent(AssessmentFormComponent);
+    first.detectChanges();
+    first.componentInstance.request.state.set('sent');
+    first.detectChanges();
+    expect(
+      first.nativeElement.querySelector('#assessment-sent')
+    ).not.toBeNull();
+    // Navigating away destroys the form, and its request state with it.
+    first.destroy();
+
+    const second = TestBed.createComponent(AssessmentFormComponent);
+    second.detectChanges();
+
+    expect(second.componentInstance.request.state()).toBe('idle');
+    expect(second.nativeElement.querySelector('form')).not.toBeNull();
+    expect(second.nativeElement.querySelector('#assessment-sent')).toBeNull();
   });
 });

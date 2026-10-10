@@ -39,6 +39,8 @@ interface FieldError {
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './assessment-form.component.html',
   styleUrl: './assessment-form.component.scss',
+  // One request state per form instance; see AssessmentRequestService.
+  providers: [AssessmentRequestService],
 })
 export class AssessmentFormComponent {
   private readonly fb = inject(FormBuilder);
