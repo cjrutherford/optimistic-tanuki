@@ -38,10 +38,22 @@ export class ProfileGuard implements CanActivate {
           return false;
         }
         if (isPlatformBrowser(this.platformId)) {
-          const saved = this.authStateService.getPersistedSelectedProfile();
-          this.profileService.selectProfile(
-            profiles.find((p) => p.id === saved?.id) ?? profiles[0]
+          const sessionProfileId =
+            this.authStateService.getDecodedTokenValue()?.profileId;
+          const sessionProfile = profiles.find(
+            (profile) => profile.id === sessionProfileId
           );
+          if (!sessionProfile) {
+            this.router.navigate(['/settings'], {
+              state: {
+                showProfileModal: false,
+                profileMessage:
+                  'Your active profile could not be loaded. Please sign in again.',
+              },
+            });
+            return false;
+          }
+          this.profileService.selectProfile(sessionProfile);
         }
         return true;
       } catch (error) {

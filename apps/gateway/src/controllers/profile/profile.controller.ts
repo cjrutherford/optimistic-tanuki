@@ -116,10 +116,20 @@ export class ProfileController {
   })
   async createProfile(
     @Body() createProfileDto: CreateProfileDto & { appId?: string },
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @User() user: UserDetails
   ) {
+    if (!createProfileDto.userId || createProfileDto.userId !== user?.userId) {
+      throw new ForbiddenException(
+        'A profile can only be created for the authenticated user'
+      );
+    }
+    const authenticatedProfileDto = {
+      ...createProfileDto,
+      userId: user.userId,
+    };
     const createdProfile: ProfileDto = await firstValueFrom(
-      this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
+      this.client.send({ cmd: ProfileCommands.Create }, authenticatedProfileDto)
     );
     this.l.log(`Profile created with ID: ${createdProfile.id}`);
     if (['forgeofwill'].includes(createProfileDto.appId))
@@ -139,7 +149,7 @@ export class ProfileController {
     // Initialize permissions for the profile
     await this.initializeProfilePermissions(
       createdProfile,
-      createProfileDto.userId,
+      user.userId,
       appScope
     );
 
@@ -148,7 +158,7 @@ export class ProfileController {
       const issueResp: any = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId: createProfileDto.userId, profileId: createdProfile.id }
+          { userId: user.userId, profileId: createdProfile.id }
         )
       );
       const newToken = issueResp?.data?.newToken || issueResp?.newToken || null;

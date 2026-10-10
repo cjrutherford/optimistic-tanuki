@@ -62,6 +62,9 @@
       [communityInfo]="
         post.communityId ? communityInfo()[post.communityId] : undefined
       "
+      [saveState]="
+        postSaveStates()[post.id] || { status: 'idle', requestId: 0 }
+      "
       [currentUserId]="getCurrentUserId()"
       [profileId]="getCurrentUserId()"
       [userVote]="getUserVote(post.id)"

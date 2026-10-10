@@ -152,7 +152,19 @@ export class RegisterComponent implements OnInit {
           type: 'warning',
         });
       } else {
-        this.profileService.selectProfile(currentProfiles[0]);
+        const sessionProfile = currentProfiles.find(
+          (profile) => profile.id === decoded?.profileId
+        );
+        if (!sessionProfile) {
+          this.errorMessage =
+            'Your active profile could not be loaded. Please sign in again.';
+          this.messageService.addMessage({
+            content: this.errorMessage,
+            type: 'error',
+          });
+          return;
+        }
+        this.profileService.selectProfile(sessionProfile);
         this.router.navigate(['/feed']);
         this.messageService.addMessage({
           content: 'Welcome! Registration successful.',

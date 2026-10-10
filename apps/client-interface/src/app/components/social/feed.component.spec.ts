@@ -583,5 +583,51 @@ describe('FeedComponent', () => {
         updatedAt: expect.any(Date),
       })
     );
+    expect(component.postSaveStates()['post-1']).toEqual({
+      status: 'saved',
+      requestId: 1,
+    });
+  });
+
+  it('keeps failed post edits retryable and reports the failure without rejecting the event handler', async () => {
+    const updateError = new Error('controlled update failure');
+    jest
+      .spyOn(component.postService, 'updatePost')
+      .mockReturnValue(throwError(() => updateError));
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const original = {
+      id: 'post-1',
+      title: 'Original',
+      content: 'Original content',
+      profileId: '123',
+    } as any;
+    component.posts.set([original]);
+
+    await expect(
+      component.updatePost('post-1', {
+        title: 'Draft',
+        content: 'Draft content',
+      })
+    ).resolves.toBeUndefined();
+
+    expect(component.posts()).toEqual([original]);
+    expect(component.postSaveStates()['post-1']).toEqual({
+      status: 'error',
+      requestId: 1,
+      error:
+        'Your post could not be saved. Your draft is still here; try again.',
+    });
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content:
+        'Your post could not be saved. Your draft is still here; try again.',
+      type: 'error',
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to update post',
+      updateError
+    );
+    consoleErrorSpy.mockRestore();
   });
 });

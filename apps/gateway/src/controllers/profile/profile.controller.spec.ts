@@ -1,4 +1,5 @@
 import {
+  AuthCommands,
   GoalCommands,
   ProfileCommands,
   ProjectCommands,
@@ -31,6 +32,7 @@ import { ForbiddenException } from '@nestjs/common';
 describe('ProfileController', () => {
   let controller: ProfileController;
   let clientProxy: ClientProxy;
+  let authClient: ClientProxy;
   let socialClient: ClientProxy;
   let roleInitService: { processNow: jest.Mock };
 
@@ -112,6 +114,7 @@ describe('ProfileController', () => {
 
     controller = module.get<ProfileController>(ProfileController);
     clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+    authClient = module.get<ClientProxy>(ServiceTokens.AUTHENTICATION_SERVICE);
     socialClient = module.get<ClientProxy>(ServiceTokens.SOCIAL_SERVICE);
   });
 
@@ -172,16 +175,18 @@ describe('ProfileController', () => {
       .spyOn(clientProxy, 'send')
       .mockReturnValueOnce(of({ id: 'profile-1', userId: 'user-1' } as any));
 
-    await controller.createProfile(createProfileDto, 'test');
+    await controller.createProfile(createProfileDto, 'test', {
+      userId: 'user-1',
+    } as UserDetails);
 
     expect(roleInitService.processNow).toHaveBeenCalled();
   });
 
-  it('should create a profile', async () => {
+  it('rejects creating a profile for another user before profile or token writes', async () => {
     const createProfileDto: CreateProfileDto = {
       name: 'Test',
       description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
+      userId: 'attacker-selected-user',
       profilePic: 'https://www.google.com',
       coverPic: 'https://www.google.com',
       bio: 'I am a bio',
@@ -190,17 +195,63 @@ describe('ProfileController', () => {
       interests: 'Coding',
       skills: 'Coding',
     };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
+    const profileSend = jest.spyOn(clientProxy, 'send');
+    const authSend = jest.spyOn(authClient, 'send');
+    await expect(
+      controller.createProfile(createProfileDto, 'client-interface', {
+        userId: 'authenticated-user',
+      } as UserDetails)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(profileSend).not.toHaveBeenCalled();
+    expect(authSend).not.toHaveBeenCalled();
+  });
 
-    const createResponse = await controller.createProfile(
+  it('rejects an absent profile owner before profile or token writes', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send');
+    const authSend = jest.spyOn(authClient, 'send');
+    await expect(
+      controller.createProfile(
+        { name: 'Test', userId: '' } as CreateProfileDto,
+        'client-interface',
+        { userId: 'authenticated-user' } as UserDetails
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(profileSend).not.toHaveBeenCalled();
+    expect(authSend).not.toHaveBeenCalled();
+  });
+
+  it('uses the authenticated user for a legitimate profile creation', async () => {
+    const createProfileDto: CreateProfileDto = {
+      name: 'Test',
+      description: 'bio',
+      userId: 'authenticated-user',
+    } as CreateProfileDto;
+    const profileSend = jest
+      .spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(
+        of({ id: 'new-profile', userId: 'authenticated-user' } as any)
+      );
+    const authSend = jest
+      .spyOn(authClient, 'send')
+      .mockReturnValueOnce(of({ data: { newToken: 'legacy-token' } }));
+
+    const response = await controller.createProfile(
       createProfileDto,
-      'test'
+      'client-interface',
+      { userId: 'authenticated-user' } as UserDetails
     );
-    expect(clientProxy.send).toHaveBeenCalledWith(
+    expect(profileSend).toHaveBeenCalledWith(
       { cmd: ProfileCommands.Create },
-      createProfileDto
+      expect.objectContaining({ userId: 'authenticated-user' })
     );
-    expect(createResponse).toEqual({});
+    expect(authSend).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'authenticated-user', profileId: 'new-profile' }
+    );
+    expect(response).toEqual({
+      profile: { id: 'new-profile', userId: 'authenticated-user' },
+      newToken: 'legacy-token',
+    });
   });
 
   it('should get a profile', async () => {

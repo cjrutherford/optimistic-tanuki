@@ -21,6 +21,7 @@ describe('ProfileGuard', () => {
       const persisted = localStorage.getItem('ot-client-selectedProfile');
       return persisted ? JSON.parse(persisted) : null;
     }),
+    getDecodedTokenValue: jest.fn(() => ({ profileId: 'profile-1' })),
     restoreSession: jest.fn().mockResolvedValue(true),
   };
 
@@ -66,7 +67,7 @@ describe('ProfileGuard', () => {
     );
   });
 
-  it('selects the first available profile when a restored cookie session has no saved selection', async () => {
+  it('selects the profile identified by the restored cookie session when there is no saved selection', async () => {
     profileServiceMock.getCurrentUserProfiles.mockReturnValue([
       { id: 'profile-1', profileName: 'User One' } as ProfileDto,
     ]);
@@ -81,6 +82,9 @@ describe('ProfileGuard', () => {
 
   it('restores a cookie session before loading profiles when the guard starts unauthenticated', async () => {
     authStateSubject.next(false);
+    authStateServiceMock.getDecodedTokenValue.mockReturnValue({
+      profileId: 'mine',
+    });
     profileServiceMock.getCurrentUserProfiles.mockReturnValue([
       { id: 'mine' } as ProfileDto,
     ]);
@@ -99,7 +103,10 @@ describe('ProfileGuard', () => {
     );
   });
 
-  it('does not select a saved profile outside the fresh account list', async () => {
+  it('does not select a different profile when the session profile is missing from the fresh account list', async () => {
+    authStateServiceMock.getDecodedTokenValue.mockReturnValue({
+      profileId: 'missing-profile',
+    });
     localStorage.setItem(
       'ot-client-selectedProfile',
       JSON.stringify({ id: 'stale' })
@@ -107,9 +114,46 @@ describe('ProfileGuard', () => {
     profileServiceMock.getCurrentUserProfiles.mockReturnValue([
       { id: 'mine' } as ProfileDto,
     ]);
-    expect(await guard.canActivate()).toBe(true);
-    expect(profileServiceMock.selectProfile).toHaveBeenCalledWith({
-      id: 'mine',
+    expect(await guard.canActivate()).toBe(false);
+    expect(profileServiceMock.selectProfile).not.toHaveBeenCalled();
+  });
+
+  it('prefers the verified session profile over a stale stored selection and list order', async () => {
+    localStorage.setItem(
+      'ot-client-selectedProfile',
+      JSON.stringify({ id: 'profile-1' })
+    );
+    authStateServiceMock.getDecodedTokenValue.mockReturnValue({
+      profileId: 'profile-2',
     });
+    const first = { id: 'profile-1' } as ProfileDto;
+    const sessionProfile = { id: 'profile-2' } as ProfileDto;
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([
+      first,
+      sessionProfile,
+    ]);
+
+    expect(await guard.canActivate()).toBe(true);
+    expect(profileServiceMock.selectProfile).toHaveBeenCalledWith(
+      sessionProfile
+    );
+    expect(profileServiceMock.selectProfile).not.toHaveBeenCalledWith(first);
+  });
+
+  it('does not fall back to the first profile when the verified session profile is unavailable', async () => {
+    authStateServiceMock.getDecodedTokenValue.mockReturnValue({
+      profileId: 'missing-profile',
+    });
+    const first = { id: 'profile-1' } as ProfileDto;
+    profileServiceMock.getCurrentUserProfiles.mockReturnValue([first]);
+
+    expect(await guard.canActivate()).toBe(false);
+    expect(profileServiceMock.selectProfile).not.toHaveBeenCalled();
+    expect(routerMock.navigate).toHaveBeenCalledWith(
+      ['/settings'],
+      expect.objectContaining({
+        state: expect.objectContaining({ showProfileModal: false }),
+      })
+    );
   });
 });

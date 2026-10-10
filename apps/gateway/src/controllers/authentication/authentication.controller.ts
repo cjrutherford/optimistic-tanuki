@@ -320,17 +320,66 @@ export class AuthenticationController {
   async issueTokenForProfile(
     @User() user: UserDetails,
     @Body() body: { profileId?: string },
+    @AppScope() appScope?: string,
     @Headers('x-ot-session-mode') sessionMode?: string,
     @Res({ passthrough: true }) response?: Response
   ) {
     try {
+      const requestedProfileId = body?.profileId?.trim() || user.profileId;
+      const currentProfileId = user.profileId;
+      const requestedScope = appScope?.trim();
+      const isOwnerConsole = requestedScope === 'owner-console';
+      const canonicalAppId = requestedScope
+        ? this.canonicalAppForScope(requestedScope)
+        : null;
+
+      // The user id comes from the authenticated token, never from the request body.
+      // Always verify ownership, including when refreshing the current profile.
+      const ownedProfiles = await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.GetAll },
+          { where: { userId: user.userId } }
+        )
+      );
+      const targetProfile = Array.isArray(ownedProfiles)
+        ? ownedProfiles.find(
+            (profile) =>
+              profile.id === requestedProfileId &&
+              profile.userId === user.userId
+          )
+        : undefined;
+
+      if (!targetProfile) {
+        throw new ForbiddenException('Profile is not owned by the authenticated user');
+      }
+
+      const isSameProfileRefresh = requestedProfileId === currentProfileId;
+      if (!canonicalAppId && !isOwnerConsole && !isSameProfileRefresh) {
+        throw new ForbiddenException('A registered app scope is required to select another profile');
+      }
+
+      if (canonicalAppId || isOwnerConsole) {
+        const targetScope = targetProfile.appScope;
+        const isGlobalProfile = targetScope === 'global' || targetScope == null;
+        const canonicalTargetAppId =
+          typeof targetScope === 'string'
+            ? this.canonicalAppForScope(targetScope)
+            : null;
+        const scopeMatches = isOwnerConsole
+          ? isGlobalProfile
+          : isGlobalProfile || canonicalTargetAppId === canonicalAppId;
+        if (!scopeMatches) {
+          throw new ForbiddenException('Profile does not belong to the requested app scope');
+        }
+      }
+
       return this.withBrowserSession(
         await firstValueFrom(
           this.authClient.send(
             { cmd: AuthCommands.Issue },
             {
               userId: user.userId,
-              profileId: body.profileId || user.profileId,
+              profileId: requestedProfileId,
             }
           )
         ),
@@ -338,6 +387,9 @@ export class AuthenticationController {
         response
       );
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error(
         'Error in issueTokenForProfile:',
         error?.message || error

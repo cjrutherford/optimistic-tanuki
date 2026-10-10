@@ -83,8 +83,22 @@
         [value]="editContent"
         (input)="onEditContentInput($event)"
       ></textarea>
+      @if (saveState?.status === 'pending') {
+      <div class="edit-save-status" role="status" aria-live="polite">
+        Saving changes…
+      </div>
+      } @if (saveState?.status === 'error' && saveState?.error) {
+      <div class="edit-save-error" role="alert" aria-live="assertive">
+        {{ saveState?.error }}
+      </div>
+      }
       <div class="edit-actions">
-        <otui-button variant="primary" (action)="saveEdit()">Save</otui-button>
+        <otui-button
+          variant="primary"
+          [disabled]="saveState?.status === 'pending'"
+          (action)="saveEdit()"
+          >Save</otui-button
+        >
         <otui-button variant="secondary" (action)="cancelEdit()"
           >Cancel</otui-button
         >

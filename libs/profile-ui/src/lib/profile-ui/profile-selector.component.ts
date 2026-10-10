@@ -5,8 +5,10 @@ import {
   ElementRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnInit,
   Output,
+  SimpleChanges,
   inject,
   signal,
 } from '@angular/core';
@@ -51,9 +53,15 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   templateUrl: './profile-selector.component.html',
   styleUrl: './profile-selector.component.scss',
 })
-export class ProfileSelectorComponent implements OnInit, AfterViewInit {
+export class ProfileSelectorComponent
+  implements OnInit, OnChanges, AfterViewInit
+{
   @Input() profiles: ProfileDto[] = [];
   @Input() currentSelectedProfile: ProfileDto | null = null;
+  /** Keep selection controlled until an asynchronous owner/session check passes. */
+  @Input() selectionPending = false;
+  /** Let the owner update currentSelectedProfile only after validation succeeds. */
+  @Input() controlledSelection = false;
   @Output() selectedProfile: EventEmitter<ProfileDto> =
     new EventEmitter<ProfileDto>();
   @Output() profileCreated: EventEmitter<CreateProfileDto> =
@@ -117,8 +125,16 @@ export class ProfileSelectorComponent implements OnInit, AfterViewInit {
     );
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['currentSelectedProfile']) {
+      this.internalSelectedProfile.set(this.currentSelectedProfile);
+    }
+  }
+
   selectProfile(profile: ProfileDto): void {
-    this.internalSelectedProfile.set(profile);
+    if (!this.controlledSelection && !this.selectionPending) {
+      this.internalSelectedProfile.set(profile);
+    }
     this.selectedProfile.emit(profile);
     this.showProfileModal = false; // Close the modal
   }

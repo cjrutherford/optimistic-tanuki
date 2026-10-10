@@ -283,6 +283,113 @@ describe('PostComponent', () => {
     expect(component.canEdit()).toBe(true);
   });
 
+  it('keeps an opt-in controlled draft through pending, failure, and unrelated content refreshes', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Draft title';
+    component.editContent = '<p>Draft <strong>content</strong></p>';
+    const update = jest.fn();
+    component.postUpdated.subscribe(update);
+
+    component.saveEdit();
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(component.isEditing).toBe(true);
+
+    component.saveState = { status: 'pending', requestId: 1 };
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.edit-content')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('.edit-actions button')?.disabled
+    ).toBe(true);
+    component.saveEdit();
+    expect(update).toHaveBeenCalledTimes(1);
+
+    component.saveState = {
+      status: 'error',
+      requestId: 1,
+      error: 'Your post could not be saved. Try again.',
+    };
+    fixture.detectChanges();
+    expect(
+      (fixture.nativeElement.querySelector('.edit-title') as HTMLInputElement)
+        .value
+    ).toBe('Draft title');
+    expect(
+      fixture.nativeElement.querySelector('[role="alert"]')?.textContent
+    ).toContain('Your post could not be saved. Try again.');
+
+    const unrelatedRefresh = {
+      ...component.content,
+      voteCount: 4,
+    } as PostDto;
+    component.ngOnChanges({
+      content: {
+        currentValue: unrelatedRefresh,
+        previousValue: component.content,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+    expect(component.isEditing).toBe(true);
+    expect(component.editTitle).toBe('Draft title');
+    expect(component.editContent).toBe('<p>Draft <strong>content</strong></p>');
+  });
+
+  it('closes a controlled editor only after a new save acknowledgement and authoritative content input', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Saved title';
+    component.saveState = { status: 'saved', requestId: 1 };
+    const savedContent = {
+      ...component.content,
+      title: 'Saved title',
+    } as PostDto;
+
+    component.ngOnChanges({
+      saveState: {
+        currentValue: component.saveState,
+        previousValue: { status: 'pending', requestId: 1 },
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+      content: {
+        currentValue: savedContent,
+        previousValue: component.content,
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+
+    expect(component.isEditing).toBe(false);
+  });
+
+  it('retains legacy immediate-close behavior when controlled save state is omitted', () => {
+    component.saveState = undefined;
+    component.startEdit();
+
+    component.saveEdit();
+
+    expect(component.isEditing).toBe(false);
+  });
+
+  it('cancels an open draft when the post owner or active profile changes', () => {
+    component.saveState = { status: 'idle', requestId: 0 };
+    component.startEdit();
+    component.editTitle = 'Private draft';
+
+    component.ngOnChanges({
+      currentUserId: {
+        currentValue: 'new-active-profile',
+        previousValue: 'old-active-profile',
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+
+    expect(component.isEditing).toBe(false);
+    expect(component.editTitle).toBe('');
+  });
+
   it('shows an edited badge when the post has been updated', () => {
     component.content = {
       ...component.content,

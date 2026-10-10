@@ -213,7 +213,7 @@ describe('LoginComponent behaviour', () => {
       password: 'pw',
     } as never;
 
-    it('selects the first profile and lands on the feed', async () => {
+    it('selects the verified session profile and lands on the feed', async () => {
       await component.onSubmit(credentials);
 
       expect(authStateService.login).toHaveBeenCalledWith({
@@ -228,6 +228,38 @@ describe('LoginComponent behaviour', () => {
         content: 'Login successful! Welcome back.',
         type: 'success',
       });
+    });
+
+    it('does not replace the verified profile with the first profile in account order', async () => {
+      const first = { id: 'profile-1', profileName: 'First' };
+      const sessionProfile = { id: 'profile-2', profileName: 'Active' };
+      authStateService.getDecodedTokenValue.mockReturnValue({
+        profileId: 'profile-2',
+      });
+      profileService.getCurrentUserProfiles.mockReturnValue([
+        first,
+        sessionProfile,
+      ]);
+
+      await component.onSubmit(credentials);
+
+      expect(profileService.selectProfile).toHaveBeenCalledWith(sessionProfile);
+      expect(profileService.selectProfile).not.toHaveBeenCalledWith(first);
+      expect(router.navigate).toHaveBeenCalledWith(['/feed']);
+    });
+
+    it('does not navigate or select a fallback when the verified profile is missing', async () => {
+      authStateService.getDecodedTokenValue.mockReturnValue({
+        profileId: 'missing-profile',
+      });
+
+      await component.onSubmit(credentials);
+
+      expect(profileService.selectProfile).not.toHaveBeenCalled();
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(component.errorMessage).toContain(
+        'Your active profile could not be loaded'
+      );
     });
 
     it('sends a user with an empty profileId to settings without the modal', async () => {

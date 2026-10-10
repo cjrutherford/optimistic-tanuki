@@ -22,6 +22,7 @@ import {
   PostData,
   ImageUploadCallback,
   UpdatePostDto,
+  PostSaveState,
 } from '@optimistic-tanuki/social-ui';
 import {
   CreateAttachmentDto,
@@ -103,6 +104,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   private contentReadVersion = 0;
   private readonly contentReadCancelled$ = new Subject<void>();
   posts = signal<PostDto[]>([]);
+  postSaveStates = signal<Record<string, PostSaveState>>({});
   loading = signal(true);
   loadingMore = signal(false);
   hasMorePosts = signal(true);
@@ -705,16 +707,46 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  async updatePost(id: string, updatePostDto: UpdatePostDto): Promise<PostDto> {
-    const updatedPost = await firstValueFrom(
-      this.postService.updatePost(id, updatePostDto)
-    );
+  async updatePost(
+    id: string,
+    updatePostDto: UpdatePostDto
+  ): Promise<PostDto | undefined> {
+    const previous = this.postSaveStates()[id];
+    if (previous?.status === 'pending') return undefined;
+    const requestId = (previous?.requestId ?? 0) + 1;
+    this.setPostSaveState(id, { status: 'pending', requestId });
 
-    this.posts.update((posts) =>
-      posts.map((post) => (post.id === id ? { ...post, ...updatedPost } : post))
-    );
+    try {
+      const updatedPost = await firstValueFrom(
+        this.postService.updatePost(id, updatePostDto)
+      );
 
-    return updatedPost;
+      this.posts.update((posts) =>
+        posts.map((post) =>
+          post.id === id ? { ...post, ...updatedPost } : post
+        )
+      );
+      this.setPostSaveState(id, { status: 'saved', requestId });
+      return updatedPost;
+    } catch (error) {
+      console.error('Failed to update post', error);
+      this.setPostSaveState(id, {
+        status: 'error',
+        requestId,
+        error:
+          'Your post could not be saved. Your draft is still here; try again.',
+      });
+      this.messageService.addMessage({
+        content:
+          'Your post could not be saved. Your draft is still here; try again.',
+        type: 'error',
+      });
+      return undefined;
+    }
+  }
+
+  private setPostSaveState(id: string, state: PostSaveState): void {
+    this.postSaveStates.update((states) => ({ ...states, [id]: state }));
   }
 
   canFollow(post: PostDto): boolean {

@@ -9,7 +9,21 @@
   >
   </lib-banner>
 
-  @if (isViewingOther) {
+  @if (!isViewingOther && ownedProfiles().length > 0) {
+  <lib-profile-selector
+    [profiles]="ownedProfiles()"
+    [currentSelectedProfile]="selectedOwnedProfile()"
+    [selectionPending]="profileSelectionPending()"
+    [controlledSelection]="true"
+    (selectedProfile)="selectProfile($event)"
+    (profileCreated)="createProfile($event)"
+    (profileUpdated)="updateProfile($event)"
+  ></lib-profile-selector>
+  @if (profileSelectionError()) {
+  <div class="profile-selection-error" role="alert" aria-live="assertive">
+    {{ profileSelectionError() }}
+  </div>
+  } } @if (isViewingOther) {
   <div class="profile-actions">
     <otui-button
       [variant]="isFollowing() ? 'warning' : 'primary'"

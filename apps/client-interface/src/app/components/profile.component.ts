@@ -8,6 +8,7 @@ import { CommonModule } from '@angular/common';
 import {
   BannerComponent,
   ProfileEditorComponent,
+  ProfileSelectorComponent,
 } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import {
@@ -35,6 +36,7 @@ import { PrivacyService } from '../privacy.service';
     ButtonComponent,
     BannerComponent,
     ProfileEditorComponent,
+    ProfileSelectorComponent,
   ],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
@@ -43,6 +45,12 @@ export class ProfileComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
   private readonly profileService = inject(ProfileService);
+  readonly ownedProfiles = computed(() =>
+    this.profileService.getCurrentUserProfiles()
+  );
+  readonly selectedOwnedProfile = computed(() =>
+    this.profileService.getCurrentUserProfile()
+  );
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   private readonly communityService = inject(CommunityService);
@@ -50,6 +58,8 @@ export class ProfileComponent implements OnInit {
   private readonly followService = inject(FollowService);
   private readonly privacyService = inject(PrivacyService);
   showProfileEditor = false;
+  profileSelectionPending = signal(false);
+  profileSelectionError = signal('');
   viewingUserId: string | null = null;
   isViewingOther = false;
 
@@ -279,14 +289,28 @@ export class ProfileComponent implements OnInit {
       });
   }
 
-  selectProfile(profile: ProfileDto) {
-    this.profileService.selectProfile(profile);
-    this.showMessage('Profile selected!', 'success');
-    setTimeout(() => {
+  async selectProfile(profile: ProfileDto) {
+    if (this.profileSelectionPending()) return;
+
+    this.profileSelectionError.set('');
+    this.profileSelectionPending.set(true);
+    try {
+      await this.profileService.activateProfile(profile);
+      this.showMessage('Profile selected!', 'success');
       if (isPlatformBrowser(this.platformId)) {
-        this.router.navigate(['/feed']);
+        await this.router.navigate(['/profile', profile.id]);
       }
-    }, 500);
+    } catch (error) {
+      console.error('Failed to switch profile session', error);
+      this.profileSelectionError.set(
+        error instanceof Error
+          ? error.message
+          : 'This profile could not be selected. Your current profile remains active; try again.'
+      );
+      this.showMessage(this.profileSelectionError(), 'error');
+    } finally {
+      this.profileSelectionPending.set(false);
+    }
   }
 
   createProfile(newProfile: CreateProfileDto) {

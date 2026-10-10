@@ -71,6 +71,12 @@ export declare type PostProfileStub = {
   avatar: string;
 };
 
+export type PostSaveState = {
+  status: 'idle' | 'pending' | 'error' | 'saved';
+  requestId: number;
+  error?: string;
+};
+
 @Component({
   selector: 'lib-post',
   standalone: true,
@@ -125,6 +131,8 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     isPrivate?: boolean;
   };
   @Input() shareUrl: string = '';
+  /** When provided, the parent owns save acknowledgement and retry state. */
+  @Input() saveState?: PostSaveState;
 
   get commentImageUploadCallback(): ImageUploadCallback | undefined {
     if (!this.imageUploadCallback) return undefined;
@@ -200,6 +208,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   isEditing = false;
   editTitle = '';
   editContent = '';
+  private acknowledgedSaveRequestId = 0;
 
   downloadAttachment(attachment: AttachmentDto) {
     console.log('Downloading attachment:', attachment);
@@ -268,11 +277,14 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   saveEdit() {
+    if (this.saveState?.status === 'pending') return;
     this.postUpdated.emit({
       title: this.editTitle,
       content: this.editContent,
     });
-    this.isEditing = false;
+    // Legacy consumers still close immediately. Controlled consumers keep the
+    // draft visible until the parent supplies an authoritative saved post.
+    if (!this.saveState) this.cancelEdit();
   }
 
   onEditTitleInput(event: Event) {
@@ -335,8 +347,50 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['content'] && !changes['content'].firstChange) {
+    if (
+      changes['currentUserId'] &&
+      !changes['currentUserId'].firstChange &&
+      changes['currentUserId'].previousValue !==
+        changes['currentUserId'].currentValue
+    ) {
       this.cancelEdit();
+    }
+    if (
+      changes['content'] &&
+      !changes['content'].firstChange &&
+      changes['content'].previousValue?.profileId !==
+        changes['content'].currentValue?.profileId
+    ) {
+      this.cancelEdit();
+    }
+    if (changes['saveState']) {
+      const state = this.saveState;
+      if (state?.status === 'saved') {
+        const isNewAcknowledgement =
+          state.requestId > this.acknowledgedSaveRequestId;
+        this.acknowledgedSaveRequestId = Math.max(
+          this.acknowledgedSaveRequestId,
+          state.requestId
+        );
+        if (
+          isNewAcknowledgement &&
+          changes['content'] &&
+          !changes['content'].firstChange
+        ) {
+          this.cancelEdit();
+        }
+      }
+    }
+    if (
+      changes['content'] &&
+      !changes['content'].firstChange &&
+      !this.saveState
+    ) {
+      // Preserve the historical behavior for consumers that have not opted
+      // into parent-acknowledged save state.
+      this.cancelEdit();
+    }
+    if (changes['content'] && !changes['content'].firstChange) {
       // Reload component data when content changes
       this.loadComponentData();
     }

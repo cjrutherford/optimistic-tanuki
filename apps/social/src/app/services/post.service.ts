@@ -445,7 +445,10 @@ export class PostService {
     }
 
     if (!post.communityId && post.profileId !== profileId) {
-      throw new Error('You do not have permission to update this post');
+      throw new RpcException({
+        statusCode: 403,
+        message: 'You do not have permission to update this post',
+      });
     }
 
     // If it's a community post, check membership or moderator privileges
@@ -466,7 +469,10 @@ export class PostService {
 
       // Allow if user is a moderator OR if user is the post author (who is also a member)
       if (!hasPermission && (!isMember || post.userId !== userId)) {
-        throw new Error('You do not have permission to update this post');
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to update this post',
+        });
       }
     }
 

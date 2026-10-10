@@ -117,6 +117,92 @@ export class AuthStateService {
     return pending;
   }
 
+  /**
+   * Replace the browser session's active profile and verify the new cookie
+   * before callers update their selected-profile state. If issuance or
+   * verification fails, restore the previously verified profile session.
+   */
+  async activateProfileSession(profileId: string): Promise<boolean> {
+    const currentUser = this.getDecodedTokenValue();
+    const previousProfileId = currentUser?.profileId;
+    if (!isPlatformBrowser(this.platformId) || !currentUser?.userId) {
+      throw new Error('Sign in before switching profiles.');
+    }
+    if (!profileId || !previousProfileId) {
+      throw new Error('A verified profile session is required to switch.');
+    }
+    if (profileId === previousProfileId) return true;
+
+    const issueProfile = (targetProfileId: string) =>
+      firstValueFrom(
+        this.http.post(
+          `${this.apiBaseUrl}/authentication/issue`,
+          { profileId: targetProfileId },
+          {
+            headers: {
+              'X-ot-appscope': 'client-interface',
+              'X-ot-session-mode': 'cookie',
+            },
+            withCredentials: true,
+          }
+        )
+      );
+    const invalidatePendingRestore = () => {
+      ++this.sessionRestoreGeneration;
+      this.inflightRestore = undefined;
+    };
+
+    invalidatePendingRestore();
+    try {
+      await issueProfile(profileId);
+      invalidatePendingRestore();
+      const restored = await this.restoreSessionForProfile(
+        currentUser.userId,
+        profileId
+      );
+      const activatedUser = this.getDecodedTokenValue();
+      if (
+        !restored ||
+        activatedUser?.userId !== currentUser.userId ||
+        activatedUser.profileId !== profileId
+      ) {
+        throw new Error('The switched profile session could not be verified.');
+      }
+      return true;
+    } catch {
+      // The issue response may have been lost after the server changed its
+      // cookie, so always attempt to restore the prior verified profile.
+      let rollbackSucceeded = false;
+      try {
+        invalidatePendingRestore();
+        await issueProfile(previousProfileId);
+        invalidatePendingRestore();
+        const restored = await this.restoreSessionForProfile(
+          currentUser.userId,
+          previousProfileId
+        );
+        const rolledBackUser = this.getDecodedTokenValue();
+        if (
+          !restored ||
+          rolledBackUser?.userId !== currentUser.userId ||
+          rolledBackUser.profileId !== previousProfileId
+        ) {
+          throw new Error('The prior session could not be restored.');
+        }
+        rollbackSucceeded = true;
+      } catch {
+        // Never leave the app presenting the previous profile while the
+        // HttpOnly cookie may authenticate as another profile.
+        this.logout();
+      }
+      throw new Error(
+        rollbackSucceeded
+          ? 'Profile switching failed. Your previous profile remains active; please try again.'
+          : 'Profile switching could not be verified, so your session was ended. Please sign in again.'
+      );
+    }
+  }
+
   private async executeRestore(restoreGeneration: number): Promise<boolean> {
     try {
       const response = await firstValueFrom(
@@ -135,6 +221,37 @@ export class AuthStateService {
         return this._isAuthenticated;
       }
       this.clearClientSession();
+      return false;
+    }
+  }
+
+  /** Read and validate a switched cookie before publishing its identity. */
+  private async restoreSessionForProfile(
+    userId: string,
+    profileId: string
+  ): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return false;
+    const restoreGeneration = ++this.sessionRestoreGeneration;
+    this.inflightRestore = undefined;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: UserData }>(
+          `${this.apiBaseUrl}/authentication/session`,
+          { withCredentials: true }
+        )
+      );
+      if (restoreGeneration !== this.sessionRestoreGeneration) {
+        return this._isAuthenticated;
+      }
+      if (
+        response.data?.userId !== userId ||
+        response.data?.profileId !== profileId
+      ) {
+        return false;
+      }
+      this.setSession(response.data);
+      return true;
+    } catch {
       return false;
     }
   }

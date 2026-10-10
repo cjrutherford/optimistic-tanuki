@@ -14,7 +14,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
-import { HttpException, Logger } from '@nestjs/common';
+import { ForbiddenException, HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import {
@@ -428,22 +428,251 @@ describe('AuthenticationController', () => {
     );
   });
 
-  it('should issue a fresh token for the requested profile', async () => {
-    (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'fresh-token' } })
-    );
+  describe('issueTokenForProfile', () => {
+    const currentUser = {
+      userId: 'user-1',
+      email: 'u@example.com',
+      name: 'U',
+      profileId: 'profile-current',
+    } as any;
+    const browserResponse = () => ({ cookie: jest.fn() }) as any;
 
-    await expect(
-      controller.issueTokenForProfile(
-        { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
-        { profileId: 'profile-2' }
-      )
-    ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
+    it('issues a same-profile refresh after verifying ownership, even without app scope', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'user-1',
+            appScope: 'leads-app',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest.fn().mockReturnValueOnce(
+        of({ data: { newToken: 'fresh-token' } })
+      ) as any;
 
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Issue },
-      { userId: 'user-1', profileId: 'profile-2' }
-    );
+      await expect(
+        controller.issueTokenForProfile(currentUser, {}, undefined, 'cookie', response)
+      ).resolves.toEqual({ data: {} });
+
+      expect(profileService.send).toHaveBeenCalledWith(
+        { cmd: ProfileCommands.GetAll },
+        { where: { userId: 'user-1' } }
+      );
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        { userId: 'user-1', profileId: 'profile-current' }
+      );
+      expect(response.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'fresh-token',
+        expect.any(Object)
+      );
+    });
+
+    it('allows an owned current-app profile and a global profile in cookie mode', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'user-1',
+            appScope: 'client-interface',
+          },
+          {
+            id: 'profile-global',
+            userId: 'user-1',
+            appScope: 'global',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest.fn().mockReturnValueOnce(
+        of({ data: { newToken: 'global-token' } })
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-global' },
+          'leads-app',
+          'cookie',
+          response
+        )
+      ).resolves.toEqual({ data: {} });
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        { userId: 'user-1', profileId: 'profile-global' }
+      );
+      expect(response.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'global-token',
+        expect.any(Object)
+      );
+    });
+
+    it('allows an owned profile whose app scope matches the registered current app', async () => {
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'lead-profile',
+            userId: 'user-1',
+            appScope: 'opportunity-compass',
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'lead-profile' },
+          'leads-app'
+        )
+      ).resolves.toEqual(true);
+    });
+
+    it('allows an owned app-scope alias after canonicalizing it', async () => {
+      const user = { ...currentUser, profileId: 'global-profile' };
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'global-profile',
+            userId: 'user-1',
+            appScope: 'global',
+          },
+          {
+            id: 'lead-profile',
+            userId: 'user-1',
+            appScope: 'opportunity-compass',
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest.fn().mockReturnValueOnce(
+        of({ data: { newToken: 'lead-token' } })
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          user,
+          { profileId: 'lead-profile' },
+          'leads-app'
+        )
+      ).resolves.toEqual({ data: { newToken: 'lead-token' } });
+
+      expect(clientProxy.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        { userId: 'user-1', profileId: 'lead-profile' }
+      );
+    });
+
+    it('allows a null-scope profile with a registered app scope', async () => {
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-null-scope',
+            userId: 'user-1',
+            appScope: null,
+          },
+        ])
+      ) as any;
+      clientProxy.send = jest.fn().mockReturnValueOnce(
+        of({ data: { newToken: 'null-scope-token' } })
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-null-scope' },
+          'leads-app'
+        )
+      ).resolves.toEqual({ data: { newToken: 'null-scope-token' } });
+    });
+
+    it.each([
+      ['another user profile', 'leads-app', 'other-user'],
+      ['a foreign app-scope profile', 'leads-app', 'user-1'],
+    ])('denies %s before issuing or setting a cookie', async (reason, scope, ownerId) => {
+      const response = browserResponse();
+      const profileScope = reason === 'a foreign app-scope profile' ? 'fin-commander' : 'leads-app';
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-target',
+            userId: ownerId,
+            appScope: profileScope,
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-target' },
+          scope,
+          'cookie',
+          response
+        )
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        expect.anything()
+      );
+      expect(response.cookie).not.toHaveBeenCalled();
+    });
+
+    it.each([undefined, 'not-registered'])('denies a different profile when scope is %s', async (scope) => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-target',
+            userId: 'user-1',
+            appScope: 'leads-app',
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(
+          currentUser,
+          { profileId: 'profile-target' },
+          scope,
+          'cookie',
+          response
+        )
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        expect.anything()
+      );
+      expect(response.cookie).not.toHaveBeenCalled();
+    });
+
+    it('rejects a current-profile refresh if that profile is not owned by the authenticated user', async () => {
+      const response = browserResponse();
+      profileService.send = jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-current',
+            userId: 'someone-else',
+            appScope: 'client-interface',
+          },
+        ])
+      ) as any;
+
+      await expect(
+        controller.issueTokenForProfile(currentUser, {}, 'leads-app', 'cookie', response)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(clientProxy.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        expect.anything()
+      );
+      expect(response.cookie).not.toHaveBeenCalled();
+    });
   });
 
   it('should register user', async () => {

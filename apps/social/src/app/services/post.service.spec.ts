@@ -9,6 +9,7 @@ import { CreatePostDto, UpdatePostDto } from '@optimistic-tanuki/models';
 import { CommunityService } from './community.service';
 import { of } from 'rxjs';
 import { AssetCommands } from '@optimistic-tanuki/constants';
+import { RpcException } from '@nestjs/microservices';
 
 describe('PostService', () => {
   let service: PostService;
@@ -653,7 +654,7 @@ describe('PostService', () => {
     );
   });
 
-  it('rejects post updates from non-owners', async () => {
+  it('returns forbidden for a non-owner update without mutating the post', async () => {
     postRepo.findOne.mockResolvedValue({
       id: '1',
       userId: 'owner-user',
@@ -661,9 +662,55 @@ describe('PostService', () => {
       communityId: null,
     } as Post);
 
-    await expect(
-      service.update('1', { title: 'Updated' }, 'owner-user', 'other-profile')
-    ).rejects.toThrow();
+    let thrown: unknown;
+    try {
+      await service.update(
+        '1',
+        { title: 'Updated' },
+        'owner-user',
+        'other-profile'
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(RpcException);
+    expect((thrown as RpcException).getError()).toEqual({
+      statusCode: 403,
+      message: 'You do not have permission to update this post',
+    });
+    expect(postRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('returns forbidden when a community post editor lacks moderator access', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: 'community-post',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      communityId: 'community-1',
+    } as Post);
+    const communityService = (service as any).communityService;
+    communityService.hasPermission = jest.fn().mockResolvedValue(false);
+    communityService.isMember.mockResolvedValue(false);
+
+    let thrown: unknown;
+    try {
+      await service.update(
+        'community-post',
+        { title: 'Updated' },
+        'other-user',
+        'other-profile'
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(RpcException);
+    expect((thrown as RpcException).getError()).toEqual({
+      statusCode: 403,
+      message: 'You do not have permission to update this post',
+    });
+    expect(postRepo.update).not.toHaveBeenCalled();
   });
 
   it('allows a non-community post update only for the owning profile', async () => {

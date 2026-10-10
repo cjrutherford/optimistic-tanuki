@@ -98,40 +98,7 @@ export class LoginComponent implements OnDestroy, OnInit {
       await this.authStateService.login(loginRequest);
 
       if (this.authStateService.isAuthenticated) {
-        const decoded = this.authStateService.getDecodedTokenValue();
-        // If profileId is empty string, show only the profile creation modal
-        if (decoded && decoded.profileId === '') {
-          this.router.navigate(['/settings'], {
-            state: {
-              showProfileModal: false,
-              profileMessage: 'Please create your profile to continue.',
-            },
-          });
-          return;
-        }
-        // Otherwise load profiles and redirect accordingly
-        await this.profileService.getAllProfiles();
-        const currentProfiles = this.profileService.getCurrentUserProfiles();
-        if (!currentProfiles.length) {
-          this.router.navigate(['/settings'], {
-            state: {
-              showProfileModal: true,
-              profileMessage:
-                'No profiles found. Please create a profile to continue.',
-            },
-          });
-          this.messageService.addMessage({
-            content: 'No profiles found. Please create a profile to continue.',
-            type: 'warning',
-          });
-        } else {
-          this.profileService.selectProfile(currentProfiles[0]);
-          this.router.navigate(['/feed']);
-          this.messageService.addMessage({
-            content: 'Login successful! Welcome back.',
-            type: 'success',
-          });
-        }
+        await this.completeAuthenticatedLogin();
       }
     } catch (err: any) {
       this.errorMessage =
@@ -227,7 +194,21 @@ export class LoginComponent implements OnDestroy, OnInit {
       return;
     }
 
-    this.profileService.selectProfile(currentProfiles[0]);
+    const sessionProfileId = decoded?.profileId;
+    const sessionProfile = currentProfiles.find(
+      (profile) => profile.id === sessionProfileId
+    );
+    if (!sessionProfile) {
+      this.errorMessage =
+        'Your active profile could not be loaded. Please sign in again.';
+      this.messageService.addMessage({
+        content: this.errorMessage,
+        type: 'error',
+      });
+      return;
+    }
+
+    this.profileService.selectProfile(sessionProfile);
     this.router.navigate(['/feed']);
     this.messageService.addMessage({
       content: 'Login successful! Welcome back.',
