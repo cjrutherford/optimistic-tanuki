@@ -241,7 +241,7 @@ data:
           },
           "targets": [
             {
-              "expr": "max by (event, detail) (increase(ot_site_events_total{app=\"hai\",event=~\"audience_interest|assessment_submit\"}[$__range]))",
+              "expr": "sum by (event, detail) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=~\"audience_interest|assessment_submit\"}[$__range])))",
               "format": "table",
               "instant": true,
               "refId": "A"
@@ -283,7 +283,7 @@ data:
           },
           "targets": [
             {
-              "expr": "max by (path) (increase(ot_site_events_total{app=\"hai\",event=\"page_view\"}[$__range]))",
+              "expr": "sum by (path) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"page_view\"}[$__range])))",
               "format": "table",
               "instant": true,
               "refId": "A"
@@ -325,7 +325,7 @@ data:
           },
           "targets": [
             {
-              "expr": "max by (path, detail) (increase(ot_site_events_total{app=\"hai\",event=\"cta_click\"}[$__range]))",
+              "expr": "sum by (path, detail) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"cta_click\"}[$__range])))",
               "format": "table",
               "instant": true,
               "refId": "A"
@@ -367,7 +367,7 @@ data:
           },
           "targets": [
             {
-              "expr": "max by (utm_source, utm_medium, utm_campaign, event) (increase(ot_site_events_total{app=\"hai\",utm_source!=\"\"}[$__range]))",
+              "expr": "sum by (utm_source, utm_medium, utm_campaign, event) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",utm_source!=\"\"}[$__range])))",
               "format": "table",
               "instant": true,
               "refId": "A"
@@ -422,5 +422,5 @@ data:
       "title": "HAI site analytics",
       "uid": "hai-site-analytics",
       "version": 1,
-      "description": "Aggregate, cookieless site events from /api/analytics/events. Counts live in Redis; each gateway replica exposes the same totals, so panels take max across instances."
+      "description": "Aggregate, cookieless site events from /api/analytics/events. Counts live in Redis; each gateway replica exposes the same totals, so panels first take max across instances for each full label set, then sum. Events that arrived after a budget was full are counted under path (other)."
     }
