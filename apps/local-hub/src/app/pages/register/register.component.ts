@@ -127,9 +127,13 @@ import { AuthStateService } from '../../services/auth-state.service';
         margin: 0;
         font-size: 0.9rem;
         a {
-          color: var(--primary);
+          color: var(--foreground);
+          display: inline-flex;
+          min-height: 44px;
+          align-items: center;
+          padding-inline: 8px;
           font-weight: 600;
-          text-decoration: none;
+          text-decoration: underline;
           &:hover {
             text-decoration: underline;
           }

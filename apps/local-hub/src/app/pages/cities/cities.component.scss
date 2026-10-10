@@ -371,6 +371,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   max-width: 100%;
   box-sizing: border-box;
+  min-height: 44px;
 }
 
 .filter-chip {
@@ -386,7 +387,7 @@
 .filter-chip.soft {
   border-color: color-mix(in srgb, var(--secondary) 24%, var(--border));
   background: color-mix(in srgb, var(--secondary) 9%, var(--surface));
-  color: color-mix(in srgb, var(--secondary) 82%, var(--foreground));
+  color: var(--secondary-text, var(--foreground));
 }
 
 .filter-chip:hover,
@@ -420,7 +421,7 @@
 .clear-filters {
   border: 1px solid color-mix(in srgb, var(--secondary) 25%, var(--border));
   background: color-mix(in srgb, var(--secondary) 12%, var(--surface));
-  color: color-mix(in srgb, var(--secondary) 84%, var(--foreground));
+  color: var(--foreground);
 }
 
 .panel-section.accent {
@@ -598,7 +599,7 @@
 .community-description {
   margin: 0.75rem 0 0;
   line-height: 1.62;
-  color: var(--foreground-muted);
+  color: var(--foreground);
 }
 
 .city-meta,
@@ -611,7 +612,7 @@
 .city-pill,
 .community-type {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--primary-text, var(--primary));
+  color: var(--primary-text, var(--foreground));
 }
 
 .community-location,

@@ -95,8 +95,9 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
       </div>
 
       <div class="form-group">
-        <label>Images (optional, up to 5)</label>
+        <label [for]="imageInputId">Images (optional, up to 5)</label>
         <input
+          [id]="imageInputId"
           type="file"
           accept="image/*"
           multiple
@@ -167,7 +168,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         margin-top: 0;
         font-size: 1.35rem;
         margin-bottom: 20px;
-        color: var(--foreground);
+        color: var(--primary-text, var(--foreground));
       }
       .form-group {
         margin-bottom: 16px;
@@ -209,7 +210,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
       }
       .upload-status {
         font-size: 0.85rem;
-        color: var(--primary, #3f51b5);
+        color: var(--foreground);
         margin: 4px 0 0;
       }
       .image-previews {
@@ -278,7 +279,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         background: color-mix(in srgb, var(--surface) 82%, transparent);
         border: 1px solid
           color-mix(in srgb, var(--primary) 32%, var(--border, var(--muted)));
-        color: var(--primary, #3f51b5);
+        color: var(--foreground, #212121);
         &:hover {
           background: color-mix(in srgb, var(--primary) 8%, var(--surface));
         }
@@ -287,6 +288,8 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
   ],
 })
 export class ClassifiedFormComponent implements OnInit {
+  private static nextImageInputId = 0;
+  readonly imageInputId = `classified-images-${ClassifiedFormComponent.nextImageInputId++}`;
   /** Optional existing ad for edit mode */
   @Input() existingAd?: ClassifiedAdDto;
   @Input({ required: true }) communityId!: string;

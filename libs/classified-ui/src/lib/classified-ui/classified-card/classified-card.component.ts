@@ -229,7 +229,7 @@ import { ClassifiedAdDto } from '../models/index';
       .card-price {
         font-size: 1.1rem;
         font-weight: 700;
-        color: var(--primary, #3f51b5);
+        color: var(--primary-text, var(--foreground, #212121));
       }
       .card-condition {
         display: inline-block;
@@ -254,10 +254,10 @@ import { ClassifiedAdDto } from '../models/index';
         margin-bottom: 10px;
       }
       .status-sold {
-        color: var(--error, #d32f2f);
+        color: var(--danger-text, var(--foreground, #212121));
       }
       .status-active {
-        color: var(--success, #388e3c);
+        color: var(--success-text, var(--foreground, #212121));
       }
       .card-status {
         font-weight: 700;
@@ -286,7 +286,7 @@ import { ClassifiedAdDto } from '../models/index';
         background: color-mix(in srgb, var(--surface) 82%, transparent);
         border: 1px solid
           color-mix(in srgb, var(--primary) 30%, var(--border, var(--muted)));
-        color: var(--primary, #3f51b5);
+        color: var(--primary-text, var(--foreground, #212121));
         &:hover {
           background: color-mix(in srgb, var(--primary) 8%, var(--surface));
         }
