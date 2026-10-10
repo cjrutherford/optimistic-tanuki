@@ -25,29 +25,29 @@ The agent must complete only the current slice, validate it, update completion n
 
 ## Slice status
 
-| Slice | Description                       | Status   |
-| ----- | --------------------------------- | -------- |
-| S000  | Repository and site audit         | Complete |
-| S001  | Design-system inventory           | Complete |
-| S002  | Route and navigation foundation   | Complete |
-| S003  | Homepage positioning              | Complete |
-| S004  | Homepage private-cloud section    | Complete |
-| S005  | Private-cloud landing page        | Complete |
-| S006  | Home private-cloud page           | Complete |
-| S007  | Organization private-cloud page   | Complete |
-| S008  | Open-source stack page            | Complete |
-| S009  | Turn-key appliance integration    | Complete |
-| S010  | Software-stack integration        | Complete |
-| S011  | Cost-comparison update            | Complete |
-| S012  | Shared conversion components      | Complete |
-| S013  | Assessment flow                   | Complete |
-| S014  | Analytics and campaign tracking   | Complete |
-| S015  | SEO and social metadata           | Complete |
-| S016  | Responsive and accessibility QA   | Complete |
-| S017  | Performance and browser QA        | Complete |
-| S019  | QR and campaign validation        | Ready    |
-| S020  | Theme and personality token audit | Complete |
-| S018  | Release pull request              | Planned  |
+| Slice | Description                       | Status                |
+| ----- | --------------------------------- | --------------------- |
+| S000  | Repository and site audit         | Complete              |
+| S001  | Design-system inventory           | Complete              |
+| S002  | Route and navigation foundation   | Complete              |
+| S003  | Homepage positioning              | Complete              |
+| S004  | Homepage private-cloud section    | Complete              |
+| S005  | Private-cloud landing page        | Complete              |
+| S006  | Home private-cloud page           | Complete              |
+| S007  | Organization private-cloud page   | Complete              |
+| S008  | Open-source stack page            | Complete              |
+| S009  | Turn-key appliance integration    | Complete              |
+| S010  | Software-stack integration        | Complete              |
+| S011  | Cost-comparison update            | Complete              |
+| S012  | Shared conversion components      | Complete              |
+| S013  | Assessment flow                   | Complete              |
+| S014  | Analytics and campaign tracking   | Complete              |
+| S015  | SEO and social metadata           | Complete              |
+| S016  | Responsive and accessibility QA   | Complete              |
+| S017  | Performance and browser QA        | Complete              |
+| S019  | QR and campaign validation        | Ready                 |
+| S020  | Theme and personality token audit | Complete              |
+| S018  | Release pull request              | In progress (PR #277) |
 
 ## Dependency order
 

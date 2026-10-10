@@ -16,11 +16,18 @@ The agent's deliverable is a PR that is green, reviewable, and reversible, plus
 a smoke-test script the owner runs against whatever host they deploy to.
 
 This is the last slice. It follows S019 so the PR includes the validated
-campaign URLs.
+campaign URLs, and S020 so it includes the token audit.
 
 ## Dependencies
 
-S020
+- S019 (QR and campaign validation)
+- S020 (theme and personality token audit)
+
+Do not mark this slice complete until both are complete. On 2026-10-10 the
+owner opened the PR (#277) before S019, so the campaign URLs in
+`scripts/smoke-test-hai.sh` are the planned ones from
+`06-SEO-ANALYTICS-ACCESSIBILITY.md`. S019 confirms them, and any change it
+makes lands on the same PR.
 
 ## In scope
 
