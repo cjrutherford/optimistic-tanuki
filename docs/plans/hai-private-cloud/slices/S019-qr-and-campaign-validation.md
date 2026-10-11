@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready
+In progress: owner phone scan pending
 
 ## Objective
 
@@ -47,9 +47,9 @@ S017
 
 ## Acceptance Criteria
 
-- [ ] QR target paths resolve on the dev server
-- [ ] UTM parameters are accepted and recorded by the S014 tracking
-- [ ] Campaign destinations documented with their production URLs
+- [x] QR target paths resolve on the dev server
+- [x] UTM parameters are accepted and recorded by the S014 tracking
+- [x] Campaign destinations documented with their production URLs
 
 ## Validation
 
@@ -62,8 +62,72 @@ S017
 
 ## Completion Notes
 
-_To be filled by the implementing agent._
+### Campaign destinations
+
+The three print pieces are the ones planned in
+`06-SEO-ANALYTICS-ACCESSIBILITY.md`. They are now listed once, in
+`scripts/hai-print-campaigns.txt`. The QR generator and the release smoke test
+both read that file, so the printed path and query can't drift from what is
+tested.
+
+| Piece                    | Print QR code encodes                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `flyer-private-cloud`    | `https://hopefulaspirationsindustries.com/private-cloud?utm_source=print&utm_medium=flyer&utm_campaign=private_cloud`                  |
+| `brochure-private-cloud` | `https://hopefulaspirationsindustries.com/private-cloud?utm_source=print&utm_medium=brochure&utm_campaign=private_cloud`               |
+| `brochure-oss-stack`     | `https://hopefulaspirationsindustries.com/private-cloud/open-source-stack?utm_source=print&utm_medium=brochure&utm_campaign=oss_stack` |
+
+To add a print piece, add a line to the campaign file and regenerate.
+
+### QR codes
+
+`node scripts/hai-campaign-qr.mjs <origin> <out-dir>` writes, for each piece:
+
+- an SVG for print;
+- a 600 px PNG;
+- `index.html`, a sheet showing every code with the URL it encodes.
+
+Codes use error-correction level Q (survives about 25% damage) and the
+standard four-module quiet zone.
+
+- **Print codes:** generated with origin
+  `https://hopefulaspirationsindustries.com` into
+  [`../assets/s019/print/`](../assets/s019/print/index.html).
+- **Test codes:** generated with the dev server's LAN origin. They're not
+  committed, because the address is specific to one machine.
+
+### Validation on the dev server
+
+The production SSR build was served on the LAN (`http://192.168.1.153:4000`)
+with `SSR_ALLOWED_HOSTS` including the LAN address. Its `/api` went to a
+gateway built from this branch, which ran beside the dev stack and used the
+dev Redis.
+
+- **Codes decode correctly.** Every PNG, print and test, was decoded with
+  jsQR. Each one returns exactly its campaign URL. The print sheet was
+  rendered and inspected.
+- **Destinations resolve.** `scripts/smoke-test-hai.sh` against the LAN origin
+  passed all 54 checks, including the three campaign URLs (200, page title and
+  production canonical URL).
+- **Tracking is recorded.** Each decoded test URL was opened in a 390 × 844
+  browser.
+  - Each scan added one `page_view` to the campaign tier, with source `print`
+    and the right medium and campaign.
+  - The counts appear on `ot_site_events_total` with the same labels.
+  - The campaign is kept for the visit (`hai.campaign` in session storage),
+    which is what the contact and assessment forms append to `sourcePage`.
+
+### Left for the owner
+
+- **Phone scan:** scan each test code with a phone on the LAN (D009).
+- **After deploying:** scan the print codes, or run the smoke test against
+  production, before sending anything to print (D007).
 
 ## Deviations / Blockers
 
-_None unless documented by the implementing agent._
+- **Host allow-list:** Angular SSR returns 400 for any host that isn't
+  allowed, so a LAN server needs `SSR_ALLOWED_HOSTS`. Production needs the
+  same: set `SSR_ALLOWED_HOSTS`, which covers `hopefulaspirationsindustries.com`,
+  on the deployed HAI service. Neither Compose nor the k8s manifests set it
+  for HAI by default.
+- **Host firewall:** `ufw` is active on the dev host. If a phone can't reach
+  port 4000, allow it from the LAN.

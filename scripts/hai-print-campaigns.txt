@@ -1,0 +1,10 @@
+# Print campaign destinations for the Hopeful Aspirations Industries site.
+#
+# One line per print piece: a file name for its QR code, a tab, then the path
+# and query string the code encodes. The print code prefixes
+# https://hopefulaspirationsindustries.com; test codes prefix a dev server.
+# The path and query are used byte for byte by scripts/hai-campaign-qr.mjs
+# and scripts/smoke-test-hai.sh, so edit them only here.
+flyer-private-cloud	/private-cloud?utm_source=print&utm_medium=flyer&utm_campaign=private_cloud
+brochure-private-cloud	/private-cloud?utm_source=print&utm_medium=brochure&utm_campaign=private_cloud
+brochure-oss-stack	/private-cloud/open-source-stack?utm_source=print&utm_medium=brochure&utm_campaign=oss_stack

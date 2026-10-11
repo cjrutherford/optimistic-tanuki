@@ -29,7 +29,9 @@ Prefer privacy-friendly analytics consistent with company positioning.
 
 ## Print campaign parameters
 
-Examples:
+Final print destinations (S019). The single source is
+`scripts/hai-print-campaigns.txt`; print QR codes prefix
+`https://hopefulaspirationsindustries.com`.
 
 ```text
 /private-cloud?utm_source=print&utm_medium=flyer&utm_campaign=private_cloud

@@ -110,16 +110,23 @@ done
 
 echo
 echo "Print campaign URLs (query strings exactly as printed):"
-campaigns=(
-  "private-cloud|?utm_source=print&utm_medium=flyer&utm_campaign=private_cloud|Private Cloud Systems | Hopeful Aspirations Industries"
-  "private-cloud|?utm_source=print&utm_medium=brochure&utm_campaign=private_cloud|Private Cloud Systems | Hopeful Aspirations Industries"
-  "private-cloud/open-source-stack|?utm_source=print&utm_medium=brochure&utm_campaign=oss_stack|Open-Source Private Cloud Stack | HAI"
-)
-for entry in "${campaigns[@]}"; do
-  # The last field keeps the rest of the line, so the "|" in titles survives.
-  IFS='|' read -r path query title <<< "$entry"
+# The same file the print QR codes are generated from.
+CAMPAIGN_FILE="$(dirname "$0")/hai-print-campaigns.txt"
+while IFS=$'\t' read -r name target; do
+  [[ -z "$name" || "$name" == \#* ]] && continue
+  path="${target%%\?*}"
+  path="${path#/}"
+  query="${target:${#path}+1}"
+  title=""
+  for entry in "${routes[@]}"; do
+    [ "${entry%%|*}" = "$path" ] && title="${entry#*|}"
+  done
+  if [ -z "$title" ]; then
+    fail "$name points at a known route (/$path)"
+    continue
+  fi
   check_page "$path" "$title" "$query"
-done
+done < "$CAMPAIGN_FILE"
 
 echo
 echo "Contact details:"

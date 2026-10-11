@@ -45,7 +45,7 @@ The agent must complete only the current slice, validate it, update completion n
 | S015  | SEO and social metadata           | Complete              |
 | S016  | Responsive and accessibility QA   | Complete              |
 | S017  | Performance and browser QA        | Complete              |
-| S019  | QR and campaign validation        | Ready                 |
+| S019  | QR and campaign validation        | Owner scan pending    |
 | S020  | Theme and personality token audit | Complete              |
 | S018  | Release pull request              | In progress (PR #277) |
 
