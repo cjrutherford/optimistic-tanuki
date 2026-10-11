@@ -113,6 +113,10 @@ export function postSearchDtoToFindManyOptions(
   const searchOptions: FindManyOptions<Post> = {};
   const where: FindOptionsWhere<Post> = {};
 
+  if (searchDto?.id) {
+    where.id = searchDto.id;
+  }
+
   if (searchDto?.title) {
     where.title = Like(`%${searchDto.title}%`);
   }
