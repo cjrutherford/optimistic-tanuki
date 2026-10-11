@@ -51,7 +51,15 @@
   }
   &[data-emphasis='soft'] {
     background: color-mix(in oklab, var(--variant-bg-source) 18%, transparent);
-    color: var(--variant-text-source, var(--variant-bg-source));
+    // The tone's text colour is tuned for the page background; on its own
+    // tint over a tinted surface it fell to about 4.6:1. Mixing in the
+    // foreground keeps the hue and holds at least 5.3:1 across personalities,
+    // modes and palettes (measured in HAI S020).
+    color: color-mix(
+      in oklab,
+      var(--variant-text-source, var(--variant-bg-source)) 70%,
+      var(--foreground)
+    );
     border-color: transparent;
   }
   &[data-emphasis='outline'] {

@@ -1,0 +1,49 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.contact-strip {
+  @include section.section-spacing;
+  @include section.panel;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+.channels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(1) section.space(2.5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.channels li {
+  display: flex;
+  flex-direction: column;
+  gap: section.space(0.2);
+  min-width: 0;
+}
+
+.label {
+  @include section.body-copy;
+  font-size: section.text-size('sm');
+}
+
+.channels a {
+  @include section.heading-font;
+  @include section.text-link;
+  font-size: section.text-size('h4');
+  // The email address is long; it must wrap rather than overflow.
+  overflow-wrap: anywhere;
+}
+
+.website {
+  @include section.body-copy;
+  margin: section.space(1) 0 0;
+  font-size: section.text-size('sm');
+}

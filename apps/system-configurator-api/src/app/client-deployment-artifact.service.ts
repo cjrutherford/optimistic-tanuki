@@ -18,12 +18,6 @@ export const CLIENT_DEPLOYMENT_ARTIFACT_CLOCK = Symbol(
   'CLIENT_DEPLOYMENT_ARTIFACT_CLOCK'
 );
 
-type QuoteLease = {
-  termMonths?: unknown;
-  monthlyTotal?: unknown;
-  monthlyMaintenanceReserve?: unknown;
-};
-
 function asRecord(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new BadRequestException(
@@ -46,6 +40,15 @@ function amountCents(value: unknown, label: string): number {
     );
   }
   return cents;
+}
+
+function hoursValue(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new BadRequestException(
+      `Accepted quote has an invalid ${label} snapshot.`
+    );
+  }
+  return value;
 }
 
 @Injectable()
@@ -84,14 +87,16 @@ export class ClientDeploymentArtifactService {
 
     const pricing = asRecord(quote.pricingSnapshot, 'pricing');
     const terms = asRecord(quote.terms, 'commercial terms');
-    const leases = Array.isArray(pricing['leases'])
-      ? (pricing['leases'] as QuoteLease[])
-      : [];
-    const lease24 = leases.find((lease) => lease?.termMonths === 24);
-    const lease36 = leases.find((lease) => lease?.termMonths === 36);
-    if (!lease24 || !lease36 || typeof terms['tierId'] !== 'string') {
+    const monthlySupport = asRecord(
+      pricing['monthlySupport'],
+      'monthly support'
+    );
+    if (
+      pricing['pricingModel'] !== 'pass-through' ||
+      typeof terms['tierId'] !== 'string'
+    ) {
       throw new BadRequestException(
-        'Accepted quote is missing its appliance tier or lease snapshots.'
+        'Accepted quote is missing its appliance tier or pass-through pricing snapshot.'
       );
     }
 
@@ -110,21 +115,34 @@ export class ClientDeploymentArtifactService {
           expiresAt: validUntil.toISOString(),
           applianceTier: terms['tierId'],
           currency: quote.currency,
+          hardwareCents: amountCents(pricing['hardwareCost'], 'hardware cost'),
+          freightCents: amountCents(pricing['freightAmount'], 'freight'),
+          taxCents: amountCents(pricing['taxAmount'], 'tax'),
+          setupHours: hoursValue(pricing['setupHours'], 'setup hours'),
+          setupLaborCents: amountCents(pricing['setupLabor'], 'setup labor'),
           upfrontTotalCents: amountCents(
             pricing['outrightPrice'],
-            'outright price'
+            'up-front total'
           ),
-          lease24MonthlyCents: amountCents(
-            lease24.monthlyTotal,
-            '24-month lease'
+          laborRateCents: amountCents(
+            pricing['laborRatePerHour'],
+            'labor rate'
           ),
-          lease36MonthlyCents: amountCents(
-            lease36.monthlyTotal,
-            '36-month lease'
+          monthlySupportHours: hoursValue(
+            monthlySupport['supportHours'],
+            'monthly support hours'
           ),
-          maintenanceMonthlyCents: amountCents(
-            lease24.monthlyMaintenanceReserve,
-            'monthly maintenance reserve'
+          monthlySupportLaborCents: amountCents(
+            monthlySupport['supportLabor'],
+            'monthly support labor'
+          ),
+          monthlyPassThroughCents: amountCents(
+            monthlySupport['passThroughCosts'],
+            'monthly service costs'
+          ),
+          monthlySupportTotalCents: amountCents(
+            monthlySupport['monthlyTotal'],
+            'monthly support total'
           ),
         },
         customer: {

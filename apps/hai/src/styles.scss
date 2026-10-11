@@ -1,11 +1,26 @@
+@use 'app/styles/section';
+
+// Native controls and scrollbars follow the visitor's light or dark mode.
 html {
-  scroll-behavior: smooth;
   color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+// Smooth scrolling only for visitors who have not asked for reduced motion.
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
   margin: 0;
   font-family: var(--font-body, var(--personality-font-family, sans-serif));
+  line-height: section.leading();
+  letter-spacing: var(--letter-spacing, normal);
   color: var(--foreground);
   background: radial-gradient(
       circle at top left,
@@ -19,15 +34,11 @@ body {
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--background) 96%, white 4%) 0%,
+      var(--background) 0%,
       color-mix(in srgb, var(--surface, var(--background)) 96%, transparent)
         100%
     );
-  transition: background 0.4s ease, color 0.3s ease;
-}
-
-body.dark {
-  color-scheme: dark;
+  @include section.fade(background, color);
 }
 
 * {
@@ -41,4 +52,9 @@ a {
 ::selection {
   background: color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--foreground);
+}
+
+// Present to assistive technology, hidden on screen.
+.visually-hidden {
+  @include section.visually-hidden;
 }

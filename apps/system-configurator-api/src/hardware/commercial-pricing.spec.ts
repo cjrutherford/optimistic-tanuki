@@ -1,121 +1,111 @@
 import {
+  HAI_LABOR_RATE_PER_HOUR,
   addQuoteExpiryDays,
-  assessRetainerMargin,
   calculateHardwareCommercialPricing,
+  calculateMonthlySupport,
 } from './commercial-pricing';
 
-describe('commercial hardware pricing', () => {
-  it('keeps contingency internal and prices from raw distributor cost', () => {
-    const quote = calculateHardwareCommercialPricing({
-      costBasis: {
-        kind: 'raw',
-        wholesaleCost: 1000,
-      },
-    });
+describe('pass-through commercial pricing', () => {
+  const upfront = {
+    hardwareCost: 1000,
+    freightAmount: 24.5,
+    taxAmount: 70,
+    setupHours: 6,
+    laborRatePerHour: HAI_LABOR_RATE_PER_HOUR,
+  };
 
-    expect(quote).toEqual({
-      sourceWholesaleCost: 1000,
-      contingencyAmount: 0,
-      contingencyReserve: 100,
-      bufferedSourceCost: 1000,
-      freightAndTaxAllowance: 80,
-      landedCost: 1080,
-      procurementMarkup: 378,
-      outrightPrice: 1458,
-      leases: [
-        {
-          termMonths: 24,
-          monthlyAmortization: 66.94,
-          monthlyMaintenanceReserve: 13.5,
-          monthlyTotal: 80.44,
-        },
-        {
-          termMonths: 36,
-          monthlyAmortization: 46.7,
-          monthlyMaintenanceReserve: 13.5,
-          monthlyTotal: 60.2,
-        },
-      ],
+  it('publishes a $65 labor rate', () => {
+    expect(HAI_LABOR_RATE_PER_HOUR).toBe(65);
+  });
+
+  it('bills hardware, freight, and tax at actual amounts plus setup labor', () => {
+    expect(calculateHardwareCommercialPricing(upfront)).toEqual({
+      pricingModel: 'pass-through',
+      hardwareCost: 1000,
+      freightAmount: 24.5,
+      taxAmount: 70,
+      setupHours: 6,
+      laborRatePerHour: 65,
+      setupLabor: 390,
+      outrightPrice: 1484.5,
     });
   });
 
-  it('keeps the 10 percent contingency as an internal reserve by default', () => {
-    const quote = calculateHardwareCommercialPricing({
-      costBasis: { kind: 'raw', wholesaleCost: 1000 },
+  it('adds no markup, allowance, reserve, or lease figures', () => {
+    const pricing = calculateHardwareCommercialPricing({
+      ...upfront,
+      freightAmount: 0,
+      taxAmount: 0,
+      setupHours: 0,
     });
 
-    expect(quote.outrightPrice).toBe(1458);
-    expect(quote.contingencyAmount).toBe(0);
-    expect(quote.contingencyReserve).toBe(100);
+    expect(pricing.outrightPrice).toBe(1000);
+    expect(Object.keys(pricing)).not.toEqual(
+      expect.arrayContaining(['leases'])
+    );
+    for (const key of Object.keys(pricing)) {
+      expect(key).not.toMatch(/markup|margin|allowance|reserve|lease/i);
+    }
   });
 
-  it('rounds monetary outputs to cents and rejects invalid cost input', () => {
+  it('rounds to cents and rejects invalid input', () => {
     expect(
       calculateHardwareCommercialPricing({
-        costBasis: {
-          kind: 'raw',
-          wholesaleCost: 0.01,
-        },
+        ...upfront,
+        hardwareCost: 0.005,
+        freightAmount: 0,
+        taxAmount: 0,
+        setupHours: 0,
       }).outrightPrice
     ).toBe(0.01);
-
     expect(() =>
-      calculateHardwareCommercialPricing({
-        costBasis: {
-          kind: 'raw',
-          wholesaleCost: Number.NaN,
-        },
-      })
-    ).toThrow('wholesaleCost must be a nonnegative finite number');
+      calculateHardwareCommercialPricing({ ...upfront, hardwareCost: -1 })
+    ).toThrow('hardwareCost must be a nonnegative finite number');
+    expect(() =>
+      calculateHardwareCommercialPricing({ ...upfront, taxAmount: Number.NaN })
+    ).toThrow('taxAmount must be a nonnegative finite number');
+    expect(() =>
+      calculateHardwareCommercialPricing({ ...upfront, laborRatePerHour: 0 })
+    ).toThrow('laborRatePerHour must be a positive finite number');
   });
 
-  it('enforces a 70 percent margin from explicit recurring costs', () => {
+  it('prices monthly support as labor plus pass-through service costs', () => {
     expect(
-      assessRetainerMargin({
-        monthlyRevenue: 1000,
-        monthlyCloudCost: 100,
-        monthlySmsCost: 100,
-        monthlyNetworkCost: 100,
-      })
-    ).toEqual({
-      monthlyRevenue: 1000,
-      monthlyCosts: 300,
-      monthlyGrossProfit: 700,
-      grossMargin: 0.7,
-      meetsMinimumMargin: true,
-    });
-
-    expect(
-      assessRetainerMargin({
-        monthlyRevenue: 1000,
-        monthlyCloudCost: 101,
-        monthlySmsCost: 100,
-        monthlyNetworkCost: 100,
-      }).meetsMinimumMargin
-    ).toBe(false);
-
-    expect(
-      assessRetainerMargin({
-        monthlyRevenue: 100.004,
-        monthlyCloudCost: 30.006,
-        monthlySmsCost: 0,
+      calculateMonthlySupport({
+        supportHours: 2,
+        laborRatePerHour: HAI_LABOR_RATE_PER_HOUR,
+        monthlyCloudCost: 12.5,
+        monthlySmsCost: 3,
         monthlyNetworkCost: 0,
       })
-    ).toMatchObject({
-      monthlyRevenue: 100,
-      monthlyCosts: 30.01,
-      monthlyGrossProfit: 69.99,
-      grossMargin: 0.6999,
-      meetsMinimumMargin: false,
+    ).toEqual({
+      supportHours: 2,
+      laborRatePerHour: 65,
+      supportLabor: 130,
+      passThroughCosts: 15.5,
+      monthlyTotal: 145.5,
     });
+  });
+
+  it('allows a plan with no support hours and rejects negative inputs', () => {
+    expect(
+      calculateMonthlySupport({
+        supportHours: 0,
+        laborRatePerHour: 65,
+        monthlyCloudCost: 0,
+        monthlySmsCost: 0,
+        monthlyNetworkCost: 0,
+      }).monthlyTotal
+    ).toBe(0);
     expect(() =>
-      assessRetainerMargin({
-        monthlyRevenue: 0,
+      calculateMonthlySupport({
+        supportHours: -1,
+        laborRatePerHour: 65,
         monthlyCloudCost: 0,
         monthlySmsCost: 0,
         monthlyNetworkCost: 0,
       })
-    ).toThrow('monthlyRevenue must be greater than zero');
+    ).toThrow('supportHours must be a nonnegative finite number');
   });
 
   it('expires quotes 30 calendar days later in UTC, including month and leap-year rollover', () => {

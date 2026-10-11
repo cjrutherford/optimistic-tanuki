@@ -1,0 +1,22 @@
+<section
+  class="how-it-works"
+  id="how-it-works"
+  aria-labelledby="how-it-works-heading"
+>
+  <p class="eyebrow">How it works</p>
+  <h2 id="how-it-works-heading">From first questions to ongoing support.</h2>
+
+  <ol class="steps">
+    @for (step of steps; track step.title) {
+    <li class="step">
+      <span class="step-number" aria-hidden="true">{{ $index + 1 }}</span>
+      <h3>{{ step.title }}</h3>
+      <p>{{ step.description }}</p>
+    </li>
+    }
+  </ol>
+
+  @if (moreRoute) {
+  <a class="more-link" [routerLink]="moreRoute">More on how we work</a>
+  }
+</section>

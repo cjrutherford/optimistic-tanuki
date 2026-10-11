@@ -1,0 +1,187 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.assessment-form,
+.result.success {
+  @include section.section-spacing;
+  @include section.panel;
+}
+
+.assessment-form {
+  display: grid;
+  gap: section.space(1.5);
+}
+
+.field,
+.choice-group {
+  display: grid;
+  gap: section.space(0.4);
+  min-width: 0;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: section.space(1.25);
+}
+
+.choice-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+label,
+legend {
+  font-weight: var(--hai-weight-strong);
+  color: var(--foreground);
+}
+
+legend {
+  padding: 0;
+  margin-bottom: section.space(0.4);
+}
+
+.required,
+.hint {
+  @include section.body-copy;
+  font-weight: 400;
+  font-size: section.text-size('sm');
+}
+
+.hint {
+  margin: 0;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='tel'],
+select,
+textarea {
+  width: 100%;
+  min-height: var(--touch-target, 44px);
+  padding: section.space(0.6) section.space(0.75);
+  font: inherit;
+  color: var(--foreground);
+  background: var(--surface, var(--background));
+  border: var(--hai-border-strong) solid var(--border, var(--primary));
+  border-radius: var(--personality-input-radius, 6px);
+}
+
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'],
+fieldset[aria-invalid='true'] .choices {
+  border-color: var(--danger);
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: section.space(0.5) section.space(1.5);
+}
+
+.choices.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.5) section.space(2);
+}
+
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: section.space(0.6);
+  min-height: var(--touch-target, 44px);
+  font-weight: 400;
+}
+
+.choices input {
+  width: 1.25em;
+  height: 1.25em;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.field-error {
+  margin: 0;
+  font-weight: var(--hai-weight-strong);
+  color: var(--danger);
+}
+
+.error-summary,
+.result.failure {
+  padding: section.space(1) section.space(1.25);
+  border: var(--hai-border-strong) solid var(--danger);
+  border-radius: var(--personality-input-radius, 6px);
+  background: color-mix(
+    in srgb,
+    var(--danger) 8%,
+    var(--surface, var(--background))
+  );
+}
+
+.error-summary h3 {
+  margin: 0 0 section.space(0.5);
+  font-size: section.text-size('h4');
+}
+
+.error-summary ul {
+  margin: 0;
+  padding-left: section.space(1.1);
+}
+
+.error-summary a,
+.result a {
+  @include section.text-link;
+  overflow-wrap: anywhere;
+}
+
+.result.failure p {
+  margin: 0;
+}
+
+.result.success h2 {
+  @include section.section-heading;
+}
+
+.result.success p {
+  @include section.body-copy;
+  max-width: var(--hai-measure);
+}
+
+.submit {
+  @include section.primary-action;
+  & {
+    justify-self: start;
+    border-style: solid;
+    cursor: pointer;
+    font-size: section.text-size('body');
+  }
+}
+
+.submit[disabled] {
+  opacity: var(--hai-opacity-disabled);
+  cursor: progress;
+}
+
+// Off-screen rather than display: none, which some bots skip.
+.trap {
+  @include section.visually-hidden;
+  // token-exempt: keeps the honeypot off screen for bots that ignore clip
+  left: -10000px;
+}
+
+@media (max-width: 960px) {
+  .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .submit {
+    justify-self: stretch;
+  }
+}

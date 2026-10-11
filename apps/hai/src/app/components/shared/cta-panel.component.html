@@ -1,0 +1,16 @@
+<section class="cta-panel" aria-labelledby="cta-heading">
+  <p class="eyebrow">{{ eyebrow }}</p>
+  <h2 id="cta-heading">{{ title }}</h2>
+  @if (text) {
+  <p class="text">{{ text }}</p>
+  }
+  <div class="actions">
+    <a class="primary-action" [routerLink]="action.route">{{ action.label }}</a>
+    @if (secondary) {
+    <p class="secondary">
+      {{ secondaryPrompt }}
+      <a [routerLink]="secondary.route">{{ secondary.label }}</a>
+    </p>
+    }
+  </div>
+</section>

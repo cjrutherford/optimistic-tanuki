@@ -1,11 +1,13 @@
+@use '../../styles/section';
+
 :host {
   display: block;
 }
 
 .personal-cloud-panel {
-  margin-top: clamp(2.5rem, 5vw, 4rem);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
-  padding: clamp(1.6rem, 3vw, 2.8rem);
+  padding: clamp(section.space(1.6), 3vw, section.space(2.8));
   background: var(--hai-panel-background);
   backdrop-filter: blur(14px);
 }
@@ -17,37 +19,25 @@
 }
 
 .eyebrow {
-  margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+  @include section.eyebrow;
 }
 
 h2 {
-  margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1;
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  @include section.section-heading;
 }
 
 .section-copy p,
 .ownership-list {
-  font: 400 1rem/1.75
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 74%, transparent);
 }
 
 .ownership-layout {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
-  gap: 1rem;
+  gap: section.space(1);
   align-items: stretch;
-  margin-top: 1.2rem;
+  margin-top: section.space(1.2);
 }
 
 .ownership-card {
@@ -58,7 +48,7 @@ h2 {
 
 .ownership-list {
   display: grid;
-  gap: 1.2rem;
+  gap: section.space(1.2);
   margin: 0;
   padding-left: 0;
   list-style: none;
@@ -66,7 +56,7 @@ h2 {
 
 .ownership-list li {
   position: relative;
-  padding-left: 1.4rem;
+  padding-left: section.space(1.4);
 }
 
 .ownership-list li::before {
@@ -74,14 +64,15 @@ h2 {
   position: absolute;
   left: 0;
   top: 0.55em;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 2px;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: var(--hai-radius-chip);
   background: color-mix(in srgb, var(--primary) 50%, transparent);
   transform: rotate(45deg);
 }
 
 .ownership-motion {
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 19rem;
 }
 
@@ -91,6 +82,6 @@ h2 {
 
 @media (max-width: 960px) {
   .ownership-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

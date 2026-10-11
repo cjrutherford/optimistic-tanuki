@@ -35,17 +35,17 @@
 
     <div class="hero-copy">
       <p class="eyebrow">Hopeful Aspirations Industries</p>
-      <h1>Software you own. Servers that stay in your office.</h1>
+      <h1>Technology you own.</h1>
       <p class="lede">
-        We build custom web software, deploy open-source business tools, and
-        install on-premises server appliances for South Georgia businesses. Stop
-        paying monthly rent on your data.
+        Private cloud systems, turn-key server appliances, open-source software,
+        and custom tools for homes, organizations, and businesses across
+        Savannah and South Georgia. We set it up and support it; you keep it.
       </p>
 
       <div class="hero-actions">
         <a
           class="cta primary use-gradient"
-          href="#contact"
+          routerLink="/contact"
           data-tone="brand"
           data-emphasis="solid"
           data-size="lg"
@@ -54,12 +54,13 @@
         </a>
         <a
           class="cta secondary"
-          href="#appliances"
+          routerLink="/"
+          fragment="offerings"
           data-tone="brand"
           data-emphasis="outline"
           data-size="lg"
         >
-          View Turn-key Appliances
+          See What We Offer
         </a>
       </div>
     </div>
@@ -72,11 +73,11 @@
     >
       <aside class="signal-body">
         <div class="signal-group">
-          <otui-badge tone="brand" emphasis="soft">Built for</otui-badge>
+          <otui-badge tone="brand" emphasis="solid">Built for</otui-badge>
           <ul>
-            <li>Field-service contractors and professional offices</li>
-            <li>Growing local businesses with practical workflow needs</li>
-            <li>Teams that need clear choices about data and infrastructure</li>
+            <li>Families keeping photos, files, and media</li>
+            <li>Faith groups, nonprofits, and community groups</li>
+            <li>Small businesses and professional offices</li>
             <li>Local technology partners needing delivery capacity</li>
           </ul>
         </div>
@@ -92,43 +93,21 @@
     </otui-card>
   </section>
 
-  <hai-hardware-catalog></hai-hardware-catalog>
+  <hai-offerings-section [offerings]="offerings"></hai-offerings-section>
 
-  <hai-roi-calculator
-    (emailComparison)="prefillContactWithComparison($event)"
-  ></hai-roi-calculator>
-
-  <hai-solutions-matrix></hai-solutions-matrix>
-
-  <hai-services-section
-    [serviceProof]="serviceProof"
-    [servicePillars]="servicePillars"
-  ></hai-services-section>
-
-  <hai-manifesto-section
-    [manifesto]="manifesto"
-    [reducedMotion]="reducedMotion"
-  ></hai-manifesto-section>
-
-  <hai-personal-cloud-section
-    [ownershipNotes]="ownershipNotes"
-    [reducedMotion]="reducedMotion"
-  ></hai-personal-cloud-section>
-
-  <hai-engagement-section [stages]="engagementStages"></hai-engagement-section>
-
-  <hai-partner-section [benefits]="partnerBenefits"></hai-partner-section>
+  <hai-private-cloud-section
+    [intro]="privateCloudIntro"
+    [capabilities]="privateCloudCapabilities"
+    [paths]="privateCloudPaths"
+  ></hai-private-cloud-section>
 
   <hai-ecosystem-section
     [apps]="(ecosystem$ | async) ?? []"
   ></hai-ecosystem-section>
 
-  <hai-contact-section
-    [contactLead]="contactLead"
-    [contactSubjects]="contactSubjects"
-    [submittingContact]="submittingContact"
-    [contactStatus]="contactStatus"
-    [contactPrefill]="contactPrefill"
-    (formSubmit)="submitContactForm($event)"
-  ></hai-contact-section>
+  <hai-cta-panel
+    title="Not sure where to start?"
+    text="Book a free audit. We look at what you run today and suggest what to own, what to keep renting, and what to leave alone."
+    [action]="{ label: 'Schedule Free Audit', route: '/contact' }"
+  ></hai-cta-panel>
 </div>

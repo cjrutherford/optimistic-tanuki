@@ -1,0 +1,73 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.how-it-works {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.heading-style;
+  margin: section.space(0.75) 0 section.space(0.4);
+  font-size: section.text-size('h4');
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: section.space(1);
+  margin: section.space(1.5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  min-width: 0;
+  padding-top: section.space(1);
+  border-top: var(--hai-border-strong) solid
+    color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+.step p {
+  @include section.body-copy;
+  margin: 0;
+}
+
+.step-number {
+  @include section.heading-style;
+  font-size: section.text-size('h1');
+  line-height: section.leading('display');
+  color: var(--primary-text, var(--primary));
+}
+
+.more-link {
+  @include section.text-link;
+  display: inline-block;
+  margin-top: section.space(1.5);
+}
+
+.more-link::after {
+  content: ' →';
+}
+
+@media (max-width: 960px) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /oauth/
+Disallow: /api/
+
+Sitemap: https://hopefulaspirationsindustries.com/sitemap.xml

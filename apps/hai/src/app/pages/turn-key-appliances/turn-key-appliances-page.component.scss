@@ -1,0 +1,17 @@
+@use '../../styles/section';
+
+.appliance-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.75) section.space(1.75);
+  margin: section.space(1.5) 0 0;
+}
+
+.appliance-links a {
+  font-weight: var(--hai-weight-strong);
+  color: var(--primary-text, var(--primary));
+}
+
+.appliance-links a::after {
+  content: ' →';
+}

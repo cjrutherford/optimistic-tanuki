@@ -1,0 +1,426 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-site-analytics
+  labels:
+    app: grafana
+    grafana_dashboard: '1'
+data:
+  site-analytics.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": false,
+      "graphTooltip": 0,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"page_view\",path=\"/private-cloud\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Private-cloud landing visits",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"assessment_start\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Assessment starts",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"assessment_submit\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Assessment submissions",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"page_view\",path=\"/private-cloud/open-source-stack\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Open-source stack visits",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 0,
+            "y": 5
+          },
+          "id": 5,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"phone_click\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Phone clicks",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 6,
+            "y": 5
+          },
+          "id": 6,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "sum(max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"email_click\"}[$__range])))",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Email clicks",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "id": 7,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "sum by (event, detail) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=~\"audience_interest|assessment_submit\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "title": "Home vs organization interest",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          },
+          "id": 8,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "sum by (path) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"page_view\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "title": "Page views by path",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          },
+          "id": 9,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "sum by (path, detail) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",event=\"cta_click\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "title": "Calls to action by page",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 19
+          },
+          "id": 10,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "sum by (utm_source, utm_medium, utm_campaign, event) (max by (event, path, detail, utm_source, utm_medium, utm_campaign) (increase(ot_site_events_total{app=\"hai\",utm_source!=\"\"}[$__range])))",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                }
+              }
+            }
+          ],
+          "title": "Campaigns (UTM)",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 28
+          },
+          "id": 11,
+          "targets": [
+            {
+              "expr": "max by (event) (sum by (event, instance) (increase(ot_site_events_total{app=\"hai\"}[1h])))",
+              "legendFormat": "{{event}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Events per hour",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "5m",
+      "schemaVersion": 39,
+      "tags": [
+        "hai",
+        "analytics"
+      ],
+      "time": {
+        "from": "now-30d",
+        "to": "now"
+      },
+      "title": "HAI site analytics",
+      "uid": "hai-site-analytics",
+      "version": 1,
+      "description": "Aggregate, cookieless site events from /api/analytics/events. Counts live in Redis; each gateway replica exposes the same totals, so panels first take max across instances for each full label set, then sum. Events that arrived after a budget was full are counted under path (other)."
+    }

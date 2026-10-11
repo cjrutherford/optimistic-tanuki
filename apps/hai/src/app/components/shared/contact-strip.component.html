@@ -1,0 +1,18 @@
+<aside class="contact-strip" aria-labelledby="contact-strip-heading">
+  <h2 id="contact-strip-heading" class="eyebrow">Talk to a person</h2>
+  <ul class="channels">
+    <li>
+      <span class="label">Call</span>
+      <a [href]="contact.phoneHref">{{ contact.phone }}</a>
+    </li>
+    <li>
+      <span class="label">Email</span>
+      <a [href]="'mailto:' + contact.email">{{ contact.email }}</a>
+    </li>
+    <li>
+      <span class="label">Write to us</span>
+      <a routerLink="/contact">Contact form</a>
+    </li>
+  </ul>
+  <p class="website">{{ contact.website }}</p>
+</aside>

@@ -14,6 +14,19 @@
   @include variant.variant-surface;
 }
 
+// A card is a surface. Lay the soft tint over the elevated surface so page
+// patterns and personality scenes behind the card never reach its text
+// (measured as low as 3.4:1 over a dotted backdrop in dark mode).
+.card[data-tone]:not([data-tone='neutral'])[data-emphasis='soft'] {
+  --card-soft-tint: color-mix(
+    in oklab,
+    var(--variant-bg-source) 18%,
+    transparent
+  );
+  background: linear-gradient(var(--card-soft-tint), var(--card-soft-tint)),
+    var(--background-elevated, var(--surface, var(--background)));
+}
+
 // The folded `default` card resolves to the neutral tone. A neutral card should
 // read as a normal elevated surface rather than the mixin's faint tone-mix, so
 // preserve the surface background/foreground for that tone specifically. Colored

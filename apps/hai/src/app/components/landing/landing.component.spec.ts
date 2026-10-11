@@ -1,12 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
-import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { LandingComponent } from './landing.component';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
-import { RoiCalculatorSectionComponent } from './roi-calculator-section.component';
-import { DEFAULT_HARDWARE_TIERS } from '../../services/hardware-catalog.service';
+import { OFFERINGS } from '../../content/site-content';
 
 describe('LandingComponent', () => {
   let component: LandingComponent;
@@ -62,8 +59,9 @@ describe('LandingComponent', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await TestBed.configureTestingModule({
-      imports: [LandingComponent, HttpClientTestingModule],
+      imports: [LandingComponent],
       providers: [
+        provideRouter([]),
         { provide: HaiAppDirectoryService, useValue: directoryServiceStub },
       ],
     }).compileComponents();
@@ -73,11 +71,38 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders a project-start CTA and the Turn-key Appliances path', () => {
-    const text = fixture.nativeElement.textContent as string;
+  it('leads with the company-level ownership positioning', () => {
+    const element = fixture.nativeElement as HTMLElement;
+    const lede = element.querySelector('.hero-copy .lede')?.textContent ?? '';
 
-    expect(text).toContain('Schedule Free Audit');
-    expect(text).toContain('View Turn-key Appliances');
+    expect(element.querySelector('h1')?.textContent?.trim()).toBe(
+      'Technology you own.'
+    );
+    for (const offering of [
+      'Private cloud',
+      'turn-key server appliances',
+      'open-source software',
+      'custom tools',
+    ]) {
+      expect(lede).toContain(offering);
+    }
+    expect(element.textContent).toContain(
+      'You should be able to leave any vendor, including us, with your data intact.'
+    );
+  });
+
+  it('names homes and organizations, using Faith groups terminology', () => {
+    const audiences = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.hero-signal li')
+    ).map((item) => item.textContent?.trim());
+
+    expect(audiences).toEqual([
+      'Families keeping photos, files, and media',
+      'Faith groups, nonprofits, and community groups',
+      'Small businesses and professional offices',
+      'Local technology partners needing delivery capacity',
+    ]);
+    expect(fixture.nativeElement.textContent).not.toMatch(/church/i);
   });
 
   it('renders the operational guarantee banner', () => {
@@ -88,41 +113,95 @@ describe('LandingComponent', () => {
     );
   });
 
-  it('renders semantic hash anchors with canonical hero CTA variants', () => {
+  it('sends the hero actions to the audit and the offerings overview', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
-    const buttons = nativeElement.querySelectorAll('.hero-actions a');
-    const card = nativeElement.querySelector('.hero-signal');
-    const badge = nativeElement.querySelector('.hero-signal otui-badge');
+    const buttons = nativeElement.querySelectorAll(
+      '.hero-panel .hero-actions a'
+    );
 
     expect(buttons).toHaveLength(2);
-    expect(
-      nativeElement.querySelectorAll('.hero-actions otui-button')
-    ).toHaveLength(0);
-    expect(buttons[0].getAttribute('href')).toBe('#contact');
-    expect(buttons[0].getAttribute('data-tone')).toBe('brand');
-    expect(buttons[0].getAttribute('data-emphasis')).toBe('solid');
-    expect(buttons[0].getAttribute('data-size')).toBe('lg');
+    expect(buttons[0].textContent?.trim()).toBe('Schedule Free Audit');
+    expect(buttons[0].getAttribute('href')).toBe('/contact');
     expect(buttons[0].classList).toContain('primary');
-    expect(buttons[0].classList).toContain('use-gradient');
-    expect(buttons[1].getAttribute('href')).toBe('#appliances');
-    expect(buttons[1].getAttribute('data-tone')).toBe('brand');
-    expect(buttons[1].getAttribute('data-emphasis')).toBe('outline');
-    expect(buttons[1].getAttribute('data-size')).toBe('lg');
+    expect(buttons[1].textContent?.trim()).toBe('See What We Offer');
+    expect(buttons[1].getAttribute('href')).toBe('/#offerings');
     expect(buttons[1].classList).toContain('secondary');
+  });
 
-    expect(card).not.toBeNull();
-    expect(card?.querySelector('.card')?.getAttribute('data-tone')).toBe(
-      'brand'
+  it('gives every offering a headline, one sentence, and a link to its page', () => {
+    const cards = Array.from(
+      (
+        fixture.nativeElement as HTMLElement
+      ).querySelectorAll<HTMLAnchorElement>('#offerings a.offering-card')
     );
-    expect(card?.querySelector('.card')?.getAttribute('data-emphasis')).toBe(
-      'soft'
+
+    expect(cards.map((card) => card.getAttribute('href'))).toEqual(
+      OFFERINGS.map((offering) => offering.route)
     );
-    expect(card?.querySelector('.card')?.getAttribute('data-size')).toBe('md');
-    expect(badge).not.toBeNull();
-    expect(badge?.textContent).toContain('Built for');
-    expect(badge?.querySelector('.badge')?.getAttribute('data-tone')).toBe(
-      'brand'
+    for (const [index, card] of cards.entries()) {
+      expect(card.querySelector('.offering-headline')?.textContent).toBe(
+        OFFERINGS[index].headline
+      );
+      expect(card.querySelector('.offering-summary')?.textContent).toBe(
+        OFFERINGS[index].summary
+      );
+    }
+  });
+
+  it('still represents appliances, stacks, and custom software', () => {
+    const routes = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll(
+        '#offerings a.offering-card'
+      )
+    ).map((card) => card.getAttribute('href'));
+
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        '/private-cloud',
+        '/turn-key-appliances',
+        '/software-stacks',
+        '/custom-software',
+      ])
     );
+  });
+
+  it('links to the cost comparison without claiming savings', () => {
+    const note = (fixture.nativeElement as HTMLElement).querySelector(
+      '.comparison-note'
+    );
+
+    expect(note?.querySelector('a')?.getAttribute('href')).toBe(
+      '/cost-comparison'
+    );
+    expect(note?.textContent).not.toMatch(/save|cheaper|guarantee/i);
+  });
+
+  it('keeps detail sections off the homepage', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    for (const selector of [
+      'hai-hardware-catalog',
+      'hai-roi-calculator',
+      'hai-solutions-matrix',
+      'hai-services-section',
+      'hai-manifesto-section',
+      'hai-personal-cloud-section',
+      'hai-engagement-section',
+      'hai-partner-section',
+      'hai-contact-section',
+    ]) {
+      expect(nativeElement.querySelector(selector)).toBeNull();
+    }
+  });
+
+  it('closes with a single audit action', () => {
+    const closing = (fixture.nativeElement as HTMLElement).querySelector(
+      'hai-cta-panel'
+    );
+    const links = closing?.querySelectorAll('a') ?? [];
+
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('href')).toBe('/contact');
   });
 
   it('renders the registry-backed HAI app cards', () => {
@@ -136,44 +215,12 @@ describe('LandingComponent', () => {
     expect(component.ecosystem$).toBeDefined();
   });
 
-  it('prefills the contact message from the calculator comparison action', () => {
-    const calculator = fixture.debugElement.query(
-      By.directive(RoiCalculatorSectionComponent)
-    );
-    const calculatorComponent =
-      calculator.componentInstance as RoiCalculatorSectionComponent;
-    calculatorComponent.tiers = DEFAULT_HARDWARE_TIERS;
-    calculatorComponent.recalculate();
-    fixture.detectChanges();
-    const contact = fixture.nativeElement.querySelector(
-      '#contact'
-    ) as HTMLElement;
-    contact.scrollIntoView = jest.fn();
-    const emailButton = calculator.nativeElement.querySelector(
-      '.btn-email'
-    ) as HTMLButtonElement;
-
-    emailButton.click();
-    fixture.detectChanges();
-
-    const contactForm = fixture.debugElement.query(
-      By.directive(ContactFormComponent)
-    ).componentInstance as ContactFormComponent;
-    expect(contactForm.contactForm.value.message).toContain(
-      'Please send me the five-year comparison'
-    );
-    expect(contactForm.contactForm.value.message).toContain(
-      'Five-year savings'
-    );
-  });
-
   it('uses motion layers in the hero scene', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
 
     expect(
       nativeElement.querySelector('otui-topographic-drift')
     ).not.toBeNull();
-    expect(nativeElement.querySelector('otui-aurora-ribbon')).not.toBeNull();
     expect(nativeElement.querySelector('otui-pulse-rings')).not.toBeNull();
   });
 
@@ -186,126 +233,44 @@ describe('LandingComponent', () => {
     expect(
       nativeElement.querySelector('.hero-panel[data-theme-surface="hero"]')
     ).not.toBeNull();
-    expect(nativeElement.querySelector('otui-card.story-panel')).not.toBeNull();
   });
 
-  it('renders the manifesto rail with motion-backed section emphasis', () => {
+  it('introduces private cloud right after the offerings overview', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
+    const order = Array.from(nativeElement.querySelectorAll('section[id]')).map(
+      (section) => section.id
+    );
 
-    expect(nativeElement.querySelector('.manifesto-rail')).not.toBeNull();
-    expect(nativeElement.querySelector('otui-shimmer-beam')).not.toBeNull();
+    expect(order.indexOf('private-cloud')).toBe(order.indexOf('offerings') + 1);
+    expect(
+      nativeElement.querySelector('#private-cloud h2')?.textContent?.trim()
+    ).toBe('A cloud you control.');
+    expect(
+      nativeElement.querySelectorAll('#private-cloud otui-card h3')
+    ).toHaveLength(3);
   });
 
-  it('renders the approved business positioning and removes playful messaging', () => {
-    const text = fixture.nativeElement.textContent as string;
+  it('routes private-cloud visitors to home, organizations, and the overview', () => {
+    const links = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll(
+        '#private-cloud a'
+      )
+    ).map((link) => [
+      link.querySelector('.path-label')?.textContent?.trim() ??
+        link.textContent?.trim(),
+      link.getAttribute('href'),
+    ]);
 
-    expect(text).toContain(
-      'Software you own. Servers that stay in your office.'
-    );
-    expect(text).toContain(
-      'We build custom web software, deploy open-source business tools, and install on-premises server appliances for South Georgia businesses. Stop paying monthly rent on your data.'
-    );
-    expect(text).toContain('Custom Portals & Workflow Automation');
-    expect(text).toContain('Independent Infrastructure');
-    expect(text).toContain('Tailored Software');
-    expect(text).toContain('Build the foundation');
-    expect(text).toContain('Maintain and improve');
-    expect(text).toContain(
-      'White-label delivery for local technology partners'
-    );
-    expect(text).not.toContain('What does HAI actually stand for today?');
+    expect(links).toEqual([
+      ['For your home', '/private-cloud/home'],
+      ['For organizations', '/private-cloud/organizations'],
+      ['Explore private cloud', '/private-cloud'],
+    ]);
   });
 
-  it('keeps services and engagement ahead of delivery proof in the page narrative', () => {
-    const text = fixture.nativeElement.textContent as string;
+  it('uses the private-cloud headline once on the page', () => {
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(text.indexOf('Services')).toBeGreaterThan(-1);
-    expect(text.indexOf('Services')).toBeLessThan(
-      text.indexOf('Delivery Proof')
-    );
-  });
-
-  it('renders the business narrative sections with semantic service cards', () => {
-    const nativeElement = fixture.nativeElement as HTMLElement;
-
-    expect(nativeElement.querySelector('#services')).not.toBeNull();
-    expect(nativeElement.querySelector('#approach')).not.toBeNull();
-    expect(nativeElement.querySelector('#infrastructure')).not.toBeNull();
-    expect(nativeElement.querySelectorAll('#services otui-card')).toHaveLength(
-      4
-    );
-    expect(nativeElement.querySelector('#services h3')?.textContent).toContain(
-      'Custom Portals & Workflow Automation'
-    );
-    expect(nativeElement.querySelector('#services')?.textContent).not.toContain(
-      'homelab'
-    );
-    expect(
-      nativeElement.querySelector('#infrastructure')?.textContent
-    ).not.toContain('family compute');
-  });
-
-  it('renders engagement and partner conversion paths before delivery proof', () => {
-    const nativeElement = fixture.nativeElement as HTMLElement;
-    const text = nativeElement.textContent as string;
-
-    expect(nativeElement.querySelector('#engagement')).not.toBeNull();
-    expect(nativeElement.querySelector('#partners')).not.toBeNull();
-    expect(text.indexOf('Build the foundation')).toBeLessThan(
-      text.indexOf('Delivery Proof')
-    );
-    expect(text.indexOf('Maintain and improve')).toBeLessThan(
-      text.indexOf('Delivery Proof')
-    );
-  });
-
-  it('preserves canonical section targets and migrated surface attributes', () => {
-    const nativeElement = fixture.nativeElement as HTMLElement;
-    const targets = [
-      '#appliances',
-      '#stacks',
-      '#services',
-      '#approach',
-      '#infrastructure',
-      '#engagement',
-      '#partners',
-      '#ecosystem',
-      '#contact',
-    ];
-
-    expect(targets.every((target) => nativeElement.querySelector(target))).toBe(
-      true
-    );
-    expect(nativeElement.querySelector('hai-hardware-catalog')).not.toBeNull();
-    expect(nativeElement.querySelector('hai-solutions-matrix')).not.toBeNull();
-    expect(
-      nativeElement.querySelector('#services otui-card')?.getAttribute('tone')
-    ).toBe('brand');
-    expect(
-      nativeElement
-        .querySelector('#approach otui-card')
-        ?.getAttribute('emphasis')
-    ).toBe('outline');
-    expect(
-      nativeElement
-        .querySelector('#infrastructure otui-card')
-        ?.getAttribute('tone')
-    ).toBe('neutral');
-    expect(
-      nativeElement
-        .querySelector('#engagement otui-badge')
-        ?.getAttribute('emphasis')
-    ).toBe('solid');
-    expect(
-      nativeElement.querySelector('#partners otui-card')?.getAttribute('size')
-    ).toBe('lg');
-    expect(
-      nativeElement
-        .querySelector('#ecosystem a.ecosystem-card')
-        ?.getAttribute('data-tone')
-    ).toBe('brand');
-    expect(
-      nativeElement.querySelector('#contact')?.getAttribute('data-emphasis')
-    ).toBe('soft');
+    expect(text.split('A cloud you control.')).toHaveLength(2);
   });
 });

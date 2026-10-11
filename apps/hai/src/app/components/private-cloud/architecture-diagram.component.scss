@@ -1,0 +1,89 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.architecture {
+  @include section.section-spacing;
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+h3 {
+  @include section.eyebrow;
+  margin-bottom: section.space(0.75);
+  color: var(--primary-text, var(--primary));
+}
+
+figure {
+  margin: section.space(1.5) 0 0;
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: section.space(2.5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: tier;
+}
+
+.tier {
+  @include section.panel;
+  & {
+    position: relative;
+    min-width: 0;
+  }
+}
+
+// Arrow to the next tier: right on wide screens, down on narrow ones.
+.tier:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  top: 50%;
+  // token-exempt: connector arrow offset, positioned against the diagram grid
+  right: -1.9rem;
+  transform: translateY(-50%);
+  font-size: section.text-size('h3');
+  line-height: section.leading('display');
+  color: var(--primary-text, var(--primary));
+}
+
+.tier ul {
+  @include section.body-copy;
+  display: grid;
+  gap: section.space(0.4);
+  margin: 0;
+  padding-left: section.space(1.1);
+}
+
+figcaption {
+  @include section.body-copy;
+  margin-top: section.space(1.25);
+  font-style: italic;
+}
+
+@media (max-width: 1200px) {
+  .tiers {
+    grid-template-columns: minmax(0, 1fr);
+    gap: section.space(2.25);
+  }
+
+  .tier:not(:last-child)::after {
+    content: '↓';
+    top: auto;
+    right: auto;
+    // token-exempt: connector arrow offset, positioned against the diagram grid
+    bottom: -1.95rem;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}

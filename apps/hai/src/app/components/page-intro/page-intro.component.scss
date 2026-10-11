@@ -1,0 +1,105 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.page-intro {
+  margin-top: section.space(1);
+  padding: clamp(section.space(1.6), 3.5vw, section.space(3));
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  background: var(--hai-panel-strong);
+  box-shadow: var(--hai-shadow-panel);
+}
+
+.eyebrow {
+  margin: 0 0 section.space(0.8);
+  @include section.eyebrow-font;
+  letter-spacing: var(--personality-label-letter-spacing, 0.18em);
+  text-transform: var(--personality-label-text-transform, uppercase);
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+h1 {
+  @include section.heading-style;
+  margin: 0;
+  max-width: var(--hai-measure-wide);
+  font-size: var(--hai-type-section);
+  line-height: section.leading('display');
+  overflow-wrap: anywhere;
+  color: color-mix(
+    in srgb,
+    var(--foreground) 92%,
+    var(--primary-text, var(--primary))
+  );
+}
+
+.summary {
+  max-width: var(--hai-measure);
+  margin: section.space(1) 0 0;
+  @include section.copy-font('lede');
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.intro-action {
+  @include section.primary-action;
+  & {
+    margin-top: section.space(1.5);
+  }
+}
+
+.intro-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: section.space(0.75);
+  margin-top: section.space(1.5);
+}
+
+.intro-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target, 44px);
+  padding: section.space(0.6) section.space(1.2);
+  border-radius: var(--hai-radius-pill);
+  border: var(--hai-border-width) var(--hai-border-style)
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 86%,
+    transparent
+  );
+  color: var(--foreground);
+  font-weight: var(--hai-weight-strong);
+  text-decoration: none;
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal');
+
+  &:hover,
+  &:focus-visible {
+    @include section.hover-lift;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-intro {
+    padding: section.space(1.2);
+  }
+
+  .intro-link,
+  .intro-action {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-link {
+    transition: none;
+  }
+
+  .intro-link:hover,
+  .intro-link:focus-visible {
+    transform: none;
+  }
+}

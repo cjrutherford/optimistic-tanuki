@@ -8,6 +8,7 @@ import {
 } from '@optimistic-tanuki/common-ui';
 import { HardwareCatalogService } from '../../services/hardware-catalog.service';
 import { Observable } from 'rxjs';
+import { PRICING_ONE_LINE } from '../../content/pricing';
 
 export interface SolutionVertical {
   id: string;
@@ -27,11 +28,6 @@ export interface SolutionVertical {
     name: string;
     role: string;
   }[];
-  investment: {
-    upfront?: string;
-    monthly: string;
-    projectOption?: string;
-  };
   actionLabel: string;
   configuratorPreset: string;
   portalUrl?: string;
@@ -76,9 +72,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
         role: 'Workflow automation routing webhooks, notifications, and alerts',
       },
     ],
-    investment: {
-      monthly: '$50/mo software + $99/mo Mini-PC lease',
-    },
     actionLabel: 'Configure Tier 1 Appliance',
     configuratorPreset: 'tier1',
   },
@@ -121,10 +114,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
         role: 'Self-hosted credential vault for firm-wide password management',
       },
     ],
-    investment: {
-      upfront: '$3,200 setup',
-      monthly: '$550/mo compliance retainer',
-    },
     actionLabel: 'Configure Tier 2 Appliance',
     configuratorPreset: 'tier2',
   },
@@ -162,10 +151,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
         role: 'Audit-ready electronic signatures for closing disclosures and deeds',
       },
     ],
-    investment: {
-      upfront: '$2,850 setup',
-      monthly: '$650/mo defense retainer',
-    },
     actionLabel: 'Configure Tier 2 Appliance',
     configuratorPreset: 'tier2',
   },
@@ -221,11 +206,6 @@ export const VERTICAL_SOLUTIONS: SolutionVertical[] = [
         role: 'Private on-premises large language model for ordinance and specification searches',
       },
     ],
-    investment: {
-      upfront: '$3,200 setup',
-      monthly: '$849/mo retainer',
-      projectOption: '$40,000 project build',
-    },
     actionLabel: 'Configure Tier 3 Appliance',
     configuratorPreset: 'tier3',
   },
@@ -242,6 +222,7 @@ export class SolutionsMatrixComponent implements OnInit {
   private readonly catalogService = inject(HardwareCatalogService);
 
   readonly verticals = VERTICAL_SOLUTIONS;
+  readonly pricingSummary = PRICING_ONE_LINE;
   readonly activeVerticalId = signal<string>(VERTICAL_SOLUTIONS[0].id);
 
   readonly tabs: Tab[] = VERTICAL_SOLUTIONS.map((v) => ({

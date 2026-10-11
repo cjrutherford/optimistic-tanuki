@@ -1,0 +1,16 @@
+@use '../../styles/section';
+
+.stack-qualifier {
+  max-width: var(--hai-measure);
+  margin: section.space(1.5) 0 0;
+  padding: section.space(1) section.space(1.25);
+  border-left: var(--hai-border-accent) solid
+    var(--primary-text, var(--primary));
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 86%,
+    transparent
+  );
+  font-weight: var(--hai-weight-strong);
+  line-height: section.leading('copy');
+}

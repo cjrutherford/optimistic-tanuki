@@ -60,9 +60,11 @@ describe('HardwareCatalogComponent', () => {
     expect(text).toContain('Dual 2.5 GbE Intel i226-V ports');
     expect(text).toContain('12W draw');
     expect(text).toContain('CyberPower CP685AVRG (685VA / 390W)');
-    expect(text).toContain('$705');
-    expect(text).toContain('$99/mo lease');
-    expect(text).toContain('Wholesale cost: $522.22 with 35% margin');
+    expect(text).toContain('Actual cost of the parts above, no markup');
+    expect(text).toContain('Actual amounts on the order');
+    expect(text).toContain('$65 per hour');
+    expect(text).toContain('Available on request through a third-party lender');
+    expect(text).not.toMatch(/margin|\$705|\$522|\/mo/);
 
     const button = tier1Card.querySelector('a.portal-btn');
     expect(button.getAttribute('href')).toContain('preset=tier1');
@@ -87,9 +89,7 @@ describe('HardwareCatalogComponent', () => {
     );
     expect(text).toContain('GL.iNet GL-X3000 Spitz AX');
     expect(text).toContain('APC Smart-UPS SMT1500C (1500VA / 1000W)');
-    expect(text).toContain('$2,850 to $3,200 setup');
-    expect(text).toContain('$199/mo lease');
-    expect(text).toContain('Wholesale cost: $2,111.11 with 35% margin');
+    expect(text).not.toMatch(/margin|\$2,850|\$2,111|\/mo/);
 
     const button = tier2Card.querySelector('a.portal-btn');
     expect(button.getAttribute('href')).toContain('preset=tier2');
@@ -118,8 +118,7 @@ describe('HardwareCatalogComponent', () => {
     expect(text).toContain(
       'CyberPower OL2200RTXL2U (2000VA online double-conversion)'
     );
-    expect(text).toContain('$3,200 setup or $40,000 project build');
-    expect(text).toContain('$349/mo lease');
+    expect(text).not.toMatch(/margin|\$3,200|\$2,370|\$40,000|\/mo/);
 
     const button = tier3Card.querySelector('a.portal-btn');
     expect(button.getAttribute('href')).toContain('preset=tier3');
@@ -132,5 +131,11 @@ describe('HardwareCatalogComponent', () => {
 
     const h2 = element.querySelector('h2');
     expect(h2?.textContent?.trim()).toBe('Turn-key hardware appliances');
+  });
+
+  it('states the pass-through pricing structure', () => {
+    expect(
+      fixture.nativeElement.querySelector('.pricing-principle')?.textContent
+    ).toContain('Hardware at actual cost with no markup');
   });
 });

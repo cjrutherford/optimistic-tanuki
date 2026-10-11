@@ -1,0 +1,56 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.cta-panel {
+  @include section.section-spacing;
+  @include section.panel(var(--hai-panel-strong));
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+  margin: 0;
+}
+
+.text,
+.secondary {
+  @include section.body-copy;
+  max-width: var(--hai-measure);
+}
+
+.text {
+  margin: section.space(1) 0 0;
+  font-size: section.text-size('h4');
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: section.space(1) section.space(1.5);
+  margin-top: section.space(1.5);
+}
+
+.primary-action {
+  @include section.primary-action;
+}
+
+.secondary {
+  margin: 0;
+}
+
+.secondary a {
+  @include section.text-link;
+}
+
+@media (max-width: 640px) {
+  .primary-action {
+    width: 100%;
+  }
+}

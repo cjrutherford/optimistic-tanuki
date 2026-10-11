@@ -1,44 +1,137 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { of } from 'rxjs';
-import { NavigationService } from '@optimistic-tanuki/app-registry';
+import { Router, provideRouter } from '@angular/router';
+import { Component } from '@angular/core';
+import { NavItem } from '@optimistic-tanuki/navigation-ui';
 import { TitleBarComponent } from './title-bar.component';
+
+@Component({ standalone: true, template: '' })
+class BlankPageComponent {}
+
+function flatten(items: NavItem[]): NavItem[] {
+  return items.flatMap((item) => [item, ...flatten(item.children ?? [])]);
+}
 
 describe('TitleBarComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TitleBarComponent],
       providers: [
-        { provide: Router, useValue: { url: '/', events: of() } },
-        { provide: NavigationService, useValue: {} },
+        provideRouter([{ path: '**', component: BlankPageComponent }]),
       ],
     });
   });
 
-  it('exposes the business narrative anchors in the menu', () => {
+  it('puts every page in the drawer, grouping offerings under Solutions', () => {
     const component =
       TestBed.createComponent(TitleBarComponent).componentInstance;
-    const labels = component.navItems.map((item) => item.label);
+    const items = component.navItems();
 
-    expect(labels).toEqual([
+    expect(items.map((item) => item.label)).toEqual([
       'Home',
+      'Solutions',
+      'Cost Comparison',
+      'How We Work',
+      'Contact',
+    ]);
+    expect(items[1].children?.map((item) => item.label)).toEqual([
+      'Private Cloud',
       'Turn-key Appliances',
       'Software Stacks',
-      'Cost Comparison',
-      'Contact',
+      'Custom Software',
+      'Partners',
+    ]);
+    expect(items[1].children?.[0].children?.map((item) => item.label)).toEqual([
+      'For your home',
+      'For organizations',
+      'Open-source stack',
+      'Assessment',
     ]);
   });
 
-  it('renders brand logo and title, nav links, and primary action button', () => {
+  it('lifts the bar above other fixed elements only while the drawer is open', () => {
+    const fixture = TestBed.createComponent(TitleBarComponent);
+    const host = fixture.nativeElement as HTMLElement;
+    fixture.detectChanges();
+    expect(host.classList).not.toContain('menu-open');
+
+    fixture.componentInstance.toggleMenu();
+    fixture.detectChanges();
+    expect(host.classList).toContain('menu-open');
+
+    fixture.componentInstance.menuOpen.set(false);
+    fixture.detectChanges();
+    expect(host.classList).not.toContain('menu-open');
+  });
+
+  it('navigates to the route of a drawer item', () => {
+    const component =
+      TestBed.createComponent(TitleBarComponent).componentInstance;
+    const router = TestBed.inject(Router);
+    const navigate = jest
+      .spyOn(router, 'navigateByUrl')
+      .mockResolvedValue(true);
+    const partners = flatten(component.navItems()).find(
+      (item) => item.label === 'Partners'
+    );
+
+    partners?.action?.();
+
+    expect(navigate).toHaveBeenCalledWith('/partners');
+  });
+
+  it('marks the current page and its parents active after navigation', async () => {
+    const fixture = TestBed.createComponent(TitleBarComponent);
+    await TestBed.inject(Router).navigateByUrl('/private-cloud/home');
+    const active = flatten(fixture.componentInstance.navItems())
+      .filter((item) => item.isActive)
+      .map((item) => item.label);
+
+    expect(active).toEqual(['Solutions', 'Private Cloud', 'For your home']);
+  });
+
+  it('marks Home active only on the homepage', async () => {
+    const fixture = TestBed.createComponent(TitleBarComponent);
+    await TestBed.inject(Router).navigateByUrl('/contact');
+    const home = fixture.componentInstance.navItems()[0];
+
+    expect(home.isActive).toBe(false);
+  });
+
+  it('renders the brand, header links, audit action, and menu button', () => {
     const fixture = TestBed.createComponent(TitleBarComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
+    const links = Array.from(
+      compiled.querySelectorAll<HTMLAnchorElement>('.desktop-nav a')
+    ).map((link) => [link.textContent?.trim(), link.getAttribute('href')]);
+
     expect(compiled.textContent).toContain('HOPEFUL ASPIRATIONS INDUSTRIES');
-    expect(compiled.textContent).toContain('Home');
-    expect(compiled.textContent).toContain('Turn-key Appliances');
-    expect(compiled.textContent).toContain('Software Stacks');
-    expect(compiled.textContent).toContain('Cost Comparison');
-    expect(compiled.textContent).toContain('Contact');
-    expect(compiled.textContent).toContain('Schedule Free Audit');
+    expect(links).toEqual([
+      ['Private Cloud', '/private-cloud'],
+      ['Cost Comparison', '/cost-comparison'],
+      ['How We Work', '/how-we-work'],
+      ['Contact', '/contact'],
+    ]);
+    expect(
+      compiled.querySelector('.header-cta-btn')?.getAttribute('href')
+    ).toBe('/contact');
+    expect(compiled.querySelector('.brand-link')?.getAttribute('href')).toBe(
+      '/'
+    );
+    expect(compiled.querySelector('.menu-btn')).not.toBeNull();
+  });
+
+  it('opens the drawer from the menu button', () => {
+    const fixture = TestBed.createComponent(TitleBarComponent);
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector(
+      '.menu-btn'
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.menuOpen()).toBe(true);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
   });
 });

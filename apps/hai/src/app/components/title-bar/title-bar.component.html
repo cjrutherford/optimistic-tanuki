@@ -1,13 +1,12 @@
 <header class="hai-header" role="banner">
   <div class="header-container">
     <a
-      href="#"
-      (click)="onNavClick($event, '#')"
+      routerLink="/"
       class="brand-link"
       aria-label="HOPEFUL ASPIRATIONS INDUSTRIES Home"
     >
       <img
-        src="assets/haidev-logo.png"
+        src="assets/haidev-logo-88.webp"
         alt="HOPEFUL ASPIRATIONS INDUSTRIES"
         class="brand-logo"
         width="44"
@@ -17,10 +16,11 @@
     </a>
 
     <nav class="desktop-nav" aria-label="Main navigation">
-      @for (item of navLinks; track item.label) {
+      @for (item of headerLinks; track item.label) {
       <a
-        [href]="item.href"
-        (click)="onNavClick($event, item.href)"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        ariaCurrentWhenActive="page"
         class="nav-link"
       >
         {{ item.label }}
@@ -29,23 +29,19 @@
     </nav>
 
     <div class="header-actions">
-      <a
-        href="#contact"
-        (click)="onNavClick($event, '#contact')"
-        class="header-cta-btn"
-      >
-        Schedule Free Audit
-      </a>
+      <a routerLink="/contact" class="header-cta-btn">Schedule Free Audit</a>
 
       <lib-theme-toggle></lib-theme-toggle>
 
       <button
         type="button"
-        class="mobile-menu-btn"
+        class="menu-btn"
         (click)="toggleMenu()"
-        aria-label="Toggle navigation menu"
+        aria-label="Open site navigation"
+        [attr.aria-expanded]="menuOpen()"
       >
-        ☰
+        <span aria-hidden="true">☰</span>
+        <span class="menu-label">Menu</span>
       </button>
     </div>
   </div>
@@ -53,7 +49,7 @@
 
 <otui-nav-sidebar
   [isOpen]="menuOpen()"
-  [navItems]="navItems"
+  [navItems]="navItems()"
   heading="Navigate HAI"
   (close)="menuOpen.set(false)"
 >

@@ -1,74 +1,75 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { NavItem, NavSidebarComponent } from '@optimistic-tanuki/navigation-ui';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+} from '@angular/router';
+import { filter } from 'rxjs';
+import {
+  AppShellNavLink,
+  NavItem,
+  NavSidebarComponent,
+} from '@optimistic-tanuki/navigation-ui';
 import { ThemeToggleComponent } from '@optimistic-tanuki/theme-ui';
-import { NavigationService } from '@optimistic-tanuki/app-registry';
+import { HEADER_LINKS, SITE_NAVIGATION } from '../../content/navigation';
 
 @Component({
   selector: 'hai-title-bar',
   standalone: true,
-  imports: [CommonModule, NavSidebarComponent, ThemeToggleComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    NavSidebarComponent,
+    ThemeToggleComponent,
+  ],
   templateUrl: './title-bar.component.html',
   styleUrl: './title-bar.component.scss',
+  host: { '[class.menu-open]': 'menuOpen()' },
 })
 export class TitleBarComponent {
   private readonly router = inject(Router);
-  private readonly navigation = inject(NavigationService);
 
   readonly menuOpen = signal(false);
-  readonly navItems: NavItem[] = [
-    { label: 'Home', action: () => this.jump('#') },
-    { label: 'Turn-key Appliances', action: () => this.jump('#appliances') },
-    { label: 'Software Stacks', action: () => this.jump('#stacks') },
-    { label: 'Cost Comparison', action: () => this.jump('#comparison') },
-    { label: 'Contact', action: () => this.jump('#contact') },
-  ];
+  readonly headerLinks = HEADER_LINKS;
+  readonly navItems = signal<NavItem[]>(this.buildNavItems(this.router.url));
 
-  readonly navLinks = [
-    { label: 'Home', href: '#' },
-    { label: 'Turn-key Appliances', href: '#appliances' },
-    { label: 'Software Stacks', href: '#stacks' },
-    { label: 'Cost Comparison', href: '#comparison' },
-    { label: 'Contact', href: '#contact' },
-  ];
+  constructor() {
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(inject(DestroyRef))
+      )
+      .subscribe(() => this.navItems.set(this.buildNavItems(this.router.url)));
+  }
 
   toggleMenu() {
     this.menuOpen.update((value) => !value);
   }
 
-  jump(anchor: string) {
-    const target = anchor.replace('#', '');
-    if (this.router.url !== '/') {
-      void this.router.navigateByUrl('/').then(() => {
-        this.scrollToTarget(target);
-      });
-    } else {
-      this.scrollToTarget(target);
-    }
-    this.menuOpen.set(false);
-  }
+  private buildNavItems(currentUrl: string): NavItem[] {
+    const path = currentUrl.split(/[?#]/)[0] || '/';
 
-  onNavClick(event: Event, href: string) {
-    event.preventDefault();
-    this.jump(href);
-  }
+    const toItem = (link: AppShellNavLink): NavItem => {
+      const children = link.children?.map(toItem);
+      const isActive =
+        (children?.some((child) => child.isActive) ?? false) ||
+        (!!link.route &&
+          (link.exact
+            ? path === link.route
+            : path === link.route || path.startsWith(`${link.route}/`)));
 
-  private scrollToTarget(target: string) {
-    if (typeof window === 'undefined') return;
-    if (!target) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      window.location.hash = '';
-      return;
-    }
-    const el = document.getElementById(target);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    window.location.hash = target;
-  }
+      return {
+        label: link.label,
+        isActive,
+        action: link.route
+          ? () => void this.router.navigateByUrl(link.route as string)
+          : undefined,
+        children,
+      };
+    };
 
-  leave(appId: string) {
-    this.navigation.navigate(appId);
+    return SITE_NAVIGATION.map(toItem);
   }
 }

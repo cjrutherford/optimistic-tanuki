@@ -5,8 +5,9 @@
       <h2>Turn-key hardware appliances</h2>
       <p class="lede">
         Standardized, pre-configured server appliances deployed on-premises in
-        your office. Choose between direct purchase or a monthly hardware lease.
+        your office.
       </p>
+      <p class="pricing-principle">{{ pricingSummary }}</p>
     </div>
   </div>
 
@@ -67,53 +68,28 @@
           </div>
 
           <div class="pricing-section">
-            <h4 class="pricing-heading">Commercial pricing</h4>
-            <div class="pricing-grid">
-              <div class="pricing-box purchase-box">
-                <span class="pricing-label">Outright purchase</span>
-                <div class="price-value">
-                  <span *ngIf="tier.id === 'tier1'">$705 package</span>
-                  <span *ngIf="tier.id === 'tier2'"
-                    >$2,850 to $3,200 setup</span
-                  >
-                  <span *ngIf="tier.id === 'tier3'"
-                    >$3,200 setup or $40,000 project build</span
-                  >
-                </div>
-                <div class="wholesale-detail">
-                  Wholesale cost: ${{ tier.wholesaleCost | number : '1.2-2' }}
-                  with 35% margin
-                </div>
+            <h4 class="pricing-heading">Pricing</h4>
+            <dl class="pricing-terms">
+              <div class="pricing-row">
+                <dt>Hardware</dt>
+                <dd>
+                  Actual cost of the parts above, no markup. Itemized in your
+                  quote.
+                </dd>
               </div>
-
-              <div class="pricing-box lease-box">
-                <span class="pricing-label">Monthly lease</span>
-                <div class="price-value">
-                  ${{ tier.leaseMonthlyRate }}/mo lease
-                </div>
-                <div class="lease-detail">
-                  <span *ngIf="tier.softwareMonthlyRate">
-                    + ${{ tier.softwareMonthlyRate }}/mo software
-                  </span>
-                  <span
-                    *ngIf="
-                      tier.retainerMonthlyRate && !tier.retainerMonthlyRateMax
-                    "
-                  >
-                    + ${{ tier.retainerMonthlyRate }}/mo retainer
-                  </span>
-                  <span
-                    *ngIf="
-                      tier.retainerMonthlyRate && tier.retainerMonthlyRateMax
-                    "
-                  >
-                    + ${{ tier.retainerMonthlyRate }} to ${{
-                      tier.retainerMonthlyRateMax
-                    }}/mo retainer
-                  </span>
-                </div>
+              <div class="pricing-row">
+                <dt>Freight and tax</dt>
+                <dd>Actual amounts on the order.</dd>
               </div>
-            </div>
+              <div class="pricing-row">
+                <dt>Setup labor</dt>
+                <dd>{{ laborRate }}; hours estimated in your quote.</dd>
+              </div>
+              <div class="pricing-row">
+                <dt>Leasing</dt>
+                <dd>Available on request through a third-party lender.</dd>
+              </div>
+            </dl>
           </div>
 
           <div class="card-actions">

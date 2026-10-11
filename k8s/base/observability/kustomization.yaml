@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - grafana.yaml
   - performance.yaml
+  - site-analytics.yaml
   - loki.yaml
   - otel-collector.yaml
   - prometheus.yaml

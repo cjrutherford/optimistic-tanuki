@@ -13,7 +13,13 @@
 }
 
 <div class="app-content">
+  <a class="skip-link" href="#main-content" (click)="skipToContent($event)"
+    >Skip to content</a
+  >
   <hai-title-bar></hai-title-bar>
-  <router-outlet></router-outlet>
+  <main class="page" id="main-content" tabindex="-1">
+    <router-outlet></router-outlet>
+    <hai-contact-strip></hai-contact-strip>
+  </main>
   <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
 </div>

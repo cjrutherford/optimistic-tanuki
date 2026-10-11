@@ -1,0 +1,41 @@
+<section
+  class="stack-summary"
+  id="private-cloud-stack"
+  aria-labelledby="private-cloud-stack-heading"
+>
+  <p class="eyebrow">Private cloud stack</p>
+  <h2 id="private-cloud-stack-heading">The private cloud stack.</h2>
+  <p class="summary">{{ summary }}</p>
+
+  <div class="columns">
+    <div>
+      <h3>Core services</h3>
+      <ul class="service-list">
+        @for (service of services; track service.role) {
+        <li>
+          <strong>{{ service.project }}</strong>
+          <span>{{ service.role }}</span>
+        </li>
+        }
+      </ul>
+    </div>
+    <div>
+      <h3>Platform and operations</h3>
+      <ul class="platform-list">
+        @for (project of platformProjects; track project) {
+        <li>{{ project }}</li>
+        }
+      </ul>
+    </div>
+  </div>
+
+  <p class="qualifier">{{ qualifier }}</p>
+
+  <p class="links">
+    <a routerLink="/private-cloud/open-source-stack">
+      See the full open-source stack
+    </a>
+    <a routerLink="/private-cloud">What a private cloud includes</a>
+    <a [routerLink]="assessmentRoute">Start an assessment</a>
+  </p>
+</section>

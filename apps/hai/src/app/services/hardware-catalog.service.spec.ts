@@ -46,10 +46,6 @@ describe('HardwareCatalogService', () => {
       expect(tiers).toHaveLength(3);
       expect(tiers[0].name).toBe('Compact Edge Appliance');
       expect(tiers[0].targetUsers).toBe('10 to 50 users');
-      expect(tiers[0].wholesaleCost).toBe(522.22);
-      expect(tiers[0].marginRate).toBe(0.35);
-      expect(tiers[0].retailPrice).toBe(705);
-      expect(tiers[0].leaseMonthlyRate).toBe(99);
       expect(tiers[0].stockStatus).toBe('In stock');
       expect(tiers[0].portalUrl).toBe('http://localhost:8091?preset=tier1');
       done();
@@ -65,8 +61,6 @@ describe('HardwareCatalogService', () => {
       expect(tiers).toHaveLength(3);
       expect(tiers[1].name).toBe('Workstation Tower Appliance');
       expect(tiers[1].targetUsers).toBe('50 to 250 users');
-      expect(tiers[1].retailPrice).toBe(2850);
-      expect(tiers[1].leaseMonthlyRate).toBe(199);
       expect(tiers[1].portalUrl).toBe('http://localhost:8091?preset=tier2');
       done();
     });

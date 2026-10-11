@@ -1,54 +1,61 @@
-const CONTINGENCY_RATE = 0.1;
-const FREIGHT_AND_TAX_RATE = 0.08;
-const PROCUREMENT_MARKUP_RATE = 0.35;
-const LEASE_APR = 0.095;
-const ANNUAL_MAINTENANCE_RESERVE_RATE = 0.15;
-const MINIMUM_RETAINER_MARGIN = 0.7;
+/**
+ * Pass-through commercial pricing (HAI decisions D018–D021).
+ *
+ * The customer pays for hardware, freight, and tax at the actual amounts,
+ * with no markup, plus labor at the published hourly rate. Ongoing support is
+ * labor at the same rate plus service costs passed through at actual amounts.
+ * Leasing is arranged on request through a third-party lender, so quotes carry
+ * no lease figures.
+ *
+ * The HAI website states the same rate in
+ * `apps/hai/src/app/content/pricing.ts`; a test there keeps the two equal.
+ */
+
+/** Published labor rate in US dollars per hour (D019). */
+export const HAI_LABOR_RATE_PER_HOUR = 65;
+
+export const PRICING_MODEL = 'pass-through' as const;
+
 const QUOTE_EXPIRY_CALENDAR_DAYS = 30;
 
-export interface HardwareCostBasis {
-  kind: 'raw';
-  wholesaleCost: number;
-}
-
 export interface HardwareCommercialPricingInput {
-  costBasis: HardwareCostBasis;
-}
-
-export interface HardwareLeasePrice {
-  termMonths: 24 | 36;
-  monthlyAmortization: number;
-  monthlyMaintenanceReserve: number;
-  monthlyTotal: number;
+  /** Sum of the selected supplier offers, at the price HAI pays. */
+  hardwareCost: number;
+  /** Freight on the order, at the actual amount. */
+  freightAmount: number;
+  /** Sales tax on the order, at the actual amount. */
+  taxAmount: number;
+  setupHours: number;
+  laborRatePerHour: number;
 }
 
 export interface HardwareCommercialPricing {
-  sourceWholesaleCost: number;
-  /** Customer-facing contingency amount. The internal reserve is separate. */
-  contingencyAmount: 0;
-  /** Internal reserve on raw wholesale cost; never added to the public price. */
-  contingencyReserve: number | null;
-  bufferedSourceCost: number;
-  freightAndTaxAllowance: number;
-  landedCost: number;
-  procurementMarkup: number;
+  pricingModel: typeof PRICING_MODEL;
+  hardwareCost: number;
+  freightAmount: number;
+  taxAmount: number;
+  setupHours: number;
+  laborRatePerHour: number;
+  setupLabor: number;
+  /** Everything paid up front: hardware, freight, tax, and setup labor. */
   outrightPrice: number;
-  leases: HardwareLeasePrice[];
 }
 
-export interface RetainerMarginInput {
-  monthlyRevenue: number;
+export interface MonthlySupportInput {
+  supportHours: number;
+  laborRatePerHour: number;
   monthlyCloudCost: number;
   monthlySmsCost: number;
   monthlyNetworkCost: number;
 }
 
-export interface RetainerMarginAssessment {
-  monthlyRevenue: number;
-  monthlyCosts: number;
-  monthlyGrossProfit: number;
-  grossMargin: number;
-  meetsMinimumMargin: boolean;
+export interface MonthlySupportPricing {
+  supportHours: number;
+  laborRatePerHour: number;
+  supportLabor: number;
+  /** Cloud, SMS, and network costs at the actual amounts. */
+  passThroughCosts: number;
+  monthlyTotal: number;
 }
 
 function assertNonnegativeFinite(value: number, name: string): void {
@@ -68,100 +75,60 @@ function cents(value: number): number {
   return rounded;
 }
 
-function amortizedMonthlyPayment(
-  principal: number,
-  termMonths: 24 | 36
-): number {
-  const monthlyRate = LEASE_APR / 12;
-  const payment =
-    (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -termMonths));
-  return cents(payment);
-}
-
-function makeLease(
-  outrightPrice: number,
-  landedCost: number,
-  termMonths: 24 | 36
-): HardwareLeasePrice {
-  const monthlyAmortization = amortizedMonthlyPayment(
-    outrightPrice,
-    termMonths
-  );
-  const monthlyMaintenanceReserve = cents(
-    (landedCost * ANNUAL_MAINTENANCE_RESERVE_RATE) / 12
-  );
-
-  return {
-    termMonths,
-    monthlyAmortization,
-    monthlyMaintenanceReserve,
-    monthlyTotal: cents(monthlyAmortization + monthlyMaintenanceReserve),
-  };
+function requirePositiveRate(rate: number): void {
+  if (!Number.isFinite(rate) || rate <= 0) {
+    throw new Error('laborRatePerHour must be a positive finite number');
+  }
 }
 
 export function calculateHardwareCommercialPricing(
   input: HardwareCommercialPricingInput
 ): HardwareCommercialPricing {
-  const { wholesaleCost } = input.costBasis;
-  assertNonnegativeFinite(wholesaleCost, 'wholesaleCost');
-  const sourceWholesaleCost = cents(wholesaleCost);
-  const contingencyReserve = cents(sourceWholesaleCost * CONTINGENCY_RATE);
-  const bufferedSourceCost = sourceWholesaleCost;
-  const contingencyAmount = 0 as const;
-  const freightAndTaxAllowance = cents(
-    bufferedSourceCost * FREIGHT_AND_TAX_RATE
-  );
-  const landedCost = cents(bufferedSourceCost + freightAndTaxAllowance);
-  const procurementMarkup = cents(landedCost * PROCUREMENT_MARKUP_RATE);
-  const outrightPrice = cents(landedCost + procurementMarkup);
+  assertNonnegativeFinite(input.hardwareCost, 'hardwareCost');
+  assertNonnegativeFinite(input.freightAmount, 'freightAmount');
+  assertNonnegativeFinite(input.taxAmount, 'taxAmount');
+  assertNonnegativeFinite(input.setupHours, 'setupHours');
+  requirePositiveRate(input.laborRatePerHour);
+
+  const hardwareCost = cents(input.hardwareCost);
+  const freightAmount = cents(input.freightAmount);
+  const taxAmount = cents(input.taxAmount);
+  const setupLabor = cents(input.setupHours * input.laborRatePerHour);
 
   return {
-    sourceWholesaleCost,
-    contingencyAmount,
-    contingencyReserve,
-    bufferedSourceCost,
-    freightAndTaxAllowance,
-    landedCost,
-    procurementMarkup,
-    outrightPrice,
-    leases: [
-      makeLease(outrightPrice, landedCost, 24),
-      makeLease(outrightPrice, landedCost, 36),
-    ],
+    pricingModel: PRICING_MODEL,
+    hardwareCost,
+    freightAmount,
+    taxAmount,
+    setupHours: input.setupHours,
+    laborRatePerHour: input.laborRatePerHour,
+    setupLabor,
+    outrightPrice: cents(hardwareCost + freightAmount + taxAmount + setupLabor),
   };
 }
 
-export function assessRetainerMargin(
-  input: RetainerMarginInput
-): RetainerMarginAssessment {
-  assertNonnegativeFinite(input.monthlyRevenue, 'monthlyRevenue');
+export function calculateMonthlySupport(
+  input: MonthlySupportInput
+): MonthlySupportPricing {
+  assertNonnegativeFinite(input.supportHours, 'supportHours');
   assertNonnegativeFinite(input.monthlyCloudCost, 'monthlyCloudCost');
   assertNonnegativeFinite(input.monthlySmsCost, 'monthlySmsCost');
   assertNonnegativeFinite(input.monthlyNetworkCost, 'monthlyNetworkCost');
-  if (input.monthlyRevenue === 0) {
-    throw new Error('monthlyRevenue must be greater than zero');
-  }
+  requirePositiveRate(input.laborRatePerHour);
 
-  const monthlyRevenue = cents(input.monthlyRevenue);
-  if (monthlyRevenue === 0) {
-    throw new Error(
-      'monthlyRevenue must be greater than zero after cent rounding'
-    );
-  }
-  const monthlyCosts = cents(
+  const supportLabor = cents(input.supportHours * input.laborRatePerHour);
+  const passThroughCosts = cents(
     cents(input.monthlyCloudCost) +
       cents(input.monthlySmsCost) +
       cents(input.monthlyNetworkCost)
   );
-  const monthlyGrossProfit = cents(monthlyRevenue - monthlyCosts);
-  const grossMargin = (monthlyRevenue - monthlyCosts) / monthlyRevenue;
 
   return {
-    monthlyRevenue,
-    monthlyCosts,
-    monthlyGrossProfit,
-    grossMargin,
-    meetsMinimumMargin: grossMargin >= MINIMUM_RETAINER_MARGIN,
+    supportHours: input.supportHours,
+    laborRatePerHour: input.laborRatePerHour,
+    supportLabor,
+    passThroughCosts,
+    monthlyTotal: cents(supportLabor + passThroughCosts),
   };
 }
 

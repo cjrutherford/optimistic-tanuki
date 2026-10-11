@@ -822,23 +822,12 @@ describe('BusinessLandingPageComponent', () => {
     );
   });
 
-  it('hides a broken newsletter banner and exposes an accessible fallback', async () => {
+  it('does not show a stock banner beside the contact form', async () => {
     const fixture = await render();
-    const image = fixture.nativeElement.querySelector(
-      'lib-contact-form img[alt="Newsletter Banner"]'
-    ) as HTMLImageElement | null;
 
-    expect(image).not.toBeNull();
-    image?.dispatchEvent(new Event('error'));
-    fixture.detectChanges();
-
-    expect(image?.isConnected).toBe(false);
-    const fallback = fixture.nativeElement.querySelector(
-      '.contact-media-fallback'
-    ) as HTMLElement | null;
-    expect(fallback?.textContent?.trim()).toBe('Newsletter Banner');
-    expect(fallback?.getAttribute('aria-hidden')).toBeNull();
-    expect(fallback?.getAttribute('role')).toBe('img');
+    expect(
+      fixture.nativeElement.querySelector('lib-contact-form img')
+    ).toBeNull();
   });
 
   it('keeps public contact layout children shrinkable at narrow widths', () => {

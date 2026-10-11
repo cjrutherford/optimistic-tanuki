@@ -1,39 +1,30 @@
+@use '../../styles/section';
+
 :host {
   display: block;
 }
 
 .solutions-matrix-shell {
-  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4.5));
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
 .matrix-header {
-  margin-bottom: clamp(1.8rem, 3vw, 2.5rem);
+  margin-bottom: clamp(section.space(1.8), 3vw, section.space(2.5));
 }
 
 .eyebrow {
-  margin: 0 0 0.8rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+  @include section.eyebrow;
 }
 
 h2 {
-  margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.2vw, 3.2rem);
-  line-height: 1.05;
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  @include section.section-heading;
+  line-height: section.leading('display');
 }
 
 .lede {
   max-width: 60ch;
-  font: 400 1.05rem/1.7
-    var(--font-body, var(--personality-font-family, sans-serif));
+  @include section.copy-font;
   color: color-mix(in srgb, var(--foreground) 75%, transparent);
   margin: 0;
 }
@@ -47,35 +38,36 @@ h2 {
 :host ::ng-deep otui-tabs .tabs-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.65rem;
+  gap: section.space(0.65);
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 40%, transparent);
-  padding-bottom: 0.75rem;
-  margin-bottom: 1.5rem;
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
+  padding-bottom: section.space(0.75);
+  margin-bottom: section.space(1.5);
 }
 
 :host ::ng-deep otui-tabs .tab-item {
-  padding: 0.65rem 1.25rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+  padding: section.space(0.65) section.space(1.25);
+  border-radius: var(--hai-radius-pill);
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
   color: color-mix(in srgb, var(--foreground) 75%, transparent);
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: section.text-size('sm');
+  font-weight: var(--hai-weight-strong);
   cursor: pointer;
-  transition: all 160ms ease;
+  transition: all section.timing('fast');
 
   &:hover:not(.active) {
-    background: rgba(45, 212, 191, 0.08);
-    border-color: rgba(45, 212, 191, 0.3);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
     color: var(--foreground);
   }
 
   &.active {
-    background: rgba(45, 212, 191, 0.16);
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
     border-color: var(--primary);
-    color: var(--primary);
-    box-shadow: 0 0 16px rgba(45, 212, 191, 0.18);
+    color: var(--foreground);
+    box-shadow: var(--glow-focus, none);
 
     &::after {
       display: none;
@@ -88,6 +80,7 @@ h2 {
 }
 
 .vertical-panel {
+  // token-exempt: layout height that keeps a row of panels aligned
   min-height: 520px;
   display: flex;
   flex-direction: column;
@@ -96,14 +89,14 @@ h2 {
 .panel-layout {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  padding: 0.75rem 0.5rem;
+  gap: section.space(1.75);
+  padding: section.space(0.75) section.space(0.5);
 }
 
 .panel-header {
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 40%, transparent);
-  padding-bottom: 1.25rem;
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
+  padding-bottom: section.space(1.25);
 }
 
 .title-row {
@@ -111,25 +104,35 @@ h2 {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: section.space(1);
+  margin-bottom: section.space(0.75);
+}
+
+// The industry badge can hold a long list; let it wrap instead of clipping.
+.title-row otui-badge {
+  max-width: 100%;
+}
+
+:host ::ng-deep .title-row otui-badge .badge {
+  white-space: normal;
 }
 
 .vertical-title {
+  @include section.heading-style;
+  min-width: 0;
   margin: 0;
-  font-size: 1.75rem;
-  line-height: 1.15;
-  font-family: var(
-    --font-heading,
-    var(--personality-font-family, Georgia, serif)
-  );
+  font-size: section.text-size('h2');
   color: var(--foreground);
+
+  @media (max-width: 640px) {
+    font-size: section.text-size('h3');
+  }
 }
 
 .vertical-summary {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: section.text-size('body');
+  line-height: section.leading('copy');
   color: color-mix(in srgb, var(--foreground) 80%, transparent);
   max-width: 72ch;
 }
@@ -137,51 +140,52 @@ h2 {
 .panel-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5rem;
+  gap: section.space(1.5);
   align-items: stretch;
 }
 
 @media (max-width: 1024px) {
   .panel-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .grid-card {
-  padding: 1.25rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  padding: section.space(1.25);
+  border-radius: var(--hai-radius-card);
+  background: color-mix(in srgb, var(--foreground) 2%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   display: flex;
   flex-direction: column;
 }
 
 .card-heading {
-  margin: 0 0 1rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin: 0 0 section.space(1);
+  font-size: section.text-size('small');
+  font-weight: var(--hai-weight-strong);
+  letter-spacing: var(--personality-label-letter-spacing, 0.12em);
+  text-transform: var(--personality-label-text-transform, uppercase);
   color: color-mix(in srgb, var(--foreground) 65%, var(--primary));
   border-bottom: 1px solid
-    color-mix(in srgb, var(--border-color) 30%, transparent);
-  padding-bottom: 0.5rem;
+    color-mix(in srgb, var(--border, var(--primary)) 30%, transparent);
+  padding-bottom: section.space(0.5);
 }
 
 /* Hardware column */
 .hardware-card {
   .hardware-name {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--primary);
-    line-height: 1.35;
+    font-size: section.text-size('body');
+    font-weight: var(--hai-weight-strong);
+    color: var(--foreground);
+    line-height: section.leading();
     display: inline-block;
-    margin-bottom: 0.85rem;
+    margin-bottom: section.space(0.85);
   }
 
   .hardware-desc {
-    font-size: 0.88rem;
-    line-height: 1.6;
+    font-size: section.text-size('sm');
+    line-height: section.leading('copy');
     color: color-mix(in srgb, var(--foreground) 75%, transparent);
     margin: 0;
   }
@@ -193,13 +197,13 @@ h2 {
   .app-item {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: section.space(0.65);
 
     &:not(:last-child) {
-      margin-bottom: 1.25rem;
-      padding-bottom: 1.25rem;
+      margin-bottom: section.space(1.25);
+      padding-bottom: section.space(1.25);
       border-bottom: 1px dashed
-        color-mix(in srgb, var(--border-color) 35%, transparent);
+        color-mix(in srgb, var(--border, var(--primary)) 35%, transparent);
     }
   }
 
@@ -208,45 +212,44 @@ h2 {
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: section.space(0.5);
   }
 
   .app-name {
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: section.text-size('body');
+    font-weight: var(--hai-weight-strong);
     color: var(--foreground);
   }
 
   .customization-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--primary);
+    font-size: section.text-size('small');
+    font-weight: var(--hai-weight-strong);
+    color: var(--foreground);
     background: color-mix(in srgb, var(--primary) 12%, transparent);
     border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
+    padding: section.space(0.15) section.space(0.5);
+    border-radius: var(--hai-radius-pill);
+    letter-spacing: var(--letter-spacing, 0.02em);
   }
 
   .demo-route-container {
     display: flex;
     align-items: center;
-    font-size: 0.78rem;
+    font-size: section.text-size('small');
   }
 
   .demo-route {
     color: color-mix(in srgb, var(--foreground) 65%, var(--primary));
-    font-weight: 500;
+    font-weight: var(--personality-font-weight, 500);
   }
 
   .feature-list {
-    margin: 0.25rem 0 0;
-    padding-left: 1.2rem;
+    margin: section.space(0.25) 0 0;
+    padding-left: section.space(1.2);
     display: grid;
-    gap: 0.45rem;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    gap: section.space(0.45);
+    font-size: section.text-size('sm');
+    line-height: section.leading();
     color: color-mix(in srgb, var(--foreground) 80%, transparent);
 
     li::marker {
@@ -262,16 +265,16 @@ h2 {
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.9rem;
+    gap: section.space(0.9);
   }
 
   .foss-item {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    padding-bottom: 0.65rem;
+    gap: section.space(0.2);
+    padding-bottom: section.space(0.65);
     border-bottom: 1px solid
-      color-mix(in srgb, var(--border-color) 25%, transparent);
+      color-mix(in srgb, var(--border, var(--primary)) 25%, transparent);
 
     &:last-child {
       border-bottom: none;
@@ -280,69 +283,54 @@ h2 {
   }
 
   .tool-name {
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: section.text-size('sm');
+    font-weight: var(--hai-weight-strong);
     color: var(--foreground);
   }
 
   .tool-role {
-    font-size: 0.82rem;
-    line-height: 1.45;
-    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+    font-size: section.text-size('small');
+    line-height: section.leading();
+    color: color-mix(in srgb, var(--foreground) 88%, transparent);
   }
 }
 
 /* Panel footer */
 .panel-footer {
-  border-top: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
-  padding-top: 1.25rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
+  padding-top: section.space(1.25);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  gap: section.space(1.25);
 }
 
 .investment-summary {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: section.space(0.35);
 }
 
 .investment-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-size: section.text-size('small');
+  font-weight: var(--hai-weight-strong);
+  letter-spacing: var(--personality-label-letter-spacing, 0.1em);
+  text-transform: var(--personality-label-text-transform, uppercase);
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
 }
 
-.investment-figures {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-}
-
-.upfront-cost {
-  font-size: 1.25rem;
-  font-weight: 800;
+.pricing-line {
+  max-width: var(--hai-measure);
+  margin: section.space(0.35) 0 0;
+  font-size: section.text-size('sm');
+  line-height: section.leading();
   color: var(--foreground);
 }
 
-.monthly-cost {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.project-cost {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: color-mix(in srgb, var(--foreground) 75%, transparent);
-}
-
 .action-container {
+  // token-exempt: keeps the action button from collapsing beside long pricing text
   min-width: 240px;
 }
 
@@ -358,28 +346,12 @@ h2 {
 }
 
 .action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.85rem 1.5rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  color: var(--on-primary, var(--primary-foreground));
-  font-size: 0.95rem;
-  font-weight: 700;
-  text-decoration: none;
-  text-align: center;
-  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(45, 212, 191, 0.3);
-    opacity: 0.95;
-  }
-
-  &:active {
-    transform: translateY(0);
+  @include section.primary-action;
+  & {
+    display: flex;
+    width: 100%;
+    padding: section.space(0.85) section.space(1.5);
+    font-size: section.text-size('sm');
+    text-align: center;
   }
 }

@@ -1,12 +1,14 @@
+@use '../../styles/section';
+
 :host {
   display: block;
 }
 .engagement-panel {
   display: grid;
-  gap: 2rem;
-  margin-top: 2rem;
+  gap: section.space(2);
+  margin-top: section.space(2);
   scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
-  padding: clamp(1.4rem, 4vw, 3rem);
+  padding: clamp(section.space(1.4), 4vw, section.space(3));
   border: var(--hai-border-width, 1px) var(--hai-border-style, solid)
     color-mix(in srgb, var(--border, var(--primary)) 42%, transparent);
   border-radius: var(--personality-card-radius, 1.75rem);
@@ -17,42 +19,42 @@
   );
 }
 .section-copy {
-  max-width: 46rem;
+  max-width: var(--hai-measure-wide);
 }
 .eyebrow {
   color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
 }
 h2,
 h3 {
-  font-family: var(--font-heading, Georgia, serif);
+  @include section.heading-style;
 }
 h2 {
   margin: 0;
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  line-height: 1;
+  font-size: var(--hai-type-feature);
+  line-height: section.leading('display');
 }
 .section-copy p:last-child {
-  max-width: 38rem;
-  line-height: 1.7;
+  max-width: var(--hai-measure-narrow);
+  line-height: section.leading('copy');
 }
 .engagement-flow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: section.space(1);
 }
 .stage-number {
   display: inline-flex;
 }
 h3 {
-  margin: 1.5rem 0 1rem;
-  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  margin: section.space(1.5) 0 section.space(1);
+  font-size: var(--hai-type-subsection);
 }
 ul {
   display: grid;
-  gap: 0.6rem;
+  gap: section.space(0.6);
   margin: 0;
-  padding-left: 1.1rem;
-  line-height: 1.55;
+  padding-left: section.space(1.1);
+  line-height: section.leading();
 }
 .engagement-note {
   margin: 0;
@@ -60,6 +62,6 @@ ul {
 }
 @media (max-width: 640px) {
   .engagement-flow {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

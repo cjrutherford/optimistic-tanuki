@@ -1,8 +1,10 @@
 import { Component, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { ViewportScroller, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
+import { ContactStripComponent } from './components/shared/contact-strip.component';
+import { AnalyticsService } from './services/analytics.service';
 import { PersonalityBackdropComponent } from '@optimistic-tanuki/theme-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
 
@@ -12,6 +14,7 @@ import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
   imports: [
     RouterModule,
     TitleBarComponent,
+    ContactStripComponent,
     HaiAboutTagComponent,
     PersonalitySceneComponent,
     PersonalityBackdropComponent,
@@ -32,6 +35,30 @@ export class AppComponent {
   };
 
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly analytics = inject(AnalyticsService);
+
+  constructor() {
+    this.analytics.start();
+    // Keep anchor targets clear of the sticky header.
+    inject(ViewportScroller).setOffset(() => {
+      const header = this.isBrowser
+        ? document.querySelector('hai-title-bar')
+        : null;
+      return [0, (header?.getBoundingClientRect().height ?? 0) + 16];
+    });
+  }
+
+  /**
+   * Moves focus to the page content. Done in code because the site's
+   * <base href="/"> would turn a plain "#main-content" link into a navigation
+   * to the homepage.
+   */
+  skipToContent(event: Event): void {
+    event.preventDefault();
+    if (this.isBrowser) {
+      document.getElementById('main-content')?.focus();
+    }
+  }
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);

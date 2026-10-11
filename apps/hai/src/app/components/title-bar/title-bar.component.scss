@@ -1,55 +1,64 @@
+@use '../../styles/section';
+
 :host {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-index-dropdown, 1000);
   display: block;
-  padding: 0.75rem clamp(0.75rem, 2vw, 1.5rem) 0;
+  padding: section.space(0.75)
+    clamp(section.space(0.75), 2vw, section.space(1.5)) 0;
+}
+
+// The drawer renders inside this stacking context, so while it is open the
+// bar must sit above other fixed elements such as the about tag.
+:host(.menu-open) {
+  z-index: var(--z-index-overlay, 1080);
 }
 
 .hai-header {
   position: relative;
-  border-radius: var(--personality-card-radius, 1rem);
-  border: var(--personality-border-width, 1px)
-    var(--personality-border-style, solid)
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style)
     color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
+  // Nearly opaque so page headings never show through the bar's own text;
+  // the personality's surface finish (e.g. glass) still applies.
   background: color-mix(
     in srgb,
-    var(--surface, var(--background)) 78%,
+    var(--surface, var(--background)) 95%,
     transparent
   );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(
-    --personality-card-shadow,
-    0 10px 30px -10px rgba(0, 0, 0, 0.2)
-  );
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: var(--surface-backdrop-filter, blur(12px));
+  -webkit-backdrop-filter: var(--surface-backdrop-filter, blur(12px));
+  box-shadow: var(--hai-shadow-raised);
+  transition: border-color section.timing('fast'),
+    box-shadow section.timing('fast');
 }
 
 .header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0.65rem 1.25rem;
-  min-height: 3.75rem;
+  gap: section.space(1.5);
+  padding: section.space(0.65) section.space(1.25);
+  min-height: var(--personality-control-height-lg, 3.75rem);
   box-sizing: border-box;
 }
 
 .brand-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: section.space(0.85);
   text-decoration: none;
   min-width: 0;
   flex-shrink: 0;
 
   .brand-logo {
     display: block;
+    // token-exempt: the logo asset is exported at twice this display size
     width: 2.4rem;
     height: auto;
     object-fit: contain;
-    border-radius: 4px;
+    border-radius: var(--hai-radius-chip);
   }
 
   .brand-title {
@@ -57,33 +66,42 @@
       --font-heading,
       var(--personality-font-family, Georgia, serif)
     );
-    font-size: clamp(0.95rem, 1.2vw, 1.15rem);
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-size: var(--personality-header-size, 1.125rem);
+    // Two lines when space is short, so the navigation fits beside it.
+    display: block;
+    max-width: 12em;
+    font-weight: var(--personality-header-weight, 700);
+    line-height: section.leading('heading');
+    letter-spacing: var(--personality-header-tracking, 0.04em);
     color: var(--foreground);
-    white-space: nowrap;
   }
 }
 
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: section.space(1.5);
   margin-left: auto;
 
   .nav-link {
-    color: var(--foreground);
+    color: color-mix(in srgb, var(--foreground) 85%, transparent);
     text-decoration: none;
-    font-size: 0.925rem;
-    font-weight: 600;
-    opacity: 0.85;
-    transition: opacity 0.15s ease, color 0.15s ease;
-    white-space: nowrap;
+    font-size: section.text-size('sm');
+    font-weight: var(--hai-weight-strong);
+    @include section.fade(color);
+    & {
+      white-space: nowrap;
+    }
 
     &:hover,
-    &:focus-visible {
-      opacity: 1;
-      color: var(--primary);
+    &:focus-visible,
+    &.active {
+      color: var(--primary-text, var(--primary));
+    }
+
+    &.active {
+      text-decoration: underline;
+      text-underline-offset: 0.35em;
     }
   }
 }
@@ -91,61 +109,52 @@
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: section.space(0.85);
   flex-shrink: 0;
 }
 
 .header-cta-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.55rem 1.15rem;
-  border-radius: var(--personality-button-radius, 999px);
-  background: var(--gradient-animated, var(--gradient-primary, var(--primary)));
-  color: color-mix(in srgb, var(--background) 90%, white 10%);
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-decoration: none;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--primary) 40%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    opacity: 0.95;
-    box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--primary) 60%, transparent);
+  @include section.primary-action;
+  & {
+    min-height: var(--personality-control-height-sm, 2.5rem);
+    padding: section.space(0.55) section.space(1.15);
+    font-size: section.text-size('sm');
+    white-space: nowrap;
   }
 }
 
-.mobile-menu-btn {
-  display: none;
+.menu-btn {
+  display: inline-flex;
+  gap: section.space(0.5);
   background: transparent;
   border: 1px solid
     color-mix(in srgb, var(--border, var(--primary)) 40%, transparent);
   color: var(--foreground);
-  font-size: 1.25rem;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--personality-button-radius, 8px);
+  font: inherit;
+  font-weight: var(--hai-weight-strong);
+  min-width: var(--touch-target, 2.75rem);
+  height: var(--touch-target, 2.75rem);
+  padding: 0 section.space(0.75);
+  border-radius: var(--hai-radius-pill);
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  @include section.fade(background-color, border-color);
 
   &:hover {
     background: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 
-@media (max-width: 1024px) {
+// The full navigation needs about 1,200px once the brand title wraps.
+@media (max-width: 1200px) {
   .desktop-nav,
   .header-cta-btn {
     display: none;
   }
 
-  .mobile-menu-btn {
-    display: inline-flex;
+  .menu-btn .menu-label {
+    display: none;
   }
 }
 
@@ -155,6 +164,6 @@
   }
 
   .header-container {
-    padding: 0.5rem 0.85rem;
+    padding: section.space(0.5) section.space(0.85);
   }
 }

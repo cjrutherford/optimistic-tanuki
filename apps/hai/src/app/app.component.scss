@@ -1,21 +1,113 @@
+@use 'styles/section';
+
+// HAI's design tokens, available to every component in the app. Each one
+// is derived from the theme and personality tokens, so the personality, mode
+// and palette a visitor picks drive every page.
 :host {
+  --hai-scroll-margin-top: clamp(4.5rem, 8vw, 6rem);
+  --hai-radius-panel: var(--personality-card-radius, 1.75rem);
+  --hai-radius-card: var(--border-radius-lg, 1rem);
+  --hai-radius-chip: var(--border-radius-md, 0.5rem);
+  --hai-radius-pill: var(--personality-button-radius, 999px);
+  --hai-border-width: var(--personality-border-width, 1px);
+  --hai-border-style: var(--personality-border-style, solid);
+  // Emphasis borders stay visible under personalities that draw no borders.
+  --hai-border-strong: max(2px, var(--personality-input-border-width, 1px));
+  --hai-border-accent: max(3px, var(--personality-border-width, 0px));
+  // Emphasis weight follows the personality, never lighter than semibold.
+  --hai-weight-strong: max(600, var(--personality-font-weight, 700));
+  // Display sizes: fluid, and scaled by the personality's type ratio.
+  --hai-type-hero: #{section.display(3rem, 7vw, 5.8rem)};
+  --hai-type-hero-compact: #{section.display(2.4rem, 8vw, 3.2rem)};
+  --hai-type-feature: #{section.display(2.2rem, 5vw, 4.2rem)};
+  --hai-type-section: #{section.display(2rem, 4.2vw, 3.2rem)};
+  --hai-type-subsection: #{section.display(1.6rem, 3vw, 2.5rem)};
+  --hai-type-card-title: #{section.display(1.4rem, 2.5vw, 1.9rem)};
+  // Reading measures for text blocks.
+  --hai-measure: 44rem;
+  --hai-measure-wide: 48rem;
+  --hai-measure-narrow: 38rem;
+  --hai-opacity-disabled: 0.7;
+  --hai-shadow-panel: var(--personality-card-shadow, var(--shadow-lg));
+  --hai-shadow-card: var(--shadow-sm, none);
+  --hai-shadow-raised: var(--shadow-md, none);
+  --hai-shadow-hover: var(--shadow-lg, none);
+  --hai-panel-background: linear-gradient(
+    180deg,
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 92%,
+      var(--primary) 8%
+    ),
+    color-mix(in srgb, var(--surface, var(--background)) 97%, transparent)
+  );
+  --hai-panel-strong: linear-gradient(
+    160deg,
+    color-mix(
+      in srgb,
+      var(--surface, var(--background)) 84%,
+      var(--secondary) 16%
+    ),
+    color-mix(in srgb, var(--surface, var(--background)) 94%, var(--primary) 6%)
+  );
+  --hai-outline: color-mix(
+    in srgb,
+    var(--border, var(--primary)) 70%,
+    transparent
+  );
+
   display: block;
   min-height: 100vh;
   color: var(--foreground);
-  background: var(--background);
 }
 
 .motion-background {
   position: fixed;
   inset: 0;
+  // token-exempt: local stacking order inside the app shell
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  // token-exempt: the scene is ambient decoration, kept faint behind content
   opacity: 0.5;
 }
 
 .app-content {
   position: relative;
+  // token-exempt: local stacking order inside the app shell
   z-index: 1;
   min-height: 100vh;
+}
+
+// Shared by every routed page. The page canvas (background, personality
+// pattern and atmosphere) comes from the body and lib-personality-backdrop.
+.page {
+  display: block;
+  max-width: var(--layout-max-width, none);
+  margin-inline: auto;
+  padding: section.space(1.75) clamp(section.space(1), 3vw, section.space(2.5))
+    section.space(5);
+}
+
+// Hidden until focused, then shown above the header.
+.skip-link {
+  position: absolute;
+  top: section.space(0.5);
+  left: section.space(0.5);
+  z-index: var(--z-index-tooltip, 1070);
+  padding: section.space(0.6) section.space(1);
+  border-radius: var(--hai-radius-pill);
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
+  font-weight: var(--personality-button-font-weight, 700);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+.page:focus {
+  outline: none;
 }

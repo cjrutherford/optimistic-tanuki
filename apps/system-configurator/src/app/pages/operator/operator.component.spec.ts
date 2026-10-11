@@ -31,7 +31,7 @@ function quote(overrides: Partial<CommercialQuote> = {}): CommercialQuote {
     id: 'server-quote-42',
     sourceCost: 1000,
     currency: 'USD',
-    pricingSnapshot: { outrightPrice: 1458 },
+    pricingSnapshot: { pricingModel: 'pass-through', outrightPrice: 1484.5 },
     issuedAt: new Date().toISOString(),
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     version: 'commercial-pricing-v1',
@@ -147,7 +147,10 @@ describe('OperatorComponent', () => {
 
     const component = fixture.componentInstance;
     component.toggleOffer(offer(), true);
-    component.monthlyRetainerRevenue = 1000;
+    component.freightAmount = 24.5;
+    component.taxAmount = 70;
+    component.setupHours = 6;
+    component.monthlySupportHours = 2;
     component.monthlyCloudCost = 50;
     component.monthlySmsCost = 20;
     component.monthlyNetworkCost = 30;
@@ -157,7 +160,10 @@ describe('OperatorComponent', () => {
       expect.objectContaining({
         tierId: 'tier1',
         items: [{ offerId: 'offer-live-1', quantity: 1 }],
-        monthlyRetainerRevenue: 1000,
+        freightAmount: 24.5,
+        taxAmount: 70,
+        setupHours: 6,
+        monthlySupportHours: 2,
       })
     );
     expect(component.quote()?.id).toBe('server-quote-42');

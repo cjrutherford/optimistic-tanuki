@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
+  HAI_LABOR_RATE_PER_HOUR,
   CommercialQuote,
   HardwareService,
   IssueCommercialQuoteRequest,
@@ -167,14 +168,44 @@ import {
             </select>
           </label>
           <fieldset>
-            <legend>Monthly retainer margin inputs (USD)</legend>
+            <legend>Up front, at actual amounts (no markup)</legend>
             <label
-              >Retainer revenue<input
+              >Freight (USD)<input
                 type="number"
-                name="revenue"
-                min="0.01"
+                name="freight"
+                min="0"
                 step="0.01"
-                [(ngModel)]="monthlyRetainerRevenue"
+                [(ngModel)]="freightAmount"
+                required
+            /></label>
+            <label
+              >Tax (USD)<input
+                type="number"
+                name="tax"
+                min="0"
+                step="0.01"
+                [(ngModel)]="taxAmount"
+                required
+            /></label>
+            <label
+              >Setup hours at {{ laborRate | currency : 'USD' }}/hour<input
+                type="number"
+                name="setupHours"
+                min="0"
+                step="0.25"
+                [(ngModel)]="setupHours"
+                required
+            /></label>
+          </fieldset>
+          <fieldset>
+            <legend>Monthly support</legend>
+            <label
+              >Support hours at {{ laborRate | currency : 'USD' }}/hour<input
+                type="number"
+                name="supportHours"
+                min="0"
+                step="0.25"
+                [(ngModel)]="monthlySupportHours"
                 required
             /></label>
             <label
@@ -227,13 +258,13 @@ import {
               <dd>{{ issuedQuote.state }}</dd>
             </div>
             <div>
-              <dt>Internal source cost</dt>
+              <dt>Hardware at cost</dt>
               <dd>
                 {{ issuedQuote.sourceCost | currency : issuedQuote.currency }}
               </dd>
             </div>
             <div>
-              <dt>Customer price</dt>
+              <dt>Up-front total (hardware, freight, tax, setup labor)</dt>
               <dd>
                 {{
                   issuedQuote.pricingSnapshot['outrightPrice']
@@ -550,7 +581,11 @@ export class OperatorComponent implements OnInit {
   selectedQuantities: Record<string, number> = {};
 
   tierId: IssueCommercialQuoteRequest['tierId'] = 'tier1';
-  monthlyRetainerRevenue = 0;
+  readonly laborRate = HAI_LABOR_RATE_PER_HOUR;
+  freightAmount = 0;
+  taxAmount = 0;
+  setupHours = 0;
+  monthlySupportHours = 0;
   monthlyCloudCost = 0;
   monthlySmsCost = 0;
   monthlyNetworkCost = 0;
@@ -706,7 +741,10 @@ export class OperatorComponent implements OnInit {
     const request: IssueCommercialQuoteRequest = {
       tierId: this.tierId,
       items,
-      monthlyRetainerRevenue: Number(this.monthlyRetainerRevenue),
+      freightAmount: Number(this.freightAmount),
+      taxAmount: Number(this.taxAmount),
+      setupHours: Number(this.setupHours),
+      monthlySupportHours: Number(this.monthlySupportHours),
       monthlyCloudCost: Number(this.monthlyCloudCost),
       monthlySmsCost: Number(this.monthlySmsCost),
       monthlyNetworkCost: Number(this.monthlyNetworkCost),

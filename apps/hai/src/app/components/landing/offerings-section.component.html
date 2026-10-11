@@ -1,0 +1,37 @@
+<section
+  class="offerings-panel"
+  id="offerings"
+  aria-labelledby="offerings-heading"
+>
+  <div class="section-copy">
+    <p class="eyebrow">What we do</p>
+    <h2 id="offerings-heading">Pick a starting point.</h2>
+    <p>
+      Six ways to own more of your technology. Each has its own page with the
+      details.
+    </p>
+  </div>
+
+  <ul class="offerings-grid">
+    @for (offering of offerings; track offering.route) {
+    <li>
+      <a
+        class="offering-card"
+        [routerLink]="offering.route"
+        data-theme-surface="card"
+      >
+        <span class="card-label">{{ offering.name }}</span>
+        <span class="offering-headline">{{ offering.headline }}</span>
+        <span class="offering-summary">{{ offering.summary }}</span>
+        <span class="offering-link">{{ offering.linkLabel }}</span>
+      </a>
+    </li>
+    }
+  </ul>
+
+  <p class="comparison-note">
+    Weighing ownership against your current subscriptions?
+    <a routerLink="/cost-comparison">Compare five-year costs</a>, with every
+    assumption shown.
+  </p>
+</section>

@@ -10,7 +10,12 @@ import {
   TextAreaComponent,
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+} from '@angular/forms';
 
 @Component({
   selector: 'lib-contact-form',
@@ -22,6 +27,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
     TextAreaComponent,
     HeadingComponent,
     SelectComponent,
+    ReactiveFormsModule,
   ],
   templateUrl: './contact-form.component.html',
   styleUrl: './contact-form.component.scss',
@@ -32,7 +38,13 @@ export class ContactFormComponent {
   @Input() subjects: { value: string; label: string }[] = [];
   @Input() subjectId = 'contact-subject';
   @Input() subjectLabel = 'Subject';
-  @Input() bannerImage = 'https://picsum.photos/1200/300';
+  /**
+   * Image shown beside the form. No image by default; each app supplies its
+   * own (previously a random external stock photo).
+   */
+  @Input() bannerImage: string | null = null;
+  /** Alt text for the banner; empty marks it as decorative. */
+  @Input() bannerAlt = '';
   @Input() set initialMessage(message: string | null) {
     if (typeof message === 'string' && message) {
       this.contactForm.patchValue({ message });
@@ -63,6 +75,11 @@ export class ContactFormComponent {
 
   onEmailChange(email: string) {
     this.contactForm.patchValue({ email });
+  }
+
+  /** Bound to the message box so a prefilled message is visible and editable. */
+  get messageControl(): FormControl<string> {
+    return this.contactForm.get('message') as FormControl<string>;
   }
 
   onMessageChange(message: string) {

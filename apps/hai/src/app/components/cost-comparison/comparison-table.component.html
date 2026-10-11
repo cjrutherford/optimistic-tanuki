@@ -1,0 +1,41 @@
+<section
+  class="comparison"
+  id="comparison"
+  aria-labelledby="comparison-heading"
+>
+  <p class="eyebrow">Side by side</p>
+  <h2 id="comparison-heading">How the two approaches differ.</h2>
+
+  <div class="table-wrap">
+    <table>
+      <caption class="visually-hidden">
+        Cloud subscription compared with an owned private cloud
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col"><span class="visually-hidden">Topic</span></th>
+          <th scope="col">Cloud subscription</th>
+          <th scope="col">Owned private cloud</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows; track row.topic) {
+        <tr>
+          <th scope="row">{{ row.topic }}</th>
+          <td data-label="Cloud subscription">{{ row.subscription }}</td>
+          <td data-label="Owned private cloud">{{ row.owned }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="subscription-wins">
+    <h3>A subscription is often the better choice when</h3>
+    <ul>
+      @for (reason of subscriptionBetterWhen; track reason) {
+      <li>{{ reason }}</li>
+      }
+    </ul>
+  </div>
+</section>

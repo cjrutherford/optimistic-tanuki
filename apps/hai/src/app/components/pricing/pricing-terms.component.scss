@@ -1,0 +1,63 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.pricing {
+  @include section.section-spacing;
+  @include section.panel(var(--hai-panel-strong));
+}
+
+.eyebrow {
+  @include section.eyebrow;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+.summary,
+dd {
+  @include section.body-copy;
+}
+
+.summary {
+  max-width: var(--hai-measure);
+  margin: 0;
+}
+
+.terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: section.space(1.25) section.space(2);
+  margin: section.space(1.5) 0 0;
+}
+
+.term {
+  min-width: 0;
+  padding-left: section.space(1);
+  border-left: var(--hai-border-strong) solid
+    color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+dt {
+  @include section.heading-style;
+  font-size: section.text-size('h4');
+}
+
+dd {
+  margin: section.space(0.35) 0 0;
+}
+
+@media (max-width: 960px) {
+  .terms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .terms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

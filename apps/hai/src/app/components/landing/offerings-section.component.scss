@@ -1,0 +1,138 @@
+@use '../../styles/section';
+
+:host {
+  display: block;
+}
+
+.offerings-panel {
+  margin-top: clamp(section.space(2.5), 5vw, section.space(4));
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
+}
+
+.eyebrow,
+.card-label {
+  @include section.eyebrow;
+}
+
+h2,
+.offering-headline {
+  @include section.heading-style;
+}
+
+h2 {
+  @include section.section-heading;
+}
+
+.section-copy p,
+.offering-summary,
+.comparison-note {
+  @include section.copy-font;
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.section-copy p {
+  max-width: var(--hai-measure);
+  margin: 0;
+}
+
+.offerings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: section.space(1.25);
+  margin: section.space(1.5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offerings-grid li {
+  display: flex;
+  min-width: 0;
+}
+
+.offering-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: section.space(0.3);
+  // token-exempt: layout height that keeps a row of panels aligned
+  min-height: 15rem;
+  padding: section.space(1.4);
+  color: var(--foreground);
+  text-decoration: none;
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  box-shadow: var(--hai-shadow-panel);
+  background: var(--hai-panel-background);
+  transition: transform section.timing('normal'),
+    box-shadow section.timing('normal');
+}
+
+.offering-card:hover,
+.offering-card:focus-visible {
+  @include section.hover-lift;
+}
+
+.offering-card:focus-visible {
+  outline: var(--hai-border-accent) solid
+    color-mix(in srgb, var(--primary) 70%, var(--foreground));
+  outline-offset: 4px;
+}
+
+.offering-headline {
+  display: block;
+  font-size: section.text-size('h3');
+  line-height: section.leading('heading');
+  overflow-wrap: anywhere;
+}
+
+.offering-summary {
+  display: block;
+  margin-top: section.space(0.35);
+}
+
+.offering-link {
+  margin-top: auto;
+  padding-top: section.space(1);
+  font-weight: var(--hai-weight-strong);
+  color: var(--primary-text, var(--primary));
+}
+
+.offering-link::after {
+  content: ' →';
+}
+
+.comparison-note {
+  margin: section.space(1.5) 0 0;
+}
+
+.comparison-note a {
+  font-weight: var(--hai-weight-strong);
+  color: var(--primary-text, var(--primary));
+}
+
+@media (max-width: 960px) {
+  .offerings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .offerings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .offering-card {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offering-card {
+    transition: none;
+  }
+
+  .offering-card:hover,
+  .offering-card:focus-visible {
+    transform: none;
+  }
+}

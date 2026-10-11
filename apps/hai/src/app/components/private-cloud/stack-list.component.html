@@ -1,0 +1,28 @@
+<section
+  class="stack"
+  [id]="sectionId"
+  [attr.aria-labelledby]="sectionId + '-heading'"
+>
+  <p class="eyebrow">{{ eyebrow }}</p>
+  <h2 [id]="sectionId + '-heading'">{{ heading }}</h2>
+  @if (intro) {
+  <p class="intro">{{ intro }}</p>
+  }
+
+  <ul class="stack-list">
+    @for (component of components; track component.role) {
+    <li class="stack-item">
+      <h3>{{ component.role }}</h3>
+      @if (component.project) {
+      <p class="project">{{ component.project }}</p>
+      }
+      <p class="description">{{ component.description }}</p>
+      @if (component.url) {
+      <a class="project-link" [href]="component.url" rel="noopener">
+        {{ component.project }} project site
+      </a>
+      }
+    </li>
+    }
+  </ul>
+</section>

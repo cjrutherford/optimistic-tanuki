@@ -212,6 +212,10 @@ spec:
               mountPath: /var/lib/grafana/dashboards/performance.json
               subPath: performance.json
               readOnly: true
+            - name: site-analytics-dashboard
+              mountPath: /var/lib/grafana/dashboards/site-analytics.json
+              subPath: site-analytics.json
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -234,6 +238,9 @@ spec:
         - name: performance-dashboard
           configMap:
             name: grafana-dashboard-performance
+        - name: site-analytics-dashboard
+          configMap:
+            name: grafana-dashboard-site-analytics
 ---
 apiVersion: v1
 kind: Service

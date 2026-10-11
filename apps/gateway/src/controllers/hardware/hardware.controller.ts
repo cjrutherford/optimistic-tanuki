@@ -350,10 +350,10 @@ export class HardwareController {
       | Record<string, unknown>
       | undefined;
     const outrightPrice = snapshot?.['outrightPrice'];
-    const requestSnapshot = quote.inputs?.['request'] as
+    const monthlySupport = snapshot?.['monthlySupport'] as
       | Record<string, unknown>
       | undefined;
-    const monthlyRetainerRevenue = requestSnapshot?.['monthlyRetainerRevenue'];
+    const monthlySupportTotal = monthlySupport?.['monthlyTotal'];
     if (
       !['tier1', 'tier2', 'tier3'].includes(String(tier)) ||
       typeof outrightPrice !== 'number' ||
@@ -372,14 +372,16 @@ export class HardwareController {
       issuedAt: quote.terms?.issuedAt,
       validUntil:
         quote.terms?.validUntil ?? new Date(validUntilMs).toISOString(),
-      hardwarePrice: outrightPrice,
+      pricingModel: snapshot?.['pricingModel'],
+      upfrontTotal: outrightPrice,
+      laborRatePerHour: snapshot?.['laborRatePerHour'],
     };
     if (
-      typeof monthlyRetainerRevenue === 'number' &&
-      Number.isFinite(monthlyRetainerRevenue) &&
-      monthlyRetainerRevenue >= 0
+      typeof monthlySupportTotal === 'number' &&
+      Number.isFinite(monthlySupportTotal) &&
+      monthlySupportTotal >= 0
     ) {
-      customerTerms['monthlyRetainerRevenue'] = monthlyRetainerRevenue;
+      customerTerms['monthlySupportTotal'] = monthlySupportTotal;
     }
 
     const payload: CommitHardwareProposalRequest = {
