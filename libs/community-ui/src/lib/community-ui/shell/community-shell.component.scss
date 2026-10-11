@@ -276,7 +276,7 @@
 
   .subtitle {
     font-size: var(--font-size-md, 1.1rem);
-    color: var(--local-complement);
+    color: var(--local-foreground);
     margin: 0;
     line-height: 1.5;
 
@@ -309,7 +309,7 @@
   font-family: var(--font-body, sans-serif);
   font-size: var(--font-size-md, 1rem);
   font-weight: 500;
-  color: var(--local-complement);
+  color: var(--local-foreground);
   cursor: pointer;
   position: relative;
   white-space: nowrap;
@@ -327,8 +327,13 @@
     color: var(--local-foreground);
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--local-foreground);
+    outline-offset: 2px;
+  }
+
   &.active {
-    color: var(--local-accent);
+    color: var(--local-foreground);
     font-weight: 600;
 
     &::after {

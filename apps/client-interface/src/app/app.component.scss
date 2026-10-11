@@ -81,13 +81,13 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: var(--accent);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground, var(--foreground));
   border-radius: 24px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);

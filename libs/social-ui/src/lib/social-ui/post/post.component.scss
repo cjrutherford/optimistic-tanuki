@@ -86,7 +86,7 @@
     }
 
     .subtitle {
-      color: var(--muted-foreground, #9ca3af);
+      color: var(--foreground);
       font-weight: 500;
       @include p.small-text(0.875rem);
 
