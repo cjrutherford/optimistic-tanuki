@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress: owner phone scan pending
+Complete
 
 ## Objective
 
@@ -116,11 +116,25 @@ dev Redis.
   - The campaign is kept for the visit (`hai.campaign` in session storage),
     which is what the contact and assessment forms append to `sourcePage`.
 
+### Owner phone scan (2026-10-11)
+
+The owner scanned all three test codes with a phone on the LAN and approved
+them.
+
+- **Flyer and brochure:** both opened `/private-cloud`. That is intended; only
+  `utm_medium` differs.
+- **Open-source brochure:** opened `/private-cloud/open-source-stack`.
+
+The counters recorded the phone's flyer visit. The two brochure scans opened
+their pages but added no count. The reason wasn't found. Possible causes are a
+privacy signal (GPC or DNT), a scanner preview that never ran the page, or a
+reused tab. Recording itself was shown to work for all three codes in the
+browser test above.
+
 ### Left for the owner
 
-- **Phone scan:** scan each test code with a phone on the LAN (D009).
-- **After deploying:** scan the print codes, or run the smoke test against
-  production, before sending anything to print (D007).
+- **After deploying:** scan the print codes against production before sending
+  anything to print (D007). Confirm in Grafana that each scan is counted.
 
 ## Deviations / Blockers
 

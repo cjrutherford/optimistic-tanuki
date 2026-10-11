@@ -45,7 +45,7 @@ The agent must complete only the current slice, validate it, update completion n
 | S015  | SEO and social metadata           | Complete              |
 | S016  | Responsive and accessibility QA   | Complete              |
 | S017  | Performance and browser QA        | Complete              |
-| S019  | QR and campaign validation        | Owner scan pending    |
+| S019  | QR and campaign validation        | Complete              |
 | S020  | Theme and personality token audit | Complete              |
 | S018  | Release pull request              | In progress (PR #277) |
 
@@ -56,7 +56,8 @@ The agent must complete only the current slice, validate it, update completion n
 S018 runs last on purpose: the release PR carries the campaign URLs validated
 in S019 and the token audit from S020 (added at the owner's request on
 2026-10-07). The IDs were kept stable rather than renumbered. On 2026-10-07
-the owner moved S020 ahead of S019, which waits for a session with the owner.
+the owner moved S020 ahead of S019; S019 was validated with the owner on
+2026-10-11.
 
 ## Standard launcher prompt
 
