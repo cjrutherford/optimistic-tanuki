@@ -382,16 +382,24 @@
               [content]="post"
               [profile]="postProfiles()[post.profileId]"
               [availableProfiles]="postProfiles()"
+              [currentUserId]="getActingProfileId()"
               [communityInfo]="{
                 id: post.communityId || '',
                 name: city()!.name
               }"
+              (reportPost)="reportDiscussionPost(post)"
               (click)="navigateToPost(posts()[$index].communitySlug)"
             ></lib-post>
             }
           </div>
         </div>
       </section>
+      } @if (reportTargetPostId()) {
+      <lib-report-dialog
+        contentType="post"
+        [contentId]="reportTargetPostId()!"
+        (closeDialog)="closeDiscussionReport()"
+      ></lib-report-dialog>
       }
     </main>
   </div>

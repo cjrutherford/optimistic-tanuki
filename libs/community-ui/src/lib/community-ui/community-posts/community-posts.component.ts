@@ -13,6 +13,7 @@ import {
   PostData,
   PostDto,
   PostProfileStub,
+  ReportDialogComponent,
 } from '@optimistic-tanuki/social-ui';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommunityService } from '../services/community.service';
@@ -27,7 +28,13 @@ import { firstValueFrom } from 'rxjs';
   selector: 'lib-community-posts',
   standalone: true,
   providers: [ThemeVariableService],
-  imports: [CommonModule, ComposeComponent, PostComponent, ButtonComponent],
+  imports: [
+    CommonModule,
+    ComposeComponent,
+    PostComponent,
+    ButtonComponent,
+    ReportDialogComponent,
+  ],
   host: {
     '[class.theme]': 'theme',
     '[style.--local-background]': 'background',
@@ -55,6 +62,7 @@ export class CommunityPostsComponent extends Variantable {
 
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
+  reportTargetPostId = signal<string | null>(null);
   profiles = signal<{ [key: string]: PostProfileStub }>({});
   loading = signal(true);
   error = signal<string | null>(null);
@@ -78,6 +86,14 @@ export class CommunityPostsComponent extends Variantable {
 
   setActiveTab(tab: 'posts' | 'create' | 'manage') {
     this.activeTab.set(tab);
+  }
+
+  reportPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeReportDialog(): void {
+    this.reportTargetPostId.set(null);
   }
 
   goToManage() {

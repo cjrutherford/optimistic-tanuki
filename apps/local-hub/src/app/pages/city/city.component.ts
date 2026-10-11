@@ -33,7 +33,11 @@ import {
   BadgeComponent,
   IconComponent,
 } from '@optimistic-tanuki/common-ui';
-import { PostComponent, PostDto } from '@optimistic-tanuki/social-ui';
+import {
+  PostComponent,
+  PostDto,
+  ReportDialogComponent,
+} from '@optimistic-tanuki/social-ui';
 import { OptomisitcTanukiAPIService as ProfileAPIService } from '@optimistic-tanuki/profile-ui-data-access';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
 import {
@@ -76,6 +80,7 @@ interface CommunityTreeNode {
     BadgeComponent,
     IconComponent,
     PostComponent,
+    ReportDialogComponent,
     ClassifiedListComponent,
     ClassifiedFormComponent,
     SelectComponent,
@@ -131,6 +136,7 @@ export class CityComponent implements OnInit, OnDestroy {
     contentType: 'classified' | 'seller';
     contentId: string;
   } | null>(null);
+  reportTargetPostId = signal<string | null>(null);
   creatingCommunity = signal(false);
   creatingBusiness = signal(false);
 
@@ -140,25 +146,26 @@ export class CityComponent implements OnInit, OnDestroy {
   });
 
   discussionPosts = computed(() =>
-    this.posts().map(
-      (post): PostDto => ({
+    this.posts().map((post): PostDto => {
+      return {
         id: post.id,
         title: post.title,
         content: post.content,
-        userId: post.authorName,
-        profileId: post.authorName,
+        userId: post.authorUserId || '',
+        profileId: post.authorProfileId || '',
         communityId: post.communityId,
         createdAt: new Date(post.createdAt),
-      })
-    )
+      };
+    })
   );
 
   postProfiles = computed(() =>
     this.posts().reduce<
       Record<string, { id: string; name: string; avatar: string }>
     >((profiles, post) => {
-      profiles[post.authorName] = {
-        id: post.authorName,
+      if (!post.authorProfileId) return profiles;
+      profiles[post.authorProfileId] = {
+        id: post.authorProfileId,
         name: post.authorName,
         avatar: post.authorAvatar || CityComponent.fallbackProfileAvatar,
       };
@@ -690,6 +697,18 @@ export class CityComponent implements OnInit, OnDestroy {
 
   async reportClassified(ad: ClassifiedAdDto): Promise<void> {
     this.safetyReport.set({ contentType: 'classified', contentId: ad.id });
+  }
+
+  reportDiscussionPost(post: PostDto): void {
+    this.reportTargetPostId.set(post.id);
+  }
+
+  closeDiscussionReport(): void {
+    this.reportTargetPostId.set(null);
+  }
+
+  getActingProfileId(): string {
+    return this.authState.getActingProfileId();
   }
 
   async reportClassifiedSeller(ad: ClassifiedAdDto): Promise<void> {

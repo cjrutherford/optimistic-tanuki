@@ -10,6 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { CityComponent } from './city.component';
+import { PostComponent } from '@optimistic-tanuki/social-ui';
 import {
   CommunityService,
   LocalCommunity,
@@ -63,6 +64,7 @@ const communityServiceMock = {
 const authStateMock = {
   isAuthenticated$: { pipe: () => ({ subscribe: jest.fn() }) },
   isAuthenticated: false,
+  getActingProfileId: jest.fn().mockReturnValue('profile-current'),
 };
 
 const paymentServiceMock = {
@@ -144,6 +146,61 @@ describe('CityComponent', () => {
 
       expect(mapComponent?.userLocation).toEqual({ lat: 32.05, lng: -81.1 });
     });
+
+    it('uses selected profile identity for own-post controls and non-owner reporting', async () => {
+      await fixture.whenStable();
+      const component = fixture.componentInstance;
+      component.posts.set([
+        {
+          id: 'own-post',
+          communityId: 'city-1',
+          communitySlug: 'savannah-ga',
+          communityName: 'Savannah',
+          title: 'Mine',
+          content: 'Own content',
+          authorName: 'Current profile',
+          authorProfileId: 'profile-current',
+          authorUserId: 'account-current',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          likes: 0,
+          comments: 0,
+        },
+        {
+          id: 'other-post',
+          communityId: 'city-1',
+          communitySlug: 'savannah-ga',
+          communityName: 'Savannah',
+          title: 'Theirs',
+          content: 'Other content',
+          authorName: 'Other profile',
+          authorProfileId: 'profile-other',
+          authorUserId: 'account-other',
+          createdAt: '2026-01-02T00:00:00.000Z',
+          likes: 0,
+          comments: 0,
+        },
+      ]);
+      fixture.detectChanges();
+
+      const postElements = fixture.debugElement.queryAll(
+        By.directive(PostComponent)
+      );
+      expect(postElements).toHaveLength(2);
+      const [ownPost, otherPost] = postElements.map(
+        (element) => element.componentInstance as PostComponent
+      );
+      expect(ownPost.currentUserId).toBe('profile-current');
+      expect(ownPost.canEdit()).toBe(true);
+      expect(otherPost.currentUserId).toBe('profile-current');
+      expect(otherPost.canEdit()).toBe(false);
+
+      const otherTrigger =
+        postElements[1].nativeElement.querySelector('.dropdown-trigger');
+      expect(otherTrigger).not.toBeNull();
+      otherTrigger.click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Report post');
+    });
   });
 
   // These exercise the component class directly. `detectChanges()` is never
@@ -167,6 +224,7 @@ describe('CityComponent', () => {
     let authState: {
       isAuthenticated$: BehaviorSubject<boolean>;
       isAuthenticated: boolean;
+      getActingProfileId: () => string;
     };
     let paramSlug: string;
 
@@ -194,6 +252,7 @@ describe('CityComponent', () => {
       authState = {
         isAuthenticated$: authSubject,
         isAuthenticated: false,
+        getActingProfileId: () => 'profile-current',
       };
       messages = { addMessage: jest.fn() };
       community = {
@@ -474,6 +533,8 @@ describe('CityComponent', () => {
             title: 'Hello',
             content: 'World',
             authorName: 'Ada',
+            authorProfileId: 'profile-current',
+            authorUserId: 'account-current',
             createdAt: '2024-05-01T00:00:00.000Z',
             likes: 0,
             comments: 0,
@@ -486,6 +547,8 @@ describe('CityComponent', () => {
             title: 'Second',
             content: 'Post',
             authorName: 'Grace',
+            authorProfileId: 'profile-other',
+            authorUserId: 'account-other',
             authorAvatar: 'https://cdn.example/grace.png',
             createdAt: '2024-05-02T00:00:00.000Z',
             likes: 0,
@@ -498,8 +561,8 @@ describe('CityComponent', () => {
             id: 'p1',
             title: 'Hello',
             content: 'World',
-            userId: 'Ada',
-            profileId: 'Ada',
+            userId: 'account-current',
+            profileId: 'profile-current',
             communityId: 'city-1',
             createdAt: new Date('2024-05-01T00:00:00.000Z'),
           },
@@ -507,17 +570,21 @@ describe('CityComponent', () => {
             id: 'p2',
             title: 'Second',
             content: 'Post',
-            userId: 'Grace',
-            profileId: 'Grace',
+            userId: 'account-other',
+            profileId: 'profile-other',
             communityId: 'city-1',
             createdAt: new Date('2024-05-02T00:00:00.000Z'),
           },
         ]);
 
         expect(component.postProfiles()).toEqual({
-          Ada: { id: 'Ada', name: 'Ada', avatar: 'assets/ts.png' },
-          Grace: {
-            id: 'Grace',
+          'profile-current': {
+            id: 'profile-current',
+            name: 'Ada',
+            avatar: 'assets/ts.png',
+          },
+          'profile-other': {
+            id: 'profile-other',
             name: 'Grace',
             avatar: 'https://cdn.example/grace.png',
           },
@@ -600,6 +667,14 @@ describe('CityComponent', () => {
 
         component.navigateToCities();
         expect(router.navigate).toHaveBeenCalledWith(['/cities']);
+      });
+
+      it('opens and closes the shared report dialog for a discussion post id', () => {
+        component.reportDiscussionPost({ id: 'community-post-1' } as any);
+        expect(component.reportTargetPostId()).toBe('community-post-1');
+
+        component.closeDiscussionReport();
+        expect(component.reportTargetPostId()).toBeNull();
       });
 
       it('sends anonymous visitors to login with a return url', () => {

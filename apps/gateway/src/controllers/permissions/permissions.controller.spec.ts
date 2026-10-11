@@ -3,6 +3,9 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 import { PermissionsController } from './permissions.controller';
+import { Logger } from '@nestjs/common';
+import { RoleCommands } from '@optimistic-tanuki/constants';
+import { of } from 'rxjs';
 
 describe('Gateway PermissionsController metadata', () => {
   const controller = PermissionsController.prototype;
@@ -37,5 +40,26 @@ describe('Gateway PermissionsController metadata', () => {
     expectMutationGuarded('unassignRole', 'users.update');
     expectMutationGuarded('previewBulkRoleMutation', 'users.update');
     expectMutationGuarded('executeBulkRoleMutation', 'users.update');
+  });
+});
+
+describe('Gateway PermissionsController role assignment contract', () => {
+  it('returns the permissions-service unassign acknowledgement to the caller', async () => {
+    const acknowledgement = {
+      success: true,
+      assignmentId: 'assignment-1',
+    };
+    const client = {
+      send: jest.fn().mockReturnValue(of(acknowledgement)),
+    };
+    const controller = new PermissionsController(new Logger(), client as any);
+
+    await expect(controller.unassignRole('assignment-1')).resolves.toEqual(
+      acknowledgement
+    );
+    expect(client.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.Unassign },
+      { assignmentId: 'assignment-1' }
+    );
   });
 });

@@ -118,10 +118,29 @@ describe('RolesController', () => {
   });
 
   describe('unassignRole', () => {
-    it('should call service.unassignRole with the correct id', async () => {
-      const data = { assignmentId: '1' };
-      await controller.unassignRole(data);
-      expect(service.unassignRole).toHaveBeenCalledWith('1');
+    it('acknowledges only after the exact assignment has been removed', async () => {
+      const data = { assignmentId: 'assignment-1' };
+      let finishRemoval!: () => void;
+      jest.spyOn(service, 'unassignRole').mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRemoval = resolve;
+          })
+      );
+
+      const acknowledgement = controller.unassignRole(data);
+      await Promise.resolve();
+      let settled = false;
+      void acknowledgement.then(() => (settled = true));
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(service.unassignRole).toHaveBeenCalledWith(data.assignmentId);
+
+      finishRemoval();
+      await expect(acknowledgement).resolves.toEqual({
+        success: true,
+        assignmentId: data.assignmentId,
+      });
     });
   });
 

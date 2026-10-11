@@ -111,11 +111,10 @@
     </div>
   </otui-modal>
   @if (reportTargetPostId()) {
-  <app-report-dialog
+  <lib-report-dialog
     contentType="post"
     [contentId]="reportTargetPostId()!"
     (closeDialog)="closeReportDialog()"
-    (reportSubmitted)="closeReportDialog()"
-  ></app-report-dialog>
+  ></lib-report-dialog>
   }
 </div>

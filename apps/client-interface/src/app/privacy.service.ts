@@ -1,6 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import {
+  ContentReport,
+  PrivacyReportService,
+  ReportContentDto,
+} from '@optimistic-tanuki/social-data-access';
 
 export interface BlockedUser {
   id: string;
@@ -18,15 +23,7 @@ export interface MutedUser {
   createdAt: Date;
 }
 
-export interface ContentReport {
-  id: string;
-  contentType: string;
-  contentId: string;
-  reason: string;
-  description?: string;
-  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
-  createdAt: Date;
-}
+export { ContentReport, ReportContentDto };
 
 export interface BlockUserDto {
   blockedId: string;
@@ -38,18 +35,12 @@ export interface MuteUserDto {
   duration?: number;
 }
 
-export interface ReportContentDto {
-  contentType: 'post' | 'comment' | 'profile' | 'community' | 'message';
-  contentId: string;
-  reason: string;
-  description?: string;
-}
-
 @Injectable({
   providedIn: 'root',
 })
 export class PrivacyService {
   private http = inject(HttpClient);
+  private readonly reports = inject(PrivacyReportService);
   private baseUrl = '/api/privacy';
 
   // Block functionality
@@ -86,7 +77,7 @@ export class PrivacyService {
 
   // Report functionality
   reportContent(dto: ReportContentDto): Observable<ContentReport> {
-    return this.http.post<ContentReport>(`${this.baseUrl}/report`, dto);
+    return this.reports.reportContent(dto);
   }
 
   getMyReports(): Observable<ContentReport[]> {

@@ -199,6 +199,10 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('contentContainer', { read: ElementRef })
   contentElement?: ElementRef<HTMLElement>;
 
+  @ViewChild('postMenu') private postMenu?: DropdownComponent;
+  @ViewChild('postMenu', { read: ElementRef })
+  private postMenuElement?: ElementRef<HTMLElement>;
+
   // Services and state
   private readonly componentPersistence = inject(
     SocialComponentPersistenceService
@@ -212,6 +216,14 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   downloadAttachment(attachment: AttachmentDto) {
     console.log('Downloading attachment:', attachment);
+  }
+
+  openReport(): void {
+    this.postMenu?.closeDropdown();
+    this.postMenuElement?.nativeElement
+      .querySelector<HTMLButtonElement>('.dropdown-trigger')
+      ?.focus();
+    this.reportPost.emit();
   }
   openLink(link: { url: string }) {
     console.log('Opening link:', link);

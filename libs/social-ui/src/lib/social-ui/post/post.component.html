@@ -2,7 +2,11 @@
   <div class="post-header">
     @if (profile) {
     <div class="post-profile">
-      <otui-dropdown [triggerLabel]="'...'">
+      <otui-dropdown
+        #postMenu
+        [triggerLabel]="'...'"
+        (click)="$event.stopPropagation()"
+      >
         <button class="dropdown-item" (click)="onProfileClick()">
           View Profile
         </button>
@@ -22,7 +26,7 @@
         <button class="dropdown-item" (click)="onMuteToggle()">
           {{ isMuted ? 'Unmute from feed' : 'Mute from feed' }}
         </button>
-        <button class="dropdown-item" (click)="reportPost.emit()">
+        <button class="dropdown-item" (click)="openReport()">
           Report post
         </button>
         @if (ownedCommunities.length > 0) {

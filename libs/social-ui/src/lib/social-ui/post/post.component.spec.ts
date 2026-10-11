@@ -173,13 +173,21 @@ describe('PostComponent', () => {
   it('emits mute and report actions from the post safety menu', () => {
     const mute = jest.fn();
     const report = jest.fn();
+    const focus = jest.fn();
+    const closeDropdown = jest.fn();
     component.muteToggle.subscribe(mute);
     component.reportPost.subscribe(report);
+    (component as any).postMenu = { closeDropdown };
+    (component as any).postMenuElement = {
+      nativeElement: { querySelector: () => ({ focus }) },
+    };
 
     component.onMuteToggle();
-    component.reportPost.emit();
+    component.openReport();
 
     expect(mute).toHaveBeenCalledTimes(1);
+    expect(closeDropdown).toHaveBeenCalledTimes(1);
+    expect(focus).toHaveBeenCalledTimes(1);
     expect(report).toHaveBeenCalledTimes(1);
   });
 

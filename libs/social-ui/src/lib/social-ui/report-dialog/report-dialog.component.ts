@@ -1,31 +1,39 @@
 import {
   Component,
-  inject,
+  EventEmitter,
   Input,
   Output,
-  EventEmitter,
+  inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
-import { PrivacyService, ReportContentDto } from '../../privacy.service';
-import { MessageService } from '@optimistic-tanuki/message-ui';
+import {
+  PrivacyReportService,
+  ReportContentDto,
+} from '@optimistic-tanuki/social-data-access';
 
 @Component({
-  selector: 'app-report-dialog',
+  selector: 'lib-report-dialog',
   standalone: true,
   imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent],
   template: `
     <otui-modal
       [visible]="true"
       [heading]="'Report ' + (contentType | titlecase)"
+      [ariaDescribedBy]="'report-dialog-instructions'"
+      [closable]="false"
+      [closeOnEscape]="submissionState() !== 'pending'"
+      [closeOnBackdrop]="submissionState() !== 'pending'"
       (close)="cancel()"
     >
       <div class="dialog-header">
         <button
+          type="button"
           class="close-button"
           aria-label="Close report"
+          [disabled]="submissionState() === 'pending'"
           (click)="cancel()"
         >
           <svg
@@ -33,6 +41,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
             fill="none"
             stroke="currentColor"
             stroke-width="2"
+            aria-hidden="true"
           >
             <path d="M18 6 6 18M6 6l12 12"></path>
           </svg>
@@ -40,43 +49,79 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
       </div>
 
       <div class="dialog-content">
-        <p>Why are you reporting this {{ contentType }}?</p>
+        <p>
+          Choose the reason that best describes your concern. Reports are
+          reviewed under the same community safety policy.
+        </p>
 
-        <div class="reason-options">
+        <fieldset
+          class="reason-options"
+          [disabled]="submissionState() === 'pending'"
+          [attr.aria-invalid]="showReasonError()"
+        >
+          <legend>Why are you reporting this {{ contentType }}?</legend>
           @for (option of reasonOptions; track option.value) {
           <label
             class="radio-option"
-            [class.selected]="selectedReason() === option.value"
+            [class.selected]="reason === option.value"
           >
             <input
               type="radio"
-              name="reason"
+              name="report-reason"
               [value]="option.value"
               [(ngModel)]="reason"
-              (ngModelChange)="selectedReason.set($event)"
+              (ngModelChange)="onReasonChange()"
             />
             <span class="radio-label">{{ option.label }}</span>
           </label>
           }
-        </div>
+        </fieldset>
+        @if (showReasonError()) {
+        <p class="field-error" role="alert">
+          Choose a reason before submitting.
+        </p>
+        }
 
         <div class="form-field">
-          <label class="field-label">Additional details (optional)</label>
+          <label class="field-label" for="report-details">
+            Additional details (optional)
+          </label>
           <textarea
+            id="report-details"
             [(ngModel)]="description"
             rows="4"
             placeholder="Provide more context..."
             class="text-area"
+            [disabled]="submissionState() === 'pending'"
           ></textarea>
         </div>
+
+        <p
+          class="submission-status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          @switch (submissionState()) { @case ('pending') { Submitting report… }
+          @case ('success') { Report submitted. Thank you for helping keep our
+          community safe. } @case ('error') { Failed to submit report. Your
+          reason and details are saved; try again. } }
+        </p>
       </div>
 
       <div class="dialog-actions">
-        <otui-button variant="text" (click)="cancel()">Cancel</otui-button>
+        <otui-button
+          variant="text"
+          (action)="cancel()"
+          [disabled]="submissionState() === 'pending'"
+          >Close</otui-button
+        >
         <otui-button
           variant="primary"
-          (click)="submit()"
-          [disabled]="!selectedReason()"
+          (action)="submit()"
+          [disabled]="
+            submissionState() === 'pending' || submissionState() === 'success'
+          "
           >Submit Report</otui-button
         >
       </div>
@@ -86,42 +131,48 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
     `
       .dialog-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--border);
-      }
-      .dialog-header h2 {
-        margin: 0;
-        font-size: 18px;
+        justify-content: flex-end;
+        padding: 8px 20px 0;
       }
       .close-button {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
-        border: none;
+        width: 40px;
+        height: 40px;
+        border: 1px solid transparent;
         background: transparent;
         border-radius: 50%;
+        color: var(--foreground);
         cursor: pointer;
-        transition: background 0.2s;
       }
       .close-button:hover {
         background: var(--hover-bg);
+      }
+      .close-button:focus-visible,
+      .radio-option:focus-within,
+      .text-area:focus-visible {
+        outline: 3px solid var(--foreground);
+        outline-offset: 3px;
       }
       .close-button svg {
         width: 20px;
         height: 20px;
       }
       .dialog-content {
-        padding: 20px;
+        padding: 16px 20px 20px;
       }
       .reason-options {
         display: flex;
         flex-direction: column;
         gap: 8px;
-        margin: 16px 0;
+        margin: 16px 0 8px;
+        padding: 0;
+        border: 0;
+      }
+      .reason-options legend {
+        margin-bottom: 8px;
+        font-weight: 600;
       }
       .radio-option {
         display: flex;
@@ -131,20 +182,22 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         border: 1px solid var(--border);
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.2s;
       }
-      .radio-option:hover {
-        border-color: var(--primary);
-      }
+      .radio-option:hover,
       .radio-option.selected {
         border-color: var(--primary);
-        background: var(--primary-alpha, rgba(25, 118, 210, 0.1));
       }
       .radio-option input {
-        display: none;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
       }
       .radio-label {
         flex: 1;
+      }
+      .field-error {
+        margin: 8px 0;
+        color: var(--danger, #a61b1b);
       }
       .form-field {
         margin-top: 16px;
@@ -167,10 +220,9 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
         resize: vertical;
         min-height: 100px;
       }
-      .text-area:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-alpha, rgba(25, 118, 210, 0.2));
+      .submission-status {
+        min-height: 1.5em;
+        margin: 12px 0 0;
       }
       .dialog-actions {
         display: flex;
@@ -193,14 +245,16 @@ export class ReportDialogComponent {
   @Output() closeDialog = new EventEmitter<void>();
   @Output() reportSubmitted = new EventEmitter<void>();
 
-  private privacyService = inject(PrivacyService);
-  private messageService = inject(MessageService);
+  private readonly privacyReports = inject(PrivacyReportService);
 
+  readonly submissionState = signal<'idle' | 'pending' | 'success' | 'error'>(
+    'idle'
+  );
+  readonly attemptedSubmit = signal(false);
   reason = '';
   description = '';
-  selectedReason = signal('');
 
-  reasonOptions = [
+  readonly reasonOptions = [
     { value: 'spam', label: 'Spam' },
     { value: 'harassment', label: 'Harassment' },
     { value: 'hate_speech', label: 'Hate speech' },
@@ -210,13 +264,26 @@ export class ReportDialogComponent {
     { value: 'other', label: 'Other' },
   ];
 
-  ngOnChanges() {
-    // Sync reason signal with ngModel
-    this.selectedReason.set(this.reason);
+  showReasonError(): boolean {
+    return this.attemptedSubmit() && !this.reason;
   }
 
-  submit() {
-    if (!this.reason) return;
+  onReasonChange(): void {
+    this.attemptedSubmit.set(false);
+    if (this.submissionState() === 'error') this.submissionState.set('idle');
+  }
+
+  submit(): void {
+    if (
+      this.submissionState() === 'pending' ||
+      this.submissionState() === 'success'
+    ) {
+      return;
+    }
+    if (!this.reason) {
+      this.attemptedSubmit.set(true);
+      return;
+    }
 
     const dto: ReportContentDto = {
       contentType: this.contentType,
@@ -224,27 +291,18 @@ export class ReportDialogComponent {
       reason: this.reason,
       description: this.description,
     };
-
-    this.privacyService.reportContent(dto).subscribe({
+    this.submissionState.set('pending');
+    this.privacyReports.reportContent(dto).subscribe({
       next: () => {
-        this.messageService.addMessage({
-          content:
-            'Report submitted. Thank you for helping keep our community safe.',
-          type: 'success',
-        });
+        this.submissionState.set('success');
         this.reportSubmitted.emit();
-        this.cancel();
       },
-      error: () => {
-        this.messageService.addMessage({
-          content: 'Failed to submit report. Please try again.',
-          type: 'error',
-        });
-      },
+      error: () => this.submissionState.set('error'),
     });
   }
 
-  cancel() {
+  cancel(): void {
+    if (this.submissionState() === 'pending') return;
     this.closeDialog.emit();
   }
 }

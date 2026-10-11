@@ -23,6 +23,7 @@ import {
   ImageUploadCallback,
   UpdatePostDto,
   PostSaveState,
+  ReportDialogComponent,
 } from '@optimistic-tanuki/social-ui';
 import {
   CreateAttachmentDto,
@@ -64,7 +65,6 @@ import { ActivityService } from '../../activity.service';
 import { PrivacyService } from '../../privacy.service';
 import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
 import { MessageService } from '@optimistic-tanuki/message-ui';
-import { ReportDialogComponent } from '../report/report-dialog.component';
 
 @Component({
   selector: 'app-feed',

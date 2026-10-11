@@ -70,7 +70,8 @@ export class RolesController {
 
   @MessagePattern({ cmd: RoleCommands.Unassign })
   async unassignRole(@Payload() data: { assignmentId: string }) {
-    return await this.rolesService.unassignRole(data.assignmentId);
+    await this.rolesService.unassignRole(data.assignmentId);
+    return { success: true, assignmentId: data.assignmentId };
   }
 
   @MessagePattern({ cmd: RoleCommands.PreviewBulkMutation })
