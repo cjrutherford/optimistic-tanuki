@@ -190,6 +190,162 @@ describe('PermissionsCacheService', () => {
     });
   });
 
+  it('rechecks a permission result whose RPC overlaps profile invalidation', async () => {
+    let releaseOldLookup!: (granted: boolean) => void;
+    let markLookupStarted!: () => void;
+    const lookupStarted = new Promise<void>((resolve) => {
+      markLookupStarted = resolve;
+    });
+    const oldLookup = new Promise<boolean>((resolve) => {
+      releaseOldLookup = resolve;
+    });
+    const loader = jest
+      .fn<Promise<boolean>, []>()
+      .mockImplementationOnce(() => {
+        markLookupStarted();
+        return oldLookup;
+      })
+      .mockResolvedValueOnce(false);
+
+    const pending = service.getOrLoad(
+      'profile-race',
+      'permission',
+      'scope-a',
+      undefined,
+      loader
+    );
+    await lookupStarted;
+    await service.invalidateProfile('profile-race');
+    releaseOldLookup(true);
+
+    await expect(pending).resolves.toBe(false);
+    expect(loader).toHaveBeenCalledTimes(2);
+    await expect(
+      service.get('profile-race', 'permission', 'scope-a')
+    ).resolves.toBe(false);
+  });
+
+  it('does not trust cache after profile invalidation fails', async () => {
+    (cacheProvider.deletePattern as jest.Mock).mockRejectedValueOnce(
+      new Error('cache unavailable')
+    );
+    await expect(service.invalidateProfile('profile-fail')).rejects.toThrow(
+      'cache unavailable'
+    );
+    await service.set('profile-fail', 'permission', 'scope-a', true);
+    const load = jest.fn().mockResolvedValue(false);
+
+    await expect(
+      service.getOrLoad(
+        'profile-fail',
+        'permission',
+        'scope-a',
+        undefined,
+        load
+      )
+    ).resolves.toBe(false);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits asynchronously for an active profile invalidation before checking', async () => {
+    let releaseDelete!: () => void;
+    (cacheProvider.deletePattern as jest.Mock).mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        releaseDelete = resolve;
+      })
+    );
+    const invalidation = service.invalidateProfile('profile-wait');
+    const load = jest.fn().mockResolvedValue(false);
+    const pending = service.getOrLoad(
+      'profile-wait',
+      'permission',
+      'scope',
+      undefined,
+      load
+    );
+    await Promise.resolve();
+    expect(load).not.toHaveBeenCalled();
+    releaseDelete();
+    await invalidation;
+    await expect(pending).resolves.toBe(false);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('bypasses cache when a late stale-write cleanup fails', async () => {
+    let finishSet!: () => void;
+    let markSetStarted!: () => void;
+    const setStarted = new Promise<void>(
+      (resolve) => (markSetStarted = resolve)
+    );
+    (cacheProvider.set as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSet = resolve;
+          markSetStarted();
+        })
+    );
+    const load = jest
+      .fn<Promise<boolean>, []>()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    (cacheProvider.deletePattern as jest.Mock)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('late delete failed'));
+    const pending = service.getOrLoad(
+      'profile-late',
+      'p',
+      's',
+      undefined,
+      load
+    );
+    await setStarted;
+    await service.invalidateProfile('profile-late');
+    finishSet();
+    await expect(pending).rejects.toThrow('late delete failed');
+
+    await service.set('profile-late', 'p', 's', true);
+    await expect(
+      service.getOrLoad('profile-late', 'p', 's', undefined, load)
+    ).resolves.toBe(false);
+    expect(load).toHaveBeenCalledTimes(2);
+  });
+
+  it('fences in-flight lookups during clear and keeps cache bypassed after clear failure', async () => {
+    let releaseLookup!: (granted: boolean) => void;
+    let lookupStarted!: () => void;
+    const started = new Promise<void>((resolve) => (lookupStarted = resolve));
+    const oldLookup = new Promise<boolean>(
+      (resolve) => (releaseLookup = resolve)
+    );
+    const load = jest
+      .fn<Promise<boolean>, []>()
+      .mockImplementationOnce(() => {
+        lookupStarted();
+        return oldLookup;
+      })
+      .mockResolvedValueOnce(false);
+    const pending = service.getOrLoad(
+      'profile-clear',
+      'p',
+      's',
+      undefined,
+      load
+    );
+    await started;
+    (cacheProvider.clear as jest.Mock).mockRejectedValueOnce(
+      new Error('clear failed')
+    );
+    await expect(service.clear()).rejects.toThrow('clear failed');
+    releaseLookup(true);
+    await expect(pending).resolves.toBe(false);
+    await service.set('profile-clear', 'p', 's', true);
+    const subsequentLoad = jest.fn().mockResolvedValue(false);
+    await expect(
+      service.getOrLoad('profile-clear', 'p', 's', undefined, subsequentLoad)
+    ).resolves.toBe(false);
+    expect(subsequentLoad).toHaveBeenCalledTimes(1);
+  });
+
   describe('invalidation', () => {
     beforeEach(async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);

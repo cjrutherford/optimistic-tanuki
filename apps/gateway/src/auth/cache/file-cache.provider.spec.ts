@@ -162,7 +162,7 @@ describe('FileCacheProvider', () => {
       (fs.readdir as jest.Mock).mockResolvedValue(['key1.json']);
       (fs.unlink as jest.Mock).mockRejectedValue(new Error('Clear error'));
 
-      await provider.clear();
+      await expect(provider.clear()).rejects.toThrow('Clear error');
 
       expect(spy).toHaveBeenCalledWith('Error clearing cache: Clear error');
     });

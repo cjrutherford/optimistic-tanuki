@@ -222,8 +222,17 @@ export class RolesService {
     );
   }
 
-  async unassignRole(assignmentId: string): Promise<void> {
+  async unassignRole(
+    assignmentId: string
+  ): Promise<{ profileId: string | null; changed: boolean }> {
+    const assignment = await this.roleAssignmentsRepository.findOne({
+      where: { id: assignmentId },
+    });
+    if (!assignment) {
+      return { profileId: null, changed: false };
+    }
     await this.roleAssignmentsRepository.delete(assignmentId);
+    return { profileId: assignment.profileId, changed: true };
   }
 
   async previewBulkRoleMutation(
@@ -365,13 +374,14 @@ export class RolesService {
     roleId: string,
     appScopeId: string,
     targetId: string
-  ): Promise<void> {
+  ): Promise<{ profileId: string }> {
     await this.roleAssignmentsRepository.delete({
       profileId,
       roleId,
       appScopeId,
       targetId,
     });
+    return { profileId };
   }
 
   async getUserRoles(

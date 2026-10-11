@@ -28,6 +28,7 @@ describe('RolesController', () => {
             removePermissionFromRole: jest.fn(),
             assignRole: jest.fn(),
             unassignRole: jest.fn(),
+            unassignRoleByTarget: jest.fn(),
             previewBulkRoleMutation: jest.fn(),
             executeBulkRoleMutation: jest.fn(),
             getUserRoles: jest.fn(),
@@ -123,8 +124,9 @@ describe('RolesController', () => {
       let finishRemoval!: () => void;
       jest.spyOn(service, 'unassignRole').mockImplementation(
         () =>
-          new Promise<void>((resolve) => {
-            finishRemoval = resolve;
+          new Promise<{ profileId: string; changed: boolean }>((resolve) => {
+            finishRemoval = () =>
+              resolve({ profileId: 'profile-1', changed: true });
           })
       );
 
@@ -140,8 +142,32 @@ describe('RolesController', () => {
       await expect(acknowledgement).resolves.toEqual({
         success: true,
         assignmentId: data.assignmentId,
+        profileId: 'profile-1',
+        changed: true,
       });
     });
+  });
+
+  it('returns profile metadata after a target-scoped role removal', async () => {
+    const data = {
+      profileId: 'profile-1',
+      roleId: 'role-1',
+      appScopeId: 'scope-1',
+      targetId: 'target-1',
+    };
+    jest.spyOn(service, 'unassignRoleByTarget').mockResolvedValue({
+      profileId: 'profile-1',
+    });
+
+    await expect(controller.unassignRoleByTarget(data)).resolves.toEqual({
+      profileId: 'profile-1',
+    });
+    expect(service.unassignRoleByTarget).toHaveBeenCalledWith(
+      data.profileId,
+      data.roleId,
+      data.appScopeId,
+      data.targetId
+    );
   });
 
   describe('previewBulkRoleMutation', () => {

@@ -187,38 +187,29 @@ export class PermissionsGuard implements CanActivate {
       let allGlobalPermissionsGranted = true;
 
       for (const permission of permissions) {
-        let hasPermission = await this.cacheService.get(
+        const hasPermission = await this.cacheService.getOrLoad(
           globalPermissionProfileId,
           permission,
           globalScope.id,
-          targetId
+          targetId,
+          async () => {
+            this.logger.debug(
+              `Cache miss for global permission: ${permission}, checking with permissions service`
+            );
+            return await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.CheckPermission },
+                {
+                  profileId: globalPermissionProfileId,
+                  permission,
+                  profileAppScope: 'global',
+                  appScopeId: globalScope.id,
+                  targetId,
+                }
+              )
+            );
+          }
         );
-
-        if (hasPermission === null) {
-          this.logger.debug(
-            `Cache miss for global permission: ${permission}, checking with permissions service`
-          );
-          hasPermission = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: RoleCommands.CheckPermission },
-              {
-                profileId: globalPermissionProfileId,
-                permission,
-                profileAppScope: 'global',
-                appScopeId: globalScope.id,
-                targetId,
-              }
-            )
-          );
-
-          await this.cacheService.set(
-            globalPermissionProfileId,
-            permission,
-            globalScope.id,
-            hasPermission,
-            targetId
-          );
-        }
 
         if (!hasPermission) {
           allGlobalPermissionsGranted = false;
@@ -261,33 +252,25 @@ export class PermissionsGuard implements CanActivate {
 
       let allWorkspacePermissionsGranted = true;
       for (const permission of permissions) {
-        let hasPermission = await this.cacheService.get(
+        const hasPermission = await this.cacheService.getOrLoad(
           appScopePermissionProfileId,
           permission,
           workspaceScope.id,
-          targetId
-        );
-        if (hasPermission === null) {
-          hasPermission = await firstValueFrom(
-            this.permissionsClient.send(
-              { cmd: RoleCommands.CheckPermission },
-              {
-                profileId: appScopePermissionProfileId,
-                permission,
-                profileAppScope: workspaceContext.workspaceScope,
-                appScopeId: workspaceScope.id,
-                targetId,
-              }
+          targetId,
+          async () =>
+            await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: RoleCommands.CheckPermission },
+                {
+                  profileId: appScopePermissionProfileId,
+                  permission,
+                  profileAppScope: workspaceContext.workspaceScope,
+                  appScopeId: workspaceScope.id,
+                  targetId,
+                }
+              )
             )
-          );
-          await this.cacheService.set(
-            appScopePermissionProfileId,
-            permission,
-            workspaceScope.id,
-            hasPermission,
-            targetId
-          );
-        }
+        );
         if (!hasPermission) {
           allWorkspacePermissionsGranted = false;
           break;
@@ -313,45 +296,30 @@ export class PermissionsGuard implements CanActivate {
     // Check each required permission for the specific app scope
     for (const permission of permissions) {
       // Try to get from cache first
-      let hasPermission = await this.cacheService.get(
+      const hasPermission = await this.cacheService.getOrLoad(
         appScopePermissionProfileId,
         permission,
         appScope.id,
-        targetId
+        targetId,
+        async () => {
+          this.logger.debug(
+            `Cache miss for permission: ${permission}, checking with permissions service`
+          );
+          return await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId: appScopePermissionProfileId,
+                permission,
+                profileAppScope: appScopeName,
+                appScopeId: appScope.id,
+                checkGlobalFallback: true,
+                targetId,
+              }
+            )
+          );
+        }
       );
-
-      // If not in cache, check with permissions service
-      if (hasPermission === null) {
-        this.logger.debug(
-          `Cache miss for permission: ${permission}, checking with permissions service`
-        );
-        hasPermission = await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: RoleCommands.CheckPermission },
-            {
-              profileId: appScopePermissionProfileId,
-              permission,
-              profileAppScope: appScopeName,
-              appScopeId: appScope.id,
-              checkGlobalFallback: true,
-              targetId,
-            }
-          )
-        );
-
-        // Cache the result
-        await this.cacheService.set(
-          appScopePermissionProfileId,
-          permission,
-          appScope.id,
-          hasPermission,
-          targetId
-        );
-      } else {
-        this.logger.debug(
-          `Cache hit for permission: ${permission}, granted=${hasPermission}`
-        );
-      }
 
       if (!hasPermission) {
         this.logger.warn(

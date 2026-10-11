@@ -388,11 +388,33 @@ describe('RolesService', () => {
 
   describe('unassignRole', () => {
     it('should unassign a role from a user', async () => {
+      const assignment = new RoleAssignment();
+      assignment.id = '1';
+      assignment.profileId = 'profile-1';
+      jest
+        .spyOn(roleAssignmentsRepository, 'findOne')
+        .mockResolvedValue(assignment);
       jest
         .spyOn(roleAssignmentsRepository, 'delete')
-        .mockResolvedValue(undefined);
-      await service.unassignRole('1');
+        .mockResolvedValue({ affected: 1, raw: [] });
+      await expect(service.unassignRole('1')).resolves.toEqual({
+        profileId: 'profile-1',
+        changed: true,
+      });
+      expect(roleAssignmentsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: '1' },
+      });
       expect(roleAssignmentsRepository.delete).toHaveBeenCalledWith('1');
+    });
+
+    it('keeps deleting an absent assignment idempotent with unknown affected profile', async () => {
+      jest.spyOn(roleAssignmentsRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(service.unassignRole('already-removed')).resolves.toEqual({
+        profileId: null,
+        changed: false,
+      });
+      expect(roleAssignmentsRepository.delete).not.toHaveBeenCalled();
     });
   });
 

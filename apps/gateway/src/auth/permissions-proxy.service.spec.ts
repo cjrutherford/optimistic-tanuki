@@ -23,6 +23,9 @@ describe('PermissionsProxyService', () => {
           useValue: {
             get: jest.fn(),
             set: jest.fn(),
+            getOrLoad: jest.fn(),
+            invalidateProfile: jest.fn(),
+            clear: jest.fn(),
           },
         },
       ],
@@ -48,6 +51,9 @@ describe('PermissionsProxyService.checkPermission', () => {
     cacheServiceMock = {
       get: jest.fn().mockResolvedValue(null),
       set: jest.fn().mockResolvedValue(undefined),
+      getOrLoad: jest.fn(async (_p, _permission, _scope, _target, load) =>
+        load()
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,40 +79,43 @@ describe('PermissionsProxyService.checkPermission', () => {
 
   it('returns cached value when present (true)', async () => {
     permissionsClientMock.send.mockReturnValue(of({ id: 'app1' }));
-    cacheServiceMock.get.mockResolvedValue(true);
+    cacheServiceMock.getOrLoad.mockResolvedValue(true);
 
     const result = await service.checkPermission('p1', 'perm.read', 'app');
 
     expect(result).toBe(true);
     expect(permissionsClientMock.send).toHaveBeenCalledTimes(1);
-    expect(cacheServiceMock.set).not.toHaveBeenCalled();
+    expect(cacheServiceMock.getOrLoad).toHaveBeenCalled();
   });
 
   it('returns cached value when present (false)', async () => {
     permissionsClientMock.send.mockReturnValue(of({ id: 'app1' }));
-    cacheServiceMock.get.mockResolvedValue(false);
+    cacheServiceMock.getOrLoad.mockResolvedValue(false);
 
     const result = await service.checkPermission('p1', 'perm.read', 'app');
 
     expect(result).toBe(false);
     expect(permissionsClientMock.send).toHaveBeenCalledTimes(1);
-    expect(cacheServiceMock.set).not.toHaveBeenCalled();
+    expect(cacheServiceMock.getOrLoad).toHaveBeenCalled();
   });
 
   it('fetches permission from service and caches result when cache miss', async () => {
     permissionsClientMock.send
       .mockReturnValueOnce(of({ id: 'app1' }))
       .mockReturnValueOnce(of(true));
-    cacheServiceMock.get.mockResolvedValue(null);
+    cacheServiceMock.getOrLoad.mockImplementation(
+      async (_p, _permission, _scope, _target, load) => load()
+    );
 
     const result = await service.checkPermission('p1', 'perm.read', 'app');
 
     expect(result).toBe(true);
-    expect(cacheServiceMock.set).toHaveBeenCalledWith(
+    expect(cacheServiceMock.getOrLoad).toHaveBeenCalledWith(
       'p1',
       'perm.read',
       'app1',
-      true
+      undefined,
+      expect.any(Function)
     );
   });
 

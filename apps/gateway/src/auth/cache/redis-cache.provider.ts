@@ -26,7 +26,13 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
     keyPrefix = 'permissions:'
   ) {
     this.cacheTTL = ttl;
-    this.keyPrefix = keyPrefix;
+    const normalizedPrefix = keyPrefix.trim();
+    if (!normalizedPrefix || /[*?\[\]\\]/.test(normalizedPrefix)) {
+      throw new Error(
+        'Redis permissions cache key prefix must be non-empty and contain no glob characters'
+      );
+    }
+    this.keyPrefix = normalizedPrefix;
     this.initRedis(host, port, password, db);
     this.logger.log(
       `RedisCacheProvider initialized with host=${host}, port=${port}, TTL=${ttl}ms`
@@ -144,8 +150,9 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
 
   async deletePattern(pattern: string): Promise<void> {
     if (!this.isConnected) {
-      this.logger.warn('Redis not connected, skipping deletePattern operation');
-      return;
+      throw new Error(
+        'Redis not connected; cannot invalidate permission cache'
+      );
     }
 
     try {
@@ -160,13 +167,13 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       }
     } catch (error) {
       this.logger.error(`Error deleting pattern from Redis: ${error.message}`);
+      throw error;
     }
   }
 
   async clear(): Promise<void> {
     if (!this.isConnected) {
-      this.logger.warn('Redis not connected, skipping clear operation');
-      return;
+      throw new Error('Redis not connected; cannot clear permission cache');
     }
 
     try {
@@ -182,6 +189,7 @@ export class RedisCacheProvider implements ICacheProvider, OnModuleDestroy {
       this.logger.log(`Cleared all ${keys.length} cache entries`);
     } catch (error) {
       this.logger.error(`Error clearing Redis cache: ${error.message}`);
+      throw error;
     }
   }
 

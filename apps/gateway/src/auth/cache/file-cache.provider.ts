@@ -195,7 +195,13 @@ export class FileCacheProvider implements ICacheProvider {
 
     for (const key of Array.from(this.cacheIndex.keys())) {
       if (regex.test(key)) {
-        await this.delete(key);
+        const filePath = this.getFilePath(key);
+        try {
+          await fs.unlink(filePath);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
+        this.cacheIndex.delete(key);
         count++;
       }
     }
@@ -224,6 +230,7 @@ export class FileCacheProvider implements ICacheProvider {
       this.logger.log(`Cleared all ${count} cache entries`);
     } catch (error) {
       this.logger.error(`Error clearing cache: ${error.message}`);
+      throw error;
     }
   }
 

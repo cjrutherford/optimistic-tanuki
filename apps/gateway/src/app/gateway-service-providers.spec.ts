@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
+import { ClientProxyFactory } from '@nestjs/microservices';
+import { RoleCommands } from '@optimistic-tanuki/constants';
 import { normalizeGatewayComposition } from '@optimistic-tanuki/constants';
 import {
   createMcpToolImports,
@@ -86,6 +88,52 @@ describe('gateway service providers', () => {
     // safely assert it was pointed at the configured host/port.
     expect(proxy.host).toBe('authentication');
     expect(proxy.port).toBe(3001);
+  });
+
+  it('wraps only the configured permissions client with awaited cache invalidation', async () => {
+    const composition = normalizeGatewayComposition(
+      { enabledServices: ['permissions', 'authentication'] },
+      ['permissions', 'authentication']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const permissionsProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.PERMISSIONS_SERVICE
+    );
+    const authProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.AUTHENTICATION_SERVICE
+    );
+    const fakeClient = {
+      send: jest.fn().mockReturnValue(of({ profileId: 'p-1' })),
+      connect: jest.fn(),
+    };
+    const create = jest
+      .spyOn(ClientProxyFactory, 'create')
+      .mockReturnValue(fakeClient as any);
+    const config = {
+      get: jest.fn().mockReturnValue({ host: 'permissions', port: 3000 }),
+    } as unknown as ConfigService;
+    const cache = {
+      invalidateProfile: jest.fn().mockResolvedValue(undefined),
+      clear: jest.fn().mockResolvedValue(undefined),
+    };
+    try {
+      const permissionsClient = permissionsProvider!.useFactory!(
+        config,
+        cache as any
+      );
+      await firstValueFrom(
+        permissionsClient.send(
+          { cmd: RoleCommands.Assign },
+          { profileId: 'p-1' }
+        )
+      );
+      expect(cache.invalidateProfile).toHaveBeenCalledWith('p-1');
+
+      authProvider!.useFactory!(config);
+      expect(create).toHaveBeenCalledTimes(2);
+    } finally {
+      create.mockRestore();
+    }
   });
 
   it('creates a billing TCP proxy pointed at the configured host and port', () => {
