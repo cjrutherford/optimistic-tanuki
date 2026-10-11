@@ -1,7 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { appendFileSync, chmodSync, mkdirSync, readFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  chmodSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
@@ -25,6 +31,10 @@ const fixtureJournalPath = join(
   'i05',
   'fixture.jsonl'
 );
+const i08EvidenceDir = join(workspaceRoot, '.runtime-artifacts', 'rr09', 'i08');
+const i08EvidencePath = join(i08EvidenceDir, 'acceptance.jsonl');
+const i08ScreenshotDir = join(i08EvidenceDir, 'screenshots');
+const i08RunId = `i08-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const credentialsPath =
   process.env['RR09_I03_CREDENTIALS_FILE'] ??
   '/home/cjrutherford/.cache/optimistic-tanuki/rr09-i03-credentials.json';
@@ -37,6 +47,25 @@ function record(value: Record<string, unknown>): void {
     { mode: 0o600 }
   );
   chmodSync(evidencePath, 0o600);
+}
+
+function recordI08(value: Record<string, unknown>): void {
+  mkdirSync(i08EvidenceDir, { recursive: true, mode: 0o700 });
+  appendFileSync(
+    i08EvidencePath,
+    `${JSON.stringify({
+      runId: i08RunId,
+      observedAt: new Date().toISOString(),
+      ...value,
+    })}\n`,
+    { mode: 0o600 }
+  );
+  chmodSync(i08EvidencePath, 0o600);
+}
+
+function saveI08Screenshot(path: string, data: Buffer): void {
+  writeFileSync(path, data, { mode: 0o600 });
+  chmodSync(path, 0o600);
 }
 
 function decodePng(buffer: Buffer): {
@@ -544,7 +573,8 @@ async function measureRenderedUnderlineContrast(
   page: import('@playwright/test').Page,
   selector: string,
   index: number,
-  label: string
+  label: string,
+  writeEvidence: (value: Record<string, unknown>) => void = record
 ): Promise<Record<string, unknown>> {
   const target = page.locator(selector).nth(index);
   await target.scrollIntoViewIfNeeded();
@@ -739,7 +769,7 @@ async function measureRenderedUnderlineContrast(
     method:
       'normal rendered screenshot line pixels compared against immediate rendered pixels above and below the line and same-position underlay pixels captured with only the ::after underline hidden',
   };
-  record({ type: 'rendered-underline-contrast', ...evidence });
+  writeEvidence({ type: 'rendered-underline-contrast', ...evidence });
   expect(
     minimumRatio,
     `${label}: rendered underline contrast`
@@ -2277,6 +2307,237 @@ test('RR09 V01 stable mobile active shell underline contrast', async ({
   expect(
     contrastFailures,
     'All mobile active shell underlines meet 3:1'
+  ).toEqual([]);
+});
+
+test('RR09 I08 stable community shell active underline contrast matrix', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(180_000);
+  test.skip(
+    process.env['RR09_I08_LIVE_STACK'] !== 'true',
+    'Requires the existing stack and retained RR09 owner account'
+  );
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'The probe sets explicit viewports and uses system Chrome'
+  );
+  mkdirSync(i08ScreenshotDir, { recursive: true, mode: 0o700 });
+  const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8')) as {
+    email: string;
+    password: string;
+  };
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Email', { exact: true }).fill(credentials.email);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+  const initialTheme = await page.locator('html').getAttribute('data-theme');
+  expect(['light', 'dark']).toContain(initialTheme);
+  await page.goto(`${origin}/communities`, { waitUntil: 'domcontentloaded' });
+
+  const selector = '.community-nav .nav-tab.active';
+  const failures: string[] = [];
+  const viewports = [
+    { label: '320x740', width: 320, height: 740 },
+    { label: '375x812', width: 375, height: 812 },
+    { label: '768x1024', width: 768, height: 1024 },
+    { label: '1280x633', width: 1280, height: 633 },
+    { label: '1440x900', width: 1440, height: 900 },
+  ];
+  try {
+    await expect(page.locator(selector)).toBeVisible();
+    for (const theme of ['light', 'dark'] as const) {
+      await operateTheme(page, theme);
+      for (const viewport of viewports) {
+        await page.setViewportSize({
+          width: viewport.width,
+          height: viewport.height,
+        });
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await expect(page.locator(selector)).toBeVisible();
+        const label = `i08-community-shell-${viewport.label}-${theme}`;
+        let activeState: Record<string, unknown> | null = null;
+        let pixelEvidence: Record<string, unknown> | null = null;
+        try {
+          await page.locator(selector).scrollIntoViewIfNeeded();
+          activeState = await page.locator(selector).evaluate((active) => {
+            const rect = active.getBoundingClientRect();
+            const line = getComputedStyle(active, '::after');
+            const inactive = active
+              .closest('.community-nav')
+              ?.querySelector<HTMLElement>('.nav-tab:not(.active)');
+            const inactiveWeight = inactive
+              ? getComputedStyle(inactive).fontWeight
+              : null;
+            const lineHeight = Number.parseFloat(line.height) || 0;
+            const lineBottom =
+              rect.bottom - (Number.parseFloat(line.bottom) || 0);
+            const lineTop = lineBottom - lineHeight;
+            return {
+              tag: active.tagName,
+              text: (active.textContent ?? '').replace(/\s+/g, ' ').trim(),
+              className: active.className,
+              activeFontWeight: getComputedStyle(active).fontWeight,
+              inactiveFontWeight: inactiveWeight,
+              activeRect: {
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+              },
+              underline: {
+                content: line.content,
+                color: line.backgroundColor,
+                opacity: Number.parseFloat(line.opacity),
+                height: lineHeight,
+                width:
+                  rect.width -
+                  (Number.parseFloat(line.left) || 0) -
+                  (Number.parseFloat(line.right) || 0),
+                x: rect.left + (Number.parseFloat(line.left) || 0),
+                y: lineTop,
+              },
+              viewport: { width: innerWidth, height: innerHeight },
+            };
+          });
+          expect(activeState.tag).toBe('BUTTON');
+          expect(activeState.className).toContain('active');
+          expect(Number(activeState.activeFontWeight)).toBeGreaterThan(
+            Number(activeState.inactiveFontWeight)
+          );
+          const underline = activeState.underline as {
+            content: string;
+            opacity: number;
+            height: number;
+            width: number;
+            x: number;
+            y: number;
+          };
+          expect(underline.content).not.toBe('none');
+          expect(underline.opacity).toBe(1);
+          expect(underline.height).toBe(2);
+          expect(underline.width).toBeGreaterThan(0);
+          expect(underline.x).toBeGreaterThanOrEqual(0);
+          expect(underline.x + underline.width).toBeLessThanOrEqual(
+            viewport.width
+          );
+          expect(underline.y).toBeGreaterThanOrEqual(0);
+          expect(underline.y + underline.height).toBeLessThanOrEqual(
+            viewport.height
+          );
+          pixelEvidence = await measureRenderedUnderlineContrast(
+            page,
+            selector,
+            0,
+            label,
+            recordI08
+          );
+        } catch (error) {
+          failures.push(
+            `${label}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+
+        const screenshot = `screenshots/${viewport.label}-${theme}.png`;
+        saveI08Screenshot(
+          join(i08ScreenshotDir, `${viewport.label}-${theme}.png`),
+          await page.screenshot({ animations: 'disabled', fullPage: false })
+        );
+        recordI08({
+          type: 'community-shell-active-cell',
+          label,
+          route: await page.evaluate(() => location.pathname),
+          selector,
+          viewport,
+          operatedTheme: theme,
+          observedTheme: await page.locator('html').getAttribute('data-theme'),
+          activeState,
+          pixelEvidence,
+          screenshot,
+          failures: failures.filter((failure) =>
+            failure.startsWith(`${label}:`)
+          ),
+        });
+      }
+
+      if (theme === 'light' || theme === 'dark') {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await operateTheme(page, theme);
+        const selectorForFocus = '.community-nav .nav-tab:not(.active)';
+        const reachedByTab = await focusByKeyboard(page, selectorForFocus);
+        const focus = reachedByTab
+          ? await page
+              .locator(selectorForFocus)
+              .first()
+              .evaluate((target) => {
+                const style = getComputedStyle(target);
+                const rect = target.getBoundingClientRect();
+                return {
+                  tag: target.tagName,
+                  text: (target.textContent ?? '').replace(/\s+/g, ' ').trim(),
+                  isActive: target.classList.contains('active'),
+                  isFocused: target === document.activeElement,
+                  outlineStyle: style.outlineStyle,
+                  outlineWidth: style.outlineWidth,
+                  outlineColor: style.outlineColor,
+                  rect: {
+                    left: rect.left,
+                    top: rect.top,
+                    right: rect.right,
+                    bottom: rect.bottom,
+                  },
+                };
+              })
+          : null;
+        const visibleFocus = Boolean(
+          focus &&
+            focus.isFocused &&
+            focus.outlineStyle !== 'none' &&
+            Number.parseFloat(focus.outlineWidth) > 0 &&
+            focus.outlineColor !== 'rgba(0, 0, 0, 0)'
+        );
+        if (!visibleFocus) {
+          failures.push(
+            `${theme}: community nav has no visible Tab focus ring`
+          );
+        }
+        const focusScreenshot = `screenshots/1440x900-${theme}-focus.png`;
+        saveI08Screenshot(
+          join(i08ScreenshotDir, `1440x900-${theme}-focus.png`),
+          await page.screenshot({ animations: 'disabled', fullPage: false })
+        );
+        recordI08({
+          type: 'community-shell-focus',
+          route: await page.evaluate(() => location.pathname),
+          viewport: { width: 1440, height: 900 },
+          operatedTheme: theme,
+          reachedByTab,
+          focus,
+          visibleFocus,
+          screenshot: focusScreenshot,
+        });
+      }
+    }
+  } finally {
+    if (initialTheme === 'light' || initialTheme === 'dark') {
+      await operateTheme(page, initialTheme);
+    }
+    recordI08({
+      type: 'theme-restoration',
+      originalTheme: initialTheme,
+      restoredTheme: await page.locator('html').getAttribute('data-theme'),
+      route: await page.evaluate(() => location.pathname),
+    });
+  }
+  expect(
+    failures,
+    'All five widths × two themes meet stable active-line contrast and retain focused shell-tab indication'
   ).toEqual([]);
 });
 
