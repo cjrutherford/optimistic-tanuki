@@ -34,7 +34,56 @@
     </otui-nav-sidebar>
 
     <main class="content">
-      @if (workspaceSummary(); as summary) {
+      @if (isAuthenticated() && !suppressFixedChatOverlays()) {
+      <div class="chat-launcher-row">
+        <button
+          #chatLauncher
+          type="button"
+          class="chat-floating-button"
+          aria-label="Messages"
+          aria-controls="floating-chat-panel"
+          [attr.aria-expanded]="showChat()"
+          (click)="toggleChat()"
+        >
+          <span class="chat-icon" aria-hidden="true">💬</span>
+          <span class="chat-label">Messages</span>
+        </button>
+      </div>
+
+      <section
+        #chatPanel
+        id="floating-chat-panel"
+        class="chat-panel"
+        role="region"
+        aria-labelledby="floating-chat-title"
+        tabindex="-1"
+        [hidden]="!showChat()"
+        (keydown.escape)="closeChat()"
+      >
+        <header class="chat-panel-header">
+          <h2 id="floating-chat-title">Messages</h2>
+          <button
+            type="button"
+            class="chat-panel-close"
+            aria-label="Close messages"
+            (click)="closeChat()"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <div class="chat-panel-content">
+          @if (chatEverOpened()) {
+          <lib-chat-ui
+            [contacts]="chatContacts"
+            [conversations]="chatConversations"
+            [currentUserId]="selectedProfile()?.id || ''"
+            [conversationToOpen]="conversationToOpen()"
+            (messageSubmitted)="handleFloatingMessageSubmitted($event)"
+          ></lib-chat-ui>
+          }
+        </div>
+      </section>
+      } @if (workspaceSummary(); as summary) {
       <section class="workflow-summary">
         <p class="workflow-kicker">{{ summary.eyebrow }}</p>
         <h1>{{ summary.title }}</h1>
@@ -53,26 +102,6 @@
       (markAllRead)="onMarkAllRead()"
     ></notif-notification-bell>
 
-    @if (!suppressFixedChatOverlays()) {
-    <div class="chat-floating-button" (click)="toggleChat()">
-      <span class="chat-icon">💬</span>
-      @if (!showChat()) {
-      <span class="chat-label">Messages</span>
-      }
-    </div>
-
-    @if (showChat()) {
-    <div class="chat-panel">
-      <lib-chat-ui
-        [contacts]="chatContacts"
-        [conversations]="chatConversations"
-        [currentUserId]="selectedProfile()?.id || ''"
-        [conversationToOpen]="conversationToOpen()"
-        (messageSubmitted)="handleFloatingMessageSubmitted($event)"
-      ></lib-chat-ui>
-    </div>
-    } } }
-
     <otui-dev-info />
 
     <lib-message />
@@ -81,5 +110,6 @@
     <hai-about-tag [config]="haiAboutConfig" placement="inline"></hai-about-tag>
     }
     <lib-bug-report-ui />
+    }
   </div>
 </div>

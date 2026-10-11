@@ -1,14 +1,18 @@
 import {
   Component,
   computed,
+  afterNextRender,
+  ElementRef,
   HostListener,
   inject,
+  Injector,
   signal,
   OnInit,
   OnDestroy,
   PLATFORM_ID,
   Inject,
   effect,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, RouterModule } from '@angular/router';
@@ -153,6 +157,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private socketChatService = inject(SocketChatService);
   private profiles = inject(OptomisitcTanukiAPIService);
   private notificationService = inject(NotificationService);
+  private injector = inject(Injector);
+
+  @ViewChild('chatLauncher')
+  private chatLauncher?: ElementRef<HTMLButtonElement>;
+  @ViewChild('chatPanel') private chatPanel?: ElementRef<HTMLElement>;
 
   constructor(
     private router: Router,
@@ -184,6 +193,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatContacts: ChatContact[] = [];
   chatConversations: ChatConversation[] = [];
   showChat = signal(false);
+  chatEverOpened = signal(false);
   conversationToOpen = signal<{ id: string; requestId: number } | null>(null);
   private conversationOpenRequestId = 0;
   chatInitialized = signal(false);
@@ -318,9 +328,35 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleChat() {
-    this.showChat.update((v) => !v);
-    if (this.showChat() && !this.chatInitialized()) {
-      this.loadChatData();
+    if (this.showChat()) {
+      this.closeChat();
+      return;
+    }
+
+    this.openFloatingChat();
+  }
+
+  closeChat() {
+    if (!this.showChat()) return;
+
+    this.showChat.set(false);
+    afterNextRender(() => this.chatLauncher?.nativeElement.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  private openFloatingChat() {
+    this.chatEverOpened.set(true);
+    this.showChat.set(true);
+    afterNextRender(
+      () => {
+        if (this.showChat()) this.chatPanel?.nativeElement.focus();
+      },
+      { injector: this.injector }
+    );
+
+    if (!this.chatInitialized()) {
+      void this.loadChatData();
     }
   }
 
@@ -337,6 +373,13 @@ export class AppComponent implements OnInit, OnDestroy {
       );
 
       this.showChat.set(true);
+      this.chatEverOpened.set(true);
+      afterNextRender(
+        () => {
+          if (this.showChat()) this.chatPanel?.nativeElement.focus();
+        },
+        { injector: this.injector }
+      );
 
       if (!this.chatInitialized()) {
         await this.loadChatData();

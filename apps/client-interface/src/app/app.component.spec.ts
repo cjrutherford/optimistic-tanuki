@@ -483,6 +483,130 @@ describe('AppComponent behaviour', () => {
   });
 
   describe('chat', () => {
+    it('exposes the launcher as a named disclosure and focuses a named chat region', async () => {
+      app.isAuthenticated.set(true);
+      fixture.detectChanges();
+
+      const launcher = fixture.nativeElement.querySelector(
+        '.chat-floating-button'
+      ) as HTMLButtonElement;
+
+      expect(launcher.tagName).toBe('BUTTON');
+      expect(launcher.getAttribute('aria-label')).toBe('Messages');
+      expect(launcher.getAttribute('aria-expanded')).toBe('false');
+      expect(launcher.getAttribute('aria-controls')).toBe(
+        'floating-chat-panel'
+      );
+
+      launcher.focus();
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      expect(launcher.getAttribute('aria-expanded')).toBe('true');
+      expect(panel.getAttribute('role')).toBe('region');
+      expect(panel.getAttribute('aria-labelledby')).toBe('floating-chat-title');
+      expect(panel.querySelector('#floating-chat-title')?.textContent).toBe(
+        'Messages'
+      );
+      expect(document.activeElement).toBe(panel);
+      expect(
+        panel.querySelector('button[aria-label="Close messages"]')
+      ).toBeTruthy();
+    });
+
+    it('closes the modeless chat region with Escape and restores launcher focus', async () => {
+      app.isAuthenticated.set(true);
+      fixture.detectChanges();
+
+      const launcher = fixture.nativeElement.querySelector(
+        '.chat-floating-button'
+      ) as HTMLButtonElement;
+      launcher.focus();
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      const closeButton = panel.querySelector(
+        'button[aria-label="Close messages"]'
+      ) as HTMLButtonElement;
+      expect(closeButton).toBeTruthy();
+      panel.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+      fixture.detectChanges();
+
+      expect(launcher.getAttribute('aria-expanded')).toBe('false');
+      expect(document.activeElement).toBe(launcher);
+      expect(panel.hidden).toBe(true);
+
+      launcher.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('#floating-chat-panel')).toBe(
+        panel
+      );
+      expect(panel.hidden).toBe(false);
+    });
+
+    it('retains an unsent composer draft when the panel closes and reopens', async () => {
+      app.isAuthenticated.set(true);
+      app.chatInitialized.set(true);
+      app.chatContacts = [{ id: 'draft-conversation', name: 'Contact' }];
+      app.chatConversations = [
+        {
+          id: 'draft-conversation',
+          participants: ['profile-1', 'profile-2'],
+          messages: [],
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+        },
+      ];
+      app.showChat.set(true);
+      app.chatEverOpened.set(true);
+      app.conversationToOpen.set({
+        id: 'draft-conversation',
+        requestId: 1,
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const panel = fixture.nativeElement.querySelector(
+        '#floating-chat-panel'
+      ) as HTMLElement;
+      const textarea = panel.querySelector(
+        'lib-compose-chat textarea'
+      ) as HTMLTextAreaElement;
+      expect(textarea).toBeTruthy();
+      textarea.value = 'A message I have not sent';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      fixture.detectChanges();
+
+      app.closeChat();
+      fixture.detectChanges();
+      expect(panel.hidden).toBe(true);
+
+      app.toggleChat();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(panel.querySelector('lib-compose-chat textarea')).toBe(textarea);
+      expect(textarea.value).toBe('A message I have not sent');
+      expect(socketChatService.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('loads chat data the first time the panel opens', async () => {
       app.toggleChat();
       expect(app.showChat()).toBe(true);
@@ -662,6 +786,7 @@ describe('AppComponent behaviour', () => {
         },
       ];
       app.showChat.set(true);
+      app.chatEverOpened.set(true);
       fixture.detectChanges();
 
       app.openChat('c2');
@@ -692,6 +817,7 @@ describe('AppComponent behaviour', () => {
       await app.startChatWithUser('profile-2');
       fixture.detectChanges();
 
+      expect(app.chatEverOpened()).toBe(true);
       const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
         .componentInstance as ChatUiComponent;
       expect(chatUi.selectedConversationId()).toBe('existing-conversation');
@@ -714,6 +840,7 @@ describe('AppComponent behaviour', () => {
       await pending;
       fixture.detectChanges();
 
+      expect(app.chatEverOpened()).toBe(true);
       const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
         .componentInstance as ChatUiComponent;
       expect(chatUi.selectedConversationId()).toBe('new-conversation');

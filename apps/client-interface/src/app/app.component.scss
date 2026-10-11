@@ -33,6 +33,16 @@
   box-sizing: border-box;
 }
 
+.chat-launcher-row {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8px var(--spacing-md, 16px);
+  box-sizing: border-box;
+}
+
 .workflow-summary {
   margin-bottom: 1rem;
   padding: 1rem 1.2rem;
@@ -74,20 +84,24 @@
 }
 
 .chat-floating-button {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
+  border: 0;
+  font: inherit;
   background: var(--primary);
   color: var(--primary-foreground, var(--foreground));
   border-radius: 24px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 1;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus-visible {
+    outline: 3px solid var(--foreground);
+    outline-offset: 3px;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -105,6 +119,8 @@
 }
 
 .chat-panel {
+  display: flex;
+  flex-direction: column;
   position: fixed;
   bottom: 80px;
   right: 24px;
@@ -117,12 +133,80 @@
   overflow: hidden;
 }
 
+.chat-panel[hidden] {
+  display: none !important;
+}
+
+.chat-panel:focus-visible {
+  outline: 3px solid var(--foreground);
+  outline-offset: 3px;
+}
+
+.chat-panel-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  background: var(--background);
+
+  h2 {
+    margin: 0;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+}
+
+.chat-panel-close {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--foreground);
+  background: var(--background);
+  cursor: pointer;
+
+  span {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--foreground);
+    outline-offset: 2px;
+  }
+}
+
+.chat-panel-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat-panel-content lib-chat-ui {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 @media (max-width: 480px) {
+  .chat-launcher-row {
+    padding-inline: 16px;
+  }
+
   .chat-panel {
     right: 0;
     bottom: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     max-height: 100vh;
     border-radius: 0;
   }
