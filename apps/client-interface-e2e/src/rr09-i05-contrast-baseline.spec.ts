@@ -2215,3 +2215,398 @@ test('RR09-I05 LocalHub shared post subtitle contrast', async ({ page }) => {
     });
   }
 });
+
+test('RR09 V01 stable mobile active shell underline contrast', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  test.skip(
+    process.env['RR09_V01_LIVE_STACK'] !== 'true',
+    'Requires the existing stack and retained RR09 owner account'
+  );
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'The probe sets phone viewports and uses system Chrome'
+  );
+  const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8')) as {
+    email: string;
+    password: string;
+  };
+  await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Email', { exact: true }).fill(credentials.email);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+  const initialTheme = await page.locator('html').getAttribute('data-theme');
+  expect(['light', 'dark']).toContain(initialTheme);
+  await page.goto(`${origin}/communities`, { waitUntil: 'domcontentloaded' });
+  const activeSelector = '.community-nav .nav-tab.active';
+  await expect(page.locator(activeSelector)).toBeVisible();
+  const contrastFailures: string[] = [];
+  try {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (const theme of ['light', 'dark'] as const) {
+        await operateTheme(page, theme);
+        await expect(page.locator(activeSelector)).toBeVisible();
+        const label = `community-shell-active-${viewport.width}x${viewport.height}-${theme}`;
+        try {
+          await measureRenderedUnderlineContrast(
+            page,
+            activeSelector,
+            0,
+            label
+          );
+        } catch (error) {
+          contrastFailures.push(
+            `${label}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    }
+  } finally {
+    if (initialTheme === 'light' || initialTheme === 'dark') {
+      await operateTheme(page, initialTheme);
+    }
+  }
+  expect(
+    contrastFailures,
+    'All mobile active shell underlines meet 3:1'
+  ).toEqual([]);
+});
+
+test('RR09 V01 existing community post mobile underline and report keyboard', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  test.skip(
+    process.env['RR09_V01_LIVE_STACK'] !== 'true',
+    'Requires existing stack and retained RR09 owner account'
+  );
+  test.skip(
+    testInfo.project.name !== 'chromium-desktop',
+    'Sets phone viewports and uses system Chrome'
+  );
+  const communityId = '3bd16edb-3a0e-40c1-b382-f014d0f0bbd6';
+  const postId = '2e2eeab2-7ef7-4b7c-997a-c559cbfd9d2f';
+  const headers = { 'X-ot-appscope': 'social', 'X-ot-app-id': 'social' };
+  const credentials = JSON.parse(readFileSync(credentialsPath, 'utf8')) as {
+    email: string;
+    password: string;
+  };
+  await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Email', { exact: true }).fill(credentials.email);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
+  await page.getByRole('button', { name: 'Login', exact: true }).click();
+  await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+  const sessionResponse = await page.request.get(
+    `${origin}/api/authentication/session`,
+    { headers }
+  );
+  expect(sessionResponse.status()).toBe(200);
+  const session = (await sessionResponse.json()).data as {
+    userId: string;
+    profileId: string;
+  };
+  const communityResponse = await page.request.get(
+    `${origin}/api/social/community/${communityId}`,
+    { headers }
+  );
+  expect(communityResponse.status()).toBe(200);
+  const community = await communityResponse.json();
+  expect(community.isPrivate).toBe(false);
+  const originalPostResponse = await page.request.post(
+    `${origin}/api/social/post/find`,
+    { headers, data: { criteria: { id: postId } } }
+  );
+  expect(originalPostResponse.ok()).toBe(true);
+  const originalPostRows = await originalPostResponse.json();
+  expect(Array.isArray(originalPostRows)).toBe(true);
+  const membership = async (): Promise<boolean> => {
+    const response = await page.request.get(
+      `${origin}/api/social/community/${communityId}/membership`,
+      { headers }
+    );
+    if (!response.ok())
+      throw new Error(`Membership status ${response.status()}`);
+    const body = await response.json();
+    return body === true || body?.data === true;
+  };
+  const memberIdsDigest = async (): Promise<string> => {
+    const response = await page.request.get(
+      `${origin}/api/social/community/${communityId}/members`,
+      { headers }
+    );
+    if (!response.ok()) throw new Error(`Members status ${response.status()}`);
+    const body = await response.json();
+    const rows = Array.isArray(body) ? body : body?.data ?? [];
+    const ids = rows
+      .map(
+        (row: { id?: string; profileId?: string }) => row.profileId ?? row.id
+      )
+      .filter(Boolean)
+      .sort();
+    return createHash('sha256').update(ids.join('\n')).digest('hex');
+  };
+  const initialTheme = await page.locator('html').getAttribute('data-theme');
+  expect(['light', 'dark']).toContain(initialTheme);
+  const wasMember = await membership();
+  expect(wasMember, 'Existing baseline caller is not a community member').toBe(
+    false
+  );
+  expect(
+    originalPostRows.some((row: { id: string }) => row.id === postId),
+    'The exact public post is hidden from the nonmember baseline caller'
+  ).toBe(false);
+  const beforeMemberCount = community.memberCount;
+  const beforeMemberIdsDigest = await memberIdsDigest();
+  record({
+    type: 'v01-community-post-baseline',
+    communityId,
+    postId,
+    memberBefore: wasMember,
+    memberCountBefore: beforeMemberCount,
+    postExactFindStatus: originalPostResponse.status(),
+    postHiddenFromNonmember: true,
+  });
+  const failures: string[] = [];
+  let joinedByTest = false;
+  try {
+    if (!wasMember) {
+      const joined = await page.request.post(
+        `${origin}/api/social/community/${communityId}/join`,
+        { headers, data: {} }
+      );
+      joinedByTest = joined.status() === 201 || joined.status() === 200;
+      record({
+        type: 'v01-community-post-join',
+        status: joined.status(),
+        membershipAfterJoin: await membership(),
+      });
+      expect(joinedByTest).toBe(true);
+      expect(await membership()).toBe(true);
+    }
+    const route = `/communities/${encodeURIComponent(community.slug)}/posts`;
+    const listPromise = page.waitForResponse((response) => {
+      if (
+        response.request().method() !== 'POST' ||
+        !response.url().includes('/api/social/post/find')
+      )
+        return false;
+      try {
+        return (
+          response.request().postDataJSON()?.criteria?.communityId ===
+          communityId
+        );
+      } catch {
+        return false;
+      }
+    });
+    await page.goto(`${origin}${route}`, { waitUntil: 'domcontentloaded' });
+    const listResponse = await listPromise;
+    expect(listResponse.status()).toBe(201);
+    const rows = await listResponse.json();
+    expect(rows.map((row: { id: string }) => row.id)).toContain(postId);
+    const originalPost = rows.find((row: { id: string }) => row.id === postId);
+    expect(originalPost?.visibility).toBe('public');
+    expect(originalPost?.profileId).not.toBe(session.profileId);
+    const postCard = page
+      .locator('lib-post .post-container')
+      .filter({ hasText: originalPost.title });
+    await expect(postCard).toHaveCount(1);
+    const active = '.posts-nav .nav-tab.active';
+    await expect(page.locator(active)).toBeVisible();
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (const theme of ['light', 'dark'] as const) {
+        await operateTheme(page, theme);
+        const label = `posts-nav-active-${viewport.width}x${viewport.height}-${theme}`;
+        try {
+          const row = await measureRenderedUnderlineContrast(
+            page,
+            active,
+            0,
+            label
+          );
+          if (Number(row.minimumRatio) < 3)
+            failures.push(`${label}: ${row.minimumRatio}`);
+        } catch (error) {
+          failures.push(
+            `${label}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+        }
+      }
+    }
+    record({
+      type: 'v01-posts-nav-phone-matrix',
+      route,
+      postId,
+      themesOperated: ['light', 'dark'],
+      viewports: ['320x740', '375x812'],
+      failures,
+      threshold: 3,
+    });
+    await page.setViewportSize({ width: 375, height: 812 });
+    const menu = postCard.getByRole('button', { name: '...', exact: true });
+    await menu.click();
+    const report = postCard.getByRole('button', {
+      name: 'Report post',
+      exact: true,
+    });
+    await expect(report).toBeVisible();
+    await report.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', {
+      name: 'Report Post',
+      exact: true,
+    });
+    const keyboardOpenedDialog = await dialog
+      .isVisible({ timeout: 750 })
+      .catch(() => false);
+    let pointerOpenedDialog = false;
+    if (
+      !keyboardOpenedDialog &&
+      (await report.isVisible().catch(() => false))
+    ) {
+      await report.click();
+      pointerOpenedDialog = await dialog
+        .isVisible({ timeout: 1_500 })
+        .catch(() => false);
+    }
+    record({
+      type: 'v01-existing-post-report-open-attempt',
+      route,
+      postId,
+      keyboardOpenedDialog,
+      pointerOpenedDialog,
+      reportActionStillVisible: await report.isVisible().catch(() => false),
+    });
+    expect(
+      keyboardOpenedDialog || pointerOpenedDialog,
+      'Report post action opens its report dialog'
+    ).toBe(true);
+    const focusable = dialog.locator(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const focusCount = await focusable.count();
+    await focusable.first().focus();
+    let tabEscaped = false;
+    for (let i = 0; i < focusCount + 2; i += 1) {
+      await page.keyboard.press('Tab');
+      if (
+        !(await dialog.evaluate((node) =>
+          node.contains(document.activeElement)
+        ))
+      ) {
+        tabEscaped = true;
+        break;
+      }
+    }
+    let shiftTabEscaped = false;
+    for (let i = 0; i < focusCount + 2; i += 1) {
+      await page.keyboard.press('Shift+Tab');
+      if (
+        !(await dialog.evaluate((node) =>
+          node.contains(document.activeElement)
+        ))
+      ) {
+        shiftTabEscaped = true;
+        break;
+      }
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    const focusRestored = await menu.evaluate(
+      (element) => element === document.activeElement
+    );
+    record({
+      type: 'v01-existing-post-report-dialog',
+      route,
+      postId,
+      openedByKeyboard: true,
+      focusCount,
+      tabEscaped,
+      shiftTabEscaped,
+      escapeClosed: true,
+      focusRestored,
+      submitted: false,
+    });
+    expect(tabEscaped).toBe(false);
+    expect(shiftTabEscaped).toBe(false);
+    expect(focusRestored).toBe(true);
+    expect(failures, 'All posts-nav mobile indicators meet 3:1').toEqual([]);
+  } finally {
+    if (initialTheme === 'light' || initialTheme === 'dark') {
+      await operateTheme(page, initialTheme).catch(() => undefined);
+    }
+    if (
+      !wasMember &&
+      (joinedByTest || (await membership().catch(() => true)))
+    ) {
+      const leave = await page.request.post(
+        `${origin}/api/social/community/${communityId}/leave`,
+        { headers, data: {} }
+      );
+      const finalMembership = await membership().catch(() => true);
+      const finalMemberIdsDigest = await memberIdsDigest().catch(
+        () => 'readback-failed'
+      );
+      const finalCommunityResponse = await page.request.get(
+        `${origin}/api/social/community/${communityId}`,
+        { headers }
+      );
+      const finalCommunity = finalCommunityResponse.ok()
+        ? await finalCommunityResponse.json()
+        : null;
+      const finalPostResponse = await page.request.post(
+        `${origin}/api/social/post/find`,
+        { headers, data: { criteria: { id: postId } } }
+      );
+      const finalSearch = await page.request.post(
+        `${origin}/api/social/post/find`,
+        { headers, data: { criteria: { communityId } } }
+      );
+      const finalRows = finalSearch.ok() ? await finalSearch.json() : [];
+      record({
+        type: 'v01-community-post-cleanup',
+        leaveStatus: leave.status(),
+        finalMembership,
+        memberCountBefore: beforeMemberCount,
+        memberCountAfter: finalCommunity?.memberCount ?? null,
+        memberIdsDigestBefore: beforeMemberIdsDigest,
+        memberIdsDigestAfter: finalMemberIdsDigest,
+        memberIdsRestored: finalMemberIdsDigest === beforeMemberIdsDigest,
+        originalPostExactFindAfter: finalPostResponse.status(),
+        originalPostHiddenFromNonmember:
+          finalPostResponse.ok() &&
+          (await finalPostResponse.json()).every(
+            (row: { id: string }) => row.id !== postId
+          ),
+        originalPostVisibleToNonmember:
+          Array.isArray(finalRows) &&
+          finalRows.some((row: { id: string }) => row.id === postId),
+        knownOriginalPostDatabaseSha256:
+          '668faba9bab556d877a23273ec20a688868c2e05765dd0df5aac6a945de455a3',
+      });
+      expect(finalMembership).toBe(false);
+      expect(finalCommunity?.memberCount).toBe(beforeMemberCount);
+      expect(finalMemberIdsDigest).toBe(beforeMemberIdsDigest);
+      expect(finalPostResponse.ok()).toBe(true);
+      expect(
+        (await finalPostResponse.json()).some(
+          (row: { id: string }) => row.id === postId
+        )
+      ).toBe(false);
+    }
+  }
+});

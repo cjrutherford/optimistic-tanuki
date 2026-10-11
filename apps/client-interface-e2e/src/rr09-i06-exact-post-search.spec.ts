@@ -295,7 +295,16 @@ test('RR09-I06 exact post search and visibility acceptance', async ({
 
   let joinedFixtureCommunity = false;
   const fixturePostIds: string[] = [];
-  let cleanupError: unknown;
+  let testFailed = false;
+  let testError: unknown;
+  const cleanupErrors: unknown[] = [];
+  const recordCleanup = (value: Record<string, unknown>): void => {
+    try {
+      record(fixturePath, value);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  };
   try {
     const join = await jsonFetch(
       page,
@@ -519,6 +528,9 @@ test('RR09-I06 exact post search and visibility acceptance', async ({
       anonymousSharedGetReturnedPrivateId:
         anonymousPrivatePost?.id === privatePostId,
     });
+  } catch (error) {
+    testFailed = true;
+    testError = error;
   } finally {
     for (const fixturePostId of [...fixturePostIds].reverse()) {
       try {
@@ -536,13 +548,6 @@ test('RR09-I06 exact post search and visibility acceptance', async ({
           string,
           unknown
         > | null;
-        expect(deletion.status, 'delete exact fixture through owner API').toBe(
-          200
-        );
-        expect(
-          tombstoneBody?.id,
-          'deleted exact fixture is absent on owner readback'
-        ).not.toBe(fixturePostId);
         const absentSearch = searchShape(
           await jsonFetch(page, '/api/social/post/find', 'POST', {
             criteria: { id: fixturePostId },
@@ -553,7 +558,7 @@ test('RR09-I06 exact post search and visibility acceptance', async ({
           absentSearch.ids,
           'deleted fixture absent from exact search'
         ).toEqual([]);
-        record(fixturePath, {
+        recordCleanup({
           type: 'fixture-cleanup-post',
           postId: fixturePostId,
           deleteStatus: deletion.status,
@@ -563,86 +568,121 @@ test('RR09-I06 exact post search and visibility acceptance', async ({
           exactSearchStatus: absentSearch.status,
           exactSearchAbsent: absentSearch.ids.length === 0,
         });
+        expect(deletion.status, 'delete exact fixture through owner API').toBe(
+          200
+        );
+        expect(
+          tombstoneBody?.id,
+          'deleted exact fixture is absent on owner readback'
+        ).not.toBe(fixturePostId);
       } catch (error) {
-        cleanupError = error;
+        cleanupErrors.push(error);
+        recordCleanup({
+          type: 'fixture-cleanup-post-failure',
+          postId: fixturePostId,
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
     if (joinedFixtureCommunity) {
-      const leave = await jsonFetch(
-        page,
-        `/api/social/community/${communityId}/leave`,
-        'POST',
-        {}
-      );
-      const membershipAfter = await jsonFetch(
-        page,
-        `/api/social/community/${communityId}/membership`,
-        'GET'
-      );
-      const communityAfterResponse = await jsonFetch(
-        page,
-        `/api/social/community/${communityId}`,
-        'GET'
-      );
-      const communityAfter = unwrap(communityAfterResponse.body) as Record<
-        string,
-        unknown
-      >;
-      const membershipRestored = unwrap(membershipAfter.body) === false;
-      const membersAfterResponse = await jsonFetch(
-        page,
-        `/api/social/community/${communityId}/members`,
-        'GET'
-      );
-      const membersAfter = unwrap(membersAfterResponse.body);
-      const memberIdsAfter = Array.isArray(membersAfter)
-        ? (membersAfter as Array<{ id?: string }>)
-            .map((member) => member.id ?? '')
-            .sort()
-        : [];
-      const memberIdsAfterSha256 = createHash('sha256')
-        .update(JSON.stringify(memberIdsAfter))
-        .digest('hex');
-      const memberIdsRestored =
-        membersAfterResponse.status === 200 &&
-        memberIdsAfterSha256 === baselineMemberIdsSha256;
-      const communityPostsAfter = searchShape(
-        await jsonFetch(page, '/api/social/post/find', 'POST', {
-          criteria: { communityId },
-          opts: { limit: 100 },
-        })
-      );
-      const readableRowsRestored =
-        JSON.stringify(communityPostsAfter.ids) ===
-        JSON.stringify(baselineReadableCommunityPostIds);
-      expect(leave.status, 'restore pre-fixture membership').toBe(201);
-      expect(membershipAfter.status).toBe(200);
-      expect(membershipRestored).toBe(true);
-      expect(communityAfterResponse.status).toBe(200);
-      expect(communityAfter.memberCount).toBe(baselineMemberCount);
-      expect(memberIdsRestored).toBe(true);
-      expect(readableRowsRestored).toBe(true);
-      record(fixturePath, {
-        type: 'fixture-cleanup-membership',
-        communityId,
-        leaveStatus: leave.status,
-        membershipReadbackStatus: membershipAfter.status,
-        membershipRestored,
-        membersReadbackStatus: membersAfterResponse.status,
-        memberIdsSha256Before: baselineMemberIdsSha256,
-        memberIdsSha256After: memberIdsAfterSha256,
-        memberIdsRestored,
-        communityReadbackStatus: communityAfterResponse.status,
-        memberCountBefore: baselineMemberCount,
-        memberCountAfter: communityAfter.memberCount,
-        communityStillPublic: communityAfter.isPrivate === false,
-        communityPostSearchStatus: communityPostsAfter.status,
-        readablePostIdsBefore: baselineReadableCommunityPostIds,
-        readablePostIdsAfter: communityPostsAfter.ids,
-        readableRowsRestored,
-      });
+      try {
+        const leave = await jsonFetch(
+          page,
+          `/api/social/community/${communityId}/leave`,
+          'POST',
+          {}
+        );
+        const membershipAfter = await jsonFetch(
+          page,
+          `/api/social/community/${communityId}/membership`,
+          'GET'
+        );
+        const communityAfterResponse = await jsonFetch(
+          page,
+          `/api/social/community/${communityId}`,
+          'GET'
+        );
+        const communityAfter = unwrap(communityAfterResponse.body) as Record<
+          string,
+          unknown
+        >;
+        const membershipRestored = unwrap(membershipAfter.body) === false;
+        const membersAfterResponse = await jsonFetch(
+          page,
+          `/api/social/community/${communityId}/members`,
+          'GET'
+        );
+        const membersAfter = unwrap(membersAfterResponse.body);
+        const memberIdsAfter = Array.isArray(membersAfter)
+          ? (membersAfter as Array<{ id?: string }>)
+              .map((member) => member.id ?? '')
+              .sort()
+          : [];
+        const memberIdsAfterSha256 = createHash('sha256')
+          .update(JSON.stringify(memberIdsAfter))
+          .digest('hex');
+        const memberIdsRestored =
+          membersAfterResponse.status === 200 &&
+          memberIdsAfterSha256 === baselineMemberIdsSha256;
+        const communityPostsAfter = searchShape(
+          await jsonFetch(page, '/api/social/post/find', 'POST', {
+            criteria: { communityId },
+            opts: { limit: 100 },
+          })
+        );
+        const readableRowsRestored =
+          JSON.stringify(communityPostsAfter.ids) ===
+          JSON.stringify(baselineReadableCommunityPostIds);
+        recordCleanup({
+          type: 'fixture-cleanup-membership',
+          communityId,
+          leaveStatus: leave.status,
+          membershipReadbackStatus: membershipAfter.status,
+          membershipRestored,
+          membersReadbackStatus: membersAfterResponse.status,
+          memberIdsSha256Before: baselineMemberIdsSha256,
+          memberIdsSha256After: memberIdsAfterSha256,
+          memberIdsRestored,
+          communityReadbackStatus: communityAfterResponse.status,
+          memberCountBefore: baselineMemberCount,
+          memberCountAfter: communityAfter.memberCount,
+          communityStillPublic: communityAfter.isPrivate === false,
+          communityPostSearchStatus: communityPostsAfter.status,
+          readablePostIdsBefore: baselineReadableCommunityPostIds,
+          readablePostIdsAfter: communityPostsAfter.ids,
+          readableRowsRestored,
+        });
+        expect(leave.status, 'restore pre-fixture membership').toBe(201);
+        expect(membershipAfter.status).toBe(200);
+        expect(membershipRestored).toBe(true);
+        expect(communityAfterResponse.status).toBe(200);
+        expect(communityAfter.memberCount).toBe(baselineMemberCount);
+        expect(memberIdsRestored).toBe(true);
+        expect(readableRowsRestored).toBe(true);
+      } catch (error) {
+        cleanupErrors.push(error);
+        recordCleanup({
+          type: 'fixture-cleanup-membership-failure',
+          communityId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
-    if (cleanupError) throw cleanupError;
+  }
+
+  recordCleanup({
+    type: 'fixture-cleanup-complete',
+    fixturePostIds,
+    joinedFixtureCommunity,
+    cleanupFailureCount: cleanupErrors.length,
+    cleanupFailures: cleanupErrors.map((error) =>
+      error instanceof Error ? error.message : String(error)
+    ),
+    testBodyFailed: testFailed,
+  });
+  if (testFailed) throw testError;
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, 'I06 fixture cleanup failed');
   }
 });
