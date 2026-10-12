@@ -1,4 +1,10 @@
 import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { VerifiedMediaSpoolHandle } from './verified-media-spool.service';
+
+export interface AuthenticatedMediaReadOptions {
+  maxPlaintextBytes: number;
+  signal?: AbortSignal;
+}
 
 export interface StorageAdapter {
   /***
@@ -31,4 +37,13 @@ export interface StorageAdapter {
 
   /** Returns authenticated plaintext bytes without data-URL/base64 expansion. */
   readBuffer?(data: AssetDto, maxStoredBytes?: number): Promise<Buffer>;
+
+  /**
+   * Opens an authenticated plaintext spool only after the complete envelope
+   * tag has verified. Adapters that cannot provide this must not stream media.
+   */
+  openAuthenticatedMedia?(
+    data: AssetDto,
+    options: AuthenticatedMediaReadOptions
+  ): Promise<VerifiedMediaSpoolHandle>;
 }

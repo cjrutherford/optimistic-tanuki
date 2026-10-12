@@ -55,4 +55,31 @@ describe('ImageUploadService audience context', () => {
       expect.not.objectContaining({ audienceRestrictions: expect.anything() })
     );
   });
+
+  it('rejects oversized files before FileReader materializes base64', async () => {
+    const service = TestBed.inject(ImageUploadService);
+    const file = {
+      name: 'large.mp4',
+      type: 'video/mp4',
+      size: 25 * 1024 * 1024 + 1,
+    } as File;
+    const readAsDataUrl = jest.spyOn(FileReader.prototype, 'readAsDataURL');
+
+    await expect(service.uploadFile(file, 'profile-id')).rejects.toThrow(
+      /25 MiB limit/i
+    );
+    expect(readAsDataUrl).not.toHaveBeenCalled();
+    expect(http.post).not.toHaveBeenCalled();
+    readAsDataUrl.mockRestore();
+  });
+
+  it('rejects oversized base64 payloads before posting them', async () => {
+    const service = TestBed.inject(ImageUploadService);
+    const payload = `data:video/mp4;base64,${'A'.repeat(35 * 1024 * 1024)}`;
+
+    await expect(service.uploadBase64(payload, 'profile-id')).rejects.toThrow(
+      /25 MiB limit/i
+    );
+    expect(http.post).not.toHaveBeenCalled();
+  });
 });

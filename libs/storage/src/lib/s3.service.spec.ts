@@ -72,6 +72,27 @@ describe('S3Service', () => {
     expect(service).toBeDefined();
   });
 
+  it('returns the S3 body stream and forwards cancellation to the SDK request', async () => {
+    const body = Readable.from([Buffer.from('first'), Buffer.from('second')]);
+    const signal = new AbortController().signal;
+    mockS3Client.send.mockResolvedValueOnce({ Body: body });
+
+    const result = await service.getObjectStream('media/key', signal);
+
+    expect(result).toBe(body);
+    expect(mockS3Client.send).toHaveBeenCalledWith(
+      expect.any(GetObjectCommand),
+      { abortSignal: signal }
+    );
+  });
+
+  it('propagates an S3 body request failure instead of returning partial media', async () => {
+    const failure = new Error('controlled S3 stream failure');
+    mockS3Client.send.mockRejectedValueOnce(failure);
+
+    await expect(service.getObjectStream('media/key')).rejects.toBe(failure);
+  });
+
   describe('uploadObject', () => {
     it('should successfully upload an object to S3', async () => {
       mockS3Client.send.mockResolvedValueOnce({});

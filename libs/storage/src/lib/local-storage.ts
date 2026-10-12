@@ -22,7 +22,11 @@ import { mimeTypeFromFileName, mimeTypeForAssetType } from './file-mime';
 import { EnvelopeEncryptionService } from './envelope-encryption.service';
 import { TaxDocumentClassifierService } from './tax-document-classifier.service';
 import { ZfsStorageReport, ZfsStorageService } from './zfs-storage.service';
-import { StorageAdapter } from './storage-adapter.interface';
+import {
+  AuthenticatedMediaReadOptions,
+  StorageAdapter,
+} from './storage-adapter.interface';
+import { VerifiedMediaSpoolService } from './verified-media-spool.service';
 
 export const TAX_DOCUMENT_FILE_MODE = 0o600;
 export const TAX_DOCUMENT_DIR_MODE = 0o700;
@@ -38,7 +42,10 @@ export class LocalStorageAdapter implements StorageAdapter {
     private readonly basePath: string,
     private readonly encryption: EnvelopeEncryptionService = new EnvelopeEncryptionService(),
     private readonly classifier: TaxDocumentClassifierService = new TaxDocumentClassifierService(),
-    private readonly zfs: ZfsStorageService = new ZfsStorageService()
+    private readonly zfs: ZfsStorageService = new ZfsStorageService(),
+    private readonly mediaSpool: VerifiedMediaSpoolService = new VerifiedMediaSpoolService(
+      encryption
+    )
   ) {
     this.l.log(
       `LocalStorageAdapter initialized with basePath: ${this.basePath}`
@@ -207,6 +214,55 @@ export class LocalStorageAdapter implements StorageAdapter {
       );
       throw error; // Re-throw the error
     }
+  }
+
+  async openAuthenticatedMedia(
+    data: AssetDto,
+    options: AuthenticatedMediaReadOptions
+  ) {
+    const absolutePath = this.resolveStoragePath(data.storagePath);
+    return this.mediaSpool.create(async (signal) => {
+      if (signal?.aborted) {
+        const error = new Error('Media read was cancelled.');
+        error.name = 'AbortError';
+        throw error;
+      }
+      const handle = await fs.open(
+        absolutePath,
+        fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW
+      );
+      try {
+        const sourceStats = await handle.stat();
+        if (!sourceStats.isFile()) {
+          throw new ServiceUnavailableException(
+            'Stored asset is not a regular file.'
+          );
+        }
+        if (sourceStats.size > options.maxPlaintextBytes + 64 * 1024) {
+          throw new PayloadTooLargeException(
+            'Stored media exceeds the authenticated retrieval limit.'
+          );
+        }
+        return handle.createReadStream({
+          autoClose: true,
+          highWaterMark: 64 * 1024,
+        });
+      } catch (error) {
+        await handle.close().catch(() => undefined);
+        throw error;
+      }
+    }, options);
+  }
+
+  private resolveStoragePath(storagePath: string): string {
+    const root = path.resolve(this.basePath);
+    const resolved = path.resolve(root, storagePath);
+    if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
+      throw new ServiceUnavailableException(
+        'Stored asset path is outside local storage.'
+      );
+    }
+    return resolved;
   }
 
   private async readBoundedFile(

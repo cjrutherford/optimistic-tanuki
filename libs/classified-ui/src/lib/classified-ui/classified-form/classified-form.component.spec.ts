@@ -208,6 +208,24 @@ describe('ClassifiedFormComponent', () => {
       expect(component.imagePreviews()).toEqual([]);
     });
 
+    it('rejects oversized selections before creating previews', async () => {
+      const oversized = makeFile('too-large.png');
+      Object.defineProperty(oversized, 'size', {
+        value: 20 * 1024 * 1024 + 1,
+      });
+      const event = fileInputEvent([oversized]);
+      const input = event.target as HTMLInputElement;
+      const readAsDataURL = jest.spyOn(FileReader.prototype, 'readAsDataURL');
+
+      await component.onFilesSelected(event);
+
+      expect(readAsDataURL).not.toHaveBeenCalled();
+      expect(component.imagePreviews()).toEqual([]);
+      expect(component.error()).toContain('20 MiB upload limit');
+      expect(input.value).toBe('');
+      readAsDataURL.mockRestore();
+    });
+
     it('stores data-url previews directly when no uploadImage callback is provided', async () => {
       const event = fileInputEvent([makeFile()]);
 

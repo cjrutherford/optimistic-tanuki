@@ -17,6 +17,8 @@ import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ICacheProvider } from '../auth/cache/cache-provider.interface';
 import { ConfigService } from '@nestjs/config';
 import { Readable, Writable } from 'node:stream';
+import { createServer, Server } from 'node:http';
+import { AddressInfo } from 'node:net';
 
 describe('AssetController', () => {
   let controller: AssetController;
@@ -445,6 +447,98 @@ describe('AssetController', () => {
     fetchSpy.mockRestore();
   });
 
+  it('proxies an isolated HTTP range response through the gateway controller', async () => {
+    let observedHeaders: Record<string, string | string[] | undefined> = {};
+    const upstream = createServer((request, response) => {
+      observedHeaders = request.headers;
+      response.writeHead(206, {
+        'content-type': 'video/mp4',
+        'content-length': '6',
+        'content-range': 'bytes 2-7/20',
+        'accept-ranges': 'bytes',
+      });
+      response.end('abcdef');
+    });
+    let gateway: Server | undefined;
+
+    try {
+      await new Promise<void>((resolve) =>
+        upstream.listen(0, '127.0.0.1', resolve)
+      );
+      const upstreamUrl = `http://127.0.0.1:${
+        (upstream.address() as AddressInfo).port
+      }`;
+      (controller as any).configService.get.mockImplementation((key: string) =>
+        key === 'ASSETS_INTERNAL_MEDIA_URL'
+          ? upstreamUrl
+          : key === 'ASSETS_INTERNAL_MEDIA_TOKEN'
+          ? 'gateway-secret'
+          : undefined
+      );
+      assetService.send.mockImplementation((pattern: { cmd: string }) =>
+        pattern.cmd === AssetCommands.RETRIEVE
+          ? of({
+              id: 'http-range-asset',
+              profileId: 'owner-profile',
+              audienceCommunityIds: [],
+            })
+          : of([])
+      );
+
+      gateway = createServer((request, response) => {
+        (response as any).status = (statusCode: number) => {
+          response.statusCode = statusCode;
+          return response;
+        };
+        const id = request.url?.split('/').pop() || '';
+        controller
+          .getAssetById(
+            id,
+            response as any,
+            request.headers.range,
+            undefined,
+            undefined,
+            request as any
+          )
+          .catch((error) => {
+            if (!response.headersSent) {
+              response.statusCode =
+                typeof error?.getStatus === 'function'
+                  ? error.getStatus()
+                  : 500;
+              response.end();
+            }
+          });
+      });
+      await new Promise<void>((resolve) =>
+        gateway!.listen(0, '127.0.0.1', resolve)
+      );
+      const gatewayUrl = `http://127.0.0.1:${
+        (gateway.address() as AddressInfo).port
+      }`;
+      const response = await fetch(`${gatewayUrl}/asset/http-range-asset`, {
+        headers: { range: 'bytes=2-7' },
+      });
+
+      expect(response.status).toBe(206);
+      expect(response.headers.get('content-length')).toBe('6');
+      expect(response.headers.get('content-range')).toBe('bytes 2-7/20');
+      expect(Buffer.from(await response.arrayBuffer())).toEqual(
+        Buffer.from('abcdef')
+      );
+      expect(observedHeaders['x-internal-media-token']).toBe('gateway-secret');
+      expect(observedHeaders.range).toBe('bytes=2-7');
+    } finally {
+      for (const server of [gateway, upstream]) {
+        if (server?.listening) {
+          await new Promise<void>((resolve, reject) =>
+            server.close((error) => (error ? reject(error) : resolve()))
+          );
+        }
+      }
+    }
+  });
+
   it('returns a typed media-unconfigured diagnostic when the media token is missing', async () => {
     const unconfigured = new AssetController(
       assetService,
@@ -524,7 +618,7 @@ describe('AssetController', () => {
           callback();
         },
       }),
-      { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() }
+      { setHeader: jest.fn(), status: jest.fn() }
     ) as any;
     mockRes.status.mockReturnValue(mockRes);
 
@@ -576,7 +670,7 @@ describe('AssetController', () => {
           callback();
         },
       }),
-      { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() }
+      { setHeader: jest.fn(), status: jest.fn() }
     ) as any;
     mockRes.status.mockReturnValue(mockRes);
 
@@ -728,7 +822,7 @@ describe('AssetController', () => {
             callback();
           },
         }),
-        { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() }
+        { setHeader: jest.fn(), status: jest.fn() }
       ) as any;
       res.status.mockReturnValue(res);
 
@@ -783,7 +877,7 @@ describe('AssetController', () => {
           callback();
         },
       }),
-      { setHeader: jest.fn(), status: jest.fn(), end: jest.fn() }
+      { setHeader: jest.fn(), status: jest.fn() }
     ) as any;
     mockRes.status.mockReturnValue(mockRes);
 

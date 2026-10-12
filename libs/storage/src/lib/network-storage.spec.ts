@@ -3,6 +3,12 @@ import { Logger } from '@nestjs/common';
 import { NetworkStorageAdapter } from './network-storage';
 import { S3Service } from './s3.service';
 import { AssetDto, CreateAssetDto } from '@optimistic-tanuki/models';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { PassThrough, Readable } from 'node:stream';
+import { EnvelopeEncryptionService } from './envelope-encryption.service';
+import { VerifiedMediaSpoolService } from './verified-media-spool.service';
 
 // Mock the S3Service
 jest.mock('./s3.service');
@@ -58,6 +64,114 @@ describe('NetworkStorageAdapter', () => {
 
   it('should be defined', () => {
     expect(adapter).toBeDefined();
+  });
+
+  it('authenticates an S3 response stream without calling the Buffer reader', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'rr10-s3-stream-'));
+    const encryption = new EnvelopeEncryptionService({
+      VAULT_STORAGE_KEK: 'isolated-s3-stream-test-key',
+    });
+    const spool = new VerifiedMediaSpoolService(encryption, {
+      spoolRoot: root,
+      maxPlaintextBytes: 1024 * 1024,
+      maxConcurrent: 1,
+      spoolBudgetBytes: 1024 * 1024,
+    });
+    const body = encryption.encrypt(Buffer.from('authenticated s3 body'));
+    const chunks = [body.subarray(0, 32), body.subarray(32)];
+    const getObjectStream = jest.fn().mockResolvedValue(Readable.from(chunks));
+    const s3 = {
+      getKeyFromPath: jest.fn().mockReturnValue('assets/test/video.mp4'),
+      getObjectStream,
+      getObject: jest.fn(),
+    } as any;
+    const networkAdapter = new NetworkStorageAdapter(
+      mockLogger,
+      s3,
+      encryption,
+      undefined,
+      spool
+    );
+
+    try {
+      const media = await networkAdapter.openAuthenticatedMedia(
+        { storagePath: 's3://test-bucket/assets/test/video.mp4' } as AssetDto,
+        { maxPlaintextBytes: 1024 }
+      );
+      const output: Buffer[] = [];
+      for await (const chunk of media.createReadStream()) {
+        output.push(Buffer.from(chunk));
+      }
+      await media.cleanup();
+
+      expect(Buffer.concat(output)).toEqual(
+        Buffer.from('authenticated s3 body')
+      );
+      expect(getObjectStream).toHaveBeenCalledWith(
+        'assets/test/video.mp4',
+        undefined
+      );
+      expect(s3.getObject).not.toHaveBeenCalled();
+      expect(await readdir(spool.processDirectory)).toEqual([]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it('propagates abort into an in-flight S3 stream and removes the partial spool', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'rr10-s3-abort-'));
+    const encryption = new EnvelopeEncryptionService({
+      VAULT_STORAGE_KEK: 'isolated-s3-abort-test-key',
+    });
+    const spool = new VerifiedMediaSpoolService(encryption, {
+      spoolRoot: root,
+      maxPlaintextBytes: 1024 * 1024,
+      maxConcurrent: 1,
+      spoolBudgetBytes: 1024 * 1024,
+    });
+    const body = new PassThrough();
+    const getObjectStream = jest.fn().mockResolvedValue(body);
+    const s3 = {
+      getKeyFromPath: jest.fn().mockReturnValue('assets/test/video.mp4'),
+      getObjectStream,
+      getObject: jest.fn(),
+    } as any;
+    const networkAdapter = new NetworkStorageAdapter(
+      mockLogger,
+      s3,
+      encryption,
+      undefined,
+      spool
+    );
+    const abortController = new AbortController();
+
+    try {
+      const pending = networkAdapter.openAuthenticatedMedia(
+        { storagePath: 's3://test-bucket/assets/test/video.mp4' } as AssetDto,
+        { maxPlaintextBytes: 1024, signal: abortController.signal }
+      );
+      const sourceDeadline = Date.now() + 2000;
+      while (
+        getObjectStream.mock.calls.length === 0 &&
+        Date.now() < sourceDeadline
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      expect(getObjectStream).toHaveBeenCalledTimes(1);
+      abortController.abort();
+      await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+
+      expect(getObjectStream).toHaveBeenCalledWith(
+        'assets/test/video.mp4',
+        abortController.signal
+      );
+      expect(body.destroyed).toBe(true);
+      expect(await readdir(spool.processDirectory)).toEqual([]);
+      expect(s3.getObject).not.toHaveBeenCalled();
+    } finally {
+      body.destroy();
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   // Add tests for create, remove, retrieve, and read methods here

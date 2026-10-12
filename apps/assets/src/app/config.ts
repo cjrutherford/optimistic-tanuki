@@ -62,6 +62,10 @@ export const loadConfig = () => {
   return {
     listenPort: configData.listenPort,
     internalMediaPort: Number(process.env.ASSETS_INTERNAL_MEDIA_PORT || 3006),
+    mediaMaxReadBytes: readPositiveInt(
+      process.env['ASSETS_MEDIA_MAX_READ_BYTES'],
+      1024 * 1024 * 1024
+    ),
     internalMediaToken: process.env.ASSETS_INTERNAL_MEDIA_TOKEN,
     database: {
       ...configData.database,
@@ -78,3 +82,14 @@ export const loadConfig = () => {
     },
   };
 };
+
+function readPositiveInt(value: string | undefined, fallback: number): number {
+  if (!value?.trim()) return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      'ASSETS_MEDIA_MAX_READ_BYTES must be a positive safe integer'
+    );
+  }
+  return parsed;
+}

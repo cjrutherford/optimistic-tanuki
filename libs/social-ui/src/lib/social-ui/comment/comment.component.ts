@@ -128,6 +128,14 @@ export class CommentComponent
 
     // If custom callback is provided, use it
     if (this.imageUploadCallback) {
+      try {
+        this.imageUploadService.assertFileWithinLimit(file);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image. Please try again.');
+        input.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async () => {
         const base64Src = reader.result as string;

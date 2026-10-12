@@ -394,6 +394,29 @@ export class S3Service {
     }
   }
 
+  /** Return the S3 object body without materializing it into a Buffer. */
+  async getObjectStream(key: string, signal?: AbortSignal): Promise<Readable> {
+    const response = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
+      signal ? { abortSignal: signal } : undefined
+    );
+    if (!response.Body) {
+      throw new ServiceUnavailableException(
+        `No content body received for s3://${this.bucketName}/${key}.`
+      );
+    }
+    if (response.Body instanceof Readable) return response.Body;
+    const body = response.Body as unknown as {
+      transformToWebStream?: () => ReadableStream<Uint8Array>;
+    };
+    if (body.transformToWebStream) {
+      return Readable.fromWeb(body.transformToWebStream() as never);
+    }
+    throw new ServiceUnavailableException(
+      'S3 object body does not support streaming in this runtime.'
+    );
+  }
+
   // Helper to extract key from S3 path
   getKeyFromPath(s3Path: string): string {
     const prefix = `s3://${this.bucketName}/`;

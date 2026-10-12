@@ -15,6 +15,11 @@ export type {
   AssetDto,
   AssetAudienceRestriction,
 } from './asset';
+export {
+  ASSET_UPLOAD_LIMIT_BYTES,
+  assertAssetUploadSize,
+  estimateBase64Bytes,
+} from './asset';
 export * from './project';
 export type {
   PermissionDto,

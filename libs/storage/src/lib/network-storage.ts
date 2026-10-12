@@ -10,7 +10,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { S3Service, S3ServiceOptions } from './s3.service'; // Import S3Service and its options
 import { EnvelopeEncryptionService } from './envelope-encryption.service';
 import { TaxDocumentClassifierService } from './tax-document-classifier.service';
-import { StorageAdapter } from './storage-adapter.interface';
+import {
+  AuthenticatedMediaReadOptions,
+  StorageAdapter,
+} from './storage-adapter.interface';
+import { VerifiedMediaSpoolService } from './verified-media-spool.service';
 
 // Rename S3StorageOptions to S3NetworkOptions to avoid confusion with S3ServiceOptions
 export type S3NetworkOptions = S3ServiceOptions;
@@ -21,7 +25,10 @@ export class NetworkStorageAdapter implements StorageAdapter {
     private readonly l: Logger,
     private readonly s3Service: S3Service, // Inject the S3Service
     private readonly encryption: EnvelopeEncryptionService = new EnvelopeEncryptionService(),
-    private readonly classifier: TaxDocumentClassifierService = new TaxDocumentClassifierService()
+    private readonly classifier: TaxDocumentClassifierService = new TaxDocumentClassifierService(),
+    private readonly mediaSpool: VerifiedMediaSpoolService = new VerifiedMediaSpoolService(
+      encryption
+    )
   ) {
     this.l.log(`NetworkStorageAdapter initialized with S3Service`);
   }
@@ -126,6 +133,17 @@ export class NetworkStorageAdapter implements StorageAdapter {
       );
       throw error;
     }
+  }
+
+  async openAuthenticatedMedia(
+    data: AssetDto,
+    options: AuthenticatedMediaReadOptions
+  ) {
+    const s3Key = this.s3Service.getKeyFromPath(data.storagePath);
+    return this.mediaSpool.create(
+      (signal) => this.s3Service.getObjectStream(s3Key, signal),
+      options
+    );
   }
 
   private buildMetadata(

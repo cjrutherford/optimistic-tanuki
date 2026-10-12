@@ -5,6 +5,8 @@ import {
   API_BASE_URL,
   CreateAssetDto,
   AssetAudienceRestriction,
+  assertAssetUploadSize,
+  estimateBase64Bytes,
 } from '@optimistic-tanuki/ui-models';
 
 export interface AssetDto {
@@ -89,6 +91,7 @@ export class ImageUploadService {
     fileName?: string,
     audienceRestrictions?: AssetAudienceRestriction[]
   ): Promise<string> {
+    this.assertFileWithinLimit(file);
     // Read file as base64
     const base64Content = await this.fileToBase64(file);
 
@@ -136,6 +139,7 @@ export class ImageUploadService {
     // Determine asset type from MIME type in data URL
     const mimeType = this.getMimeTypeFromDataUrl(dataUrl);
     const assetType = this.getAssetType(mimeType);
+    assertAssetUploadSize(estimateBase64Bytes(dataUrl), assetType);
 
     // Create asset DTO
     const assetDto: CreateAssetDto = {
@@ -166,6 +170,10 @@ export class ImageUploadService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  assertFileWithinLimit(file: File): void {
+    assertAssetUploadSize(file.size, this.getAssetType(file.type));
   }
 
   /**

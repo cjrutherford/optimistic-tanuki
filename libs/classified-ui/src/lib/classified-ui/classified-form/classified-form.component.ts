@@ -16,6 +16,7 @@ import {
   ClassifiedAdDto,
 } from '../models/index';
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
+import { ASSET_UPLOAD_LIMIT_BYTES } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-classified-form',
@@ -365,6 +366,18 @@ export class ClassifiedFormComponent implements OnInit {
       5 - (this.formData.imageUrls?.length ?? 0)
     );
     if (!files.length) return;
+    const oversized = files.filter(
+      (file) => file.size > ASSET_UPLOAD_LIMIT_BYTES.image
+    );
+    if (oversized.length > 0) {
+      this.error.set(
+        `These images exceed the 20 MiB upload limit: ${oversized
+          .map((file) => file.name)
+          .join(', ')}`
+      );
+      input.value = '';
+      return;
+    }
 
     // Show local previews immediately
     const previewPromises = files.map(

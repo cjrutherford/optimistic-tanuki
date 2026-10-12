@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  PayloadTooLargeException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -21,8 +22,10 @@ import {
   StorageAdapter,
   FileValidationService,
   VirusScanService,
+  AuthenticatedMediaReadOptions,
 } from '@optimistic-tanuki/storage';
 import * as fs from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
 
 @Injectable()
 export class AppService {
@@ -90,6 +93,12 @@ export class AppService {
       if (error instanceof RpcException) {
         throw error;
       }
+      if (error instanceof PayloadTooLargeException) {
+        throw new RpcException({ statusCode: 413, message: error.message });
+      }
+      if (error instanceof BadRequestException) {
+        throw new RpcException({ statusCode: 400, message: error.message });
+      }
       throw new RpcException('Failed to create asset');
     }
   }
@@ -99,13 +108,13 @@ export class AppService {
     validation: ReturnType<FileValidationService['validateFile']>;
     scanResult: Awaited<ReturnType<VirusScanService['scanFile']>>;
   }> {
-    const contentBuffer = data.content
-      ? this.normalizeContentBuffer(data.content)
-      : await this.readSourceFile(data.sourcePath);
-
-    if (data.content) {
-      data.content = contentBuffer;
-    }
+    const maxBytes = this.fileValidationService.getMaxSizeBytes(data.type);
+    const contentBuffer =
+      data.content !== undefined
+        ? this.normalizeContentBuffer(data.content, maxBytes)
+        : await this.readSourceFile(data.sourcePath, maxBytes);
+    data.content = contentBuffer;
+    data.sourcePath = undefined;
 
     const mimeType = this.getMimeTypeFromExtension(data.fileExtension || 'png');
     const validationFilename = this.buildPersistedFilename(
@@ -140,12 +149,62 @@ export class AppService {
     };
   }
 
-  private async readSourceFile(sourcePath?: string): Promise<Buffer> {
+  private async readSourceFile(
+    sourcePath: string | undefined,
+    maxBytes: number
+  ): Promise<Buffer> {
     if (!sourcePath) {
       throw new BadRequestException('Asset content or sourcePath is required');
     }
-
-    return fs.readFile(sourcePath);
+    const handle = await fs.open(
+      sourcePath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW
+    );
+    try {
+      const initial = await handle.stat();
+      if (!initial.isFile()) {
+        throw new BadRequestException('Upload source must be a regular file');
+      }
+      if (initial.size > maxBytes) {
+        throw new PayloadTooLargeException(
+          `Upload exceeds the ${Math.floor(
+            maxBytes / (1024 * 1024)
+          )} MiB supported limit.`
+        );
+      }
+      const stream = handle.createReadStream({
+        autoClose: false,
+        highWaterMark: 64 * 1024,
+      });
+      const chunks: Buffer[] = [];
+      let total = 0;
+      for await (const rawChunk of stream) {
+        const chunk = Buffer.isBuffer(rawChunk)
+          ? rawChunk
+          : Buffer.from(rawChunk as Uint8Array);
+        total += chunk.length;
+        if (total > maxBytes) {
+          stream.destroy();
+          throw new PayloadTooLargeException(
+            `Upload exceeds the ${Math.floor(
+              maxBytes / (1024 * 1024)
+            )} MiB supported limit.`
+          );
+        }
+        chunks.push(chunk);
+      }
+      const final = await handle.stat();
+      if (
+        total !== initial.size ||
+        final.size !== initial.size ||
+        final.mtimeMs !== initial.mtimeMs
+      ) {
+        throw new BadRequestException('Upload source changed while being read');
+      }
+      return Buffer.concat(chunks, total);
+    } finally {
+      await handle.close();
+    }
   }
 
   private getMimeTypeFromExtension(extension: string): string {
@@ -186,8 +245,12 @@ export class AppService {
     return mimeTypes[extension.toLowerCase()] || 'application/octet-stream';
   }
 
-  private normalizeContentBuffer(content: Buffer | string | unknown): Buffer {
+  private normalizeContentBuffer(
+    content: Buffer | string | unknown,
+    maxBytes: number
+  ): Buffer {
     if (Buffer.isBuffer(content)) {
+      this.assertBufferLimit(content.length, maxBytes);
       return content;
     }
 
@@ -199,19 +262,36 @@ export class AppService {
       (content as { type?: unknown }).type === 'Buffer' &&
       Array.isArray((content as { data?: unknown }).data)
     ) {
+      this.assertBufferLimit(
+        (content as { data: number[] }).data.length,
+        maxBytes
+      );
       return Buffer.from((content as { data: number[] }).data);
     }
 
     if (typeof content === 'string') {
-      if (content.startsWith('data:')) {
-        const base64Data = content.split(',')[1] || '';
-        return Buffer.from(base64Data, 'base64');
-      }
-
-      return Buffer.from(content, 'base64');
+      const comma = content.startsWith('data:') ? content.indexOf(',') : -1;
+      const base64Data = comma >= 0 ? content.slice(comma + 1) : content;
+      const estimatedBytes =
+        Math.floor((base64Data.length * 3) / 4) -
+        (base64Data.endsWith('==') ? 2 : base64Data.endsWith('=') ? 1 : 0);
+      this.assertBufferLimit(estimatedBytes, maxBytes);
+      const buffer = Buffer.from(base64Data, 'base64');
+      this.assertBufferLimit(buffer.length, maxBytes);
+      return buffer;
     }
 
     throw new BadRequestException('Invalid asset content payload');
+  }
+
+  private assertBufferLimit(actualBytes: number, maxBytes: number): void {
+    if (actualBytes > maxBytes) {
+      throw new PayloadTooLargeException(
+        `Upload exceeds the ${Math.floor(
+          maxBytes / (1024 * 1024)
+        )} MiB supported limit.`
+      );
+    }
   }
 
   private buildPersistedFilename(name: string, fileExtension?: string): string {
@@ -343,5 +423,17 @@ export class AppService {
       );
     }
     return Buffer.from(dataUrl[1], 'base64');
+  }
+
+  async openAuthenticatedMedia(
+    asset: AssetEntity,
+    options: AuthenticatedMediaReadOptions
+  ) {
+    if (!this.storageAdapter.openAuthenticatedMedia) {
+      throw new Error(
+        'Configured storage adapter cannot safely stream authenticated media.'
+      );
+    }
+    return this.storageAdapter.openAuthenticatedMedia(asset, options);
   }
 }

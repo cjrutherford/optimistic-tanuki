@@ -13,9 +13,12 @@ import { RpcException } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as nodeFs from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
+import { Readable } from 'node:stream';
 
 jest.mock('node:fs/promises', () => ({
   readFile: jest.fn(),
+  open: jest.fn(),
 }));
 
 describe('AppService', () => {
@@ -48,6 +51,7 @@ describe('AppService', () => {
     } as StorageAdapter;
     fileValidationService = {
       validateFile: jest.fn().mockReturnValue({ isValid: true }),
+      getMaxSizeBytes: jest.fn().mockReturnValue(25 * 1024 * 1024),
     } as unknown as FileValidationService;
     virusScanService = {
       scanFile: jest
@@ -437,7 +441,16 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
       jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
       jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
-      (nodeFs.readFile as jest.Mock).mockResolvedValue(Buffer.from('video'));
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 5,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(() => Readable.from([Buffer.from('video')])),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
 
       await appService.createAsset(dto);
 
@@ -453,9 +466,90 @@ describe('AppService', () => {
       );
       expect(storageAdapter.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          sourcePath: '/tmp/imports/episode.mp4',
+          content: Buffer.from('video'),
+          sourcePath: undefined,
         })
       );
+      expect(nodeFs.open).toHaveBeenCalledWith(
+        '/tmp/imports/episode.mp4',
+        expect.any(Number)
+      );
+      const openFlags = (nodeFs.open as jest.Mock).mock.calls[0][1] as number;
+      expect(openFlags & fsConstants.O_NOFOLLOW).not.toBe(0);
+      expect(fileHandle.createReadStream).toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+    });
+
+    it('rejects an oversized sourcePath from the opened descriptor before reading or saving', async () => {
+      fileValidationService.getMaxSizeBytes = jest.fn().mockReturnValue(4);
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 5,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
+      const dto = {
+        name: 'large.mp4',
+        type: 'video',
+        sourcePath: '/tmp/imports/large.mp4',
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+
+      expect(fileHandle.stat).toHaveBeenCalledTimes(1);
+      expect(fileHandle.createReadStream).not.toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+      expect(assetRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('stops a sourcePath stream that grows beyond the configured limit and closes its descriptor', async () => {
+      fileValidationService.getMaxSizeBytes = jest.fn().mockReturnValue(4);
+      const sourceStream = Readable.from([Buffer.from('12345')]);
+      const fileHandle = {
+        stat: jest.fn().mockResolvedValue({
+          isFile: () => true,
+          size: 4,
+          mtimeMs: 1,
+        }),
+        createReadStream: jest.fn(() => sourceStream),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+      (nodeFs.open as jest.Mock).mockResolvedValue(fileHandle);
+      const dto = {
+        name: 'growing.mp4',
+        type: 'video',
+        sourcePath: '/tmp/imports/growing.mp4',
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+
+      expect(fileHandle.createReadStream).toHaveBeenCalled();
+      expect(fileHandle.close).toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+      expect(assetRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects oversized base64 before decoding or scanning', async () => {
+      const dto = {
+        name: 'episode.mp4',
+        type: 'video',
+        content: 'A'.repeat(35 * 1024 * 1024),
+        fileExtension: 'mp4',
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
+      expect(fileValidationService.validateFile).not.toHaveBeenCalled();
+      expect(virusScanService.scanFile).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
     });
 
     it('should throw RpcException if file validation fails', async () => {

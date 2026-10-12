@@ -13,6 +13,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -34,9 +35,10 @@ import {
   CreateAssetDto,
   AssetAudienceRestriction,
 } from '@optimistic-tanuki/models';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { RequirePermissions } from '../decorators/permissions.decorator';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { AuthGuard } from '../auth/auth.guard';
@@ -178,9 +180,30 @@ export class AssetController {
     @Res() res: Response,
     @Headers('range') range?: string,
     @User() user?: UserDetails,
-    @AppScope() appScope?: string | null
+    @AppScope() appScope?: string | null,
+    @Req() request?: Request
   ) {
     res.setHeader('Cache-Control', 'private, no-store');
+    const abortController = new AbortController();
+    const configuredDeadline = Number(
+      this.configService.get<string>('ASSETS_MEDIA_PROXY_DEADLINE_MS')
+    );
+    const deadlineMs =
+      Number.isSafeInteger(configuredDeadline) && configuredDeadline > 0
+        ? configuredDeadline
+        : 120_000;
+    let deadlineExpired = false;
+    const deadline = setTimeout(() => {
+      deadlineExpired = true;
+      abortController.abort();
+    }, deadlineMs);
+    deadline.unref?.();
+    const onRequestAborted = (): void => abortController.abort();
+    const onResponseClosed = (): void => {
+      if (!res.writableEnded) abortController.abort();
+    };
+    request?.once('aborted', onRequestAborted);
+    res.once?.('close', onResponseClosed);
     try {
       const asset = (await firstValueFrom(
         this.assetService
@@ -399,7 +422,7 @@ export class AssetController {
         `${mediaUrl.replace(/\/$/, '')}/internal/media/${encodeURIComponent(
           id
         )}`,
-        { headers }
+        { headers, signal: abortController.signal }
       );
 
       for (const [header, responseHeader] of [
@@ -419,14 +442,29 @@ export class AssetController {
         return res.end();
       }
 
-      Readable.fromWeb(upstream.body as never).pipe(res);
+      await pipeline(Readable.fromWeb(upstream.body as never), res);
     } catch (error) {
+      if (request?.aborted || res.destroyed) {
+        return;
+      }
+      if (deadlineExpired) {
+        if (!res.headersSent) {
+          res.status(504).json({ message: 'Media request timed out.' });
+        } else {
+          res.destroy();
+        }
+        return;
+      }
       if (error instanceof HttpException) {
         throw error;
       }
       throw new BadGatewayException(
         `Failed to stream asset: ${this.errorMessage(error)}`
       );
+    } finally {
+      clearTimeout(deadline);
+      request?.removeListener('aborted', onRequestAborted);
+      res.removeListener?.('close', onResponseClosed);
     }
   }
 

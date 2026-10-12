@@ -64,6 +64,16 @@ describe('AssetService', () => {
     expect(result).toContain('data:text/plain;base64,');
   });
 
+  it('rejects oversized files before FileReader allocates a data URL', () => {
+    const file = new File(['x'], 'oversized.png', { type: 'image/png' });
+    Object.defineProperty(file, 'size', { value: 20 * 1024 * 1024 + 1 });
+    const readAsDataURL = jest.spyOn(FileReader.prototype, 'readAsDataURL');
+
+    expect(() => service.fileToDataUrl(file)).toThrow(/20 MiB limit/);
+    expect(readAsDataURL).not.toHaveBeenCalled();
+    readAsDataURL.mockRestore();
+  });
+
   it('rejects when the file cannot be read', async () => {
     const file = new File(['x'], 'x.txt', { type: 'text/plain' });
     const originalReadAsDataURL = FileReader.prototype.readAsDataURL;

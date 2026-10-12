@@ -1,23 +1,32 @@
 import { ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'node:crypto';
+import { Readable, Writable } from 'node:stream';
 
 import { InternalMediaController } from './internal-media.controller';
 import { InternalMediaService } from './internal-media.service';
 
 describe('InternalMediaController', () => {
-  const stream = { pipe: jest.fn() } as any;
+  const stream = () => Readable.from([Buffer.from('media-bytes')]);
   let mediaService: Pick<InternalMediaService, 'open'>;
   let configService: Pick<ConfigService, 'get'>;
   let controller: InternalMediaController;
 
   const response = () => {
-    const value = {
-      setHeader: jest.fn(),
-      status: jest.fn(),
-      end: jest.fn(),
-    };
+    let body = Buffer.alloc(0);
+    const value = Object.assign(
+      new Writable({
+        write(chunk, _encoding, callback) {
+          body = Buffer.concat([body, Buffer.from(chunk)]);
+          callback();
+        },
+      }),
+      { setHeader: jest.fn(), status: jest.fn() }
+    ) as any;
     value.status.mockReturnValue(value);
+    const end = value.end.bind(value);
+    value.end = jest.fn((...args: any[]) => end(...args));
+    value.readBody = () => body;
     return value;
   };
 
@@ -36,7 +45,7 @@ describe('InternalMediaController', () => {
       contentType: 'video/mp4',
       contentLength: 10,
       contentRange: 'bytes 10-19/100',
-      stream,
+      stream: stream(),
     });
     const res = response();
 
@@ -53,7 +62,8 @@ describe('InternalMediaController', () => {
     expect(mediaService.open).toHaveBeenCalledWith(
       'asset-1',
       'bytes=10-19',
-      false
+      false,
+      expect.any(AbortSignal)
     );
     expect(res.status).toHaveBeenCalledWith(206);
     expect(res.setHeader).toHaveBeenCalledWith('Accept-Ranges', 'bytes');
@@ -63,7 +73,7 @@ describe('InternalMediaController', () => {
     );
     expect(res.setHeader).toHaveBeenCalledWith('Content-Length', '10');
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'video/mp4');
-    expect(stream.pipe).toHaveBeenCalledWith(res);
+    expect(res.readBody()).toEqual(Buffer.from('media-bytes'));
   });
 
   it('rejects requests without the configured internal media token', async () => {
@@ -85,7 +95,7 @@ describe('InternalMediaController', () => {
       statusCode: 200,
       contentType: 'image/png',
       contentLength: 8,
-      stream,
+      stream: stream(),
     });
     const timestamp = String(Date.now());
     const viewer = 'profile-1';
@@ -103,7 +113,12 @@ describe('InternalMediaController', () => {
       response() as any
     );
 
-    expect(mediaService.open).toHaveBeenCalledWith('asset-1', undefined, true);
+    expect(mediaService.open).toHaveBeenCalledWith(
+      'asset-1',
+      undefined,
+      true,
+      expect.any(AbortSignal)
+    );
   });
 
   it('returns a 416 response with the file size for an invalid byte range', async () => {

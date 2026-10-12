@@ -578,6 +578,7 @@ export class ComposeComponent
     try {
       // If custom callback is provided, use it
       if (this.imageUploadCallback) {
+        this.imageUploadService.assertFileWithinLimit(file);
         const reader = new FileReader();
         reader.onload = async () => {
           try {
@@ -750,6 +751,7 @@ export class ComposeComponent
       try {
         // If custom callback is provided, use it
         if (this.imageUploadCallback) {
+          this.imageUploadService.assertFileWithinLimit(file);
           const reader = new FileReader();
           reader.onload = async (event: ProgressEvent<FileReader>) => {
             try {

@@ -29,6 +29,34 @@ describe('CommentComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('rejects an oversized custom-callback upload before FileReader and clears the input', async () => {
+    const oversized = new File(['payload'], 'oversized.png', {
+      type: 'image/png',
+    });
+    Object.defineProperty(oversized, 'size', {
+      value: 20 * 1024 * 1024 + 1,
+    });
+    const input = { files: [oversized], value: 'selected' } as any;
+    component.imageUploadCallback = jest.fn();
+    const uploadService = (component as any).imageUploadService;
+    jest
+      .spyOn(uploadService, 'assertFileWithinLimit')
+      .mockImplementation(() => {
+        throw new Error('File exceeds supported upload size');
+      });
+    const fileReader = jest.spyOn(FileReader.prototype, 'readAsDataURL');
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    await component.onFileSelected({ target: input } as any);
+
+    expect(uploadService.assertFileWithinLimit).toHaveBeenCalledWith(oversized);
+    expect(fileReader).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalled();
+    expect(input.value).toBe('');
+    fileReader.mockRestore();
+    alertSpy.mockRestore();
+  });
+
   it('should create editor instance after view init', () => {
     fixture.detectChanges();
     expect(component.editor).toBeDefined();
