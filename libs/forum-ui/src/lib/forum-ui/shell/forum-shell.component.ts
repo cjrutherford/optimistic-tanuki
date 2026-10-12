@@ -50,13 +50,18 @@ export class ForumShellComponent implements OnInit {
 
   // Route resolved data
   userValidPermissions: string[] = [];
+  permissionsUnavailable = signal(false);
+  permissionsDenied = signal(false);
   userLoggedIn = false;
   currentUserId = '';
 
   // Signals for reactive state
   topics = signal<TopicDto[]>([]);
+  showEmptyTopics = signal(false);
   threads = signal<ThreadDto[]>([]);
+  showEmptyThreads = signal(false);
   posts = signal<ForumPostDto[]>([]);
+  showEmptyPosts = signal(false);
 
   currentTopic = signal<TopicDto | null>(null);
   currentThread = signal<ThreadDto | null>(null);
@@ -69,9 +74,23 @@ export class ForumShellComponent implements OnInit {
   showThreadModal = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
+  topicsLoadError = signal<string | null>(null);
+  topicLoadError = signal<string | null>(null);
+  threadLoadError = signal<string | null>(null);
+  threadsLoadError = signal<string | null>(null);
+  postsLoadError = signal<string | null>(null);
+  detailLoading = signal(false);
+  failedTopicId = signal<string | null>(null);
+  failedThreadId = signal<string | null>(null);
 
   userHasPermission(permission: string): boolean {
     return this.userValidPermissions.includes(permission);
+  }
+
+  retryPermissions(): void {
+    if (this.isBrowser()) {
+      window.location.reload();
+    }
   }
 
   getUploadProfileId(): string {
@@ -81,7 +100,18 @@ export class ForumShellComponent implements OnInit {
   ngOnInit() {
     // Read resolved data from route
     this.route.data.subscribe((data) => {
-      this.userValidPermissions = data['userValidPermissions'] || [];
+      const resolvedPermissions = data['userValidPermissions'];
+      if (Array.isArray(resolvedPermissions)) {
+        this.userValidPermissions = resolvedPermissions;
+        this.permissionsUnavailable.set(false);
+        this.permissionsDenied.set(false);
+      } else {
+        this.userValidPermissions = resolvedPermissions?.permissions ?? [];
+        this.permissionsUnavailable.set(
+          resolvedPermissions?.unavailable === true
+        );
+        this.permissionsDenied.set(resolvedPermissions?.denied === true);
+      }
       this.userLoggedIn = data['userLoggedIn'] || false;
       this.currentUserId = data['currentUserId'] || '';
 
@@ -130,42 +160,163 @@ export class ForumShellComponent implements OnInit {
   }
 
   private async loadTopics() {
+    this.error.set(null);
+    this.topicsLoadError.set(null);
+    this.showEmptyTopics.set(false);
     this.loading.set(true);
     try {
       const topics = await this.forumService.getTopics();
       this.topics.set(topics);
+      this.showEmptyTopics.set(topics.length === 0);
     } catch (error) {
-      this.error.set('Failed to load topics');
+      this.showEmptyTopics.set(false);
+      const status = (error as { status?: number } | null)?.status;
+      const reason =
+        status === 401
+          ? 'Your session has expired. Please log in again.'
+          : status === 403
+          ? 'You do not have permission to load forum topics.'
+          : status === 404
+          ? 'Forum topics were not found.'
+          : status === 0 ||
+            status === 408 ||
+            (typeof status === 'number' && status >= 500)
+          ? 'Forum topics are temporarily unavailable.'
+          : 'Forum topics could not be loaded.';
+      this.topicsLoadError.set(reason);
       console.error('Error loading topics:', error);
     } finally {
       this.loading.set(false);
     }
   }
 
-  private async loadTopic(topicId: string) {
-    try {
-      const topic = await this.forumService.getTopic(topicId);
-      this.currentTopic.set(topic);
-
-      const threads = await this.forumService.getThreadsByTopic(topicId);
-      this.threads.set(threads);
-    } catch (error) {
-      this.error.set('Failed to load topic');
-      console.error('Error loading topic:', error);
+  retryTopics(): void {
+    if (this.isBrowser()) {
+      void this.loadTopics();
     }
   }
 
+  private async loadTopic(topicId: string) {
+    this.currentTopic.set(null);
+    this.currentThread.set(null);
+    this.failedTopicId.set(null);
+    this.failedThreadId.set(null);
+    this.topicLoadError.set(null);
+    this.threadLoadError.set(null);
+    this.threadsLoadError.set(null);
+    this.showEmptyThreads.set(false);
+    this.threads.set([]);
+    this.posts.set([]);
+    this.detailLoading.set(true);
+    try {
+      const topic = await this.forumService.getTopic(topicId);
+      this.currentTopic.set(topic);
+    } catch (error) {
+      this.currentTopic.set(null);
+      this.currentThread.set(null);
+      this.threads.set([]);
+      this.failedTopicId.set(topicId);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.topicLoadError.set(
+        `This forum topic could not be loaded (${resource}).`
+      );
+      console.error('Error loading topic:', error);
+      this.detailLoading.set(false);
+      return false;
+    }
+    try {
+      const threads = await this.forumService.getThreadsByTopic(topicId);
+      this.threads.set(threads);
+      this.showEmptyThreads.set(threads.length === 0);
+      this.threadsLoadError.set(null);
+    } catch (error) {
+      this.showEmptyThreads.set(false);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.threadsLoadError.set(
+        `Threads for this topic could not be loaded (${resource}).`
+      );
+      console.error('Error loading topic threads:', error);
+    } finally {
+      this.detailLoading.set(false);
+    }
+    return true;
+  }
+
+  retryTopic(topicId: string): void {
+    if (this.isBrowser()) void this.loadTopic(topicId);
+  }
+
+  retryFailedTopic(): void {
+    const topicId = this.failedTopicId();
+    if (topicId) this.retryTopic(topicId);
+  }
+
+  retryThreads(topicId: string): void {
+    if (this.isBrowser()) void this.loadTopic(topicId);
+  }
+
+  retryFailedThread(): void {
+    const threadId = this.failedThreadId();
+    if (threadId) void this.loadThread(threadId);
+  }
+
   private async loadThread(threadId: string) {
+    this.currentTopic.set(null);
+    this.currentThread.set(null);
+    this.failedTopicId.set(null);
+    this.failedThreadId.set(null);
+    this.postsLoadError.set(null);
+    this.threadsLoadError.set(null);
+    this.topicLoadError.set(null);
+    this.threadLoadError.set(null);
+    this.threads.set([]);
+    this.showEmptyPosts.set(false);
+    this.posts.set([]);
+    this.detailLoading.set(true);
     try {
       const thread = await this.forumService.getThread(threadId);
-      await this.loadTopic(thread.topicId);
+      const topicLoaded = await this.loadTopic(thread.topicId);
+      if (!topicLoaded) return;
       this.currentThread.set(thread);
+      await this.loadThreadPosts(threadId);
+    } catch (error) {
+      this.currentThread.set(null);
+      this.currentTopic.set(null);
+      this.threads.set([]);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'unavailable';
+      this.failedThreadId.set(threadId);
+      this.threadLoadError.set(
+        `This forum thread could not be loaded (${resource}).`
+      );
+      console.error('Error loading thread:', error);
+    } finally {
+      this.detailLoading.set(false);
+    }
+  }
 
+  retryPosts(threadId: string): void {
+    if (this.isBrowser()) void this.loadThreadPosts(threadId);
+  }
+
+  private async loadThreadPosts(threadId: string): Promise<void> {
+    this.postsLoadError.set(null);
+    this.showEmptyPosts.set(false);
+    this.posts.set([]);
+    this.detailLoading.set(true);
+    try {
       const posts = await this.forumService.getPostsByThread(threadId);
       this.posts.set(posts);
+      this.showEmptyPosts.set(posts.length === 0);
     } catch (error) {
-      this.error.set('Failed to load thread');
-      console.error('Error loading thread:', error);
+      const status = (error as { status?: number } | null)?.status;
+      const resource = status === 404 ? 'not found' : 'temporarily unavailable';
+      this.postsLoadError.set(`Posts for this thread were ${resource}.`);
+      console.error('Error loading posts:', error);
+    } finally {
+      this.detailLoading.set(false);
     }
   }
 

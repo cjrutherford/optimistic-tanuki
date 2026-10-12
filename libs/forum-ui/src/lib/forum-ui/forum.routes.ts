@@ -1,8 +1,14 @@
 import { ResolveFn, Route } from '@angular/router';
 import { ForumShellComponent } from './shell/forum-shell.component';
 
+export interface ForumPermissionResolution {
+  permissions: string[];
+  unavailable?: true;
+  denied?: true;
+}
+
 export function provideForumRoutes(
-  permissionsResolver: ResolveFn<string[]>,
+  permissionsResolver: ResolveFn<string[] | ForumPermissionResolution>,
   isLoggedInResolver: ResolveFn<boolean>,
   userIdResolver: ResolveFn<string>
 ): Route[] {

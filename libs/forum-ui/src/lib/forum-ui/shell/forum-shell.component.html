@@ -9,6 +9,17 @@
     <otui-button (action)="showThreadModal.set(true)"
       >Create New Thread</otui-button
     >
+    } @if (permissionsUnavailable()) {
+    <p class="permission-unavailable" role="status">
+      Forum permissions are temporarily unavailable. Authoring controls are
+      hidden.
+    </p>
+    <otui-button (action)="retryPermissions()">Retry forum access</otui-button>
+    } @if (permissionsDenied()) {
+    <p class="permission-denied" role="status">
+      Forum permissions were denied. You can read the forum, but authoring
+      controls are hidden.
+    </p>
     }
     <div class="breadcrumb">
       @if (currentThread()) {
@@ -28,7 +39,7 @@
       }
     </div>
 
-    @if (isLoggedIn()) {
+    @if (isLoggedIn() && userHasPermission('forum.post.create')) {
     <otui-button
       variant="primary"
       (action)="toggleComposer()"
@@ -40,9 +51,26 @@
   </div>
 
   <!-- Error Message -->
-  @if (error()) {
-  <otui-card class="error-message">
+  @if (topicsLoadError()) {
+  <otui-card class="error-message" role="alert">
+    <p>{{ topicsLoadError() }}</p>
+    <otui-button (action)="retryTopics()">Retry loading topics</otui-button>
+  </otui-card>
+  } @if (error() && !topicsLoadError()) {
+  <otui-card class="error-message" role="alert">
     {{ error() }}
+  </otui-card>
+  } @if (topicLoadError()) {
+  <otui-card class="error-message" role="alert">
+    <p>{{ topicLoadError() }}</p>
+    <otui-button (action)="retryFailedTopic()">Retry loading topic</otui-button>
+  </otui-card>
+  } @if (threadLoadError()) {
+  <otui-card class="error-message" role="alert">
+    <p>{{ threadLoadError() }}</p>
+    <otui-button (action)="retryFailedThread()"
+      >Retry loading thread</otui-button
+    >
   </otui-card>
   }
 
@@ -85,7 +113,8 @@
   <!-- Main Content -->
   <div class="forum-content">
     <!-- Topics View (default) -->
-    @if (!currentTopic() && !currentThread()) {
+    @if (!currentTopic() && !currentThread() && !failedTopicId() &&
+    !failedThreadId()) {
     <div class="topics-grid">
       @for (topic of topics(); track topic.id) {
       <otui-card class="topic-card" (click)="onTopicClick(topic)">
@@ -103,7 +132,7 @@
       }
     </div>
 
-    @if (topics().length === 0 && !loading()) {
+    @if (showEmptyTopics() && !loading()) {
     <otui-card class="empty-state">
       <p>No topics found. Be the first to create one!</p>
     </otui-card>
@@ -118,7 +147,9 @@
       </otui-card>
 
       <div class="threads-list">
-        @for (thread of threads(); track thread.id) {
+        @if (detailLoading()) {
+        <otui-card class="loading" role="status">Loading threads...</otui-card>
+        } @for (thread of threads(); track thread.id) {
         <otui-card class="thread-card" (click)="onThreadClick(thread)">
           <div class="thread-header">
             <h4>{{ thread.title }}</h4>
@@ -139,7 +170,14 @@
         }
       </div>
 
-      @if (threads().length === 0 && !loading()) {
+      @if (threadsLoadError()) {
+      <otui-card class="error-message" role="alert">
+        <p>{{ threadsLoadError() }}</p>
+        <otui-button (action)="retryThreads(currentTopic()!.id)"
+          >Retry loading threads</otui-button
+        >
+      </otui-card>
+      } @if (showEmptyThreads() && !detailLoading() && !threadsLoadError()) {
       <otui-card class="empty-state">
         <p>No threads in this topic yet. Create the first one!</p>
       </otui-card>
@@ -160,12 +198,21 @@
       </otui-card>
 
       <div class="posts-list">
-        @for (post of posts(); track post.id) {
+        @if (detailLoading()) {
+        <otui-card class="loading" role="status">Loading posts...</otui-card>
+        } @for (post of posts(); track post.id) {
         <lib-forum-post [post]="post"></lib-forum-post>
         }
       </div>
 
-      @if (posts().length === 0 && !loading()) {
+      @if (postsLoadError()) {
+      <otui-card class="error-message" role="alert">
+        <p>{{ postsLoadError() }}</p>
+        <otui-button (action)="retryPosts(currentThread()!.id)"
+          >Retry loading posts</otui-button
+        >
+      </otui-card>
+      } @if (showEmptyPosts() && !detailLoading() && !postsLoadError()) {
       <otui-card class="empty-state">
         <p>No posts in this thread yet. Be the first to post!</p>
       </otui-card>

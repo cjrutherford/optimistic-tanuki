@@ -10,15 +10,37 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
 
-const forumPermissionResolver: ResolveFn<string[]> = async () => {
+interface ForumPermissionResolution {
+  permissions: string[];
+  unavailable?: true;
+  denied?: true;
+}
+
+const forumPermissionResolver: ResolveFn<
+  string[] | ForumPermissionResolution
+> = async () => {
   const authState = inject(AuthStateService);
   if (!authState.isAuthenticated) {
     return [];
   }
   const permissionsService = inject(UserPermissionsService);
-  const permissions = await permissionsService.searchPermissions('forum.');
-  console.log('Forum permissionsResolver:', permissions);
-  return permissions;
+  try {
+    const permissions = await permissionsService.searchPermissions('forum.');
+    console.log('Forum permissionsResolver:', permissions);
+    return permissions;
+  } catch (error) {
+    const status = (error as { status?: number } | null)?.status;
+    if (status === 401) {
+      // AuthInterceptor owns session expiry and redirects to the login route.
+      return [];
+    }
+    if (status === 403) {
+      return { permissions: [], denied: true };
+    }
+    // Keep the public forum route usable during transient service failures,
+    // while hiding authoring controls and offering an explicit retry.
+    return { permissions: [], unavailable: true };
+  }
 };
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
