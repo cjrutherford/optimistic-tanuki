@@ -37,6 +37,29 @@ describe('permissions seed integrity', () => {
     );
   });
 
+  it('lets ordinary forum authors attempt only their own topic and thread deletion', () => {
+    const forumAuthorParentDeletes = seedData.role_permissions
+      .filter(
+        (association) =>
+          association.role === 'forum_user' &&
+          ['forum.topic.delete', 'forum.thread.delete'].includes(
+            association.permission
+          )
+      )
+      .map((association) => association.permission)
+      .sort();
+
+    expect(forumAuthorParentDeletes).toEqual([
+      'forum.thread.delete',
+      'forum.topic.delete',
+    ]);
+    expect(seedData.role_permissions).not.toContainEqual({
+      role: 'forum_user',
+      permission: 'forum.topic.create',
+      permissionAppScope: 'forum',
+    });
+  });
+
   it('grants Forge planners the exact delete permissions exposed by Forge project controls', () => {
     const plannerDeletePermissions = seedData.role_permissions
       .filter(

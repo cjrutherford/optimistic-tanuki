@@ -1,6 +1,8 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Thread } from '../../entities/thread.entity';
+import { ForumPost } from '../../entities/forum-post.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import { CreateThreadDto, UpdateThreadDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
@@ -12,6 +14,8 @@ export class ThreadService {
   constructor(
     @Inject(getRepositoryToken(Thread))
     private readonly threadRepo: Repository<Thread>,
+    @Inject(getRepositoryToken(ForumPost))
+    private readonly postRepo: Repository<ForumPost>,
     @Optional() private readonly forumAccess?: ForumAccessService
   ) {}
 
@@ -145,6 +149,13 @@ export class ThreadService {
   async remove(id: string): Promise<{ id: string; deleted: boolean }> {
     const thread = await this.threadRepo.findOne({ where: { id } });
     if (thread) {
+      const postCount = await this.postRepo.count({ where: { threadId: id } });
+      if (postCount > 0) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Thread still contains posts. Delete those posts first.',
+        });
+      }
       const audienceOwner = await this.forumAccess?.resolveThreadAudienceOwner(
         thread.topicId,
         thread.visibility,
@@ -157,8 +168,18 @@ export class ThreadService {
         audienceOwner
       );
     }
-    const result = await this.threadRepo.delete(id);
-    return { id, deleted: (result.affected ?? 0) > 0 };
+    try {
+      const result = await this.threadRepo.delete(id);
+      return { id, deleted: (result.affected ?? 0) > 0 };
+    } catch (error) {
+      if (this.isForeignKeyConstraintViolation(error)) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Thread still contains posts. Delete those posts first.',
+        });
+      }
+      throw error;
+    }
   }
 
   async moderate(
@@ -215,5 +236,9 @@ export class ThreadService {
     }
 
     return normalized;
+  }
+
+  private isForeignKeyConstraintViolation(error: any): boolean {
+    return error?.code === '23503' || error?.driverError?.code === '23503';
   }
 }

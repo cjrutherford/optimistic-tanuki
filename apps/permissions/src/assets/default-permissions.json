@@ -4503,12 +4503,22 @@
     },
     {
       "role": "forum_user",
+      "permission": "forum.topic.delete",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
       "permission": "forum.thread.create",
       "permissionAppScope": "forum"
     },
     {
       "role": "forum_user",
       "permission": "forum.thread.read",
+      "permissionAppScope": "forum"
+    },
+    {
+      "role": "forum_user",
+      "permission": "forum.thread.delete",
       "permissionAppScope": "forum"
     },
     {

@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UpdateThreadDto } from '@optimistic-tanuki/models';
 import { Thread } from '../../entities/thread.entity';
+import { ForumPost } from '../../entities/forum-post.entity';
 import { ThreadService } from './thread.service';
 
 // The workspace maps isomorphic-dompurify to an identity stub, which would make
@@ -29,6 +30,7 @@ interface ThreadRepoMock {
 describe('ThreadService', () => {
   let service: ThreadService;
   let repo: ThreadRepoMock;
+  let postRepo: { count: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -43,11 +45,13 @@ describe('ThreadService', () => {
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       increment: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    postRepo = { count: jest.fn().mockResolvedValue(0) };
 
     const module = await Test.createTestingModule({
       providers: [
         ThreadService,
         { provide: getRepositoryToken(Thread), useValue: repo },
+        { provide: getRepositoryToken(ForumPost), useValue: postRepo },
       ],
     }).compile();
 
@@ -266,6 +270,46 @@ describe('ThreadService', () => {
   });
 
   describe('remove', () => {
+    it('returns conflict without deleting a thread that still has posts', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'thread-1',
+        title: 'Parent',
+        description: 'Parent thread',
+        content: 'Parent content',
+      });
+      postRepo.count.mockResolvedValue(1);
+
+      await expect(service.remove('thread-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/post/i),
+        },
+      });
+
+      expect(postRepo.count).toHaveBeenCalledWith({
+        where: { threadId: 'thread-1' },
+      });
+      expect(repo.delete).not.toHaveBeenCalled();
+    });
+
+    it('maps a foreign-key race to conflict', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'thread-1',
+        title: 'Parent',
+        description: 'Parent thread',
+        content: 'Parent content',
+      });
+      postRepo.count.mockResolvedValue(0);
+      repo.delete.mockRejectedValue({ driverError: { code: '23503' } });
+
+      await expect(service.remove('thread-1')).rejects.toMatchObject({
+        error: {
+          statusCode: 409,
+          message: expect.stringMatching(/post/i),
+        },
+      });
+    });
+
     it('deletes the thread by id', async () => {
       await expect(service.remove('thread-1')).resolves.toEqual({
         id: 'thread-1',

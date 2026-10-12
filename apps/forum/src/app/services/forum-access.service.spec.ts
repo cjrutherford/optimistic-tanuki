@@ -196,6 +196,21 @@ describe('Forum audience and parent policy', () => {
       service.owner('thread', 'thread', actor)
     ).resolves.toBeUndefined();
   });
+
+  it('does not treat matching profile ownership as matching user ownership', async () => {
+    await expect(
+      service.owner('thread', 'thread', { ...actor, userId: 'other-user' })
+    ).rejects.toMatchObject({ error: { statusCode: 403 } });
+  });
+
+  it('does not authorize deletion through a different app scope', async () => {
+    await expect(
+      service.owner('thread', 'thread', {
+        ...actor,
+        appScope: 'local-hub',
+      })
+    ).rejects.toMatchObject({ error: { statusCode: 404 } });
+  });
   it('prevents writes under a locked or inaccessible parent', async () => {
     topic.isLocked = true;
     await expect(service.parent('topic', 'topic', actor)).rejects.toMatchObject(
