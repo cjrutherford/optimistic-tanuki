@@ -144,6 +144,15 @@
       <otui-card class="topic-header">
         <h2>{{ currentTopic()!.title }}</h2>
         <p>{{ currentTopic()!.description }}</p>
+        @if (canDeleteTopic(currentTopic()!)) {
+        <otui-button
+          variant="danger"
+          (click)="$event.stopPropagation()"
+          (action)="requestTopicDeletion(currentTopic()!)"
+          ariaLabel="Delete topic"
+          >Delete topic</otui-button
+        >
+        }
       </otui-card>
 
       <div class="threads-list">
@@ -191,6 +200,15 @@
       <otui-card class="thread-header">
         <h2>{{ currentThread()!.title }}</h2>
         <p>{{ currentThread()!.description }}</p>
+        @if (canDeleteThread(currentThread()!)) {
+        <otui-button
+          variant="danger"
+          (click)="$event.stopPropagation()"
+          (action)="requestThreadDeletion(currentThread()!)"
+          ariaLabel="Delete thread"
+          >Delete thread</otui-button
+        >
+        }
         <div class="thread-info">
           <span>{{ posts().length }} posts</span>
           <span>{{ currentThread()!.viewCount }} views</span>
@@ -221,3 +239,41 @@
     }
   </div>
 </div>
+
+@if (pendingDeletion(); as deletion) {
+<otui-modal
+  [visible]="!!pendingDeletion()"
+  [heading]="deletion.kind === 'topic' ? 'Delete topic?' : 'Delete thread?'"
+  ariaLabel="Confirm forum deletion"
+  (closeModal)="cancelDeletion()"
+>
+  <div class="forum-delete-confirmation">
+    <p>
+      Delete <strong>{{ deletion.title }}</strong
+      >? This only succeeds when the {{ deletion.kind }} has no
+      {{ deletion.kind === 'topic' ? 'threads' : 'posts' }}. Its contents are
+      never deleted with it.
+    </p>
+    @if (deletionError()) {
+    <p role="alert" class="error-message">{{ deletionError() }}</p>
+    }
+    <div class="delete-actions">
+      <otui-button
+        variant="danger"
+        [disabled]="deleting()"
+        (action)="confirmDeletion()"
+        >{{
+          deleting()
+            ? 'Deleting…'
+            : deletionRetryable()
+            ? 'Retry delete'
+            : 'Delete'
+        }}</otui-button
+      >
+      <otui-button [disabled]="deleting()" (action)="cancelDeletion()"
+        >Cancel</otui-button
+      >
+    </div>
+  </div>
+</otui-modal>
+}

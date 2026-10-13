@@ -25,6 +25,10 @@ import { ForumPostData } from '../compose-forum-post/compose-forum-post.componen
 import { CreateTopicComponent } from '../create-topic/create-topic.component';
 import { CreateThreadComponent } from '../create-thread/create-thread.component';
 
+type ParentDeletion =
+  | { kind: 'topic'; id: string; title: string }
+  | { kind: 'thread'; id: string; title: string; topicId: string };
+
 @Component({
   selector: 'lib-forum-shell',
   standalone: true,
@@ -82,9 +86,107 @@ export class ForumShellComponent implements OnInit {
   detailLoading = signal(false);
   failedTopicId = signal<string | null>(null);
   failedThreadId = signal<string | null>(null);
+  pendingDeletion = signal<ParentDeletion | null>(null);
+  deletionError = signal<string | null>(null);
+  deletionRetryable = signal(false);
+  deleting = signal(false);
 
   userHasPermission(permission: string): boolean {
     return this.userValidPermissions.includes(permission);
+  }
+
+  canDeleteTopic(topic: TopicDto): boolean {
+    return (
+      this.isLoggedIn() &&
+      !!this.currentUserId &&
+      topic.profileId === this.currentUserId &&
+      this.userHasPermission('forum.topic.delete')
+    );
+  }
+
+  canDeleteThread(thread: ThreadDto): boolean {
+    return (
+      this.isLoggedIn() &&
+      !!this.currentUserId &&
+      thread.profileId === this.currentUserId &&
+      this.userHasPermission('forum.thread.delete')
+    );
+  }
+
+  requestTopicDeletion(topic: TopicDto): void {
+    if (!this.canDeleteTopic(topic)) return;
+    this.pendingDeletion.set({
+      kind: 'topic',
+      id: topic.id,
+      title: topic.title,
+    });
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  requestThreadDeletion(thread: ThreadDto): void {
+    if (!this.canDeleteThread(thread)) return;
+    this.pendingDeletion.set({
+      kind: 'thread',
+      id: thread.id,
+      title: thread.title,
+      topicId: thread.topicId,
+    });
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  cancelDeletion(): void {
+    if (!this.deleting()) this.pendingDeletion.set(null);
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+  }
+
+  async confirmDeletion(): Promise<void> {
+    const target = this.pendingDeletion();
+    if (!target || this.deleting()) return;
+    this.deleting.set(true);
+    this.deletionError.set(null);
+    this.deletionRetryable.set(false);
+
+    try {
+      if (target.kind === 'topic') {
+        await this.forumService.deleteTopic(target.id);
+        this.pendingDeletion.set(null);
+        this.currentTopic.set(null);
+        await this.loadTopics();
+        await this.router.navigate(['/forum']);
+      } else {
+        await this.forumService.deleteThread(target.id);
+        this.pendingDeletion.set(null);
+        this.currentThread.set(null);
+        await this.router.navigate(['/forum/topic', target.topicId]);
+      }
+    } catch (error) {
+      const status = (error as { status?: number } | null)?.status;
+      this.deletionError.set(
+        status === 401
+          ? 'Your session has expired. Please log in again before deleting.'
+          : status === 403
+          ? 'You are no longer allowed to delete this forum item.'
+          : status === 404
+          ? 'This forum item is no longer available. Refresh the page to check its status.'
+          : status === 409
+          ? 'This item still has threads or posts. Remove them first; deletion never removes descendants.'
+          : status === 0 ||
+            status === 408 ||
+            (status !== undefined && status >= 500)
+          ? 'The forum item could not be deleted because the service is temporarily unavailable. You can retry.'
+          : 'The forum item could not be deleted. Your content is still here.'
+      );
+      this.deletionRetryable.set(
+        status === 0 ||
+          status === 408 ||
+          (status !== undefined && status >= 500)
+      );
+    } finally {
+      this.deleting.set(false);
+    }
   }
 
   retryPermissions(): void {
