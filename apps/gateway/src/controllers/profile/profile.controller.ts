@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   Body,
   Controller,
   Delete,
@@ -6,6 +7,8 @@ import {
   Get,
   Inject,
   Logger,
+  NotFoundException,
+  NotImplementedException,
   Param,
   Post,
   Put,
@@ -452,16 +455,61 @@ export class ProfileController {
   }
 
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Delete a profile by ID' })
+  @ApiOperation({ summary: 'Delete an owned app-scoped profile by ID' })
   @ApiResponse({
-    status: 200,
-    description: 'The profile has been successfully deleted.',
+    status: 501,
+    description:
+      'Profile deletion is unavailable until lifecycle support is implemented.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'The profile is outside the authenticated owner and app scope.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
+  @ApiResponse({ status: 502, description: 'Profile ownership could not be verified.' })
   @Delete(':id')
   @RequirePermissions('profile.delete')
-  deleteProfile(@Param('id') id: string) {
-    return this.client.send({ cmd: ProfileCommands.Delete }, id);
+  async deleteProfile(
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @User() user: UserDetails
+  ): Promise<never> {
+    if (!user?.userId || !appScope) {
+      throw new ForbiddenException(
+        'Authenticated owner and app scope are required'
+      );
+    }
+
+    let profile: ProfileDto;
+    try {
+      profile = await firstValueFrom(
+        this.client.send({ cmd: ProfileCommands.Get }, { id })
+      );
+    } catch {
+      throw new BadGatewayException('Profile ownership could not be verified');
+    }
+
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (!profile.userId || profile.userId !== user.userId) {
+      throw new ForbiddenException(
+        'Profile is not owned by the authenticated user'
+      );
+    }
+    if (
+      !profile.appScope ||
+      profile.appScope === 'global' ||
+      profile.appScope !== appScope
+    ) {
+      throw new ForbiddenException('Profile is outside the current app scope');
+    }
+
+    // The profile service has no supported delete handler, and dependent-data
+    // retention has not been approved. Never issue the existing unhandled RPC.
+    throw new NotImplementedException(
+      'Profile deletion is unavailable until lifecycle support is implemented'
+    );
   }
 
   @UseGuards(AuthGuard)

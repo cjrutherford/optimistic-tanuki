@@ -16,7 +16,7 @@ import {
 } from '@optimistic-tanuki/models';
 // Removed duplicate/out-of-scope tests at the top of the file
 import { Test, TestingModule } from '@nestjs/testing';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 
 import { ClientProxy } from '@nestjs/microservices';
 import { ProfileController } from './profile.controller';
@@ -27,7 +27,12 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { Reflector } from '@nestjs/core';
-import { ForbiddenException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ForbiddenException,
+  NotFoundException,
+  NotImplementedException,
+} from '@nestjs/common';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
@@ -311,16 +316,134 @@ describe('ProfileController', () => {
     expect(updateResponse).toEqual({});
   });
 
-  it('should delete a profile', async () => {
-    const id = '1';
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
-
-    const deleteResponse = await firstValueFrom(controller.deleteProfile(id));
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: ProfileCommands.Delete },
-      id
+  it('fails closed for an owned app profile while lifecycle deletion is unavailable', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({ id: 'owned-app', userId: 'user-1', appScope: 'client-interface' }) as any
     );
-    expect(deleteResponse).toEqual({});
+
+    await expect(
+      controller.deleteProfile('owned-app', 'client-interface', {
+        userId: 'user-1',
+        profileId: 'owned-app',
+      } as UserDetails)
+    ).rejects.toBeInstanceOf(NotImplementedException);
+
+    expect(profileSend).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Get },
+      { id: 'owned-app' }
+    );
+    expect(profileSend).not.toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Delete },
+      expect.anything()
+    );
+  });
+
+  it.each([
+    [
+      'another owner, even with an elevated role',
+      { id: 'target', userId: 'user-2', appScope: 'client-interface' },
+      'client-interface',
+    ],
+    [
+      'unknown owner',
+      { id: 'target', userId: null, appScope: 'client-interface' },
+      'client-interface',
+    ],
+    [
+      'another app scope',
+      { id: 'target', userId: 'user-1', appScope: 'forgeofwill' },
+      'client-interface',
+    ],
+    [
+      'global scope',
+      { id: 'target', userId: 'user-1', appScope: 'global' },
+      'client-interface',
+    ],
+    [
+      'legacy null scope',
+      { id: 'target', userId: 'user-1', appScope: null },
+      'client-interface',
+    ],
+  ])(
+    'does not request deletion for %s targets',
+    async (_reason, profile, appScope) => {
+      const profileSend = jest
+        .spyOn(clientProxy, 'send')
+        .mockReturnValue(of(profile) as any);
+
+      await expect(
+        controller.deleteProfile('target', appScope, {
+          userId: 'user-1',
+          profileId: 'current-profile',
+          roles: ['global_admin', 'moderator'],
+        } as UserDetails & { roles: string[] })
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(profileSend).not.toHaveBeenCalledWith(
+        { cmd: ProfileCommands.Delete },
+        expect.anything()
+      );
+    }
+  );
+
+  it('returns not found without requesting deletion when the target profile is absent', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(of(null) as any);
+
+    await expect(
+      controller.deleteProfile('missing', 'client-interface', {
+        userId: 'user-1',
+        profileId: 'current-profile',
+      } as UserDetails)
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(profileSend).not.toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Delete },
+      expect.anything()
+    );
+  });
+
+  it.each([
+    ['missing authenticated user', undefined, 'client-interface'],
+    ['missing app scope', { userId: 'user-1' }, undefined],
+  ])(
+    'rejects deletion with %s before profile lookup',
+    async (_reason, user, appScope) => {
+      const profileSend = jest.spyOn(clientProxy, 'send');
+
+      await expect(
+        controller.deleteProfile(
+          'target',
+          appScope as string,
+          user as UserDetails
+        )
+      ).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(profileSend).not.toHaveBeenCalled();
+    }
+  );
+
+  it('maps profile lookup failures to a generic fail-closed gateway error', async () => {
+    const profileSend = jest
+      .spyOn(clientProxy, 'send')
+      .mockReturnValue(throwError(() => new Error('private profile details')) as any);
+
+    let thrown: unknown;
+    try {
+      await controller.deleteProfile('target', 'client-interface', {
+        userId: 'user-1',
+        profileId: 'current-profile',
+      } as UserDetails);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(BadGatewayException);
+    expect((thrown as BadGatewayException).getStatus()).toBe(502);
+    expect((thrown as Error).message).not.toContain('private profile details');
+    expect(profileSend).not.toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Delete },
+      expect.anything()
+    );
   });
 
   it('should create a timeline', async () => {
