@@ -559,6 +559,13 @@ jobs:
           file: ./apps/${{ matrix.app }}/Dockerfile
           push: ${{ needs.plan.outputs.publish_images == 'true' || needs.plan.outputs.push_e2e_images == 'true' }}
           tags: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            GITHUB_RUN_ID=${{ github.run_id }}
+            GITHUB_RUN_ATTEMPT=${{ github.run_attempt }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/cjrutherford/optimistic-tanuki
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.app }}
           # GitHub Actions' shared cache is limited repository-wide.  Large,
           # parallel `mode=max` exports routinely exhaust it, then fail after

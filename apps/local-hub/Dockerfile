@@ -4,6 +4,8 @@ FROM node:24-alpine as builder
 WORKDIR /usr/src/app
 
 ARG GIT_SHA=unknown
+ARG GITHUB_RUN_ID=
+ARG GITHUB_RUN_ATTEMPT=
 
 COPY package.json ./
 COPY pnpm-lock.yaml ./
@@ -12,10 +14,24 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/local-hub ./apps/local-hub
+COPY scripts/rr12-deployment-manifest.mjs ./scripts/rr12-deployment-manifest.mjs
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 
 RUN pnpm exec nx build local-hub --configuration=production
+RUN if [ -n "$GITHUB_RUN_ID" ] && [ -n "$GITHUB_RUN_ATTEMPT" ]; then \
+      node scripts/rr12-deployment-manifest.mjs \
+        --app local-hub \
+        --browser-dir dist/apps/local-hub/browser \
+        --source-revision "$GIT_SHA" \
+        --run-id "$GITHUB_RUN_ID" \
+        --run-attempt "$GITHUB_RUN_ATTEMPT"; \
+    else \
+      node scripts/rr12-deployment-manifest.mjs \
+        --app local-hub \
+        --browser-dir dist/apps/local-hub/browser \
+        --source-revision "$GIT_SHA"; \
+    fi
 
 # Stage 2: Runtime image
 FROM node:24-alpine

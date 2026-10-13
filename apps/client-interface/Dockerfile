@@ -5,6 +5,8 @@ FROM node:24-alpine as builder
 WORKDIR /usr/src/app
 
 ARG GIT_SHA=unknown
+ARG GITHUB_RUN_ID=
+ARG GITHUB_RUN_ATTEMPT=
 
 # Copy package.json and pnpm-lock.yaml
 COPY package.json ./
@@ -14,6 +16,7 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/client-interface ./apps/client-interface
+COPY scripts/rr12-deployment-manifest.mjs ./scripts/rr12-deployment-manifest.mjs
 
 # Install all dependencies (including devDependencies needed for build)
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
@@ -21,6 +24,19 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 # Build the client-interface application for production with SSR
 # This will output to dist/apps/client-interface and include server/main.js
 RUN pnpm exec nx build client-interface --configuration=production
+RUN if [ -n "$GITHUB_RUN_ID" ] && [ -n "$GITHUB_RUN_ATTEMPT" ]; then \
+      node scripts/rr12-deployment-manifest.mjs \
+        --app client-interface \
+        --browser-dir dist/apps/client-interface/browser \
+        --source-revision "$GIT_SHA" \
+        --run-id "$GITHUB_RUN_ID" \
+        --run-attempt "$GITHUB_RUN_ATTEMPT"; \
+    else \
+      node scripts/rr12-deployment-manifest.mjs \
+        --app client-interface \
+        --browser-dir dist/apps/client-interface/browser \
+        --source-revision "$GIT_SHA"; \
+    fi
 
 # Stage 2: Create the runtime image from a slim Node.js base
 FROM node:24-alpine

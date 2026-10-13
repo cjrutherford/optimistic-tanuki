@@ -53,8 +53,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
+
+      - name: Verify immutable deployment source
+        id: source
+        run: |
+          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
+          if [ "$CHECKED_OUT_SHA" != "$GITHUB_SHA" ]; then
+            echo "Checked-out source does not match the workflow event SHA." >&2
+            exit 1
+          fi
+          echo "revision=$CHECKED_OUT_SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Production deployment source"
+            echo "- Event revision: \`$GITHUB_SHA\`"
+            echo "- Checked-out revision: \`$CHECKED_OUT_SHA\`"
+            echo "- Workflow run: \`$GITHUB_RUN_ID\` attempt \`$GITHUB_RUN_ATTEMPT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
