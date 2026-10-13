@@ -88,6 +88,12 @@ test('RR10 I03 forum permission resolver recovers after a controlled 503', async
   expect(servedMainHash).toBe(builtMainHash);
 
   const events: Record<string, unknown>[] = [];
+  const permissionStartedAt = new WeakMap<object, number>();
+  page.on('request', (request) => {
+    if (request.url().includes('/api/permissions/permission-search')) {
+      permissionStartedAt.set(request, performance.now());
+    }
+  });
   mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
   chmodSync(evidenceDirectory, 0o700);
   page.on('pageerror', (error) =>
@@ -107,6 +113,10 @@ test('RR10 I03 forum permission resolver recovers after a controlled 503', async
       events.push({
         type: 'permission-response',
         status: response.status(),
+        durationMs: Math.round(
+          performance.now() -
+            (permissionStartedAt.get(response.request()) ?? performance.now())
+        ),
         url: response.url(),
       });
     } else if (response.url().includes('/api/forum')) {
@@ -156,6 +166,7 @@ test('RR10 I03 forum permission resolver recovers after a controlled 503', async
     (response) => response.url().includes('/api/permissions/permission-search'),
     { timeout: 20_000 }
   );
+  const retryStartedAt = performance.now();
   await page
     .getByRole('button', { name: 'Retry forum access', exact: true })
     .click();
@@ -167,6 +178,10 @@ test('RR10 I03 forum permission resolver recovers after a controlled 503', async
   await expect(
     page.getByRole('button', { name: 'New Post', exact: true })
   ).toBeVisible();
+  events.push({
+    type: 'authoring-visible-after-retry',
+    durationMs: Math.round(performance.now() - retryStartedAt),
+  });
   await expect(
     page
       .getByRole('status')

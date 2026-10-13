@@ -13,6 +13,7 @@ export default [
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      '**/.runtime-artifacts/**',
       '**/public/generated/**',
       'apps/ui-playground/generated/**',
       'dot/**',

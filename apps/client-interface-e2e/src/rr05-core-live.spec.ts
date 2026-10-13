@@ -3,6 +3,12 @@ import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { randomUUID } from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
+import {
+  createLocalChatCleanupPool,
+  readDeletedDirectMessageRetention,
+  softDeleteExactDirectConversation,
+  timedAwaitedStage,
+} from '../../../tools/testing/rr10-direct-chat-cleanup';
 
 test.skip(
   process.env['RR05_LIVE_STACK'] !== 'true',
@@ -17,42 +23,220 @@ const password = 'RR05-local-test-password!';
 const marker = (label: string) =>
   `RR05 ${label} ${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-async function account(request: APIRequestContext, role: string) {
-  const email = `rr05-${role}-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2)}@example.test`;
-  const registration = await request.post(
-    origin + '/api/authentication/register',
-    {
-      headers,
-      data: {
-        fn: 'RR05',
-        ln: role,
-        email,
-        password,
-        confirm: password,
-        bio: 'Local release gate',
-      },
+function cleanupFailureKind(error: unknown): string {
+  let candidate: unknown = error;
+  if (typeof candidate === 'string') {
+    try {
+      candidate = JSON.parse(candidate);
+    } catch {
+      const knownMessages: Record<string, string> = {
+        'Only the current owner can clean up this community conversation':
+          'community-owner-mismatch',
+        'Community owner or application scope does not match':
+          'community-owner-or-scope-mismatch',
+        'Current approved community ownership is required':
+          'approved-owner-membership-missing',
+        'Community authorization unavailable':
+          'community-authorization-unavailable',
+        'Community membership authorization unavailable':
+          'community-membership-authorization-unavailable',
+        'Conversation not found': 'conversation-not-found',
+        'Community not found': 'community-not-found',
+        'Conversation is no longer available for cleanup':
+          'conversation-no-longer-available',
+      };
+      if (knownMessages[candidate]) return knownMessages[candidate];
+      if (
+        /^\d{3}$/.test(candidate) &&
+        [400, 401, 403, 404, 408, 500, 502, 503].includes(Number(candidate))
+      )
+        return `rpc-string-status-${candidate}`;
+      return 'unclassified-rpc-string';
     }
-  );
-  expect(registration.status()).toBe(201);
-  expect(
-    (
-      await request.post(origin + '/api/authentication/login', {
-        headers: { ...headers, 'x-ot-session-mode': 'cookie' },
-        data: { email, password },
-      })
-    ).status()
-  ).toBe(201);
-  const session = await request.get(origin + '/api/authentication/session', {
-    headers,
-  });
-  expect(session.status()).toBe(200);
-  return { email, ...(await session.json()).data } as {
-    email: string;
-    userId: string;
-    profileId: string;
+  }
+  if (!candidate || typeof candidate !== 'object') return 'non-error-value';
+  const value = candidate as {
+    code?: unknown;
+    name?: unknown;
+    status?: unknown;
+    statusCode?: unknown;
+    message?: unknown;
+    error?: unknown;
+    response?: unknown;
   };
+  if (typeof value.code === 'string' && /^[0-9A-Z]{5}$/.test(value.code))
+    return `sqlstate-${value.code}`;
+  const nested =
+    value.response && typeof value.response === 'object'
+      ? (value.response as Record<string, unknown>)
+      : value.error && typeof value.error === 'object'
+      ? (value.error as Record<string, unknown>)
+      : undefined;
+  const status = Number(
+    value.statusCode ?? value.status ?? nested?.statusCode ?? nested?.status
+  );
+  const knownMessages: Record<string, string> = {
+    'Fixture timestamp is invalid': 'fixture-timestamp-invalid',
+    'Conversation id does not match the exact target':
+      'conversation-id-mismatch',
+    'Target direct conversation deletion state is unexpected':
+      'conversation-state-mismatch',
+    'Target contains non-direct ownership or scope data':
+      'conversation-scope-mismatch',
+    'Exactly two controlled profile UUIDs are required':
+      'participant-fixture-invalid',
+    'Conversation participants do not match the exact fixture':
+      'participant-set-mismatch',
+    'Conversation is outside the bounded test time window':
+      'conversation-outside-window',
+    'Message is outside the bounded test time window': 'message-outside-window',
+    'Conversation contains a message from an uncontrolled sender':
+      'uncontrolled-sender',
+    'Conversation contains an unexpected system message':
+      'unexpected-system-message',
+    'Conversation contains an uncontrolled recipient': 'uncontrolled-recipient',
+    'Exact direct conversation fixture was not found': 'conversation-not-found',
+    'Exact direct conversation soft-delete affected no single row':
+      'conditional-update-missed',
+    'Exact direct conversation soft-delete readback failed':
+      'soft-delete-readback-failed',
+    'Message count or digest changed during soft-delete':
+      'message-retention-mismatch',
+    'Conversation not found': 'conversation-not-found',
+    'Only the current owner can clean up this community conversation':
+      'community-owner-mismatch',
+    'Community owner or application scope does not match':
+      'community-owner-or-scope-mismatch',
+    'Current approved community ownership is required':
+      'approved-owner-membership-missing',
+    'Community authorization unavailable':
+      'community-authorization-unavailable',
+    'Community membership authorization unavailable':
+      'community-membership-authorization-unavailable',
+  };
+  const message =
+    typeof value.message === 'string'
+      ? value.message
+      : typeof value.error === 'string'
+      ? value.error
+      : typeof nested?.message === 'string'
+      ? nested.message
+      : undefined;
+  if (message && knownMessages[message]) return knownMessages[message];
+  if ([400, 401, 403, 404, 408, 500, 502, 503].includes(status))
+    return `http-or-rpc-status-${status}`;
+  if (
+    value.name === 'Error' ||
+    value.name === 'TypeError' ||
+    value.name === 'RpcException'
+  )
+    return `unclassified-${value.name}`;
+  return 'unclassified-error-object';
+}
+
+async function account(request: APIRequestContext, role: string) {
+  return timedAwaitedStage(`register/login/session ${role}`, async () => {
+    const email = `rr05-${role}-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}@example.test`;
+    const registration = await request.post(
+      origin + '/api/authentication/register',
+      {
+        headers,
+        data: {
+          fn: 'RR05',
+          ln: role,
+          email,
+          password,
+          confirm: password,
+          bio: 'Local release gate',
+        },
+      }
+    );
+    expect(registration.status()).toBe(201);
+    const login = await request.post(origin + '/api/authentication/login', {
+      headers: { ...headers, 'x-ot-session-mode': 'cookie' },
+      data: { email, password },
+    });
+    expect(login.status()).toBe(201);
+    const session = await request.get(origin + '/api/authentication/session', {
+      headers,
+    });
+    expect(session.status()).toBe(200);
+    return { email, ...(await session.json()).data } as {
+      email: string;
+      userId: string;
+      profileId: string;
+    };
+  });
+}
+
+async function cleanupDirectConversation(
+  conversationId: string,
+  controlledProfileIds: string[],
+  startedAt: Date,
+  actors: Array<{ request: APIRequestContext; profileId: string }>
+): Promise<void> {
+  const pool = createLocalChatCleanupPool();
+  try {
+    const receipt = await timedAwaitedStage(
+      'soft-delete exact direct test conversation',
+      () =>
+        softDeleteExactDirectConversation(pool, {
+          conversationId,
+          controlledProfileIds,
+          startedAt,
+          finishedAt: new Date(),
+        })
+    );
+    expect(receipt.retainedMessageCount).toBeGreaterThan(0);
+    for (const actor of actors) {
+      const list = await timedAwaitedStage(
+        'verify deleted direct conversation absent from actor list',
+        () =>
+          actor.request.get(origin + '/api/chat/conversations/find', {
+            headers,
+          })
+      );
+      expect(list.status()).toBe(200);
+      expect(await list.text()).not.toContain(conversationId);
+      for (const path of [
+        `conversations/id/${conversationId}`,
+        `messages/${conversationId}`,
+      ]) {
+        const read = await timedAwaitedStage(
+          'verify deleted direct conversation read denial',
+          () => actor.request.get(origin + '/api/chat/' + path, { headers })
+        );
+        expect([403, 404]).toContain(read.status());
+      }
+      const deniedSend = await timedAwaitedStage(
+        'verify deleted direct conversation send denial',
+        () =>
+          actor.request.post(origin + '/api/chat/messages', {
+            headers,
+            data: {
+              conversationId,
+              content: marker('post-cleanup send denial'),
+              recipientIds: controlledProfileIds.filter(
+                (profileId) => profileId !== actor.profileId
+              ),
+            },
+          })
+      );
+      expect([403, 404]).toContain(deniedSend.status());
+    }
+    const retained = await readDeletedDirectMessageRetention(
+      pool,
+      conversationId
+    );
+    expect(retained).toEqual({
+      retainedMessageCount: receipt.retainedMessageCount,
+      retainedMessageSha256: receipt.retainedMessageSha256,
+    });
+  } finally {
+    await pool.end();
+  }
 }
 
 async function forumFixture(
@@ -379,38 +563,56 @@ test('RR05 invitation claim: addressed account joins through a token, while othe
     transport: Transport.TCP,
     options: { host: '127.0.0.1', port: 3003 },
   });
+  let ownerProfileId: string | undefined;
+  let community: { id: string; slug: string } | undefined;
+  let inviteId: string | undefined;
+  let memberPostId: string | undefined;
+  let invitedProfileId: string | undefined;
+  let invitedMembership = false;
   try {
     const owner = await account(ownerContext, 'invite-owner');
     const invited = await account(invitedContext, 'invite-member');
     await account(outsiderContext, 'invite-outsider');
+    ownerProfileId = owner.profileId;
+    invitedProfileId = invited.profileId;
     const name = marker('invite community');
-    const created = await ownerContext.post(origin + '/api/social/community', {
-      headers,
-      data: {
-        name,
-        description: name,
-        isPrivate: true,
-        joinPolicy: 'invite_only',
-      },
-    });
+    const created = await timedAwaitedStage(
+      'RR05 create invite community',
+      () =>
+        ownerContext.post(origin + '/api/social/community', {
+          headers,
+          data: {
+            name,
+            description: name,
+            isPrivate: true,
+            joinPolicy: 'invite_only',
+          },
+        })
+    );
     expect(created.status()).toBe(201);
-    const community = await created.json();
-    await client.connect();
+    community = await created.json();
+    await timedAwaitedStage(
+      'RR05 connect community invite fixture client',
+      () => client.connect()
+    );
     // Owning-service fixture deliberately bypasses email transport. This is
     // token consumption evidence, never proof of invitation receipt.
-    const invite = await firstValueFrom(
-      client.send(
-        { cmd: 'INVITE_TO_COMMUNITY_BY_EMAIL' },
-        {
-          dto: {
-            communityId: community.id,
-            email: invited.email,
-            inviteeUserId: invited.userId,
-          },
-          inviterId: owner.userId,
-        }
+    const invite = await timedAwaitedStage('RR05 create addressed invite', () =>
+      firstValueFrom(
+        client.send(
+          { cmd: 'INVITE_TO_COMMUNITY_BY_EMAIL' },
+          {
+            dto: {
+              communityId: community!.id,
+              email: invited.email,
+              inviteeUserId: invited.userId,
+            },
+            inviterId: owner.userId,
+          }
+        )
       )
     );
+    inviteId = invite.id;
     const url = origin + '/api/social/community/invites/claim';
     const wrong = await outsiderContext.post(url, {
       headers,
@@ -425,11 +627,14 @@ test('RR05 invitation claim: addressed account joins through a token, while othe
     );
     expect(notJoined.status()).toBe(200);
     expect(await notJoined.json()).toBe(false);
-    const claimed = await invitedContext.post(url, {
-      headers,
-      data: { token: invite.token },
-    });
+    const claimed = await timedAwaitedStage('RR05 claim addressed invite', () =>
+      invitedContext.post(url, {
+        headers,
+        data: { token: invite.token },
+      })
+    );
     expect(claimed.status(), 'addressed claim').toBe(201);
+    invitedMembership = true;
     expect((await claimed.json()).id).toBe(community.id);
     const membership = await invitedContext.get(
       origin + `/api/social/community/${community.id}/membership`,
@@ -446,6 +651,8 @@ test('RR05 invitation claim: addressed account joins through a token, while othe
         content: 'New invited member posting',
       },
     });
+    if (memberPost.status() === 201)
+      memberPostId = (await memberPost.json()).id;
     expect.soft(memberPost.status(), await memberPost.text()).toBe(201);
     const replay = await invitedContext.post(url, {
       headers,
@@ -453,6 +660,68 @@ test('RR05 invitation claim: addressed account joins through a token, while othe
     });
     expect.soft([403, 404], 'token replay').toContain(replay.status());
   } finally {
+    const cleanupErrors: string[] = [];
+    if (community && invitedProfileId && invitedMembership) {
+      if (memberPostId) {
+        try {
+          const deletedPost = await invitedContext.delete(
+            origin + `/api/social/post/${memberPostId}`,
+            { headers: { ...headers, 'x-ot-appscope': 'social' } }
+          );
+          if (![200, 204].includes(deletedPost.status()))
+            cleanupErrors.push('exact invite member post delete failed');
+        } catch {
+          cleanupErrors.push('exact invite member post delete failed');
+        }
+      }
+      try {
+        const leave = await invitedContext.post(
+          origin + `/api/social/community/${community.id}/leave`,
+          { headers }
+        );
+        if (![200, 201, 204].includes(leave.status()))
+          cleanupErrors.push('invite member leave failed');
+      } catch {
+        cleanupErrors.push('invite member leave failed');
+      }
+    }
+    if (inviteId && community) {
+      try {
+        const cancel = await ownerContext.delete(
+          origin + `/api/social/community/invites/${inviteId}`,
+          { headers }
+        );
+        if (![200, 204, 404].includes(cancel.status()))
+          cleanupErrors.push('exact invite cancellation failed');
+      } catch {
+        cleanupErrors.push('exact invite cancellation failed');
+      }
+    }
+    if (community && ownerProfileId) {
+      try {
+        const deleted = await ownerContext.delete(
+          origin + `/api/social/community/${community.id}`,
+          { headers }
+        );
+        if (![200, 204].includes(deleted.status()))
+          cleanupErrors.push('exact invite community delete failed');
+        const readback = await ownerContext.get(
+          origin + `/api/social/community/${community.id}`,
+          { headers }
+        );
+        const readbackBody = await readback.text();
+        if (
+          readback.status() !== 404 &&
+          !(readback.status() === 200 && readbackBody.length === 0)
+        )
+          cleanupErrors.push('exact invite community delete readback failed');
+      } catch {
+        cleanupErrors.push('exact invite community delete/readback failed');
+      }
+    }
+    expect
+      .soft(cleanupErrors, 'RR05 exact invitation fixture cleanup')
+      .toEqual([]);
     client.close();
     await Promise.all([
       ownerContext.dispose(),
@@ -465,63 +734,110 @@ test('RR05 invitation claim: addressed account joins through a token, while othe
 test('RR05 DM authorization: third parties cannot list, read or send another conversation', async ({
   playwright,
 }) => {
+  test.skip(
+    process.env['RR10_I03_LIVE_STACK'] !== 'true',
+    'Requires the reviewed exact direct-conversation cleanup guard'
+  );
   const aliceContext = await playwright.request.newContext();
   const bobContext = await playwright.request.newContext();
   const outsider = await playwright.request.newContext();
+  const startedAt = new Date();
+  let conversationId: string | undefined;
+  let aliceProfileId: string | undefined;
+  let bobProfileId: string | undefined;
+  const timedStep = <T>(name: string, action: () => Promise<T>) =>
+    timedAwaitedStage(name, () => test.step(name, action));
   try {
     const alice = await account(aliceContext, 'alice');
     const bob = await account(bobContext, 'bob');
     await account(outsider, 'outsider');
-    const created = await aliceContext.post(
-      origin + '/api/chat/conversations/direct/get-or-create',
-      { headers, data: { recipientProfileId: bob.profileId } }
+    aliceProfileId = alice.profileId;
+    bobProfileId = bob.profileId;
+    const created = await timedStep(
+      'create exact Alice/Bob direct conversation',
+      () =>
+        aliceContext.post(
+          origin + '/api/chat/conversations/direct/get-or-create',
+          { headers, data: { recipientProfileId: bob.profileId } }
+        )
     );
     expect(created.status()).toBe(201);
     const conversation = await created.json();
+    conversationId = conversation.id;
     expect(conversation.participants).toEqual(
       expect.arrayContaining([alice.profileId, bob.profileId])
     );
     const content = marker('private DM');
-    const sent = await aliceContext.post(origin + '/api/chat/messages', {
-      headers,
-      data: {
-        conversationId: conversation.id,
-        content,
-        recipientIds: [bob.profileId],
-      },
-    });
+    const sent = await timedStep('send authorized direct message', () =>
+      aliceContext.post(origin + '/api/chat/messages', {
+        headers,
+        data: {
+          conversationId: conversation.id,
+          content,
+          recipientIds: [bob.profileId],
+        },
+      })
+    );
     expect(sent.status(), await sent.text()).toBe(201);
-    const positive = await bobContext.get(
-      origin + '/api/chat/messages/' + conversation.id,
-      { headers }
+    const positive = await timedStep('read authorized direct history', () =>
+      bobContext.get(origin + '/api/chat/messages/' + conversation.id, {
+        headers,
+      })
     );
     expect(positive.status()).toBe(200);
     expect(await positive.text()).toContain(content);
-    const list = await outsider.get(origin + '/api/chat/conversations/find', {
-      headers,
-    });
+    const list = await timedStep(
+      'outsider conversation list authorization',
+      () => outsider.get(origin + '/api/chat/conversations/find', { headers })
+    );
     expect(list.status()).toBe(200);
     expect(await list.text()).not.toContain(conversation.id);
     for (const path of [
       `conversations/id/${conversation.id}`,
       `messages/${conversation.id}`,
     ]) {
-      const denied = await outsider.get(origin + '/api/chat/' + path, {
-        headers,
-      });
+      const denied = await timedStep(`outsider read denial ${path}`, () =>
+        outsider.get(origin + '/api/chat/' + path, { headers })
+      );
       expect.soft([403, 404], path).toContain(denied.status());
       expect.soft(await denied.text(), path).not.toContain(content);
     }
-    const deniedSend = await outsider.post(origin + '/api/chat/messages', {
-      headers,
-      data: {
-        conversationId: conversation.id,
-        content: marker('forbidden'),
-        recipientIds: [bob.profileId],
-      },
-    });
+    const deniedSend = await timedStep('outsider send denial', () =>
+      outsider.post(origin + '/api/chat/messages', {
+        headers,
+        data: {
+          conversationId: conversation.id,
+          content: marker('forbidden'),
+          recipientIds: [bob.profileId],
+        },
+      })
+    );
     expect.soft([403, 404]).toContain(deniedSend.status());
   } finally {
+    const cleanupErrors: string[] = [];
+    if (conversationId && aliceProfileId && bobProfileId) {
+      try {
+        await cleanupDirectConversation(
+          conversationId,
+          [aliceProfileId, bobProfileId],
+          startedAt,
+          [
+            { request: aliceContext, profileId: aliceProfileId },
+            { request: bobContext, profileId: bobProfileId },
+          ]
+        );
+      } catch (error) {
+        console.info(
+          '[RR10-I03 cleanup]',
+          JSON.stringify({
+            fixture: 'rr05-direct',
+            reason: cleanupFailureKind(error),
+          })
+        );
+        cleanupErrors.push('exact direct-conversation cleanup/readback failed');
+      }
+    }
+    expect.soft(cleanupErrors, 'RR05 exact direct fixture cleanup').toEqual([]);
     await Promise.all([
       aliceContext.dispose(),
       bobContext.dispose(),
@@ -533,25 +849,58 @@ test('RR05 DM authorization: third parties cannot list, read or send another con
 test('RR05 community permissions: private room access requires current membership and management stays with its owner', async ({
   playwright,
 }) => {
+  test.skip(
+    process.env['RR10_I03_LIVE_STACK'] !== 'true',
+    'Requires exact community and chat-room cleanup before rerun'
+  );
   const ownerContext = await playwright.request.newContext();
   const memberContext = await playwright.request.newContext();
   const outsider = await playwright.request.newContext();
+  const collector = ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: { host: '127.0.0.1', port: 3007 },
+  });
+  let community: { id: string; slug: string } | undefined;
+  let roomId: string | undefined;
+  let ownerProfileId: string | undefined;
+  let memberProfileId: string | undefined;
+  let memberLeft = false;
+  let roomCleanupComplete = false;
   try {
     const owner = await account(ownerContext, 'community-owner');
     const member = await account(memberContext, 'community-member');
     const other = await account(outsider, 'community-outsider');
+    ownerProfileId = owner.profileId;
+    memberProfileId = member.profileId;
     const name = marker('private community');
-    const created = await ownerContext.post(origin + '/api/social/community', {
-      headers,
-      data: {
-        name,
-        description: name,
-        isPrivate: true,
-        joinPolicy: 'approval_required',
-      },
-    });
+    const created = await timedAwaitedStage(
+      'RR05 create private community',
+      () =>
+        ownerContext.post(origin + '/api/social/community', {
+          headers,
+          data: {
+            name,
+            description: name,
+            isPrivate: true,
+            joinPolicy: 'approval_required',
+          },
+        })
+    );
     expect(created.status(), await created.text()).toBe(201);
-    const community = await created.json();
+    community = await created.json();
+    const ownerCommunities = await ownerContext.get(
+      origin + '/api/social/community/user/communities',
+      { headers }
+    );
+    expect(ownerCommunities.status()).toBe(200);
+    const ownerCommunityRows = await ownerCommunities.json();
+    expect(
+      Array.isArray(ownerCommunityRows) &&
+        ownerCommunityRows.some(
+          (row: { id?: string }) => row.id === community!.id
+        ),
+      'the created fixture must be visible in the requested app scope'
+    ).toBe(true);
     const joined = await memberContext.post(
       origin + `/api/social/community/${community.id}/join`,
       { headers }
@@ -569,12 +918,17 @@ test('RR05 community permissions: private room access requires current membershi
       { headers }
     );
     expect(approved.status(), await approved.text()).toBe(201);
-    const roomResponse = await ownerContext.get(
-      origin + `/api/social/community/${community.id}/chat-room`,
-      { headers }
+    const roomResponse = await timedAwaitedStage(
+      'RR05 discover private chat room',
+      () =>
+        ownerContext.get(
+          origin + `/api/social/community/${community.id}/chat-room`,
+          { headers }
+        )
     );
     expect(roomResponse.status()).toBe(200);
     const room = await roomResponse.json();
+    roomId = room.id;
     expect(room.id).toEqual(expect.any(String));
     const content = marker('private community message');
     const sent = await ownerContext.post(origin + '/api/chat/messages', {
@@ -658,6 +1012,7 @@ test('RR05 community permissions: private room access requires current membershi
       { headers }
     );
     expect(leave.status()).toBe(201);
+    memberLeft = true;
     const revoked = await memberContext.get(
       origin + '/api/chat/messages/' + room.id,
       { headers }
@@ -667,6 +1022,90 @@ test('RR05 community permissions: private room access requires current membershi
       .soft(await revoked.text(), 'revoked room read')
       .not.toContain(content);
   } finally {
+    const cleanupErrors: string[] = [];
+    if (community && memberProfileId && !memberLeft) {
+      try {
+        const leave = await memberContext.post(
+          origin + `/api/social/community/${community.id}/leave`,
+          { headers }
+        );
+        if (![200, 201, 204, 404].includes(leave.status()))
+          cleanupErrors.push('exact private-room member leave failed');
+      } catch {
+        cleanupErrors.push('exact private-room member leave failed');
+      }
+    }
+    if (community && roomId && ownerProfileId) {
+      try {
+        await collector.connect();
+        const receipt = await timedAwaitedStage(
+          'RR05 exact owned private-room soft-delete',
+          () =>
+            firstValueFrom(
+              collector.send(
+                { cmd: 'DELETE_OWNED_COMMUNITY_CONVERSATION' },
+                {
+                  conversationId: roomId,
+                  communityId: community!.id,
+                  actorProfileId: ownerProfileId,
+                  appScope: 'client-interface',
+                }
+              )
+            )
+        );
+        if ((receipt as { success?: boolean } | undefined)?.success !== true) {
+          cleanupErrors.push(
+            'Exact private-room cleanup receipt was not successful'
+          );
+        } else {
+          const ownerReadback = await ownerContext.get(
+            origin + `/api/chat/messages/${roomId}`,
+            { headers }
+          );
+          if (![403, 404].includes(ownerReadback.status())) {
+            cleanupErrors.push('private-room soft-delete readback failed');
+          } else {
+            roomCleanupComplete = true;
+          }
+        }
+      } catch (error) {
+        console.info(
+          '[RR10-I03 cleanup]',
+          JSON.stringify({
+            fixture: 'rr05-community-room',
+            reason: cleanupFailureKind(error),
+          })
+        );
+        cleanupErrors.push('exact private-room soft-delete/readback failed');
+      }
+    }
+    if (!roomId) roomCleanupComplete = true;
+    if (community && ownerProfileId && roomCleanupComplete) {
+      try {
+        const deleted = await ownerContext.delete(
+          origin + `/api/social/community/${community.id}`,
+          { headers }
+        );
+        if (![200, 204].includes(deleted.status()))
+          cleanupErrors.push('exact private community delete failed');
+        const readback = await ownerContext.get(
+          origin + `/api/social/community/${community.id}`,
+          { headers }
+        );
+        const readbackBody = await readback.text();
+        if (
+          readback.status() !== 404 &&
+          !(readback.status() === 200 && readbackBody.length === 0)
+        )
+          cleanupErrors.push('exact private community delete readback failed');
+      } catch {
+        cleanupErrors.push('exact private community delete/readback failed');
+      }
+    }
+    expect
+      .soft(cleanupErrors, 'RR05 exact private-room fixture cleanup')
+      .toEqual([]);
+    collector.close();
     await Promise.all([
       ownerContext.dispose(),
       memberContext.dispose(),
@@ -712,6 +1151,10 @@ async function chatSocket(request: APIRequestContext, profileId: string) {
 test('RR05 socket authorization: a nonparticipant cannot persist or deliver a forged direct message', async ({
   playwright,
 }) => {
+  test.skip(
+    process.env['RR10_I03_LIVE_STACK'] !== 'true',
+    'Requires the reviewed exact direct-conversation cleanup guard'
+  );
   // Measured healthy execution is ~30s: three real registrations plus two
   // authorized message roundtrips leave no scheduling headroom at 30s.
   test.setTimeout(60_000);
@@ -719,17 +1162,14 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
   const bobContext = await playwright.request.newContext();
   const outsiderContext = await playwright.request.newContext();
   const sockets: Socket[] = [];
+  const startedAt = new Date();
   let alice!: Awaited<ReturnType<typeof account>>;
   let bob!: Awaited<ReturnType<typeof account>>;
   let outsider!: Awaited<ReturnType<typeof account>>;
   let conversation!: { id: string };
+  let conversationId: string | undefined;
   const timedStep = async <T>(name: string, action: () => Promise<T>) => {
-    const startedAt = Date.now();
-    try {
-      return await test.step(name, action);
-    } finally {
-      console.log(`[RR05 socket timing] ${name}: ${Date.now() - startedAt}ms`);
-    }
+    return timedAwaitedStage(name, () => test.step(name, action));
   };
   try {
     await timedStep('register Alice', async () => {
@@ -748,6 +1188,7 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
       );
       expect(created.status()).toBe(201);
       conversation = await created.json();
+      conversationId = conversation.id;
     });
     const aliceSocket = await timedStep('authorize Alice socket', () =>
       chatSocket(aliceContext, alice.profileId)
@@ -868,6 +1309,34 @@ test('RR05 socket authorization: a nonparticipant cannot persist or deliver a fo
   } finally {
     await timedStep('disconnect sockets and dispose accounts', async () => {
       sockets.forEach((socket) => socket.disconnect());
+      const cleanupErrors: string[] = [];
+      if (conversationId && alice?.profileId && bob?.profileId) {
+        try {
+          await cleanupDirectConversation(
+            conversationId,
+            [alice.profileId, bob.profileId],
+            startedAt,
+            [
+              { request: aliceContext, profileId: alice.profileId },
+              { request: bobContext, profileId: bob.profileId },
+            ]
+          );
+        } catch (error) {
+          console.info(
+            '[RR10-I03 cleanup]',
+            JSON.stringify({
+              fixture: 'rr05-socket-direct',
+              reason: cleanupFailureKind(error),
+            })
+          );
+          cleanupErrors.push(
+            'exact direct-conversation cleanup/readback failed'
+          );
+        }
+      }
+      expect
+        .soft(cleanupErrors, 'RR05 exact direct fixture cleanup')
+        .toEqual([]);
       await Promise.all([
         aliceContext.dispose(),
         bobContext.dispose(),

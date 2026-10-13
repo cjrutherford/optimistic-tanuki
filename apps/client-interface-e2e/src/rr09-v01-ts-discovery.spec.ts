@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { appendFileSync, chmodSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 
 const origin = new URL(process.env['TS_BASE_URL'] ?? 'http://127.0.0.1:8087')
   .origin;
@@ -33,6 +35,30 @@ function record(value: Record<string, unknown>): void {
     { mode: 0o600 }
   );
   chmodSync(evidencePath, 0o600);
+}
+
+async function timedStage<T>(
+  timings: Array<Record<string, unknown>>,
+  stage: string,
+  action: () => Promise<T>
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    const result = await action();
+    timings.push({
+      stage,
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: 'pass',
+    });
+    return result;
+  } catch (error) {
+    timings.push({
+      stage,
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: 'fail',
+    });
+    throw error;
+  }
 }
 
 async function settleTheme(page: Page): Promise<void> {
@@ -106,19 +132,52 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     email: string;
     password: string;
   };
+  const timings: Array<Record<string, unknown>> = [];
+  const servedMainAssets: Array<{
+    path: string;
+    status: number;
+    sha256: string;
+  }> = [];
+  const servedMainAssetReads: Promise<void>[] = [];
+  page.on('response', (response) => {
+    const url = new URL(response.url());
+    if (
+      response.request().resourceType() !== 'script' ||
+      !/(^|\/)main(?:-[^/]*)?\.js$/.test(url.pathname)
+    )
+      return;
+    servedMainAssetReads.push(
+      response
+        .body()
+        .then((body) => {
+          servedMainAssets.push({
+            path: url.pathname,
+            status: response.status(),
+            sha256: createHash('sha256').update(body).digest('hex'),
+          });
+        })
+        .catch(() => undefined)
+    );
+  });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
-  await page.getByLabel('Email', { exact: true }).fill(credentials.email);
-  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
-  await page.getByRole('button', { name: 'Login', exact: true }).click();
-  await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+  await timedStage(timings, 'signed-in login and session hydration', async () => {
+    await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Email', { exact: true }).fill(credentials.email);
+    await page.getByLabel('Password', { exact: true }).fill(credentials.password);
+    await page.getByRole('button', { name: 'Login', exact: true }).click();
+    await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+  });
   expect(new URL(page.url()).origin, 'browser uses explicit TS origin').toBe(
     origin
   );
 
-  const sessionResponse = await page.request.get(
-    `${origin}/api/authentication/session`,
-    { headers: scopeHeaders }
+  const sessionResponse = await timedStage(
+    timings,
+    'authenticated session REST read',
+    () =>
+      page.request.get(`${origin}/api/authentication/session`, {
+        headers: scopeHeaders,
+      })
   );
   expect(sessionResponse.status()).toBe(200);
   const session = (await sessionResponse.json()).data as {
@@ -126,9 +185,14 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     profileId: string;
   };
 
-  const communityResponse = await page.request.get(
-    `${origin}/api/social/community/slug/${community.slug}`,
-    { headers: scopeHeaders }
+  const communityResponse = await timedStage(
+    timings,
+    'target community REST read',
+    () =>
+      page.request.get(
+        `${origin}/api/social/community/slug/${community.slug}`,
+        { headers: scopeHeaders }
+      )
   );
   expect(communityResponse.status()).toBe(200);
   const communityBody = (await communityResponse.json()) as {
@@ -263,10 +327,12 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
 
   const originalTheme = await page.locator('html').getAttribute('data-theme');
   expect(['light', 'dark']).toContain(originalTheme);
-  await page.goto(`${origin}/communities`, { waitUntil: 'domcontentloaded' });
-  await expect(
-    page.getByRole('heading', { name: 'Local Communities', exact: true })
-  ).toBeVisible();
+  await timedStage(timings, 'communities route and first render', async () => {
+    await page.goto(`${origin}/communities`, { waitUntil: 'domcontentloaded' });
+    await expect(
+      page.getByRole('heading', { name: 'Local Communities', exact: true })
+    ).toBeVisible();
+  });
   expect(
     new URL(page.url()).origin,
     'communities page stays on TS origin'
@@ -285,8 +351,11 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     cardCount: document.querySelectorAll('.community-card').length,
     communityEntryHeadingCount: document.querySelectorAll('main h3').length,
   }));
-  await page.goto(`${origin}/c/${community.slug}`, {
-    waitUntil: 'domcontentloaded',
+  await timedStage(timings, 'signed-in community deep-link hydration', async () => {
+    await page.goto(`${origin}/c/${community.slug}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await expect(page.locator('.community-page')).toBeVisible();
   });
   expect(new URL(page.url()).origin, 'community route stays on TS origin').toBe(
     origin
@@ -352,6 +421,7 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
 
   record({
     type: 'ts-locality-community-discovery',
+    timings,
     browserOrigin: new URL(page.url()).origin,
     requestedTsOrigin: origin,
     route: '/communities',
@@ -398,7 +468,9 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     cleanup: 'read-only; no membership/community/listing/conversation writes',
   });
 
-  await page.goto(`${origin}/messages`, { waitUntil: 'domcontentloaded' });
+  await timedStage(timings, 'messages route hydration', () =>
+    page.goto(`${origin}/messages`, { waitUntil: 'domcontentloaded' })
+  );
   const messagesView = await page.evaluate(() => ({
     route: location.pathname,
     headingCount: document.querySelectorAll('h1,h2').length,
@@ -435,11 +507,13 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
       continue;
     }
     const listingCommunity = await communityResponse.json();
-    await page.goto(
-      `${origin}/c/${encodeURIComponent(
-        listingCommunity.slug
-      )}/classifieds/${listingId}`,
-      { waitUntil: 'domcontentloaded' }
+    await timedStage(timings, 'signed-in listing detail deep-link hydration', () =>
+      page.goto(
+        `${origin}/c/${encodeURIComponent(
+          listingCommunity.slug
+        )}/classifieds/${listingId}`,
+        { waitUntil: 'domcontentloaded' }
+      )
     );
     const detailPage = page.locator('.detail-page');
     const visible = await detailPage.isVisible().catch(() => false);
@@ -482,5 +556,12 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
         'Preflight only: no approved membership or nonempty seller conversation; clicking may persist a direct chat and initial system message.',
     });
   }
-  record({ type: 'ts-existing-listing-detail-preflight', rows: detailStates });
+  await Promise.all(servedMainAssetReads);
+  record({
+    type: 'ts-existing-listing-detail-preflight',
+    rows: detailStates,
+    timings,
+    servedMainAssets,
+    sourceProvenance: 'SHA256 captured from actual browser-served main JavaScript response; compare with workspace dist separately',
+  });
 });

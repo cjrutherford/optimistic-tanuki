@@ -1,5 +1,11 @@
-import { APIRequestContext, expect, test } from '@playwright/test';
+import { APIRequestContext, expect, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import {
+  createLocalChatCleanupPool,
+  readDeletedDirectMessageRetention,
+  softDeleteExactDirectConversation,
+  timedAwaitedStage,
+} from '../../../tools/testing/rr10-direct-chat-cleanup';
 import { getBaseUrl } from './fixtures/helpers';
 import { apiUrl, LOCAL_HUB_HEADERS } from './helpers/local-hub-api';
 
@@ -15,6 +21,7 @@ async function registeredBrowserSession(
   request: APIRequestContext,
   role: string
 ) {
+  return timedAwaitedStage(`RR06 register/login/session ${role}`, async () => {
   const email = `rr06-${role}-${unique()}@example.test`;
   const registration = await request.post(
     `${getBaseUrl()}/api/authentication/register`,
@@ -48,6 +55,60 @@ async function registeredBrowserSession(
     userId: string;
     profileId: string;
   };
+  });
+}
+
+type SocketFrameEvidence = {
+  direction: 'sent' | 'received';
+  namespace: string;
+  event: string;
+  elapsedMs: number;
+  matchedConversation: boolean;
+  matchedParticipant: boolean;
+};
+
+function observeChatSocketFrames(
+  page: import('@playwright/test').Page,
+  startedAt: number,
+  getConversationId: () => string | undefined,
+  participantIds: string[]
+): SocketFrameEvidence[] {
+  const evidence: SocketFrameEvidence[] = [];
+  page.on('websocket', (socket) => {
+    const namespace = new URL(socket.url()).pathname;
+    const record = (
+      direction: 'sent' | 'received',
+      raw: string | Buffer
+    ) => {
+      const frame = typeof raw === 'string' ? raw : raw.toString('utf8');
+      let event = frame.slice(0, 2) === '40' ? 'connect' : 'control';
+      let fields: unknown;
+      const jsonStart = frame.indexOf('[');
+      if (jsonStart >= 0) {
+        try {
+          fields = JSON.parse(frame.slice(jsonStart));
+          if (Array.isArray(fields) && typeof fields[0] === 'string')
+            event = fields[0];
+        } catch {
+          event = 'unparsed-event';
+        }
+      }
+      const safeJson = JSON.stringify(fields ?? '');
+      evidence.push({
+        direction,
+        namespace,
+        event,
+        elapsedMs: Math.round(performance.now() - startedAt),
+        matchedConversation: Boolean(
+          getConversationId() && safeJson.includes(getConversationId()!)
+        ),
+        matchedParticipant: participantIds.some((id) => safeJson.includes(id)),
+      });
+    };
+    socket.on('framesent', (frame) => record('sent', frame.payload));
+    socket.on('framereceived', (frame) => record('received', frame.payload));
+  });
+  return evidence;
 }
 
 test('RR06 asset diagnostic captures upload response and persisted listing URL', async ({
@@ -133,6 +194,20 @@ test('RR06 asset diagnostic captures upload response and persisted listing URL',
     expect(assetId, 'asset create response should include an id').toBeTruthy();
     await page.getByRole('button', { name: 'Post Listing' }).click();
     await expect(page).toHaveURL(`/c/${community.slug}/classifieds`);
+    const listingCard = page
+      .locator('.classified-card')
+      .filter({ hasText: `RR06 image ${marker}` });
+    const renderedImage = listingCard.locator(
+      `img[src="/api/asset/${assetId}"]`
+    );
+    await expect(renderedImage).toBeVisible();
+    await expect
+      .poll(() =>
+        renderedImage.evaluate(
+          (img: HTMLImageElement) => img.complete && img.naturalWidth > 0
+        )
+      )
+      .toBe(true);
 
     const listingsResponse = await context.request.get(
       apiUrl(`/api/classifieds/community/${communityId}`),
@@ -176,35 +251,34 @@ test('RR06 asset diagnostic captures upload response and persisted listing URL',
       `bytes */${fullImage.length}`
     );
   } finally {
+    const cleanupHeaders = sellerToken
+      ? { ...LOCAL_HUB_HEADERS, Authorization: `Bearer ${sellerToken}` }
+      : LOCAL_HUB_HEADERS;
     if (listingId && sellerToken) {
-      await context.request
-        .delete(apiUrl(`/api/classifieds/${listingId}`), {
-          headers: {
-            ...LOCAL_HUB_HEADERS,
-            Authorization: `Bearer ${sellerToken}`,
-          },
-        })
-        .catch(() => undefined);
+      const deleted = await context.request.delete(
+        apiUrl(`/api/classifieds/${listingId}`),
+        { headers: cleanupHeaders }
+      );
+      expect([200, 204]).toContain(deleted.status());
     }
     if (assetId && sellerToken) {
-      await context.request
-        .delete(apiUrl(`/api/asset/${assetId}`), {
-          headers: {
-            ...LOCAL_HUB_HEADERS,
-            Authorization: `Bearer ${sellerToken}`,
-          },
-        })
-        .catch(() => undefined);
+      const deleted = await context.request.delete(
+        apiUrl(`/api/asset/${assetId}`),
+        { headers: cleanupHeaders }
+      );
+      expect([200, 204]).toContain(deleted.status());
+      const readback = await context.request.get(
+        apiUrl(`/api/asset/${assetId}`),
+        { headers: cleanupHeaders }
+      );
+      expect(readback.status()).toBe(404);
     }
     if (communityId && sellerToken) {
-      await context.request
-        .delete(apiUrl(`/api/social/community/${communityId}`), {
-          headers: {
-            ...LOCAL_HUB_HEADERS,
-            Authorization: `Bearer ${sellerToken}`,
-          },
-        })
-        .catch(() => undefined);
+      const deleted = await context.request.delete(
+        apiUrl(`/api/social/community/${communityId}`),
+        { headers: cleanupHeaders }
+      );
+      expect([200, 204]).toContain(deleted.status());
     }
     await context.close();
   }
@@ -214,6 +288,10 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
   browser,
   playwright,
 }) => {
+  test.skip(
+    process.env['RR10_I03_LIVE_STACK'] !== 'true',
+    'Requires reviewed exact direct-chat cleanup before rerun'
+  );
   test.setTimeout(180_000);
   const sellerContext = await browser.newContext({ baseURL: getBaseUrl() });
   const buyerContext = await browser.newContext({ baseURL: getBaseUrl() });
@@ -228,13 +306,25 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
   const unexpectedListingIds: Array<{ id: string; token: string }> = [];
   const uploadedAssetIds: string[] = [];
   let sellerToken: string | undefined;
+  let buyerToken: string | undefined;
   let communityOwnerToken: string | undefined;
+  const directChatStartedAt = new Date();
+  const directChatMonotonicStart = performance.now();
+  let directConversationId: string | undefined;
+  let buyerProfileId: string | undefined;
+  let sellerProfileId: string | undefined;
+  const socketFrameBuffers: SocketFrameEvidence[][] = [];
+  let sellerSocketEvidence: SocketFrameEvidence[] = [];
+  const chatPages: Page[] = [];
+  const chatCleanupErrors: string[] = [];
   const marker = unique();
-  const cleanupEmails: string[] = [];
-  const auth = (token: string) => ({
-    ...LOCAL_HUB_HEADERS,
-    Authorization: `Bearer ${token}`,
-  });
+  const auth = (token: string | undefined) => {
+    if (!token) throw new Error('The scoped test session is unavailable');
+    return {
+      ...LOCAL_HUB_HEADERS,
+      Authorization: `Bearer ${token}`,
+    };
+  };
 
   try {
     const seller = await registeredBrowserSession(
@@ -250,12 +340,8 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       communityOwnerContext.request,
       'community-owner'
     );
-    cleanupEmails.push(
-      seller.email,
-      buyer.email,
-      outsider.email,
-      communityOwner.email
-    );
+    buyerProfileId = buyer.profileId;
+    sellerProfileId = seller.profileId;
 
     // The authenticated gateway creates a uniquely tagged root locality;
     // the following child is a second ordinary community under that root.
@@ -268,7 +354,7 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       return (await response.json()).data.newToken as string;
     };
     sellerToken = await loginToken(sellerContext, seller.email);
-    const buyerToken = await loginToken(buyerContext, buyer.email);
+    buyerToken = await loginToken(buyerContext, buyer.email);
     const outsiderToken = await loginToken(outsiderContext, outsider.email);
     communityOwnerToken = await loginToken(
       communityOwnerContext,
@@ -601,6 +687,15 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     // A second registered browser user contacts the seller. The listing title,
     // price and route must be present in the initial real conversation.
     const buyerPage = await buyerContext.newPage();
+    chatPages.push(buyerPage);
+    socketFrameBuffers.push(
+      observeChatSocketFrames(
+        buyerPage,
+        directChatMonotonicStart,
+        () => directConversationId,
+        [buyer.profileId, seller.profileId]
+      )
+    );
     await buyerPage.goto(`/c/${community.slug}/classifieds/${listingId}`);
     buyerPage.on('request', (request) => {
       const url = new URL(request.url());
@@ -612,7 +707,7 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       } catch {
         // This diagnostic records field names only; it never prints message text.
       }
-      console.log(
+      console.info(
         '[RR06 chat request]',
         JSON.stringify({
           method: request.method(),
@@ -636,15 +731,12 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
             ...(typeof body.statusCode === 'number'
               ? { statusCode: body.statusCode }
               : {}),
-            ...(typeof body.message === 'string'
-              ? { message: body.message }
-              : {}),
           };
         }
       } catch {
         // Never include response content that could contain private messages.
       }
-      console.log(
+      console.info(
         '[RR06 chat response]',
         JSON.stringify({
           method: response.request().method(),
@@ -670,8 +762,13 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         { timeout: 10000 }
       )
       .catch(() => undefined);
-    await buyerPage.getByRole('button', { name: 'Contact Seller' }).click();
-    const chatResponse = await chatResponsePromise;
+    await timedAwaitedStage('RR06 buyer contact seller UI action', async () => {
+      await buyerPage.getByRole('button', { name: 'Contact Seller' }).click();
+    });
+    const chatResponse = await timedAwaitedStage(
+      'RR06 direct conversation bootstrap HTTP response',
+      () => chatResponsePromise
+    );
     expect(
       chatResponse?.status(),
       `Contact Seller chat bootstrap response: ${await chatResponse
@@ -691,17 +788,78 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       );
       const conversationData = await chatResponse.json();
       const conversationId = conversationData.id;
+      directConversationId = conversationId;
       expect(conversationId).toEqual(expect.any(String));
-      const buyerMessage = `RR06 buyer opening ${marker}`;
-      await buyerPage.getByLabel('Message').fill(buyerMessage);
-      await buyerPage.getByRole('button', { name: 'Send' }).click();
+
+      // Keep the seller inbox connected before the buyer's first send. This
+      // exercises the live first-message event that adds a new direct room to
+      // the seller's already-open conversation list.
+      const sellerMessagesPage = await sellerContext.newPage();
+      chatPages.push(sellerMessagesPage);
+      sellerSocketEvidence = observeChatSocketFrames(
+        sellerMessagesPage,
+        directChatMonotonicStart,
+        () => directConversationId,
+        [buyer.profileId, seller.profileId]
+      );
+      socketFrameBuffers.push(sellerSocketEvidence);
+      const sellerHistoryReads: Array<{
+        status: number;
+        isTargetConversation: boolean;
+        messageCount: number;
+        containsBuyerMarker: boolean;
+      }> = [];
+      sellerMessagesPage.on('response', async (response) => {
+        const url = new URL(response.url());
+        if (
+          response.request().method() !== 'GET' ||
+          !/^\/api\/chat\/messages\/[^/]+$/.test(url.pathname)
+        ) {
+          return;
+        }
+        const body = await response.json().catch(() => undefined);
+        const messages = Array.isArray(body)
+          ? body
+          : Array.isArray(body?.data)
+            ? body.data
+            : [];
+        sellerHistoryReads.push({
+          status: response.status(),
+          isTargetConversation:
+            url.pathname === `/api/chat/messages/${conversationId}`,
+          messageCount: messages.length,
+          containsBuyerMarker: messages.some(
+            (message: { content?: string }) =>
+              typeof message.content === 'string' &&
+              message.content.includes('RR06 buyer opening')
+          ),
+        });
+      });
+      await sellerMessagesPage.goto('/messages');
       await expect(
-        buyerPage.locator('.message-content').filter({ hasText: buyerMessage })
+        sellerMessagesPage.getByRole('heading', { name: 'Messages' })
       ).toBeVisible();
 
-      const sellerMessagesResponse = await sellerContext.request.get(
-        apiUrl(`/api/chat/messages/${conversationId}`),
-        { headers: auth(sellerToken) }
+      const buyerMessage = `RR06 buyer opening ${marker}`;
+      await buyerPage.getByLabel('Message').fill(buyerMessage);
+      await timedAwaitedStage('RR06 buyer send message UI action', async () => {
+        await buyerPage.getByRole('button', { name: 'Send' }).click();
+      });
+      await timedAwaitedStage('RR06 buyer message visible after send', () =>
+        expect(
+          buyerPage
+            .locator('.message-content')
+            .filter({ hasText: buyerMessage })
+        ).toBeVisible()
+      );
+
+      const sellerMessagesResponse = await timedAwaitedStage(
+        'RR06 persisted buyer message readback',
+        () =>
+          sellerContext.request.get(
+            apiUrl(`/api/chat/messages/${conversationId}`),
+            { headers: auth(sellerToken) }
+          )
       );
       expect(
         sellerMessagesResponse.status(),
@@ -711,16 +869,17 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         buyerMessage
       );
       const sellerReply = `RR06 seller reply ${marker}`;
-      const sendSellerReply = await sellerContext.request.post(
-        apiUrl('/api/chat/messages'),
-        {
-          headers: auth(sellerToken),
-          data: {
-            conversationId,
-            content: sellerReply,
-            recipientIds: [buyer.profileId],
-          },
-        }
+      const sendSellerReply = await timedAwaitedStage(
+        'RR06 seller API reply persist',
+        () =>
+          sellerContext.request.post(apiUrl('/api/chat/messages'), {
+            headers: auth(sellerToken),
+            data: {
+              conversationId,
+              content: sellerReply,
+              recipientIds: [buyer.profileId],
+            },
+          })
       );
       expect(sendSellerReply.status(), await sendSellerReply.text()).toBe(201);
       const buyerMessagesAfterApiReply = await buyerContext.request.get(
@@ -732,23 +891,90 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         sellerReply
       );
 
-      const sellerMessagesPage = await sellerContext.newPage();
-      await sellerMessagesPage.goto('/messages');
-      await expect(
-        sellerMessagesPage.getByRole('heading', { name: 'Messages' })
-      ).toBeVisible();
       // The seller also has community threads created by the listing journey.
       // Select the direct buyer thread by participant identity, not list size.
       const sellerConversation = sellerMessagesPage
         .locator('.contact-item')
         .filter({ hasText: /RR06 buyer/i });
-      await expect(sellerConversation).toHaveCount(1, { timeout: 15000 });
+      await expect(sellerConversation).toHaveCount(1, { timeout: 15000 }).catch(
+        () => undefined
+      );
+      const sellerConversationList = await sellerContext.request.get(
+        apiUrl('/api/chat/conversations/find'),
+        { headers: auth(sellerToken) }
+      );
+      const sellerConversationListBody = await sellerConversationList
+        .json()
+        .catch(() => undefined);
+      const sellerConversationRows = Array.isArray(sellerConversationListBody)
+        ? sellerConversationListBody
+        : Array.isArray(sellerConversationListBody?.data)
+          ? sellerConversationListBody.data
+          : [];
+      const targetSocketFrames = sellerSocketEvidence.filter(
+        (frame) => frame.matchedConversation
+      );
+      console.info(
+        '[RR06 seller inbox diagnostic]',
+        JSON.stringify({
+          inboxHttpStatus: sellerConversationList.status(),
+          apiListContainsTarget: sellerConversationRows.some(
+            (conversation: { id?: string }) => conversation.id === conversationId
+          ),
+          uiContactCount: await sellerConversation.count(),
+          socketConnectFrames: sellerSocketEvidence.filter(
+            (frame) => frame.event === 'connect'
+          ).length,
+          socketEvents: sellerSocketEvidence.map(({ direction, namespace, event }) => ({
+            direction,
+            namespace,
+            event,
+          })),
+          targetConversationFrameEvents: targetSocketFrames.map(
+            ({ direction, event, elapsedMs }) => ({
+              direction,
+              event,
+              elapsedMs,
+            })
+          ),
+          historyReads: sellerHistoryReads,
+        })
+      );
+      await expect(sellerConversation).toHaveCount(1);
       await sellerConversation.click();
-      await expect(
-        sellerMessagesPage
-          .locator('.message-text')
-          .filter({ hasText: buyerMessage })
-      ).toBeVisible({ timeout: 15000 });
+      await timedAwaitedStage(
+        'RR06 seller browser receives buyer message',
+        async () => {
+          try {
+            await expect(
+              sellerMessagesPage
+                .locator('.message-text')
+                .filter({ hasText: buyerMessage })
+            ).toBeVisible({ timeout: 15000 });
+          } catch (error) {
+            const bodyText = await sellerMessagesPage
+              .locator('body')
+              .innerText();
+            console.info(
+              '[RR06 seller message render diagnostic]',
+              JSON.stringify({
+                historyReads: sellerHistoryReads,
+                selectedContactCount: await sellerMessagesPage
+                  .locator('.contact-item')
+                  .filter({ hasText: /RR06 buyer/i })
+                  .count(),
+                renderedMessageCount: await sellerMessagesPage
+                  .locator('.message-text')
+                  .count(),
+                buyerTextRendered: bodyText.includes(buyerMessage),
+                emptyThreadVisible: bodyText.includes('No messages yet'),
+                browserSocketFrames: sellerSocketEvidence.length,
+              })
+            );
+            throw error;
+          }
+        }
+      );
       const uiSellerReply = `RR06 seller UI reply ${marker}`;
       await sellerMessagesPage
         .locator('lib-compose-chat textarea')
@@ -761,6 +987,15 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       ).toBeVisible({ timeout: 15000 });
 
       const buyerMessagesPage = await buyerContext.newPage();
+      chatPages.push(buyerMessagesPage);
+      socketFrameBuffers.push(
+        observeChatSocketFrames(
+          buyerMessagesPage,
+          directChatMonotonicStart,
+          () => directConversationId,
+          [buyer.profileId, seller.profileId]
+        )
+      );
       await buyerMessagesPage.goto('/messages');
       const buyerConversation = buyerMessagesPage
         .locator('.contact-item')
@@ -858,18 +1093,90 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     expect([403, 404], await formerMemberOtherAd.text()).toContain(
       formerMemberOtherAd.status()
     );
+    const socketFrames = socketFrameBuffers.flat();
+    console.info(
+      '[RR06 browser chat transport evidence]',
+      JSON.stringify({
+        transport: 'observed browser websocket frames; HTTP chat calls separately timed',
+        frameCount: socketFrames.length,
+        targetConversationMatchedFrameCount: socketFrames.filter(
+          (frame) => frame.matchedConversation
+        ).length,
+        controlledProfileMatchedFrameCount: socketFrames.filter(
+          (frame) => frame.matchedParticipant
+        ).length,
+        frames: socketFrames.map(({ direction, namespace, event, elapsedMs, matchedConversation, matchedParticipant }) => ({
+          direction,
+          namespace,
+          event,
+          elapsedMs,
+          matchedConversation,
+          matchedParticipant,
+        })),
+      })
+    );
     listingId = undefined;
   } finally {
-    console.log(
+    await Promise.allSettled(chatPages.map((page) => page.close()));
+    if (
+      directConversationId &&
+      buyerProfileId &&
+      sellerProfileId &&
+      buyerToken &&
+      sellerToken
+    ) {
+      try {
+        const pool = createLocalChatCleanupPool();
+        try {
+          const receipt = await timedAwaitedStage(
+            'RR06 exact direct-conversation soft-delete and integrity check',
+            () =>
+              softDeleteExactDirectConversation(pool, {
+                conversationId: directConversationId!,
+                controlledProfileIds: [buyerProfileId!, sellerProfileId!],
+                startedAt: directChatStartedAt,
+                finishedAt: new Date(),
+              })
+          );
+          const retained = await readDeletedDirectMessageRetention(
+            pool,
+            directConversationId
+          );
+          expect.soft(retained).toEqual({
+            retainedMessageCount: receipt.retainedMessageCount,
+            retainedMessageSha256: receipt.retainedMessageSha256,
+          });
+          for (const [context, token] of [
+            [buyerContext, buyerToken],
+            [sellerContext, sellerToken],
+          ] as const) {
+            const list = await context.request.get(
+              apiUrl('/api/chat/conversations/find'),
+              { headers: auth(token) }
+            );
+            expect.soft(list.status()).toBe(200);
+            expect.soft(await list.text()).not.toContain(directConversationId);
+            const history = await context.request.get(
+              apiUrl(`/api/chat/messages/${directConversationId}`),
+              { headers: auth(token) }
+            );
+            expect.soft([403, 404]).toContain(history.status());
+          }
+        } finally {
+          await pool.end();
+        }
+      } catch {
+        chatCleanupErrors.push('exact RR06 direct-chat cleanup failed');
+      }
+    }
+    expect.soft(chatCleanupErrors, 'RR06 direct-chat fixture cleanup').toEqual(
+      []
+    );
+    console.info(
       '[RR06 exact-fixture cleanup]',
       JSON.stringify({
-        marker,
-        cityId,
-        communityId,
-        listingId,
-        uploadedAssetIds,
-        unexpectedListingIds: unexpectedListingIds.map(({ id }) => id),
-        accountEmails: cleanupEmails,
+        exactChatCleanupCompleted: chatCleanupErrors.length === 0,
+        controlledAccountsRetained: 4,
       })
     );
     // Clean only this run's exact listing and locality IDs. Never reset shared data.

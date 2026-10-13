@@ -1453,7 +1453,11 @@ test.describe('RR10 I04 community chat recovery', () => {
         `/api/social/community/${fixture.community.id}`
       );
       expect(deletedCommunityRead.status()).toBe(200);
-      expect(await deletedCommunityRead.json()).toBeNull();
+      const deletedCommunityBody = await deletedCommunityRead.text();
+      expect(
+        deletedCommunityBody === '' ||
+          JSON.parse(deletedCommunityBody) === null
+      ).toBe(true);
       checks.push({
         name: 'normal owner API deleted the exact private community',
         status: communityDelete.status(),

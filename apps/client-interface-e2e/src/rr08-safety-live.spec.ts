@@ -1,6 +1,12 @@
 import { APIRequestContext, expect, test } from '@playwright/test';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
+import {
+  createLocalChatCleanupPool,
+  readDeletedDirectMessageRetention,
+  softDeleteExactDirectConversation,
+  timedAwaitedStage,
+} from '../../../tools/testing/rr10-direct-chat-cleanup';
 
 const RoleCommands = {
   GetByName: 'GetByName:Role',
@@ -19,6 +25,45 @@ const headers = {
   'x-ot-appscope': 'client-interface',
 };
 const password = 'RR08-local-test-password!';
+
+function directCleanupFailureCategory(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  const code =
+    error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: unknown }).code ?? '')
+      : '';
+
+  if (message.includes('RR10_I03_LIVE_STACK=true')) return 'live-stack-guard';
+  if (message.includes('local PostgreSQL')) return 'local-host-guard';
+  if (message.includes('ot_chat_collector')) return 'database-name-guard';
+  if (message.includes('session timezone is not UTC')) return 'timezone-guard';
+  if (message.includes('Exactly two controlled profile UUIDs'))
+    return 'controlled-participant-count';
+  if (message.includes('participants do not match'))
+    return 'participant-mismatch';
+  if (message.includes('outside the bounded test time window'))
+    return 'fixture-time-window';
+  if (
+    message.includes('uncontrolled sender') ||
+    message.includes('uncontrolled recipient')
+  )
+    return 'uncontrolled-message-party';
+  if (message.includes('unexpected system message'))
+    return 'unexpected-system-message';
+  if (message.includes('fixture was not found')) return 'fixture-row-missing';
+  if (message.includes('soft-delete affected no single row'))
+    return 'soft-delete-row-count';
+  if (message.includes('soft-delete readback failed'))
+    return 'soft-delete-readback';
+  if (message.includes('Message count or digest changed'))
+    return 'message-integrity-check';
+  if (message.includes('not soft-deleted')) return 'retention-readback';
+  if (/^08/.test(code) || /ECONNREFUSED|ETIMEDOUT|ENOTFOUND/.test(code))
+    return 'database-connectivity';
+  if (/^28/.test(code)) return 'database-authentication';
+  if (/^42/.test(code)) return 'database-schema';
+  return 'unclassified';
+}
 
 async function account(
   request: APIRequestContext,
@@ -182,14 +227,37 @@ async function createForumThread(author: {
 test('RR08 safety API: report history, blocking, and feed-only mute survive live reads', async ({
   browser,
 }) => {
+  test.skip(
+    process.env['RR10_I03_LIVE_STACK'] !== 'true',
+    'I03 rerun requires the exact direct-conversation cleanup guard'
+  );
   test.setTimeout(180_000);
   const reporterContext = await browser.newContext({ baseURL: origin });
   const authorContext = await browser.newContext({ baseURL: origin });
   const blockTargetContext = await browser.newContext({ baseURL: origin });
   const muteTargetContext = await browser.newContext({ baseURL: origin });
+  const startedAt = new Date();
+  const activeMuteIds = new Set<string>();
+  const activeBlockIds = new Set<string>();
+  const createdPosts: Array<{ request: APIRequestContext; id: string }> = [];
+  let reporterProfileId: string | undefined;
+  let authorProfileId: string | undefined;
+  let directConversationId: string | undefined;
   try {
     const reporter = await account(reporterContext.request, 'reporter');
     const author = await account(authorContext.request, 'author');
+    reporterProfileId = reporter.profileId;
+    authorProfileId = author.profileId;
+    const directStage = <T>(name: string, action: () => Promise<T>) =>
+      timedAwaitedStage(name, action);
+    const baselineMuteState = await directStage(
+      'RR08 baseline muted-state read',
+      () =>
+        reporterContext.request.get(`${origin}/api/privacy/muted`, { headers })
+    );
+    expect(baselineMuteState.status()).toBe(200);
+    const baselineMuteRows = await baselineMuteState.json();
+    expect(JSON.stringify(baselineMuteRows)).not.toContain(author.profileId);
     const directConversationResponse = await reporterContext.request.post(
       `${origin}/api/chat/conversations/direct/get-or-create`,
       { headers, data: { recipientProfileId: author.profileId } }
@@ -199,6 +267,27 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       await directConversationResponse.text()
     ).toBe(201);
     const directConversation = await directConversationResponse.json();
+    directConversationId = directConversation.id;
+    const authorPost = await createPublicPost(author);
+    createdPosts.push({ request: authorContext.request, id: authorPost.id });
+    const blockTarget = await account(
+      blockTargetContext.request,
+      'ui-block-target'
+    );
+    const muteTarget = await account(
+      muteTargetContext.request,
+      'ui-mute-target'
+    );
+    const blockTargetPost = await createPublicPost(blockTarget);
+    createdPosts.push({
+      request: blockTargetContext.request,
+      id: blockTargetPost.id,
+    });
+    const muteTargetPost = await createPublicPost(muteTarget);
+    createdPosts.push({
+      request: muteTargetContext.request,
+      id: muteTargetPost.id,
+    });
     const baselineMessage = await reporterContext.request.post(
       `${origin}/api/chat/messages`,
       {
@@ -211,17 +300,7 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       }
     );
     expect(baselineMessage.status(), await baselineMessage.text()).toBe(201);
-    const post = await createPublicPost(author);
-    const blockTarget = await account(
-      blockTargetContext.request,
-      'ui-block-target'
-    );
-    const muteTarget = await account(
-      muteTargetContext.request,
-      'ui-mute-target'
-    );
-    const blockTargetPost = await createPublicPost(blockTarget);
-    const muteTargetPost = await createPublicPost(muteTarget);
+    const post = authorPost;
 
     const targetBefore = await reporterContext.request.get(
       `${origin}/api/social/post/${post.id}/shared`,
@@ -256,6 +335,17 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       .getByPlaceholder('Provide more context...')
       .fill('RR08 browser UI report');
     await reporterPage.getByRole('button', { name: 'Submit Report' }).click();
+    const reportDialog = reporterPage.getByRole('dialog', {
+      name: 'Report Post',
+    });
+    await expect(reportDialog.getByRole('status')).toContainText(
+      'Report submitted. Thank you for helping keep our community safe.'
+    );
+    // The success dialog remains open long enough for assistive technology to
+    // announce the result. Close it explicitly before continuing the flow.
+    await reporterPage
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
     await expect(
       reporterPage.getByRole('heading', { name: 'Report Post' })
     ).toBeHidden();
@@ -265,7 +355,15 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       .filter({ hasText: blockTargetPost.marker });
     await expect(blockTargetCard).toBeVisible({ timeout: 20_000 });
     await blockTargetCard.getByRole('button', { name: '...' }).click();
+    const blockTargetResponsePromise = reporterPage.waitForResponse(
+      (response) =>
+        response.url().includes('/api/privacy/block') &&
+        response.request().method() === 'POST'
+    );
     await blockTargetCard.getByRole('button', { name: 'Block' }).click();
+    const blockTargetResponse = await blockTargetResponsePromise;
+    expect(blockTargetResponse.status()).toBe(201);
+    activeBlockIds.add(blockTarget.profileId);
     await expect(blockTargetCard).toBeHidden();
     await reporterPage.goto(`${origin}/settings/privacy`);
     await expect(
@@ -274,7 +372,15 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
     await expect(
       reporterPage.getByRole('button', { name: 'Unblock' })
     ).toHaveCount(1);
+    const unblockTargetResponsePromise = reporterPage.waitForResponse(
+      (response) =>
+        response.url().includes('/api/privacy/block/') &&
+        response.request().method() === 'DELETE'
+    );
     await reporterPage.getByRole('button', { name: 'Unblock' }).click();
+    const unblockTargetResponse = await unblockTargetResponsePromise;
+    expect([200, 204]).toContain(unblockTargetResponse.status());
+    activeBlockIds.delete(blockTarget.profileId);
     await expect(
       reporterPage.getByRole('button', { name: 'Unblock' })
     ).toHaveCount(0);
@@ -285,9 +391,17 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       .filter({ hasText: muteTargetPost.marker });
     await expect(muteTargetCard).toBeVisible({ timeout: 20_000 });
     await muteTargetCard.getByRole('button', { name: '...' }).click();
+    const muteTargetResponsePromise = reporterPage.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/privacy/mute') &&
+        response.request().method() === 'POST'
+    );
     await muteTargetCard
       .getByRole('button', { name: 'Mute from feed' })
       .click();
+    const muteTargetResponse = await muteTargetResponsePromise;
+    expect(muteTargetResponse.status()).toBe(201);
+    activeMuteIds.add(muteTarget.profileId);
     await expect(muteTargetCard).toBeHidden();
     await reporterPage.goto(`${origin}/settings/privacy`);
     await expect(
@@ -296,7 +410,15 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
     await expect(
       reporterPage.getByRole('button', { name: 'Unmute' })
     ).toHaveCount(1);
+    const unmuteTargetResponsePromise = reporterPage.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/privacy/mute/${muteTarget.profileId}`) &&
+        response.request().method() === 'DELETE'
+    );
     await reporterPage.getByRole('button', { name: 'Unmute' }).click();
+    const unmuteTargetResponse = await unmuteTargetResponsePromise;
+    expect([200, 204]).toContain(unmuteTargetResponse.status());
+    activeMuteIds.delete(muteTarget.profileId);
     await expect(
       reporterPage.getByRole('button', { name: 'Unmute' })
     ).toHaveCount(0);
@@ -377,6 +499,7 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       { headers, data: { blockedId: author.profileId } }
     );
     expect(block.status(), await block.text()).toBe(201);
+    activeBlockIds.add(author.profileId);
     const blocked = await reporterContext.request.get(
       `${origin}/api/privacy/blocked`,
       { headers }
@@ -423,12 +546,14 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       { headers }
     );
     expect([200, 204]).toContain(unblock.status());
+    activeBlockIds.delete(author.profileId);
     await expect(authorCard).toBeVisible({ timeout: 20_000 });
     const mute = await reporterContext.request.post(
       `${origin}/api/privacy/mute`,
       { headers, data: { mutedId: author.profileId, duration: 3600 } }
     );
     expect(mute.status(), await mute.text()).toBe(201);
+    activeMuteIds.add(author.profileId);
     await expect(authorCard).toBeHidden({ timeout: 20_000 });
     const muted = await reporterContext.request.get(
       `${origin}/api/privacy/muted`,
@@ -440,11 +565,25 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
         expect.objectContaining({ mutedId: author.profileId }),
       ])
     );
-    const unmute = await reporterContext.request.delete(
-      `${origin}/api/privacy/mute/${author.profileId}`,
-      { headers }
+    await reporterPage.goto(`${origin}/settings/privacy`);
+    await expect(
+      reporterPage.getByRole('heading', { name: 'Muted Users' })
+    ).toBeVisible();
+    const samePageUnmuteResponsePromise = reporterPage.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/privacy/mute/${author.profileId}`) &&
+        response.request().method() === 'DELETE'
     );
-    expect([200, 204]).toContain(unmute.status());
+    const samePageUnmute = await timedAwaitedStage(
+      'RR08 same-page mute removal request',
+      async () => {
+        await reporterPage.getByRole('button', { name: 'Unmute' }).click();
+        return samePageUnmuteResponsePromise;
+      }
+    );
+    expect([200, 204]).toContain(samePageUnmute.status());
+    activeMuteIds.delete(author.profileId);
+    await reporterPage.goto(`${origin}/feed`);
     const unmutedPreferences = await reporterContext.request.get(
       `${origin}/api/privacy/muted`,
       { headers }
@@ -462,11 +601,16 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
     expect(unmutedFeed.status(), await unmutedFeed.text()).toBe(200);
     expect(await unmutedFeed.text()).toContain(post.marker);
     await expect(authorCard).toBeVisible({ timeout: 20_000 });
+    await timedAwaitedStage(
+      'RR08 same-page feed card restored after unmute',
+      () => expect(authorCard).toBeVisible({ timeout: 20_000 })
+    );
     const expiryMute = await reporterContext.request.post(
       `${origin}/api/privacy/mute`,
       { headers, data: { mutedId: author.profileId, duration: 1 } }
     );
     expect(expiryMute.status(), await expiryMute.text()).toBe(201);
+    activeMuteIds.add(author.profileId);
     await new Promise((resolve) => setTimeout(resolve, 1200));
     const afterMuteExpiry = await reporterContext.request.get(
       `${origin}/api/privacy/muted`,
@@ -478,11 +622,13 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
         expect.objectContaining({ mutedId: author.profileId }),
       ])
     );
+    activeMuteIds.delete(author.profileId);
     const remute = await reporterContext.request.post(
       `${origin}/api/privacy/mute`,
       { headers, data: { mutedId: author.profileId, duration: 3600 } }
     );
     expect(remute.status(), await remute.text()).toBe(201);
+    activeMuteIds.add(author.profileId);
     const activeRemute = await reporterContext.request.get(
       `${origin}/api/privacy/muted`,
       { headers }
@@ -511,6 +657,90 @@ test('RR08 safety API: report history, blocking, and feed-only mute survive live
       `[RR08 B02 fixture] reporterProfileId=${reporter.profileId} authorProfileId=${author.profileId} postId=${post.id} blockTargetProfileId=${blockTarget.profileId} blockTargetPostId=${blockTargetPost.id} muteTargetProfileId=${muteTarget.profileId} muteTargetPostId=${muteTargetPost.id}`
     );
   } finally {
+    const cleanupErrors: string[] = [];
+    for (const profileId of activeMuteIds) {
+      try {
+        const response = await reporterContext.request.delete(
+          `${origin}/api/privacy/mute/${profileId}`,
+          { headers }
+        );
+        if (![200, 204].includes(response.status()))
+          cleanupErrors.push('exact active mute cleanup failed');
+      } catch {
+        cleanupErrors.push('exact active mute cleanup failed');
+      }
+    }
+    for (const profileId of activeBlockIds) {
+      try {
+        const response = await reporterContext.request.delete(
+          `${origin}/api/privacy/block/${profileId}`,
+          { headers }
+        );
+        if (![200, 204].includes(response.status()))
+          cleanupErrors.push('exact active block cleanup failed');
+      } catch {
+        cleanupErrors.push('exact active block cleanup failed');
+      }
+    }
+    if (directConversationId && reporterProfileId && authorProfileId) {
+      try {
+        const pool = createLocalChatCleanupPool();
+        try {
+          const receipt = await timedAwaitedStage(
+            'RR08 exact direct-conversation cleanup',
+            () =>
+              softDeleteExactDirectConversation(pool, {
+                conversationId: directConversationId!,
+                controlledProfileIds: [reporterProfileId!, authorProfileId!],
+                startedAt,
+                finishedAt: new Date(),
+              })
+          );
+          const retained = await readDeletedDirectMessageRetention(
+            pool,
+            directConversationId
+          );
+          expect(retained).toEqual({
+            retainedMessageCount: receipt.retainedMessageCount,
+            retainedMessageSha256: receipt.retainedMessageSha256,
+          });
+        } finally {
+          await pool.end();
+        }
+      } catch (error) {
+        cleanupErrors.push(
+          `exact RR08 direct conversation cleanup failed (${directCleanupFailureCategory(
+            error
+          )})`
+        );
+      }
+    }
+    for (const fixture of createdPosts) {
+      try {
+        const deleted = await fixture.request.delete(
+          `${origin}/api/social/post/${fixture.id}`,
+          { headers }
+        );
+        if (![200, 204].includes(deleted.status())) {
+          cleanupErrors.push('exact RR08 post delete failed');
+          continue;
+        }
+        const readback = await fixture.request.get(
+          `${origin}/api/social/post/${fixture.id}/shared`,
+          { headers }
+        );
+        const readbackStatus = readback.status();
+        const readbackBody = (await readback.text()).trim();
+        const absentByEmptyResponse =
+          readbackStatus === 200 &&
+          (readbackBody === '' || readbackBody === 'null');
+        if (readbackStatus !== 404 && !absentByEmptyResponse)
+          cleanupErrors.push('exact RR08 post delete readback failed');
+      } catch {
+        cleanupErrors.push('exact RR08 post delete/readback failed');
+      }
+    }
+    expect.soft(cleanupErrors, 'RR08 exact safety fixture cleanup').toEqual([]);
     await Promise.allSettled([
       reporterContext.close(),
       authorContext.close(),
