@@ -690,10 +690,18 @@ describe('AppService', () => {
     it('should throw an error if asset not found', async () => {
       const handle = { id: '1' } as any;
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
+      let error: RpcException | undefined;
+      try {
+        await appService.retrieveAsset(handle);
+      } catch (caught) {
+        error = caught as RpcException;
+      }
 
-      await expect(appService.retrieveAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
-      );
+      expect(error).toBeInstanceOf(RpcException);
+      expect(error?.getError()).toEqual({
+        statusCode: 404,
+        message: 'Asset not found',
+      });
     });
 
     it('should log the retrieval of an asset', async () => {

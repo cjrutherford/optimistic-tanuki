@@ -455,6 +455,9 @@ export class AssetController {
         }
         return;
       }
+      if (this.isMissingAssetError(error)) {
+        throw new NotFoundException('Asset not found');
+      }
       if (error instanceof HttpException) {
         throw error;
       }
@@ -476,6 +479,18 @@ export class AssetController {
       return String((error as { message: unknown }).message);
     }
     return 'Unknown asset error';
+  }
+
+  private isMissingAssetError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+    const response = error as {
+      statusCode?: unknown;
+      message?: unknown;
+      error?: { statusCode?: unknown; message?: unknown };
+    };
+    const statusCode = response.statusCode ?? response.error?.statusCode;
+    const message = response.message ?? response.error?.message;
+    return statusCode === 404 && message === 'Asset not found';
   }
 
   @RequirePermissions('asset.read')

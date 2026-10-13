@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AssetController } from './asset.controller';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import {
   ServiceTokens,
   AssetCommands,
@@ -393,6 +393,67 @@ describe('AssetController', () => {
       { cmd: AssetCommands.REMOVE },
       { id: '1' }
     );
+  });
+
+  it('maps the typed missing-asset RPC to a not-found response before media access', async () => {
+    assetService.send.mockImplementation((pattern: { cmd: string }) =>
+      pattern.cmd === AssetCommands.RETRIEVE
+        ? throwError(() => ({ statusCode: 404, message: 'Asset not found' }))
+        : of([])
+    );
+    const response = Object.assign(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+      {
+        setHeader: jest.fn(),
+        status: jest.fn(),
+        end: jest.fn(),
+        json: jest.fn(),
+      }
+    ) as any;
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    await expect(
+      controller.getAssetById('missing-asset', response)
+    ).rejects.toMatchObject({
+      status: 404,
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('keeps asset-provider retrieval failures as gateway errors', async () => {
+    assetService.send.mockImplementation((pattern: { cmd: string }) =>
+      pattern.cmd === AssetCommands.RETRIEVE
+        ? throwError(() => ({
+            statusCode: 503,
+            message: 'Asset provider unavailable',
+          }))
+        : of([])
+    );
+    const response = Object.assign(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+      {
+        setHeader: jest.fn(),
+        status: jest.fn(),
+        end: jest.fn(),
+        json: jest.fn(),
+      }
+    ) as any;
+
+    await expect(
+      controller.getAssetById('asset-1', response)
+    ).rejects.toMatchObject({
+      status: 502,
+    });
   });
 
   it('proxies a byte-range media response without using the TCP asset read command', async () => {

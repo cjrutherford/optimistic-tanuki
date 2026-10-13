@@ -323,7 +323,7 @@ export class AppService {
     const asset = await this.assetRepo.findOneBy({ id: data.id });
     if (!asset) {
       this.l.error(`Asset with id ${data.id} not found`);
-      throw new RpcException(`Asset with id ${data.id} not found`);
+      throw new RpcException({ statusCode: 404, message: 'Asset not found' });
     }
     return asset;
   }
