@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
 import { createGatewaySessionValidator } from './server-session-validation';
 import { createProtectedRouteGate } from './server-route-guard';
+import { createSocketIoProxyOptions } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
@@ -42,11 +43,7 @@ app.use(cookieParser());
 
 app.use(
   '/socket.io',
-  createProxyMiddleware({
-    target: gatewayWsUrl,
-    ws: true,
-    changeOrigin: true,
-  })
+  createProxyMiddleware(createSocketIoProxyOptions(gatewayWsUrl))
 );
 
 app.use(

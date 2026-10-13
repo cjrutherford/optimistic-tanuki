@@ -38,6 +38,7 @@ describe('LocalHub MessagesComponent', () => {
     onConversations: jest.fn(),
     onMessage: jest.fn(),
     getConversations: jest.fn(),
+    sendDraftMessage: jest.fn(),
     destroy: jest.fn(),
   };
 
@@ -61,16 +62,11 @@ describe('LocalHub MessagesComponent', () => {
     (component as any).currentProfileId = 'self-profile';
   });
 
-  it('sends outgoing messages to the other conversation participants', async () => {
-    chatServiceMock.sendMessage.mockResolvedValue({
-      id: 'message-1',
-      senderId: 'self-profile',
-      content: 'hello from local hub',
-      type: 'chat',
-      recipients: ['other-profile'],
-      createdAt: new Date('2026-07-05T19:00:00.000Z'),
+  it('sends outgoing messages through the acknowledged socket path', async () => {
+    socketChatServiceMock.sendDraftMessage.mockResolvedValue({
+      success: true,
+      messageId: 'message-1',
     });
-
     component.chatConversations.set([
       {
         id: 'conversation-1',
@@ -81,21 +77,61 @@ describe('LocalHub MessagesComponent', () => {
       },
     ]);
 
-    await component.handleMessageSubmitted({
+    const settle = jest.fn();
+    await component.handleMessageSubmission({
       conversationId: 'conversation-1',
       content: 'hello from local hub',
+      settle,
     });
 
-    expect(chatServiceMock.sendMessage).toHaveBeenCalledWith({
+    expect(socketChatServiceMock.sendDraftMessage).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       content: 'hello from local hub',
       senderId: 'self-profile',
-      recipientIds: ['other-profile'],
+      recipientId: ['other-profile'],
+      type: 'chat',
     });
-    expect(component.chatConversations()[0].messages).toHaveLength(1);
-    expect(component.chatConversations()[0].messages[0].conversationId).toBe(
-      'conversation-1'
+    expect(settle).toHaveBeenCalledWith(true);
+  });
+
+  it('retains a rejected draft when socket persistence fails', async () => {
+    socketChatServiceMock.sendDraftMessage.mockRejectedValue(
+      Object.assign(new Error('persistence denied'), { statusCode: 403 })
     );
+    component.chatConversations.set([
+      {
+        id: 'conversation-1',
+        participants: ['self-profile', 'other-profile'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    const settle = jest.fn();
+    await component.handleMessageSubmission({
+      conversationId: 'conversation-1',
+      content: 'keep this draft',
+      settle,
+    });
+
+    expect(settle).toHaveBeenCalledWith(false);
+    expect(socketChatServiceMock.sendDraftMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ content: 'keep this draft' })
+    );
+  });
+
+  it('rejects a draft when the authenticated conversation is unavailable', async () => {
+    const settle = jest.fn();
+
+    await component.handleMessageSubmission({
+      conversationId: 'unknown-conversation',
+      content: 'must not send',
+      settle,
+    });
+
+    expect(socketChatServiceMock.sendDraftMessage).not.toHaveBeenCalled();
+    expect(settle).toHaveBeenCalledWith(false);
   });
 
   it('appends incoming socket messages to the matching conversation', () => {

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { SocketChatService } from '@optimistic-tanuki/chat-ui';
 import { CommunityChatComponent } from './community-chat.component';
 import { CommunityService } from '../services/community.service';
@@ -61,6 +61,7 @@ describe('CommunityChatComponent behaviour', () => {
   const setup = (
     params: Record<string, string> = { communitySlug: 'general' }
   ) => {
+    const routeData = new BehaviorSubject({ currentUserId: 'profile-1' });
     communityService = {
       findOne: jest.fn(),
       findBySlug: jest.fn(),
@@ -87,7 +88,7 @@ describe('CommunityChatComponent behaviour', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            data: of({ currentUserId: 'profile-1' }),
+            data: routeData.asObservable(),
             paramMap: of(convertToParamMap(params)),
             snapshot: { paramMap: convertToParamMap(params) },
           },
@@ -100,6 +101,7 @@ describe('CommunityChatComponent behaviour', () => {
     component = TestBed.createComponent(
       CommunityChatComponent
     ).componentInstance;
+    return { routeData };
   };
 
   beforeEach(() => {
@@ -159,6 +161,81 @@ describe('CommunityChatComponent behaviour', () => {
 
       expect(component.isOwnerOrManager()).toBe(false);
     });
+
+    it('does not let an older community lookup replace the newer route state', async () => {
+      setup();
+      const nextCommunity = {
+        ...community,
+        id: 'community-2',
+        name: 'Next',
+        ownerId: 'profile-9',
+      };
+      let resolveInitialCommunity!: (value: typeof community) => void;
+      communityService.findBySlug.mockImplementation((slug: string) =>
+        slug === 'general'
+          ? new Promise<typeof community>(
+              (resolve) => (resolveInitialCommunity = resolve)
+            )
+          : Promise.resolve(nextCommunity)
+      );
+      communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-2' });
+      communityService.getCommunityChatConversation.mockResolvedValue({
+        ...conversation,
+        id: 'room-2',
+      });
+      communityService.getCommunityChatMessages.mockResolvedValue([
+        {
+          id: 'next-message',
+          conversationId: 'room-2',
+          senderId: 'profile-2',
+          content: 'current route history',
+          type: 'chat',
+          recipients: ['profile-1'],
+          createdAt: new Date('2026-07-05T10:01:00.000Z'),
+        },
+      ]);
+
+      const initialLoad = component.ngOnInit();
+      await component['loadCommunityBySlug']('next');
+      resolveInitialCommunity(community);
+      await initialLoad;
+
+      expect(component.community()?.id).toBe('community-2');
+      expect(component.chatRoomId()).toBe('room-2');
+      expect(component.chatContacts()).toEqual([
+        expect.objectContaining({ id: 'room-2', name: 'Next' }),
+      ]);
+      expect(component.chatConversations()).toEqual([
+        expect.objectContaining({
+          id: 'room-2',
+          messages: [expect.objectContaining({ id: 'next-message' })],
+        }),
+      ]);
+      expect(communityService.getCommunityChatRoom).toHaveBeenCalledTimes(1);
+      expect(communityService.getCommunityChatRoom).toHaveBeenCalledWith(
+        'community-2'
+      );
+    });
+
+    it('does not let an older community failure replace the newer route state', async () => {
+      setup();
+      let rejectInitialCommunity!: (reason: Error) => void;
+      communityService.findBySlug.mockImplementation((slug: string) =>
+        slug === 'general'
+          ? new Promise<typeof community>(
+              (_, reject) => (rejectInitialCommunity = reject)
+            )
+          : Promise.resolve({ ...community, id: 'community-2', name: 'Next' })
+      );
+
+      const initialLoad = component.ngOnInit();
+      await component['loadCommunityBySlug']('next');
+      rejectInitialCommunity(new Error('stale request failed'));
+      await initialLoad;
+
+      expect(component.community()?.id).toBe('community-2');
+      expect(component.error()).toBeNull();
+    });
   });
 
   describe('loading without a community slug', () => {
@@ -201,6 +278,27 @@ describe('CommunityChatComponent behaviour', () => {
 
       expect(component.loading()).toBe(false);
       expect(component.error()).toBeNull();
+    });
+
+    it('ignores a community-list response after the signed-in profile changes', async () => {
+      const { routeData } = setup({});
+      let resolveCommunities!: (value: (typeof community)[]) => void;
+      communityService.getUserCommunities.mockReturnValue(
+        new Promise<(typeof community)[]>(
+          (resolve) => (resolveCommunities = resolve)
+        )
+      );
+
+      await component.ngOnInit();
+      routeData.next({ currentUserId: 'profile-2' });
+      resolveCommunities([community]);
+      await settle();
+
+      expect(component.community()).toBeNull();
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.chatContacts()).toEqual([]);
+      expect(component.chatConversations()).toEqual([]);
+      expect(communityService.getCommunityChatRoom).not.toHaveBeenCalled();
     });
   });
 

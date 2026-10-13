@@ -106,16 +106,22 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   private readonly listeners: (() => void)[] = [];
   private hasConnectedOnce = false;
   private historyLoadVersion = 0;
+  private communityLoadVersion = 0;
 
   async ngOnInit() {
     const routeDataSubscription = this.route.data.subscribe((data: any) => {
       const nextUserId = data['currentUserId'] || '';
       if (this.currentUserId && this.currentUserId !== nextUserId) {
         this.historyLoadVersion += 1;
+        this.communityLoadVersion += 1;
         this.currentCommunityId = null;
+        this.community.set(null);
+        this.isOwner.set(false);
+        this.error.set(null);
         this.chatConversations.set([]);
         this.chatContacts.set([]);
         this.chatRoomId.set(null);
+        this.loading.set(false);
       }
       this.currentUserId = nextUserId;
     });
@@ -123,13 +129,12 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     const routeParamsSubscription = this.route.paramMap
       .pipe(skip(1))
       .subscribe((params) => {
-        this.loading.set(true);
-        this.error.set(null);
         const slug = params.get('communitySlug');
-        const load = slug
-          ? this.loadCommunityBySlug(slug)
-          : this.loadUserCommunitiesChat();
-        void load.finally(() => this.loading.set(false));
+        if (slug) {
+          void this.loadCommunityBySlug(slug);
+        } else {
+          void this.loadUserCommunitiesChat();
+        }
       });
     this.listeners.push(() => routeParamsSubscription.unsubscribe());
 
@@ -162,15 +167,23 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
 
     const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
     if (!communitySlug) {
-      this.loadUserCommunitiesChat();
+      void this.loadUserCommunitiesChat();
       return;
     }
 
     await this.loadCommunityBySlug(communitySlug);
-    this.loading.set(false);
   }
 
   private async loadCommunityBySlug(slug: string) {
+    const loadVersion = ++this.communityLoadVersion;
+    const userId = this.currentUserId;
+    const isCurrentLoad = () =>
+      loadVersion === this.communityLoadVersion &&
+      userId === this.currentUserId;
+    this.loading.set(true);
+    this.error.set(null);
+    this.community.set(null);
+    this.isOwner.set(false);
     this.historyLoadVersion += 1;
     this.currentCommunityId = null;
     this.chatConversations.set([]);
@@ -178,6 +191,7 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     this.chatRoomId.set(null);
     try {
       const community = await this.communityService.findBySlug(slug);
+      if (!isCurrentLoad()) return;
       if (!community) {
         this.error.set('Community not found');
         return;
@@ -189,18 +203,32 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       const chatRoom = await this.communityService.getCommunityChatRoom(
         community.id
       );
+      if (!isCurrentLoad()) return;
       if (chatRoom) {
         this.chatRoomId.set(chatRoom.id);
-        await this.loadChatRoom(chatRoom.id, community);
+        await this.loadChatRoom(chatRoom.id, community, isCurrentLoad);
       }
+      if (!isCurrentLoad()) return;
       this.socketChatService.getConversations(this.currentUserId);
     } catch (err) {
+      if (!isCurrentLoad()) return;
       console.error('Failed to load community:', err);
       this.error.set('Failed to load community');
+    } finally {
+      if (isCurrentLoad()) this.loading.set(false);
     }
   }
 
   private async loadUserCommunitiesChat() {
+    const loadVersion = ++this.communityLoadVersion;
+    const userId = this.currentUserId;
+    const isCurrentLoad = () =>
+      loadVersion === this.communityLoadVersion &&
+      userId === this.currentUserId;
+    this.loading.set(true);
+    this.error.set(null);
+    this.community.set(null);
+    this.isOwner.set(false);
     this.historyLoadVersion += 1;
     this.currentCommunityId = null;
     this.chatConversations.set([]);
@@ -208,32 +236,42 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     this.chatRoomId.set(null);
     try {
       const communities = await this.communityService.getUserCommunities();
+      if (!isCurrentLoad()) return;
       if (communities.length > 0) {
         const community = communities[0];
         this.community.set(community);
         this.currentCommunityId = community.id;
+        this.isOwner.set(community.ownerId === userId);
         const chatRoom = await this.communityService.getCommunityChatRoom(
           community.id
         );
+        if (!isCurrentLoad()) return;
         if (chatRoom) {
           this.chatRoomId.set(chatRoom.id);
-          await this.loadChatRoom(chatRoom.id, community);
+          await this.loadChatRoom(chatRoom.id, community, isCurrentLoad);
         }
+        if (!isCurrentLoad()) return;
         this.socketChatService.getConversations(this.currentUserId);
       }
-      this.loading.set(false);
     } catch (err) {
+      if (!isCurrentLoad()) return;
       console.error('Failed to load communities:', err);
-      this.loading.set(false);
+    } finally {
+      if (isCurrentLoad()) this.loading.set(false);
     }
   }
 
-  private async loadChatRoom(conversationId: string, community: CommunityDto) {
+  private async loadChatRoom(
+    conversationId: string,
+    community: CommunityDto,
+    isCurrentLoad: () => boolean = () => true
+  ) {
     try {
       const [conversation, messages] = await Promise.all([
         this.communityService.getCommunityChatConversation(conversationId),
         this.communityService.getCommunityChatMessages(conversationId),
       ]);
+      if (!isCurrentLoad()) return;
 
       const transformedMessages: ChatMessage[] = messages.map((message) => ({
         id: message.id,
@@ -263,9 +301,10 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         },
       ]);
     } catch (err) {
+      if (!isCurrentLoad()) return;
       console.error('Failed to load chat room:', err);
       if (this.isOwnerOrManager()) {
-        await this.createChatRoom();
+        await this.createChatRoom(isCurrentLoad);
         return;
       }
       this.error.set('Failed to load community chat.');
@@ -528,9 +567,14 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     this.listeners.forEach((dispose) => dispose?.());
   }
 
-  async createChatRoom() {
+  async createChatRoom(isCurrentLoad: () => boolean = () => true) {
     const community = this.community();
     if (!community) return;
+    const loadVersion = this.communityLoadVersion;
+    const isCurrentCommunity = () =>
+      isCurrentLoad() &&
+      loadVersion === this.communityLoadVersion &&
+      this.community()?.id === community.id;
 
     try {
       const chatRoom = await this.communityService.ensureCommunityChatRoom(
@@ -538,9 +582,11 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         this.currentUserId,
         community.name
       );
+      if (!isCurrentCommunity()) return;
       this.chatRoomId.set(chatRoom.id);
-      await this.loadChatRoom(chatRoom.id, community);
+      await this.loadChatRoom(chatRoom.id, community, isCurrentCommunity);
     } catch (err) {
+      if (!isCurrentCommunity()) return;
       console.error('Failed to create chat room:', err);
       this.error.set('Failed to create chat room');
     }

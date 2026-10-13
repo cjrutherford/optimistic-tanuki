@@ -39,6 +39,13 @@ const CHAT_WRITE_PRODUCTION_LIMIT = 60;
 const CHAT_WRITE_RELAXED_LIMIT = 1000;
 const CHAT_WRITE_LIMIT_CEILING = 2000;
 
+export interface PersistedChatMessageNotification {
+  id: string;
+  senderId: string;
+  recipients?: string[];
+  createdAt?: Date | string;
+}
+
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
   cors: {
@@ -458,7 +465,17 @@ export class ChatGateway {
     } else {
       this.l.log('Message handling complete.');
     }
-    const recipientProfileIds = [...new Set([...recipientIds, senderId])];
+    await this.notifyPersistedMessage(payload.conversationId, storedMessage);
+  }
+
+  async notifyPersistedMessage(
+    conversationId: string,
+    storedMessage: PersistedChatMessageNotification
+  ): Promise<void> {
+    const senderId = storedMessage.senderId;
+    const recipientProfileIds = [
+      ...new Set([...(storedMessage.recipients ?? []), senderId]),
+    ];
     this.l.log(
       'Updating recipient sockets...' + JSON.stringify(recipientProfileIds)
     );
@@ -468,7 +485,7 @@ export class ChatGateway {
         await firstValueFrom(
           this.chatCollectorClient.send(
             { cmd: ChatCommands.GET_CONVERSATION },
-            { conversationId: payload.conversationId, requestingProfileId: id }
+            { conversationId, requestingProfileId: id }
           )
         );
       } catch {
@@ -489,7 +506,7 @@ export class ChatGateway {
             this.chatCollectorClient.send(
               { cmd: ChatCommands.GET_CONVERSATION },
               {
-                conversationId: payload.conversationId,
+                conversationId,
                 requestingProfileId: id,
                 deliverySenderId: senderId,
               }
@@ -497,7 +514,7 @@ export class ChatGateway {
           );
           connected.client.emit('message', {
             ...storedMessage,
-            conversationId: payload.conversationId,
+            conversationId,
             recipientIds: storedMessage.recipients,
             recipientId: storedMessage.recipients,
             timestamp: storedMessage.createdAt,

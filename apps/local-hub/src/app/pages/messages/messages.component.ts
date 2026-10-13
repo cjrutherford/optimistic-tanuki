@@ -6,6 +6,7 @@ import {
   ChatContact,
   ChatConversation,
   ChatMessage,
+  ChatMessageSubmission,
   SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -48,7 +49,7 @@ import { ChatService } from '../../services/chat.service';
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
         [currentUserId]="currentProfileId || ''"
-        (messageSubmitted)="handleMessageSubmitted($event)"
+        (messageSubmission)="handleMessageSubmission($event)"
       ></lib-chat-ui>
       }
     </div>
@@ -151,11 +152,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.socketChatService.destroy();
   }
 
-  async handleMessageSubmitted(event: {
-    conversationId: string;
-    content: string;
-  }) {
+  async handleMessageSubmission(
+    event: ChatMessageSubmission & { conversationId: string }
+  ) {
     if (!this.currentProfileId) {
+      event.settle(false);
       return;
     }
 
@@ -163,6 +164,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       (item) => item.id === event.conversationId
     );
     if (!conversation) {
+      event.settle(false);
       return;
     }
 
@@ -170,22 +172,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentProfileId
     );
 
-    const createdMessage = await this.chatService.sendMessage({
-      conversationId: event.conversationId,
-      content: event.content,
-      senderId: this.currentProfileId,
-      recipientIds,
-    });
-
-    this.appendMessageToConversation({
-      id: createdMessage.id,
-      conversationId: createdMessage.conversationId || event.conversationId,
-      senderId: createdMessage.senderId,
-      content: createdMessage.content,
-      type: createdMessage.type as 'chat' | 'info' | 'warning' | 'system',
-      recipientId: createdMessage.recipients || recipientIds,
-      timestamp: new Date(createdMessage.createdAt),
-    });
+    try {
+      await this.socketChatService.sendDraftMessage({
+        conversationId: event.conversationId,
+        content: event.content,
+        senderId: this.currentProfileId,
+        recipientId: recipientIds,
+        type: 'chat',
+      });
+      event.settle(true);
+    } catch {
+      event.settle(false);
+    }
   }
 
   handleIncomingMessage(message: ChatMessage) {

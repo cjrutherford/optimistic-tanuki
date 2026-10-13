@@ -5,6 +5,8 @@ import {
   Get,
   HttpException,
   Inject,
+  Logger,
+  Optional,
   Param,
   Post,
   UseGuards,
@@ -35,19 +37,25 @@ import {
   GetOrCreateDirectChatBodyDto,
   SendMessageDto,
 } from '@optimistic-tanuki/chat-contracts';
+import {
+  ChatGateway,
+  PersistedChatMessageNotification,
+} from '../../app/chat-gateway/chat.gateway';
 
 @ApiBearerAuth()
 @ApiTags('chat')
 @UseGuards(AuthGuard)
 @Controller('chat')
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name);
   constructor(
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatService: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy,
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialService: ClientProxy
+    private readonly socialService: ClientProxy,
+    @Optional() private readonly chatGateway?: ChatGateway
   ) {}
 
   @Get('conversations/find')
@@ -219,11 +227,21 @@ export class ChatController {
         conversation.participants ?? []
       );
     }
-    return this.forward(
+    const stored = await this.forward<any, PersistedChatMessageNotification>(
       { cmd: ChatCommands.SEND_MESSAGE },
       { ...body, senderId: user.profileId },
       'Failed to send message'
     );
+    // Persistence has succeeded. Live delivery must not turn it into a failed
+    // HTTP send (and an accidental duplicate retry); authorized history recovers it.
+    if (this.chatGateway) {
+      void this.chatGateway
+        .notifyPersistedMessage(body.conversationId, stored)
+        .catch(() =>
+          this.logger.warn('Live chat delivery unavailable; message persisted')
+        );
+    }
+    return stored;
   }
 
   private async forward<TPayload, TResult>(
