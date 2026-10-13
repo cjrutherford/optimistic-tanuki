@@ -1,5 +1,6 @@
 import { ServiceTokens, CommunityCommands } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
+import { throwError } from 'rxjs';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppService } from './app.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -181,6 +182,135 @@ describe('AppService', () => {
       }
       expect(update).toHaveBeenCalledTimes(60);
       expect(conversationRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('treats a concurrent same-id/same-content insert as an idempotent retry', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'existing-conv-id',
+        participants: ['user1', 'user2'],
+        messages: [],
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+      jest
+        .spyOn(messageRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(
+          Object.assign(new Message(), {
+            id: mockChatMessage.id,
+            senderId: mockChatMessage.senderId,
+            content: mockChatMessage.content,
+            conversation,
+          })
+        );
+      jest
+        .spyOn(messageRepository, 'save')
+        .mockRejectedValueOnce({ code: '23505' });
+
+      await expect(
+        service.postMessage({
+          ...mockChatMessage,
+          conversationId: conversation.id,
+        })
+      ).resolves.toBe(conversation);
+
+      expect(messageRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(conversationRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('returns the durable message in the conversation receipt for a sequential same-id retry', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'existing-conv-id',
+        participants: ['user1', 'user2'],
+        messages: [],
+      });
+      const durableMessage = Object.assign(new Message(), {
+        id: mockChatMessage.id,
+        senderId: mockChatMessage.senderId,
+        content: mockChatMessage.content,
+        conversation,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest
+        .spyOn(messageRepository, 'findOne')
+        .mockResolvedValue(durableMessage);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([durableMessage]);
+
+      const result = await service.postMessage({
+        ...mockChatMessage,
+        conversationId: conversation.id,
+      });
+
+      expect(result).toBe(conversation);
+      expect(result.messages).toEqual([durableMessage]);
+      expect(messageRepository.find).toHaveBeenCalledWith({
+        where: { conversation: { id: conversation.id } },
+        order: { createdAt: 'ASC' },
+      });
+      expect(messageRepository.save).not.toHaveBeenCalled();
+      expect(conversationRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('checks current community membership before accepting a duplicate ID', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'community-conversation',
+        type: ConversationType.COMMUNITY,
+        communityId: 'community-id',
+        participants: [],
+        messages: [],
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(service as any, 'participants').mockResolvedValue([]);
+
+      await expect(
+        service.postMessage({
+          ...mockChatMessage,
+          conversationId: conversation.id,
+        })
+      ).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403 }),
+      });
+
+      expect(messageRepository.findOne).not.toHaveBeenCalled();
+      expect(messageRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects a sequential same-ID retry when the stored payload differs', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'existing-conv-id',
+        participants: ['user1', 'user2'],
+        messages: [],
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'find').mockResolvedValue([]);
+      jest.spyOn(messageRepository, 'findOne').mockResolvedValue(
+        Object.assign(new Message(), {
+          id: mockChatMessage.id,
+          senderId: mockChatMessage.senderId,
+          content: 'Different content',
+          conversation,
+        })
+      );
+
+      await expect(
+        service.postMessage({
+          ...mockChatMessage,
+          conversationId: conversation.id,
+        })
+      ).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 409 }),
+      });
+
+      expect(messageRepository.find).not.toHaveBeenCalled();
+      expect(messageRepository.save).not.toHaveBeenCalled();
     });
 
     it('does not create a conversation after a repository failure', async () => {
@@ -645,6 +775,281 @@ describe('AppService', () => {
       await service.deleteConversation('conv1', 'anyone');
 
       expect(conversation.isDeleted).toBe(true);
+    });
+  });
+
+  describe('deleteOwnedCommunityConversation', () => {
+    const payload = {
+      conversationId: '78c973a8-0d2b-4a59-b8b0-83b7a0a0c1d1',
+      communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+      actorProfileId: 'owner-profile',
+      appScope: 'towne-square',
+    };
+
+    it('soft-deletes only an owned community conversation in the exact current owner scope', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: payload.conversationId,
+        type: ConversationType.COMMUNITY,
+        communityId: payload.communityId,
+        ownerId: payload.actorProfileId,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      jest.spyOn(messageRepository, 'delete');
+      const socialClient = service['socialClient'] as any;
+      jest.spyOn(socialClient, 'send').mockImplementation((pattern: any) => {
+        if (pattern.cmd === CommunityCommands.FIND) {
+          return of({
+            id: payload.communityId,
+            ownerProfileId: payload.actorProfileId,
+            appScope: payload.appScope,
+          });
+        }
+        if (pattern.cmd === CommunityCommands.GET_MEMBERS) {
+          return of([
+            {
+              profileId: payload.actorProfileId,
+              role: 'owner',
+              status: 'approved',
+            },
+          ]);
+        }
+        return of([]);
+      });
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation(payload)
+      ).resolves.toEqual({ success: true });
+
+      expect(conversationRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: payload.conversationId,
+          isDeleted: false,
+          type: ConversationType.COMMUNITY,
+          communityId: payload.communityId,
+          ownerId: payload.actorProfileId,
+        }),
+        { isDeleted: true }
+      );
+      expect(messageRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it('rejects malformed UUIDs before a repository query or social lookup', async () => {
+      const findOneSpy = jest.spyOn(conversationRepository, 'findOne');
+      const socialClient = service['socialClient'] as any;
+      const sendSpy = jest.spyOn(socialClient, 'send');
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation({
+          ...payload,
+          conversationId: 'not-a-uuid',
+        })
+      ).rejects.toBeInstanceOf(RpcException);
+
+      expect(findOneSpy).not.toHaveBeenCalled();
+      expect(sendSpy).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['actorProfileId', 17],
+      ['appScope', { unexpected: true }],
+    ])(
+      'rejects a non-string %s before repository access',
+      async (key, value) => {
+        const findOneSpy = jest.spyOn(conversationRepository, 'findOne');
+
+        await expect(
+          (service as any).deleteOwnedCommunityConversation({
+            ...payload,
+            [key]: value,
+          })
+        ).rejects.toMatchObject({ error: { statusCode: 400 } });
+
+        expect(findOneSpy).not.toHaveBeenCalled();
+      }
+    );
+
+    it('rejects a scope mismatch before attempting the conditional update', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: payload.conversationId,
+        type: ConversationType.COMMUNITY,
+        communityId: payload.communityId,
+        ownerId: payload.actorProfileId,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      const socialClient = service['socialClient'] as any;
+      jest.spyOn(socialClient, 'send').mockImplementation((pattern: any) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? {
+                id: payload.communityId,
+                ownerProfileId: payload.actorProfileId,
+                appScope: 'other-app',
+              }
+            : []
+        )
+      );
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation(payload)
+      ).rejects.toBeInstanceOf(RpcException);
+
+      expect(conversationRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects a stale owner membership when the community record names another owner', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: payload.conversationId,
+        type: ConversationType.COMMUNITY,
+        communityId: payload.communityId,
+        ownerId: payload.actorProfileId,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      const socialClient = service['socialClient'] as any;
+      jest.spyOn(socialClient, 'send').mockImplementation((pattern: any) =>
+        of(
+          pattern.cmd === CommunityCommands.FIND
+            ? {
+                id: payload.communityId,
+                ownerProfileId: 'different-current-owner',
+                appScope: payload.appScope,
+              }
+            : [
+                {
+                  profileId: payload.actorProfileId,
+                  role: 'owner',
+                  status: 'approved',
+                },
+              ]
+        )
+      );
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation(payload)
+      ).rejects.toMatchObject({ error: { statusCode: 403 } });
+      expect(conversationRepository.update).not.toHaveBeenCalled();
+    });
+
+    it.each(['admin', 'moderator', 'member'])(
+      'rejects an approved %s without owner status',
+      async (role) => {
+        const conversation = Object.assign(new Conversation(), {
+          id: payload.conversationId,
+          type: ConversationType.COMMUNITY,
+          communityId: payload.communityId,
+          ownerId: payload.actorProfileId,
+          isDeleted: false,
+        });
+        jest
+          .spyOn(conversationRepository, 'findOne')
+          .mockResolvedValue(conversation);
+        const socialClient = service['socialClient'] as any;
+        jest.spyOn(socialClient, 'send').mockImplementation((pattern: any) =>
+          of(
+            pattern.cmd === CommunityCommands.FIND
+              ? {
+                  id: payload.communityId,
+                  ownerProfileId: payload.actorProfileId,
+                  appScope: payload.appScope,
+                }
+              : [
+                  {
+                    profileId: payload.actorProfileId,
+                    role,
+                    status: 'approved',
+                  },
+                ]
+          )
+        );
+
+        await expect(
+          (service as any).deleteOwnedCommunityConversation(payload)
+        ).rejects.toBeInstanceOf(RpcException);
+
+        expect(conversationRepository.update).not.toHaveBeenCalled();
+      }
+    );
+
+    it('keeps a social authorization denial as a status-aware RPC denial', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: payload.conversationId,
+        type: ConversationType.COMMUNITY,
+        communityId: payload.communityId,
+        ownerId: payload.actorProfileId,
+        isDeleted: false,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      const socialClient = service['socialClient'] as any;
+      jest
+        .spyOn(socialClient, 'send')
+        .mockReturnValueOnce(
+          throwError(
+            () => new RpcException({ statusCode: 403, message: 'denied' })
+          )
+        );
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation(payload)
+      ).rejects.toMatchObject({
+        error: { statusCode: 403, message: 'denied' },
+      });
+      expect(conversationRepository.update).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['direct conversation', { type: ConversationType.DIRECT }],
+      ['project conversation', { type: ConversationType.PROJECT }],
+      [
+        'different community',
+        { communityId: '77c973a8-0d2b-4a59-b8b0-83b7a0a0c1d3' },
+      ],
+      ['different recorded owner', { ownerId: 'other-profile' }],
+      ['missing recorded owner', { ownerId: null }],
+      ['already deleted conversation', { isDeleted: true }],
+    ])('rejects a %s without soft-deleting it', async (_caseName, override) => {
+      const conversation = Object.assign(new Conversation(), {
+        id: payload.conversationId,
+        type: ConversationType.COMMUNITY,
+        communityId: payload.communityId,
+        ownerId: payload.actorProfileId,
+        isDeleted: false,
+        ...override,
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+      const socialClient = service['socialClient'] as any;
+      jest.spyOn(socialClient, 'send').mockImplementation((pattern: any) => {
+        if (pattern.cmd === CommunityCommands.FIND) {
+          return of({
+            id: payload.communityId,
+            ownerProfileId: payload.actorProfileId,
+            appScope: payload.appScope,
+          });
+        }
+        return of([
+          {
+            profileId: payload.actorProfileId,
+            role: 'owner',
+            status: 'approved',
+          },
+        ]);
+      });
+
+      await expect(
+        (service as any).deleteOwnedCommunityConversation(payload)
+      ).rejects.toBeInstanceOf(RpcException);
+      expect(conversationRepository.update).not.toHaveBeenCalled();
     });
   });
 

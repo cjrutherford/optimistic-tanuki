@@ -13,8 +13,9 @@ describe('CommunityChatComponent', () => {
   let socketChatService: {
     onConversations: jest.Mock;
     onMessage: jest.Mock;
+    onConnectionState: jest.Mock;
     getConversations: jest.Mock;
-    sendMessage: jest.Mock;
+    sendDraftMessage: jest.Mock;
     destroy: jest.Mock;
   };
 
@@ -33,8 +34,9 @@ describe('CommunityChatComponent', () => {
     socketChatService = {
       onConversations: jest.fn(),
       onMessage: jest.fn(),
+      onConnectionState: jest.fn(),
       getConversations: jest.fn(),
-      sendMessage: jest.fn(),
+      sendDraftMessage: jest.fn().mockResolvedValue({ success: true }),
       destroy: jest.fn(),
     };
 
@@ -45,6 +47,7 @@ describe('CommunityChatComponent', () => {
           provide: ActivatedRoute,
           useValue: {
             data: of({ currentUserId: 'profile-1' }),
+            paramMap: of(convertToParamMap({ communitySlug: 'general' })),
             snapshot: {
               paramMap: convertToParamMap({ communitySlug: 'general' }),
             },
@@ -122,9 +125,12 @@ describe('CommunityChatComponent', () => {
     } as any);
     communityService.getCommunityChatMessages.mockResolvedValue([] as any);
 
-    await component.ngOnInit();
     fixture.detectChanges();
-
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(component.loading()).toBe(false);
+    expect(component.error()).toBeNull();
+    expect(component.chatRoomId()).toBe('room-1');
     const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
       .componentInstance as ChatUiComponent;
 
@@ -225,7 +231,7 @@ describe('CommunityChatComponent', () => {
     );
   });
 
-  it('sends submitted community messages to the room participants over the shared socket', async () => {
+  it('sends a submitted community message through acknowledged shared socket delivery', async () => {
     component['currentUserId'] = 'profile-1';
     component.chatConversations.set([
       {
@@ -239,15 +245,19 @@ describe('CommunityChatComponent', () => {
     await component.handleMessageSubmitted({
       conversationId: 'room-1',
       content: 'hello',
+      settle: jest.fn(),
     });
 
-    expect(socketChatService.sendMessage).toHaveBeenCalledWith({
+    expect(socketChatService.sendDraftMessage).toHaveBeenCalledWith({
       conversationId: 'room-1',
       content: 'hello',
       senderId: 'profile-1',
       recipientId: ['profile-2'],
       type: 'chat',
     });
+    expect(
+      socketChatService.sendDraftMessage.mock.calls[0][0]
+    ).not.toHaveProperty('id');
     expect(communityService.sendCommunityChatMessage).not.toHaveBeenCalled();
   });
 });

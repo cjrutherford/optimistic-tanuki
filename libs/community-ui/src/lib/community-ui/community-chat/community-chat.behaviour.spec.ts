@@ -12,8 +12,9 @@ import { CommunityService } from '../services/community.service';
 interface SocketChatServiceMock {
   onConversations: jest.Mock;
   onMessage: jest.Mock;
+  onConnectionState: jest.Mock;
   getConversations: jest.Mock;
-  sendMessage: jest.Mock;
+  sendDraftMessage: jest.Mock;
   destroy: jest.Mock;
 }
 
@@ -74,8 +75,9 @@ describe('CommunityChatComponent behaviour', () => {
     socketChatService = {
       onConversations: jest.fn(),
       onMessage: jest.fn(),
+      onConnectionState: jest.fn(),
       getConversations: jest.fn(),
-      sendMessage: jest.fn(),
+      sendDraftMessage: jest.fn().mockResolvedValue({ success: true }),
       destroy: jest.fn(),
     };
 
@@ -86,6 +88,7 @@ describe('CommunityChatComponent behaviour', () => {
           provide: ActivatedRoute,
           useValue: {
             data: of({ currentUserId: 'profile-1' }),
+            paramMap: of(convertToParamMap(params)),
             snapshot: { paramMap: convertToParamMap(params) },
           },
         },
@@ -293,9 +296,10 @@ describe('CommunityChatComponent behaviour', () => {
       await component.handleMessageSubmitted({
         conversationId: testCase.conversationId,
         content: 'hello',
+        settle: jest.fn(),
       });
 
-      expect(socketChatService.sendMessage).not.toHaveBeenCalled();
+      expect(socketChatService.sendDraftMessage).not.toHaveBeenCalled();
     });
   });
 
@@ -399,6 +403,117 @@ describe('CommunityChatComponent behaviour', () => {
       expect(component.chatRoomId()).toBe('room-1');
     });
 
+    const loadedAuthorizedRoom = async () => {
+      setup();
+      communityService.findBySlug.mockResolvedValue(community);
+      communityService.getCommunityChatRoom.mockResolvedValue({ id: 'room-1' });
+      communityService.getCommunityChatConversation.mockResolvedValue(
+        conversation
+      );
+      await component.ngOnInit();
+      return socketChatService.onConversations.mock.calls[0][0] as (
+        conversations: unknown[]
+      ) => Promise<void>;
+    };
+
+    it('retains REST-authorized room history after an empty socket snapshot', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+
+      await onConversations([]);
+
+      expect(
+        communityService.getCommunityChatConversation
+      ).toHaveBeenCalledTimes(2);
+      expect(component.chatRoomId()).toBe('room-1');
+      expect(component.chatConversations()).toEqual([
+        expect.objectContaining({ id: 'room-1' }),
+      ]);
+      expect(component.error()).toBeNull();
+    });
+
+    it('clears the cached room when empty-snapshot reauthorization is denied', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+      communityService.getCommunityChatConversation.mockRejectedValueOnce({
+        status: 403,
+      });
+
+      await onConversations([]);
+
+      expect(
+        communityService.getCommunityChatConversation
+      ).toHaveBeenCalledTimes(2);
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.chatConversations()).toEqual([]);
+      expect(component.error()).toBe(
+        'Community chat is unavailable. Approved membership is required.'
+      );
+    });
+
+    it('reports a missing room separately from denied membership', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+      communityService.getCommunityChatConversation.mockRejectedValueOnce({
+        status: 404,
+      });
+
+      await onConversations([]);
+
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.error()).toBe('Community chat could not be found.');
+      expect(component.error()).not.toContain('Approved membership');
+    });
+
+    it('reports an expired session separately from denied membership', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+      communityService.getCommunityChatConversation.mockRejectedValueOnce({
+        status: 401,
+      });
+
+      await onConversations([]);
+
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.error()).toBe('Sign in again to access community chat.');
+      expect(component.error()).not.toContain('Approved membership');
+    });
+
+    it('reports a temporary access-check failure without claiming membership denial', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+      communityService.getCommunityChatConversation.mockRejectedValueOnce({
+        statusCode: 503,
+      });
+
+      await onConversations([]);
+
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.error()).toBe(
+        'Failed to verify community chat access. Please try again.'
+      );
+      expect(component.error()).not.toContain('Approved membership');
+    });
+
+    it('ignores empty-snapshot reauthorization that finishes after route change', async () => {
+      const onConversations = await loadedAuthorizedRoom();
+      let finishAuthorization!: (value: typeof conversation) => void;
+      communityService.getCommunityChatConversation.mockReturnValueOnce(
+        new Promise((resolve) => (finishAuthorization = resolve))
+      );
+      communityService.findBySlug.mockResolvedValueOnce({
+        ...community,
+        id: 'community-2',
+        name: 'Next',
+      });
+      communityService.getCommunityChatRoom.mockResolvedValueOnce(null);
+
+      const authorization = onConversations([]);
+      await component['loadCommunityBySlug']('next');
+      finishAuthorization(conversation);
+      await authorization;
+
+      expect(component.community()?.id).toBe('community-2');
+      expect(component.chatRoomId()).toBeNull();
+      expect(component.chatConversations()).toEqual([]);
+      expect(component.error()).toBeNull();
+    });
+
     it('skips the profile lookup when the user is the only participant', async () => {
       const onConversations = await loadedConversations();
 
@@ -415,6 +530,54 @@ describe('CommunityChatComponent behaviour', () => {
 
       expect(communityService.getProfilesByIds).not.toHaveBeenCalled();
       expect(component.chatContacts()[0].name).toBe('General');
+    });
+
+    it('keeps a live message that arrives while authorized history is loading', async () => {
+      const onConversations = await loadedConversations();
+      component.chatConversations.set([
+        {
+          id: 'room-1',
+          participants: ['profile-1', 'profile-2'],
+          messages: [],
+          createdAt: new Date('2026-07-05T10:00:00.000Z'),
+          updatedAt: new Date('2026-07-05T10:00:00.000Z'),
+        },
+      ]);
+      let finishHistory!: (messages: unknown[]) => void;
+      communityService.getCommunityChatMessages.mockReturnValue(
+        new Promise((resolve) => (finishHistory = resolve)) as any
+      );
+      const historyLoad = onConversations([
+        {
+          id: 'room-1',
+          type: 'community',
+          communityId: 'community-1',
+          participants: ['profile-1', 'profile-2'],
+          createdAt: new Date('2026-07-05T10:00:00.000Z'),
+          updatedAt: new Date('2026-07-05T10:00:00.000Z'),
+        },
+      ]);
+
+      const onMessage = socketChatService.onMessage.mock.calls[0][0] as (
+        message: any
+      ) => void;
+      onMessage({
+        id: 'm2',
+        conversationId: 'room-1',
+        senderId: 'profile-2',
+        content: 'socket update',
+        type: 'chat',
+        recipientId: ['profile-1'],
+        timestamp: new Date('2026-07-05T10:03:00.000Z'),
+      });
+      finishHistory([]);
+      await historyLoad;
+
+      expect(component.chatConversations()[0].messages).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'm2', content: 'socket update' }),
+        ])
+      );
     });
   });
 

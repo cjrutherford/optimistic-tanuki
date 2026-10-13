@@ -7,6 +7,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
+  Ack,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
@@ -233,17 +234,34 @@ export class ChatGateway {
   @SubscribeMessage('message')
   async handleMessage(
     @MessageBody() payload: ChatMessage,
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: Socket,
+    @Ack()
+    acknowledge?: (response: {
+      success: boolean;
+      messageId?: string;
+      statusCode?: number;
+      message?: string;
+    }) => void
   ): Promise<void> {
     const user = await this.socketSessionAuth
       .authenticate(client)
       .catch((error) => {
+        this.acknowledgeMessageFailure(acknowledge, 401);
         throw new WsException(error.message);
       });
     if (payload.senderId && payload.senderId !== user.profileId) {
+      this.acknowledgeMessageFailure(acknowledge, 403);
       throw new UnauthorizedException('Message sender does not match session');
     }
-    this.assertChatWriteAllowed(user.userId);
+    try {
+      this.assertChatWriteAllowed(user.userId);
+    } catch (error) {
+      this.acknowledgeMessageFailure(
+        acknowledge,
+        error instanceof Error && error.message.includes('Too many') ? 429 : 403
+      );
+      throw error;
+    }
     payload.senderId = user.profileId;
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
@@ -257,11 +275,20 @@ export class ChatGateway {
         }
       )
     ).catch((error) => {
+      this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
       throw new WsException(error);
     });
-    if (!conversation) throw new WsException('Conversation unavailable');
+    if (!conversation) {
+      this.acknowledgeMessageFailure(acknowledge, 404);
+      throw new WsException('Conversation unavailable');
+    }
     if (conversation.type === 'direct') {
-      await this.ensureDirectChatAllowed(conversation.participants ?? []);
+      try {
+        await this.ensureDirectChatAllowed(conversation.participants ?? []);
+      } catch (error) {
+        this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
+        throw error;
+      }
     }
     // The collector resolves current community recipients and validates every send.
     payload.recipientIds = (conversation.participants ?? []).filter(
@@ -270,11 +297,22 @@ export class ChatGateway {
     const messageReceipt = await firstValueFrom(
       this.chatCollectorClient.send({ cmd: ChatCommands.POST_MESSAGE }, payload)
     ).catch((error) => {
+      this.acknowledgeMessageFailure(acknowledge, this.rpcStatus(error));
       throw new WsException(error);
     });
-    const storedMessage =
-      messageReceipt.messages.find((message) => message.id === payload.id) ??
-      messageReceipt.messages[messageReceipt.messages.length - 1];
+    const receiptMessages = Array.isArray(messageReceipt?.messages)
+      ? messageReceipt.messages
+      : [];
+    const storedMessage = payload.id
+      ? receiptMessages.find((message) => message.id === payload.id)
+      : receiptMessages[receiptMessages.length - 1];
+    if (!storedMessage?.id) {
+      this.acknowledgeMessageFailure(acknowledge, 503);
+      throw new WsException('Message persistence could not be confirmed');
+    }
+    // The receipt is returned only after the collector's durable POST has
+    // completed. Delivery fan-out may still be recovered from authorized history.
+    acknowledge?.({ success: true, messageId: storedMessage.id });
     const recipientIds = storedMessage.recipients ?? [];
     this.updateConnectedSockets(senderId, client, 'connect');
     this.l.log(`Sender ID: ${senderId} connected.`);
@@ -470,6 +508,48 @@ export class ChatGateway {
         }
       }
     }
+  }
+
+  private rpcStatus(error: unknown): number {
+    const direct = error as {
+      statusCode?: unknown;
+      error?: { statusCode?: unknown };
+      response?: { statusCode?: unknown };
+      getError?: () => unknown;
+    };
+    const nested = direct?.getError?.() as {
+      statusCode?: unknown;
+      error?: { statusCode?: unknown };
+    };
+    const status =
+      direct?.statusCode ??
+      direct?.error?.statusCode ??
+      direct?.response?.statusCode ??
+      nested?.statusCode ??
+      nested?.error?.statusCode;
+    return typeof status === 'number' ? status : 500;
+  }
+
+  private acknowledgeMessageFailure(
+    acknowledge:
+      | ((response: {
+          success: boolean;
+          statusCode?: number;
+          message?: string;
+        }) => void)
+      | undefined,
+    statusCode: number
+  ): void {
+    if (!acknowledge) return;
+    const message =
+      statusCode === 401
+        ? 'Sign in again to send this message.'
+        : statusCode === 403
+        ? 'You no longer have access to this conversation.'
+        : statusCode === 404
+        ? 'This conversation is no longer available.'
+        : 'Message could not be saved. Please retry.';
+    acknowledge({ success: false, statusCode, message });
   }
 
   async invalidateConversations(): Promise<void> {

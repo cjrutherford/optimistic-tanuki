@@ -1,4 +1,5 @@
 import {
+  ChatMessageSubmission,
   ChatWindowComponent,
   ChatWindowState,
 } from './chat-window/chat-window.component';
@@ -171,6 +172,9 @@ export class ChatUiComponent implements OnInit, OnChanges {
     conversationId: string;
     content: string;
   }>();
+  @Output() messageSubmission = new EventEmitter<
+    ChatMessageSubmission & { conversationId: string }
+  >();
   @Input() autoOpenFirstConversation = false;
   /** A conversation to select when its contact is present. */
   @Input() conversationToOpen: { id: string; requestId: number } | null = null;
@@ -353,6 +357,19 @@ export class ChatUiComponent implements OnInit, OnChanges {
 
   handleMessageSubmitted(conversationId: string, content: string) {
     this.messageSubmitted.emit({ conversationId, content });
+  }
+
+  handleMessageSubmission(
+    conversationId: string,
+    submission: ChatMessageSubmission
+  ) {
+    if (this.messageSubmission.observed) {
+      this.messageSubmission.emit({ ...submission, conversationId });
+      return;
+    }
+
+    this.messageSubmitted.emit({ conversationId, content: submission.content });
+    submission.settle(true);
   }
 
   getConversation(contactId: string): ChatConversation {

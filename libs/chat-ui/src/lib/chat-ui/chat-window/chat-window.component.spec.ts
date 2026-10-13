@@ -65,6 +65,31 @@ describe('ChatWindowComponent', () => {
     });
   });
 
+  it('uses only the acknowledged submission path when a consumer opts in', () => {
+    const legacy = jest.fn();
+    const acknowledged = jest.fn();
+    const settle = jest.fn();
+    component.messageSubmitted.subscribe(legacy);
+    component.messageSubmission.subscribe(acknowledged);
+
+    component.onMessageSubmission({ content: 'hello', settle });
+
+    expect(acknowledged).toHaveBeenCalledWith({ content: 'hello', settle });
+    expect(legacy).not.toHaveBeenCalled();
+    expect(settle).not.toHaveBeenCalled();
+  });
+
+  it('keeps the legacy string event for consumers without an ack listener', () => {
+    const legacy = jest.fn();
+    const settle = jest.fn();
+    component.messageSubmitted.subscribe(legacy);
+
+    component.onMessageSubmission({ content: 'hello', settle });
+
+    expect(legacy).toHaveBeenCalledWith('hello');
+    expect(settle).toHaveBeenCalledWith(true);
+  });
+
   it('marks the window as mobile at small viewports', () => {
     const originalWidth = window.innerWidth;
     Object.defineProperty(window, 'innerWidth', {

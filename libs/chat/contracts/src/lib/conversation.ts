@@ -10,6 +10,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
+  Matches,
 } from 'class-validator';
 
 /**
@@ -148,6 +150,29 @@ export class CreateCommunityChatDto {
   @IsOptional()
   @IsString()
   name?: string;
+}
+
+/** Trusted internal cleanup request. There is intentionally no gateway route. */
+export class DeleteOwnedCommunityConversationDto {
+  @ApiProperty()
+  @IsUUID()
+  conversationId!: string;
+
+  @ApiProperty()
+  @IsUUID()
+  communityId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/)
+  actorProfileId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/)
+  appScope!: string;
 }
 
 /** `ChatCommands.GET_OR_CREATE_PROJECT_CHAT` — project-chat provisioning. */

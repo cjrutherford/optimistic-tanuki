@@ -16,6 +16,21 @@ describe('ChatUiComponent', () => {
     component = fixture.componentInstance;
   });
 
+  it('forwards the ack completion only to an opted-in consumer', () => {
+    const settle = jest.fn();
+    const submission = { content: 'hello', settle };
+    const delivered = jest.fn();
+    component.messageSubmission.subscribe(delivered);
+
+    component.handleMessageSubmission('conversation-1', submission);
+
+    expect(delivered).toHaveBeenCalledWith({
+      ...submission,
+      conversationId: 'conversation-1',
+    });
+    expect(settle).not.toHaveBeenCalled();
+  });
+
   it('mounts the selected conversation in the right pane', () => {
     component.contacts = [
       { id: 'room-1', name: 'General' },

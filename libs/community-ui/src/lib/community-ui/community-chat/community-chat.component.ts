@@ -6,10 +6,12 @@ import {
   ChatContact,
   ChatConversation,
   ChatMessage,
+  ChatMessageSubmission,
   SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { CommunityService } from '../services/community.service';
 import { CommunityDto } from '../models';
+import { skip } from 'rxjs';
 
 @Component({
   selector: 'lib-community-chat',
@@ -30,14 +32,18 @@ import { CommunityDto } from '../models';
         </button>
         }
       </div>
-      } @else {
+      } @else { @if (connectionStatus() === 'reconnecting') {
+      <p role="status" class="connection-status">
+        Reconnecting… authorized chat history will reload when connected.
+      </p>
+      }
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
         [currentUserId]="currentUserId"
         [autoOpenFirstConversation]="true"
         [layout]="'embedded'"
-        (messageSubmitted)="handleMessageSubmitted($event)"
+        (messageSubmission)="handleMessageSubmitted($event)"
       ></lib-chat-ui>
       }
     </div>
@@ -57,6 +63,10 @@ import { CommunityDto } from '../models';
       }
       .error {
         color: #dc3545;
+      }
+      .connection-status {
+        color: var(--local-complement, #666);
+        text-align: center;
       }
       .create-btn {
         margin-top: 1rem;
@@ -86,16 +96,42 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
 
   loading = signal(true);
   error = signal<string | null>(null);
+  connectionStatus = signal<'connecting' | 'connected' | 'reconnecting'>(
+    'connecting'
+  );
 
   currentUserId = '';
   isOwner = signal(false);
   private currentCommunityId: string | null = null;
   private readonly listeners: (() => void)[] = [];
+  private hasConnectedOnce = false;
+  private historyLoadVersion = 0;
 
   async ngOnInit() {
-    this.route.data.subscribe((data: any) => {
-      this.currentUserId = data['currentUserId'] || '';
+    const routeDataSubscription = this.route.data.subscribe((data: any) => {
+      const nextUserId = data['currentUserId'] || '';
+      if (this.currentUserId && this.currentUserId !== nextUserId) {
+        this.historyLoadVersion += 1;
+        this.currentCommunityId = null;
+        this.chatConversations.set([]);
+        this.chatContacts.set([]);
+        this.chatRoomId.set(null);
+      }
+      this.currentUserId = nextUserId;
     });
+    this.listeners.push(() => routeDataSubscription.unsubscribe());
+    const routeParamsSubscription = this.route.paramMap
+      .pipe(skip(1))
+      .subscribe((params) => {
+        this.loading.set(true);
+        this.error.set(null);
+        const slug = params.get('communitySlug');
+        const load = slug
+          ? this.loadCommunityBySlug(slug)
+          : this.loadUserCommunitiesChat();
+        void load.finally(() => this.loading.set(false));
+      });
+    this.listeners.push(() => routeParamsSubscription.unsubscribe());
 
     this.listeners.push(
       this.socketChatService.onConversations(async (conversations: any[]) => {
@@ -105,6 +141,22 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     this.listeners.push(
       this.socketChatService.onMessage((message) => {
         this.appendMessageToConversation(message);
+      })
+    );
+    this.listeners.push(
+      this.socketChatService.onConnectionState((connected) => {
+        if (connected) {
+          const reconnecting = this.hasConnectedOnce;
+          this.hasConnectedOnce = true;
+          this.connectionStatus.set('connected');
+          if (reconnecting && this.currentUserId) {
+            this.socketChatService.getConversations(this.currentUserId);
+          }
+        } else {
+          this.connectionStatus.set(
+            this.hasConnectedOnce ? 'reconnecting' : 'connecting'
+          );
+        }
       })
     );
 
@@ -119,6 +171,11 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   }
 
   private async loadCommunityBySlug(slug: string) {
+    this.historyLoadVersion += 1;
+    this.currentCommunityId = null;
+    this.chatConversations.set([]);
+    this.chatContacts.set([]);
+    this.chatRoomId.set(null);
     try {
       const community = await this.communityService.findBySlug(slug);
       if (!community) {
@@ -144,6 +201,11 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
   }
 
   private async loadUserCommunitiesChat() {
+    this.historyLoadVersion += 1;
+    this.currentCommunityId = null;
+    this.chatConversations.set([]);
+    this.chatContacts.set([]);
+    this.chatRoomId.set(null);
     try {
       const communities = await this.communityService.getUserCommunities();
       if (communities.length > 0) {
@@ -210,18 +272,22 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
     }
   }
 
-  async handleMessageSubmitted(event: {
-    conversationId: string;
-    content: string;
-  }) {
+  async handleMessageSubmitted(
+    event: ChatMessageSubmission & {
+      conversationId: string;
+    }
+  ) {
+    const conversationId = event.conversationId;
     if (!this.currentUserId) {
+      event.settle(false);
       return;
     }
 
     const conversation = this.chatConversations().find(
-      (item) => item.id === event.conversationId
+      (item) => item.id === conversationId
     );
     if (!conversation) {
+      event.settle(false);
       return;
     }
 
@@ -229,33 +295,84 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentUserId
     );
 
-    this.socketChatService.sendMessage({
-      conversationId: event.conversationId,
-      content: event.content,
-      senderId: this.currentUserId,
-      recipientId: recipientIds,
-      type: 'chat',
-    });
+    try {
+      await this.socketChatService.sendDraftMessage({
+        conversationId,
+        content: event.content,
+        senderId: this.currentUserId,
+        recipientId: recipientIds,
+        type: 'chat',
+      });
+      event.settle(true);
+    } catch {
+      event.settle(false);
+    }
   }
 
   private async handleConversationsLoaded(conversations: any[]) {
-    if (!this.currentCommunityId) {
+    const communityId = this.currentCommunityId;
+    const userId = this.currentUserId;
+    if (!communityId) {
       return;
     }
+    const historyLoadVersion = ++this.historyLoadVersion;
 
     const communityConversations = conversations.filter(
       (conversation) =>
         conversation.type === 'community' &&
-        conversation.communityId === this.currentCommunityId
+        conversation.communityId === communityId
     );
 
     if (communityConversations.length === 0) {
-      this.chatConversations.set([]);
-      this.chatContacts.set([]);
-      this.chatRoomId.set(null);
-      this.error.set(
-        'Community chat is unavailable. Approved membership is required.'
-      );
+      const currentRoomId = this.chatRoomId();
+      if (!currentRoomId) {
+        // Initial route loading owns authorization until it has resolved a
+        // room. An early socket snapshot must not race that REST request.
+        return;
+      }
+
+      try {
+        const authorizedConversation =
+          await this.communityService.getCommunityChatConversation(
+            currentRoomId
+          );
+        if (
+          historyLoadVersion !== this.historyLoadVersion ||
+          communityId !== this.currentCommunityId ||
+          userId !== this.currentUserId ||
+          currentRoomId !== this.chatRoomId()
+        ) {
+          return;
+        }
+        if (authorizedConversation.id === currentRoomId) {
+          this.error.set(null);
+          return;
+        }
+
+        this.clearUnavailableCommunityChat(
+          'Failed to verify community chat access. Please try again.'
+        );
+      } catch (error) {
+        if (
+          historyLoadVersion !== this.historyLoadVersion ||
+          communityId !== this.currentCommunityId ||
+          userId !== this.currentUserId ||
+          currentRoomId !== this.chatRoomId()
+        ) {
+          return;
+        }
+
+        const status = this.getErrorStatus(error);
+        this.clearUnavailableCommunityChat(
+          status === 403
+            ? 'Community chat is unavailable. Approved membership is required.'
+            : status === 401
+            ? 'Sign in again to access community chat.'
+            : status === 404
+            ? 'Community chat could not be found.'
+            : 'Failed to verify community chat access. Please try again.'
+        );
+      }
       return;
     }
 
@@ -286,18 +403,19 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         const messages = await this.communityService.getCommunityChatMessages(
           conversation.id
         );
+        const fetchedMessages = messages.map((message) => ({
+          id: message.id,
+          conversationId: message.conversationId,
+          senderId: message.senderId,
+          content: message.content,
+          type: message.type,
+          recipientId: message.recipients || [],
+          timestamp: new Date(message.createdAt),
+        }));
         return {
           id: conversation.id,
           participants: conversation.participants,
-          messages: messages.map((message) => ({
-            id: message.id,
-            conversationId: message.conversationId,
-            senderId: message.senderId,
-            content: message.content,
-            type: message.type,
-            recipientId: message.recipients || [],
-            timestamp: new Date(message.createdAt),
-          })),
+          messages: fetchedMessages,
           createdAt: new Date(conversation.createdAt),
           updatedAt: new Date(conversation.updatedAt),
           participantProfiles: conversation.participants
@@ -306,6 +424,31 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
         };
       })
     );
+
+    if (
+      historyLoadVersion !== this.historyLoadVersion ||
+      communityId !== this.currentCommunityId ||
+      userId !== this.currentUserId
+    ) {
+      return;
+    }
+    const latestVisibleMessages = new Map(
+      this.chatConversations().map((conversation) => [
+        conversation.id,
+        conversation.messages,
+      ])
+    );
+    for (const conversation of conversationsWithMessages) {
+      const mergedMessages = new Map(
+        conversation.messages.map((message) => [message.id, message])
+      );
+      for (const message of latestVisibleMessages.get(conversation.id) || []) {
+        mergedMessages.set(message.id, message);
+      }
+      conversation.messages = [...mergedMessages.values()].sort(
+        (left, right) => left.timestamp.getTime() - right.timestamp.getTime()
+      );
+    }
 
     this.chatContacts.set(
       communityConversations.map((conversation) => ({
@@ -356,6 +499,29 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
           : contact
       )
     );
+  }
+
+  private clearUnavailableCommunityChat(
+    message = 'Community chat is unavailable. Approved membership is required.'
+  ) {
+    this.chatConversations.set([]);
+    this.chatContacts.set([]);
+    this.chatRoomId.set(null);
+    this.error.set(message);
+  }
+
+  private getErrorStatus(error: unknown): number | null {
+    if (typeof error !== 'object' || error === null) {
+      return null;
+    }
+
+    const candidate = error as { status?: unknown; statusCode?: unknown };
+    if (typeof candidate.status === 'number') {
+      return candidate.status;
+    }
+    return typeof candidate.statusCode === 'number'
+      ? candidate.statusCode
+      : null;
   }
 
   ngOnDestroy() {

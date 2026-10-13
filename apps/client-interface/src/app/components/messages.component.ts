@@ -13,6 +13,7 @@ import {
   ChatContact,
   ChatConversation,
   ChatMessage,
+  ChatMessageSubmission,
   SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { ProfileService } from '../profile.service';
@@ -36,6 +37,13 @@ import { firstValueFrom } from 'rxjs';
         <div>
           <h1>Messages</h1>
           <p class="subtitle">Your conversations</p>
+          @if (connectionStatus() === 'reconnecting') {
+          <p class="connection-status" role="status">
+            Reconnecting… saved messages will reload when you are back online.
+          </p>
+          } @else if (connectionStatus() === 'connecting') {
+          <p class="connection-status" role="status">Connecting to chat…</p>
+          }
         </div>
         <label class="start-conversation">
           <span>Start a conversation</span>
@@ -64,7 +72,7 @@ import { firstValueFrom } from 'rxjs';
           [conversations]="chatConversations()"
           [currentUserId]="currentProfileId || ''"
           [layout]="'embedded'"
-          (messageSubmitted)="handleMessageSubmitted($event)"
+          (messageSubmission)="handleMessageSubmitted($event)"
         ></lib-chat-ui>
       </div>
       }
@@ -139,6 +147,11 @@ import { firstValueFrom } from 'rxjs';
       .error {
         color: var(--error);
       }
+
+      .connection-status {
+        color: var(--muted);
+        font-size: 0.875rem;
+      }
     `,
   ],
 })
@@ -155,26 +168,50 @@ export class MessagesComponent implements OnInit, OnDestroy {
   chatConversations = signal<ChatConversation[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  connectionStatus = signal<'connecting' | 'connected' | 'reconnecting'>(
+    'connecting'
+  );
   availableProfiles = computed(() =>
     this.profileService.discoverableProfiles()
   );
 
   currentProfileId: string | null = null;
+  private hasConnectedOnce = false;
+  private socketListenerDisposers: Array<() => void> = [];
+  private historyLoadVersion = 0;
 
   async ngOnInit() {
-    this.socketChatService.onConversations((conversations) => {
-      this.handleConversationsLoaded(
-        conversations as unknown as AppChatConversation[]
-      );
-    });
-    this.socketChatService.onMessage((message) => {
-      this.handleIncomingMessage(message);
-    });
+    this.socketListenerDisposers.push(
+      this.socketChatService.onConversations((conversations) => {
+        this.handleConversationsLoaded(
+          conversations as unknown as AppChatConversation[]
+        );
+      }),
+      this.socketChatService.onMessage((message) => {
+        this.handleIncomingMessage(message);
+      }),
+      this.socketChatService.onConnectionState((connected) => {
+        if (connected) {
+          const reconnecting = this.hasConnectedOnce;
+          this.hasConnectedOnce = true;
+          this.connectionStatus.set('connected');
+          if (reconnecting && this.currentProfileId) {
+            this.socketChatService.getConversations(this.currentProfileId);
+          }
+        } else {
+          this.connectionStatus.set(
+            this.hasConnectedOnce ? 'reconnecting' : 'connecting'
+          );
+        }
+      })
+    );
     await this.loadConversations();
     await this.loadDiscoverableProfiles();
   }
 
   ngOnDestroy() {
+    this.socketListenerDisposers.forEach((dispose) => dispose());
+    this.socketListenerDisposers = [];
     this.socketChatService.destroy();
   }
 
@@ -183,18 +220,22 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.chatConversations.set([]);
   }
 
-  async handleMessageSubmitted(event: {
-    conversationId: string;
-    content: string;
-  }) {
+  async handleMessageSubmitted(
+    event: ChatMessageSubmission & {
+      conversationId: string;
+    }
+  ) {
+    const conversationId = event.conversationId;
     if (!this.currentProfileId) {
+      event.settle(false);
       return;
     }
 
     const conversation = this.chatConversations().find(
-      (item) => item.id === event.conversationId
+      (item) => item.id === conversationId
     );
     if (!conversation) {
+      event.settle(false);
       return;
     }
 
@@ -202,13 +243,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentProfileId
     );
 
-    this.socketChatService.sendMessage({
-      conversationId: event.conversationId,
-      content: event.content,
-      senderId: this.currentProfileId,
-      recipientId: recipientIds,
-      type: 'chat',
-    });
+    try {
+      await this.socketChatService.sendDraftMessage({
+        conversationId,
+        content: event.content,
+        senderId: this.currentProfileId,
+        recipientId: recipientIds,
+        type: 'chat',
+      });
+      event.settle(true);
+    } catch {
+      event.settle(false);
+    }
   }
 
   async startDirectConversation(profileId: string): Promise<void> {
@@ -258,6 +304,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
     try {
       const profile = this.profileService.getCurrentUserProfile();
       if (!profile) return;
+      const profileId = profile.id;
+      const historyLoadVersion = ++this.historyLoadVersion;
 
       const allParticipantIds = new Set<string>();
       conversations.forEach((c) => {
@@ -311,6 +359,31 @@ export class MessagesComponent implements OnInit, OnDestroy {
       const conversationMessages = await Promise.all(
         conversationMessagesPromises
       );
+      if (
+        historyLoadVersion !== this.historyLoadVersion ||
+        profileId !== this.currentProfileId ||
+        profileId !== this.profileService.getCurrentUserProfile()?.id
+      ) {
+        return;
+      }
+      const latestVisibleMessages = new Map(
+        this.chatConversations().map((conversation) => [
+          conversation.id,
+          conversation.messages,
+        ])
+      );
+      for (const conversation of conversationMessages) {
+        const merged = new Map(
+          conversation.messages.map((message) => [message.id, message])
+        );
+        for (const message of latestVisibleMessages.get(conversation.id) ||
+          []) {
+          merged.set(message.id, message);
+        }
+        conversation.messages = [...merged.values()].sort(
+          (left, right) => left.timestamp.getTime() - right.timestamp.getTime()
+        );
+      }
       const messagesMap = new Map(
         conversationMessages.map((cm) => [cm.id, cm.messages])
       );

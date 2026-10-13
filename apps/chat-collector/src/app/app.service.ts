@@ -15,7 +15,9 @@ import {
   MessageType,
 } from './entities';
 import { Any, ArrayContains, Repository } from 'typeorm';
+import { isUUID } from 'class-validator';
 import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import { DeleteOwnedCommunityConversationDto } from '@optimistic-tanuki/chat-contracts';
 import {
   ServiceTokens,
   CommunityCommands,
@@ -62,6 +64,10 @@ export class AppService {
             statusCode: 409,
             message: 'Message ID already used',
           });
+        conversation.messages = await this.getMessages(
+          conversation.id,
+          data.senderId
+        );
         return conversation;
       }
     }
@@ -77,7 +83,36 @@ export class AppService {
     this.l.log('Posting new message:', JSON.stringify(newMessage));
     const message = this.messageRepository.create(newMessage);
     this.l.debug('Created message entity:', JSON.stringify(message));
-    await this.messageRepository.save(message);
+    try {
+      await this.messageRepository.save(message);
+    } catch (error) {
+      if (!data.id || (error as { code?: string })?.code !== '23505') {
+        throw error;
+      }
+
+      // Two retries can both miss the initial lookup. If the unique message ID
+      // wins elsewhere, accept only the identical durable message.
+      const racedMessage = await this.messageRepository.findOne({
+        where: { id: data.id },
+        relations: ['conversation'],
+      });
+      if (!racedMessage) throw error;
+      if (
+        racedMessage.conversation?.id !== conversation.id ||
+        racedMessage.senderId !== data.senderId ||
+        racedMessage.content !== data.content
+      ) {
+        throw new RpcException({
+          statusCode: 409,
+          message: 'Message ID already used',
+        });
+      }
+      conversation.messages = await this.getMessages(
+        conversation.id,
+        data.senderId
+      );
+      return conversation;
+    }
 
     conversation.updatedAt = new Date();
     // Messages own the ManyToOne relation. Saving a stale OneToMany snapshot
@@ -484,5 +519,143 @@ export class AppService {
 
     conversation.isDeleted = true;
     await this.conversationRepository.save(conversation);
+  }
+
+  async deleteOwnedCommunityConversation(
+    data: DeleteOwnedCommunityConversationDto
+  ): Promise<{ success: true }> {
+    if (
+      !data ||
+      !isUUID(data.conversationId) ||
+      !isUUID(data.communityId) ||
+      typeof data.actorProfileId !== 'string' ||
+      !data.actorProfileId.trim() ||
+      typeof data.appScope !== 'string' ||
+      !data.appScope.trim()
+    ) {
+      throw new RpcException({
+        statusCode: 400,
+        message:
+          'A valid conversation, community, actor, and app scope are required',
+      });
+    }
+
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: data.conversationId },
+    });
+    if (!conversation || conversation.isDeleted) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Conversation not found',
+      });
+    }
+    if (
+      conversation.type !== ConversationType.COMMUNITY ||
+      conversation.communityId !== data.communityId ||
+      !conversation.ownerId ||
+      conversation.ownerId !== data.actorProfileId
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message:
+          'Only the current owner can clean up this community conversation',
+      });
+    }
+
+    const community = await this.requestCommunityAuthorization<{
+      id?: string;
+      ownerProfileId?: string;
+      appScope?: string;
+    }>(
+      { cmd: CommunityCommands.FIND },
+      { id: data.communityId },
+      'Community authorization unavailable'
+    );
+    if (!community || community.id !== data.communityId) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Community not found',
+      });
+    }
+    if (
+      community.ownerProfileId !== data.actorProfileId ||
+      community.appScope !== data.appScope
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Community owner or application scope does not match',
+      });
+    }
+
+    const members = await this.requestCommunityAuthorization<
+      Array<{ profileId?: string; role?: string; status?: string }>
+    >(
+      { cmd: CommunityCommands.GET_MEMBERS },
+      { communityId: data.communityId },
+      'Community membership authorization unavailable'
+    );
+    const currentOwner = Array.isArray(members)
+      ? members.some(
+          (member) =>
+            member?.profileId === data.actorProfileId &&
+            member?.role === 'owner' &&
+            member?.status === 'approved'
+        )
+      : false;
+    if (!currentOwner) {
+      throw new RpcException({
+        statusCode: 403,
+        message: 'Current approved community ownership is required',
+      });
+    }
+
+    const result = await this.conversationRepository.update(
+      {
+        id: data.conversationId,
+        isDeleted: false,
+        type: ConversationType.COMMUNITY,
+        communityId: data.communityId,
+        ownerId: data.actorProfileId,
+      },
+      { isDeleted: true }
+    );
+    if (result.affected !== 1) {
+      throw new RpcException({
+        statusCode: 404,
+        message: 'Conversation is no longer available for cleanup',
+      });
+    }
+
+    return { success: true };
+  }
+
+  private async requestCommunityAuthorization<T>(
+    pattern: { cmd: string },
+    payload: Record<string, string>,
+    unavailableMessage: string
+  ): Promise<T> {
+    try {
+      return await firstValueFrom(
+        this.socialClient.send(pattern, payload).pipe(timeout(5000))
+      );
+    } catch (error) {
+      const transportError =
+        error instanceof RpcException ? error.getError() : error;
+      const response =
+        typeof transportError === 'object' && transportError !== null
+          ? (transportError as Record<string, unknown>)
+          : {};
+      const statusCode = Number(response.statusCode ?? response.status);
+      if ([400, 401, 403, 404].includes(statusCode)) {
+        throw new RpcException({
+          statusCode,
+          message:
+            typeof response.message === 'string'
+              ? response.message
+              : unavailableMessage,
+        });
+      }
+      throw new RpcException({ statusCode: 503, message: unavailableMessage });
+    }
   }
 }

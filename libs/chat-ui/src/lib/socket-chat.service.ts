@@ -47,6 +47,13 @@ export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
 export const SOCKET_AUTH_TOKEN_PROVIDER = 'SOCKET_AUTH_TOKEN_PROVIDER';
 export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
 
+export interface ChatMessageAcknowledgement {
+  success: boolean;
+  messageId?: string;
+  statusCode?: number;
+  message?: string;
+}
+
 /**
  * Service for handling chat functionality via WebSockets.
  */
@@ -55,6 +62,11 @@ export const SOCKET_AUTH_ERROR_HANDLER = 'SOCKET_AUTH_ERROR_HANDLER';
 })
 export class SocketChatService {
   private socket: Socket;
+  private readonly draftMessageIds = new Map<
+    string,
+    { content: string; id: string }
+  >();
+  private readonly activeDraftConversations = new Set<string>();
   private typingSubject = new Subject<{
     conversationId: string;
     userId: string;
@@ -209,6 +221,96 @@ export class SocketChatService {
   sendMessage(message: Partial<ChatMessage>): void {
     this.reconnectIfNeeded();
     this.socket.emit('message', message);
+  }
+
+  sendMessageWithAck(
+    message: Partial<ChatMessage>,
+    timeoutMs = 15000
+  ): Promise<ChatMessageAcknowledgement> {
+    this.reconnectIfNeeded();
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('Chat server did not acknowledge the message'));
+      }, timeoutMs);
+
+      this.socket.emit(
+        'message',
+        message,
+        (response: ChatMessageAcknowledgement) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          if (response?.success) {
+            resolve(response);
+          } else {
+            const error = new Error(
+              response?.message || 'Message could not be sent'
+            ) as Error & { statusCode?: number };
+            error.statusCode = response?.statusCode;
+            reject(error);
+          }
+        }
+      );
+    });
+  }
+
+  sendDraftMessage(
+    message: Partial<ChatMessage> & {
+      conversationId: string;
+      content: string;
+    }
+  ): Promise<ChatMessageAcknowledgement> {
+    const conversationId = message.conversationId;
+    if (this.activeDraftConversations.has(conversationId)) {
+      return Promise.reject(
+        Object.assign(new Error('A message is already being sent'), {
+          statusCode: 409,
+        })
+      );
+    }
+
+    const previous = this.draftMessageIds.get(conversationId);
+    const draft =
+      previous?.content === message.content
+        ? previous
+        : { content: message.content, id: this.createMessageId() };
+    this.draftMessageIds.set(conversationId, draft);
+    this.activeDraftConversations.add(conversationId);
+
+    return this.sendMessageWithAck({ ...message, id: draft.id })
+      .then((acknowledgement) => {
+        if (acknowledgement.messageId !== draft.id) {
+          throw new Error('Chat server acknowledged a different message');
+        }
+        if (this.draftMessageIds.get(conversationId) === draft) {
+          this.draftMessageIds.delete(conversationId);
+        }
+        return acknowledgement;
+      })
+      .finally(() => this.activeDraftConversations.delete(conversationId));
+  }
+
+  private createMessageId(): string {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+      const random = Math.floor(Math.random() * 16);
+      return (char === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  onConnectionState(callback: (connected: boolean) => void): () => void {
+    const connected = () => callback(true);
+    const disconnected = () => callback(false);
+    this.socket.on('connect', connected);
+    this.socket.on('disconnect', disconnected);
+    callback(Boolean(this.socket.connected));
+    return () => {
+      this.socket.off('connect', connected);
+      this.socket.off('disconnect', disconnected);
+    };
   }
 
   private reconnectIfNeeded(): void {

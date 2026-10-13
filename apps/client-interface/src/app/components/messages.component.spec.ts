@@ -7,7 +7,11 @@ import { MessagesComponent } from './messages.component';
 import { ProfileService } from '../profile.service';
 import { ChatService } from '../chat.service';
 import { PresenceService } from '../presence.service';
-import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
+import {
+  ChatMessage,
+  ChatUiComponent,
+  SocketChatService,
+} from '@optimistic-tanuki/chat-ui';
 
 describe('MessagesComponent', () => {
   let fixture: ComponentFixture<MessagesComponent>;
@@ -22,6 +26,8 @@ describe('MessagesComponent', () => {
     onMessage: jest.Mock;
     getConversations: jest.Mock;
     sendMessage: jest.Mock;
+    sendDraftMessage: jest.Mock;
+    onConnectionState: jest.Mock;
     destroy: jest.Mock;
   };
 
@@ -35,10 +41,12 @@ describe('MessagesComponent', () => {
     };
 
     socketChatService = {
-      onConversations: jest.fn(),
-      onMessage: jest.fn(),
+      onConversations: jest.fn(() => jest.fn()),
+      onMessage: jest.fn(() => jest.fn()),
       getConversations: jest.fn(),
       sendMessage: jest.fn(),
+      sendDraftMessage: jest.fn(),
+      onConnectionState: jest.fn(() => jest.fn()),
       destroy: jest.fn(),
     };
 
@@ -116,7 +124,7 @@ describe('MessagesComponent', () => {
     expect(chatUi.layout).toBe('embedded');
   });
 
-  it('sends outgoing messages to the other conversation participants over the socket', async () => {
+  it('retains the submitted draft after a failed send and accepts a deliberate retry', async () => {
     component.chatConversations.set([
       {
         id: 'conversation-1',
@@ -127,18 +135,39 @@ describe('MessagesComponent', () => {
       },
     ]);
 
+    socketChatService.sendDraftMessage
+      .mockRejectedValueOnce(new Error('disconnected'))
+      .mockResolvedValueOnce({ success: true });
+    const firstSettle = jest.fn();
     await component.handleMessageSubmitted({
       conversationId: 'conversation-1',
       content: 'hello world',
+      settle: firstSettle,
+    });
+    expect(firstSettle).toHaveBeenCalledWith(false);
+
+    const secondSettle = jest.fn();
+    await component.handleMessageSubmitted({
+      conversationId: 'conversation-1',
+      content: 'hello world',
+      settle: secondSettle,
     });
 
-    expect(socketChatService.sendMessage).toHaveBeenCalledWith({
+    expect(socketChatService.sendDraftMessage).toHaveBeenNthCalledWith(1, {
       conversationId: 'conversation-1',
       content: 'hello world',
       senderId: 'profile-1',
       recipientId: ['other-profile'],
       type: 'chat',
     });
+    expect(socketChatService.sendDraftMessage).toHaveBeenNthCalledWith(2, {
+      conversationId: 'conversation-1',
+      content: 'hello world',
+      senderId: 'profile-1',
+      recipientId: ['other-profile'],
+      type: 'chat',
+    });
+    expect(secondSettle).toHaveBeenCalledWith(true);
     expect(chatService.sendMessage).not.toHaveBeenCalled();
   });
 
@@ -149,6 +178,28 @@ describe('MessagesComponent', () => {
     expect(socketChatService.getConversations).toHaveBeenCalledWith(
       'profile-1'
     );
+  });
+
+  it('reloads authorized conversation history when the socket reconnects', async () => {
+    let connectionListener: ((connected: boolean) => void) | undefined;
+    const dispose = jest.fn();
+    socketChatService.onConnectionState.mockImplementation((callback) => {
+      connectionListener = callback;
+      return dispose;
+    });
+
+    await component.ngOnInit();
+    expect(socketChatService.getConversations).toHaveBeenCalledTimes(1);
+    connectionListener?.(true);
+    connectionListener?.(false);
+    expect(component.connectionStatus()).toBe('reconnecting');
+    connectionListener?.(true);
+    expect(component.connectionStatus()).toBe('connected');
+    expect(socketChatService.getConversations).toHaveBeenCalledTimes(2);
+
+    component.ngOnDestroy();
+    expect(dispose).toHaveBeenCalled();
+    expect(socketChatService.destroy).toHaveBeenCalled();
   });
 
   it('attaches fetched participant profiles to rehydrated conversations', async () => {
@@ -176,6 +227,50 @@ describe('MessagesComponent', () => {
     ]);
   });
 
+  it('keeps socket arrivals that race an authorized history refresh', async () => {
+    component.chatConversations.set([
+      {
+        id: 'conversation-1',
+        participants: ['profile-1', 'other-profile'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    let resolveMessages!: (messages: any[]) => void;
+    chatService.getMessages.mockReturnValue(
+      new Promise((resolve) => (resolveMessages = resolve))
+    );
+    const history = (component as any).handleConversationsLoaded([
+      {
+        id: 'conversation-1',
+        participants: ['profile-1', 'other-profile'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    component.handleIncomingMessage({
+      id: 'live-message',
+      conversationId: 'conversation-1',
+      senderId: 'other-profile',
+      content: 'arrived during reload',
+      type: 'chat',
+      recipientId: ['profile-1'],
+      timestamp: new Date('2026-07-05T18:21:00.000Z'),
+    });
+    resolveMessages([]);
+    await history;
+
+    expect(component.chatConversations()[0].messages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'live-message',
+          content: 'arrived during reload',
+        }),
+      ])
+    );
+  });
+
   it('appends incoming socket messages to the matching conversation', () => {
     component.chatConversations.set([
       {
@@ -186,6 +281,16 @@ describe('MessagesComponent', () => {
         updatedAt: new Date(),
       },
     ]);
+
+    component.handleIncomingMessage({
+      id: 'message-2',
+      conversationId: 'conversation-1',
+      senderId: 'other-profile',
+      content: 'reply message',
+      type: 'chat',
+      recipientId: ['profile-1'],
+      timestamp: new Date('2026-07-05T18:21:00.000Z'),
+    });
 
     component.handleIncomingMessage({
       id: 'message-2',

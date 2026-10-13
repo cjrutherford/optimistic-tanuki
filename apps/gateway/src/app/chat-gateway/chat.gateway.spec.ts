@@ -9,6 +9,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { Socket, Server } from 'socket.io';
+import { RpcException } from '@nestjs/microservices';
 import { ChatMessage } from '@optimistic-tanuki/models';
 import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
@@ -131,11 +132,17 @@ describe('ChatGateway', () => {
         conversationId: 'missing-conversation',
         content: 'rate-limit must run before POST',
       } as unknown as ChatMessage;
+      const acknowledge = jest.fn();
 
       try {
         await expect(
-          gateway.handleMessage({ ...payload }, socket)
+          gateway.handleMessage({ ...payload }, socket, acknowledge)
         ).rejects.toThrow('Conversation unavailable');
+        expect(acknowledge).toHaveBeenCalledWith({
+          success: false,
+          statusCode: 404,
+          message: 'This conversation is no longer available.',
+        });
         await expect(
           gateway.handleMessage({ ...payload }, secondSocket)
         ).rejects.toThrow('Too many chat writes');
@@ -181,7 +188,7 @@ describe('ChatGateway', () => {
         participants: ['sender-id', 'recipient-id'],
         messages: [
           {
-            id: 'msg-1',
+            id: 'msg-id',
             senderId: 'sender-id',
             recipients: ['recipient-id'],
             content: 'hello',
@@ -218,6 +225,99 @@ describe('ChatGateway', () => {
       expect(socket.emit).toHaveBeenCalledWith(
         'message',
         expect.objectContaining({ content: 'hello' })
+      );
+    });
+
+    it('acknowledges the stable message id only after the collector saves it', async () => {
+      const payload: ChatMessage = {
+        id: 'stable-message-id',
+        senderId: 'sender-id',
+        senderName: 'Sender',
+        recipientId: ['recipient-id'],
+        recipientName: ['Recipient'],
+        conversationId: 'conv-id',
+        content: 'acknowledged',
+        timestamp: new Date(),
+        type: 'chat',
+        role: 'user',
+      };
+      const conversation = {
+        id: 'conv-id',
+        type: 'community',
+        participants: ['sender-id', 'recipient-id'],
+      };
+      const stored = {
+        id: 'stable-message-id',
+        content: 'acknowledged',
+        senderId: 'sender-id',
+        recipients: ['recipient-id'],
+        createdAt: new Date(),
+      };
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        of(
+          cmd === ChatCommands.GET_CONVERSATION
+            ? conversation
+            : cmd === ChatCommands.POST_MESSAGE
+            ? { messages: [stored] }
+            : [{ id: 'conv-id' }]
+        )
+      );
+      telosDocsService.send.mockReturnValue(of([]));
+      const acknowledge = jest.fn();
+
+      await gateway.handleMessage(payload, socket, acknowledge);
+
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        payload
+      );
+      expect(acknowledge).toHaveBeenCalledWith({
+        success: true,
+        messageId: 'stable-message-id',
+      });
+    });
+
+    it('returns a sanitized status-aware acknowledgement when persistence rejects', async () => {
+      const payload = {
+        id: 'stable-message-id',
+        senderId: 'sender-id',
+        senderName: 'Sender',
+        recipientId: ['recipient-id'],
+        recipientName: ['Recipient'],
+        conversationId: 'conv-id',
+        content: 'denied',
+        timestamp: new Date(),
+        type: 'chat',
+        role: 'user',
+      } as ChatMessage;
+      chatCollectorService.send.mockImplementation(({ cmd }) =>
+        cmd === ChatCommands.GET_CONVERSATION
+          ? of({
+              id: 'conv-id',
+              type: 'community',
+              participants: ['sender-id', 'recipient-id'],
+            })
+          : throwError(
+              () =>
+                new RpcException({
+                  statusCode: 403,
+                  message: 'Sensitive membership details',
+                })
+            )
+      );
+      const acknowledge = jest.fn();
+
+      await expect(
+        gateway.handleMessage(payload, socket, acknowledge)
+      ).rejects.toBeTruthy();
+
+      expect(acknowledge).toHaveBeenCalledWith({
+        success: false,
+        statusCode: 403,
+        message: 'You no longer have access to this conversation.',
+      });
+      expect(JSON.stringify(acknowledge.mock.calls)).not.toContain(
+        'Sensitive membership details'
       );
     });
 
@@ -275,7 +375,7 @@ describe('ChatGateway', () => {
         participants: ['sender-id', 'recipient-id'],
         messages: [
           {
-            id: 'msg-1',
+            id: 'msg-id',
             senderId: 'sender-id',
             recipients: ['recipient-id'],
             content: 'hello',
@@ -334,7 +434,7 @@ describe('ChatGateway', () => {
         participants: ['sender-id', 'recipient-id'],
         messages: [
           {
-            id: 'msg-1',
+            id: 'msg-id',
             senderId: 'sender-id',
             recipients: ['recipient-id'],
             content: 'hello',

@@ -5,6 +5,7 @@ import {
   ConversationDto,
   ConversationType,
   CreateCommunityChatDto,
+  DeleteOwnedCommunityConversationDto,
   GetConversationDto,
   GetConversationsDto,
   GetMessagesDto,
@@ -83,6 +84,23 @@ const COVERED: Array<{
     valid: { communityId: 'community-1', ownerId: 'profile-1' },
     invalid: { communityId: 'community-1' },
     invalidProps: ['ownerId'],
+  },
+  {
+    pattern: ChatCommands.DELETE_OWNED_COMMUNITY_CONVERSATION,
+    dto: DeleteOwnedCommunityConversationDto,
+    valid: {
+      conversationId: '78c973a8-0d2b-4a59-b8b0-83b7a0a0c1d1',
+      communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+      actorProfileId: 'owner-profile',
+      appScope: 'towne-square',
+    },
+    invalid: {
+      conversationId: 'not-a-uuid',
+      communityId: '67c973a8-0d2b-4a59-b8b0-83b7a0a0c1d2',
+      actorProfileId: '',
+      appScope: ' ',
+    },
+    invalidProps: ['actorProfileId', 'appScope', 'conversationId'],
   },
   {
     pattern: ChatCommands.GET_OR_CREATE_PROJECT_CHAT,

@@ -54,6 +54,7 @@
       [windowState]="activeWindowState()"
       (windowStateChange)="handleWindowStateChange(contact.id, $event)"
       (messageSubmitted)="handleMessageSubmitted(contact.id, $event)"
+      (messageSubmission)="handleMessageSubmission(contact.id, $event)"
     ></lib-chat-window>
     } }
   </div>

@@ -12,7 +12,10 @@ import {
 import { AppService } from './app.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ChatCommands, CommonCommands } from '@optimistic-tanuki/constants';
-import { ChatMessage } from '@optimistic-tanuki/chat-contracts';
+import {
+  ChatMessage,
+  DeleteOwnedCommunityConversationDto,
+} from '@optimistic-tanuki/chat-contracts';
 
 @Controller()
 export class AppController {
@@ -64,6 +67,13 @@ export class AppController {
       data.ownerId,
       data.name
     );
+  }
+
+  @MessagePattern({ cmd: ChatCommands.DELETE_OWNED_COMMUNITY_CONVERSATION })
+  async deleteOwnedCommunityConversation(
+    @Payload() data: DeleteOwnedCommunityConversationDto
+  ) {
+    return this.appService.deleteOwnedCommunityConversation(data);
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_OR_CREATE_PROJECT_CHAT })
