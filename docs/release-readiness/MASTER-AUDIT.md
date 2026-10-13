@@ -319,7 +319,7 @@ The `RR-xx` namespace is intentionally separate from existing product/engineerin
 | RR-09 | Accessibility, responsive/mobile, themes, and motion                      | GAP FOUND; I01–I10 accepted, V01 in progress; see findings/RR-09.md                                                                | P1                |
 | RR-10 | Reliability, error recovery, uploads, sockets, and degraded states        | GAP FOUND — I01-V01 in progress; I02 API/UI matrices pass; I03 current-source checkpoint pass with historical diagnostics open; I04 bounded source/runtime checkpoint and V01 double-submit pass | P0/P1             |
 | RR-11 | Legal/support/privacy/account deletion and public-operational basics      | GAP FOUND — I01 bounded fail-closed checkpoint accepted; I02 approval pending; I03 HOLD / NOT IMPLEMENTED; V01 EXECUTED — CONDITIONAL / NOT ACCEPTED; deletion lifecycle and approved public disclosures/processes remain open; see findings/RR-11.md | P0/P1             |
-| RR-12 | End-to-end launch gate and regression matrix                              | PLANNED                                                                                                                            | P0                |
+| RR-12 | End-to-end launch gate and regression matrix                              | GAP FOUND — 2026-10-13; production claims mismatch, bundle identity unproven, integrated matrix NOT RUN; see findings/RR-12.md | P0                |
 | RR-13 | Final public positioning, onboarding, and launch marketing package        | PLANNED                                                                                                                            | P1                |
 | RR-14 | Reputation prototype evaluation and migration path (`retumbl`)            | PLANNED; local access confirmed                                                                                                    | P1/P2             |
 | RR-15 | Federation/self-hosting feasibility and architecture decision             | AUDITING                                                                                                                           | P1/P2 strategic   |
@@ -746,6 +746,8 @@ Legal review may be needed for final wording; this slice's engineering goal is t
 ---
 
 ## RR-12 — End-to-end launch gate and regression matrix
+
+**Status:** GAP FOUND — 2026-10-13. Read-only production checks returned HTTP 200 for both roots and captured the current main JavaScript hashes, but RR-01-withdrawn/reworded OT and TS claims remain visible and no deployed git SHA ties the served bundle to reviewed source. The current canonical local Compose project has only its existing Redis service; OT, TS, and gateway ports are down, so the fresh integrated write-capable matrix was not run. This is an environment limitation, not a product failure finding. Prior slice reports are reused only for their exact bounded scopes; they do not satisfy final integration. RR-11 approval/operations, RR-06-V01, RR-09-V01 manual AT, RR-10 provider/config/resource qualification, RR-03/shared email, and other named gates remain independent prerequisites. No waiver or scope change is recorded. See [RR-12 findings and cell matrix](./findings/RR-12.md).
 
 **Goal:** Make public readiness reproducible.
 
