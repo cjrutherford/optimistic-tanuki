@@ -11,17 +11,19 @@ tags:
   - faq
 ---
 
-# Messaging Pillars
+# Messaging pillars (internal draft)
 
-This document is the canonical source for Optimistic Tanuki's outward-facing messaging. It is derived from analysis of the full repository: product READMEs, architecture docs, marketing one-pagers, package metadata, and deployment tooling. All claims are anchored to repo evidence.
+**Status:** Internal positioning draft. Not approved for public use while RR-12 is unaccepted.
 
-Use it as ground truth when generating landing copy, social posts, email campaigns, pitch decks, or developer-facing content.
+RR-01 is the authority for OT/TS public claim dispositions. The release owner must reconcile any proposed copy with the accepted RR-12 revision and the owning behavior evidence. This document and repository source presence do not approve claims.
 
 ## Positioning Statement
 
-> **Optimistic Tanuki is a composable web application platform that ships named products for community coordination, local commerce, financial planning, project execution, and marketing campaigns on a shared Angular, NestJS, AI, and Kubernetes foundation.**
+> Internal direction only. Do not present this draft as approved launch copy while RR-12 is unaccepted.
+
+> **Optimistic Tanuki is a web application portfolio and platform for community, local, planning, project, and marketing workflows.**
 >
-> Teams adopt it three ways: as a finished product portfolio with deployable applications, as a composable service layer with reusable backend capabilities, or as a developer toolbox with selected npm-ready packages and shared contracts — without rebuilding authentication, billing, social, AI orchestration, or deployment automation from scratch.
+> The repository documents application, service-composition, and developer-package paths. Availability and support claims for a specific workflow or revision require current evidence.
 
 _Source: `docs/marketing/repo-story.md:18-28`, `PRODUCT.md:3-6`_
 
@@ -31,8 +33,8 @@ _Source: `docs/marketing/repo-story.md:18-28`, `PRODUCT.md:3-6`_
 
 | Product               | Nx project            | Audience                              | Personality    | One-line promise                                                                                             |
 | --------------------- | --------------------- | ------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Optimistic Tanuki** | `client-interface`    | Communities                           | `classic`      | A trustworthy, community-owned social space.                                                                 |
-| **Towne Square**      | `local-hub`           | Residents, local operators            | `soft-touch`   | One local place for coordination, classifieds, commerce, and civic participation.                            |
+| **Optimistic Tanuki** | `client-interface`    | People and interest communities       | `classic`      | A social space centered on people and shared interests, with communities as an option.                        |
+| **Towne Square**      | `local-hub`           | People connected to a place           | `soft-touch`   | A place-centered product direction for local coordination and exchange.                                       |
 | **Forge of Will**     | `forgeofwill`         | Individuals, small teams, consultants | `bold`         | Turn plans into visible progress in one focused execution workspace.                                         |
 | **Fin Commander**     | `fin-commander`       | Households, advisors, finance teams   | `professional` | Move from account setup to usable financial plans and scenarios without losing context.                      |
 | **Signal Foundry**    | `marketing-generator` | Marketers, product teams, agencies    | `electric`     | Turn a structured brief into strategy directions, channel drafts, material assets, and a refinement history. |
@@ -45,9 +47,9 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ### Pillar 1 — Five products, one platform
 
-**Headline:** Five products. One platform. No repeated infrastructure.
+**Headline:** Five products share platform infrastructure.
 
-**Body:** Every named product runs on the same service layer, design system, and deployment tooling. Authentication, billing, social, AI orchestration, and deployment automation are built once and shared. Buyers get finished products; operators get composable services; developers get npm-ready packages.
+**Body:** The repository contains named applications, shared services, design-system code, and deployment tooling. Product maturity and accepted workflows vary. Describe a specific capability only when its owning release evidence supports it.
 
 **Proof:** `client-interface`, `local-hub`, `forgeofwill`, `fin-commander`, `marketing-generator` all ship from one Nx monorepo sharing gateway, auth, billing, payments, social, profile, AI, and video services. `PRODUCT.md:78-84`, `docs/marketing/repo-story.md:63-78`.
 
@@ -55,9 +57,9 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ### Pillar 2 — Shared services, distinct identities
 
-**Headline:** 12 personalities. One component library. Products that look nothing alike.
+**Headline:** Shared components support distinct product identities.
 
-**Body:** The personality system is not a color palette swap. It is a complete design language covering typography, spacing, shadows, animations, border radii, and color harmony — all derived from a single Angular component set. Towne Square ships a warm, pill-radius neighborhood aesthetic; Signal Foundry ships neon glows and DM Serif Display headlines; Fin Commander ships Source Sans Pro and near-instant transitions. Every product feels built for its audience.
+**Body:** The shared theme system defines product personalities and visual tokens. Avoid claims that every component, screen, or accessibility behavior is complete without matching evidence.
 
 **Proof:** `docs/design-system/personalities.md`, `libs/theme-models/src/lib/personalities.ts`, `libs/theme-models/src/lib/product-personalities.ts`. _PRODUCT.md:68-74_.
 
@@ -65,9 +67,9 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ### Pillar 3 — Catalog-to-deployment in one command
 
-**Headline:** Describe what you need. Get a deployable environment.
+**Headline:** Generate deployment artifacts from catalog selections.
 
-**Body:** The Go-based admin environment wizard is a deployment compiler. Operators select a provider (Akamai, Vultr, OCI), capability bundles, and target surface (Compose, Kubernetes, or both). The wizard generates Docker Compose fragments, Kustomize base and overlay manifests, a gateway composition YAML, a runtime environment file, and a validation report. No hand-maintained environment templates. The same catalog drives CI inventory validation, image promotion, and ArgoCD delivery.
+**Body:** The Go-based admin environment wizard generates deployment artifacts from catalog selections. Describe supported outputs and provider targets from current tool documentation; do not imply a particular production deployment or accepted served revision without release evidence.
 
 **Proof:** `tools/admin-env-wizard/README.md:1-42`, `docs/marketing/admin-env-demo-script.md`, `README.md:101-119`.
 
@@ -75,9 +77,9 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ### Pillar 4 — AI is a service, not a feature flag
 
-**Headline:** Multi-model AI orchestration. Built in. Not bolted on.
+**Headline:** AI orchestration is part of the platform codebase.
 
-**Body:** The AI orchestrator is a first-class platform service. It uses specialized models for workflow control (tool-call detection), tool execution (MCP), and natural-language response. It integrates LangChain and LangGraph, appears in the deployment inventory, and is composed through the gateway alongside authentication, billing, and social. Signal Foundry's campaign generation runs on the same stack being offered to operators.
+**Body:** The repository includes an AI orchestrator and related integrations. Do not imply hosted availability or a production service commitment unless separately verified.
 
 **Proof:** `apps/ai-orchestrator/README.md`, `apps/gateway/README.md:55-58`, `docs/architecture/README.md:189-197`.
 
@@ -87,7 +89,7 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 **Headline:** Adopt a product. Deploy selected services. Install a package. Your call.
 
-**Body:** Three documented adoption paths exist. Product buyers deploy a named application. Platform operators select the services behind their workflow and generate a deployment. Developers install `@optimistic-tanuki/billing-sdk` or `@optimistic-tanuki/app-catalog-contracts` and nothing else. Each path has a documented entry point and does not require adopting the others.
+**Body:** The repository documents application, platform, and package paths. Confirm each package's current publication and each deployment path's tested status before making an external availability claim.
 
 **Proof:** `docs/marketing/repo-story.md:16-28`, `docs/marketing/npm-developer-packages.md`, `apps/developer-portal/README.md`.
 
@@ -95,13 +97,15 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ## Elevator Pitch (60 seconds)
 
-> Most teams building a web application start from zero — they rebuild auth, billing, social, and deployment from scratch for every project. Optimistic Tanuki skips that.
+> Internal draft. Reconcile every OT/TS workflow claim with RR-01 and accepted RR-12 evidence before external use.
+
+> The Optimistic Tanuki repository brings applications, shared services, and deployment tooling together in one codebase.
 >
-> It is a portfolio of five finished applications: a community social app, a local commerce platform, a project-execution tool, a financial planning workbench, and a marketing campaign generator — all running on the same Angular, NestJS, and Kubernetes stack.
+> Product maturity and accepted workflows vary. Optimistic Tanuki centers on people and interests, with communities as an option. Towne Square centers on locality and early-access local exchange. Do not describe either as finished or launch-accepted while RR-12 remains open.
 >
-> If you want a finished product, deploy Towne Square or Forge of Will. If you want backend capabilities without the frontend, pick the services you need and generate your deployment with the Go-based environment wizard. If you just want billing helpers or contract types, install the npm package.
+> The repository includes product applications, platform services, deployment tools, and developer packages. Check current support and release evidence before describing an option as available.
 >
-> The design system gives each product its own identity — 12 fully distinct personalities in one component library. The AI orchestrator is a platform service, not a bolt-on. And the whole thing ships under AGPL-3.0, so your deployment is yours to control.
+> The shared theme system defines product identities, and the repository includes AI orchestration code. Verify licensing, deployment support, and service availability for the specific use before making a public claim.
 
 ---
 
@@ -110,7 +114,7 @@ _Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 | Dimension                                | Direction                                                                                                                                                                                                                                                              |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Clarity over cleverness**              | State the product benefit before the architecture. Buyers understand outcomes; platform complexity comes after.                                                                                                                                                        |
-| **Anchor claims to repo evidence**       | Every claim about features, workflows, or deployment should trace back to a README, service doc, or source file.                                                                                                                                                       |
+| **Use accepted evidence**                | For OT and TS, follow RR-01 dispositions and the accepted RR-12 revision. A README, service doc, test, or source file can locate evidence but does not prove acceptance. |
 | **Honest about boundaries**              | Public pricing is posture and vocabulary, not a published price sheet. Hosted demos are not implied unless separately deployed.                                                                                                                                        |
 | **Personality matches product**          | Towne Square copy should feel warm and community-oriented (soft-touch). Forge of Will copy should feel action-forward (bold). Fin Commander copy should feel clear and conservative (professional). Signal Foundry copy should feel energetic and creative (electric). |
 | **Platform story follows product story** | Lead with the buyer's product problem. Name the relevant product. Then show the platform underneath as proof, not as the lead.                                                                                                                                         |
@@ -130,7 +134,7 @@ Each targets a distinct workflow: Towne Square = local community and commerce; F
 Yes. The admin-env-wizard supports capability-bundle selections. You choose the services for the product you want; the generator creates the matching Compose or Kubernetes output. `tools/admin-env-wizard/README.md:14-42`.
 
 **Q: Are these finished applications or reference implementations?**
-Active product surfaces with documented workflows, e2e coverage, and deployment posture. They are not prototypes, but commercial pricing is not yet published and hosted demos are not presented as live external surfaces. `PRODUCT.md:96-101`.
+Product maturity varies by application and workflow. For Optimistic Tanuki and Towne Square, use the early-access wording and claim dispositions in RR-01; do not describe them as finished or launch-accepted while RR-12 remains unaccepted.
 
 ### Platform questions
 
@@ -144,7 +148,7 @@ The Go-based admin-env-wizard compiles capability selections into Docker Compose
 Akamai, Vultr, and OCI are the documented provider targets in the admin-env-wizard. `tools/admin-env-wizard/README.md:17`.
 
 **Q: Is there a self-hosted option?**
-Yes. Docker Compose deployment is fully supported. The billing service is explicitly positioned with a managed-vs-self-hosted choice. `docs/marketing/service-offerings.md:8-26`.
+The repository contains Docker Compose deployment configuration. Confirm the supported deployment path and exact reviewed revision before describing it as a released or supported offering.
 
 ### Developer and package questions
 
