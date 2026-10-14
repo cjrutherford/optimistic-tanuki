@@ -42,5 +42,9 @@
 
     <hai-about-tag [config]="haiAboutConfig" placement="inline"></hai-about-tag>
     <lib-bug-report-ui />
+    <otui-public-info-footer
+      [productName]="haiAboutConfig.appName"
+      [tagline]="publicFooterTagline"
+    />
   </div>
 </div>

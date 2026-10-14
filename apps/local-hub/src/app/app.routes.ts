@@ -5,9 +5,14 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
+import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 export const appRoutes: Route[] = [
   ...emailAuthRoutes('ot-local-hub-authToken', true),
+  {
+    path: 'contact',
+    component: PublicContactPageComponent,
+  },
   {
     path: '',
     loadComponent: () =>

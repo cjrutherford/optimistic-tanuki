@@ -18,7 +18,10 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { Router } from '@angular/router';
-import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import {
+  DevInfoComponent,
+  PublicInfoFooterComponent,
+} from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { AuthStateService } from './services/auth-state.service';
@@ -37,6 +40,7 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
     AppBarComponent,
     NavSidebarComponent,
     DevInfoComponent,
+    PublicInfoFooterComponent,
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
@@ -72,6 +76,7 @@ export class AppComponent implements OnInit, OnDestroy {
     accountNotice:
       'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
+  readonly publicFooterTagline = this.haiAboutConfig.appTagline;
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);

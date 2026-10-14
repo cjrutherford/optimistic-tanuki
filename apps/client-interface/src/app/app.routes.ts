@@ -9,6 +9,7 @@ import {
   OAuthCallbackComponent,
 } from '@optimistic-tanuki/auth-ui';
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
+import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 interface ForumPermissionResolution {
   permissions: string[];
@@ -78,6 +79,10 @@ const communityUserIdResolver: ResolveFn<string> = () => {
 
 export const appRoutes: Route[] = [
   ...emailAuthRoutes('ot-client-authToken', true),
+  {
+    path: 'contact',
+    component: PublicContactPageComponent,
+  },
   {
     path: '',
     loadComponent: () =>

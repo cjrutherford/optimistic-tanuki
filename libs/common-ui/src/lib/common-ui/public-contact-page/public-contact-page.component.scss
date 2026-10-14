@@ -1,0 +1,98 @@
+:host {
+  display: block;
+}
+
+.public-contact {
+  --public-contact-surface: var(--surface, #fff);
+  --public-contact-border: var(--border, #cbd5e1);
+  --public-contact-text: var(--foreground, #172033);
+  --public-contact-muted: var(--muted, #475569);
+  --public-contact-accent: var(--primary, #0b5cad);
+  width: min(100%, 72rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 4rem) clamp(0.25rem, 2vw, 1rem)
+    clamp(2rem, 6vw, 5rem);
+  color: var(--public-contact-text);
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.public-contact__intro {
+  max-width: 52rem;
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.public-contact__eyebrow,
+.public-contact__card-label {
+  margin: 0 0 0.75rem;
+  color: var(--public-contact-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.public-contact h1,
+.public-contact h2 {
+  margin: 0;
+  color: var(--public-contact-text);
+  font-family: var(--font-heading, var(--font-body, system-ui, sans-serif));
+  letter-spacing: -0.03em;
+}
+
+.public-contact h1 {
+  max-width: 18ch;
+  font-size: clamp(2rem, 6vw, 4rem);
+  line-height: 1.03;
+  overflow-wrap: anywhere;
+}
+
+.public-contact__scope {
+  max-width: 62ch;
+  margin: 1.25rem 0 0;
+  color: var(--public-contact-muted);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.public-contact__cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 48rem;
+  gap: 1rem;
+}
+
+.public-contact__card {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--public-contact-border);
+  border-top: 3px solid var(--public-contact-accent);
+  border-radius: 0.9rem;
+  background: var(--public-contact-surface);
+  box-shadow: 0 1rem 2.5rem
+    color-mix(in srgb, var(--public-contact-text) 7%, transparent);
+}
+
+.public-contact__card h2 {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.public-contact__card p:not(.public-contact__card-label) {
+  max-width: 58ch;
+  margin: 1rem 0 0;
+  color: var(--public-contact-muted);
+  line-height: 1.7;
+}
+
+.public-contact__card a {
+  color: var(--public-contact-accent);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-underline-offset: 0.2em;
+}
+
+.public-contact__card a:focus-visible {
+  outline: 3px solid var(--focus-ring, #075985);
+  outline-offset: 3px;
+  border-radius: 0.15rem;
+}

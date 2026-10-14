@@ -53,7 +53,10 @@ import {
   GlobalSearchComponent,
   SearchResult,
 } from '@optimistic-tanuki/search-ui';
-import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
+import {
+  DevInfoComponent,
+  PublicInfoFooterComponent,
+} from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { PersonalitySceneComponent } from '@optimistic-tanuki/motion-ui';
@@ -136,6 +139,7 @@ const AUTH_NAV_LINKS = [
     NotificationBellComponent,
     GlobalSearchComponent,
     DevInfoComponent,
+    PublicInfoFooterComponent,
     HaiAboutTagComponent,
     MessageComponent,
     PersonalitySceneComponent,
@@ -184,6 +188,8 @@ export class AppComponent implements OnInit, OnDestroy {
     accountNotice:
       'Optimistic Tanuki and Towne Square use the same account credentials. Sign in separately in each app.',
   };
+  readonly publicFooterTagline =
+    'Built around people and the interests they share.';
   isNavExpanded = signal(false);
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
