@@ -22,6 +22,7 @@ import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 @Injectable()
 export class AppService {
@@ -42,7 +43,8 @@ export class AppService {
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
     private readonly jsonWebToken: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly guardianPermissionService: GuardianPermissionService
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -182,7 +184,14 @@ export class AppService {
     email: string,
     password: string,
     mfa?: string,
-    profileId?: string
+    profileId?: string,
+    appId?: string,
+    ageAssessment?: {
+      dateOfBirth?: string;
+      guardianEmail?: string;
+      context: import('../guardian-permissions/guardian-permission.service').GuardianPermissionContext;
+    },
+    deferSession = false
   ) {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -228,6 +237,33 @@ export class AppService {
 
       // Successful authentication clears any accumulated failed attempts.
       await this.clearFailedLogins(user);
+      if (ageAssessment) {
+        const assessment = await this.guardianPermissionService.assessUnassessedLogin({
+          userId: user.id,
+          email: normalizedEmail,
+          status: user.ageEligibilityStatus || 'legacy',
+          ageEligibilityEndsAt: user.ageEligibilityEndsAt,
+          dateOfBirth: ageAssessment.dateOfBirth,
+          guardianEmail: ageAssessment.guardianEmail,
+          context: ageAssessment.context,
+        });
+        if (assessment.pending) {
+          return {
+            message: assessment.sent
+              ? 'Guardian permission request sent.'
+              : 'Guardian permission email could not be sent. Please retry.',
+            data: {
+              guardianConsentPending: true,
+              guardianEmailSent: assessment.sent,
+            },
+          };
+        }
+      }
+      await this.guardianPermissionService.assertAccountAccess(user.id, appId);
+
+      if (deferSession) {
+        return { message: 'Eligibility checked', code: 0, data: { eligibilityChecked: true } };
+      }
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -236,7 +272,8 @@ export class AppService {
           lastName: user.lastName,
           email: normalizedEmail,
         },
-        profileId
+        profileId,
+        appId
       );
 
       delete user.keyData;
@@ -266,7 +303,8 @@ export class AppService {
     ln: string,
     password: string,
     confirm: string,
-    bio = ''
+    bio = '',
+    ageEligibilityStatus: 'adult' | 'minor' | undefined = undefined
   ) {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -302,7 +340,11 @@ export class AppService {
       const existingUser = await this.userRepo.findOne({
         where: { email: normalizedEmail },
       });
-      this.l.log('Existing user check complete:', existingUser);
+      this.l.log(
+        existingUser
+          ? `Existing user found for bootstrap reconciliation: id=${existingUser.id}`
+          : 'No existing bootstrap user found'
+      );
       if (existingUser) {
         console.error('User already exists');
         throw new RpcException('User already exists');
@@ -322,6 +364,7 @@ export class AppService {
         keyData: { salt: hashData.salt },
         bio: bio,
         emailVerifiedAt: this.autoVerifyEmailsEnabled() ? new Date() : null,
+        ...(ageEligibilityStatus ? { ageEligibilityStatus } : {}),
       });
       this.l.log('User inserted successfully:', insertResult);
       const newUserId = insertResult.identifiers[0].id;
@@ -413,7 +456,7 @@ export class AppService {
     return { message: 'Password reset successful', code: 0 };
   }
 
-  async validateToken(token: string) {
+  async validateToken(token: string, appId?: string) {
     try {
       const valid = await this.jsonWebToken.verifyAsync(token, {
         secret: this.jwtSecret,
@@ -428,12 +471,17 @@ export class AppService {
         throw new RpcException('Token is invalid or revoked');
       }
       const userId = String((valid as { userId?: string }).userId || '');
+      const tokenAppId = (valid as { appId?: string }).appId;
+      if (tokenAppId && appId && tokenAppId !== appId) {
+        throw new RpcException('Token application scope does not match request');
+      }
       const user = userId
         ? await this.userRepo.findOne({ where: { id: userId } })
         : null;
       if (!user) {
         throw new RpcException('Token user was not found');
       }
+      await this.guardianPermissionService.assertAccountAccess(user.id, tokenAppId || appId);
       return {
         message: 'Token is valid',
         code: 0,
@@ -578,7 +626,7 @@ export class AppService {
     });
   }
 
-  async issueToken(userId: string, profileId?: string) {
+  async issueToken(userId: string, profileId?: string, appId?: string) {
     try {
       this.l.debug(
         `Issuing token for userId: ${userId}, profileId: ${profileId}`
@@ -591,6 +639,7 @@ export class AppService {
       if (!user.emailVerifiedAt) {
         throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
       }
+      await this.guardianPermissionService.assertAccountAccess(user.id, appId);
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -599,7 +648,8 @@ export class AppService {
           lastName: user.lastName,
           email: user.email,
         },
-        profileId
+        profileId,
+        appId
       );
 
       // Save token

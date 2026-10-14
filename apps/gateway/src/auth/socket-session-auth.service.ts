@@ -5,6 +5,8 @@ import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { Socket } from 'socket.io';
 import { UserDetails } from '../decorators/user.decorator';
+import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
+import { GATEWAY_APP_REGISTRY } from '../controllers/registry/registry.tokens';
 
 export type SocketSessionUser = Pick<UserDetails, 'profileId' | 'userId'>;
 
@@ -18,7 +20,8 @@ export class SocketSessionAuthService {
   constructor(
     private readonly jwt: JwtService,
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
-    private readonly authenticationService: ClientProxy
+    private readonly authenticationService: ClientProxy,
+    @Inject(GATEWAY_APP_REGISTRY) private readonly appRegistry: AppRegistry
   ) {}
 
   async authenticate(socket: Socket): Promise<SocketSessionUser> {
@@ -29,10 +32,23 @@ export class SocketSessionAuthService {
 
     try {
       const tokenPayload = await this.jwt.verifyAsync<UserDetails>(credential);
+      const origin = socket.handshake.headers.origin;
+      const originAppId = this.requestAppId(origin);
+      const signedAppId =
+        typeof (tokenPayload as UserDetails & { appId?: unknown }).appId === 'string'
+          ? (tokenPayload as UserDetails & { appId: string }).appId
+          : undefined;
+      if ((origin && !originAppId) || (signedAppId && originAppId && signedAppId !== originAppId)) {
+        throw new UnauthorizedException('Unauthorized socket connection');
+      }
       const validation = await firstValueFrom(
         this.authenticationService.send(
           { cmd: AuthCommands.Validate },
-          { token: credential, userId: tokenPayload.userId }
+          {
+            token: credential,
+            userId: tokenPayload.userId,
+            appId: signedAppId || originAppId,
+          }
         )
       );
 
@@ -103,6 +119,22 @@ export class SocketSessionAuthService {
       return decodeURIComponent(cookie.slice('ot_session='.length));
     } catch {
       return '';
+    }
+  }
+
+  private requestAppId(origin?: string): string | undefined {
+    if (!origin) return undefined;
+    try {
+      const normalized = new URL(origin).origin;
+      return this.appRegistry.apps.find((app) => {
+        try {
+          return new URL(app.uiBaseUrl).origin === normalized;
+        } catch {
+          return false;
+        }
+      })?.appId;
+    } catch {
+      return undefined;
     }
   }
 }

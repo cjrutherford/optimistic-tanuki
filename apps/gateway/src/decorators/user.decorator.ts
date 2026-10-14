@@ -32,5 +32,6 @@ export declare type UserDetails = {
   name: string;
   userId: string;
   profileId: string;
+  appId?: string;
   emailVerified?: boolean;
 };

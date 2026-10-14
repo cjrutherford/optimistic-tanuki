@@ -18,6 +18,8 @@ import { UserContext } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { UserDetails } from '../decorators/user.decorator';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
+import { GATEWAY_APP_REGISTRY } from '../controllers/registry/registry.tokens';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -27,7 +29,8 @@ export class AuthGuard implements CanActivate {
     private reflector: Reflector,
     private readonly jwt: JwtService,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private readonly permissionsClient: ClientProxy
+    private readonly permissionsClient: ClientProxy,
+    @Inject(GATEWAY_APP_REGISTRY) private readonly appRegistry: AppRegistry
   ) {}
 
   private async assertPrivilegedScopeAccess(
@@ -80,15 +83,54 @@ export class AuthGuard implements CanActivate {
 
   private async introspectToken(
     token: string,
-    userId: string
+    userId: string,
+    appId?: string
   ): Promise<{ isValid: boolean; emailVerified: boolean }> {
     const response = (await firstValueFrom(
-      this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
+      this.authService.send({ cmd: AuthCommands.Validate }, { token, userId, appId })
     )) as { isValid?: boolean; emailVerified?: boolean };
     return {
       isValid: Boolean(response?.isValid),
       emailVerified: response?.emailVerified === true,
     };
+  }
+
+  private registeredHostAppId(host: string | undefined): string | undefined {
+    if (!host) return undefined;
+    let normalizedHost: string;
+    try {
+      normalizedHost = new URL(`http://${host.trim()}`).host.toLowerCase();
+    } catch {
+      return undefined;
+    }
+    const matches = this.appRegistry.apps.filter((app) => {
+      try {
+        return [app.uiBaseUrl, app.apiBaseUrl].some(
+          (baseUrl) => new URL(baseUrl).host.toLowerCase() === normalizedHost
+        );
+      } catch {
+        return false;
+      }
+    });
+    return matches.length === 1 ? matches[0].appId : undefined;
+  }
+
+  private requestAppId(request: { headers?: Record<string, string | undefined> }): string | undefined {
+    const origin = request.headers?.origin;
+    const hostAppId = this.registeredHostAppId(request.headers?.host);
+    if (!origin) return hostAppId;
+    try {
+      const normalized = new URL(origin).origin;
+      const originAppId = this.appRegistry.apps.find((app) => {
+        try { return new URL(app.uiBaseUrl).origin === normalized; } catch { return false; }
+      })?.appId;
+      // Origin is caller-controlled. When the gateway can identify the app
+      // from its actual Host header, require both signals to identify it.
+      if (hostAppId && hostAppId !== originAppId) return undefined;
+      return originAppId;
+    } catch {
+      return undefined;
+    }
   }
 
   async parseToken(token: string): Promise<UserDetails> {
@@ -121,9 +163,25 @@ export class AuthGuard implements CanActivate {
     if (credential) {
       try {
         const user = await this.jwt.verifyAsync<UserDetails>(credential);
+        const origin = request.headers?.origin;
+        const hostAppId = this.registeredHostAppId(request.headers?.host);
+        const originAppId = this.requestAppId(request);
+        const signedAppId =
+          typeof (user as UserDetails & { appId?: unknown }).appId === 'string'
+            ? (user as UserDetails & { appId: string }).appId
+            : undefined;
+        if (
+          (origin && !originAppId) ||
+          (origin && !hostAppId && (!signedAppId || signedAppId !== originAppId)) ||
+          (signedAppId && originAppId && signedAppId !== originAppId) ||
+          (signedAppId && hostAppId && signedAppId !== hostAppId)
+        ) {
+          throw new UnauthorizedException('Session application scope does not match request origin.');
+        }
         const authentication = await this.introspectToken(
           credential,
-          user.userId
+          user.userId,
+          signedAppId || originAppId
         );
         if (!authentication.isValid) {
           throw new UnauthorizedException(

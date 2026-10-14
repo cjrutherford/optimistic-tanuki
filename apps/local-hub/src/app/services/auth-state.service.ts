@@ -60,10 +60,15 @@ export class AuthStateService {
     return null;
   }
 
-  async login(email: string, password: string): Promise<void> {
-    const request: LoginRequest = { email, password };
+  async login(credentials: LoginRequest): Promise<'pending' | 'pending-undelivered' | void> {
+    const request: LoginRequest = { ...credentials };
     const generation = ++this.restoreGeneration;
-    await this.authService.login(request);
+    const response = await this.authService.login(request);
+    if ((response as any)?.data?.guardianConsentPending) {
+      return (response as any)?.data?.guardianEmailSent === true
+        ? 'pending'
+        : 'pending-undelivered';
+    }
     if (generation !== this.restoreGeneration)
       throw new Error('Sign-in was cancelled.');
     await this.restoreSession();

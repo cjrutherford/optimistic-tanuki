@@ -100,6 +100,7 @@ describe('ForumController', () => {
       controllers: [ForumController],
       providers: [
         Logger,
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         AuthGuard,
         {
           provide: 'FORUM_SERVICE',

@@ -62,7 +62,8 @@ describe('EmailAuthService', () => {
       password,
       {
         issueForUser: jest.fn().mockReturnValue('session-token'),
-      } as any
+      } as any,
+      { assertAccountAccess: jest.fn().mockResolvedValue(undefined) } as any
     );
   });
 
@@ -192,6 +193,34 @@ describe('EmailAuthService', () => {
         data: { userId: 'user-1', email: 'person@example.com' },
       })
     );
+    expect(sessions.save).not.toHaveBeenCalled();
+  });
+
+  it('keeps an age-gated login action reusable when account eligibility blocks access', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'client-interface',
+      returnPath: '/dashboard',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+    const eligibilityError = new RpcException({ code: 'AGE_CHECK_REQUIRED' });
+    (service as any).guardianPermissions.assertAccountAccess.mockRejectedValue(
+      eligibilityError
+    );
+
+    await expect(
+      service.consumeLoginAction(
+        'raw-token',
+        AuthActionPurpose.MagicLink,
+        undefined,
+        'client-interface'
+      )
+    ).rejects.toBe(eligibilityError);
+    expect(actions.update).not.toHaveBeenCalled();
+    expect(users.save).not.toHaveBeenCalled();
     expect(sessions.save).not.toHaveBeenCalled();
   });
 

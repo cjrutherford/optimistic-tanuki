@@ -3,6 +3,8 @@ import { RegisterBlockComponent } from './register-block.component';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 import { ReactiveFormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+import { OAuthButtonsComponent } from '../oauth-buttons/oauth-buttons.component';
 
 describe('RegisterBlockComponent', () => {
   let component: RegisterBlockComponent;
@@ -140,6 +142,97 @@ describe('RegisterBlockComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('collects date of birth before showing account fields', () => {
+    component.ageGateEnabled = true;
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+
+    expect(root.querySelector('input[type="date"]')).toBeTruthy();
+    expect(root.querySelector('input[autocomplete="username"]')).toBeFalsy();
+    expect(root.querySelector('input[autocomplete="new-password"]')).toBeFalsy();
+  });
+
+  it('blocks under-13 registration without emitting account data', () => {
+    component.ageGateEnabled = true;
+    component.registerForm.patchValue({ dateOfBirth: '2016-01-01' });
+    const submit = jest.spyOn(component.submitEvent, 'emit');
+
+    component.continueFromAge();
+    fixture.detectChanges();
+
+    expect(component.registrationStep).toBe('blocked');
+    expect(fixture.nativeElement.textContent).toContain(
+      'You must be at least 13 to register.'
+    );
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('collects only guardian contacts for a teen permission request', () => {
+    component.ageGateEnabled = true;
+    component.registerForm.patchValue({
+      dateOfBirth: '2010-01-01',
+      email: 'teen@example.invalid',
+      guardianEmail: 'guardian@example.invalid',
+    });
+    const root: HTMLElement = fixture.nativeElement;
+
+    component.continueFromAge();
+    fixture.detectChanges();
+
+    expect(component.registrationStep).toBe('guardian');
+    expect(root.querySelector('input[autocomplete="new-password"]')).toBeFalsy();
+    expect(root.querySelector('input[autocomplete="given-name"]')).toBeFalsy();
+  });
+
+  it('forwards adult DOB from the rendered OAuth provider button', () => {
+    component.ageGateEnabled = true;
+    component.registerForm.patchValue({ dateOfBirth: '1990-01-01' });
+    component.registrationStep = 'adult';
+    fixture.detectChanges();
+    const emitted = jest.spyOn(component.oauthProviderSelected, 'emit');
+    const oauthButtons = fixture.debugElement.query(
+      By.directive(OAuthButtonsComponent)
+    ).componentInstance as OAuthButtonsComponent;
+
+    oauthButtons.onProviderClick('google');
+
+    expect(emitted).toHaveBeenCalledWith({
+      provider: 'google',
+      dateOfBirth: '1990-01-01',
+      guardianResumeToken: undefined,
+    });
+  });
+
+  it('forwards a resumed teen token from the rendered OAuth provider button', () => {
+    component.ageGateEnabled = true;
+    component.guardianResumeToken = 'resume-secret';
+    component.registerForm.patchValue({ dateOfBirth: '2010-01-01' });
+    component.registrationStep = 'adult';
+    fixture.detectChanges();
+    const emitted = jest.spyOn(component.oauthProviderSelected, 'emit');
+    const oauthButtons = fixture.debugElement.query(
+      By.directive(OAuthButtonsComponent)
+    ).componentInstance as OAuthButtonsComponent;
+
+    oauthButtons.onProviderClick('google');
+
+    expect(emitted).toHaveBeenCalledWith({
+      provider: 'google',
+      dateOfBirth: '2010-01-01',
+      guardianResumeToken: 'resume-secret',
+    });
+  });
+
+  it('does not add age data to OAuth initiation for apps that do not enable the age gate', () => {
+    component.registerForm.patchValue({ dateOfBirth: '2010-01-01' });
+    component.guardianResumeToken = 'unrelated-secret';
+    const emitted = jest.spyOn(component.oauthProviderSelected, 'emit');
+
+    component.onOAuthProvider({ provider: 'google' });
+
+    expect(emitted).toHaveBeenCalledWith({ provider: 'google' });
+  });
+
   it('should apply dark theme colors when theme is dark', () => {
     themeServiceMock.getTheme = () => 'dark';
     component.ngOnInit();
@@ -163,6 +256,8 @@ describe('RegisterBlockComponent', () => {
       password: 'password',
       confirmation: 'password',
       bio: 'A test user',
+      dateOfBirth: '',
+      guardianEmail: '',
     });
     component.onSubmit();
     expect(component.submitEvent.emit).toHaveBeenCalledWith({

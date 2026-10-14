@@ -26,6 +26,7 @@ import {
   ValidateTokenRequest,
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
+import validator from 'validator';
 import {
   AuthCommands,
   ProfileCommands,
@@ -209,6 +210,44 @@ export class AuthenticationController {
     );
   }
 
+  @Post('guardian-consent/attest')
+  @Public()
+  @Throttle(EMAIL_CONFIRM_THROTTLE)
+  attestGuardianPermission(
+    @Body() data: { token: string; guardianEmail: string; attested: boolean; attestationVersion: string }
+  ) {
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.AttestGuardianPermission },
+        data
+      )
+    );
+  }
+
+  @Post('guardian-consent/withdraw')
+  @Public()
+  @Throttle(EMAIL_CONFIRM_THROTTLE)
+  withdrawGuardianPermissionByToken(@Body() data: { token: string }) {
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.WithdrawGuardianPermissionByToken },
+        { token: data.token }
+      )
+    );
+  }
+
+  @Post('guardian-consent/resend-continuation')
+  @Public()
+  @Throttle(EMAIL_CONFIRM_THROTTLE)
+  resendGuardianApplicantContinuation(@Body() data: { token: string }) {
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ResendGuardianApplicantContinuation },
+        { token: data.token }
+      )
+    );
+  }
+
   @Post('magic-link/confirm')
   @Public()
   @Throttle(EMAIL_CONFIRM_THROTTLE)
@@ -243,16 +282,49 @@ export class AuthenticationController {
   async loginUser(
     @Body() data: LoginRequest,
     @AppScope() appScope: string,
+    @Headers('x-ot-app-id') appId?: string,
+    @Headers('origin') origin?: string,
     @Headers('x-ot-session-mode') sessionMode?: string,
-    @Res({ passthrough: true }) response?: Response
+    @Res({ passthrough: true }) response?: Response,
+    @Req() request?: Request
   ) {
     try {
       this.logger.debug('loginUser called');
-      await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Login }, data)
+      const canonicalAppId = this.resolveRegistrationAppId(
+        appId,
+        appScope,
+        origin,
+        request?.headers.host
       );
+      const ageGateApp = canonicalAppId === 'client-interface' || canonicalAppId === 'local-hub';
+      const app = ageGateApp ? this.resolveEmailApp(canonicalAppId) : undefined;
+      const loginResult = await firstValueFrom(
+        this.authClient.send({
+          cmd: AuthCommands.Login,
+        }, {
+          email: data.email,
+          password: data.password,
+          mfa: data.mfa,
+          appId: canonicalAppId,
+          ...(app ? {
+            ageAssessment: {
+              dateOfBirth: data.dateOfBirth,
+              guardianEmail: data.guardianEmail,
+              context: {
+                appId: canonicalAppId!,
+                appName: app.name,
+                uiBaseUrl: app.uiBaseUrl,
+                from: app.authEmail!.from,
+                replyTo: app.authEmail!.replyTo,
+              },
+            },
+          } : {}),
+          deferSession: true,
+        })
+      );
+      if (loginResult?.data?.guardianConsentPending) return loginResult;
       const result = await this.withLoginBootstrapTimeout(
-        this.loginBootstrap.login(data, appScope)
+        this.loginBootstrap.login(data, appScope, canonicalAppId || undefined)
       );
       return this.withBrowserSession(result, sessionMode, response);
     } catch (error) {
@@ -380,6 +452,7 @@ export class AuthenticationController {
             {
               userId: user.userId,
               profileId: requestedProfileId,
+              appId: canonicalAppId,
             }
           )
         ),
@@ -420,11 +493,17 @@ export class AuthenticationController {
     }
 
     try {
+      await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.CheckGuardianAccess },
+          { userId: user.userId, appId: targetAppId }
+        )
+      );
       const profile = await this.getOrCreateAppScopedProfile(user, targetAppId);
       const issueResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId: user.userId, profileId: profile.id }
+          { userId: user.userId, profileId: profile.id, appId: targetAppId }
         )
       );
       const token =
@@ -459,13 +538,18 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Throttle(REGISTER_THROTTLE)
   async registerUser(
-    @Body() data: RegisterRequest,
+    @Body() data: RegisterRequest & { guardianEmail?: string },
     @AppScope() appScope: string,
     @Headers('x-ot-app-id') appId?: string,
-    @Headers('origin') origin?: string
+    @Headers('origin') origin?: string,
+    @Req() request?: Request
   ) {
     try {
       this.logger.debug('registerUser called');
+      const submittedAge = this.ageAtRegistration(data.dateOfBirth);
+      if (submittedAge !== null && submittedAge < 13) {
+        throw new ForbiddenException('Registration is unavailable under age 13.');
+      }
       if (
         appScope === 'owner-console' &&
         process.env.NODE_ENV === 'production'
@@ -477,7 +561,8 @@ export class AuthenticationController {
       const canonicalAppId = this.resolveRegistrationAppId(
         appId,
         appScope,
-        origin
+        origin,
+        request?.headers.host
       );
       if (!canonicalAppId) {
         throw new HttpException(
@@ -485,9 +570,79 @@ export class AuthenticationController {
           HttpStatus.BAD_REQUEST
         );
       }
+      const ageGateApp =
+        canonicalAppId === 'client-interface' || canonicalAppId === 'local-hub';
+      let computedAgeEligibility: 'adult' | undefined;
+      if (ageGateApp) {
+        if (data.guardianResumeToken) {
+          const resume = await firstValueFrom(
+            this.authClient.send(
+              { cmd: AuthCommands.ValidateGuardianResume },
+              { token: data.guardianResumeToken }
+            )
+          ) as { valid: true; email: string };
+          if (resume.email.trim().toLowerCase() !== data.email.trim().toLowerCase()) {
+            throw new HttpException(
+              'The private permission link is for a different applicant.',
+              HttpStatus.FORBIDDEN
+            );
+          }
+        } else {
+          const age = this.ageAtRegistration(data.dateOfBirth);
+          if (age === null) {
+            throw new HttpException('A valid date of birth is required to register.', HttpStatus.BAD_REQUEST);
+          }
+          if (age < 13) throw new ForbiddenException('Registration is unavailable under age 13.');
+          if (age < 18) {
+            if (!data.guardianEmail || !validator.isEmail(data.guardianEmail)) {
+              throw new HttpException('A parent or guardian email is required to request permission.', HttpStatus.BAD_REQUEST);
+            }
+            const app = this.resolveEmailApp(canonicalAppId);
+            const requested = await firstValueFrom(
+              this.authClient.send(
+                { cmd: AuthCommands.RequestGuardianPermission },
+                {
+                  dateOfBirth: data.dateOfBirth,
+                  applicantEmail: data.email,
+                  guardianEmail: data.guardianEmail,
+                  context: {
+                    appId: canonicalAppId,
+                    appName: app.name,
+                    uiBaseUrl: app.uiBaseUrl,
+                    from: app.authEmail!.from,
+                    replyTo: app.authEmail!.replyTo,
+                    returnPath: '/register',
+                  },
+                }
+              )
+            );
+            return {
+              message: requested?.sent === false
+                ? 'Guardian permission request is pending, but the email could not be sent.'
+                : 'Guardian permission request sent.',
+              data: { guardianConsentPending: true, request: requested },
+            };
+          }
+          computedAgeEligibility = 'adult';
+        }
+      }
       this.resolveEmailApp(canonicalAppId);
 
-      const result = await this.registerBootstrap.register(data, appScope);
+      const {
+        dateOfBirth: _privateDateOfBirth,
+        ageEligibilityStatus: _untrustedEligibilityStatus,
+        ...accountData
+      } = data;
+      const result = await this.registerBootstrap.register(
+        accountData as RegisterRequest,
+        appScope,
+        computedAgeEligibility
+      );
+      if (result?.data?.user) {
+        // The age-rule expiry date is private account eligibility state, not
+        // part of the user DTO returned by the public registration route.
+        delete result.data.user.ageEligibilityEndsAt;
+      }
       if (!result?.data?.user?.emailVerifiedAt) {
         try {
           await this.requestEmailAction(canonicalAppId, 'verification', {
@@ -522,6 +677,24 @@ export class AuthenticationController {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  private ageAtRegistration(dateOfBirth?: string): number | null {
+    if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return null;
+    const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== dateOfBirth) {
+      return null;
+    }
+    const now = new Date();
+    if (dob.getTime() > Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) {
+      return null;
+    }
+    let age = now.getUTCFullYear() - dob.getUTCFullYear();
+    if (
+      now.getUTCMonth() < dob.getUTCMonth() ||
+      (now.getUTCMonth() === dob.getUTCMonth() && now.getUTCDate() < dob.getUTCDate())
+    ) age -= 1;
+    return age;
   }
 
   @Post('owner-access')
@@ -619,10 +792,22 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Validate authentication token' })
   @ApiResponse({ status: 201, description: 'Token validated successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async validateToken(@Body() data: ValidateTokenRequest) {
+  async validateToken(
+    @Body() data: ValidateTokenRequest,
+    @AppScope() appScope?: string,
+    @Headers('x-ot-app-id') explicitAppId?: string,
+    @Headers('origin') origin?: string,
+    @Req() request?: Request
+  ) {
     try {
+      const appId = this.resolveRegistrationAppId(
+        explicitAppId,
+        appScope,
+        origin,
+        request?.headers.host
+      );
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Validate }, data)
+        this.authClient.send({ cmd: AuthCommands.Validate }, { ...data, appId })
       );
     } catch (error) {
       console.error('Error in validateToken:', error);
@@ -817,7 +1002,7 @@ export class AuthenticationController {
     const consumed = (await firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.ConsumeEmailAuthAction },
-        { token, purpose }
+        { token, purpose, appId: inspected.appId }
       )
     )) as {
       appId: string;
@@ -835,7 +1020,7 @@ export class AuthenticationController {
     const issued = await firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Issue },
-        { userId: consumed.data.userId, profileId: profile.id }
+        { userId: consumed.data.userId, profileId: profile.id, appId: consumed.appId }
       )
     );
     return {
@@ -876,30 +1061,53 @@ export class AuthenticationController {
   private resolveRegistrationAppId(
     appId?: string,
     appScope?: string,
-    origin?: string
+    origin?: string,
+    requestHost?: string
   ): string | null {
-    const explicitAppId = appId?.trim();
-    if (explicitAppId) {
-      return this.canonicalAppForScope(explicitAppId);
-    }
-
-    const scopedAppId = appScope?.trim();
-    if (scopedAppId) {
-      return this.canonicalAppForScope(scopedAppId);
-    }
-
+    // The HTTP headers are caller-controlled labels. Bind auth policy to the
+    // registered browser origin, then reject labels that disagree with it.
     if (!origin) return null;
     try {
       const originUrl = new URL(origin).origin;
-      return (
+      const originAppId =
         this.appRegistry.apps.find((app) => {
           try {
             return new URL(app.uiBaseUrl).origin === originUrl;
           } catch {
             return false;
           }
-        })?.appId || null
-      );
+        })?.appId || null;
+      if (!originAppId) return null;
+      if (requestHost) {
+        let host: string;
+        try {
+          host = new URL(`http://${requestHost.trim()}`).hostname
+            .toLowerCase()
+            .replace(/\.$/, '');
+        } catch {
+          return null;
+        }
+        const hostname = (baseUrl: string): string | null => {
+          try {
+            return new URL(baseUrl).hostname.toLowerCase().replace(/\.$/, '');
+          } catch {
+            return null;
+          }
+        };
+        const uiHostApps = this.appRegistry.apps.filter(
+          (app) => hostname(app.uiBaseUrl) === host
+        );
+        const apiHostApps = this.appRegistry.apps.filter(
+          (app) => hostname(app.apiBaseUrl) === host
+        );
+        const hostApps = uiHostApps.length === 1 ? uiHostApps : apiHostApps;
+        if (!hostApps.some((app) => app.appId === originAppId)) return null;
+      }
+      const explicitAppId = appId?.trim();
+      const scopedAppId = appScope?.trim();
+      if (explicitAppId && this.canonicalAppForScope(explicitAppId) !== originAppId) return null;
+      if (scopedAppId && this.canonicalAppForScope(scopedAppId) !== originAppId) return null;
+      return originAppId;
     } catch {
       return null;
     }

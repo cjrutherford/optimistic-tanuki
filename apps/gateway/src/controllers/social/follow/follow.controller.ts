@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Inject,
+  Logger,
   Param,
   Post,
   UseGuards,
@@ -24,6 +25,8 @@ import { Throttle } from '@nestjs/throttler';
 
 @Controller('social/follow')
 export class FollowController {
+  private readonly logger = new Logger(FollowController.name);
+
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
@@ -63,11 +66,13 @@ export class FollowController {
 
     // Broadcast follow event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastFollowEvent(
-        followDto.followerId,
-        followDto.followeeId,
-        'follow'
-      );
+      await Promise.resolve(
+        this.socialGateway.broadcastFollowEvent(
+          followDto.followerId,
+          followDto.followeeId,
+          'follow'
+        )
+      ).catch(() => this.logger.warn('Live follow delivery unavailable'));
     }
 
     return result;
@@ -106,11 +111,13 @@ export class FollowController {
 
     // Broadcast unfollow event via WebSocket
     if (this.socialGateway && result) {
-      this.socialGateway.broadcastFollowEvent(
-        followDto.followerId,
-        followDto.followeeId,
-        'unfollow'
-      );
+      await Promise.resolve(
+        this.socialGateway.broadcastFollowEvent(
+          followDto.followerId,
+          followDto.followeeId,
+          'unfollow'
+        )
+      ).catch(() => this.logger.warn('Live follow delivery unavailable'));
     }
 
     return result;

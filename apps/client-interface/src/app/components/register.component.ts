@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { Router } from '@angular/router';
 import {
@@ -30,6 +31,7 @@ export class RegisterComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   errorMessage = '';
   enabledOAuthProviders: string[] = [];
+  guardianResumeToken = '';
   private readonly messageService = inject(MessageService);
   private readonly platformId = inject(PLATFORM_ID);
   private oauthService: OAuthService;
@@ -42,6 +44,10 @@ export class RegisterComponent implements OnInit {
   }
 
   ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.guardianResumeToken = new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
+      if (this.guardianResumeToken) history.replaceState(history.state, '', `${location.pathname}${location.search}`);
+    }
     this.loadOAuthConfig();
   }
 
@@ -69,10 +75,21 @@ export class RegisterComponent implements OnInit {
       fn: formValue.firstName,
       ln: formValue.lastName,
       bio: formValue.bio,
+      dateOfBirth: formValue.dateOfBirth,
+      guardianEmail: formValue.guardianEmail,
+      guardianResumeToken: formValue.guardianResumeToken || this.guardianResumeToken,
+      guardianConsentRequest: formValue.guardianConsentRequest,
     };
 
     this.authenticationService.register(registerRequest).subscribe({
-      next: (response) => {
+      next: (response: any) => {
+        if (formValue.guardianConsentRequest) {
+          const sent = response?.data?.request?.sent;
+          this.errorMessage = sent === false
+            ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
+            : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
+          return;
+        }
         this.router.navigate(['/login']);
       },
       error: (error) => {
@@ -89,7 +106,9 @@ export class RegisterComponent implements OnInit {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
         'client-interface',
-        true
+        true,
+        event.dateOfBirth,
+        event.guardianResumeToken
       );
 
       if (result.success && (result.token || result.session)) {

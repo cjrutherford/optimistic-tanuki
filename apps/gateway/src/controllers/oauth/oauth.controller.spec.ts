@@ -494,6 +494,115 @@ describe('OAuthController', () => {
     });
   });
 
+  describe('age-checked OAuth initiation', () => {
+    const oauthConfig = {
+      enabled: true,
+      clientId: 'client-id',
+      scopes: ['openid'],
+      authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    };
+
+    beforeEach(() => {
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google' ? oauthConfig : undefined
+      );
+    });
+
+    it.each([
+      [{ dateOfBirth: '2016-01-01' }, HttpStatus.FORBIDDEN],
+      [{ dateOfBirth: '2010-01-01' }, HttpStatus.FORBIDDEN],
+    ])('rejects an underage OAuth registration context', async (body, status) => {
+      await expect(
+        controller.startAgeCheckedOAuth(
+          { params: { provider: 'google' }, cookies: {} } as any,
+          { cookie: jest.fn() } as any,
+          'google',
+          {
+            returnTo: 'https://optimistic-tanuki.example/register',
+            ...body,
+          } as any
+        )
+      ).rejects.toMatchObject({ status });
+      expect(authClient.send).not.toHaveBeenCalled();
+    });
+
+    it('starts existing-account-only OAuth when DOB is omitted', async () => {
+      const response = { cookie: jest.fn() } as any;
+      const result = await controller.startAgeCheckedOAuth(
+        { params: { provider: 'google' }, cookies: {} } as any,
+        response,
+        'google',
+        {
+          returnTo: 'https://optimistic-tanuki.example/login',
+          appScope: 'client-interface',
+        } as any
+      );
+
+      const stateId = new URL(result.authorizationUrl).searchParams.get('state')!.split('.')[0];
+      const stored = await (controller as any).oauthStateStore.consume(stateId);
+      expect(stored.payload).toMatchObject({
+        appScope: 'client-interface',
+        registrationAllowed: false,
+      });
+      expect(stored.payload.ageEligibilityStatus).toBeUndefined();
+    });
+
+    it('keeps adult DOB out of the redirect URL and retains only the server assessment', async () => {
+      const dateOfBirth = new Date();
+      dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 30);
+      const response = { cookie: jest.fn() } as any;
+
+      const result = await controller.startAgeCheckedOAuth(
+        { params: { provider: 'google' }, cookies: {} } as any,
+        response,
+        'google',
+        {
+          returnTo: 'https://optimistic-tanuki.example/register',
+          appScope: 'client-interface',
+          dateOfBirth: dateOfBirth.toISOString().slice(0, 10),
+        } as any
+      );
+
+      const authorizationUrl = new URL(result.authorizationUrl);
+      expect(authorizationUrl.searchParams.has('dateOfBirth')).toBe(false);
+      expect(authorizationUrl.searchParams.has('guardianResumeToken')).toBe(false);
+      const stateId = authorizationUrl.searchParams.get('state')!.split('.')[0];
+      const stored = await (controller as any).oauthStateStore.consume(stateId);
+      expect(stored.payload).toMatchObject({
+        appScope: 'client-interface',
+        ageEligibilityStatus: 'adult',
+      });
+      expect(stored.payload).not.toHaveProperty('dateOfBirth');
+    });
+
+    it('binds an approved teen resume token to server state without exposing it to the provider', async () => {
+      const resumeToken = 'opaque-private-resume-token';
+      (authClient.send as jest.Mock).mockReturnValue(
+        of({ valid: true, email: 'teen@example.invalid' })
+      );
+      const result = await controller.startAgeCheckedOAuth(
+        { params: { provider: 'google' }, cookies: {} } as any,
+        { cookie: jest.fn() } as any,
+        'google',
+        {
+          returnTo: 'https://optimistic-tanuki.example/register',
+          appScope: 'client-interface',
+          guardianResumeToken: resumeToken,
+        } as any
+      );
+
+      const authorizationUrl = new URL(result.authorizationUrl);
+      expect(authorizationUrl.href).not.toContain(resumeToken);
+      const stateId = authorizationUrl.searchParams.get('state')!.split('.')[0];
+      const stored = await (controller as any).oauthStateStore.consume(stateId);
+      expect(stored.payload).toMatchObject({
+        guardianResumeToken: resumeToken,
+        guardianApplicantEmail: 'teen@example.invalid',
+      });
+      expect(stored.payload).not.toHaveProperty('dateOfBirth');
+    });
+  });
+
   describe('OAuth state consumption', () => {
     const statePayload = {
       provider: 'google',
@@ -759,6 +868,66 @@ describe('OAuthController', () => {
       ).toBe('oauth_callback_failed');
     });
 
+    it('allows existing-account OAuth login from server-marked existing-only state', async () => {
+      const issued = await (controller as any).signState({
+        provider: 'google',
+        returnTo: 'https://optimistic-tanuki.example/login',
+        appScope: 'client-interface',
+        issuedAt: Date.now(),
+        cookieSession: true,
+        registrationAllowed: false,
+      });
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'legacy-google-user',
+        email: 'legacy@example.invalid',
+        emailVerified: true,
+        displayName: 'Legacy User',
+        firstName: 'Legacy',
+        lastName: 'User',
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        (command: { cmd: string }) =>
+          of(
+            command.cmd === AuthCommands.OAuthLogin
+              ? { data: { userId: 'legacy-user' } }
+              : command.cmd === AuthCommands.Issue
+                ? { data: { newToken: 'legacy-platform-token' } }
+                : { data: { id: 'oauth-legacy' } }
+          )
+      );
+      const registerOAuthUser = jest.spyOn(controller as any, 'registerOAuthUser');
+      jest.spyOn(controller as any, 'getOrCreateAppScopedProfile').mockResolvedValue({
+        id: 'legacy-profile',
+      });
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: issued.state },
+          cookies: {
+            oauth_state_nonce: JSON.stringify([
+              { id: issued.stateId, nonce: issued.nonce },
+            ]),
+          },
+        } as any,
+        response,
+        'google'
+      );
+
+      expect(registerOAuthUser).not.toHaveBeenCalled();
+      expect(authClient.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.OAuthLogin },
+        expect.objectContaining({
+          appId: 'client-interface',
+          ageEligibilityStatus: undefined,
+        })
+      );
+      expect(
+        new URL(response.redirect.mock.calls[0][0]).searchParams.has('callbackCode')
+      ).toBe(true);
+    });
+
     it('issues a callback grant when newly registered OAuth user is verified by the platform', async () => {
       const issued = await (controller as any).signState({
         provider: 'microsoft',
@@ -766,6 +935,7 @@ describe('OAuthController', () => {
         appScope: 'client-interface',
         issuedAt: Date.now(),
         cookieSession: true,
+        ageEligibilityStatus: 'adult',
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
         providerUserId: 'microsoft-user',
@@ -825,6 +995,123 @@ describe('OAuthController', () => {
         expect.any(String)
       );
       expect(callbackUrl.searchParams.has('error')).toBe(false);
+      expect(registerBootstrap.register).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'newuser@example.com' }),
+        'client-interface',
+        'adult'
+      );
+    });
+
+    it('blocks a new OAuth registration without server age context before profile creation', async () => {
+      const issued = await (controller as any).signState({
+        provider: 'google',
+        returnTo: 'https://optimistic-tanuki.example/register',
+        appScope: 'client-interface',
+        issuedAt: Date.now(),
+      });
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'google-new-user',
+        email: 'teen@example.invalid',
+        emailVerified: true,
+        displayName: 'Teen User',
+        firstName: 'Teen',
+        lastName: 'User',
+      });
+      (authClient.send as jest.Mock).mockReturnValue(
+        of({ data: { needsRegistration: true } })
+      );
+      const registerBootstrap = (controller as any).registerBootstrap;
+      const profileClient = (controller as any).profileClient;
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: issued.state },
+          cookies: {
+            oauth_state_nonce: JSON.stringify([
+              { id: issued.stateId, nonce: issued.nonce },
+            ]),
+          },
+        } as any,
+        response,
+        'google'
+      );
+
+      expect(registerBootstrap.register).not.toHaveBeenCalled();
+      expect(profileClient.send).not.toHaveBeenCalled();
+      expect(authClient.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.OAuthLogin },
+        expect.objectContaining({ appId: 'client-interface' })
+      );
+      expect(
+        new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
+      ).toBe('oauth_callback_failed');
+    });
+
+    it('continues a teen OAuth callback only with the matching approved applicant resume state', async () => {
+      const resumeToken = 'one-use-applicant-resume';
+      const issued = await (controller as any).signState({
+        provider: 'google',
+        returnTo: 'https://optimistic-tanuki.example/register',
+        appScope: 'client-interface',
+        issuedAt: Date.now(),
+        guardianResumeToken: resumeToken,
+        guardianApplicantEmail: 'teen@example.invalid',
+      });
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'google-teen',
+        email: 'teen@example.invalid',
+        emailVerified: true,
+        displayName: 'Teen User',
+        firstName: 'Teen',
+        lastName: 'User',
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        (command: { cmd: string }) =>
+          of(
+            command.cmd === AuthCommands.OAuthLogin
+              ? { data: { needsRegistration: true } }
+              : { data: { newToken: 'platform-token' } }
+          )
+      );
+      const registerOAuthUser = jest
+        .spyOn(controller as any, 'registerOAuthUser')
+        .mockResolvedValue({ userId: 'teen-user', emailVerified: true });
+      jest
+        .spyOn(controller as any, 'getOrCreateAppScopedProfile')
+        .mockResolvedValue({ id: 'teen-profile' });
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: issued.state },
+          cookies: {
+            oauth_state_nonce: JSON.stringify([
+              { id: issued.stateId, nonce: issued.nonce },
+            ]),
+          },
+        } as any,
+        response,
+        'google'
+      );
+
+      expect(authClient.send).toHaveBeenCalledWith(
+        { cmd: AuthCommands.OAuthLogin },
+        expect.objectContaining({
+          appId: 'client-interface',
+          guardianResumeToken: resumeToken,
+        })
+      );
+      expect(registerOAuthUser).toHaveBeenCalledWith(
+        'client-interface',
+        'google',
+        expect.objectContaining({ email: 'teen@example.invalid' }),
+        undefined,
+        resumeToken
+      );
+      expect(new URL(response.redirect.mock.calls[0][0]).searchParams.has('callbackCode')).toBe(true);
     });
 
     it('rejects an existing OAuth user without a global owner role from Owner Console', async () => {

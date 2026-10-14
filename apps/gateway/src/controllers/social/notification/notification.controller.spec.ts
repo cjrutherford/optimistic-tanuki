@@ -117,6 +117,22 @@ describe('NotificationController', () => {
     });
   });
 
+  it('returns a committed notification when live delivery fails', async () => {
+    const notification = { id: 'notification-1', recipientId: 'profile-1' };
+    mockSocialClient.send.mockReturnValue(of(notification));
+    mockSocialGateway.broadcastNotification.mockRejectedValue(
+      new Error('socket delivery failed')
+    );
+
+    await expect(controller.create(notification as any)).resolves.toBe(
+      notification
+    );
+    await Promise.resolve();
+    expect(mockSocialGateway.broadcastNotification).toHaveBeenCalledWith(
+      notification
+    );
+  });
+
   describe('getUnreadCount', () => {
     it('should get unread notification count', async () => {
       mockSocialClient.send.mockReturnValue(of({ count: 5 }));

@@ -6,6 +6,7 @@ import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
 import {
   emailAuthRoutes,
+  guardianConsentRoutes,
   OAuthCallbackComponent,
 } from '@optimistic-tanuki/auth-ui';
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
@@ -79,6 +80,7 @@ const communityUserIdResolver: ResolveFn<string> = () => {
 
 export const appRoutes: Route[] = [
   ...emailAuthRoutes('ot-client-authToken', true),
+  ...guardianConsentRoutes(),
   {
     path: 'contact',
     component: PublicContactPageComponent,

@@ -29,7 +29,9 @@ export class OAuthProviderEntity {
   @Column()
   userId: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.oauthProviders)
+  @ManyToOne(() => UserEntity, (user) => user.oauthProviders, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'userId' })
   user: UserEntity;
 

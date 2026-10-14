@@ -151,7 +151,7 @@ export class LoginAccountBootstrapService {
     );
   }
 
-  async login(data: LoginRequest, appScope: string) {
+  async login(data: LoginRequest, appScope: string, appId?: string) {
     const normalizedRequest: LoginRequest = {
       ...data,
       email: data.email.trim().toLowerCase(),
@@ -288,7 +288,11 @@ export class LoginAccountBootstrapService {
     return firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Login },
-        { ...normalizedRequest, profileId: profileToUse.id }
+        {
+          ...normalizedRequest,
+          profileId: profileToUse.id,
+          ...(appId ? { appId } : {}),
+        }
       )
     );
   }

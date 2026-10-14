@@ -916,6 +916,7 @@ describe('LearningController wiring', () => {
         { provide: ServiceTokens.AUTHENTICATION_SERVICE, useValue: proxy },
         { provide: ServiceTokens.PERMISSIONS_SERVICE, useValue: proxy },
         { provide: JwtService, useValue: {} },
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
       ],
     }).compile();
 

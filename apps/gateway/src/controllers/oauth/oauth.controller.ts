@@ -77,6 +77,12 @@ type OAuthStatePayload = {
   cookieSession?: boolean;
   /** Present only in the server-side one-time state record for link flows. */
   linkUserId?: string;
+  /** Gateway-validated age result or applicant resume secret, held only in server-side state. */
+  ageEligibilityStatus?: 'adult';
+  /** False means this flow may authenticate an existing account but never bootstrap a new one. */
+  registrationAllowed?: boolean;
+  guardianResumeToken?: string;
+  guardianApplicantEmail?: string;
 };
 
 type OAuthIdentity = {
@@ -149,6 +155,51 @@ export class OAuthController {
       true,
       sessionMode === 'cookie'
     );
+  }
+
+  @Post('start/:provider')
+  @Public()
+  @Throttle({ short: { limit: 20, ttl: 60_000 } })
+  async startAgeCheckedOAuth(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+    @Param('provider') _provider: string,
+    @Body() body: {
+      returnTo: string; appScope?: string; sessionMode?: string;
+      dateOfBirth?: string; guardianResumeToken?: string;
+    }
+  ): Promise<{ authorizationUrl: string }> {
+    const returnTo = this.validateReturnTo(body.returnTo);
+    const appId = this.resolveAppScopeForReturnTo(returnTo);
+    let ageEligibilityStatus: 'adult' | undefined;
+    let guardianApplicantEmail: string | undefined;
+    let registrationAllowed = true;
+    if (appId === 'client-interface' || appId === 'local-hub') {
+      if (body.guardianResumeToken) {
+        const resumed = await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.ValidateGuardianResume },
+            { token: body.guardianResumeToken }
+          )
+        ) as { valid: true; email: string };
+        guardianApplicantEmail = resumed.email;
+      } else {
+        const age = this.ageAtRegistration(body.dateOfBirth);
+        if (age === null) {
+          registrationAllowed = false;
+        } else {
+          if (age < 13) throw new HttpException('OAuth sign-in is unavailable under age 13.', HttpStatus.FORBIDDEN);
+          if (age < 18) throw new HttpException('A parent or guardian must record permission before OAuth registration.', HttpStatus.FORBIDDEN);
+          ageEligibilityStatus = 'adult';
+        }
+      }
+    }
+    const authorizationUrl = await this.beginOAuthFlow(
+      request, response, returnTo, body.appScope, undefined, undefined, false,
+      body.sessionMode === 'cookie', ageEligibilityStatus,
+      body.guardianResumeToken, guardianApplicantEmail, registrationAllowed
+    );
+    return { authorizationUrl };
   }
 
   /**
@@ -233,7 +284,11 @@ export class OAuthController {
     queryDomain: string | undefined,
     linkUserId?: string,
     redirect = true,
-    cookieSession = false
+    cookieSession = false,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string,
+    guardianApplicantEmail?: string,
+    registrationAllowed = true
   ): Promise<string> {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
@@ -298,6 +353,10 @@ export class OAuthController {
       issuedAt: Date.now(),
       linkUserId,
       cookieSession,
+      ageEligibilityStatus,
+      registrationAllowed,
+      guardianResumeToken,
+      guardianApplicantEmail,
     } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
     const params = new URLSearchParams({
@@ -468,6 +527,9 @@ export class OAuthController {
             email: identity.email,
             emailVerified: identity.emailVerified,
             displayName: identity.displayName,
+            appId: statePayload.appScope,
+            ageEligibilityStatus: statePayload.ageEligibilityStatus,
+            guardianResumeToken: statePayload.guardianResumeToken,
           }
         )
       );
@@ -491,10 +553,25 @@ export class OAuthController {
       }
       if (!userId && loginResult?.data?.needsRegistration) {
         this.requireUsableOAuthEmail(identity.email, provider);
+        const ageGateApp = statePayload.appScope === 'client-interface' || statePayload.appScope === 'local-hub';
+        if (
+          ageGateApp &&
+          (statePayload.registrationAllowed === false ||
+            (!statePayload.ageEligibilityStatus &&
+              !statePayload.guardianResumeToken))
+        ) {
+          throw new Error('AGE_CHECK_REQUIRED');
+        }
+        if (statePayload.guardianResumeToken &&
+          statePayload.guardianApplicantEmail?.trim().toLowerCase() !== identity.email.trim().toLowerCase()) {
+          throw new Error('Guardian permission belongs to a different applicant.');
+        }
         const registeredUser = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
-          identity
+          identity,
+          statePayload.ageEligibilityStatus,
+          statePayload.guardianResumeToken
         );
         userId = registeredUser.userId;
         if (!registeredUser.emailVerified) {
@@ -529,7 +606,7 @@ export class OAuthController {
       const issueResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId, profileId: profile.id }
+          { userId, profileId: profile.id, appId: statePayload.appScope }
         )
       );
       const token =
@@ -1477,7 +1554,9 @@ export class OAuthController {
   private async registerOAuthUser(
     appScope: string,
     provider: string,
-    identity: OAuthIdentity
+    identity: OAuthIdentity,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
   ): Promise<{ userId: string; emailVerified: boolean }> {
     if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
       throw new Error(
@@ -1501,11 +1580,13 @@ export class OAuthController {
       password: generatedPassword,
       confirm: generatedPassword,
       bio: '',
+      ...(guardianResumeToken ? { guardianResumeToken } : {}),
     };
 
     const registerResult = await this.registerBootstrap.register(
       registerRequest,
-      appScope
+      appScope,
+      ageEligibilityStatus
     );
     const user = registerResult?.data?.user as
       | { id?: string; emailVerifiedAt?: unknown }
@@ -1594,6 +1675,17 @@ export class OAuthController {
 
   private generateOAuthPassword(): string {
     return `Oauth!${randomBytes(18).toString('base64url')}9`;
+  }
+
+  private ageAtRegistration(dateOfBirth?: string): number | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth || '')) return null;
+    const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== dateOfBirth) return null;
+    const today = new Date();
+    if (dob.getTime() > Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())) return null;
+    let age = today.getUTCFullYear() - dob.getUTCFullYear();
+    if (today.getUTCMonth() < dob.getUTCMonth() || (today.getUTCMonth() === dob.getUTCMonth() && today.getUTCDate() < dob.getUTCDate())) age--;
+    return age;
   }
 
   private async getOrCreateAppScopedProfile(

@@ -38,6 +38,8 @@ import {
   },
 })
 export class RegisterBlockComponent extends Themeable {
+  @Input() ageGateEnabled = false;
+  @Input() guardianResumeToken = '';
   @Input() registerHeader = 'Register';
   @Input() registerButtonText = 'Register';
   @Input() callToAction = 'Join us on your journey';
@@ -58,6 +60,7 @@ export class RegisterBlockComponent extends Themeable {
   @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
   @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();
   registerForm: FormGroup;
+  registrationStep: 'age' | 'adult' | 'guardian' | 'blocked' = 'age';
   constructor(private readonly fb: FormBuilder) {
     super();
     this.registerForm = this.fb.group({
@@ -67,7 +70,33 @@ export class RegisterBlockComponent extends Themeable {
       password: this.fb.control(''),
       confirmation: this.fb.control(''),
       bio: this.fb.control(''),
+      dateOfBirth: this.fb.control(''),
+      guardianEmail: this.fb.control(''),
     });
+  }
+
+  ngOnChanges(): void {
+    if (this.guardianResumeToken) {
+      this.registrationStep = 'adult';
+    }
+  }
+
+  continueFromAge(): void {
+    const value = this.registerForm.get('dateOfBirth')?.value;
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    const dob = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== value) return;
+    const today = new Date();
+    let age = today.getUTCFullYear() - dob.getUTCFullYear();
+    const beforeBirthday =
+      today.getUTCMonth() < dob.getUTCMonth() ||
+      (today.getUTCMonth() === dob.getUTCMonth() && today.getUTCDate() < dob.getUTCDate());
+    if (beforeBirthday) age -= 1;
+    if (age < 13) {
+      this.registrationStep = 'blocked';
+      return;
+    }
+    this.registrationStep = age < 18 ? 'guardian' : 'adult';
   }
 
   override applyTheme(colors: ThemeColors): void {
@@ -93,10 +122,37 @@ export class RegisterBlockComponent extends Themeable {
   }
 
   onSubmit() {
-    this.submitEvent.emit(this.registerForm.value);
+    const { dateOfBirth, guardianEmail, ...accountFields } =
+      this.registerForm.value;
+    this.submitEvent.emit({
+      ...accountFields,
+      ...(this.ageGateEnabled
+        ? {
+            dateOfBirth,
+            guardianResumeToken: this.guardianResumeToken || undefined,
+          }
+        : {}),
+    });
+  }
+
+  requestGuardianPermission(): void {
+    this.submitEvent.emit({
+      dateOfBirth: this.registerForm.value.dateOfBirth,
+      email: this.registerForm.value.email,
+      guardianEmail: this.registerForm.value.guardianEmail,
+      guardianConsentRequest: true,
+    } as RegisterSubmitType);
   }
 
   onOAuthProvider(event: OAuthProviderEvent) {
-    this.oauthProviderSelected.emit(event);
+    this.oauthProviderSelected.emit({
+      ...event,
+      ...(this.ageGateEnabled
+        ? {
+            dateOfBirth: this.registerForm.value.dateOfBirth || undefined,
+            guardianResumeToken: this.guardianResumeToken || undefined,
+          }
+        : {}),
+    });
   }
 }

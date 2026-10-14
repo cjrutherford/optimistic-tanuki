@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import {
@@ -43,6 +43,8 @@ import { AuthStateService } from '../../services/auth-state.service';
       </div>
       <div class="auth-panel">
         <lib-register-block
+          [ageGateEnabled]="true"
+          [guardianResumeToken]="guardianResumeToken"
           registerHeader="Join Towne Square"
           callToAction="Create an account to join local communities."
           heroSource="assets/ts.png"
@@ -142,7 +144,7 @@ import { AuthStateService } from '../../services/auth-state.service';
     `,
   ],
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private authService = inject(AuthenticationService);
   private authState = inject(AuthStateService);
   private http = inject(HttpClient);
@@ -151,8 +153,14 @@ export class RegisterComponent {
 
   error: string | null = null;
   enabledOAuthProviders: string[] = [];
+  guardianResumeToken = '';
+  private readonly platformId = inject(PLATFORM_ID);
 
-  constructor() {
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.guardianResumeToken = new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
+      if (this.guardianResumeToken) history.replaceState(history.state, '', `${location.pathname}${location.search}`);
+    }
     void this.loadOAuthConfig();
   }
 
@@ -175,12 +183,18 @@ export class RegisterComponent {
       return;
     }
     try {
-      await new Promise<void>((resolve, reject) => {
+      const response = await new Promise<any>((resolve, reject) => {
         this.authService.register(submitTypeToRegisterRequest(data)).subscribe({
-          next: () => resolve(),
+          next: (result) => resolve(result),
           error: (err: unknown) => reject(err),
         });
       });
+      if (data.guardianConsentRequest) {
+        this.error = response?.data?.request?.sent === false
+          ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
+          : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
+        return;
+      }
       this.router.navigate(['/login']);
     } catch {
       this.error = 'Registration failed. Please try again.';
@@ -194,7 +208,9 @@ export class RegisterComponent {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
         'local-hub',
-        true
+        true,
+        event.dateOfBirth,
+        event.guardianResumeToken
       );
 
       if (result.success) {

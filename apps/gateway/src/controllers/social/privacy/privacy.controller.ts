@@ -140,7 +140,12 @@ export class PrivacyController {
   ) {}
 
   private invalidateSocialContent(): void {
-    this.socialGateway?.broadcastSocialContentInvalidated();
+    void Promise.resolve(
+      this.socialGateway?.broadcastSocialContentInvalidated()
+    )
+      .catch(() =>
+        this.logger.warn('Live social invalidation unavailable')
+      );
   }
 
   private async resolveReportWorkspaceId(

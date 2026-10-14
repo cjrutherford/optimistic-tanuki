@@ -1,6 +1,7 @@
 import { Route } from '@angular/router';
 import {
   emailAuthRoutes,
+  guardianConsentRoutes,
   OAuthCallbackComponent,
 } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
@@ -9,6 +10,7 @@ import { PublicContactPageComponent } from '@optimistic-tanuki/common-ui';
 
 export const appRoutes: Route[] = [
   ...emailAuthRoutes('ot-local-hub-authToken', true),
+  ...guardianConsentRoutes(),
   {
     path: 'contact',
     component: PublicContactPageComponent,

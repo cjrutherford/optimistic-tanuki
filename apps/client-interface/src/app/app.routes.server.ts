@@ -15,6 +15,10 @@ const serverRoutes: ServerRoute[] = [
     })
   ),
   {
+    path: 'auth/guardian-consent',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: 'oauth/callback',
     renderMode: RenderMode.Client,
   },

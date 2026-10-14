@@ -178,8 +178,27 @@ describe('RegisterComponent behaviour', () => {
         fn: 'Ada',
         ln: 'Lovelace',
         bio: 'maths',
+        dateOfBirth: undefined,
+        guardianEmail: undefined,
+        guardianResumeToken: '',
+        guardianConsentRequest: undefined,
       });
       expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('does not claim a guardian email was sent when the mail service rejected it', () => {
+      const authenticationService = (
+        component as unknown as { authenticationService: unknown }
+      ).authenticationService as { register: unknown };
+      jest.spyOn(authenticationService as never, 'register' as never).mockReturnValue(
+        of({ data: { guardianConsentPending: true, request: { sent: false } } }) as never
+      );
+
+      component.onSubmit({ ...(form as any), guardianConsentRequest: true } as never);
+
+      expect(component.errorMessage).toContain("couldn't send the permission email");
+      expect(component.errorMessage).toContain('no account was created');
+      expect(router.navigate).not.toHaveBeenCalled();
     });
 
     it('logs a registration failure without redirecting', () => {

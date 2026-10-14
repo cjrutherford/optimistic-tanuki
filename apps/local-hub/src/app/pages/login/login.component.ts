@@ -40,6 +40,7 @@ import { AuthStateService } from '../../services/auth-state.service';
       <div class="auth-panel">
         <lib-login-block
           appId="local-hub"
+          [ageGateEnabled]="true"
           title="Welcome to Towne Square"
           description="Sign in to join communities and connect with your neighbors."
           heroSrc="assets/ts.png"
@@ -169,15 +170,27 @@ export class LoginComponent {
   async onLogin(credentials: LoginType): Promise<void> {
     this.error = null;
     try {
-      await this.authState.login(credentials.email, credentials.password);
+      const result = await this.authState.login(credentials);
+      if (result === 'pending' || result === 'pending-undelivered') {
+        this.error = result === 'pending'
+          ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
+          : 'The guardian permission email could not be sent. Check the guardian address and try again.';
+        return;
+      }
       const returnUrl =
         this.route.snapshot.queryParamMap.get('returnUrl') || '/';
       this.router.navigateByUrl(returnUrl);
     } catch (error: any) {
-      this.error =
-        error?.status === 401
-          ? 'Invalid email or password. Please try again.'
-          : 'Sign-in could not be completed. Please try again.';
+      const detail = error?.error?.message || error?.message || '';
+      this.error = error?.status === 401
+        ? 'Invalid email or password. Please try again.'
+        : String(detail).includes('AGE_CHECK_REQUIRED')
+          ? 'For this newly registered account, enter your date of birth to continue.'
+          : String(detail).includes('GUARDIAN_EMAIL_REQUIRED')
+            ? 'A parent or guardian email is required to request permission.'
+            : String(detail).includes('AGE_UNDER_13')
+              ? 'Sign in is unavailable under age 13.'
+              : 'Sign-in could not be completed. Please try again.';
     }
   }
 
@@ -188,7 +201,8 @@ export class LoginComponent {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
         'local-hub',
-        true
+        true,
+        event.dateOfBirth
       );
 
       if (result.success) {

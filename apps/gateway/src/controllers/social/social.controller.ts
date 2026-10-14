@@ -107,6 +107,13 @@ export class SocialController {
     @Optional() private readonly socialGateway?: SocialGateway
   ) {}
 
+  private invalidateSocialContent(): void {
+    void Promise.resolve(
+      this.socialGateway?.broadcastSocialContentInvalidated()
+    )
+      .catch(() => this.l.warn('Live social invalidation unavailable'));
+  }
+
   private async requireVisiblePost(postId: string, viewerProfileId?: string) {
     if (typeof postId !== 'string' || postId.trim().length === 0) {
       throw new NotFoundException('Post not found');
@@ -147,7 +154,8 @@ export class SocialController {
 
     // Broadcast post created event via WebSocket
     if (this.socialGateway && result) {
-      await this.socialGateway.broadcastPostCreated(result);
+      await Promise.resolve(this.socialGateway.broadcastPostCreated(result))
+        .catch(() => this.l.warn('Live post delivery unavailable'));
     }
 
     return result;
@@ -188,7 +196,8 @@ export class SocialController {
 
     // Broadcast vote updated event via WebSocket
     if (this.socialGateway && result) {
-      await this.socialGateway.broadcastVoteUpdated(result);
+      await Promise.resolve(this.socialGateway.broadcastVoteUpdated(result))
+        .catch(() => this.l.warn('Live vote delivery unavailable'));
     }
 
     return result;
@@ -304,7 +313,8 @@ export class SocialController {
 
     // Broadcast comment created event via WebSocket
     if (this.socialGateway && result) {
-      await this.socialGateway.broadcastCommentCreated(result);
+      await Promise.resolve(this.socialGateway.broadcastCommentCreated(result))
+        .catch(() => this.l.warn('Live comment delivery unavailable'));
     }
 
     return result;
@@ -656,7 +666,8 @@ export class SocialController {
 
     // Broadcast post updated event via WebSocket
     if (this.socialGateway && result) {
-      await this.socialGateway.broadcastPostUpdated(result);
+      await Promise.resolve(this.socialGateway.broadcastPostUpdated(result))
+        .catch(() => this.l.warn('Live post delivery unavailable'));
     }
 
     return result;
@@ -694,7 +705,7 @@ export class SocialController {
       )
     );
 
-    this.socialGateway?.broadcastSocialContentInvalidated();
+    this.invalidateSocialContent();
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.FIND },
@@ -745,7 +756,8 @@ export class SocialController {
 
     // Broadcast post deleted event via WebSocket
     if (this.socialGateway) {
-      await this.socialGateway.broadcastPostDeleted(id);
+      await Promise.resolve(this.socialGateway.broadcastPostDeleted(id))
+        .catch(() => this.l.warn('Live post delivery unavailable'));
     }
 
     return result;
@@ -788,9 +800,12 @@ export class SocialController {
     // Broadcast comment deleted event via WebSocket
     if (this.socialGateway) {
       if (commentPostId) {
-        await this.socialGateway.broadcastCommentDeleted(id, commentPostId);
+        await Promise.resolve(
+          this.socialGateway.broadcastCommentDeleted(id, commentPostId)
+        )
+          .catch(() => this.l.warn('Live comment delivery unavailable'));
       } else {
-        this.socialGateway.broadcastSocialContentInvalidated();
+        this.invalidateSocialContent();
       }
     }
 

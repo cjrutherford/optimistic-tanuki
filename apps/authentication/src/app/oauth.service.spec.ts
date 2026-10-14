@@ -9,6 +9,7 @@ import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 describe('OAuthService', () => {
   let service: OAuthService;
@@ -59,6 +60,13 @@ describe('OAuthService', () => {
           provide: OAuthConfigValidator,
           useValue: {
             isProviderEnabled: jest.fn().mockReturnValue(true),
+          },
+        },
+        {
+          provide: GuardianPermissionService,
+          useValue: {
+            assertAccountAccess: jest.fn().mockResolvedValue(undefined),
+            attachAccount: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],
@@ -196,6 +204,34 @@ describe('OAuthService', () => {
       ).rejects.toThrow(RpcException);
 
       // No account was linked and no session issued for the takeover attempt.
+      expect(oauthRepo.save).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('does not persist a verified OAuth auto-link when age eligibility blocks the account', async () => {
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
+      (userRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'pending-user',
+        email: 'teen@example.invalid',
+        ageEligibilityStatus: 'minor-pending',
+      });
+      const guardianPermissions = (service as any).guardianPermissions;
+      guardianPermissions.assertAccountAccess.mockRejectedValue(
+        new RpcException({ code: 'GUARDIAN_PERMISSION_REQUIRED' })
+      );
+
+      await expect(
+        service.oauthLogin(
+          'google',
+          'google-teen',
+          'teen@example.invalid',
+          'Teen User',
+          undefined,
+          true,
+          'client-interface',
+          'adult'
+        )
+      ).rejects.toThrow();
       expect(oauthRepo.save).not.toHaveBeenCalled();
       expect(tokenRepo.save).not.toHaveBeenCalled();
     });

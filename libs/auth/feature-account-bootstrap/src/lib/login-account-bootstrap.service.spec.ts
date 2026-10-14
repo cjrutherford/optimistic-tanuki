@@ -350,6 +350,7 @@ describe('LoginAccountBootstrapService', () => {
 
     const result = await service.login(
       { email: 'cross@app.com', password: 'secret' },
+      'forgeofwill',
       'forgeofwill'
     );
 
@@ -378,6 +379,7 @@ describe('LoginAccountBootstrapService', () => {
         email: 'cross@app.com',
         password: 'secret',
         profileId: 'profile-forge',
+        appId: 'forgeofwill',
       }
     );
     expect(result).toEqual({ code: 0, data: { token: 'jwt' } });

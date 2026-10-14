@@ -8,11 +8,41 @@
           <img [src]="heroSource" alt="Hero Image" width="300" />
         </div>
         <div class="form">
-          <form
-            [formGroup]="registerForm"
-            autocomplete="on"
-            (ngSubmit)="onSubmit()"
-          >
+          @if (ageGateEnabled && registrationStep === 'age') {
+          <form [formGroup]="registerForm" (ngSubmit)="continueFromAge()">
+            <label for="registration-date-of-birth">Date of birth</label>
+            <input
+              id="registration-date-of-birth"
+              type="date"
+              formControlName="dateOfBirth"
+              autocomplete="bday"
+              required
+            />
+            <button type="submit">Continue</button>
+          </form>
+          } @else if (ageGateEnabled && registrationStep === 'blocked') {
+          <p role="alert">You must be at least 13 to register.</p>
+          } @else if (ageGateEnabled && registrationStep === 'guardian') {
+          <form [formGroup]="registerForm" (ngSubmit)="requestGuardianPermission()">
+            <p>
+              A parent or guardian must give permission before you can finish
+              registration. We will email them a private link. No account or
+              profile is created until permission is recorded.
+            </p>
+            <label for="applicant-email">Your email</label>
+            <input id="applicant-email" type="email" formControlName="email" autocomplete="email" required />
+            <label for="guardian-email">Parent or guardian email</label>
+            <input id="guardian-email" type="email" formControlName="guardianEmail" autocomplete="email" required />
+            <button type="submit" [disabled]="pending">Request permission</button>
+            @if (errorMessage) {
+            <p class="auth-error" role="alert">{{ errorMessage }}</p>
+            }
+          </form>
+          } @else {
+          <form [formGroup]="registerForm" autocomplete="on" (ngSubmit)="onSubmit()">
+            @if (ageGateEnabled) {
+            <p>Your date of birth is used to determine age eligibility.</p>
+            }
             <lib-text-input
               formControlName="firstName"
               [label]="'First Name'"
@@ -57,8 +87,9 @@
               </otui-button>
             </div>
           </form>
+          }
           <lib-oauth-buttons
-            *ngIf="showOAuth"
+            *ngIf="showOAuth && (!ageGateEnabled || registrationStep === 'adult')"
             [enabledProviders]="enabledOAuthProviders"
             (providerSelected)="onOAuthProvider($event)"
           ></lib-oauth-buttons>

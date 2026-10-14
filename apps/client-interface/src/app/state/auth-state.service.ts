@@ -74,13 +74,14 @@ export class AuthStateService {
 
   async login(
     loginRequest: LoginRequest
-  ): Promise<{ data: Record<string, never> }> {
+  ): Promise<{ data: Record<string, unknown> }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
     const generation = ++this.sessionRestoreGeneration;
     this.inflightRestore = undefined;
     const response = await this.authService.login(loginRequest);
+    if ((response as any)?.data?.guardianConsentPending) return response;
     if (generation !== this.sessionRestoreGeneration)
       throw new Error('Sign-in was cancelled.');
     // A pre-login anonymous probe must not satisfy the post-login restore.

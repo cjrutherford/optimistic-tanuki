@@ -52,6 +52,27 @@ describe('TokenIssuerService', () => {
     );
   });
 
+  it('binds an app-specific session to its application scope', () => {
+    const signer = { sign: jest.fn().mockReturnValue('app-token') };
+    const service = new TokenIssuerService(signer, 'test-secret');
+
+    service.issueForUser(
+      {
+        userId: 'user-1',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+      },
+      'profile-1',
+      'client-interface'
+    );
+
+    expect(signer.sign).toHaveBeenCalledWith(
+      expect.objectContaining({ appId: 'client-interface' }),
+      expect.any(Object)
+    );
+  });
+
   it('issues distinct JWTs for same-second logins with distinct issuance ids', () => {
     const signer = {
       sign: jest.fn((payload) => JSON.stringify(payload)),

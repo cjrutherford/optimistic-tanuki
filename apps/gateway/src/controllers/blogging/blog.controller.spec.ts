@@ -31,6 +31,7 @@ describe('BlogController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BlogController],
       providers: [
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         {
           provide: ServiceTokens.BLOG_SERVICE,
           useValue: blogService,

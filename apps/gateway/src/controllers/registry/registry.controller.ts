@@ -23,9 +23,9 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { GATEWAY_APP_REGISTRY, GATEWAY_NAVIGATION_LINKS } from './registry.tokens';
 
-export const GATEWAY_APP_REGISTRY = 'GATEWAY_APP_REGISTRY';
-export const GATEWAY_NAVIGATION_LINKS = 'GATEWAY_NAVIGATION_LINKS';
+export { GATEWAY_APP_REGISTRY, GATEWAY_NAVIGATION_LINKS } from './registry.tokens';
 
 interface NavigationLinksPayload {
   links: NavigationLink[];

@@ -20,6 +20,7 @@ describe('FollowController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FollowController],
       providers: [
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         {
           provide: ServiceTokens.AUTHENTICATION_SERVICE,
           useValue: {

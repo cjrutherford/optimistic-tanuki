@@ -878,7 +878,8 @@ describe('VaultController', () => {
       { send: jest.fn() } as any,
       new Reflector(),
       { verifyAsync: jest.fn() } as any,
-      { send: jest.fn() } as any
+      { send: jest.fn() } as any,
+      { apps: [] } as any
     );
     const context = {
       getHandler: () => VaultController.prototype.exportWispComplianceAudit,

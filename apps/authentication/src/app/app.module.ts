@@ -34,6 +34,8 @@ import loadDatabase from './loadDatabase';
 import { BootstrapController } from './bootstrap.controller';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { EmailAuthService } from './email-auth.service';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 @Module({
   imports: [
@@ -87,6 +89,7 @@ import { EmailAuthService } from './email-auth.service';
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,
+    GuardianPermissionService,
     SaltedHashService,
     PasswordPolicyService,
     KeyService,
@@ -146,6 +149,11 @@ import { EmailAuthService } from './email-auth.service';
     {
       provide: getRepositoryToken(AuthActionTokenEntity),
       useFactory: (ds: DataSource) => ds.getRepository(AuthActionTokenEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(GuardianPermissionEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(GuardianPermissionEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
     {

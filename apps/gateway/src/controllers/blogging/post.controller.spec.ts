@@ -56,6 +56,7 @@ describe('PostController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PostController],
       providers: [
+        { provide: 'GATEWAY_APP_REGISTRY', useValue: { apps: [] } },
         {
           provide: ServiceTokens.BLOG_SERVICE,
           useValue: mockBlogService,

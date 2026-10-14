@@ -35,7 +35,7 @@ describe('loadDatabase', () => {
     expect(dbConfig.database).toBe('testdb');
     expect(dbConfig.entities).toBeInstanceOf(Array);
     expect(dbConfig.migrationsRun).toBe(false);
-    expect(dbConfig.migrations).toHaveLength(7);
+    expect(dbConfig.migrations).toHaveLength(10);
   });
 
   it('runs the bundled version-matched migrations only when opted in', () => {
@@ -59,6 +59,9 @@ describe('loadDatabase', () => {
       expect.arrayContaining([
         'Initial1729455565251',
         'HardenOAuthProviderIdentities1789200000000',
+        'GuardianPermissionFlow1791985246527',
+        'BackfillLegacyAgeEligibility1791985263488',
+        'GuardianAgeEligibilityEnd1791986174677',
       ])
     );
   });

@@ -15,6 +15,12 @@ export type StoredOAuthState = {
     codeVerifier: string;
     cookieSession?: boolean;
     linkUserId?: string;
+    /** Server-validated registration context; never placed in provider URLs. */
+    ageEligibilityStatus?: 'adult';
+    /** False permits existing-account authentication only, never account bootstrap. */
+    registrationAllowed?: boolean;
+    guardianResumeToken?: string;
+    guardianApplicantEmail?: string;
   };
   nonceHash: string;
   expiresAt: number;

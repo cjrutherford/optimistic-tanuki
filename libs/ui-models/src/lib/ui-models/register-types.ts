@@ -5,4 +5,8 @@ export declare type RegisterSubmitType = {
   firstName: string;
   lastName: string;
   bio?: string;
+  dateOfBirth?: string;
+  guardianEmail?: string;
+  guardianConsentRequest?: boolean;
+  guardianResumeToken?: string;
 };

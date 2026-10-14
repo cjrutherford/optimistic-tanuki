@@ -29,6 +29,14 @@ const AuthCommands = {
   ConsumeEmailAuthAction: 'ConsumeEmailAuthAction',
   ConfirmEmailVerification: 'ConfirmEmailVerification',
   ConfirmPasswordReset: 'ConfirmPasswordReset',
+  RequestGuardianPermission: 'RequestGuardianPermission',
+  AttestGuardianPermission: 'AttestGuardianPermission',
+  ValidateGuardianResume: 'ValidateGuardianResume',
+  AttachGuardianPermission: 'AttachGuardianPermission',
+  CheckGuardianAccess: 'CheckGuardianAccess',
+  WithdrawGuardianPermission: 'WithdrawGuardianPermission',
+  WithdrawGuardianPermissionByToken: 'WithdrawGuardianPermissionByToken',
+  ResendGuardianApplicantContinuation: 'ResendGuardianApplicantContinuation',
 };
 
 export default AuthCommands;

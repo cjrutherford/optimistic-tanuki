@@ -48,6 +48,19 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true, default: null })
   lockedUntil?: Date | null;
 
+  @Column({ type: 'varchar', length: 32, default: 'unassessed' })
+  ageEligibilityStatus?:
+    | 'legacy'
+    | 'unassessed'
+    | 'adult'
+    | 'minor-pending'
+    | 'minor'
+    | 'revoked';
+
+  /** Private age-rule expiry date; removed when the account reaches 18. */
+  @Column({ type: 'date', nullable: true, default: null })
+  ageEligibilityEndsAt?: string | null;
+
   @OneToMany((type) => TokenEntity, (te) => te.user)
   tokens: TokenEntity[];
 

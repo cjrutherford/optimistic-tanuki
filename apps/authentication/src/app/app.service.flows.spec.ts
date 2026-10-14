@@ -16,6 +16,7 @@ import { SaltedHashService } from '@optimistic-tanuki/encryption';
 import { EmailService } from '@optimistic-tanuki/email';
 
 import { AppService } from './app.service';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -175,6 +176,13 @@ describe('AppService flows', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: 'JWT_SECRET', useValue: 'test-secret' },
         { provide: 'totp', useValue: totp },
+        {
+          provide: GuardianPermissionService,
+          useValue: {
+            assertAccountAccess: jest.fn().mockResolvedValue(undefined),
+            assessUnassessedLogin: jest.fn().mockResolvedValue({ pending: false, sent: false }),
+          },
+        },
         {
           provide: MfaService,
           useFactory: (t: TotpMock) => new MfaService(t),

@@ -21,6 +21,7 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { EmailService } from '@optimistic-tanuki/email';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 let service: AppService;
 let userRepo: Repository<UserEntity>;
@@ -108,7 +109,8 @@ describe('AppService.getPublicOAuthConfig', () => {
       'jwt-secret',
       {} as never,
       {} as JwtService,
-      {} as EmailService
+      {} as EmailService,
+      { assertAccountAccess: jest.fn() } as never
     );
 
     expect(service.getPublicOAuthConfig('tenant.example.com')).toEqual({
@@ -155,6 +157,13 @@ describe('AppService', () => {
           provide: getRepositoryToken(KeyDatum),
           useValue: {
             save: jest.fn(),
+          },
+        },
+        {
+          provide: GuardianPermissionService,
+          useValue: {
+            assertAccountAccess: jest.fn().mockResolvedValue(undefined),
+            assessUnassessedLogin: jest.fn().mockResolvedValue({ pending: false }),
           },
         },
         {
@@ -251,6 +260,27 @@ describe('AppService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('validateToken application binding', () => {
+    it('rejects a caller-supplied app scope that conflicts with the signed token', async () => {
+      (jwtService.verifyAsync as jest.Mock).mockResolvedValue({
+        userId: 'someUserId',
+        appId: 'client-interface',
+      });
+      (tokenRepo.findOne as jest.Mock).mockResolvedValue({
+        tokenData: 'signed-token',
+        revoked: false,
+      });
+
+      await expect(
+        service.validateToken('signed-token', 'local-hub')
+      ).rejects.toThrow('Invalid token');
+      expect(userRepo.findOne).not.toHaveBeenCalled();
+      expect(
+        (service as any).guardianPermissionService.assertAccountAccess
+      ).not.toHaveBeenCalled();
+    });
+  });
+
   describe('login', () => {
     const mockUser = {
       id: 'someUserId',
@@ -290,6 +320,71 @@ describe('AppService', () => {
       );
       expect(signSpy).toHaveBeenCalled();
       expect(tokenRepo.save).toHaveBeenCalled();
+    });
+
+    it('reports failed guardian email delivery without creating a session', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        ...mockUser,
+        ageEligibilityStatus: 'unassessed',
+      } as any);
+      jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as any);
+      const guardianPermissions = (service as any).guardianPermissionService;
+      guardianPermissions.assessUnassessedLogin.mockResolvedValue({
+        pending: true,
+        sent: false,
+      });
+
+      const result = await service.login(
+        'test@example.com',
+        'password',
+        undefined,
+        undefined,
+        'client-interface',
+        {
+          dateOfBirth: '2010-01-01',
+          guardianEmail: 'guardian@example.invalid',
+          context: {
+            appId: 'client-interface',
+            appName: 'Optimistic Tanuki',
+            uiBaseUrl: 'https://optimistic-tanuki.example',
+            from: 'support@hopefulaspirationsindustries.com',
+          },
+        }
+      );
+
+      expect(result).toEqual({
+        message: 'Guardian permission email could not be sent. Please retry.',
+        data: { guardianConsentPending: true, guardianEmailSent: false },
+      });
+      expect(tokenRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('defers session creation after the account eligibility check', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        ...mockUser,
+        ageEligibilityStatus: 'adult',
+      } as any);
+      jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as any);
+      const guardianPermissions = (service as any).guardianPermissionService;
+      guardianPermissions.assertAccountAccess.mockResolvedValue(undefined);
+
+      await expect(
+        service.login(
+          'test@example.com',
+          'password',
+          undefined,
+          undefined,
+          'client-interface',
+          undefined,
+          true
+        )
+      ).resolves.toEqual({
+        message: 'Eligibility checked',
+        code: 0,
+        data: { eligibilityChecked: true },
+      });
+
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
 
     it('keeps same-second sessions distinct and revokes only the logged-out session', async () => {

@@ -8,6 +8,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import { randomUUID } from 'crypto';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 @Injectable()
 export class OAuthService {
@@ -21,7 +22,8 @@ export class OAuthService {
     private readonly tokenRepo: Repository<TokenEntity>,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     private readonly jsonWebToken: JwtService,
-    private readonly configValidator: OAuthConfigValidator
+    private readonly configValidator: OAuthConfigValidator,
+    private readonly guardianPermissions: GuardianPermissionService
   ) {}
 
   async oauthLogin(
@@ -30,7 +32,10 @@ export class OAuthService {
     email: string,
     displayName: string,
     profileId?: string,
-    emailVerified = false
+    emailVerified = false,
+    appId?: string,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
   ) {
     try {
       // Check if the provider is enabled and properly configured
@@ -55,8 +60,9 @@ export class OAuthService {
       });
 
       if (linked && linked.user) {
+        await this.applyEligibility(linked.user, appId, ageEligibilityStatus, guardianResumeToken);
         // Issue JWT for the linked user
-        return await this.issueTokenForUser(linked.user, profileId);
+        return await this.issueTokenForUser(linked.user, profileId, appId);
       }
 
       // Try to find user by email and auto-link
@@ -80,6 +86,10 @@ export class OAuthService {
             );
           }
 
+          // Evaluate age eligibility before persisting the provider binding.
+          // A denied pending/revoked account must not retain a new identity.
+          await this.applyEligibility(existingUser, appId, ageEligibilityStatus, guardianResumeToken);
+
           // Auto-link the provider to the existing user
           await this.oauthRepo.save({
             provider,
@@ -94,7 +104,7 @@ export class OAuthService {
             `OAuth auto-link: linked verified ${provider} identity (${providerUserId}) to existing userId=${existingUser.id}`
           );
 
-          return await this.issueTokenForUser(existingUser, profileId);
+          return await this.issueTokenForUser(existingUser, profileId, appId);
         }
       }
 
@@ -256,7 +266,11 @@ export class OAuthService {
     }
   }
 
-  private async issueTokenForUser(user: UserEntity, profileId?: string) {
+  private async issueTokenForUser(
+    user: UserEntity,
+    profileId?: string,
+    appId?: string
+  ) {
     if (!user.emailVerifiedAt) {
       return {
         message: 'Email verification required',
@@ -275,6 +289,7 @@ export class OAuthService {
       email: user.email,
       profileId: profileId || '',
       jti: randomUUID(),
+      ...(appId ? { appId } : {}),
     };
 
     const tk = this.jsonWebToken.sign(pl, {
@@ -296,6 +311,39 @@ export class OAuthService {
       code: 0,
       data: { newToken: tk, userId: user.id },
     };
+  }
+
+  private async applyEligibility(
+    user: UserEntity,
+    appId?: string,
+    ageEligibilityStatus?: 'adult',
+    guardianResumeToken?: string
+  ): Promise<void> {
+    if (guardianResumeToken) {
+      await this.guardianPermissions.attachAccount(guardianResumeToken, user.id);
+      user.ageEligibilityStatus = 'minor';
+    } else if (user.ageEligibilityEndsAt) {
+      const eligibilityEndsAt = new Date(
+        `${user.ageEligibilityEndsAt}T00:00:00.000Z`
+      );
+      if (eligibilityEndsAt.getTime() <= Date.now()) {
+        await this.userRepo.update(user.id, {
+          ageEligibilityStatus: 'adult',
+          ageEligibilityEndsAt: null,
+        });
+        user.ageEligibilityStatus = 'adult';
+        user.ageEligibilityEndsAt = null;
+      } else if (ageEligibilityStatus === 'adult') {
+        throw new RpcException({ code: 'AGE_ASSESSMENT_MISMATCH' });
+      }
+    } else if (ageEligibilityStatus === 'adult' && user.ageEligibilityStatus === 'unassessed') {
+      await this.userRepo.update(user.id, {
+        ageEligibilityStatus: 'adult',
+        ageEligibilityEndsAt: null,
+      });
+      user.ageEligibilityStatus = 'adult';
+    }
+    await this.guardianPermissions.assertAccountAccess(user.id, appId);
   }
 
   private getProviderDisplayName(provider: string): string {

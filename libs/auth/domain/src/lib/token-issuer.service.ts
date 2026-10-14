@@ -13,6 +13,7 @@ export type AuthTokenPayload = {
   email: string;
   profileId: string;
   jti: string;
+  appId?: string;
 };
 
 export type AuthTokenExpiry = '1h';
@@ -31,7 +32,7 @@ export class TokenIssuerService {
     private readonly expiresIn: AuthTokenExpiry = '1h'
   ) {}
 
-  issueForUser(user: AuthTokenUser, profileId?: string): string {
+  issueForUser(user: AuthTokenUser, profileId?: string, appId?: string): string {
     return this.signer.sign(
       {
         userId: user.userId,
@@ -39,6 +40,7 @@ export class TokenIssuerService {
         email: user.email,
         profileId: profileId ?? '',
         jti: randomUUID(),
+        ...(appId ? { appId } : {}),
       },
       {
         secret: this.secret,

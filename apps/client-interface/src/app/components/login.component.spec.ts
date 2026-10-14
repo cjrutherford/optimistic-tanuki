@@ -312,6 +312,18 @@ describe('LoginComponent behaviour', () => {
       );
       expect(router.navigate).not.toHaveBeenCalled();
     });
+
+    it('does not claim the guardian email was sent when delivery failed', async () => {
+      authStateService.login.mockResolvedValue({
+        data: { guardianConsentPending: true, guardianEmailSent: false },
+      } as never);
+
+      await component.onSubmit(credentials);
+
+      expect(component.errorMessage).toContain('could not be sent');
+      expect(component.errorMessage).not.toContain('request was sent');
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('onOAuthProvider', () => {
@@ -328,7 +340,8 @@ describe('LoginComponent behaviour', () => {
       expect(oauthService.initiateOAuthLogin).toHaveBeenCalledWith(
         'google',
         'client-interface',
-        true
+        true,
+        undefined
       );
       expect(authStateService.setToken).toHaveBeenCalledWith('jwt');
       expect(router.navigate).toHaveBeenCalledWith(['/feed']);

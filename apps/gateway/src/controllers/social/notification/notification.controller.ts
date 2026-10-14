@@ -134,7 +134,8 @@ export class NotificationController {
     );
 
     if (notification) {
-      this.socialGateway.broadcastNotification(notification);
+      void Promise.resolve(this.socialGateway.broadcastNotification(notification))
+        .catch(() => this.logger.warn('Live notification delivery unavailable'));
     }
 
     return notification;

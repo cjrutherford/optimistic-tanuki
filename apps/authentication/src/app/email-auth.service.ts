@@ -15,6 +15,7 @@ import {
   AuthActionPurpose,
   AuthActionTokenEntity,
 } from '../email-auth/entities/auth-action-token.entity';
+import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 
 export interface AuthEmailContext {
   appId: string;
@@ -45,7 +46,8 @@ export class EmailAuthService {
     private readonly email: EmailService,
     @Inject('EMAIL_PASSWORD_TOOLS')
     private readonly passwordTools: PasswordTools,
-    private readonly tokenIssuer: TokenIssuerService
+    private readonly tokenIssuer: TokenIssuerService,
+    private readonly guardianPermissions: GuardianPermissionService
   ) {}
 
   async requestAction(
@@ -143,9 +145,17 @@ export class EmailAuthService {
   async consumeLoginAction(
     rawToken: string,
     purpose: AuthActionPurpose.Verification | AuthActionPurpose.MagicLink,
-    profileId?: string
+    profileId?: string,
+    appId?: string
   ) {
     const action = await this.inspect(rawToken, purpose);
+    if (appId && appId !== action.appId) {
+      throw new RpcException({ code: 'ACTION_APP_MISMATCH' });
+    }
+    // Check before consuming the one-time action or allowing profile creation.
+    // A denied age-gated login can then use password assessment or an approved
+    // guardian link without losing this email action.
+    await this.guardianPermissions.assertAccountAccess(action.user.id, action.appId);
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }
@@ -171,7 +181,8 @@ export class EmailAuthService {
         lastName: action.user.lastName,
         email: action.user.email,
       },
-      profileId
+      profileId,
+      action.appId
     );
     await this.sessions.save({
       tokenData: session,

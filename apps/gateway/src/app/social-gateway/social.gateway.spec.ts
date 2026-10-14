@@ -14,11 +14,22 @@ describe('SocialGateway', () => {
       send: jest.fn().mockReturnValue(of([])),
     };
     mockSocketSessionAuth = {
-      authenticate: jest.fn(),
-      assertProfile: jest.fn((_client: unknown, profileId: string) => ({
-        userId: 'user-id',
-        profileId,
-      })),
+      authenticate: jest.fn(async (client: any) => {
+        client.data ??= {};
+        const user = client.data.user ?? {
+          userId: 'user-id',
+          profileId: 'reader',
+        };
+        client.data.user = user;
+        return user;
+      }),
+      assertProfile: jest.fn((client: any, profileId: string) => {
+        client.data ??= {};
+        const user = { userId: 'user-id', profileId };
+        client.data.user = user;
+        return user;
+      }),
+      getUser: jest.fn((client: any) => client.data.user),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -98,6 +109,45 @@ describe('SocialGateway', () => {
     });
   });
 
+  it('suppresses a deferred feed result when the session is revoked in flight', async () => {
+    const response = new Subject<any[]>();
+    let resolveFeedStarted!: () => void;
+    const feedStarted = new Promise<void>((resolve) => {
+      resolveFeedStarted = resolve;
+    });
+    let revoked = false;
+    mockSocketSessionAuth.authenticate.mockImplementation(
+      async (client: any) => {
+        if (revoked) throw new Error('session revoked');
+        client.data.user ??= { userId: 'account-1', profileId: 'reader' };
+        return client.data.user;
+      }
+    );
+    mockSocialClient.send.mockImplementation(() => {
+      resolveFeedStarted();
+      return response;
+    });
+    const client: any = {
+      id: 'socket-revoked-during-feed',
+      data: { user: { userId: 'account-1', profileId: 'reader' } },
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+
+    await gateway.handleConnection(client);
+    const pendingFeed = gateway.handleGetFeed({ profileId: 'reader' }, client);
+    await feedStarted;
+    revoked = true;
+    response.next([{ id: 'private-feed-result' }]);
+    response.complete();
+    await pendingFeed;
+
+    expect(client.emit).not.toHaveBeenCalledWith('feed', expect.anything());
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect((gateway as any).connectedClients.size).toBe(0);
+    expect((gateway as any).clientToConnectedClient(client)).toBeUndefined();
+  });
+
   it('disconnects and never subscribes when cookie-session validation fails', async () => {
     let rejectAuthentication!: (error: Error) => void;
     const authentication = new Promise<never>((_resolve, reject) => {
@@ -126,6 +176,95 @@ describe('SocialGateway', () => {
       expect.anything()
     );
     expect(gateway['connectedClients'].size).toBe(0);
+  });
+
+  it('revalidates an active socket before protected packets and disconnects revoked users', async () => {
+    const user = { userId: 'minor-user', profileId: 'minor-profile' };
+    let revoked = false;
+    mockSocketSessionAuth.authenticate.mockImplementation(async (client: any) => {
+      if (revoked) throw new Error('revoked session');
+      client.data.user = user;
+      return user;
+    });
+    mockSocketSessionAuth.assertProfile.mockImplementation(
+      (client: any, requestedProfileId: string) => {
+        if (client.data.user?.profileId !== requestedProfileId) {
+          throw new Error('wrong profile');
+        }
+        return client.data.user;
+      }
+    );
+    const client: any = {
+      id: 'revoked-active-socket',
+      data: {},
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    await gateway.handleConnection(client);
+    expect(gateway['connectedClients'].get('minor-profile')?.size).toBe(1);
+    await gateway.handleGetFollowing(
+      { profileId: 'minor-profile' },
+      client
+    );
+    expect(mockSocialClient.send).toHaveBeenCalled();
+    mockSocialClient.send.mockClear();
+
+    revoked = true;
+    await expect(
+      gateway.handleGetFollowing({ profileId: 'minor-profile' }, client)
+    ).rejects.toThrow('revoked session');
+
+    expect(mockSocialClient.send).not.toHaveBeenCalled();
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(gateway['connectedClients'].size).toBe(0);
+    expect(gateway['clientToProfileMap'].size).toBe(0);
+  });
+
+  it('does not send private broadcasts to an active socket after session revocation', async () => {
+    const user = { userId: 'minor-user', profileId: 'minor-profile' };
+    let revoked = false;
+    mockSocketSessionAuth.authenticate.mockImplementation(async (client: any) => {
+      if (revoked) throw new Error('revoked session');
+      client.data.user = user;
+      return user;
+    });
+    mockSocketSessionAuth.assertProfile.mockImplementation(
+      (client: any, requestedProfileId: string) => {
+        if (client.data.user?.profileId !== requestedProfileId) {
+          throw new Error('wrong profile');
+        }
+        return client.data.user;
+      }
+    );
+    const client: any = {
+      id: 'revoked-broadcast-socket',
+      data: {},
+      emit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+    await gateway.handleConnection(client);
+    await gateway.handleSubscribeNotifications(
+      { profileId: 'minor-profile' },
+      client
+    );
+    const notification = {
+      recipientId: 'minor-profile',
+      message: 'private notification',
+    };
+    await gateway.broadcastNotification(notification);
+    expect(client.emit).toHaveBeenCalledWith('notification', notification);
+    client.emit.mockClear();
+
+    revoked = true;
+    await gateway.broadcastNotification(notification);
+
+    expect(client.emit).not.toHaveBeenCalledWith(
+      'notification',
+      expect.anything()
+    );
+    expect(client.disconnect).toHaveBeenCalledWith(true);
+    expect(gateway['connectedClients'].size).toBe(0);
+    expect(gateway['clientToProfileMap'].size).toBe(0);
   });
 
   it('does not register or serve messages when a socket disconnects during authentication', async () => {
@@ -446,7 +585,7 @@ describe('SocialGateway', () => {
       const secondTab: any = { emit: jest.fn() };
       await gateway.handleSubscribePosts({ profileId: 'member' }, firstTab);
       await gateway.handleSubscribePosts({ profileId: 'member' }, secondTab);
-      gateway.broadcastSocialContentInvalidated();
+      await gateway.broadcastSocialContentInvalidated();
       expect(firstTab.emit).toHaveBeenCalledWith(
         'social_content_invalidated',
         {}
@@ -553,7 +692,7 @@ describe('SocialGateway', () => {
         { profileId: 'user123' },
         client
       );
-      gateway.broadcastFollowEvent('user123', 'other', 'follow');
+      await gateway.broadcastFollowEvent('user123', 'other', 'follow');
       expect(client.emit).toHaveBeenCalledWith(
         'user_follow',
         expect.objectContaining({ followerId: 'user123' })
