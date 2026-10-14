@@ -8,8 +8,40 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 import { AuthStateService } from './auth-state.service';
 import { AuthenticationService } from './authentication.service';
+import * as CommonUi from '@optimistic-tanuki/common-ui';
 
 describe('AuthStateService', () => {
+  it('opens RUM only after the server-verified session restore and closes it on logout', async () => {
+    const eligibility = jest.spyOn(
+      CommonUi,
+      'setPerformanceMonitoringEligibility'
+    );
+    const currentSession = jest.fn().mockResolvedValue({
+      data: { userId: 'user-1', name: 'Member', email: 'member@example.test' },
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        AuthStateService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        { provide: AuthenticationService, useValue: { currentSession } },
+        { provide: API_BASE_URL, useValue: '/api' },
+      ],
+    });
+
+    const service = TestBed.inject(AuthStateService);
+    await service.waitForSessionRestore();
+    expect(eligibility).toHaveBeenCalledWith('local-hub', true);
+
+    service.logout();
+    expect(eligibility).toHaveBeenLastCalledWith('local-hub', false);
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/authentication/logout')
+      .flush({});
+    eligibility.mockRestore();
+  });
+
   it('shares the pending browser session restore with all guards', async () => {
     let resolveSession!: (value: unknown) => void;
     const currentSession = jest.fn(
@@ -146,7 +178,7 @@ describe('AuthStateService', () => {
     const service = TestBed.inject(AuthStateService);
     await service.waitForSessionRestore();
     await expect(
-      service.login('user@example.test', 'test-password')
+      service.login({ email: 'user@example.test', password: 'test-password' })
     ).rejects.toThrow();
   });
   describe('server platform', () => {
@@ -260,7 +292,7 @@ describe('AuthStateService', () => {
       const service = TestBed.inject(AuthStateService);
       await service.waitForSessionRestore();
 
-      await service.login('four@example.com', 'secret');
+      await service.login({ email: 'four@example.com', password: 'secret' });
 
       expect(login).toHaveBeenCalledWith({
         email: 'four@example.com',

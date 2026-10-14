@@ -5,6 +5,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
+import * as CommonUi from '@optimistic-tanuki/common-ui';
 import { API_BASE_URL, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../authentication.service';
 import { AuthStateService, UserData } from './auth-state.service';
@@ -58,6 +59,23 @@ describe('AuthStateService', () => {
   });
 
   describe('in the browser', () => {
+    it('opens RUM only after the server-verified session restore and closes it on logout', async () => {
+      const eligibility = jest.spyOn(
+        CommonUi,
+        'setPerformanceMonitoringEligibility'
+      );
+      const service = configure('browser');
+
+      httpMock.expectOne(SESSION_URL).flush({ data: USER });
+      await service.restoreSession();
+      expect(eligibility).toHaveBeenCalledWith('client-interface', true);
+
+      service.logout();
+      expect(eligibility).toHaveBeenLastCalledWith('client-interface', false);
+      httpMock.expectOne(LOGOUT_URL).flush({});
+      eligibility.mockRestore();
+    });
+
     it('restores the session on construction and marks the user authenticated', async () => {
       const service = configure('browser');
 

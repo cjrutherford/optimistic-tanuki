@@ -8,6 +8,7 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
+import { setPerformanceMonitoringEligibility } from '@optimistic-tanuki/common-ui';
 
 export interface UserData {
   userId: string;
@@ -275,6 +276,9 @@ export class AuthStateService {
       localStorage.removeItem(this.profilesKey);
     }
     this._isAuthenticated = true;
+    // The session endpoint is protected by the gateway and its token
+    // introspection enforces app-scoped age eligibility before returning.
+    setPerformanceMonitoringEligibility('client-interface', true);
     this.decodedTokenSubject.next({ ...user, profileId: user.profileId ?? '' });
     this.currentProfileSubject.next(this.getPersistedSelectedProfile());
     this.isAuthenticatedSubject.next(true);
@@ -291,6 +295,8 @@ export class AuthStateService {
     this.isAuthenticatedSubject.next(true);
     this.decodedTokenSubject.next(null);
     this._isAuthenticated = true;
+    // A raw token response is not the server-verified session restore.
+    setPerformanceMonitoringEligibility('client-interface', false);
   }
 
   logout() {
@@ -318,6 +324,7 @@ export class AuthStateService {
   }
 
   private clearClientSession() {
+    setPerformanceMonitoringEligibility('client-interface', false);
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);

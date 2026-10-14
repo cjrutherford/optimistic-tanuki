@@ -4,6 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { AuthenticationService } from './authentication.service';
 import { LoginRequest } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
+import { setPerformanceMonitoringEligibility } from '@optimistic-tanuki/common-ui';
 
 export interface UserData {
   userId: string;
@@ -87,11 +88,15 @@ export class AuthStateService {
       const response = await this.authService.currentSession();
       if (generation !== this.restoreGeneration) return;
       this._isAuthenticated = true;
+      // The session endpoint is protected by the gateway and its token
+      // introspection enforces app-scoped age eligibility before returning.
+      setPerformanceMonitoringEligibility('local-hub', true);
       this.isAuthenticatedSubject.next(true);
       this.userDataSubject.next(response.data as UserData);
     } catch {
       if (generation !== this.restoreGeneration) return;
       this._isAuthenticated = false;
+      setPerformanceMonitoringEligibility('local-hub', false);
       this.isAuthenticatedSubject.next(false);
       this.userDataSubject.next(null);
     }
@@ -119,6 +124,7 @@ export class AuthStateService {
     }
     ++this.restoreGeneration;
     this.sessionRestorePromise = Promise.resolve();
+    setPerformanceMonitoringEligibility('local-hub', false);
     this.http
       .post('/api/authentication/logout', {}, { withCredentials: true })
       .subscribe({ error: () => undefined });

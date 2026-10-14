@@ -25,6 +25,56 @@ export interface PerformanceMonitorOptions {
   renderMode?: PerformanceRumPayload['renderMode'];
   endpoint?: string;
   flushDelayMs?: number;
+  includeBufferedEntries?: boolean;
+  flushOnStop?: boolean;
+}
+
+export interface GatedPerformanceMonitor {
+  stop(): void;
+}
+
+const eligibilityListeners = new Map<string, Set<(eligible: boolean) => void>>();
+
+/** Publish the result of an app-scoped session restore validated by the server. */
+export function setPerformanceMonitoringEligibility(
+  appId: string,
+  eligible: boolean
+): void {
+  eligibilityListeners.get(appId)?.forEach((listener) => listener(eligible));
+}
+
+/** RUM remains off until a server-validated, app-scoped session is restored. */
+export function startGatedPerformanceMonitoring(
+  options: PerformanceMonitorOptions
+): GatedPerformanceMonitor {
+  let eligible = false;
+  let stopMonitor: (() => void) | undefined;
+  const updateEligibility = (nextEligible: boolean) => {
+    if (eligible === nextEligible) return;
+    eligible = nextEligible;
+    if (eligible) {
+      stopMonitor = startPerformanceMonitoring({
+        ...options,
+        includeBufferedEntries: false,
+        flushOnStop: false,
+      });
+    } else {
+      stopMonitor?.();
+      stopMonitor = undefined;
+    }
+  };
+  const listeners = eligibilityListeners.get(options.appId) ?? new Set();
+  listeners.add(updateEligibility);
+  eligibilityListeners.set(options.appId, listeners);
+  return {
+    stop() {
+      listeners.delete(updateEligibility);
+      if (!listeners.size) eligibilityListeners.delete(options.appId);
+      stopMonitor?.();
+      stopMonitor = undefined;
+      eligible = false;
+    },
+  };
 }
 
 export function normalizePerformanceRoute(path: string): string {
@@ -45,7 +95,11 @@ export function normalizePerformanceRoute(path: string): string {
 export function createPerformanceReporter(
   options: PerformanceMonitorOptions,
   send: (payload: PerformanceRumPayload) => void
-): { record: (metric: PerformanceMetric) => void; flush: () => void } {
+): {
+  record: (metric: PerformanceMetric) => void;
+  flush: () => void;
+  clear: () => void;
+} {
   const metrics: PerformanceMetric[] = [];
 
   const flush = () => {
@@ -68,6 +122,9 @@ export function createPerformanceReporter(
       if (options.flushDelayMs === 0) flush();
     },
     flush,
+    clear() {
+      metrics.length = 0;
+    },
   };
 }
 
@@ -111,7 +168,10 @@ export function startPerformanceMonitoring(
           reporter.record({ name, value: value(entry) });
         }
       });
-      observer.observe({ type, buffered: true } as PerformanceObserverInit);
+      observer.observe({
+        type,
+        buffered: options.includeBufferedEntries !== false,
+      } as PerformanceObserverInit);
       observers.push(observer);
     } catch {
       // Browser support varies; missing optional observers must not affect UX.
@@ -127,9 +187,11 @@ export function startPerformanceMonitoring(
   observe('layout-shift', 'cls', (entry) => (entry as LayoutShiftEntry).value);
   observe('longtask', 'long_task', (entry) => entry.duration);
 
-  const navigation = performance.getEntriesByType('navigation')[0] as
-    | PerformanceNavigationTiming
-    | undefined;
+  const navigation = options.includeBufferedEntries === false
+    ? undefined
+    : (performance.getEntriesByType('navigation')[0] as
+        | PerformanceNavigationTiming
+        | undefined);
   if (navigation) {
     reporter.record({
       name: 'ttfb',
@@ -148,7 +210,8 @@ export function startPerformanceMonitoring(
     window.removeEventListener('pagehide', flush);
     if (timer !== undefined) window.clearInterval(timer);
     observers.forEach((observer) => observer.disconnect());
-    flush();
+    if (options.flushOnStop === false) reporter.clear();
+    else flush();
   };
 }
 
