@@ -110,6 +110,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       guardianEmail,
       dateOfBirth: input.dateOfBirth,
       userId: input.userId || null,
+      guardianUserId: null,
       status: 'pending',
       guardianTokenHash: tokenHash,
       resumeTokenHash: null,
@@ -194,9 +195,10 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     return { pending: true, sent: emailSent };
   }
 
-  async attest(
+  async attestAsGuardian(
     rawToken: string,
-    input: { guardianEmail: string; attested: true; attestationVersion: string }
+    guardianUserId: string,
+    input: { attested: true; attestationVersion: string; dateOfBirth?: string }
   ): Promise<{
     attested: true;
     applicantNotified: boolean;
@@ -212,12 +214,35 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       },
     });
     if (!permission) throw new RpcException({ code: 'GUARDIAN_TOKEN_INVALID' });
+    const guardian = await this.users.findOne({ where: { id: guardianUserId } });
     if (
+      !guardian ||
+      guardian.email.trim().toLowerCase() !== permission.guardianEmail?.toLowerCase() ||
+      guardian.email.trim().toLowerCase() === permission.applicantEmail.toLowerCase() ||
+      guardian.id === permission.userId ||
       input?.attested !== true ||
-      input.attestationVersion !== ATTESTATION_VERSION ||
-      input.guardianEmail?.trim().toLowerCase() !== permission.guardianEmail?.toLowerCase()
+      input.attestationVersion !== ATTESTATION_VERSION
     ) {
       throw new RpcException({ code: 'GUARDIAN_ATTESTATION_REQUIRED' });
+    }
+    const guardianStatus = guardian.ageEligibilityStatus || 'legacy';
+    if (guardianStatus !== 'adult') {
+      if (!['legacy', 'unassessed'].includes(guardianStatus) || !input.dateOfBirth) {
+        throw new RpcException({ code: 'GUARDIAN_ADULT_REQUIRED' });
+      }
+      if (this.ageFromDate(input.dateOfBirth) < 18) {
+        throw new RpcException({ code: 'GUARDIAN_ADULT_REQUIRED' });
+      }
+      const assessed = await this.users.update(
+        {
+          id: guardian.id,
+          ageEligibilityStatus: In(['legacy', 'unassessed']),
+        },
+        { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
+      );
+      if (!assessed.affected) {
+        throw new RpcException({ code: 'GUARDIAN_ADULT_REQUIRED' });
+      }
     }
 
     const resumeToken = randomBytes(32).toString('base64url');
@@ -237,6 +262,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       {
         status: 'approved',
         guardianTokenHash: null,
+        guardianUserId,
         resumeTokenHash: permission.userId ? null : this.hash(resumeToken),
         resumeExpiresAt: permission.userId ? null : unattachedDeadline,
         withdrawalTokenHash: this.hash(withdrawalToken),

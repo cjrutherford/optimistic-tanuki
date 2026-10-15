@@ -40,6 +40,7 @@ describe('GuardianPermissionService', () => {
     guardianEmail: 'guardian@example.invalid',
     dateOfBirth: '2010-10-14',
     userId: null,
+    guardianUserId: null,
     status: 'pending',
     guardianTokenHash: hash('guardian-token'),
     resumeTokenHash: null,
@@ -114,7 +115,11 @@ describe('GuardianPermissionService', () => {
       delete: jest.fn().mockResolvedValue({ affected: 0 }),
     };
     users = {
-      findOne: jest.fn(),
+      findOne: jest.fn().mockResolvedValue({
+        id: 'guardian-user',
+        email: 'guardian@example.invalid',
+        ageEligibilityStatus: 'adult',
+      }),
       update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     sessions = {
@@ -156,8 +161,7 @@ describe('GuardianPermissionService', () => {
 
     permissions.findOne.mockResolvedValue(permissionRecord());
     await expect(
-      service.attest(guardianToken, {
-        guardianEmail: 'guardian@example.invalid',
+      service.attestAsGuardian(guardianToken, 'guardian-user', {
         attested: false,
         attestationVersion: ATTESTATION_VERSION,
       } as any)
@@ -168,17 +172,20 @@ describe('GuardianPermissionService', () => {
 
   it('requires the invited guardian contact and exact attestation version', async () => {
     permissions.findOne.mockResolvedValue(permissionRecord());
+    users.findOne.mockResolvedValueOnce({
+      id: 'wrong-account',
+      email: 'someone-else@example.invalid',
+      ageEligibilityStatus: 'adult',
+    });
 
     await expect(
-      service.attest('guardian-token', {
-        guardianEmail: 'someone-else@example.invalid',
+      service.attestAsGuardian('guardian-token', 'guardian-user', {
         attested: true,
         attestationVersion: ATTESTATION_VERSION,
       })
     ).rejects.toBeInstanceOf(RpcException);
     await expect(
-      service.attest('guardian-token', {
-        guardianEmail: 'guardian@example.invalid',
+      service.attestAsGuardian('guardian-token', 'guardian-user', {
         attested: true,
         attestationVersion: 'stale-version',
       })
@@ -186,6 +193,152 @@ describe('GuardianPermissionService', () => {
 
     expect(permissions.update).not.toHaveBeenCalled();
     expect(email.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('binds approval to the authenticated invited adult and rejects body identity or account mismatch', async () => {
+    const pending = permissionRecord();
+    permissions.findOne.mockResolvedValue(pending);
+    users.findOne.mockResolvedValue({
+      id: 'guardian-user',
+      email: 'GUARDIAN@example.invalid',
+      ageEligibilityStatus: 'adult',
+    });
+
+    await expect(
+      (service as any).attestAsGuardian('guardian-token', 'guardian-user', {
+        attested: true,
+        attestationVersion: ATTESTATION_VERSION,
+      })
+    ).resolves.toEqual(expect.objectContaining({ attested: true }));
+    expect(permissions.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: pending.id, status: 'pending' }),
+      expect.objectContaining({ status: 'approved', guardianUserId: 'guardian-user' })
+    );
+
+    for (const user of [
+      { id: 'minor', email: 'guardian@example.invalid', ageEligibilityStatus: 'minor' },
+      { id: 'wrong-email', email: 'other@example.invalid', ageEligibilityStatus: 'adult' },
+      { id: 'self', email: 'applicant@example.invalid', ageEligibilityStatus: 'adult' },
+      { id: 'same-address', email: 'guardian@example.invalid', ageEligibilityStatus: 'adult' },
+    ]) {
+      permissions.update.mockClear();
+      permissions.findOne.mockResolvedValue(permissionRecord({
+        userId: user.id === 'self' ? 'self' : null,
+        ...(user.id === 'same-address' ? { applicantEmail: 'guardian@example.invalid' } : {}),
+      }));
+      users.findOne.mockResolvedValue(user);
+      await expect(
+        (service as any).attestAsGuardian('guardian-token', user.id, {
+          attested: true,
+          attestationVersion: ATTESTATION_VERSION,
+          guardianUserId: 'guardian-user',
+        })
+      ).rejects.toBeInstanceOf(RpcException);
+      expect(permissions.update).not.toHaveBeenCalled();
+    }
+  });
+
+  it('rejects a guardian identity supplied in the message body and permits only one racing bind', async () => {
+    const pending = permissionRecord();
+    permissions.findOne.mockResolvedValue(pending);
+    users.findOne.mockResolvedValue({
+      id: 'guardian-user', email: 'guardian@example.invalid', ageEligibilityStatus: 'adult',
+    });
+    permissions.update
+      .mockResolvedValueOnce({ affected: 1 })
+      .mockResolvedValueOnce({ affected: 0 });
+    const input = { attested: true as const, attestationVersion: ATTESTATION_VERSION };
+    const results = await Promise.allSettled([
+      (service as any).attestAsGuardian('guardian-token', 'guardian-user', input),
+      (service as any).attestAsGuardian('guardian-token', 'guardian-user', input),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+    expect(permissions.update).toHaveBeenCalledTimes(2);
+    expect(permissions.update.mock.calls[0][1].guardianUserId).toBe('guardian-user');
+  });
+
+  it('assesses a legacy invited guardian as adult from private DOB input without storing DOB', async () => {
+    permissions.findOne.mockResolvedValue(permissionRecord());
+    users.findOne.mockResolvedValue({
+      id: 'legacy-guardian',
+      email: 'guardian@example.invalid',
+      ageEligibilityStatus: 'legacy',
+    });
+
+    await expect(
+      service.attestAsGuardian('guardian-token', 'legacy-guardian', {
+        attested: true,
+        attestationVersion: ATTESTATION_VERSION,
+        dateOfBirth: '2000-01-01',
+      })
+    ).resolves.toEqual(expect.objectContaining({ attested: true }));
+
+    expect(users.update).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'legacy-guardian', ageEligibilityStatus: expect.anything() }),
+      { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
+    );
+    expect(users.update.mock.calls[0][1]).not.toHaveProperty('dateOfBirth');
+    expect(permissions.update.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ guardianUserId: 'legacy-guardian', status: 'approved' })
+    );
+    expect(JSON.stringify(permissions.update.mock.calls[0][1])).not.toContain('2000-01-01');
+  });
+
+  it('does not promote a legacy guardian with a minor DOB or overwrite a concurrent status change', async () => {
+    permissions.findOne.mockResolvedValue(permissionRecord());
+    users.findOne.mockResolvedValue({
+      id: 'legacy-guardian',
+      email: 'guardian@example.invalid',
+      ageEligibilityStatus: 'legacy',
+    });
+    await expect(
+      service.attestAsGuardian('guardian-token', 'legacy-guardian', {
+        attested: true,
+        attestationVersion: ATTESTATION_VERSION,
+      })
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(users.update).not.toHaveBeenCalled();
+
+    await expect(
+      service.attestAsGuardian('guardian-token', 'legacy-guardian', {
+        attested: true,
+        attestationVersion: ATTESTATION_VERSION,
+        dateOfBirth: '2010-01-01',
+      })
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(users.update).not.toHaveBeenCalled();
+    expect(permissions.update).not.toHaveBeenCalled();
+
+    users.update.mockResolvedValueOnce({ affected: 0 });
+    await expect(
+      service.attestAsGuardian('guardian-token', 'legacy-guardian', {
+        attested: true,
+        attestationVersion: ATTESTATION_VERSION,
+        dateOfBirth: '2000-01-01',
+      })
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(permissions.update).not.toHaveBeenCalled();
+  });
+
+  it('never lets known minor, pending, or revoked accounts self-promote with adult DOB input', async () => {
+    for (const ageEligibilityStatus of ['minor', 'minor-pending', 'revoked']) {
+      permissions.findOne.mockResolvedValue(permissionRecord());
+      users.findOne.mockResolvedValue({
+        id: `${ageEligibilityStatus}-guardian`,
+        email: 'guardian@example.invalid',
+        ageEligibilityStatus,
+      });
+      await expect(
+        service.attestAsGuardian('guardian-token', `${ageEligibilityStatus}-guardian`, {
+          attested: true,
+          attestationVersion: ATTESTATION_VERSION,
+          dateOfBirth: '2000-01-01',
+        })
+      ).rejects.toBeInstanceOf(RpcException);
+    }
+    expect(users.update).not.toHaveBeenCalled();
+    expect(permissions.update).not.toHaveBeenCalled();
   });
 
   it('atomically consumes a guardian link once when two attestations race', async () => {
@@ -211,8 +364,8 @@ describe('GuardianPermissionService', () => {
       attestationVersion: ATTESTATION_VERSION,
     };
     const results = await Promise.allSettled([
-      service.attest('guardian-token', input),
-      service.attest('guardian-token', input),
+      service.attestAsGuardian('guardian-token', 'guardian-user', input),
+      service.attestAsGuardian('guardian-token', 'guardian-user', input),
     ]);
 
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
@@ -225,8 +378,7 @@ describe('GuardianPermissionService', () => {
     const pending = permissionRecord();
     permissions.findOne.mockResolvedValue(pending);
 
-    const result = await service.attest('guardian-token', {
-      guardianEmail: 'GUARDIAN@example.invalid',
+    const result = await service.attestAsGuardian('guardian-token', 'guardian-user', {
       attested: true,
       attestationVersion: ATTESTATION_VERSION,
     });
@@ -608,8 +760,7 @@ describe('GuardianPermissionService', () => {
       status: 'pending',
       userId: 'minor-user',
     }));
-    const approvalResult = await service.attest('guardian-token', {
-      guardianEmail: 'guardian@example.invalid',
+    const approvalResult = await service.attestAsGuardian('guardian-token', 'guardian-user', {
       attested: true,
       attestationVersion: ATTESTATION_VERSION,
     });
@@ -669,8 +820,7 @@ describe('GuardianPermissionService', () => {
 
   it('lets a guardian withdraw before account attachment and invalidates the applicant resume link', async () => {
     permissions.findOne.mockResolvedValue(permissionRecord());
-    await service.attest('guardian-token', {
-      guardianEmail: 'guardian@example.invalid',
+    await service.attestAsGuardian('guardian-token', 'guardian-user', {
       attested: true,
       attestationVersion: ATTESTATION_VERSION,
     });
@@ -715,6 +865,7 @@ describe('GuardianPermissionService', () => {
     await expect(service.attachAccount(resumeToken, 'applicant-user')).rejects.toBeInstanceOf(
       RpcException
     );
+    users.findOne.mockClear();
     expect(users.findOne).not.toHaveBeenCalled();
   });
 
@@ -824,8 +975,7 @@ describe('GuardianPermissionService', () => {
       context: CONTEXT,
     });
     const guardianToken = tokenFromMail(0, '/auth/guardian-consent');
-    await service.attest(guardianToken, {
-      guardianEmail: 'guardian@example.invalid',
+    await service.attestAsGuardian(guardianToken, 'guardian-user', {
       attested: true,
       attestationVersion: ATTESTATION_VERSION,
     });
@@ -852,6 +1002,7 @@ describe('GuardianPermissionService', () => {
     await expect(service.attachAccount(resumeToken, 'applicant-user')).rejects.toBeInstanceOf(
       RpcException
     );
+    users.findOne.mockClear();
     expect(users.findOne).not.toHaveBeenCalled();
   });
 

@@ -59,6 +59,7 @@ describe('AppController', () => {
           provide: GuardianPermissionService,
           useValue: {
             requestPermission: jest.fn(),
+            attestAsGuardian: jest.fn(),
             resendApplicantContinuation: jest.fn(),
           },
         },
@@ -111,6 +112,25 @@ describe('AppController', () => {
     expect(
       guardianPermissions.resendApplicantContinuation
     ).toHaveBeenCalledWith('guardian-control-token');
+  });
+
+  it('passes the authenticated guardian id from the gateway command to the attestation service', async () => {
+    guardianPermissions.attestAsGuardian.mockResolvedValue({ attested: true });
+    const command = {
+      token: 'private-link-token',
+      guardianUserId: 'verified-guardian-id',
+      attested: true as const,
+      attestationVersion: 'guardian-attestation-v1',
+      dateOfBirth: '2000-01-01',
+    };
+    await expect(appController.attestGuardianPermission(command)).resolves.toEqual({
+      attested: true,
+    });
+    expect(guardianPermissions.attestAsGuardian).toHaveBeenCalledWith(
+      command.token,
+      command.guardianUserId,
+      command
+    );
   });
 
   describe('login', () => {

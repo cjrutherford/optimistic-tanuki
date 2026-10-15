@@ -17,12 +17,17 @@ export function guardianConsentRoutes(): Routes {
       <section>
         <h1 id="guardian-consent-title">Parent or guardian permission</h1>
         @if (state === 'ready' && !withdrawalToken) {
-          <p>Enter the contact email where this request was sent. By checking the box, you state that you are the user's parent or legal guardian and give permission for their use of Optimistic Tanuki and Towne Square while they are under 18.</p>
+          <p>Sign in to the adult account at the contact address where this request was sent. Open sign in in a new tab, then return here to continue; this private link stays in this tab.</p>
+          <a href="/login" target="_blank" rel="noopener noreferrer">Sign in as the invited guardian</a>
+          <a href="/register" target="_blank" rel="noopener noreferrer">Create an adult account</a>
+          <p>If your account has not confirmed that you are an adult, enter your date of birth for this private check. The server uses it only to assess adult eligibility and does not retain it. Leave it blank if your account is already assessed as an adult.</p>
+          <p>By checking the box, you state that you are the user's parent or legal guardian and give permission for their use of Optimistic Tanuki and Towne Square while they are under 18.</p>
+          <p role="status" aria-live="polite">{{ message }}</p>
           <form (ngSubmit)="submit()">
-            <label for="guardian-email">Guardian contact email</label>
-            <input id="guardian-email" name="guardianEmail" type="email" autocomplete="email" required [(ngModel)]="guardianEmail" />
+            <label for="guardian-date-of-birth">Date of birth, if adult eligibility has not been assessed</label>
+            <input id="guardian-date-of-birth" name="guardianDateOfBirth" type="date" autocomplete="bday" [(ngModel)]="dateOfBirth" />
             <label class="attestation"><input name="attested" type="checkbox" required [(ngModel)]="attested" /> I am the parent or legal guardian and give this permission.</label>
-            <button type="submit" [disabled]="!attested || !guardianEmail">Record permission</button>
+            <button type="submit" [disabled]="!attested">Record permission</button>
           </form>
           <p>This records your statement. It does not independently verify identity or guardianship. If you did not request this, close this page.</p>
         } @else if (state === 'ready' && withdrawalToken) {
@@ -64,10 +69,10 @@ export class GuardianConsentComponent implements OnInit {
   withdrawalUrl = '';
   applicantNotified = false;
   continuationRequired = false;
+  dateOfBirth = '';
   resending = false;
   linkCopied = false;
   withdrawConfirmed = false;
-  guardianEmail = '';
   attested = false;
   state: 'ready' | 'success' | 'error' = 'ready';
   message = '';
@@ -84,7 +89,9 @@ export class GuardianConsentComponent implements OnInit {
   }
 
   async submit(): Promise<void> {
-    if (!this.token || !this.attested || !this.guardianEmail.trim()) return;
+    if (!this.token || !this.attested) return;
+    const dateOfBirth = this.dateOfBirth;
+    this.dateOfBirth = '';
     try {
       const result = await this.http.post<{
         attested: true;
@@ -93,9 +100,9 @@ export class GuardianConsentComponent implements OnInit {
         withdrawalUrl: string;
       }>('/api/authentication/guardian-consent/attest', {
         token: this.token,
-        guardianEmail: this.guardianEmail.trim(),
         attested: true,
         attestationVersion: 'guardian-attestation-v1',
+        ...(dateOfBirth ? { dateOfBirth } : {}),
       }).toPromise();
       this.token = '';
       this.withdrawalUrl = result?.withdrawalUrl || '';
@@ -111,8 +118,7 @@ export class GuardianConsentComponent implements OnInit {
         ? 'Permission was recorded. A private continuation link was sent to the applicant.'
         : 'Permission was recorded, but the applicant continuation email could not be sent.';
     } catch {
-      this.state = 'error';
-      this.message = 'Permission could not be recorded. The link may have expired or already been used.';
+      this.message = 'Permission could not be recorded. Sign in to the invited adult account and try again; the private link may also have expired or already been used.';
     }
   }
 

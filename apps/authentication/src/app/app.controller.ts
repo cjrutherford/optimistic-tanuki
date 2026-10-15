@@ -106,9 +106,9 @@ export class AppController {
 
   @MessagePattern({ cmd: AuthCommands.AttestGuardianPermission })
   attestGuardianPermission(@Payload() data: {
-    token: string; guardianEmail: string; attested: true; attestationVersion: string;
+    token: string; guardianUserId: string; attested: true; attestationVersion: string; dateOfBirth?: string;
   }) {
-    return this.guardianPermissions.attest(data.token, data);
+    return this.guardianPermissions.attestAsGuardian(data.token, data.guardianUserId, data);
   }
 
   @MessagePattern({ cmd: AuthCommands.ValidateGuardianResume })

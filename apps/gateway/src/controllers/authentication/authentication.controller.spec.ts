@@ -183,6 +183,72 @@ describe('AuthenticationController', () => {
     controller = module.get<AuthenticationController>(AuthenticationController);
   });
 
+  it('requires an authenticated guardian and derives guardian identity from the verified session', async () => {
+    const user = { userId: 'session-guardian', email: 'guardian@example.invalid' } as any;
+    const forgedBody = {
+      token: 'private-link-token',
+      attested: true,
+      attestationVersion: 'guardian-attestation-v1',
+      dateOfBirth: '2000-01-01',
+      guardianUserId: 'forged-user',
+      guardianEmail: 'forged@example.invalid',
+    };
+    await controller.attestGuardianPermission(forgedBody as any, user);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.AttestGuardianPermission },
+      {
+        token: 'private-link-token',
+        attested: true,
+        attestationVersion: 'guardian-attestation-v1',
+        guardianUserId: 'session-guardian',
+        dateOfBirth: '2000-01-01',
+      }
+    );
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.attestGuardianPermission)).not.toBe(true);
+    expect(Reflect.getMetadata('__guards__', controller.attestGuardianPermission)).toContain(AuthGuard);
+  });
+
+  it.each([
+    [{ code: 'GUARDIAN_TOKEN_INVALID' }, 400],
+    [{ code: 'GUARDIAN_ATTESTATION_REQUIRED' }, 400],
+    [{ code: 'GUARDIAN_ADULT_REQUIRED' }, 403],
+    [{ code: 'GUARDIAN_TOKEN_USED' }, 409],
+  ])('maps expected guardian attestation refusal %j to HTTP %s', async (rpcError, status) => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => rpcError)
+    );
+
+    await expect(
+      controller.attestGuardianPermission(
+        {
+          token: 'private-link-token',
+          attested: true,
+          attestationVersion: 'guardian-attestation-v1',
+        },
+        { userId: 'session-guardian' } as any
+      )
+    ).rejects.toMatchObject({ status });
+  });
+
+  it('leaves unexpected guardian attestation backend failures unclassified', async () => {
+    const failure = new Error('database unavailable');
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => failure)
+    );
+
+    await expect(
+      controller.attestGuardianPermission(
+        {
+          token: 'private-link-token',
+          attested: true,
+          attestationVersion: 'guardian-attestation-v1',
+        },
+        { userId: 'session-guardian' } as any
+      )
+    ).rejects.toBe(failure);
+  });
+
   it('allows logout to clear an expired browser session', () => {
     expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.logoutUser)).toBe(
       true

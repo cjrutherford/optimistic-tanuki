@@ -16,6 +16,7 @@ import { HardenOAuthProviderIdentities1789200000000 } from '../../migrations/178
 import { GuardianPermissionFlow1791985246527 } from '../../migrations/1791985246527-guardian-permission-flow';
 import { BackfillLegacyAgeEligibility1791985263488 } from '../../migrations/1791985263488-BackfillLegacyAgeEligibility';
 import { GuardianAgeEligibilityEnd1791986174677 } from '../../migrations/1791986174677-guardian-age-eligibility-end';
+import { GuardianAdultAccountBinding1792004425354 } from '../../migrations/1792004425354-guardian-adult-account-binding';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -52,6 +53,7 @@ const loadDatabase = (config: ConfigService) => {
       GuardianPermissionFlow1791985246527,
       BackfillLegacyAgeEligibility1791985263488,
       GuardianAgeEligibilityEnd1791986174677,
+      GuardianAdultAccountBinding1792004425354,
     ],
     migrationsRun: process.env.OT_RUN_MIGRATIONS_ON_START === 'true',
   };

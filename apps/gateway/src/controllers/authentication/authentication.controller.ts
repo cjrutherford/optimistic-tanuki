@@ -211,17 +211,77 @@ export class AuthenticationController {
   }
 
   @Post('guardian-consent/attest')
-  @Public()
+  @UseGuards(AuthGuard)
   @Throttle(EMAIL_CONFIRM_THROTTLE)
   attestGuardianPermission(
-    @Body() data: { token: string; guardianEmail: string; attested: boolean; attestationVersion: string }
+    @Body() data: { token: string; attested: boolean; attestationVersion: string; dateOfBirth?: string },
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.AttestGuardianPermission },
-        data
+        {
+          token: data.token,
+          attested: data.attested,
+          attestationVersion: data.attestationVersion,
+          guardianUserId: user.userId,
+          ...(data.dateOfBirth ? { dateOfBirth: data.dateOfBirth } : {}),
+        }
       )
-    );
+    ).catch((error) => {
+      const response = this.guardianAttestationErrorResponse(error);
+      if (response) throw response;
+      throw error;
+    });
+  }
+
+  private guardianAttestationErrorResponse(error: unknown): HttpException | null {
+    const code = this.guardianAttestationRpcCode(error);
+    switch (code) {
+      case 'GUARDIAN_TOKEN_INVALID':
+      case 'GUARDIAN_ATTESTATION_REQUIRED':
+        return new HttpException(
+          'The guardian permission link or attestation is invalid.',
+          HttpStatus.BAD_REQUEST
+        );
+      case 'GUARDIAN_ADULT_REQUIRED':
+        return new HttpException(
+          'An adult account is required to record guardian permission.',
+          HttpStatus.FORBIDDEN
+        );
+      case 'GUARDIAN_TOKEN_USED':
+        return new HttpException(
+          'This guardian permission link has already been used or expired.',
+          HttpStatus.CONFLICT
+        );
+      default:
+        return null;
+    }
+  }
+
+  private guardianAttestationRpcCode(error: unknown): string | null {
+    const expectedCodes = new Set([
+      'GUARDIAN_TOKEN_INVALID',
+      'GUARDIAN_ATTESTATION_REQUIRED',
+      'GUARDIAN_ADULT_REQUIRED',
+      'GUARDIAN_TOKEN_USED',
+    ]);
+    const pending: unknown[] = [error];
+    const visited = new Set<object>();
+
+    while (pending.length) {
+      const value = pending.shift();
+      if (typeof value === 'string' && expectedCodes.has(value)) return value;
+      if (!value || typeof value !== 'object' || visited.has(value)) continue;
+      visited.add(value);
+      const record = value as Record<string, unknown>;
+      if (typeof record.code === 'string' && expectedCodes.has(record.code)) {
+        return record.code;
+      }
+      pending.push(record.error, record.message, record.response);
+    }
+
+    return null;
   }
 
   @Post('guardian-consent/withdraw')

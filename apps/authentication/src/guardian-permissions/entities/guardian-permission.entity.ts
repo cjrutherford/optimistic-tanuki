@@ -25,6 +25,9 @@ export class GuardianPermissionEntity {
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  guardianUserId!: string | null;
+
   @Column({ type: 'varchar', length: 32 })
   status!: GuardianPermissionStatus;
 

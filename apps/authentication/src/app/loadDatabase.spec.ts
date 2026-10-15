@@ -35,7 +35,7 @@ describe('loadDatabase', () => {
     expect(dbConfig.database).toBe('testdb');
     expect(dbConfig.entities).toBeInstanceOf(Array);
     expect(dbConfig.migrationsRun).toBe(false);
-    expect(dbConfig.migrations).toHaveLength(10);
+    expect(dbConfig.migrations).toHaveLength(11);
   });
 
   it('runs the bundled version-matched migrations only when opted in', () => {
@@ -62,6 +62,7 @@ describe('loadDatabase', () => {
         'GuardianPermissionFlow1791985246527',
         'BackfillLegacyAgeEligibility1791985263488',
         'GuardianAgeEligibilityEnd1791986174677',
+        'GuardianAdultAccountBinding1792004425354',
       ])
     );
   });
