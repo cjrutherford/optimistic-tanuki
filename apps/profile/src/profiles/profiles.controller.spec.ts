@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 
 import { ProfileService } from '../app/profile.service';
 import { ProfilesController } from './profiles.controller';
+import { GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
 
 describe('ProfilesController', () => {
   let controller: ProfilesController;
@@ -20,6 +21,8 @@ describe('ProfilesController', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
+            getGuardianProfile: jest.fn(),
+            updateGuardianProfile: jest.fn(),
           },
         },
         {
@@ -97,5 +100,18 @@ describe('ProfilesController', () => {
     const result = await controller.updateProfile(dto);
     expect(service.update).toHaveBeenCalledWith('1', dto);
     expect(result).toBe('updated');
+  });
+
+  it('routes guardian profile RPCs to the guarded profile service with server context', async () => {
+    const request = {
+      profileId: 'profile-1',
+      actorUserId: 'verified-guardian',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    } as GuardianProfileRequestDto;
+    (service.getGuardianProfile as jest.Mock).mockResolvedValue({ id: 'profile-1' });
+
+    await expect(controller.getGuardianProfile(request)).resolves.toEqual({ id: 'profile-1' });
+    expect(service.getGuardianProfile).toHaveBeenCalledWith(request);
   });
 });

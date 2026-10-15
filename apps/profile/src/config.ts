@@ -16,6 +16,10 @@ export declare type ProfileConfigType = {
       host: string;
       port: number;
     };
+    authentication: {
+      host: string;
+      port: number;
+    };
   };
 };
 
@@ -48,6 +52,15 @@ const loadConfig = () => {
   if (process.env.SERVICE_PERMISSIONS_PORT) {
     configData.services.permissions.port = parseInt(
       process.env.SERVICE_PERMISSIONS_PORT,
+      10
+    );
+  }
+  if (process.env.SERVICE_AUTHENTICATION_HOST) {
+    configData.services.authentication.host = process.env.SERVICE_AUTHENTICATION_HOST;
+  }
+  if (process.env.SERVICE_AUTHENTICATION_PORT) {
+    configData.services.authentication.port = parseInt(
+      process.env.SERVICE_AUTHENTICATION_PORT,
       10
     );
   }

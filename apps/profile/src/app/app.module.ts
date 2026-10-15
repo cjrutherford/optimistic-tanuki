@@ -11,6 +11,7 @@ import { ProfileService } from './profile.service';
 import { ProfilesController } from '../profiles/profiles.controller';
 import { Timeline } from '../timelines/entities/timeline.entity';
 import { TimelineService } from './timeline.service';
+import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
 import { TimelinesController } from '../timelines/timelines.controller';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import loadConfig, { ProfileConfigType } from '../config';
@@ -45,6 +46,11 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
       inject: ['PROFILE_CONNECTION'],
     },
     {
+      provide: getRepositoryToken(GuardianProfileActivity),
+      useFactory: (ds: DataSource) => ds.getRepository(GuardianProfileActivity),
+      inject: ['PROFILE_CONNECTION'],
+    },
+    {
       provide: ServiceTokens.PERMISSIONS_SERVICE,
       useFactory: (configService: ConfigService) => {
         const config = configService.get<
@@ -56,6 +62,19 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
             host: config.host,
             port: config.port,
           },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const config = configService.get<ProfileConfigType['services']['authentication']>(
+          'services.authentication'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: { host: config.host, port: config.port },
         });
       },
       inject: [ConfigService],

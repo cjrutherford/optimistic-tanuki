@@ -148,7 +148,7 @@ describe('AuthGuard', () => {
           authorization: 'Bearer valid-token',
           origin: 'http://localhost:8080',
           host: 'localhost:8080',
-          'x-ot-appscope': 'opportunity-compass',
+          'x-ot-appscope': 'local-hub',
         },
       };
       const context = {
@@ -161,6 +161,7 @@ describe('AuthGuard', () => {
         { cmd: AuthCommands.Validate },
         { token: 'valid-token', userId: mockUserDetails.userId, appId: 'client-interface' }
       );
+      expect(request.user.appId).toBe('client-interface');
     });
 
     it('rejects an Origin that conflicts with the signed token app scope', async () => {

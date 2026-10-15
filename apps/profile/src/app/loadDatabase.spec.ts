@@ -9,7 +9,7 @@ describe('profile loadDatabase', () => {
     else process.env.OT_RUN_MIGRATIONS_ON_START = previous;
   });
 
-  it('bundles both profile migrations and gates execution on the appliance flag', () => {
+  it('bundles profile migrations and gates execution on the appliance flag', () => {
     process.env.OT_RUN_MIGRATIONS_ON_START = 'true';
     const config = new ConfigService({
       database: {
@@ -24,7 +24,7 @@ describe('profile loadDatabase', () => {
     const options = loadDatabase(config);
 
     expect(options.migrationsRun).toBe(true);
-    expect(options.migrations).toHaveLength(2);
+    expect(options.migrations).toHaveLength(3);
     expect(options.synchronize).not.toBe(true);
   });
 });

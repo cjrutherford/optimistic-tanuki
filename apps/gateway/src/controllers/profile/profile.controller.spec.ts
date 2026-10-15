@@ -29,9 +29,11 @@ import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { Reflector } from '@nestjs/core';
 import {
   BadGatewayException,
+  BadRequestException,
   ForbiddenException,
   NotFoundException,
   NotImplementedException,
+  ValidationPipe,
 } from '@nestjs/common';
 
 describe('ProfileController', () => {
@@ -295,7 +297,7 @@ describe('ProfileController', () => {
       id,
       name: 'Test',
       description: 'thomas morrow',
-      userId: 'a;klsdjnfgn;lkajnerg;ljn',
+      userId: 'profile-owner',
       profilePic: 'https://www.google.com',
       coverPic: 'https://www.google.com',
       bio: 'I am a bio',
@@ -304,16 +306,175 @@ describe('ProfileController', () => {
       interests: 'Coding',
       skills: 'Coding',
     };
-    jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
+    const profileSend = jest.spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(of({ id, userId: 'profile-owner', appScope: 'client-interface' }) as any)
+      .mockReturnValueOnce(of({}) as any);
 
-    const updateResponse = await firstValueFrom(
-      controller.updateProfile(id, updateProfileDto)
+    const updateResponse = await controller.updateProfile(id, updateProfileDto, {
+        userId: 'profile-owner',
+        appId: 'client-interface',
+      } as UserDetails);
+    expect(profileSend).toHaveBeenNthCalledWith(1,
+      { cmd: ProfileCommands.Get },
+      { id }
     );
-    expect(clientProxy.send).toHaveBeenCalledWith(
+    expect(profileSend).toHaveBeenNthCalledWith(2,
       { cmd: ProfileCommands.Update },
-      { id, ...updateProfileDto }
+      expect.not.objectContaining({ userId: 'profile-owner' })
     );
     expect(updateResponse).toEqual({});
+  });
+
+  it('rejects a legacy profile owner change before forwarding a write', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({ id: 'target', userId: 'dependent', appScope: 'client-interface' }) as any
+    );
+    await expect(controller.updateProfile(
+      'target',
+      { userId: 'forged-owner' } as UpdateProfileDto,
+      { userId: 'guardian', appId: 'client-interface' } as UserDetails
+    )).rejects.toBeInstanceOf(ForbiddenException);
+    expect(profileSend).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts a validated full-profile self edit with verified immutable identity and scope', async () => {
+    const ownerId = '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631';
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+    const body = await pipe.transform(
+      {
+        id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+        name: 'Updated name',
+        userId: ownerId,
+        appScope: 'client-interface',
+      },
+      { type: 'body', metatype: UpdateProfileDto }
+    );
+    expect(body.appScope).toBe('client-interface');
+
+    const profileSend = jest.spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(of({ id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1', userId: ownerId, appScope: 'client-interface' }) as any)
+      .mockReturnValueOnce(of({ id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1' }) as any);
+
+    await controller.updateProfile(
+      '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+      body,
+      { userId: ownerId, appId: 'client-interface' } as UserDetails
+    );
+
+    expect(profileSend).toHaveBeenNthCalledWith(2,
+      { cmd: ProfileCommands.Update },
+      { id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1', name: 'Updated name' }
+    );
+  });
+
+  it('rejects a validated full-profile self edit that changes its stored app scope', async () => {
+    const ownerId = '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631';
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+    const body = await pipe.transform(
+      { id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1', name: 'Updated name', userId: ownerId, appScope: 'local-hub' },
+      { type: 'body', metatype: UpdateProfileDto }
+    );
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({ id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1', userId: ownerId, appScope: 'client-interface' }) as any
+    );
+
+    await expect(controller.updateProfile(
+      '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+      body,
+      { userId: ownerId, appId: 'client-interface' } as UserDetails
+    )).rejects.toBeInstanceOf(ForbiddenException);
+    expect(profileSend).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a legacy body profile ID that differs from the route ID', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({ id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1', userId: '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631', appScope: 'client-interface' }) as any
+    );
+    await expect(controller.updateProfile(
+      '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+      { id: 'a9a74f45-a1f1-47dd-8ee3-6825f0d82e55' } as UpdateProfileDto,
+      { userId: '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631', appId: 'client-interface' } as UserDetails
+    )).rejects.toBeInstanceOf(BadRequestException);
+    expect(profileSend).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a dependent profile view to the owning service with the verified actor and app', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(of({ id: 'dependent-profile' }) as any);
+    await controller.getDependentProfile(
+      'dependent-profile',
+      { userId: 'guardian', appId: 'client-interface' } as UserDetails
+    );
+    expect(profileSend).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetGuardian },
+      expect.objectContaining({
+        profileId: 'dependent-profile',
+        actorUserId: 'guardian',
+        appId: 'client-interface',
+        operation: 'profile.view',
+      })
+    );
+  });
+
+  it('uses the verified local-hub context for guardian access without a caller scope parameter', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(of({ id: 'dependent-profile' }) as any);
+    await controller.getDependentProfile(
+      'dependent-profile',
+      { userId: 'guardian', appId: 'local-hub' } as UserDetails
+    );
+    expect(profileSend).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetGuardian },
+      expect.objectContaining({ appId: 'local-hub', actorUserId: 'guardian' })
+    );
+  });
+
+  it('keeps a guardian request scoped to its verified client-interface context', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(of({ id: 'dependent-profile' }) as any);
+    await controller.getDependentProfile(
+      'dependent-profile',
+      { userId: 'guardian', appId: 'client-interface' } as UserDetails
+    );
+    expect(profileSend).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetGuardian },
+      expect.objectContaining({ appId: 'client-interface', actorUserId: 'guardian' })
+    );
+    expect(profileSend).not.toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetGuardian },
+      expect.objectContaining({ appId: 'local-hub' })
+    );
+  });
+
+  it('fails closed for guardian routes without a verified application context', async () => {
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(of({ id: 'dependent-profile' }) as any);
+    await expect(controller.getDependentProfile(
+      'dependent-profile',
+      { userId: 'guardian' } as UserDetails
+    )).rejects.toBeInstanceOf(ForbiddenException);
+    expect(profileSend).not.toHaveBeenCalled();
+  });
+
+  it('allows a normal local-hub self edit from the verified context', async () => {
+    const ownerId = '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631';
+    const profileSend = jest.spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(of({ id: 'own-profile', userId: ownerId, appScope: 'local-hub' }) as any)
+      .mockReturnValueOnce(of({ id: 'own-profile' }) as any);
+    await controller.updateProfile(
+      'own-profile',
+      { name: 'Updated name', userId: ownerId, appScope: 'local-hub' } as UpdateProfileDto,
+      { userId: ownerId, appId: 'local-hub' } as UserDetails
+    );
+    expect(profileSend).toHaveBeenCalledTimes(2);
+    expect(profileSend).toHaveBeenNthCalledWith(2,
+      { cmd: ProfileCommands.Update },
+      { id: 'own-profile', name: 'Updated name' }
+    );
   });
 
   it('fails closed for an owned app profile while lifecycle deletion is unavailable', async () => {

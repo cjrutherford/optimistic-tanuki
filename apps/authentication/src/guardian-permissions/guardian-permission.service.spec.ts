@@ -124,6 +124,7 @@ describe('GuardianPermissionService', () => {
     };
     sessions = {
       update: jest.fn().mockResolvedValue({ affected: 1 }),
+      findOne: jest.fn().mockResolvedValue({ userId: 'guardian-user', revoked: false }),
     };
     email = {
       sendEmail: jest.fn().mockResolvedValue({ success: true }),
@@ -137,6 +138,110 @@ describe('GuardianPermissionService', () => {
   });
 
   afterEach(() => jest.useRealTimers());
+
+  describe('assertDelegatedProfileAccess', () => {
+    const request = {
+      actorUserId: 'guardian-user',
+      dependentUserId: 'dependent-user',
+      appId: 'local-hub',
+      operation: 'profile.view',
+    };
+
+    it('allows the linked adult guardian to access an eligible dependent profile in either approved app', async () => {
+      users.findOne
+        .mockResolvedValueOnce({ id: 'guardian-user', ageEligibilityStatus: 'adult' })
+        .mockResolvedValueOnce({
+          id: 'dependent-user',
+          ageEligibilityStatus: 'minor',
+          ageEligibilityEndsAt: '2028-10-14',
+        });
+      permissions.findOne.mockResolvedValue(
+        permissionRecord({
+          userId: 'dependent-user',
+          guardianUserId: 'guardian-user',
+          status: 'approved',
+          dateOfBirth: '2010-10-14',
+          appId: 'client-interface',
+        })
+      );
+
+      await expect(service.assertDelegatedProfileAccess(request)).resolves.toBeUndefined();
+    });
+
+    it('keeps an approved link active after the original request-link deadline', async () => {
+      users.findOne
+        .mockResolvedValueOnce({ id: 'guardian-user', ageEligibilityStatus: 'adult' })
+        .mockResolvedValueOnce({
+          id: 'dependent-user',
+          ageEligibilityStatus: 'minor',
+          ageEligibilityEndsAt: '2028-10-14',
+        });
+      permissions.findOne.mockResolvedValue(permissionRecord({
+        userId: 'dependent-user',
+        guardianUserId: 'guardian-user',
+        status: 'approved',
+        dateOfBirth: '2010-10-14',
+        expiresAt: new Date(NOW.getTime() - 1000),
+        resumeExpiresAt: new Date(NOW.getTime() - 1000),
+      }));
+
+      await expect(service.assertDelegatedProfileAccess(request)).resolves.toBeUndefined();
+    });
+
+    it('rejects unknown operations and app identities before relationship lookup', async () => {
+      await expect(
+        service.assertDelegatedProfileAccess({ ...request, operation: 'account.delete' })
+      ).rejects.toBeInstanceOf(RpcException);
+      await expect(
+        service.assertDelegatedProfileAccess({ ...request, appId: 'unregistered-app' })
+      ).rejects.toBeInstanceOf(RpcException);
+      expect(permissions.findOne).not.toHaveBeenCalled();
+    });
+
+    it('rejects a guardian without an active session', async () => {
+      sessions.findOne.mockResolvedValue(null);
+      await expect(service.assertDelegatedProfileAccess(request)).rejects.toBeInstanceOf(RpcException);
+      expect(permissions.findOne).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['missing permission', null],
+      ['pending permission', permissionRecord({ userId: 'dependent-user', guardianUserId: 'guardian-user', status: 'pending' })],
+      ['revoked permission', permissionRecord({ userId: 'dependent-user', guardianUserId: 'guardian-user', status: 'revoked' })],
+      ['foreign guardian', permissionRecord({ userId: 'dependent-user', guardianUserId: 'another-guardian', status: 'approved' })],
+      ['aged out permission', permissionRecord({ userId: 'dependent-user', guardianUserId: 'guardian-user', status: 'approved', dateOfBirth: '2000-10-14' })],
+    ])('denies %s', async (_name, permission) => {
+      users.findOne
+        .mockResolvedValueOnce({ id: 'guardian-user', ageEligibilityStatus: 'adult' })
+        .mockResolvedValueOnce({ id: 'dependent-user', ageEligibilityStatus: 'minor', ageEligibilityEndsAt: '2028-10-14' });
+      permissions.findOne.mockImplementation(async ({ where }: any) => {
+        if (!permission) return null;
+        return Object.entries(where).every(([key, value]) => (permission as any)[key] === value)
+          ? permission
+          : null;
+      });
+      await expect(service.assertDelegatedProfileAccess(request)).rejects.toBeInstanceOf(RpcException);
+      expect(permissions.findOne).toHaveBeenCalledWith({
+        where: {
+          userId: 'dependent-user',
+          guardianUserId: 'guardian-user',
+          status: 'approved',
+        },
+      });
+    });
+
+    it('denies a dependent whose stored eligibility has ended even if permission still says approved', async () => {
+      users.findOne
+        .mockResolvedValueOnce({ id: 'guardian-user', ageEligibilityStatus: 'adult' })
+        .mockResolvedValueOnce({ id: 'dependent-user', ageEligibilityStatus: 'minor', ageEligibilityEndsAt: '2026-10-14' });
+      permissions.findOne.mockResolvedValue(permissionRecord({
+        userId: 'dependent-user',
+        guardianUserId: 'guardian-user',
+        status: 'approved',
+      }));
+      await expect(service.assertDelegatedProfileAccess(request)).rejects.toBeInstanceOf(RpcException);
+    });
+  });
 
   it('stores only a hash of the guardian link and keeps the request pending until an affirmative POST', async () => {
     await service.requestPermission({

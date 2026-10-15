@@ -13,7 +13,6 @@ export const updateProfileDtoToPartial = (
     id,
     name,
     description,
-    userId,
     profilePic,
     coverPic,
     bio,
@@ -28,7 +27,6 @@ export const updateProfileDtoToPartial = (
   const partialProfile: Partial<Profile> = {
     id,
     profileName: name,
-    userId,
     profilePic,
     coverPic,
     bio,

@@ -389,6 +389,64 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     throw new RpcException({ code: status === 'unassessed' ? 'AGE_CHECK_REQUIRED' : 'GUARDIAN_PERMISSION_REQUIRED' });
   }
 
+  async assertDelegatedProfileAccess(input: {
+    actorUserId: string;
+    dependentUserId: string;
+    appId: string;
+    operation: string;
+  }): Promise<void> {
+    const allowedApps = new Set(['client-interface', 'local-hub']);
+    const allowedOperations = new Set(['profile.view', 'profile.manage']);
+    if (
+      !input?.actorUserId ||
+      !input.dependentUserId ||
+      input.actorUserId === input.dependentUserId ||
+      !allowedApps.has(input.appId) ||
+      !allowedOperations.has(input.operation)
+    ) {
+      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+    }
+
+    const session = await this.sessions.findOne({
+      where: { userId: input.actorUserId, revoked: false },
+    });
+    const actor = await this.users.findOne({ where: { id: input.actorUserId } });
+    if (
+      !session ||
+      !actor ||
+      actor.ageEligibilityStatus !== 'adult' ||
+      (actor.lockedUntil && new Date(actor.lockedUntil).getTime() > Date.now())
+    ) {
+      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+    }
+
+    const dependent = await this.users.findOne({
+      where: { id: input.dependentUserId },
+    });
+    if (
+      !dependent ||
+      dependent.ageEligibilityStatus !== 'minor' ||
+      !dependent.ageEligibilityEndsAt ||
+      new Date(`${dependent.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <= Date.now()
+    ) {
+      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+    }
+
+    const permission = await this.permissions.findOne({
+      where: {
+        userId: input.dependentUserId,
+        guardianUserId: input.actorUserId,
+        status: 'approved',
+      },
+    });
+    if (
+      !permission?.dateOfBirth ||
+      this.ageFromDate(permission.dateOfBirth) >= 18
+    ) {
+      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+    }
+  }
+
   async assessUnassessedLogin(input: {
     userId: string;
     email: string;

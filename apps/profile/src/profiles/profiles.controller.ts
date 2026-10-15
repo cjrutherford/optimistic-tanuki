@@ -5,6 +5,7 @@ import { ProfileService } from '../app/profile.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/models';
+import { GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
 
 @Controller('profiles')
 export class ProfilesController {
@@ -65,6 +66,16 @@ export class ProfilesController {
     // contracts type keeps it optional because gateway bodies omit it.
     const id = data.id as string;
     return await this.profileService.update(id, { ...data, id });
+  }
+
+  @MessagePattern({ cmd: ProfileCommands.GetGuardian })
+  async getGuardianProfile(@Payload() request: GuardianProfileRequestDto) {
+    return this.profileService.getGuardianProfile(request);
+  }
+
+  @MessagePattern({ cmd: ProfileCommands.UpdateGuardian })
+  async updateGuardianProfile(@Payload() request: GuardianProfileRequestDto) {
+    return this.profileService.updateGuardianProfile(request);
   }
 
   @MessagePattern({ cmd: ProfileCommands.SetBlogRole })

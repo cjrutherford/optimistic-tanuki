@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   FindManyOptions,
@@ -7,6 +7,7 @@ import {
   ILike,
   In,
   IsNull,
+  LessThanOrEqual,
   Not,
   Repository,
 } from 'typeorm';
@@ -18,7 +19,9 @@ import {
   updateProfileDtoToPartial,
 } from '../profiles/dto/update-profile.dto';
 import { SetBlogRoleDto } from '../profiles/dto/set-blog-role.dto';
-import { RoleCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { AuthCommands, RoleCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { GuardianProfileFields, GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
+import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
 
 const DEFAULT_SEARCH_LIMIT = 20;
 const MAX_SEARCH_LIMIT = 100;
@@ -38,14 +41,155 @@ interface AssignRoleDto {
 }
 
 @Injectable()
-export class ProfileService {
+export class ProfileService implements OnModuleInit, OnModuleDestroy {
+  private cleanupTimer?: ReturnType<typeof setInterval>;
   constructor(
     @Inject(getRepositoryToken(Profile))
     private readonly profileRepository: Repository<Profile>,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private readonly authClient: ClientProxy,
     private readonly logger: Logger
   ) {}
+
+  onModuleInit(): void {
+    this.cleanupTimer = setInterval(() => void this.purgeGuardianActivity().catch(() => this.logger.error('Guardian activity retention cleanup failed')), 60 * 1000);
+    this.cleanupTimer.unref?.();
+    void this.purgeGuardianActivity().catch(() => this.logger.error('Guardian activity retention cleanup failed'));
+  }
+
+  onModuleDestroy(): void {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+  }
+
+  async getGuardianProfile(request: GuardianProfileRequestDto): Promise<Profile> {
+    this.validateGuardianRequest(request, 'profile.view');
+    const initial = await this.profileRepository.findOne({ where: { id: request.profileId } });
+    this.assertDependentProfileScope(initial, request.appId);
+    await this.authorizeGuardian(request, initial.userId);
+    const current = await this.profileRepository.findOne({ where: { id: request.profileId } });
+    this.assertUnchangedDependentProfile(initial, current, request.appId);
+    await this.profileRepository.manager.transaction(async (manager) => {
+      await manager.getRepository(GuardianProfileActivity).save({
+        actorUserId: request.actorUserId,
+        dependentUserId: initial.userId,
+        profileId: initial.id,
+        appId: request.appId,
+        operation: 'profile.view',
+        changedFieldNames: [],
+      });
+    });
+    return current;
+  }
+
+  async updateGuardianProfile(request: GuardianProfileRequestDto): Promise<Profile> {
+    this.validateGuardianRequest(request, 'profile.manage');
+    const updates = this.sanitizeGuardianUpdates(request.updates);
+    const initial = await this.profileRepository.findOne({ where: { id: request.profileId } });
+    this.assertDependentProfileScope(initial, request.appId);
+    await this.authorizeGuardian(request, initial.userId);
+    return this.profileRepository.manager.transaction(async (manager) => {
+      const repository = manager.getRepository(Profile);
+      const current = await repository.findOne({
+        where: { id: request.profileId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      this.assertUnchangedDependentProfile(initial, current, request.appId);
+      await this.authorizeGuardian(request, current.userId);
+      const partial = updateProfileDtoToPartial({ id: current.id, ...updates } as UpdateProfileDto);
+      const fieldNames = Object.keys(updates).filter((field) => {
+        const column = field === 'name' ? 'profileName' : field;
+        return current[column as keyof Profile] !== partial[column as keyof Profile];
+      });
+      if (fieldNames.length) await repository.update(current.id, partial);
+      await manager.getRepository(GuardianProfileActivity).save({
+        actorUserId: request.actorUserId,
+        dependentUserId: current.userId,
+        profileId: current.id,
+        appId: request.appId,
+        operation: 'profile.manage',
+        changedFieldNames: fieldNames,
+      });
+      return repository.findOne({ where: { id: current.id } });
+    });
+  }
+
+  async purgeGuardianActivity(now = new Date()): Promise<void> {
+    const cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    await this.profileRepository.manager.delete(GuardianProfileActivity, {
+      createdAt: LessThanOrEqual(cutoff),
+    });
+  }
+
+  private validateGuardianRequest(
+    request: GuardianProfileRequestDto,
+    operation: GuardianProfileRequestDto['operation']
+  ): void {
+    if (
+      !request?.actorUserId ||
+      !request.profileId ||
+      !['client-interface', 'local-hub'].includes(request.appId) ||
+      request.operation !== operation
+    ) {
+      throw new RpcException({ statusCode: 403, message: 'Guardian profile access denied' });
+    }
+  }
+
+  private sanitizeGuardianUpdates(
+    updates: GuardianProfileRequestDto['updates']
+  ): Record<string, string> {
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      throw new RpcException({ statusCode: 400, message: 'Invalid guardian profile update' });
+    }
+    const allowed = new Set<string>(GuardianProfileFields);
+    const entries = Object.entries(updates);
+    if (entries.some(([key, value]) => !allowed.has(key) || (value !== null && typeof value !== 'string'))) {
+      throw new RpcException({ statusCode: 400, message: 'Invalid guardian profile update' });
+    }
+    return Object.fromEntries(entries.filter((entry): entry is [string, string] => entry[1] !== null));
+  }
+
+  private async authorizeGuardian(
+    request: GuardianProfileRequestDto,
+    dependentUserId: string
+  ): Promise<void> {
+    try {
+      await firstValueFrom(this.authClient.send(
+        { cmd: AuthCommands.AuthorizeGuardianProfileOperation },
+        {
+          actorUserId: request.actorUserId,
+          dependentUserId,
+          appId: request.appId,
+          operation: request.operation,
+        }
+      ));
+    } catch (error) {
+      const details = typeof (error as any)?.getError === 'function'
+        ? (error as any).getError()
+        : error;
+      if (details?.code === 'GUARDIAN_PROFILE_ACCESS_DENIED' || details?.statusCode === 403) {
+        throw new RpcException({ statusCode: 403, message: 'Guardian profile access denied' });
+      }
+      throw error;
+    }
+  }
+
+  private assertDependentProfileScope(profile: Profile | null, appId: string): asserts profile is Profile {
+    if (!profile || profile.appScope !== appId) {
+      throw new RpcException({ statusCode: 403, message: 'Guardian profile access denied' });
+    }
+  }
+
+  private assertUnchangedDependentProfile(
+    initial: Profile,
+    current: Profile | null,
+    appId: string
+  ): asserts current is Profile {
+    if (!current || current.userId !== initial.userId || current.appScope !== appId) {
+      throw new RpcException({ statusCode: 403, message: 'Guardian profile access denied' });
+    }
+  }
 
   async findAll(query?: FindManyOptions<Profile>): Promise<Profile[]> {
     return await this.profileRepository.find(query || {});

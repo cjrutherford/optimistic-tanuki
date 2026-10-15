@@ -61,6 +61,7 @@ describe('AppController', () => {
             requestPermission: jest.fn(),
             attestAsGuardian: jest.fn(),
             resendApplicantContinuation: jest.fn(),
+            assertDelegatedProfileAccess: jest.fn(),
           },
         },
       ],
@@ -112,6 +113,21 @@ describe('AppController', () => {
     expect(
       guardianPermissions.resendApplicantContinuation
     ).toHaveBeenCalledWith('guardian-control-token');
+  });
+
+  it('routes delegated profile authorization through its dedicated RPC', async () => {
+    guardianPermissions.assertDelegatedProfileAccess.mockResolvedValue(undefined);
+    const request = {
+      actorUserId: 'session-guardian',
+      dependentUserId: 'stored-profile-owner',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    };
+
+    await expect(
+      appController.authorizeGuardianProfileOperation(request)
+    ).resolves.toEqual({ allowed: true });
+    expect(guardianPermissions.assertDelegatedProfileAccess).toHaveBeenCalledWith(request);
   });
 
   it('passes the authenticated guardian id from the gateway command to the attestation service', async () => {

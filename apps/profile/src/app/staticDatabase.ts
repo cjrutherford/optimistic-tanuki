@@ -3,6 +3,7 @@ import * as yaml from 'js-yaml';
 import { DataSource } from 'typeorm';
 import { Profile } from '../profiles/entities/profile.entity';
 import { Timeline } from '../timelines/entities/timeline.entity';
+import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
 import fs from 'fs';
 import path from 'path';
 
@@ -28,7 +29,7 @@ const password = process.env.POSTGRES_PASSWORD || configPassword;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [Profile, Timeline];
+const entities = [Profile, Timeline, GuardianProfileActivity];
 
 const staticSource = new DataSource({
   type: 'postgres',

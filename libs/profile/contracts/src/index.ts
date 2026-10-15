@@ -8,3 +8,4 @@ export * from './lib/update-profile.dto';
 export * from './lib/update-timeline.dto';
 export * from './lib/profile-queries';
 export * from './lib/profile-commands';
+export * from './lib/guardian-profile.dto';
