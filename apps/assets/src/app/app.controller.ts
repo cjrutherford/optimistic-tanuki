@@ -7,6 +7,7 @@ import { Controller, Get } from '@nestjs/common';
 
 import { AppService } from './app.service';
 import { AssetCommands } from '@optimistic-tanuki/constants';
+import { GuardianAssetActor } from './guardian-asset-authorization.service';
 import { MessagePattern, RpcException } from '@nestjs/microservices';
 
 @Controller()
@@ -77,5 +78,29 @@ export class AppController {
     } catch (error) {
       throw new RpcException(error);
     }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.GUARDIAN_CREATE })
+  async createGuardianAsset(data: GuardianAssetActor & { asset: CreateAssetDto }) {
+    try { return await this.appService.createGuardianAsset(data); }
+    catch (error) { throw new RpcException(error); }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.GUARDIAN_LIST })
+  async listGuardianAssets(data: GuardianAssetActor & { type?: import('@optimistic-tanuki/models').AssetType }) {
+    try { return await this.appService.listGuardianAssets(data); }
+    catch (error) { throw new RpcException(error); }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.GUARDIAN_REMOVE })
+  async removeGuardianAsset(data: GuardianAssetActor & { id: string }) {
+    try { return await this.appService.deleteGuardianAsset(data); }
+    catch (error) { throw new RpcException(error); }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.GUARDIAN_AUTHORIZE_READ })
+  async authorizeGuardianRead(data: GuardianAssetActor & { id: string }) {
+    try { await this.appService.authorizeGuardianRead(data); return { success: true }; }
+    catch (error) { throw new RpcException(error); }
   }
 }

@@ -16,6 +16,9 @@ import { loadConfig } from './config';
 import AssetEntity from '../entities/asset.entity';
 import { DataSource } from 'typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { GuardianAssetAuthorizationService } from './guardian-asset-authorization.service';
 
 @Module({
   imports: [
@@ -71,6 +74,23 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   controllers: [AppController, InternalMediaController],
   providers: [
     AppService,
+    GuardianAssetAuthorizationService,
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>('services.authentication');
+        return ClientProxyFactory.create({ transport: Transport.TCP, options: target });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>('services.profile');
+        return ClientProxyFactory.create({ transport: Transport.TCP, options: target });
+      },
+      inject: [ConfigService],
+    },
     InternalMediaService,
     FileValidationService,
     VirusScanService,

@@ -79,6 +79,21 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('create', () => {
+    it('rejects a traversal filename before reserving bytes', () => {
+      expect(() => adapter.reservationPath({
+        id: '11111111-1111-4111-8111-111111111111', name: '../sentinel',
+      } as never)).toThrow('Asset filename is invalid');
+    });
+    it('uses a caller-reserved id so lifecycle cleanup can find the same bytes', async () => {
+      const created = await adapter.create({
+        id: '11111111-1111-4111-8111-111111111111', name: 'photo.png', profileId: 'profile-1',
+        type: AssetType.IMAGE, content: Buffer.from('lifecycle'),
+      } as never);
+      expect(created.id).toBe('11111111-1111-4111-8111-111111111111');
+      expect(created.storagePath).toBe(path.join('assets', '11111111-1111-4111-8111-111111111111', 'photo.png'));
+    });
+
+
     it('writes a data-url payload and returns a relative storage path', async () => {
       const created = await adapter.create({
         name: 'photo.png',
@@ -277,8 +292,15 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('remove', () => {
+    it('refuses a persisted traversal path without touching a sibling sentinel', async () => {
+      const sentinel = path.join(basePath, 'sentinel');
+      writeFileSync(sentinel, 'keep');
+      await expect(adapter.remove(asset({ storagePath: path.join('..', 'sentinel') }))).rejects.toThrow('outside local storage');
+      expect(existsSync(sentinel)).toBe(true);
+    });
     it('deletes the stored file', async () => {
       const created = await adapter.create({
+        id: '22222222-2222-4222-8222-222222222222',
         name: 'gone.png',
         profileId: 'p',
         type: AssetType.IMAGE,
@@ -286,10 +308,13 @@ describe('LocalStorageAdapter', () => {
       } as never);
       const absolute = path.join(basePath, created.storagePath);
       expect(existsSync(absolute)).toBe(true);
+      const crashTemp = path.join(path.dirname(absolute), '.gone.png.abcd.tmp');
+      writeFileSync(crashTemp, 'partial');
 
       await adapter.remove(created);
 
       expect(existsSync(absolute)).toBe(false);
+      expect(existsSync(crashTemp)).toBe(false);
     });
 
     it('treats a missing file as already removed', async () => {

@@ -1,11 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import AssetEntity from '../entities/asset.entity';
+import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   console.log(`Database configuration: ${JSON.stringify(database)}`);
-  const entities = [AssetEntity];
+  const entities = [AssetEntity, GuardianAssetActivity];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
   );

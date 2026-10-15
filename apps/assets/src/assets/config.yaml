@@ -6,6 +6,13 @@ database:
   username: postgres
   password: postgres
 storagePath: /usr/src/app/storage
+services:
+  authentication:
+    host: authentication
+    port: 3001
+  profile:
+    host: profile
+    port: 3002
 storage-module-options:
   enabledAdapters:
     - local

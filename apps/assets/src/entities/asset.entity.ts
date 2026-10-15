@@ -36,4 +36,14 @@ export default class AssetEntity {
   /** Monotonic, profile-based restrictions inherited from private content. */
   @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
   audienceRestrictions: AssetAudienceRestriction[];
+
+  /** Pending assets stay invisible until storage and audit metadata are durable. */
+  @Column({ type: 'varchar', default: 'active' })
+  lifecycleState: 'pending-upload' | 'active' | 'pending-delete';
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lifecycleLeaseUntil: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lifecycleRetryAfter: Date | null;
 }

@@ -61,7 +61,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async create(data: CreateAssetDto): Promise<AssetDto> {
-    data.name = data.name.replace(/\s+/g, '_');
+    data.name = this.normalizeSafeFilename(data.name);
     await this.ensureBasePathExists();
     this.l.log(
       `LocalStorageAdapter: Creating asset with data:`,
@@ -70,7 +70,8 @@ export class LocalStorageAdapter implements StorageAdapter {
       data.type,
       data.content?.length
     );
-    const assetId = uuidv4();
+    if (data.id && !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    const assetId = data.id ?? uuidv4();
     // Create a unique path for the file within the base path
     const relativePath = path.join('assets', assetId, data.name);
     const absolutePath = path.join(this.basePath, relativePath);
@@ -139,14 +140,24 @@ export class LocalStorageAdapter implements StorageAdapter {
     }
   }
 
+  reservationPath(data: CreateAssetDto): string {
+    if (!data.id || !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    return path.join('assets', data.id, this.normalizeSafeFilename(data.name));
+  }
+
   async remove(data: AssetDto): Promise<void> {
     this.ensureBasePathExists();
     this.l.log(`LocalStorageAdapter: Removing asset with data:`, data);
-    const absolutePath = path.join(this.basePath, data.storagePath);
+    const absolutePath = this.resolveStoragePath(data.storagePath);
 
     try {
-      // Remove the file
-      await fs.unlink(absolutePath);
+      const assetDirectory = path.dirname(absolutePath);
+      const relative = path.relative(path.resolve(this.basePath), absolutePath).split(path.sep);
+      if (relative.length === 3 && relative[0] === 'assets' && relative[1] === data.id && isUuid(relative[1])) {
+        await fs.rm(assetDirectory, { recursive: true, force: true });
+      } else {
+        await fs.unlink(absolutePath);
+      }
       this.l.log(`LocalStorageAdapter: Asset removed from ${absolutePath}`);
 
       // Optional: Clean up empty directories
@@ -189,7 +200,7 @@ export class LocalStorageAdapter implements StorageAdapter {
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ')
     );
-    const absolutePath = path.join(this.basePath, data.storagePath);
+    const absolutePath = this.resolveStoragePath(data.storagePath);
 
     try {
       // Media serving sets a strict bound and reads from one non-following
@@ -263,6 +274,14 @@ export class LocalStorageAdapter implements StorageAdapter {
       );
     }
     return resolved;
+  }
+
+  private normalizeSafeFilename(name: string): string {
+    const safeName = name.replace(/\s+/g, '_');
+    if (!safeName || safeName === '.' || safeName === '..' || path.basename(safeName) !== safeName || /[\\/\u0000-\u001f]/.test(safeName)) {
+      throw new Error('Asset filename is invalid');
+    }
+    return safeName;
   }
 
   private async readBoundedFile(
@@ -380,15 +399,14 @@ export class LocalStorageAdapter implements StorageAdapter {
         .toString('hex')}.tmp`
     );
 
-    const handle = await fs.open(tempPath, 'wx', mode);
     try {
+      const handle = await fs.open(tempPath, 'wx', mode);
+      try {
       await handle.writeFile(payload);
       await handle.sync();
-    } finally {
-      await handle.close();
-    }
-
-    try {
+      } finally {
+        await handle.close();
+      }
       await fs.chmod(tempPath, mode);
       await fs.rename(tempPath, absolutePath);
     } catch (error) {
@@ -415,4 +433,8 @@ export class LocalStorageAdapter implements StorageAdapter {
   private getMimeType(name: string, type: AssetType): string {
     return mimeTypeFromFileName(name) ?? mimeTypeForAssetType(type);
   }
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

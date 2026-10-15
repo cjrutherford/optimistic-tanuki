@@ -34,15 +34,17 @@ export class NetworkStorageAdapter implements StorageAdapter {
   }
 
   async create(data: CreateAssetDto): Promise<AssetDto> {
+    data.name = this.normalizeSafeFilename(data.name);
     this.l.log(
       `NetworkStorageAdapter (S3): Creating asset with data:`,
       data.name
     );
 
-    const newAssetId = uuidv4();
-    const s3Key = `assets/${data.profileId}/${newAssetId}-${Date.now()}/${
-      data.name
-    }`; // Example S3 key structure
+    if (data.id && !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    const newAssetId = data.id ?? uuidv4();
+    const s3Key = data.id
+      ? `assets/${data.profileId}/${newAssetId}/${data.name}`
+      : `assets/${data.profileId}/${newAssetId}-${Date.now()}/${data.name}`;
 
     if (!data.content) {
       throw new Error('File content is missing in CreateAssetDto');
@@ -87,6 +89,11 @@ export class NetworkStorageAdapter implements StorageAdapter {
       );
       throw error;
     }
+  }
+
+  reservationPath(data: CreateAssetDto): string {
+    if (!data.id || !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    return `s3://${this.s3Service['bucketName']}/assets/${data.profileId}/${data.id}/${this.normalizeSafeFilename(data.name)}`;
   }
 
   async remove(data: AssetDto): Promise<void> {
@@ -163,6 +170,18 @@ export class NetworkStorageAdapter implements StorageAdapter {
       'vault-original-bytes': String(data.content?.length ?? 0),
     };
   }
+
+  private normalizeSafeFilename(name: string): string {
+    const safeName = name.replace(/\s+/g, '_');
+    if (!safeName || safeName === '.' || safeName === '..' || /[\\/\u0000-\u001f]/.test(safeName)) {
+      throw new Error('Asset filename is invalid');
+    }
+    return safeName;
+  }
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function toAsciiMetadataValue(value: string): string {

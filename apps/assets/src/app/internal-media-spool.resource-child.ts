@@ -21,7 +21,10 @@ async function main(): Promise<void> {
     }
   );
   const rssBefore = process.memoryUsage().rss;
+  let rssAfterSpool = rssBefore;
+  let rssAfterDrain = rssBefore;
   let peakRss = rssBefore;
+  const startedAt = performance.now();
   const sample = setInterval(() => {
     peakRss = Math.max(peakRss, process.memoryUsage().rss);
   }, 2);
@@ -30,12 +33,15 @@ async function main(): Promise<void> {
   const handle = await spool.create(() => createReadStream(sourcePath), {
     maxPlaintextBytes: 128 * 1024 * 1024,
   });
+  rssAfterSpool = process.memoryUsage().rss;
   const spoolBytes = (await stat(handle.path)).size;
   let bytesRead = 0;
   for await (const chunk of handle.createReadStream()) {
     bytesRead += Buffer.byteLength(chunk);
   }
+  rssAfterDrain = process.memoryUsage().rss;
   await handle.cleanup();
+  const elapsedMs = performance.now() - startedAt;
   clearInterval(sample);
   peakRss = Math.max(peakRss, process.memoryUsage().rss);
   let spoolExistsAfterCleanup = true;
@@ -54,8 +60,11 @@ async function main(): Promise<void> {
       bytesRead,
       spoolBytes,
       rssBefore,
+      rssAfterSpool,
+      rssAfterDrain,
       peakRss,
       rssDelta: Math.max(0, peakRss - rssBefore),
+      elapsedMs,
       spoolExistsAfterCleanup,
     })
   );

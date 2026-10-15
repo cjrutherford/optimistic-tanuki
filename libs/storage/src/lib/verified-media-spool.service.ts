@@ -24,6 +24,8 @@ const DEFAULT_MAX_PLAINTEXT_BYTES = 1024 * 1024 * 1024;
 const DEFAULT_MAX_CONCURRENT = 2;
 const DEFAULT_SPOOL_BUDGET_BYTES = 2 * 1024 * 1024 * 1024;
 const MAX_ENVELOPE_HEADER_BYTES = 64 * 1024;
+const MAX_DECRYPTION_CHUNK_BYTES = 1024;
+const VERIFIED_SPOOL_READ_HIGH_WATER_MARK = 1024;
 
 export interface VerifiedMediaSpoolOptions {
   spoolRoot?: string;
@@ -188,28 +190,30 @@ export class VerifiedMediaSpoolService {
         }
       };
 
-      if (firstCiphertext.length > 0) {
-        cipherBytes += firstCiphertext.length;
-        if (cipherBytes > maxBytes) {
-          throw new PayloadTooLargeException(
-            `Media exceeds the ${maxBytes}-byte authenticated retrieval limit.`
-          );
-        }
-        await writePlaintext(decipher.update(firstCiphertext));
-      }
-
-      for await (const rawChunk of source) {
-        if (options.signal?.aborted) throw abortError();
-        const chunk = Buffer.isBuffer(rawChunk)
-          ? rawChunk
-          : Buffer.from(rawChunk as Uint8Array);
+      const decryptChunk = async (chunk: Buffer): Promise<void> => {
         cipherBytes += chunk.length;
         if (cipherBytes > maxBytes) {
           throw new PayloadTooLargeException(
             `Media exceeds the ${maxBytes}-byte authenticated retrieval limit.`
           );
         }
-        await writePlaintext(decipher.update(chunk));
+        await writePlaintext(decipher!.update(chunk));
+      };
+      const decryptBounded = async (chunk: Buffer): Promise<void> => {
+        for (let offset = 0; offset < chunk.length; offset += MAX_DECRYPTION_CHUNK_BYTES) {
+          if (options.signal?.aborted) throw abortError();
+          await decryptChunk(chunk.subarray(offset, offset + MAX_DECRYPTION_CHUNK_BYTES));
+        }
+      };
+
+      await decryptBounded(firstCiphertext);
+
+      for await (const rawChunk of source) {
+        if (options.signal?.aborted) throw abortError();
+        const chunk = Buffer.isBuffer(rawChunk)
+          ? rawChunk
+          : Buffer.from(rawChunk as Uint8Array);
+        await decryptBounded(chunk);
       }
 
       // This final call is the only point at which the envelope is trusted.
@@ -232,6 +236,7 @@ export class VerifiedMediaSpoolService {
           createReadStream(filePath!, {
             ...(start === undefined ? {} : { start }),
             ...(end === undefined ? {} : { end }),
+            highWaterMark: VERIFIED_SPOOL_READ_HIGH_WATER_MARK,
           }),
         cleanup: async () => {
           if (cleaned) return;

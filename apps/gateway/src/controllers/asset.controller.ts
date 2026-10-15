@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Optional,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -21,6 +22,7 @@ import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   AssetCommands,
+  AuthCommands,
   ClassifiedCommands,
   CommunityCommands,
   FollowCommands,
@@ -65,7 +67,10 @@ export class AssetController {
     private readonly classifiedsService?: ClientProxy,
     @Optional()
     @Inject(ServiceTokens.FORUM_SERVICE)
-    private readonly forumService?: ClientProxy
+    private readonly forumService?: ClientProxy,
+    @Optional()
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private readonly authenticationService?: ClientProxy
   ) {}
 
   private toHttpException(
@@ -176,7 +181,7 @@ export class AssetController {
   @Get('/:id')
   @LongRunning()
   async getAssetById(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Res() res: Response,
     @Headers('range') range?: string,
     @User() user?: UserDetails,
@@ -313,6 +318,12 @@ export class AssetController {
         if (!community) throw new NotFoundException('Asset not found');
         if (community.isPrivate) restrictedCommunityIds.add(communityId);
       }
+      const hasDependentOwnerRestriction = restrictions.some(
+        (restriction) => restriction.type === 'owner' && restriction.profileId === asset.profileId
+      );
+      const guardianRead = hasDependentOwnerRestriction
+        ? await this.assertGuardianAssetRead(asset.profileId, user)
+        : undefined;
       if (restrictedCommunityIds.size > 0 || restrictions.length > 0) {
         if (!user?.userId || !user.profileId) {
           throw new NotFoundException('Asset not found');
@@ -349,7 +360,8 @@ export class AssetController {
               !(await this.isProfileOwnedByUser(
                 restriction.profileId,
                 user.userId
-              ))
+              )) &&
+              !(guardianRead && restriction.profileId === asset.profileId)
             ) {
               throw new NotFoundException('Asset not found');
             }
@@ -413,6 +425,18 @@ export class AssetController {
           timestamp,
           mediaToken
         );
+      }
+      if (guardianRead) {
+        const timestamp = String(Date.now());
+        const assertion = Buffer.from(JSON.stringify({
+          actorUserId: user!.userId,
+          targetProfileId: asset.profileId,
+          appId: user!.appId,
+          operation: 'content.view',
+        })).toString('base64url');
+        headers['X-Internal-Media-Guardian'] = assertion;
+        headers['X-Internal-Media-Guardian-Timestamp'] = timestamp;
+        headers['X-Internal-Media-Guardian-Signature'] = this.signGuardianAssertion(id, timestamp, assertion, mediaToken);
       }
       if (range) {
         headers['Range'] = range;
@@ -546,6 +570,30 @@ export class AssetController {
     if (!profileId) return false;
     const profile = await firstValueFrom(this.assetProfileRequest(profileId));
     return profile?.userId === userId;
+  }
+
+  private async assertGuardianAssetRead(
+    profileId: string | undefined,
+    user: UserDetails | undefined
+  ): Promise<boolean> {
+    if (!profileId || !user?.userId || !['client-interface', 'local-hub'].includes(user.appId ?? '')) return false;
+    if (!this.authenticationService) throw new BadGatewayException('Guardian asset authorization is unavailable');
+    const profile = await firstValueFrom(this.assetProfileRequest(profileId)) as { id?: string; userId?: string; appScope?: string };
+    if (!profile || profile.id !== profileId || profile.appScope !== user.appId || !profile.userId || profile.userId === user.userId) return false;
+    try {
+      await firstValueFrom(this.authenticationService.send({ cmd: AuthCommands.AuthorizeGuardianContentOperation }, {
+        actorUserId: user.userId,
+        dependentUserId: profile.userId,
+        appId: user.appId,
+        operation: 'content.view',
+      }).pipe(timeout({ first: 3000 })));
+      return true;
+    } catch (error) {
+      const nested = error as { statusCode?: number; code?: string; error?: { statusCode?: number; code?: string } };
+      const detail = nested?.error ?? nested;
+      if (detail?.statusCode === 403 && detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED') return false;
+      throw new BadGatewayException('Guardian asset authorization is unavailable');
+    }
   }
 
   private async assertUploadAudienceRestrictions(
@@ -836,6 +884,17 @@ export class AssetController {
   ): string {
     return createHmac('sha256', token)
       .update(`${assetId}:${profileId}:${timestamp}`)
+      .digest('hex');
+  }
+
+  private signGuardianAssertion(
+    assetId: string,
+    timestamp: string,
+    assertion: string,
+    token: string
+  ): string {
+    return createHmac('sha256', token)
+      .update(`${assetId}:${timestamp}:${assertion}`)
       .digest('hex');
   }
 }

@@ -22,6 +22,7 @@ export declare type AssetsConfigType = {
     secretKey: string;
     region?: string;
   };
+  services: Record<string, { host: string; port: number }>;
 };
 
 export const loadConfig = () => {
@@ -67,6 +68,7 @@ export const loadConfig = () => {
       1024 * 1024 * 1024
     ),
     internalMediaToken: process.env.ASSETS_INTERNAL_MEDIA_TOKEN,
+    services: configData.services,
     database: {
       ...configData.database,
       password: process.env.POSTGRES_PASSWORD || configData.database.password,

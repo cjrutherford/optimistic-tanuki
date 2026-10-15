@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import * as yaml from 'js-yaml';
 import AssetEntity from '../entities/asset.entity';
+import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
@@ -23,7 +24,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [AssetEntity];
+const entities = [AssetEntity, GuardianAssetActivity];
 
 console.log(
   `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`

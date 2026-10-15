@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 import { StorageStrategy } from '@optimistic-tanuki/models';
 import { basename, extname } from 'node:path';
 import { Readable } from 'node:stream';
 
 import { AppService } from './app.service';
+import { GuardianAssetActor } from './guardian-asset-authorization.service';
 
 export type MediaStreamResult = {
   statusCode: 200 | 206;
@@ -39,13 +41,48 @@ export class InternalMediaService {
     id: string,
     range?: string,
     viewerAuthorized = false,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    guardianActor?: GuardianAssetActor
   ): Promise<MediaStreamResult | UnsatisfiedMediaRange> {
     let asset: Awaited<ReturnType<AppService['retrieveAsset']>>;
     try {
       asset = await this.appService.retrieveAsset({ id });
-    } catch {
-      throw new NotFoundException(`Asset with id ${id} not found`);
+    } catch (error) {
+      const detail = error instanceof RpcException ? error.getError() : error;
+      const statusCode =
+        detail && typeof detail === 'object' && 'statusCode' in detail
+          ? detail.statusCode
+          : undefined;
+      if (error instanceof NotFoundException || statusCode === 404) {
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      }
+      throw error;
+    }
+    if (guardianActor) {
+      const ownerOnlyRestrictions =
+        Array.isArray(asset.audienceRestrictions) &&
+        asset.audienceRestrictions.length > 0 &&
+        asset.audienceRestrictions.every(
+          (restriction) =>
+            restriction?.type === 'owner' &&
+            restriction.profileId === guardianActor.targetProfileId
+        );
+      if (
+        asset.profileId !== guardianActor.targetProfileId ||
+        asset.audienceCommunityIds?.length ||
+        !ownerOnlyRestrictions
+      ) {
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      }
+      try {
+        await this.appService.authorizeGuardianRead({ ...guardianActor, id });
+      } catch (error) {
+        const detail = error instanceof RpcException ? error.getError() : error;
+        if (detail && typeof detail === 'object' && 'code' in detail && detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED') {
+          throw new NotFoundException(`Asset with id ${id} not found`);
+        }
+        throw error;
+      }
     }
     if (
       (asset.audienceCommunityIds?.length ||

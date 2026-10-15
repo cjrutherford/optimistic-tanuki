@@ -9,7 +9,8 @@ import {
   PostCommands,
 } from '@optimistic-tanuki/constants';
 import { JwtService } from '@nestjs/jwt';
-import { HttpException, Logger } from '@nestjs/common';
+import { HttpException, Logger, ParseUUIDPipe } from '@nestjs/common';
+import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { AuthGuard } from '../auth/auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
@@ -116,6 +117,32 @@ describe('AssetController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('validates the public asset GET UUID before making an asset RPC', async () => {
+    const args = Reflect.getMetadata(
+      ROUTE_ARGS_METADATA,
+      AssetController,
+      'getAssetById'
+    );
+    const parameter = Object.values(args).find(
+      (value: any) => value.index === 0
+    ) as { pipes: unknown[] };
+    const pipe = parameter.pipes.find(
+      (value): value is ParseUUIDPipe => value instanceof ParseUUIDPipe
+    );
+
+    expect(pipe).toBeInstanceOf(ParseUUIDPipe);
+    await expect(
+      pipe!.transform('not-a-uuid%2F..', { type: 'param', data: 'id' })
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      pipe!.transform('d5a7d0e3-a183-46bc-92e5-57cc84d9c534', {
+        type: 'param',
+        data: 'id',
+      })
+    ).resolves.toBe('d5a7d0e3-a183-46bc-92e5-57cc84d9c534');
+    expect(assetService.send).not.toHaveBeenCalled();
   });
 
   it('should create an asset', async () => {

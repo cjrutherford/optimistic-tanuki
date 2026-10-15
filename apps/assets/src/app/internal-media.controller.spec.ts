@@ -63,7 +63,8 @@ describe('InternalMediaController', () => {
       'asset-1',
       'bytes=10-19',
       false,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      undefined
     );
     expect(res.status).toHaveBeenCalledWith(206);
     expect(res.setHeader).toHaveBeenCalledWith('Accept-Ranges', 'bytes');
@@ -117,8 +118,47 @@ describe('InternalMediaController', () => {
       'asset-1',
       undefined,
       true,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      undefined
     );
+  });
+
+  it('accepts a fresh guardian assertion bound to actor, dependent profile, app, operation, and asset', async () => {
+    (mediaService.open as jest.Mock).mockResolvedValue({
+      statusCode: 200, contentType: 'image/png', contentLength: 8, stream: stream(),
+    });
+    const timestamp = String(Date.now());
+    const payload = Buffer.from(JSON.stringify({
+      actorUserId: 'guardian-1', targetProfileId: 'dependent-profile',
+      appId: 'client-interface', operation: 'content.view',
+    })).toString('base64url');
+    const signature = createHmac('sha256', 'gateway-secret')
+      .update(`asset-1:${timestamp}:${payload}`).digest('hex');
+
+    await controller.stream(
+      'asset-1', 'gateway-secret', undefined, undefined, undefined,
+      undefined, response() as any, undefined, timestamp, payload, signature
+    );
+
+    expect(mediaService.open).toHaveBeenCalledWith(
+      'asset-1', undefined, true, expect.any(AbortSignal),
+      expect.objectContaining({ actorUserId: 'guardian-1', targetProfileId: 'dependent-profile', appId: 'client-interface' })
+    );
+  });
+
+  it('rejects extra fields in a signed guardian assertion', async () => {
+    const timestamp = String(Date.now());
+    const payload = Buffer.from(JSON.stringify({
+      actorUserId: 'guardian-1', targetProfileId: 'dependent-profile',
+      appId: 'client-interface', operation: 'content.view', profileId: 'forged',
+    })).toString('base64url');
+    const signature = createHmac('sha256', 'gateway-secret')
+      .update(`asset-1:${timestamp}:${payload}`).digest('hex');
+    await expect(controller.stream(
+      'asset-1', 'gateway-secret', undefined, undefined, undefined,
+      undefined, response() as any, undefined, timestamp, payload, signature
+    )).rejects.toBeInstanceOf(ForbiddenException);
+    expect(mediaService.open).not.toHaveBeenCalled();
   });
 
   it('returns a 416 response with the file size for an invalid byte range', async () => {

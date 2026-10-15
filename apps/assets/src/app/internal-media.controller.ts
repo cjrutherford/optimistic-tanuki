@@ -13,6 +13,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
 
 import { InternalMediaService } from './internal-media.service';
+import { GuardianAssetActor } from './guardian-asset-authorization.service';
 
 @Controller('internal/media')
 export class InternalMediaController {
@@ -30,14 +31,20 @@ export class InternalMediaController {
     @Headers('x-internal-media-signature') signature: string | undefined,
     @Headers('range') range: string | undefined,
     @Res() response: Response,
-    @Req() request?: Request
+    @Req() request?: Request,
+    @Headers('x-internal-media-guardian-timestamp') guardianTimestamp?: string,
+    @Headers('x-internal-media-guardian') guardianPayload?: string,
+    @Headers('x-internal-media-guardian-signature') guardianSignature?: string
   ): Promise<void> {
     const expectedToken = this.configService.get<string>('internalMediaToken');
     if (!expectedToken || token !== expectedToken) {
       throw new ForbiddenException('Internal media token is required');
     }
 
-    const viewerAuthorized = this.verifyViewerAssertion(
+    const guardianActor = this.verifyGuardianAssertion(
+      id, guardianTimestamp, guardianPayload, guardianSignature, expectedToken
+    );
+    const viewerAuthorized = !!guardianActor || this.verifyViewerAssertion(
       id,
       viewer,
       timestamp,
@@ -57,7 +64,8 @@ export class InternalMediaController {
         id,
         range,
         viewerAuthorized,
-        abortController.signal
+        abortController.signal,
+        guardianActor
       );
     } catch (error) {
       request?.removeListener('aborted', onRequestAborted);
@@ -112,5 +120,42 @@ export class InternalMediaController {
     return (
       supplied.length === expected.length && timingSafeEqual(expected, supplied)
     );
+  }
+
+  private verifyGuardianAssertion(
+    id: string,
+    timestamp: string | undefined,
+    payload: string | undefined,
+    signature: string | undefined,
+    token: string
+  ): GuardianAssetActor | undefined {
+    if (!timestamp && !payload && !signature) return undefined;
+    if (!timestamp || !payload || !signature || !/^\d{13}$/.test(timestamp) || Math.abs(Date.now() - Number(timestamp)) > 30_000) {
+      throw new ForbiddenException('Invalid guardian media assertion');
+    }
+    const expected = createHmac('sha256', token).update(`${id}:${timestamp}:${payload}`).digest();
+    let supplied: Buffer;
+    try { supplied = Buffer.from(signature, 'hex'); } catch { throw new ForbiddenException('Invalid guardian media assertion'); }
+    if (supplied.length !== expected.length || !timingSafeEqual(expected, supplied)) throw new ForbiddenException('Invalid guardian media assertion');
+    try {
+      const decoded = Buffer.from(payload, 'base64url').toString('utf8');
+      if (Buffer.from(decoded, 'utf8').toString('base64url') !== payload) throw new Error('noncanonical');
+      const value = JSON.parse(decoded) as Record<string, unknown>;
+      if (JSON.stringify(value) !== decoded) throw new Error('noncanonical-json');
+      const keys = Object.keys(value).sort();
+      if (keys.join(',') !== 'actorUserId,appId,operation,targetProfileId' ||
+          typeof value.actorUserId !== 'string' || !value.actorUserId ||
+          typeof value.targetProfileId !== 'string' || !value.targetProfileId ||
+          !['client-interface', 'local-hub'].includes(String(value.appId)) ||
+          value.operation !== 'content.view') throw new Error('invalid');
+      return {
+        actorUserId: value.actorUserId,
+        targetProfileId: value.targetProfileId,
+        appId: value.appId as string,
+        operation: 'content.view',
+      };
+    } catch {
+      throw new ForbiddenException('Invalid guardian media assertion');
+    }
   }
 }

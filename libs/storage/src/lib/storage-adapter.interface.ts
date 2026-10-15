@@ -7,6 +7,8 @@ export interface AuthenticatedMediaReadOptions {
 }
 
 export interface StorageAdapter {
+  /** Returns the immutable storage key for a server-reserved asset ID. */
+  reservationPath?(data: CreateAssetDto): string;
   /***
    * Creates a new asset in the storage system.
    * @param data - The asset data to be created.

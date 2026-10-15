@@ -12,6 +12,7 @@ import {
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 
 import { AssetController } from '../controllers/asset.controller';
+import { GuardianAssetController } from '../controllers/social/guardian-asset.controller';
 import { BugReportProxyController } from '../controllers/bug-report-proxy.controller';
 import { PalettesController } from '../controllers/palettes.controller';
 import { PersonalitiesController } from '../controllers/personalities.controller';
@@ -214,6 +215,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
           'forum',
         ],
         value: AssetController,
+      },
+      {
+        id: 'guardian-assets',
+        requiredServices: ['assets', 'authentication', 'profile'],
+        value: GuardianAssetController,
       },
       { id: 'bug-reports', value: BugReportProxyController },
       {
