@@ -2176,6 +2176,14 @@
       "appScope": "local-hub"
     },
     {
+      "name": "asset.create",
+      "description": "Create asset (local-hub)",
+      "active": true,
+      "resource": "asset",
+      "action": "create",
+      "appScope": "local-hub"
+    },
+    {
       "name": "moderation.remove",
       "description": "Remove content (mod)",
       "active": true,
@@ -6014,6 +6022,11 @@
     {
       "role": "local_hub_member",
       "permission": "community.create",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "asset.create",
       "permissionAppScope": "local-hub"
     },
     {

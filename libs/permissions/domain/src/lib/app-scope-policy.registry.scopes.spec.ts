@@ -171,6 +171,30 @@ describe('AppScopePolicyRegistry scopes', () => {
     );
   });
 
+  it('grants local-hub members only the Local Hub asset-create capability', () => {
+    const localHubDefaults = registry.get('local-hub').buildDefaults();
+    const memberRole = localHubDefaults.roles.find(
+      (role) => role.name === 'local_hub_member'
+    );
+
+    expect(
+      localHubDefaults.permissions.filter((permission) =>
+        permission.name.startsWith('asset.')
+      )
+    ).toEqual([
+      expect.objectContaining({
+        name: 'asset.create',
+        resource: 'asset',
+        action: 'create',
+        appScope: 'local-hub',
+      }),
+    ]);
+    expect(memberRole?.permissions).toContain('asset.create');
+    expect(memberRole?.permissions).not.toEqual(
+      expect.arrayContaining(['asset.read', 'asset.update', 'asset.delete'])
+    );
+  });
+
   describe('client-interface cross-scope mapping', () => {
     it.each(['client_interface_user', 'community_owner'])(
       'mirrors a %s assignment into social',

@@ -97,6 +97,7 @@ describe('RoleInitService behaviour', () => {
         resource: 'post',
         action: 'read',
         targetId: undefined,
+        appScopeId: 'scope-1',
       });
     });
 
@@ -159,7 +160,7 @@ describe('RoleInitService behaviour', () => {
       });
     });
 
-    it('attaches by name when the permission id is unknown', async () => {
+    it('skips an unresolved permission instead of sending an unsupported name field', async () => {
       okScope();
       on(RoleCommands.Create, () => ({ id: 'role-1' }));
 
@@ -168,14 +169,12 @@ describe('RoleInitService behaviour', () => {
         roles: [{ name: 'Reader', permissions: ['never.created'] }],
       });
 
-      expect(sent(RoleCommands.AddPermission)[0]).toEqual({
-        roleId: 'role-1',
-        permissionName: 'never.created',
-      });
+      expect(sent(RoleCommands.AddPermission)).toHaveLength(0);
     });
 
     it('falls back to the app scope lookup when creation fails', async () => {
       okScope();
+      on(PermissionCommands.Create, () => ({ id: 'permission-p' }));
       on(RoleCommands.Create, () => new Error('exists'));
       on(RoleCommands.GetByName, (payload) =>
         payload['appScope'] === 'social' ? { id: 'role-existing' } : null
@@ -183,16 +182,19 @@ describe('RoleInitService behaviour', () => {
 
       await service.processNow({
         scopeName: 'social',
+        permissions: [{ name: 'p', resource: 'post', action: 'read' }],
         roles: [{ name: 'Reader', permissions: ['p'] }],
       });
 
-      expect(sent(RoleCommands.AddPermission)[0]).toMatchObject({
+      expect(sent(RoleCommands.AddPermission)[0]).toEqual({
         roleId: 'role-existing',
+        permissionId: 'permission-p',
       });
     });
 
     it('falls back to the global scope, then to no scope at all', async () => {
       okScope();
+      on(PermissionCommands.Create, () => ({ id: 'permission-p' }));
       on(RoleCommands.Create, () => new Error('exists'));
       on(RoleCommands.GetByName, (payload) =>
         // Only the third, scopeless attempt succeeds.
@@ -201,6 +203,7 @@ describe('RoleInitService behaviour', () => {
 
       await service.processNow({
         scopeName: 'social',
+        permissions: [{ name: 'p', resource: 'post', action: 'read' }],
         roles: [{ name: 'Reader', permissions: ['p'] }],
       });
 
@@ -210,8 +213,9 @@ describe('RoleInitService behaviour', () => {
         { name: 'Reader', appScope: 'global' },
         { name: 'Reader' },
       ]);
-      expect(sent(RoleCommands.AddPermission)[0]).toMatchObject({
+      expect(sent(RoleCommands.AddPermission)[0]).toEqual({
         roleId: 'role-legacy',
+        permissionId: 'permission-p',
       });
     });
 
@@ -247,11 +251,18 @@ describe('RoleInitService behaviour', () => {
     it('carries on when attaching a permission fails', async () => {
       okScope();
       on(RoleCommands.Create, () => ({ id: 'role-1' }));
+      on(PermissionCommands.Create, (payload) => ({
+        id: `permission-${payload['name']}`,
+      }));
       on(RoleCommands.AddPermission, () => new Error('nope'));
 
       await expect(
         service.processNow({
           scopeName: 'social',
+          permissions: [
+            { name: 'a', resource: 'post', action: 'read' },
+            { name: 'b', resource: 'post', action: 'read' },
+          ],
           roles: [{ name: 'Reader', permissions: ['a', 'b'] }],
         })
       ).resolves.toBeUndefined();

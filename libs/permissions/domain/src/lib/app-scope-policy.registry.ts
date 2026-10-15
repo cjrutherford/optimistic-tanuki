@@ -219,6 +219,13 @@ const financeDefaults = (profileId?: string): PolicyRoleInitDefaults => ({
 const localHubDefaults = (profileId?: string): PolicyRoleInitDefaults => {
   const permissions: PolicyPermissionSpec[] = [
     {
+      name: 'asset.create',
+      resource: 'asset',
+      action: 'create',
+      description: 'Create asset for Local Hub profile',
+      appScope: 'local-hub',
+    },
+    {
       name: 'classified.create',
       resource: 'classified',
       action: 'create',

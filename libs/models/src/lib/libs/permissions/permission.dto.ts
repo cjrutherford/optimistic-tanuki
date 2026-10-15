@@ -22,6 +22,11 @@ export class CreatePermissionDto {
   @IsString()
   @ApiPropertyOptional()
   targetId?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional()
+  appScopeId?: string;
 }
 
 export class UpdatePermissionDto {

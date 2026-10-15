@@ -82,6 +82,55 @@ describe('permissions seed integrity', () => {
     ]);
   });
 
+  it('seeds Local Hub asset creation only in its own app scope', () => {
+    expect(seedData.permissions).toContainEqual(
+      expect.objectContaining({
+        name: 'asset.create',
+        resource: 'asset',
+        action: 'create',
+        appScope: 'local-hub',
+      })
+    );
+    expect(seedData.role_permissions).toContainEqual({
+      role: 'local_hub_member',
+      permission: 'asset.create',
+      permissionAppScope: 'local-hub',
+    });
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'local_hub_member',
+        permission: 'asset.create',
+        permissionAppScope: expect.not.stringMatching(/^local-hub$/),
+      })
+    );
+    expect(seedData.role_permissions).not.toContainEqual(
+      expect.objectContaining({
+        role: 'local_hub_member',
+        permission: expect.stringMatching(/^asset\.(read|update|delete)$/),
+      })
+    );
+  });
+
+  it('backfills asset.create onto existing Local Hub member roles idempotently', () => {
+    const shellSeed = fs.readFileSync(
+      path.resolve(__dirname, '../../../../scripts/seed-permissions.sh'),
+      'utf8'
+    );
+
+    expect(shellSeed).toContain(
+      "('asset.create', 'Create asset (local-hub)', 'asset', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))"
+    );
+    expect(shellSeed).toContain(
+      "  'asset.create',\n  'election.vote'"
+    );
+    expect(shellSeed).toContain(
+      "WHERE r.name = 'local_hub_member'\nON CONFLICT DO NOTHING;"
+    );
+    expect(shellSeed).not.toContain(
+      "p.name IN ('asset.create') AND p.\"appScopeId\" = (SELECT id FROM app_scope WHERE name='client-interface')\nWHERE r.name = 'local_hub_member'"
+    );
+  });
+
   it('resolves every role-permission association to a declared role and permission scope', () => {
     const roles = new Set(
       seedData.roles.map((role: { name: string }) => role.name)
