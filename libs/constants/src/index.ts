@@ -42,6 +42,7 @@ export {
   DisabledClientProxy,
 } from './lib/libs/service-composition';
 export { AssetCommands } from './lib/libs/asset';
+export { GuardianContentCommands } from './lib/libs/guardian-content';
 export {
   ProjectCommands,
   ProjectInviteCommands,

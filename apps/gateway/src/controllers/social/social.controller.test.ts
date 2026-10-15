@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { SocialController } from './social.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
@@ -7,6 +8,7 @@ import {
   CommentCommands,
   PostCommands,
   VoteCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreatePostDto,
@@ -28,6 +30,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { IdentityThrottlerGuard } from '../learning/identity-throttler.guard';
+import { CreateGuardianCommentDto, CreateGuardianPostDto } from './dto/guardian-content.dto';
 
 describe('SocialController', () => {
   let socialController: SocialController;
@@ -501,7 +504,7 @@ describe('SocialController', () => {
     await socialController.updateComment(id, mockUser as any, updateCommentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.UPDATE },
-      { id, update: updateCommentDto }
+      { id, update: updateCommentDto, userId: mockUser.userId, profileId: mockUser.profileId }
     );
   });
 
@@ -531,7 +534,7 @@ describe('SocialController', () => {
     await socialController.deletePost(id, mockUser);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.DELETE },
-      { id, userId: 'user-1' }
+      { id, userId: 'user-1', profileId: 'profile-1' }
     );
   });
 
@@ -544,7 +547,7 @@ describe('SocialController', () => {
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.DELETE },
-      { id }
+      { id, userId: mockUser.userId, profileId: mockUser.profileId }
     );
   });
 
@@ -576,8 +579,51 @@ describe('SocialController', () => {
     });
     expect(sender.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.UPDATE },
-      { id: 'comment-1', update: { content: 'edited' } }
+      { id: 'comment-1', update: { content: 'edited' }, userId: mockUser.userId, profileId: mockUser.profileId }
     );
     expect(gateway.broadcastSocialContentInvalidated).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['client-interface', 'local-hub'])('uses the verified %s context and path profile for guardian content', async (appId) => {
+    const user = { ...mockUser, appId, appScope: 'forged-app', headers: { 'x-ot-appscope': 'business-site' } } as any;
+
+    await socialController.listGuardianPosts('dependent-profile-from-path', user);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: GuardianContentCommands.ListPosts },
+      { actorUserId: mockUser.userId, targetProfileId: 'dependent-profile-from-path', appId }
+    );
+  });
+
+  it('fails closed when the authenticated user has no verified guardian app context', async () => {
+    await expect(socialController.listGuardianPosts('dependent-profile', { ...mockUser, appId: undefined } as any))
+      .rejects.toMatchObject({ status: 403 });
+    expect(clientProxy.send).not.toHaveBeenCalled();
+  });
+
+  it('keeps guardian identity and app context out of caller-controlled comment fields', async () => {
+    const user = { ...mockUser, appId: 'client-interface' } as any;
+
+    await socialController.createGuardianComment('dependent-profile-from-path', 'dependent-post-from-path', user, {
+      content: 'comment', actorUserId: 'forged-actor', appId: 'business-site', postId: 'forged-post',
+    } as any);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: GuardianContentCommands.CreateComment },
+      {
+        actorUserId: mockUser.userId, targetProfileId: 'dependent-profile-from-path', appId: 'client-interface',
+        data: { content: 'comment', actorUserId: 'forged-actor', appId: 'business-site', postId: 'dependent-post-from-path' },
+      }
+    );
+  });
+
+  it.each([
+    [CreateGuardianPostDto, { title: 'title', content: 'body', appId: 'business-site' }],
+    [CreateGuardianCommentDto, { content: 'body', userId: 'forged-user', postId: 'forged-post' }],
+  ])('rejects guardian body fields outside the explicit DTO allowlist', async (metatype, body) => {
+    const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true });
+
+    await expect(pipe.transform(body, { type: 'body', metatype: metatype as any }))
+      .rejects.toBeInstanceOf(BadRequestException);
   });
 });

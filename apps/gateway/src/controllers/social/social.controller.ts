@@ -13,6 +13,7 @@ import {
   Get,
   Param,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -23,8 +24,15 @@ import {
   VoteCommands,
   ReactionCommands,
   CommunityCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import { SocialGateway } from '../../app/social-gateway/social.gateway';
+import {
+  CreateGuardianCommentDto,
+  CreateGuardianPostDto,
+  UpdateGuardianCommentDto,
+  UpdateGuardianPostDto,
+} from './dto/guardian-content.dto';
 import {
   AttachmentDto,
   CommentDto,
@@ -701,7 +709,7 @@ export class SocialController {
     await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.UPDATE },
-        { id, update: updateCommentDto }
+        { id, update: updateCommentDto, userId: user.userId, profileId: user.profileId }
       )
     );
 
@@ -750,7 +758,7 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.DELETE },
-        { id, userId: user.userId }
+        { id, userId: user.userId, profileId: user.profileId }
       )
     );
 
@@ -794,7 +802,7 @@ export class SocialController {
     }
 
     const result = await firstValueFrom(
-      this.socialClient.send({ cmd: CommentCommands.DELETE }, { id })
+      this.socialClient.send({ cmd: CommentCommands.DELETE }, { id, userId: user.userId, profileId: user.profileId })
     );
 
     // Broadcast comment deleted event via WebSocket
@@ -824,5 +832,84 @@ export class SocialController {
     return await firstValueFrom(
       this.socialClient.send({ cmd: AttachmentCommands.DELETE }, { id })
     );
+  }
+
+  private guardianActor(user: UserDetails, targetProfileId: string) {
+    if (!user?.userId || !['client-interface', 'local-hub'].includes(user.appId ?? '')) {
+      throw new ForbiddenException('A verified guardian application context is required');
+    }
+    return { actorUserId: user.userId, targetProfileId, appId: user.appId };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts')
+  async listGuardianPosts(@Param('profileId') profileId: string, @User() user: UserDetails) {
+    return firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.ListPosts }, this.guardianActor(user, profileId)));
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts/:postId')
+  async getGuardianPost(@Param('profileId') profileId: string, @Param('postId') postId: string, @User() user: UserDetails) {
+    const post = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.GetPost }, { ...this.guardianActor(user, profileId), id: postId }));
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('guardian/content/profiles/:profileId/posts')
+  async createGuardianPost(@Param('profileId') profileId: string, @User() user: UserDetails, @Body() data: CreateGuardianPostDto) {
+    return firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.CreatePost }, { ...this.guardianActor(user, profileId), data }));
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('guardian/content/profiles/:profileId/posts/:postId')
+  async updateGuardianPost(@Param('profileId') profileId: string, @Param('postId') postId: string, @User() user: UserDetails, @Body() data: UpdateGuardianPostDto) {
+    const post = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.UpdatePost }, { ...this.guardianActor(user, profileId), id: postId, data }));
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('guardian/content/profiles/:profileId/posts/:postId')
+  async deleteGuardianPost(@Param('profileId') profileId: string, @Param('postId') postId: string, @User() user: UserDetails) {
+    const result = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.DeletePost }, { ...this.guardianActor(user, profileId), id: postId }));
+    if (!result) throw new NotFoundException('Post not found');
+    return result;
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/posts/:postId/comments')
+  async listGuardianComments(@Param('profileId') profileId: string, @Param('postId') postId: string, @User() user: UserDetails) {
+    return firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.ListComments }, { ...this.guardianActor(user, profileId), postId }));
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('guardian/content/profiles/:profileId/comments/:commentId')
+  async getGuardianComment(@Param('profileId') profileId: string, @Param('commentId') commentId: string, @User() user: UserDetails) {
+    const comment = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.GetComment }, { ...this.guardianActor(user, profileId), id: commentId }));
+    if (!comment) throw new NotFoundException('Comment not found');
+    return comment;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('guardian/content/profiles/:profileId/posts/:postId/comments')
+  async createGuardianComment(@Param('profileId') profileId: string, @Param('postId') postId: string, @User() user: UserDetails, @Body() data: CreateGuardianCommentDto) {
+    return firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.CreateComment }, { ...this.guardianActor(user, profileId), data: { ...data, postId } }));
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('guardian/content/profiles/:profileId/comments/:commentId')
+  async updateGuardianComment(@Param('profileId') profileId: string, @Param('commentId') commentId: string, @User() user: UserDetails, @Body() data: UpdateGuardianCommentDto) {
+    const comment = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.UpdateComment }, { ...this.guardianActor(user, profileId), id: commentId, data }));
+    if (!comment) throw new NotFoundException('Comment not found');
+    return comment;
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('guardian/content/profiles/:profileId/comments/:commentId')
+  async deleteGuardianComment(@Param('profileId') profileId: string, @Param('commentId') commentId: string, @User() user: UserDetails) {
+    const result = await firstValueFrom(this.socialClient.send({ cmd: GuardianContentCommands.DeleteComment }, { ...this.guardianActor(user, profileId), id: commentId }));
+    if (!result) throw new NotFoundException('Comment not found');
+    return result;
   }
 }

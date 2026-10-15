@@ -32,6 +32,7 @@ import {
   ScheduledPostCommands,
   ServiceTokens,
   ProfileCommands,
+  GuardianContentCommands,
 } from '@optimistic-tanuki/constants';
 import { BusinessContentCommands } from '@optimistic-tanuki/social-contracts';
 import {
@@ -98,6 +99,8 @@ import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { BusinessContentService } from './services/business-content.service';
 import { LinkService } from './services/link.service';
+import { GuardianContentService } from './services/guardian-content.service';
+import { Optional } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -134,8 +137,44 @@ export class AppController {
     private readonly linkService: LinkService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
-    private readonly businessContentService: BusinessContentService
+    private readonly businessContentService: BusinessContentService,
+    @Optional() private readonly guardianContentService?: GuardianContentService
   ) {}
+
+  private guardianContent() {
+    if (!this.guardianContentService) throw new RpcException('Guardian content service unavailable');
+    return this.guardianContentService;
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ListPosts })
+  listGuardianPosts(@Payload() data: any) { return this.guardianContent().listPosts(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.GetPost })
+  getGuardianPost(@Payload() data: any) { return this.guardianContent().getPost(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CreatePost })
+  createGuardianPost(@Payload() data: any) { return this.guardianContent().createPost(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.UpdatePost })
+  updateGuardianPost(@Payload() data: any) { return this.guardianContent().updatePost(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.DeletePost })
+  deleteGuardianPost(@Payload() data: any) { return this.guardianContent().deletePost(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ListComments })
+  listGuardianComments(@Payload() data: any) { return this.guardianContent().listComments(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.GetComment })
+  getGuardianComment(@Payload() data: any) { return this.guardianContent().getComment(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CreateComment })
+  createGuardianComment(@Payload() data: any) { return this.guardianContent().createComment(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.UpdateComment })
+  updateGuardianComment(@Payload() data: any) { return this.guardianContent().updateComment(data); }
+
+  @MessagePattern({ cmd: GuardianContentCommands.DeleteComment })
+  deleteGuardianComment(@Payload() data: any) { return this.guardianContent().deleteComment(data); }
 
   private async buildPostVisibilityScope(
     viewerProfileId: string
@@ -355,11 +394,12 @@ export class AppController {
   @MessagePattern({ cmd: PostCommands.DELETE })
   async removePost(
     @Payload('id') id: string,
-    @Payload('userId') userId: string
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId?: string
   ) {
     console.log(`Removing post with ID: ${id}`);
     try {
-      return await this.postService.remove(id, userId);
+      return await this.postService.remove(id, userId, profileId);
     } catch (error) {
       console.error(`Error in removePost: ${error.message}`);
       throw error;
@@ -612,16 +652,22 @@ export class AppController {
   @MessagePattern({ cmd: CommentCommands.UPDATE })
   async updateComment(
     @Payload('id') id: string,
-    @Payload('update') update: UpdateCommentDto
+    @Payload('update') update: UpdateCommentDto,
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId: string
   ) {
     console.log('updateComment', id, update);
-    await this.commentService.update(id, update);
+    await this.commentService.update(id, update, userId, profileId);
     return { success: true };
   }
 
   @MessagePattern({ cmd: CommentCommands.DELETE })
-  async removeComment(@Payload('id') id: string) {
-    return await this.commentService.remove(id);
+  async removeComment(
+    @Payload('id') id: string,
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId: string
+  ) {
+    return await this.commentService.remove(id, userId, profileId);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.CREATE })

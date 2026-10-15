@@ -426,9 +426,9 @@ describe('AppController', () => {
 
   it('should remove a post', async () => {
     postService.remove.mockResolvedValue(undefined);
-    const result = await controller.removePost('1', 'user-1');
+    const result = await controller.removePost('1', 'user-1', 'profile-1');
     expect(result).toBeUndefined();
-    expect(postService.remove).toHaveBeenCalledWith('1', 'user-1');
+    expect(postService.remove).toHaveBeenCalledWith('1', 'user-1', 'profile-1');
   });
 
   it('should upvote a post', async () => {
@@ -569,16 +569,16 @@ describe('AppController', () => {
 
   it('should update a comment', async () => {
     commentService.update.mockResolvedValue(undefined);
-    const result = await controller.updateComment('1', {} as any);
+    const result = await controller.updateComment('1', {} as any, 'user-1', 'profile-1');
     expect(result).toEqual({ success: true });
-    expect(commentService.update).toHaveBeenCalledWith('1', {});
+    expect(commentService.update).toHaveBeenCalledWith('1', {}, 'user-1', 'profile-1');
   });
 
   it('should remove a comment', async () => {
     commentService.remove.mockResolvedValue('removed');
-    const result = await controller.removeComment('1');
+    const result = await controller.removeComment('1', 'user-1', 'profile-1');
     expect(result).toBe('removed');
-    expect(commentService.remove).toHaveBeenCalledWith('1');
+    expect(commentService.remove).toHaveBeenCalledWith('1', 'user-1', 'profile-1');
   });
 
   it('should create an attachment', async () => {

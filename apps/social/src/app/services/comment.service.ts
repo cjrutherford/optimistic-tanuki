@@ -249,15 +249,16 @@ export class CommentService {
     return { ...relations, post: true };
   }
 
-  async update(id: string, updateCommentDto: UpdateCommentDto): Promise<void> {
+  async update(id: string, updateCommentDto: UpdateCommentDto, userId: string, profileId: string): Promise<void> {
     const existing = await this.commentRepo.findOne({
       where: { id },
       relations: ['post'],
     });
-    const sanitizedDto = {
-      ...updateCommentDto,
-    };
-    if (updateCommentDto.content) {
+    if (!existing || existing.userId !== userId || existing.profileId !== profileId) {
+      throw new RpcException({ statusCode: 403, message: 'You do not have permission to update this comment' });
+    }
+    const sanitizedDto: Partial<Comment> = {};
+    if (typeof updateCommentDto.content === 'string') {
       sanitizedDto.content = this.sanitizeContent(updateCommentDto.content);
       if (existing?.post) {
         await this.latchParentAudience(
@@ -268,14 +269,18 @@ export class CommentService {
         await this.latchParentAudience(
           sanitizedDto.content,
           existing.post,
-          sanitizedDto.profileId ?? existing.profileId
+          existing.profileId
         );
       }
     }
     await this.commentRepo.update(id, sanitizedDto);
   }
 
-  async remove(id: string): Promise<{ success: boolean }> {
+  async remove(id: string, userId: string, profileId: string): Promise<{ success: boolean }> {
+    const existing = await this.commentRepo.findOne({ where: { id } });
+    if (!existing || existing.userId !== userId || existing.profileId !== profileId) {
+      throw new RpcException({ statusCode: 403, message: 'You do not have permission to delete this comment' });
+    }
     await this.commentRepo.delete(id);
     return { success: true };
   }

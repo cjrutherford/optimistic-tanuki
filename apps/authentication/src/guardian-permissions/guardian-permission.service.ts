@@ -397,6 +397,31 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
   }): Promise<void> {
     const allowedApps = new Set(['client-interface', 'local-hub']);
     const allowedOperations = new Set(['profile.view', 'profile.manage']);
+    await this.assertDelegatedAccess(input, allowedApps, allowedOperations, 'GUARDIAN_PROFILE_ACCESS_DENIED');
+  }
+
+  async assertDelegatedContentAccess(input: {
+    actorUserId: string;
+    dependentUserId: string;
+    appId: string;
+    operation: string;
+  }): Promise<void> {
+    const allowedApps = new Set(['client-interface', 'local-hub']);
+    const allowedOperations = new Set(['content.view', 'content.manage']);
+    await this.assertDelegatedAccess(input, allowedApps, allowedOperations, 'GUARDIAN_CONTENT_ACCESS_DENIED');
+  }
+
+  private async assertDelegatedAccess(
+    input: {
+      actorUserId: string;
+      dependentUserId: string;
+      appId: string;
+      operation: string;
+    },
+    allowedApps: Set<string>,
+    allowedOperations: Set<string>,
+    deniedCode: string
+  ): Promise<void> {
     if (
       !input?.actorUserId ||
       !input.dependentUserId ||
@@ -404,7 +429,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       !allowedApps.has(input.appId) ||
       !allowedOperations.has(input.operation)
     ) {
-      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+      throw new RpcException({ statusCode: 403, code: deniedCode });
     }
 
     const session = await this.sessions.findOne({
@@ -417,7 +442,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       actor.ageEligibilityStatus !== 'adult' ||
       (actor.lockedUntil && new Date(actor.lockedUntil).getTime() > Date.now())
     ) {
-      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+      throw new RpcException({ statusCode: 403, code: deniedCode });
     }
 
     const dependent = await this.users.findOne({
@@ -429,7 +454,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       !dependent.ageEligibilityEndsAt ||
       new Date(`${dependent.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <= Date.now()
     ) {
-      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+      throw new RpcException({ statusCode: 403, code: deniedCode });
     }
 
     const permission = await this.permissions.findOne({
@@ -443,7 +468,7 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       !permission?.dateOfBirth ||
       this.ageFromDate(permission.dateOfBirth) >= 18
     ) {
-      throw new RpcException({ code: 'GUARDIAN_PROFILE_ACCESS_DENIED' });
+      throw new RpcException({ statusCode: 403, code: deniedCode });
     }
   }
 

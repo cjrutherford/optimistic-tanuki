@@ -59,6 +59,8 @@ import { BusinessPageContent } from '../entities/business-page-content.entity';
 import { BusinessThemeContent } from '../entities/business-theme-content.entity';
 import { CommunitySponsorshipContent } from '../entities/community-sponsorship-content.entity';
 import { BusinessContentService } from './services/business-content.service';
+import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianContentService } from './services/guardian-content.service';
 
 @Module({
   imports: [
@@ -92,6 +94,18 @@ import { BusinessContentService } from './services/business-content.service';
     PostShareService,
     EventService,
     BusinessContentService,
+    GuardianContentService,
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>('services.authentication');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: { host: serviceConfig.host, port: serviceConfig.port },
+        });
+      },
+      inject: [ConfigService],
+    },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

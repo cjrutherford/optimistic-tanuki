@@ -138,6 +138,17 @@ export class AppController {
     return { allowed: true };
   }
 
+  @MessagePattern({ cmd: AuthCommands.AuthorizeGuardianContentOperation })
+  async authorizeGuardianContentOperation(@Payload() data: {
+    actorUserId: string;
+    dependentUserId: string;
+    appId: string;
+    operation: string;
+  }) {
+    await this.guardianPermissions.assertDelegatedContentAccess(data);
+    return { allowed: true };
+  }
+
   @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermission })
   withdrawGuardianPermission(@Payload() data: { userId: string }) {
     return this.guardianPermissions.withdraw(data.userId);

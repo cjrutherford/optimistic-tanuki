@@ -197,7 +197,7 @@ describe('PostService', () => {
     commentRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
     attachmentRepo.delete.mockResolvedValue({ affected: 0, raw: [] });
 
-    await service.remove('private-post', 'author-user');
+    await service.remove('private-post', 'author-user', 'author-profile');
 
     expect(assetClient.send).toHaveBeenCalledWith(
       { cmd: 'asset.addAudienceRestrictions' },
@@ -518,7 +518,7 @@ describe('PostService', () => {
         'post-author'
       )
     ).resolves.toBe(post);
-    await expect(service.remove(post.id, 'post-user')).resolves.toEqual({
+    await expect(service.remove(post.id, 'post-user', 'post-author')).resolves.toEqual({
       success: true,
     });
   });
@@ -745,10 +745,16 @@ describe('PostService', () => {
   });
 
   it('should throw error when remove fails', async () => {
-    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.findOne.mockResolvedValue({ id: '1', userId: 'u1', profileId: 'p1', communityId: null } as Post);
     commentRepo.delete.mockRejectedValue(new Error('Delete failed'));
 
-    await expect(service.remove('1')).rejects.toThrow('Delete failed');
+    await expect(service.remove('1', 'u1', 'p1')).rejects.toThrow('Delete failed');
+  });
+
+  it('denies a personal post delete when its stored owner IDs do not match the actor', async () => {
+    postRepo.findOne.mockResolvedValue({ id: 'owned-by-other', userId: 'other-user', profileId: 'other-profile', communityId: null } as Post);
+    await expect(service.remove('owned-by-other', 'actor-user', 'actor-profile')).rejects.toThrow('You do not have permission to delete this post');
+    expect(postRepo.delete).not.toHaveBeenCalled();
   });
 
   it('should get posts with various filters', async () => {

@@ -198,9 +198,23 @@ describe('GuardianPermissionService', () => {
       expect(permissions.findOne).not.toHaveBeenCalled();
     });
 
+    it.each(['content.view', 'content.manage'])('authorizes the linked guardian for %s', async (operation) => {
+      const contentRequest = { ...request, operation };
+      users.findOne
+        .mockResolvedValueOnce({ id: 'guardian-user', ageEligibilityStatus: 'adult' })
+        .mockResolvedValueOnce({ id: 'dependent-user', ageEligibilityStatus: 'minor', ageEligibilityEndsAt: '2028-10-14' });
+      permissions.findOne.mockResolvedValue(permissionRecord({
+        userId: 'dependent-user', guardianUserId: 'guardian-user', status: 'approved', dateOfBirth: '2010-10-14',
+      }));
+
+      await expect(service.assertDelegatedContentAccess(contentRequest)).resolves.toBeUndefined();
+    });
+
     it('rejects a guardian without an active session', async () => {
       sessions.findOne.mockResolvedValue(null);
-      await expect(service.assertDelegatedProfileAccess(request)).rejects.toBeInstanceOf(RpcException);
+      await expect(service.assertDelegatedProfileAccess(request)).rejects.toMatchObject({
+        error: expect.objectContaining({ statusCode: 403, code: 'GUARDIAN_PROFILE_ACCESS_DENIED' }),
+      });
       expect(permissions.findOne).not.toHaveBeenCalled();
     });
 

@@ -44,7 +44,7 @@ export class PostService {
     private readonly assetService?: ClientProxy
   ) {}
 
-  private async latchPrivateAssetReferences(post: {
+  async latchPrivateAssetReferences(post: {
     content?: string;
     profileId?: string;
     visibility?: string;
@@ -444,7 +444,7 @@ export class PostService {
       throw new Error('Post not found');
     }
 
-    if (!post.communityId && post.profileId !== profileId) {
+    if (!post.communityId && (post.profileId !== profileId || post.userId !== userId)) {
       throw new RpcException({
         statusCode: 403,
         message: 'You do not have permission to update this post',
@@ -532,13 +532,19 @@ export class PostService {
     return updated;
   }
 
-  async remove(id: string, userId: string): Promise<{ success: boolean }> {
+  async remove(id: string, userId: string, profileId?: string): Promise<{ success: boolean }> {
     console.log(`PostService.remove called for ID: ${id}`);
 
     // Get the post to check if it's a community post
     const post = await this.postRepo.findOne({ where: { id } });
     if (!post) {
       throw new Error('Post not found');
+    }
+
+    // Personal posts require both persisted owner identifiers to match the
+    // authenticated account context. Community policy remains unchanged.
+    if (!post.communityId && (post.userId !== userId || post.profileId !== profileId)) {
+      throw new RpcException({ statusCode: 403, message: 'You do not have permission to delete this post' });
     }
 
     // If it's a community post, check membership or moderator privileges

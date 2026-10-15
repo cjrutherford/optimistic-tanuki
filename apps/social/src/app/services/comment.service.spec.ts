@@ -462,19 +462,27 @@ describe('CommentService', () => {
   });
 
   describe('update', () => {
+    it('denies a comment edit when stored owner IDs do not match the actor', async () => {
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'other-user', profileId: 'other-profile' });
+      await expect(service.update('c1', { content: 'changed' }, 'actor-user', 'actor-profile')).rejects.toThrow('You do not have permission to update this comment');
+      expect(commentRepo.update).not.toHaveBeenCalled();
+    });
+
     it('should update a comment', async () => {
       commentRepo.update.mockResolvedValue(undefined);
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1', post: null });
       const dto: UpdateCommentDto = { content: 'updated' };
-      await service.update('c1', dto);
-      expect(commentRepo.update).toHaveBeenCalledWith('c1', dto);
+      await service.update('c1', dto, 'u1', 'p1');
+      expect(commentRepo.update).toHaveBeenCalledWith('c1', { content: 'updated' });
     });
 
     it('should sanitize content in update', async () => {
       commentRepo.update.mockResolvedValue(undefined);
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1', post: null });
       const dto: UpdateCommentDto = {
         content: '<strong>Hello</strong><script>alert(1)</script>',
       };
-      await service.update('c1', dto);
+      await service.update('c1', dto, 'u1', 'p1');
       expect(commentRepo.update).toHaveBeenCalledWith(
         'c1',
         expect.objectContaining({
@@ -485,9 +493,16 @@ describe('CommentService', () => {
   });
 
   describe('remove', () => {
+    it('denies a comment delete when stored owner IDs do not match the actor', async () => {
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'other-user', profileId: 'other-profile' });
+      await expect(service.remove('c1', 'actor-user', 'actor-profile')).rejects.toThrow('You do not have permission to delete this comment');
+      expect(commentRepo.delete).not.toHaveBeenCalled();
+    });
+
     it('should delete a comment', async () => {
       commentRepo.delete.mockResolvedValue(undefined);
-      await service.remove('c1');
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1' });
+      await service.remove('c1', 'u1', 'p1');
       expect(commentRepo.delete).toHaveBeenCalledWith('c1');
     });
   });
