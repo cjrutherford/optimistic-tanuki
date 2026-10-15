@@ -8,7 +8,11 @@ import { Post } from '../../entities/post.entity';
 import { GuardianContentService } from './guardian-content.service';
 
 describe('GuardianContentService', () => {
-  const profile = { id: 'dependent-profile', userId: 'dependent-user', appScope: 'client-interface' };
+  const profile = {
+    id: 'dependent-profile',
+    userId: 'dependent-user',
+    appScope: 'client-interface',
+  };
   let profileClient: { send: jest.Mock };
   let authClient: { send: jest.Mock };
   let postRepo: any;
@@ -18,7 +22,11 @@ describe('GuardianContentService', () => {
   let manager: any;
   let dataSource: any;
   let service: GuardianContentService;
-  let postService: { latchPrivateAssetReferences: jest.Mock };
+  let postService: {
+    latchPrivateAssetReferences: jest.Mock;
+    latchPostAndCommentAssetReferences: jest.Mock;
+    latchCommentAssetContent: jest.Mock;
+  };
   let transactionRollbackCount: number;
 
   beforeEach(() => {
@@ -39,14 +47,29 @@ describe('GuardianContentService', () => {
       save: jest.fn(async (row) => row),
     };
     commentRepo = {
-      create: jest.fn((row) => row), save: jest.fn(async (row) => row), find: jest.fn(async () => []),
-      findOne: jest.fn(async () => null), delete: jest.fn(async () => ({ affected: 0 })),
+      create: jest.fn((row) => row),
+      save: jest.fn(async (row) => row),
+      find: jest.fn(async () => []),
+      findOne: jest.fn(async () => null),
+      delete: jest.fn(async () => ({ affected: 0 })),
       remove: jest.fn(async (row) => row),
     };
     attachmentRepo = { delete: jest.fn(async () => ({ affected: 0 })) };
-    postService = { latchPrivateAssetReferences: jest.fn(async () => undefined) };
+    postService = {
+      latchPrivateAssetReferences: jest.fn(async () => undefined),
+      latchPostAndCommentAssetReferences: jest.fn(async () => undefined),
+      latchCommentAssetContent: jest.fn(async () => undefined),
+    };
     manager = {
-      getRepository: jest.fn((entity) => entity === Post ? postRepo : entity === GuardianContentAudit ? auditRepo : entity === Attachment ? attachmentRepo : commentRepo),
+      getRepository: jest.fn((entity) =>
+        entity === Post
+          ? postRepo
+          : entity === GuardianContentAudit
+          ? auditRepo
+          : entity === Attachment
+          ? attachmentRepo
+          : commentRepo
+      ),
     };
     dataSource = {
       transaction: jest.fn(async (work) => {
@@ -59,7 +82,12 @@ describe('GuardianContentService', () => {
       }),
       getRepository: jest.fn(),
     };
-    service = new GuardianContentService(dataSource, profileClient as any, authClient as any, postService as any);
+    service = new GuardianContentService(
+      dataSource,
+      profileClient as any,
+      authClient as any,
+      postService as any
+    );
   });
 
   it('derives the dependent owner and writes metadata only for a guardian create', async () => {
@@ -70,27 +98,149 @@ describe('GuardianContentService', () => {
       data: { title: 'A post', content: '<p>Hello</p>' },
     });
 
-    expect(profileClient.send).toHaveBeenCalledWith({ cmd: ProfileCommands.Get }, { id: 'dependent-profile' });
-    expect(authClient.send).toHaveBeenCalledWith({ cmd: AuthCommands.AuthorizeGuardianContentOperation }, {
-      actorUserId: 'guardian-user', dependentUserId: 'dependent-user', appId: 'client-interface', operation: 'content.manage',
+    expect(profileClient.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Get },
+      { id: 'dependent-profile' }
+    );
+    expect(authClient.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.AuthorizeGuardianContentOperation },
+      {
+        actorUserId: 'guardian-user',
+        dependentUserId: 'dependent-user',
+        appId: 'client-interface',
+        operation: 'content.manage',
+      }
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        userId: 'dependent-user',
+        profileId: 'dependent-profile',
+        appScope: 'client-interface',
+      })
+    );
+    expect(auditRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: 'guardian-user',
+        dependentUserId: 'dependent-user',
+        dependentProfileId: 'dependent-profile',
+        resourceType: 'post',
+        resourceId: 'post-1',
+        operation: 'create',
+        changedFields: ['content', 'title'],
+      })
+    );
+    expect(JSON.stringify(auditRepo.save.mock.calls[0][0])).not.toContain(
+      'Hello'
+    );
+  });
+
+  it('latches guardian-created post media before persisting a followers-only post', async () => {
+    await service.createPost({
+      actorUserId: 'guardian-user',
+      targetProfileId: profile.id,
+      appId: 'client-interface',
+      data: {
+        title: 'A post',
+        content: '<img src="/api/asset/asset-id">',
+        visibility: 'followers',
+      },
     });
-    expect(result).toEqual(expect.objectContaining({ userId: 'dependent-user', profileId: 'dependent-profile', appScope: 'client-interface' }));
-    expect(auditRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-      actorUserId: 'guardian-user', dependentUserId: 'dependent-user', dependentProfileId: 'dependent-profile',
-      resourceType: 'post', resourceId: 'post-1', operation: 'create', changedFields: ['content', 'title'],
-    }));
-    expect(JSON.stringify(auditRepo.save.mock.calls[0][0])).not.toContain('Hello');
+
+    expect(postService.latchPrivateAssetReferences).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: profile.id,
+        userId: profile.userId,
+        visibility: 'followers',
+        content: expect.stringContaining('/api/asset/asset-id'),
+      })
+    );
+    expect(
+      postService.latchPrivateAssetReferences.mock.invocationCallOrder[0]
+    ).toBeLessThan(postRepo.save.mock.invocationCallOrder[0]);
+  });
+
+  it('latches the old child-comment audience before a guardian makes its post public', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: 'post-1',
+      profileId: profile.id,
+      userId: profile.userId,
+      appScope: 'client-interface',
+      communityId: null,
+      moderationStatus: 'visible',
+      isScheduled: false,
+      scheduledAt: null,
+      visibility: 'followers',
+      content: 'old',
+    });
+
+    await service.updatePost({
+      actorUserId: 'guardian-user',
+      targetProfileId: profile.id,
+      appId: 'client-interface',
+      id: 'post-1',
+      data: { visibility: 'public' },
+    });
+
+    expect(
+      postService.latchPostAndCommentAssetReferences
+    ).toHaveBeenCalledTimes(1);
+    expect(postService.latchPostAndCommentAssetReferences).toHaveBeenCalledWith(
+      expect.objectContaining({ visibility: 'followers', id: 'post-1' })
+    );
+    expect(
+      postService.latchPostAndCommentAssetReferences.mock.invocationCallOrder[0]
+    ).toBeLessThan(postRepo.update.mock.invocationCallOrder[0]);
+  });
+
+  it('latches guardian-created comment media before saving the comment', async () => {
+    const parent = {
+      id: 'post-1',
+      profileId: profile.id,
+      userId: profile.userId,
+      appScope: 'client-interface',
+      communityId: null,
+      moderationStatus: 'visible',
+      isScheduled: false,
+      scheduledAt: null,
+      visibility: 'followers',
+      content: 'parent',
+    };
+    postRepo.findOne.mockResolvedValue(parent);
+
+    await service.createComment({
+      actorUserId: 'guardian-user',
+      targetProfileId: profile.id,
+      appId: 'client-interface',
+      data: { postId: parent.id, content: '<img src="/api/asset/asset-id">' },
+    });
+
+    expect(postService.latchCommentAssetContent).toHaveBeenCalledWith(
+      expect.stringContaining('/api/asset/asset-id'),
+      parent,
+      profile.id
+    );
+    expect(
+      postService.latchCommentAssetContent.mock.invocationCallOrder[0]
+    ).toBeLessThan(commentRepo.save.mock.invocationCallOrder[0]);
   });
 
   it('lists only visible, unscheduled personal posts', async () => {
-    await service.listPosts({ actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface' });
+    await service.listPosts({
+      actorUserId: 'guardian-user',
+      targetProfileId: profile.id,
+      appId: 'client-interface',
+    });
 
     const query = postRepo.find.mock.calls[0][0];
     expect(query.where).toHaveLength(2);
     for (const where of query.where) {
-      expect(where).toEqual(expect.objectContaining({
-        profileId: profile.id, moderationStatus: 'visible', isScheduled: false,
-      }));
+      expect(where).toEqual(
+        expect.objectContaining({
+          profileId: profile.id,
+          moderationStatus: 'visible',
+          isScheduled: false,
+        })
+      );
       expect(where.communityId).toBeDefined();
       expect(where.scheduledAt).toBeDefined();
     }
@@ -100,157 +250,303 @@ describe('GuardianContentService', () => {
 
   it('latches assets and deletes post children by the validated id before auditing the direct post delete', async () => {
     const post = {
-      id: 'post-1', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-      communityId: null, moderationStatus: 'visible', isScheduled: false, scheduledAt: null, content: 'post text',
+      id: 'post-1',
+      profileId: profile.id,
+      userId: profile.userId,
+      appScope: 'client-interface',
+      communityId: null,
+      moderationStatus: 'visible',
+      isScheduled: false,
+      scheduledAt: null,
+      content: 'post text',
     };
     postRepo.findOne.mockResolvedValue(post);
 
-    await expect(service.deletePost({
-      actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: 'post-1',
-    })).resolves.toEqual({ success: true });
+    await expect(
+      service.deletePost({
+        actorUserId: 'guardian-user',
+        targetProfileId: profile.id,
+        appId: 'client-interface',
+        id: 'post-1',
+      })
+    ).resolves.toEqual({ success: true });
 
-    expect(postService.latchPrivateAssetReferences).toHaveBeenCalledWith(post);
+    expect(postService.latchPostAndCommentAssetReferences).toHaveBeenCalledWith(
+      post
+    );
     expect(commentRepo.delete).toHaveBeenCalledWith({ post: { id: 'post-1' } });
-    expect(attachmentRepo.delete).toHaveBeenCalledWith({ post: { id: 'post-1' } });
+    expect(attachmentRepo.delete).toHaveBeenCalledWith({
+      post: { id: 'post-1' },
+    });
     expect(postRepo.delete).toHaveBeenCalledWith('post-1');
     expect(postRepo.remove).not.toHaveBeenCalled();
-    expect(auditRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-      resourceType: 'post', resourceId: 'post-1', operation: 'delete',
-    }));
+    expect(auditRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'post',
+        resourceId: 'post-1',
+        operation: 'delete',
+      })
+    );
   });
 
   it('keeps the validated comment id in the audit when TypeORM clears it during removal', async () => {
-    commentRepo.findOne.mockResolvedValue({
-      id: 'comment-1', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-      post: {
-        id: 'parent-post', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-        communityId: null, moderationStatus: 'visible', isScheduled: false, scheduledAt: null,
-      },
-    });
-    commentRepo.remove = jest.fn(async (comment) => { comment.id = undefined; return comment; });
-
-    await expect(service.deleteComment({
-      actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: 'comment-1',
-    })).resolves.toEqual({ success: true });
-
-    expect(auditRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-      resourceType: 'comment', resourceId: 'comment-1', operation: 'delete',
-    }));
-  });
-
-  it.each(['post', 'comment'] as const)('keeps %s removal and audit failure inside the transaction rollback path', async (kind) => {
     const parent = {
-      id: 'parent-post', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-      communityId: null, moderationStatus: 'visible', isScheduled: false, scheduledAt: null,
+      id: 'parent-post',
+      profileId: profile.id,
+      userId: profile.userId,
+      appScope: 'client-interface',
+      communityId: null,
+      moderationStatus: 'visible',
+      isScheduled: false,
+      scheduledAt: null,
     };
-    const post = { ...parent, id: 'post-1' };
-    const comment = { id: 'comment-1', profileId: profile.id, userId: profile.userId, appScope: 'client-interface', post };
-    const entity = kind === 'post' ? post : comment;
-    const expectedResourceId = entity.id;
-    const repo = kind === 'post' ? postRepo : commentRepo;
-    if (kind === 'post') postRepo.findOne.mockResolvedValue(post);
-    else {
-      commentRepo.findOne.mockResolvedValue(comment);
-      repo.remove = jest.fn(async (removed) => { removed.id = undefined; return removed; });
-    }
-    auditRepo.save.mockRejectedValueOnce(new Error('audit insert failed'));
+    commentRepo.findOne.mockResolvedValue({
+      id: 'comment-1',
+      profileId: profile.id,
+      userId: profile.userId,
+      appScope: 'client-interface',
+      post: parent,
+    });
+    postRepo.findOne.mockResolvedValue(parent);
+    commentRepo.remove = jest.fn(async (comment) => {
+      comment.id = undefined;
+      return comment;
+    });
 
-    await expect(kind === 'post'
-      ? service.deletePost({ actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: expectedResourceId })
-      : service.deleteComment({ actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: expectedResourceId })
-    ).rejects.toThrow('audit insert failed');
+    await expect(
+      service.deleteComment({
+        actorUserId: 'guardian-user',
+        targetProfileId: profile.id,
+        appId: 'client-interface',
+        id: 'comment-1',
+      })
+    ).resolves.toEqual({ success: true });
 
-    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
-    expect(kind === 'post' ? postRepo.delete : commentRepo.remove).toHaveBeenCalledTimes(1);
-    expect(auditRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-      resourceType: kind, resourceId: expectedResourceId, operation: 'delete',
-    }));
-    expect(transactionRollbackCount).toBe(1);
+    expect(auditRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'comment',
+        resourceId: 'comment-1',
+        operation: 'delete',
+      })
+    );
   });
+
+  it.each(['post', 'comment'] as const)(
+    'keeps %s removal and audit failure inside the transaction rollback path',
+    async (kind) => {
+      const parent = {
+        id: 'parent-post',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        communityId: null,
+        moderationStatus: 'visible',
+        isScheduled: false,
+        scheduledAt: null,
+      };
+      const post = { ...parent, id: 'post-1' };
+      const comment = {
+        id: 'comment-1',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        post,
+      };
+      const entity = kind === 'post' ? post : comment;
+      const expectedResourceId = entity.id;
+      const repo = kind === 'post' ? postRepo : commentRepo;
+      if (kind === 'post') postRepo.findOne.mockResolvedValue(post);
+      else {
+        commentRepo.findOne.mockResolvedValue(comment);
+        postRepo.findOne.mockResolvedValue(parent);
+        repo.remove = jest.fn(async (removed) => {
+          removed.id = undefined;
+          return removed;
+        });
+      }
+      auditRepo.save.mockRejectedValueOnce(new Error('audit insert failed'));
+
+      await expect(
+        kind === 'post'
+          ? service.deletePost({
+              actorUserId: 'guardian-user',
+              targetProfileId: profile.id,
+              appId: 'client-interface',
+              id: expectedResourceId,
+            })
+          : service.deleteComment({
+              actorUserId: 'guardian-user',
+              targetProfileId: profile.id,
+              appId: 'client-interface',
+              id: expectedResourceId,
+            })
+      ).rejects.toThrow('audit insert failed');
+
+      expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(
+        kind === 'post' ? postRepo.delete : commentRepo.remove
+      ).toHaveBeenCalledTimes(1);
+      expect(auditRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: kind,
+          resourceId: expectedResourceId,
+          operation: 'delete',
+        })
+      );
+      expect(transactionRollbackCount).toBe(1);
+    }
+  );
 
   it('rejects caller-supplied owner, actor, and scope fields before profile or database access', async () => {
-    await expect(service.createPost({
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile', appId: 'client-interface',
-      data: { title: 'A post', content: 'Hello', userId: 'forged-user', profileId: 'forged-profile', appScope: 'local-hub' },
-    })).rejects.toMatchObject({ message: expect.stringContaining('Guardian content payload') });
+    await expect(
+      service.createPost({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        data: {
+          title: 'A post',
+          content: 'Hello',
+          userId: 'forged-user',
+          profileId: 'forged-profile',
+          appScope: 'local-hub',
+        },
+      })
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('Guardian content payload'),
+    });
     expect(profileClient.send).not.toHaveBeenCalled();
     expect(authClient.send).not.toHaveBeenCalled();
     expect(postRepo.save).not.toHaveBeenCalled();
   });
 
   it('rejects a profile from a different verified app context', async () => {
-    await expect(service.listPosts({ actorUserId: 'guardian-user', targetProfileId: 'dependent-profile', appId: 'local-hub' }))
-      .rejects.toThrow('Guardian content target profile does not match the verified application');
+    await expect(
+      service.listPosts({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'local-hub',
+      })
+    ).rejects.toThrow(
+      'Guardian content target profile does not match the verified application'
+    );
     expect(authClient.send).not.toHaveBeenCalled();
   });
 
   it.each([
     { statusCode: 403, code: 'GUARDIAN_CONTENT_ACCESS_DENIED' },
-    new RpcException({ statusCode: 403, code: 'GUARDIAN_CONTENT_ACCESS_DENIED' }),
-  ])('preserves only the known guardian content denial as a structured 403', async (denial) => {
-    authClient.send.mockReturnValue(throwError(() => denial));
-
-    let caught: unknown;
-    try {
-      await service.listPosts({ actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface' });
-    } catch (error) {
-      caught = error;
-    }
-
-    expect(caught).toBeInstanceOf(RpcException);
-    expect((caught as RpcException).getError()).toEqual({
+    new RpcException({
       statusCode: 403,
       code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
-      message: 'Guardian content access denied',
-    });
-  });
+    }),
+  ])(
+    'preserves only the known guardian content denial as a structured 403',
+    async (denial) => {
+      authClient.send.mockReturnValue(throwError(() => denial));
+
+      let caught: unknown;
+      try {
+        await service.listPosts({
+          actorUserId: 'guardian-user',
+          targetProfileId: profile.id,
+          appId: 'client-interface',
+        });
+      } catch (error) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(RpcException);
+      expect((caught as RpcException).getError()).toEqual({
+        statusCode: 403,
+        code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
+        message: 'Guardian content access denied',
+      });
+    }
+  );
 
   it('leaves unclassified authorization failures unchanged for 5xx handling', async () => {
     const failure = new Error('Authentication service unavailable');
     authClient.send.mockReturnValue(throwError(() => failure));
 
-    await expect(service.listPosts({
-      actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface',
-    })).rejects.toBe(failure);
+    await expect(
+      service.listPosts({
+        actorUserId: 'guardian-user',
+        targetProfileId: profile.id,
+        appId: 'client-interface',
+      })
+    ).rejects.toBe(failure);
   });
 
   it.each([
     ['hidden', { moderationStatus: 'hidden' }],
     ['scheduled', { isScheduled: true }],
-  ])('does not return a comment when its parent post is %s', async (_name, parentOverrides) => {
-    const parent = {
-      id: 'parent-post', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-      communityId: null, moderationStatus: 'visible', isScheduled: false, scheduledAt: null,
-      ...parentOverrides,
-    };
-    commentRepo.findOne.mockResolvedValue({
-      id: 'comment-1', profileId: profile.id, userId: profile.userId,
-      appScope: 'client-interface', post: parent,
-    });
-    postRepo.findOne.mockResolvedValue(parent);
+  ])(
+    'does not return a comment when its parent post is %s',
+    async (_name, parentOverrides) => {
+      const parent = {
+        id: 'parent-post',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        communityId: null,
+        moderationStatus: 'visible',
+        isScheduled: false,
+        scheduledAt: null,
+        ...parentOverrides,
+      };
+      commentRepo.findOne.mockResolvedValue({
+        id: 'comment-1',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        post: parent,
+      });
+      postRepo.findOne.mockResolvedValue(parent);
 
-    await expect(service.getComment({
-      actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: 'comment-1',
-    })).rejects.toThrow('Guardian comments require a visible personal post owned by the dependent');
+      await expect(
+        service.getComment({
+          actorUserId: 'guardian-user',
+          targetProfileId: profile.id,
+          appId: 'client-interface',
+          id: 'comment-1',
+        })
+      ).rejects.toThrow(
+        'Guardian comments require a visible personal post owned by the dependent'
+      );
 
-    expect(authClient.send).not.toHaveBeenCalled();
-    expect(auditRepo.save).not.toHaveBeenCalled();
-  });
+      expect(authClient.send).not.toHaveBeenCalled();
+      expect(auditRepo.save).not.toHaveBeenCalled();
+    }
+  );
 
   it.each(['getPost', 'updatePost', 'deletePost'] as const)(
-    'does not allow %s to bypass post visibility eligibility', async (operation) => {
+    'does not allow %s to bypass post visibility eligibility',
+    async (operation) => {
       postRepo.findOne.mockResolvedValue({
-        id: 'post-1', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-        communityId: null, moderationStatus: 'hidden', isScheduled: false, scheduledAt: null,
+        id: 'post-1',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        communityId: null,
+        moderationStatus: 'hidden',
+        isScheduled: false,
+        scheduledAt: null,
       });
-      const input = { actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: 'post-1' };
+      const input = {
+        actorUserId: 'guardian-user',
+        targetProfileId: profile.id,
+        appId: 'client-interface',
+        id: 'post-1',
+      };
 
-      await expect(operation === 'getPost'
-        ? service.getPost(input)
-        : operation === 'updatePost'
+      await expect(
+        operation === 'getPost'
+          ? service.getPost(input)
+          : operation === 'updatePost'
           ? service.updatePost({ ...input, data: { title: 'updated' } })
           : service.deletePost(input)
-      ).rejects.toThrow('Guardian content requires a visible personal post owned by the dependent');
+      ).rejects.toThrow(
+        'Guardian content requires a visible personal post owned by the dependent'
+      );
 
       expect(authClient.send).not.toHaveBeenCalled();
       expect(auditRepo.save).not.toHaveBeenCalled();
@@ -260,24 +556,42 @@ describe('GuardianContentService', () => {
   );
 
   it.each(['getComment', 'updateComment', 'deleteComment'] as const)(
-    'does not allow %s to bypass parent post visibility eligibility', async (operation) => {
+    'does not allow %s to bypass parent post visibility eligibility',
+    async (operation) => {
       const hiddenParent = {
-        id: 'parent-post', profileId: profile.id, userId: profile.userId, appScope: 'client-interface',
-        communityId: null, moderationStatus: 'hidden', isScheduled: false, scheduledAt: null,
+        id: 'parent-post',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        communityId: null,
+        moderationStatus: 'hidden',
+        isScheduled: false,
+        scheduledAt: null,
       };
       commentRepo.findOne.mockResolvedValue({
-        id: 'comment-1', profileId: profile.id, userId: profile.userId,
-        appScope: 'client-interface', post: hiddenParent,
+        id: 'comment-1',
+        profileId: profile.id,
+        userId: profile.userId,
+        appScope: 'client-interface',
+        post: hiddenParent,
       });
       postRepo.findOne.mockResolvedValue(hiddenParent);
-      const input = { actorUserId: 'guardian-user', targetProfileId: profile.id, appId: 'client-interface', id: 'comment-1' };
+      const input = {
+        actorUserId: 'guardian-user',
+        targetProfileId: profile.id,
+        appId: 'client-interface',
+        id: 'comment-1',
+      };
 
-      await expect(operation === 'getComment'
-        ? service.getComment(input)
-        : operation === 'updateComment'
+      await expect(
+        operation === 'getComment'
+          ? service.getComment(input)
+          : operation === 'updateComment'
           ? service.updateComment({ ...input, data: { content: 'updated' } })
           : service.deleteComment(input)
-      ).rejects.toThrow('Guardian comments require a visible personal post owned by the dependent');
+      ).rejects.toThrow(
+        'Guardian comments require a visible personal post owned by the dependent'
+      );
 
       expect(authClient.send).not.toHaveBeenCalled();
       expect(auditRepo.save).not.toHaveBeenCalled();

@@ -45,17 +45,29 @@ export class PostService {
   ) {}
 
   async latchPrivateAssetReferences(post: {
+    id?: string;
     content?: string;
+    attachments?: Array<{ filePath?: string }>;
     profileId?: string;
     visibility?: string;
     communityId?: string;
     publicAudienceExplicit?: boolean;
   }): Promise<void> {
+    const persistedAttachments = post.id
+      ? (await this.attachmentRepo.find({
+          where: { post: { id: post.id } },
+        })) ?? []
+      : [];
+    const content = [
+      post.content ?? '',
+      ...(post.attachments ?? []).map((item) => item.filePath ?? ''),
+      ...persistedAttachments.map((item) => item.filePath ?? ''),
+    ].join('\n');
     // Older clients emitted /asset/:id while current clients use /api/asset/:id.
     // Both forms must latch before a content mutation can remove the first read path.
     const ids = [
       ...new Set(
-        (post.content ?? '')
+        content
           .match(
             /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi
           )
@@ -71,6 +83,9 @@ export class PostService {
     const isPrivate =
       post.visibility === 'followers' ||
       post.visibility === 'community' ||
+      (post.visibility === 'public' &&
+        post.publicAudienceExplicit === false &&
+        !!post.communityId) ||
       !!community?.isPrivate;
     for (const id of ids) {
       const asset = await firstValueFrom(
@@ -102,7 +117,14 @@ export class PostService {
       if (!compatibleRestrictions || !compatibleCommunities) {
         throw new Error('Asset audience is narrower than this post audience');
       }
-      if (asset.profileId !== post.profileId) continue;
+      if (asset.profileId !== post.profileId) {
+        if (isPrivate) {
+          throw new RpcException(
+            'Restricted posts cannot contain another profile’s image'
+          );
+        }
+        continue;
+      }
       if (isPrivate && post.visibility === 'followers') {
         await firstValueFrom(
           this.assetService
@@ -158,16 +180,6 @@ export class PostService {
   private async getCommentAssetReferences(
     post: Post
   ): Promise<Array<{ id: string; profileId: string }>> {
-    const community = post.communityId
-      ? await this.communityService.findOne(post.communityId)
-      : undefined;
-    const memberOnly =
-      post.visibility === 'community' ||
-      (post.visibility === 'public' &&
-        post.publicAudienceExplicit === false &&
-        !!post.communityId) ||
-      !!community?.isPrivate;
-    if (post.visibility !== 'followers' && !memberOnly) return [];
     const comments =
       (await this.commentRepo.find({
         where: { post: { id: post.id } },
@@ -184,22 +196,6 @@ export class PostService {
         ),
       ];
       for (const id of ids) {
-        if (!this.assetService)
-          throw new Error('Asset audience service unavailable');
-        const asset = await firstValueFrom(
-          this.assetService
-            .send({ cmd: AssetCommands.RETRIEVE }, { id })
-            .pipe(timeout({ first: 5000 }))
-        );
-        // Only the commenter can authorize narrowing their asset. Reject the
-        // parent change rather than silently privatizing a third party's URL.
-        if (asset.profileId !== comment.profileId) {
-          throw new RpcException({
-            statusCode: 400,
-            message:
-              'Restricted posts cannot contain another profile’s comment image',
-          });
-        }
         references.push({ id, profileId: comment.profileId });
       }
     }
@@ -210,21 +206,82 @@ export class PostService {
     post: Post,
     references: Array<{ id: string; profileId: string }>
   ): Promise<void> {
+    const community = post.communityId
+      ? await this.communityService.findOne(post.communityId)
+      : undefined;
+    const memberOnly =
+      post.visibility === 'community' ||
+      (post.visibility === 'public' &&
+        post.publicAudienceExplicit === false &&
+        !!post.communityId);
+    const privateCommunity = !!community?.isPrivate;
+    if (post.visibility !== 'followers' && !memberOnly && !privateCommunity)
+      return;
     if (references.length && !this.assetService) {
       throw new Error('Asset audience service unavailable');
     }
     for (const { id, profileId } of references) {
-      const restriction =
-        post.visibility === 'followers'
-          ? { type: 'followers', profileId: post.profileId }
-          : { type: 'community', profileId, communityId: post.communityId };
+      const asset = await firstValueFrom(
+        this.assetService!.send({ cmd: AssetCommands.RETRIEVE }, { id }).pipe(
+          timeout({ first: 5000 })
+        )
+      );
+      // Only the commenter can authorize narrowing their asset. Reject the
+      // parent change rather than silently privatizing a third party's URL.
+      if (asset.profileId !== profileId) {
+        throw new RpcException({
+          statusCode: 400,
+          message:
+            'Restricted posts cannot contain another profile’s comment image',
+        });
+      }
+      const restrictions: Array<Record<string, string>> = [];
+      if (post.visibility === 'followers' && post.profileId) {
+        restrictions.push({ type: 'followers', profileId: post.profileId });
+      }
+      if ((memberOnly || privateCommunity) && post.communityId) {
+        restrictions.push({
+          type: 'community',
+          profileId,
+          communityId: post.communityId,
+        });
+      }
       await firstValueFrom(
         this.assetService!.send(
           { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
-          { id, restrictions: [restriction] }
+          { id, restrictions }
         ).pipe(timeout({ first: 5000 }))
       );
+      if (privateCommunity) {
+        await firstValueFrom(
+          this.assetService!.send(
+            { cmd: AssetCommands.ADD_COMMUNITY_AUDIENCE },
+            { id, communityId: post.communityId }
+          ).pipe(timeout({ first: 5000 }))
+        );
+      }
     }
+  }
+
+  async latchCommentAssetContent(
+    content: string,
+    post: Post,
+    commenterProfileId: string
+  ): Promise<void> {
+    const pattern =
+      /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi;
+    const references = [
+      ...new Set(
+        (content.match(pattern) ?? []).map((match) => match.split('/').pop()!)
+      ),
+    ].map((id) => ({ id, profileId: commenterProfileId }));
+    await this.latchCommentAssetReferences(post, references);
+  }
+
+  async latchPostAndCommentAssetReferences(post: Post): Promise<void> {
+    await this.latchPrivateAssetReferences(post);
+    const references = await this.getCommentAssetReferences(post);
+    await this.latchCommentAssetReferences(post, references);
   }
 
   private sanitizeContent(content: string): string {
@@ -288,14 +345,12 @@ export class PostService {
       publicAudienceExplicit:
         !!createPostDto.communityId && visibility === 'public',
     };
-    await this.latchPrivateAssetReferences(normalizedDto);
-
     // Sanitize content before saving
     const sanitizedDto = {
       ...normalizedDto,
       content: this.sanitizeContent(normalizedDto.content || ''),
     };
-    const post = this.postRepo.create(sanitizedDto);
+    const post = (this.postRepo.create(sanitizedDto) ?? sanitizedDto) as Post;
 
     if (createPostDto.attachmentIds && createPostDto.attachmentIds.length > 0) {
       const attachments = await this.attachmentRepo.findBy({
@@ -303,6 +358,8 @@ export class PostService {
       });
       post.attachments = attachments;
     }
+
+    await this.latchPrivateAssetReferences(post);
 
     return await this.postRepo.save(post);
   }
@@ -426,6 +483,48 @@ export class PostService {
       }
     }
 
+    // Attachments hold the same URL references as post HTML. Include them in
+    // the live policy result even before a mutation has persisted a latch.
+    const attachmentCandidates =
+      (await this.attachmentRepo.find({
+        where: { filePath: Like(`%/asset/${assetId}%`) },
+        relations: ['post'],
+      })) ?? [];
+    for (const attachment of attachmentCandidates) {
+      if (!exactReference.test(attachment.filePath ?? '') || !attachment.post)
+        continue;
+      const parent = attachment.post;
+      if (parent.profileId !== assetProfileId) continue;
+      if (parent.visibility === 'followers' && parent.profileId) {
+        restrictions.set(`followers:${parent.profileId}`, {
+          type: 'followers',
+          profileId: parent.profileId,
+        });
+      }
+      if (
+        (parent.visibility === 'community' ||
+          (parent.visibility === 'public' &&
+            parent.publicAudienceExplicit === false)) &&
+        parent.profileId &&
+        parent.communityId
+      ) {
+        restrictions.set(
+          `community:${parent.profileId}:${parent.communityId}`,
+          {
+            type: 'community',
+            profileId: parent.profileId,
+            communityId: parent.communityId,
+          }
+        );
+      }
+      if (parent.communityId) {
+        const community = await this.communityService.findOne(
+          parent.communityId
+        );
+        if (community?.isPrivate) communityIds.add(parent.communityId);
+      }
+    }
+
     return {
       restrictions: [...restrictions.values()],
       communityIds: [...communityIds],
@@ -438,157 +537,179 @@ export class PostService {
     userId: string,
     profileId?: string
   ): Promise<Post> {
-    // Get the post to check if it's a community post
-    const post = await this.postRepo.findOne({ where: { id } });
-    if (!post) {
-      throw new Error('Post not found');
-    }
-
-    if (!post.communityId && (post.profileId !== profileId || post.userId !== userId)) {
-      throw new RpcException({
-        statusCode: 403,
-        message: 'You do not have permission to update this post',
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const post = await postRepo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
       });
-    }
+      if (!post) throw new Error('Post not found');
 
-    // If it's a community post, check membership or moderator privileges
-    if (post.communityId) {
-      const hasPermission = await this.communityService.hasPermission(
-        post.communityId,
-        userId,
-        [
-          CommunityMemberRole.OWNER,
-          CommunityMemberRole.ADMIN,
-          CommunityMemberRole.MODERATOR,
-        ]
-      );
-      const isMember = await this.communityService.isMember(
-        post.communityId,
-        userId
-      );
-
-      // Allow if user is a moderator OR if user is the post author (who is also a member)
-      if (!hasPermission && (!isMember || post.userId !== userId)) {
+      if (
+        !post.communityId &&
+        (post.profileId !== profileId || post.userId !== userId)
+      ) {
         throw new RpcException({
           statusCode: 403,
           message: 'You do not have permission to update this post',
         });
       }
-    }
 
-    if (
-      updatePostDto.communityId !== undefined &&
-      updatePostDto.communityId !== post.communityId
-    ) {
-      throw new Error('A post cannot be moved between communities');
-    }
-    if (updatePostDto.visibility === 'community' && !post.communityId) {
-      throw new Error('Community audience requires a community post');
-    }
-    if (
-      updatePostDto.visibility !== undefined &&
-      !['public', 'followers', 'community'].includes(updatePostDto.visibility)
-    ) {
-      throw new Error('Invalid post audience');
-    }
+      // If it's a community post, check membership or moderator privileges
+      if (post.communityId) {
+        const hasPermission = await this.communityService.hasPermission(
+          post.communityId,
+          userId,
+          [
+            CommunityMemberRole.OWNER,
+            CommunityMemberRole.ADMIN,
+            CommunityMemberRole.MODERATOR,
+          ]
+        );
+        const isMember = await this.communityService.isMember(
+          post.communityId,
+          userId
+        );
 
-    // Sanitize content if provided
-    const updatedAudiencePost = {
-      ...post,
-      ...updatePostDto,
-      content: updatePostDto.content ?? post.content,
-      profileId: post.profileId,
-    } as Post;
-    const commentAssetReferences = await this.getCommentAssetReferences(
-      updatedAudiencePost
-    );
-    await this.latchPrivateAssetReferences(post);
-    await this.latchPrivateAssetReferences(updatedAudiencePost);
-    await this.latchCommentAssetReferences(
-      updatedAudiencePost,
-      commentAssetReferences
-    );
-    const sanitizedDto: Partial<Post> = {
-      ...(updatePostDto.title !== undefined
-        ? { title: updatePostDto.title }
-        : {}),
-      ...(updatePostDto.visibility !== undefined
-        ? {
-            visibility: updatePostDto.visibility,
-            publicAudienceExplicit:
-              !!post.communityId && updatePostDto.visibility === 'public',
-          }
-        : { publicAudienceExplicit: post.publicAudienceExplicit ?? false }),
-    };
-    if (updatePostDto.content) {
-      sanitizedDto.content = this.sanitizeContent(updatePostDto.content);
-    }
-    await this.postRepo.update(id, sanitizedDto);
+        // Allow if user is a moderator OR if user is the post author (who is also a member)
+        if (!hasPermission && (!isMember || post.userId !== userId)) {
+          throw new RpcException({
+            statusCode: 403,
+            message: 'You do not have permission to update this post',
+          });
+        }
+      }
 
-    const updated = await this.postRepo.findOne({ where: { id } });
-    if (!updated) {
-      throw new Error('Post not found after update');
-    }
-    return updated;
+      if (
+        updatePostDto.communityId !== undefined &&
+        updatePostDto.communityId !== post.communityId
+      ) {
+        throw new Error('A post cannot be moved between communities');
+      }
+      if (updatePostDto.visibility === 'community' && !post.communityId) {
+        throw new Error('Community audience requires a community post');
+      }
+      if (
+        updatePostDto.visibility !== undefined &&
+        !['public', 'followers', 'community'].includes(updatePostDto.visibility)
+      ) {
+        throw new Error('Invalid post audience');
+      }
+
+      // Sanitize content if provided
+      const updatedAudiencePost = {
+        ...post,
+        ...updatePostDto,
+        content: updatePostDto.content ?? post.content,
+        profileId: post.profileId,
+      } as Post;
+      await this.latchPostAndCommentAssetReferences(post);
+      if (
+        updatedAudiencePost.visibility !== 'public' ||
+        updatedAudiencePost.content !== post.content
+      ) {
+        await this.latchPostAndCommentAssetReferences(updatedAudiencePost);
+      }
+      const sanitizedDto: Partial<Post> = {
+        ...(updatePostDto.title !== undefined
+          ? { title: updatePostDto.title }
+          : {}),
+        ...(updatePostDto.visibility !== undefined
+          ? {
+              visibility: updatePostDto.visibility,
+              publicAudienceExplicit:
+                !!post.communityId && updatePostDto.visibility === 'public',
+            }
+          : { publicAudienceExplicit: post.publicAudienceExplicit ?? false }),
+      };
+      if (updatePostDto.content) {
+        sanitizedDto.content = this.sanitizeContent(updatePostDto.content);
+      }
+      await postRepo.update(id, sanitizedDto);
+
+      const updated = await postRepo.findOne({ where: { id } });
+      if (!updated) {
+        throw new Error('Post not found after update');
+      }
+      return updated;
+    });
   }
 
-  async remove(id: string, userId: string, profileId?: string): Promise<{ success: boolean }> {
+  async remove(
+    id: string,
+    userId: string,
+    profileId?: string
+  ): Promise<{ success: boolean }> {
     console.log(`PostService.remove called for ID: ${id}`);
-
-    // Get the post to check if it's a community post
-    const post = await this.postRepo.findOne({ where: { id } });
-    if (!post) {
-      throw new Error('Post not found');
-    }
-
-    // Personal posts require both persisted owner identifiers to match the
-    // authenticated account context. Community policy remains unchanged.
-    if (!post.communityId && (post.userId !== userId || post.profileId !== profileId)) {
-      throw new RpcException({ statusCode: 403, message: 'You do not have permission to delete this post' });
-    }
-
-    // If it's a community post, check membership or moderator privileges
-    if (post.communityId) {
-      const hasPermission = await this.communityService.hasPermission(
-        post.communityId,
-        userId,
-        [
-          CommunityMemberRole.OWNER,
-          CommunityMemberRole.ADMIN,
-          CommunityMemberRole.MODERATOR,
-        ]
-      );
-      const isMember = await this.communityService.isMember(
-        post.communityId,
-        userId
-      );
-
-      // Allow if user is a moderator OR if user is the post author (who is also a member)
-      if (!hasPermission && (!isMember || post.userId !== userId)) {
-        throw new Error('You do not have permission to delete this post');
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const commentRepo = manager.getRepository(Comment);
+      const attachmentRepo = manager.getRepository(Attachment);
+      // Get the post to check if it's a community post
+      const post = await postRepo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!post) {
+        throw new Error('Post not found');
       }
-    }
 
-    await this.latchPrivateAssetReferences(post);
+      // Personal posts require both persisted owner identifiers to match the
+      // authenticated account context. Community policy remains unchanged.
+      if (
+        !post.communityId &&
+        (post.userId !== userId || post.profileId !== profileId)
+      ) {
+        throw new RpcException({
+          statusCode: 403,
+          message: 'You do not have permission to delete this post',
+        });
+      }
 
-    // Delete related entities first to avoid foreign key constraint errors
-    try {
-      // Remove comments associated with this post
-      await this.commentRepo.delete({ post: { id } });
+      // If it's a community post, check membership or moderator privileges
+      if (post.communityId) {
+        const hasPermission = await this.communityService.hasPermission(
+          post.communityId,
+          userId,
+          [
+            CommunityMemberRole.OWNER,
+            CommunityMemberRole.ADMIN,
+            CommunityMemberRole.MODERATOR,
+          ]
+        );
+        const isMember = await this.communityService.isMember(
+          post.communityId,
+          userId
+        );
 
-      // Remove attachments associated with this post
-      await this.attachmentRepo.delete({ post: { id } });
+        // Allow if user is a moderator OR if user is the post author (who is also a member)
+        if (!hasPermission && (!isMember || post.userId !== userId)) {
+          throw new Error('You do not have permission to delete this post');
+        }
+      }
 
-      // Finally, remove the post itself
-      await this.postRepo.delete(id);
+      await this.latchPostAndCommentAssetReferences(post);
 
-      console.log(`PostService.remove completed for ID: ${id}`);
-      return { success: true };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Error in PostService.remove for ID ${id}: ${message}`);
-      throw error;
-    }
+      // Delete related entities first to avoid foreign key constraint errors
+      try {
+        // Remove comments associated with this post
+        await commentRepo.delete({ post: { id } });
+
+        // Remove attachments associated with this post
+        await attachmentRepo.delete({ post: { id } });
+
+        // Finally, remove the post itself
+        await postRepo.delete(id);
+
+        console.log(`PostService.remove completed for ID: ${id}`);
+        return { success: true };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Error in PostService.remove for ID ${id}: ${message}`);
+        throw error;
+      }
+    });
   }
 
   async getPosts(searchDto: SearchPostDto): Promise<Post[]> {
@@ -660,6 +781,7 @@ export class PostService {
       post.attachments = attachments;
     }
 
+    await this.latchPrivateAssetReferences(post);
     return await this.postRepo.save(post);
   }
 
@@ -685,17 +807,24 @@ export class PostService {
   }
 
   async publishScheduledPost(id: string): Promise<Post> {
-    const post = await this.postRepo.findOne({ where: { id } });
-    if (!post || !post.isScheduled) {
-      throw new Error('Scheduled post not found');
-    }
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const post = await postRepo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!post || !post.isScheduled) {
+        throw new Error('Scheduled post not found');
+      }
 
-    await this.postRepo.update(id, {
-      isScheduled: false,
-      scheduledAt: null,
+      await this.latchPostAndCommentAssetReferences(post);
+      await postRepo.update(id, {
+        isScheduled: false,
+        scheduledAt: null,
+      });
+
+      return await postRepo.findOne({ where: { id } });
     });
-
-    return await this.postRepo.findOne({ where: { id } });
   }
 
   async updateScheduledPost(
@@ -708,13 +837,28 @@ export class PostService {
       communityId?: string;
     }
   ): Promise<Post> {
-    const post = await this.postRepo.findOne({ where: { id } });
-    if (!post || !post.isScheduled) {
-      throw new Error('Scheduled post not found');
-    }
+    return this.postRepo.manager.transaction(async (manager) => {
+      const postRepo = manager.getRepository(Post);
+      const post = await postRepo.findOne({
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!post || !post.isScheduled) {
+        throw new Error('Scheduled post not found');
+      }
 
-    await this.postRepo.update(id, data);
-    return await this.postRepo.findOne({ where: { id } });
+      const updatedAudiencePost = { ...post, ...data } as Post;
+      await this.latchPostAndCommentAssetReferences(post);
+      if (
+        updatedAudiencePost.visibility !== 'public' ||
+        updatedAudiencePost.content !== post.content
+      ) {
+        await this.latchPostAndCommentAssetReferences(updatedAudiencePost);
+      }
+
+      await postRepo.update(id, data);
+      return await postRepo.findOne({ where: { id } });
+    });
   }
 
   async deleteScheduledPost(id: string): Promise<void> {

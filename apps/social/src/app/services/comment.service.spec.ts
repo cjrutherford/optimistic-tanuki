@@ -72,7 +72,9 @@ describe('CommentService', () => {
       delete: jest.fn(),
     };
     postRepo = {
-      findOne: jest.fn(),
+      findOne: jest.fn(
+        async (options: any) => ({ id: options?.where?.id } as Post)
+      ),
     };
     assetService = {
       send: jest.fn((pattern: { cmd: string }) =>
@@ -88,6 +90,14 @@ describe('CommentService', () => {
       postRepo as Repository<Post>,
       assetService as any
     );
+    const transactionManager = {
+      getRepository: jest.fn((entity) =>
+        entity === Post ? postRepo : commentRepo
+      ),
+    };
+    (postRepo as any).manager = {
+      transaction: jest.fn((work) => work(transactionManager)),
+    };
   });
 
   it('should be defined', () => {
@@ -122,6 +132,7 @@ describe('CommentService', () => {
       const result = await service.create(dto);
       expect(postRepo.findOne).toHaveBeenCalledWith({
         where: { id: dto.postId },
+        lock: { mode: 'pessimistic_write' },
       });
       expect(commentRepo.create).toHaveBeenCalledWith({ ...dto, post });
       expect(commentRepo.save).toHaveBeenCalledWith(created);
@@ -262,6 +273,43 @@ describe('CommentService', () => {
       postRepo.findOne.mockRejectedValue(new Error('fail'));
       await expect(service.create(dto)).rejects.toThrow(RpcException);
     });
+  });
+
+  it('latches a restricted parent comment image before deleting the comment', async () => {
+    const assetId = '123e4567-e89b-42d3-a456-426614174000';
+    const parent = {
+      id: 'parent-post',
+      profileId: 'parent-author-profile',
+      visibility: 'followers',
+      communityId: null,
+    } as Post;
+    const comment = {
+      id: 'comment-1',
+      userId: 'commenter-user',
+      profileId: 'commenter-profile',
+      content: `<img src="/api/asset/${assetId}">`,
+      post: parent,
+    } as Comment;
+    (postRepo.findOne as jest.Mock).mockResolvedValue(parent);
+    (commentRepo.findOne as jest.Mock).mockResolvedValue(comment);
+    (commentRepo.delete as jest.Mock).mockResolvedValue({ affected: 1 });
+
+    await expect(
+      service.remove('comment-1', 'commenter-user', 'commenter-profile')
+    ).resolves.toEqual({ success: true });
+
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.ADD_AUDIENCE_RESTRICTIONS },
+      {
+        id: assetId,
+        restrictions: [
+          { type: 'followers', profileId: 'parent-author-profile' },
+        ],
+      }
+    );
+    expect(assetService.send.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      (commentRepo.delete as jest.Mock).mock.invocationCallOrder[0]
+    );
   });
 
   describe('findAll', () => {
@@ -463,22 +511,47 @@ describe('CommentService', () => {
 
   describe('update', () => {
     it('denies a comment edit when stored owner IDs do not match the actor', async () => {
-      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'other-user', profileId: 'other-profile' });
-      await expect(service.update('c1', { content: 'changed' }, 'actor-user', 'actor-profile')).rejects.toThrow('You do not have permission to update this comment');
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'c1',
+        userId: 'other-user',
+        profileId: 'other-profile',
+      });
+      await expect(
+        service.update(
+          'c1',
+          { content: 'changed' },
+          'actor-user',
+          'actor-profile'
+        )
+      ).rejects.toThrow('You do not have permission to update this comment');
       expect(commentRepo.update).not.toHaveBeenCalled();
     });
 
     it('should update a comment', async () => {
       commentRepo.update.mockResolvedValue(undefined);
-      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1', post: null });
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'c1',
+        userId: 'u1',
+        profileId: 'p1',
+        content: 'old',
+        post: { id: 'parent-1', visibility: 'public', communityId: null },
+      });
       const dto: UpdateCommentDto = { content: 'updated' };
       await service.update('c1', dto, 'u1', 'p1');
-      expect(commentRepo.update).toHaveBeenCalledWith('c1', { content: 'updated' });
+      expect(commentRepo.update).toHaveBeenCalledWith('c1', {
+        content: 'updated',
+      });
     });
 
     it('should sanitize content in update', async () => {
       commentRepo.update.mockResolvedValue(undefined);
-      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1', post: null });
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'c1',
+        userId: 'u1',
+        profileId: 'p1',
+        content: 'old',
+        post: { id: 'parent-1', visibility: 'public', communityId: null },
+      });
       const dto: UpdateCommentDto = {
         content: '<strong>Hello</strong><script>alert(1)</script>',
       };
@@ -494,14 +567,26 @@ describe('CommentService', () => {
 
   describe('remove', () => {
     it('denies a comment delete when stored owner IDs do not match the actor', async () => {
-      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'other-user', profileId: 'other-profile' });
-      await expect(service.remove('c1', 'actor-user', 'actor-profile')).rejects.toThrow('You do not have permission to delete this comment');
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'c1',
+        userId: 'other-user',
+        profileId: 'other-profile',
+      });
+      await expect(
+        service.remove('c1', 'actor-user', 'actor-profile')
+      ).rejects.toThrow('You do not have permission to delete this comment');
       expect(commentRepo.delete).not.toHaveBeenCalled();
     });
 
     it('should delete a comment', async () => {
       commentRepo.delete.mockResolvedValue(undefined);
-      (commentRepo.findOne as jest.Mock).mockResolvedValue({ id: 'c1', userId: 'u1', profileId: 'p1' });
+      (commentRepo.findOne as jest.Mock).mockResolvedValue({
+        id: 'c1',
+        userId: 'u1',
+        profileId: 'p1',
+        content: 'body',
+        post: { id: 'parent-1', visibility: 'public', communityId: null },
+      });
       await service.remove('c1', 'u1', 'p1');
       expect(commentRepo.delete).toHaveBeenCalledWith('c1');
     });
