@@ -291,6 +291,14 @@ describe('PostComponent', () => {
     expect(component.canEdit()).toBe(true);
   });
 
+  it('only enables the guardian edit affordance through explicit mode without changing the signed-in identity', () => {
+    component.currentUserId = 'guardian-user';
+    expect(component.canEdit()).toBe(false);
+    component.guardianManagementMode = true;
+    expect(component.canEdit()).toBe(true);
+    expect(component.currentUserId).toBe('guardian-user');
+  });
+
   it('keeps an opt-in controlled draft through pending, failure, and unrelated content refreshes', () => {
     component.saveState = { status: 'idle', requestId: 0 };
     component.startEdit();

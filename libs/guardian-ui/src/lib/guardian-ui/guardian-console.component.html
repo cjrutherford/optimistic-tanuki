@@ -1,0 +1,356 @@
+<main class="guardian-console" aria-labelledby="guardian-title">
+  <header class="page-heading">
+    <p class="eyebrow">Shared guardian controls</p>
+    <h1 id="guardian-title">Guardian account</h1>
+    <p>
+      Choose a linked teen account to view or manage its eligible profile,
+      personal content, and private staged media. You remain signed in as
+      yourself.
+    </p>
+  </header>
+
+  <lib-guardian-notice audience="guardian"></lib-guardian-notice>
+
+  <p class="feedback" role="status" aria-live="polite" *ngIf="message">
+    {{ message }}
+  </p>
+  <p class="error" role="alert" *ngIf="error">{{ error }}</p>
+
+  <div class="layout">
+    <aside class="dependent-list" aria-labelledby="dependents-title">
+      <div class="section-heading">
+        <h2 id="dependents-title">Linked accounts</h2>
+        <button type="button" (click)="loadDependents()" [disabled]="loading">
+          Refresh
+        </button>
+      </div>
+      <p *ngIf="loading" role="status">Loading linked accounts…</p>
+      <p *ngIf="!loading && !dependents.length && !error">
+        No linked teen accounts are available.
+      </p>
+      <button
+        class="dependent"
+        type="button"
+        *ngFor="let dependent of dependents"
+        (click)="selectDependent(dependent)"
+        [attr.aria-pressed]="selected?.profileId === dependent.profileId"
+      >
+        <img *ngIf="dependent.profilePic" [src]="dependent.profilePic" alt="" />
+        <span
+          ><strong>{{ dependent.profileName }}</strong
+          ><small>Permission active · linked across both apps</small></span
+        >
+      </button>
+    </aside>
+
+    <section
+      class="workspace"
+      *ngIf="selected as dependent"
+      aria-labelledby="selected-title"
+    >
+      <header class="section-heading selected-heading">
+        <div>
+          <p class="eyebrow">Permission active</p>
+          <h2 id="selected-title">{{ dependent.profileName }}</h2>
+          <p>
+            Changes are made by your guardian account. No teen credentials are
+            used.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="danger"
+          (click)="withdrawConfirm = true; withdrawAcknowledged = false"
+          [disabled]="busy"
+        >
+          Withdraw permission
+        </button>
+      </header>
+      <otui-modal
+        [visible]="withdrawConfirm"
+        [ariaLabel]="'Confirm withdrawal of guardian permission'"
+        (close)="closeWithdrawal()"
+      >
+        <h3 modal-title id="withdraw-title">End guardian access?</h3>
+        <p>
+          Withdrawal disables the teen account in both Optimistic Tanuki and
+          Towne Square, revokes its sessions, and ends your access to this
+          account.
+        </p>
+        <label
+          ><input type="checkbox" [(ngModel)]="withdrawAcknowledged" /> I
+          understand that access ends in both apps.</label
+        >
+        <div class="actions">
+          <button type="button" (click)="closeWithdrawal()" [disabled]="busy">
+            Keep permission</button
+          ><button
+            type="button"
+            class="danger"
+            (click)="withdraw()"
+            [disabled]="busy || !withdrawAcknowledged"
+          >
+            {{ busy ? 'Withdrawing…' : 'Confirm withdrawal' }}
+          </button>
+        </div>
+      </otui-modal>
+      <nav class="section-tabs" aria-label="Guardian controls">
+        <button
+          type="button"
+          [class.active]="activeSection === 'overview'"
+          (click)="activeSection = 'overview'"
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSection === 'profile'"
+          (click)="activeSection = 'profile'"
+        >
+          Profile and settings
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSection === 'content'"
+          (click)="activeSection = 'content'"
+        >
+          Posts and comments
+        </button>
+        <button
+          type="button"
+          [class.active]="activeSection === 'media'"
+          (click)="activeSection = 'media'"
+        >
+          Media library
+        </button>
+      </nav>
+
+      <p *ngIf="!profile && !error" role="status">
+        Loading this linked account…
+      </p>
+      <section *ngIf="profile && activeSection === 'overview'" class="panel">
+        <h3>Linked account controls</h3>
+        <p>
+          Permission is active across both apps until withdrawal or the teen
+          turns 18.
+        </p>
+        <ul>
+          <li>
+            Profile and settings: view and update the profile fields available
+            here.
+          </li>
+          <li>
+            Posts and comments: limited to eligible visible personal posts and
+            dependent-owned comments.
+          </li>
+          <li>
+            Media library: uploads remain private until explicitly selected for
+            publication in a post.
+          </li>
+        </ul>
+        <button type="button" (click)="activeSection = 'profile'">
+          Open profile and settings
+        </button>
+      </section>
+
+      <section *ngIf="profile && activeSection === 'profile'" class="panel">
+        <h3>Profile and settings</h3>
+        <p>
+          Only profile details supported by the existing delegated profile
+          editor are shown.
+        </p>
+        <div class="profile-preview">
+          <img *ngIf="profile.profilePic" [src]="profile.profilePic" alt="" />
+          <div>
+            <strong>{{ profile.profileName }}</strong>
+            <p>{{ profile.bio || profile.description }}</p>
+          </div>
+        </div>
+        <button type="button" (click)="openEditor()" [disabled]="busy">
+          Edit profile
+        </button>
+        <lib-profile-editor
+          [open]="editorOpen"
+          [profile]="editorProfile"
+          [defaultName]="profile.profileName"
+          [externalSaveState]="profileSaveState"
+          (updateProfile)="saveProfile($event)"
+          (closeEditor)="editorOpen = false"
+        ></lib-profile-editor>
+      </section>
+
+      <section *ngIf="profile && activeSection === 'content'" class="panel">
+        <h3>Eligible personal posts and comments</h3>
+        <p>
+          Community, moderated, hidden, and scheduled content is outside this
+          delegated view.
+        </p>
+        <form class="post-form" (ngSubmit)="publishPost()">
+          <h4>Create a personal post</h4>
+          <label for="post-title">Post title</label
+          ><input
+            id="post-title"
+            name="title"
+            [(ngModel)]="postTitle"
+            maxlength="500"
+            required
+          /><label for="post-body">Post text</label
+          ><textarea
+            id="post-body"
+            name="body"
+            [(ngModel)]="postText"
+            maxlength="50000"
+            rows="4"
+          ></textarea
+          ><label for="post-visibility">Who can see this post?</label
+          ><select
+            id="post-visibility"
+            name="visibility"
+            [(ngModel)]="postVisibility"
+            required
+          >
+            <option value="">Choose an audience</option>
+            <option value="public">Public</option>
+            <option value="followers">Followers</option>
+          </select>
+          <fieldset *ngIf="assets.length">
+            <legend>Select staged media to publish with this post</legend>
+            <label class="asset-choice" *ngFor="let asset of assets"
+              ><input
+                type="checkbox"
+                [checked]="selectedAssetIds.has(asset.id)"
+                (change)="toggleAsset(asset.id, $any($event.target).checked)"
+              />
+              {{ asset.name }}</label
+            >
+          </fieldset>
+          <div class="actions">
+            <button
+              type="submit"
+              [disabled]="
+                busy ||
+                !postVisibility ||
+                (!postText.trim() && !selectedAssetIds.size)
+              "
+            >
+              {{ busy ? 'Publishing…' : 'Publish post' }}
+            </button>
+          </div>
+        </form>
+        <article class="post" *ngFor="let post of posts">
+          <lib-post
+            [content]="socialPost(post)"
+            [profile]="postProfile"
+            [currentUserId]="''"
+            [guardianManagementMode]="true"
+            [canDelete]="true"
+            (postUpdated)="updatePost(post, $event)"
+            (postDeleted)="deletePost(post)"
+          ></lib-post>
+          <div class="actions">
+            <button type="button" (click)="loadComments(post)">
+              Load comments
+            </button>
+          </div>
+          <ul *ngIf="commentsByPost[post.id]" class="comments">
+            <li *ngFor="let comment of commentsByPost[post.id]">
+              <div class="comment-copy">
+                <textarea
+                  *ngIf="editingCommentId === comment.id"
+                  [attr.aria-label]="'Edit comment on ' + post.title"
+                  [(ngModel)]="commentDrafts[comment.id]"
+                  rows="2"
+                ></textarea
+                ><span *ngIf="editingCommentId !== comment.id">{{
+                  comment.content
+                }}</span>
+                <div class="actions" *ngIf="editingCommentId === comment.id">
+                  <button
+                    type="button"
+                    (click)="updateComment(post.id, comment.id)"
+                    [disabled]="busy"
+                  >
+                    Save comment</button
+                  ><button type="button" (click)="editingCommentId = null">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" (click)="editComment(comment)">
+                  Edit</button
+                ><button
+                  type="button"
+                  class="danger"
+                  (click)="deleteComment(post.id, comment.id)"
+                  [disabled]="busy"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          </ul>
+          <form class="comment-form" (ngSubmit)="createComment(post.id)">
+            <label [attr.for]="'comment-' + post.id"
+              >Add a comment as guardian</label
+            ><textarea
+              [id]="'comment-' + post.id"
+              [name]="'comment-' + post.id"
+              [(ngModel)]="commentDrafts[post.id]"
+              maxlength="10000"
+              rows="2"
+            ></textarea
+            ><button
+              type="submit"
+              [disabled]="busy || !commentDrafts[post.id]?.trim()"
+            >
+              Add comment
+            </button>
+          </form>
+        </article>
+        <p *ngIf="!posts.length">
+          No eligible visible personal posts are available.
+        </p>
+      </section>
+
+      <section *ngIf="profile && activeSection === 'media'" class="panel">
+        <h3>Private staged media</h3>
+        <p>
+          Uploads remain private. To publish a staged image, select it while
+          creating a post. Only selected media referenced by that post is
+          published.
+        </p>
+        <label for="guardian-upload">Upload media</label
+        ><input
+          id="guardian-upload"
+          type="file"
+          accept="image/*,video/*,audio/*,.pdf"
+          (change)="uploadAsset($event)"
+          [disabled]="busy"
+        />
+        <ul class="assets">
+          <li *ngFor="let asset of assets">
+            <span class="asset-name"
+              ><img
+                *ngIf="asset.type === 'image'"
+                [src]="asset.url"
+                [alt]="'Preview of ' + asset.name"
+              /><span
+                >{{ asset.name }} · {{ asset.type }}
+                <span class="private-badge">Private until selected</span></span
+              ></span
+            ><button
+              class="danger"
+              type="button"
+              (click)="deleteAsset(asset)"
+              [disabled]="busy"
+            >
+              Remove
+            </button>
+          </li>
+        </ul>
+        <p *ngIf="!assets.length">No private staged media is available.</p>
+      </section>
+    </section>
+  </div>
+</main>

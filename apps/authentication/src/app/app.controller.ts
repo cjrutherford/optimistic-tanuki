@@ -16,7 +16,10 @@ import {
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { EmailAuthService, AuthEmailContext } from './email-auth.service';
 import { AuthActionPurpose } from '../email-auth/entities/auth-action-token.entity';
-import { GuardianPermissionService, GuardianPermissionContext } from '../guardian-permissions/guardian-permission.service';
+import {
+  GuardianPermissionService,
+  GuardianPermissionContext,
+} from '../guardian-permissions/guardian-permission.service';
 
 @Controller()
 export class AppController {
@@ -92,10 +95,15 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.RequestGuardianPermission })
-  requestGuardianPermission(@Payload() data: {
-    dateOfBirth: string; applicantEmail: string; guardianEmail: string;
-    context: GuardianPermissionContext;
-  }) {
+  requestGuardianPermission(
+    @Payload()
+    data: {
+      dateOfBirth: string;
+      applicantEmail: string;
+      guardianEmail: string;
+      context: GuardianPermissionContext;
+    }
+  ) {
     return this.guardianPermissions.requestPermission({
       dateOfBirth: data.dateOfBirth,
       applicantEmail: data.applicantEmail,
@@ -105,10 +113,21 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.AttestGuardianPermission })
-  attestGuardianPermission(@Payload() data: {
-    token: string; guardianUserId: string; attested: true; attestationVersion: string; dateOfBirth?: string;
-  }) {
-    return this.guardianPermissions.attestAsGuardian(data.token, data.guardianUserId, data);
+  attestGuardianPermission(
+    @Payload()
+    data: {
+      token: string;
+      guardianUserId: string;
+      attested: true;
+      attestationVersion: string;
+      dateOfBirth?: string;
+    }
+  ) {
+    return this.guardianPermissions.attestAsGuardian(
+      data.token,
+      data.guardianUserId,
+      data
+    );
   }
 
   @MessagePattern({ cmd: AuthCommands.ValidateGuardianResume })
@@ -122,31 +141,54 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.CheckGuardianAccess })
-  async checkGuardianAccess(@Payload() data: { userId: string; appId?: string }) {
+  async checkGuardianAccess(
+    @Payload() data: { userId: string; appId?: string }
+  ) {
     await this.guardianPermissions.assertAccountAccess(data.userId, data.appId);
     return { allowed: true };
   }
 
   @MessagePattern({ cmd: AuthCommands.AuthorizeGuardianProfileOperation })
-  async authorizeGuardianProfileOperation(@Payload() data: {
-    actorUserId: string;
-    dependentUserId: string;
-    appId: string;
-    operation: string;
-  }) {
+  async authorizeGuardianProfileOperation(
+    @Payload()
+    data: {
+      actorUserId: string;
+      dependentUserId: string;
+      appId: string;
+      operation: string;
+    }
+  ) {
     await this.guardianPermissions.assertDelegatedProfileAccess(data);
     return { allowed: true };
   }
 
   @MessagePattern({ cmd: AuthCommands.AuthorizeGuardianContentOperation })
-  async authorizeGuardianContentOperation(@Payload() data: {
-    actorUserId: string;
-    dependentUserId: string;
-    appId: string;
-    operation: string;
-  }) {
+  async authorizeGuardianContentOperation(
+    @Payload()
+    data: {
+      actorUserId: string;
+      dependentUserId: string;
+      appId: string;
+      operation: string;
+    }
+  ) {
     await this.guardianPermissions.assertDelegatedContentAccess(data);
     return { allowed: true };
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ListGuardianDependents })
+  listGuardianDependents(@Payload() data: { guardianUserId: string }) {
+    return this.guardianPermissions.listGuardianDependents(data.guardianUserId);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermissionForGuardian })
+  withdrawGuardianPermissionForGuardian(
+    @Payload() data: { guardianUserId: string; dependentUserId: string }
+  ) {
+    return this.guardianPermissions.withdrawForGuardian(
+      data.guardianUserId,
+      data.dependentUserId
+    );
   }
 
   @MessagePattern({ cmd: AuthCommands.WithdrawGuardianPermission })
@@ -205,11 +247,19 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Login })
-  async login(@Payload() data: LoginRequest & {
-    profileId: string; appId?: string;
-    ageAssessment?: { dateOfBirth?: string; guardianEmail?: string; context: GuardianPermissionContext };
-    deferSession?: boolean;
-  }) {
+  async login(
+    @Payload()
+    data: LoginRequest & {
+      profileId: string;
+      appId?: string;
+      ageAssessment?: {
+        dateOfBirth?: string;
+        guardianEmail?: string;
+        context: GuardianPermissionContext;
+      };
+      deferSession?: boolean;
+    }
+  ) {
     try {
       const missingFields = validateRequiredFields<LoginRequest>(data, [
         'email',
@@ -254,7 +304,8 @@ export class AppController {
         );
       }
 
-      const { email, fn, ln, password, confirm, bio, ageEligibilityStatus } = data;
+      const { email, fn, ln, password, confirm, bio, ageEligibilityStatus } =
+        data;
       const userReg = await this.appService.registerUser(
         email,
         fn,
@@ -342,7 +393,10 @@ export class AppController {
         );
       }
       const { token } = data;
-      const tokenValidation = await this.appService.validateToken(token, data.appId);
+      const tokenValidation = await this.appService.validateToken(
+        token,
+        data.appId
+      );
       return tokenValidation;
     } catch (e) {
       if (e instanceof RpcException) {
@@ -353,7 +407,9 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AuthCommands.Issue })
-  async issue(@Payload() data: { userId: string; profileId?: string; appId?: string }) {
+  async issue(
+    @Payload() data: { userId: string; profileId?: string; appId?: string }
+  ) {
     try {
       const { userId, profileId } = data;
       if (!userId) throw new RpcException('userId is required');

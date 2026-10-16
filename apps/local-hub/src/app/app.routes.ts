@@ -180,6 +180,14 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'guardian',
+    loadComponent: () =>
+      import('@optimistic-tanuki/guardian-ui').then(
+        (m) => m.GuardianConsoleComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'profile',
     loadComponent: () =>
       import('./pages/profile/profile.component').then(

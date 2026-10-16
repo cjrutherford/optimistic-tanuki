@@ -46,7 +46,10 @@ import {
 import { PersonaTelosDto } from '@optimistic-tanuki/telos-contracts';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
-import { GuardianProfileFields, GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
+import {
+  GuardianProfileFields,
+  GuardianProfileRequestDto,
+} from '@optimistic-tanuki/profile-contracts';
 import { firstValueFrom, map } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
@@ -99,7 +102,9 @@ export class ProfileController {
     return authenticatedProfileId;
   }
 
-  private verifiedGuardianApp(user: UserDetails): 'client-interface' | 'local-hub' {
+  private verifiedGuardianApp(
+    user: UserDetails
+  ): 'client-interface' | 'local-hub' {
     if (
       !user?.userId ||
       !user.appId ||
@@ -117,20 +122,67 @@ export class ProfileController {
     try {
       return await firstValueFrom(this.client.send({ cmd: command }, request));
     } catch (error) {
-      const details = typeof (error as any)?.getError === 'function'
-        ? (error as any).getError()
-        : error;
+      const details =
+        typeof (error as any)?.getError === 'function'
+          ? (error as any).getError()
+          : error;
       if (
         details?.statusCode === 403 ||
         details?.code === 'GUARDIAN_PROFILE_ACCESS_DENIED'
       ) {
         throw new ForbiddenException('Guardian profile access is unavailable');
       }
-      if (details?.statusCode === 400 || details?.code === 'INVALID_GUARDIAN_PROFILE_UPDATE') {
-        throw new BadRequestException('The profile update contains unsupported fields');
+      if (
+        details?.statusCode === 400 ||
+        details?.code === 'INVALID_GUARDIAN_PROFILE_UPDATE'
+      ) {
+        throw new BadRequestException(
+          'The profile update contains unsupported fields'
+        );
       }
       throw error;
     }
+  }
+
+  @Get('dependents')
+  async listGuardianDependents(@User() user: UserDetails) {
+    const appId = this.verifiedGuardianApp(user);
+    const dependents = await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ListGuardianDependents },
+        { guardianUserId: user.userId }
+      )
+    );
+    const listed = await Promise.all(
+      (Array.isArray(dependents) ? dependents : []).map(
+        async (dependent: { dependentUserId: string; status: string }) => {
+          const profile = await firstValueFrom(
+            this.client.send(
+              { cmd: ProfileCommands.GetGuardianConsoleProfile },
+              { userId: dependent.dependentUserId, appScope: appId }
+            )
+          );
+          if (
+            !profile?.id ||
+            profile.userId !== dependent.dependentUserId ||
+            profile.appScope !== appId
+          )
+            return null;
+          return {
+            dependentUserId: dependent.dependentUserId,
+            profileId: profile.id,
+            profileName: profile.profileName || 'Dependent account',
+            profilePic: profile.profilePic || '',
+            coverPic: profile.coverPic || '',
+            status: 'approved' as const,
+          };
+        }
+      )
+    );
+    return listed.filter(
+      (dependent): dependent is NonNullable<typeof dependent> =>
+        dependent !== null
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -440,12 +492,31 @@ export class ProfileController {
     @User() user: UserDetails
   ) {
     const appId = this.verifiedGuardianApp(user);
-    return this.sendGuardianProfileRequest(ProfileCommands.GetGuardian, {
-      profileId,
-      actorUserId: user.userId,
-      appId,
-      operation: 'profile.view',
-    });
+    const profile = await this.sendGuardianProfileRequest(
+      ProfileCommands.GetGuardian,
+      {
+        profileId,
+        actorUserId: user.userId,
+        appId,
+        operation: 'profile.view',
+      }
+    );
+    return this.guardianProfileView(profile);
+  }
+
+  private guardianProfileView(profile: any) {
+    return {
+      id: profile.id,
+      profileName: profile.profileName || '',
+      profilePic: profile.profilePic || '',
+      coverPic: profile.coverPic || '',
+      bio: profile.bio || '',
+      description: profile.description || '',
+      location: profile.location || '',
+      occupation: profile.occupation || '',
+      interests: profile.interests || '',
+      skills: profile.skills || '',
+    };
   }
 
   @Put('dependents/:profileId')
@@ -456,29 +527,52 @@ export class ProfileController {
   ) {
     const appId = this.verifiedGuardianApp(user);
     const raw = body as Record<string, unknown>;
-    const protectedFields = ['id', 'userId', 'appScope', 'actorUserId', 'dependentUserId', 'dateOfBirth', 'ageEligibilityEndsAt'];
-    if (protectedFields.some((field) => Object.prototype.hasOwnProperty.call(raw, field))) {
-      throw new BadRequestException('The profile update contains unsupported fields');
+    const protectedFields = [
+      'id',
+      'userId',
+      'appScope',
+      'actorUserId',
+      'dependentUserId',
+      'dateOfBirth',
+      'ageEligibilityEndsAt',
+    ];
+    if (
+      protectedFields.some((field) =>
+        Object.prototype.hasOwnProperty.call(raw, field)
+      )
+    ) {
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
     }
     const allowed = new Set<string>(GuardianProfileFields);
     if (Object.keys(raw).some((field) => !allowed.has(field))) {
-      throw new BadRequestException('The profile update contains unsupported fields');
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
     }
     const updates = Object.fromEntries(
-      Object.entries(raw).filter(([key, value]) =>
-        allowed.has(key) && (value === null || typeof value === 'string')
+      Object.entries(raw).filter(
+        ([key, value]) =>
+          allowed.has(key) && (value === null || typeof value === 'string')
       )
     );
     if (Object.keys(updates).length !== Object.keys(raw).length) {
-      throw new BadRequestException('The profile update contains unsupported fields');
+      throw new BadRequestException(
+        'The profile update contains unsupported fields'
+      );
     }
-    return this.sendGuardianProfileRequest(ProfileCommands.UpdateGuardian, {
-      profileId,
-      actorUserId: user.userId,
-      appId,
-      operation: 'profile.manage',
-      updates,
-    });
+    const profile = await this.sendGuardianProfileRequest(
+      ProfileCommands.UpdateGuardian,
+      {
+        profileId,
+        actorUserId: user.userId,
+        appId,
+        operation: 'profile.manage',
+        updates,
+      }
+    );
+    return this.guardianProfileView(profile);
   }
 
   @UseGuards(AuthGuard)
@@ -533,7 +627,9 @@ export class ProfileController {
     @User() user: UserDetails
   ) {
     if (!user?.userId || !user?.appId) {
-      throw new ForbiddenException('Authenticated owner and app scope are required');
+      throw new ForbiddenException(
+        'Authenticated owner and app scope are required'
+      );
     }
     const profile: ProfileDto = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Get }, { id })
@@ -541,7 +637,9 @@ export class ProfileController {
     if (!profile) throw new NotFoundException('Profile not found');
     const raw = updateProfileDto as UpdateProfileDto & Record<string, unknown>;
     if (raw.id && raw.id !== id) {
-      throw new BadRequestException('Profile ID must match the requested resource');
+      throw new BadRequestException(
+        'Profile ID must match the requested resource'
+      );
     }
     if (
       profile.userId !== user.userId ||
@@ -550,7 +648,9 @@ export class ProfileController {
       (Object.prototype.hasOwnProperty.call(raw, 'appScope') &&
         raw.appScope !== profile.appScope)
     ) {
-      throw new ForbiddenException('Cannot update a profile outside the authenticated owner and app scope');
+      throw new ForbiddenException(
+        'Cannot update a profile outside the authenticated owner and app scope'
+      );
     }
     const fields = { ...updateProfileDto } as Record<string, unknown>;
     delete fields.id;
@@ -558,10 +658,9 @@ export class ProfileController {
     delete fields.appScope;
     delete fields.actorUserId;
     delete fields.dependentUserId;
-    return firstValueFrom(this.client.send(
-      { cmd: ProfileCommands.Update },
-      { id, ...fields }
-    ));
+    return firstValueFrom(
+      this.client.send({ cmd: ProfileCommands.Update }, { id, ...fields })
+    );
   }
 
   @UseGuards(AuthGuard)
@@ -573,10 +672,14 @@ export class ProfileController {
   })
   @ApiResponse({
     status: 403,
-    description: 'The profile is outside the authenticated owner and app scope.',
+    description:
+      'The profile is outside the authenticated owner and app scope.',
   })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
-  @ApiResponse({ status: 502, description: 'Profile ownership could not be verified.' })
+  @ApiResponse({
+    status: 502,
+    description: 'Profile ownership could not be verified.',
+  })
   @Delete(':id')
   @RequirePermissions('profile.delete')
   async deleteProfile(

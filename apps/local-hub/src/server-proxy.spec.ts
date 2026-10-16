@@ -3,7 +3,10 @@ import express from 'express';
 import { createServer, get, Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { createSocketIoProxyOptions } from './server-proxy';
+import {
+  createApiProxyOptions,
+  createSocketIoProxyOptions,
+} from './server-proxy';
 
 async function listen(server: Server): Promise<string> {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -47,5 +50,14 @@ describe('Local Hub Socket.IO proxy', () => {
         )
       );
     }
+  });
+});
+
+describe('Local Hub API proxy', () => {
+  it('preserves the registered browser host for Gateway origin authorization', () => {
+    const options = createApiProxyOptions('http://127.0.0.1:18880');
+    expect(options.target).toBe('http://127.0.0.1:18880/api');
+    expect(options.changeOrigin).toBe(false);
+    expect(options.xfwd).toBe(true);
   });
 });

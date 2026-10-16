@@ -47,6 +47,10 @@ describe('client HTTP interceptors', () => {
 
     it.each([
       ['/api/social/feed', 'social'],
+      [
+        '/api/social/guardian/content/profiles/profile-id/assets',
+        'client-interface',
+      ],
       ['/api/blog/posts', 'blogging'],
       ['/api/project/tasks', 'project-planning'],
       ['/api/profile/1', 'client-interface'],

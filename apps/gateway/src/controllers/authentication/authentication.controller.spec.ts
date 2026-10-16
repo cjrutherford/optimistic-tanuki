@@ -216,6 +216,28 @@ describe('AuthenticationController', () => {
     ).toContain(AuthGuard);
   });
 
+  it('withdraws a linked permission using the authenticated guardian identity, not request actor fields', async () => {
+    const user = { userId: 'session-guardian', appId: 'local-hub' } as any;
+    await controller.withdrawLinkedGuardianPermission(
+      {
+        dependentUserId: 'dependent-1',
+        guardianUserId: 'forged-guardian',
+        appId: 'client-interface',
+      } as any,
+      user
+    );
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.WithdrawGuardianPermissionForGuardian },
+      { guardianUserId: 'session-guardian', dependentUserId: 'dependent-1' }
+    );
+    expect(
+      Reflect.getMetadata(
+        '__guards__',
+        controller.withdrawLinkedGuardianPermission
+      )
+    ).toContain(AuthGuard);
+  });
+
   it.each([
     [{ code: 'GUARDIAN_TOKEN_INVALID' }, 400],
     [{ code: 'GUARDIAN_ATTESTATION_REQUIRED' }, 400],
@@ -756,6 +778,32 @@ describe('AuthenticationController', () => {
       'opportunity-compass',
       'opportunity-compass'
     );
+  });
+
+  it('maps a withdrawn guardian permission denial to 403 without bootstrapping a session', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      throwError(() => ({ code: 'GUARDIAN_PERMISSION_REQUIRED' }))
+    );
+    await expect(
+      controller.loginUser(
+        { email: 'minor@example.invalid', password: 'password' },
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
+    ).rejects.toMatchObject({
+      status: 403,
+      response: expect.objectContaining({
+        code: 'GUARDIAN_PERMISSION_REQUIRED',
+        message: expect.stringContaining(
+          'guardian permission is no longer active'
+        ),
+      }),
+    });
+    expect(loginBootstrap.login).not.toHaveBeenCalled();
   });
 
   it('should throw HttpException if loginUser fails', async () => {

@@ -9,7 +9,10 @@ import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
 import { createGatewaySessionValidator } from './server-session-validation';
 import { createProtectedRouteGate } from './server-route-guard';
-import { createSocketIoProxyOptions } from './server-proxy';
+import {
+  createApiProxyOptions,
+  createSocketIoProxyOptions,
+} from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
@@ -55,13 +58,7 @@ app.use(
   })
 );
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    changeOrigin: true,
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 app.use(createProtectedRouteGate({ validateSession: validateGatewaySession }));
 

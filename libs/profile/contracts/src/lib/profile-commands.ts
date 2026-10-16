@@ -2,6 +2,7 @@ export const ProfileCommands = {
   Create: 'Create:Profile',
   Update: 'Update:Profile',
   GetGuardian: 'Get:GuardianProfile',
+  GetGuardianConsoleProfile: 'Get:GuardianConsoleProfile',
   UpdateGuardian: 'Update:GuardianProfile',
   Delete: 'Delete:Profile',
   Get: 'Get:Profile',

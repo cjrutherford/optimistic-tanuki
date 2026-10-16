@@ -118,6 +118,8 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() attachments: AttachmentDto[] = [];
   @Input() links: LinkType[] = [];
   @Input() canDelete = false;
+  /** Enables the guardian scoped edit affordance; the server remains authoritative. */
+  @Input() guardianManagementMode = false;
   @Input() canFollow = false;
   @Input() isFollowing = false;
   @Input() isBlocked = false;
@@ -261,7 +263,8 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   canEdit(): boolean {
     return (
-      !!this.currentUserId && this.currentUserId === this.content?.profileId
+      this.guardianManagementMode ||
+      (!!this.currentUserId && this.currentUserId === this.content?.profileId)
     );
   }
 

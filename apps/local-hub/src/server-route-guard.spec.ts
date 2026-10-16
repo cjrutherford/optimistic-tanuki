@@ -101,6 +101,7 @@ describe('Express route protection policy', () => {
         '/seller-dashboard',
         '/messages',
         '/messages/new',
+        '/guardian',
         '/city/test-route-value/classifieds/new',
         '/c/test-route-value/classifieds/new',
       ])

@@ -65,6 +65,11 @@ import { BugReportUiComponent } from '@optimistic-tanuki/bug-report-ui';
 
 const AUTH_NAV_LINKS = [
   {
+    label: 'Guardian controls',
+    route: '/guardian',
+    description: 'View linked teen accounts and manage delegated access',
+  },
+  {
     label: 'Workspace',
     description: 'Core social workflow',
     children: [

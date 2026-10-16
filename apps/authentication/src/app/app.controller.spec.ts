@@ -62,6 +62,8 @@ describe('AppController', () => {
             attestAsGuardian: jest.fn(),
             resendApplicantContinuation: jest.fn(),
             assertDelegatedProfileAccess: jest.fn(),
+            listGuardianDependents: jest.fn(),
+            withdrawForGuardian: jest.fn(),
           },
         },
       ],
@@ -74,7 +76,10 @@ describe('AppController', () => {
   });
 
   it('does not forward a caller-supplied user id to public guardian requests', async () => {
-    guardianPermissions.requestPermission.mockResolvedValue({ pending: true, sent: true });
+    guardianPermissions.requestPermission.mockResolvedValue({
+      pending: true,
+      sent: true,
+    });
     const data = {
       dateOfBirth: '2010-01-01',
       applicantEmail: 'teen@example.invalid',
@@ -116,7 +121,9 @@ describe('AppController', () => {
   });
 
   it('routes delegated profile authorization through its dedicated RPC', async () => {
-    guardianPermissions.assertDelegatedProfileAccess.mockResolvedValue(undefined);
+    guardianPermissions.assertDelegatedProfileAccess.mockResolvedValue(
+      undefined
+    );
     const request = {
       actorUserId: 'session-guardian',
       dependentUserId: 'stored-profile-owner',
@@ -127,7 +134,41 @@ describe('AppController', () => {
     await expect(
       appController.authorizeGuardianProfileOperation(request)
     ).resolves.toEqual({ allowed: true });
-    expect(guardianPermissions.assertDelegatedProfileAccess).toHaveBeenCalledWith(request);
+    expect(
+      guardianPermissions.assertDelegatedProfileAccess
+    ).toHaveBeenCalledWith(request);
+  });
+
+  it('routes the authenticated guardian list command to the permission service', async () => {
+    const command = { guardianUserId: 'verified-guardian' };
+    guardianPermissions.listGuardianDependents.mockResolvedValue([
+      { dependentUserId: 'linked-dependent', status: 'approved' },
+    ]);
+    await expect(
+      appController.listGuardianDependents(command)
+    ).resolves.toEqual([
+      { dependentUserId: 'linked-dependent', status: 'approved' },
+    ]);
+    expect(guardianPermissions.listGuardianDependents).toHaveBeenCalledWith(
+      'verified-guardian'
+    );
+  });
+
+  it('routes linked withdrawal with the verified guardian and selected dependent IDs', async () => {
+    const command = {
+      guardianUserId: 'verified-guardian',
+      dependentUserId: 'linked-dependent',
+    };
+    guardianPermissions.withdrawForGuardian.mockResolvedValue({
+      revoked: true,
+    });
+    await expect(
+      appController.withdrawGuardianPermissionForGuardian(command)
+    ).resolves.toEqual({ revoked: true });
+    expect(guardianPermissions.withdrawForGuardian).toHaveBeenCalledWith(
+      'verified-guardian',
+      'linked-dependent'
+    );
   });
 
   it('passes the authenticated guardian id from the gateway command to the attestation service', async () => {
@@ -139,7 +180,9 @@ describe('AppController', () => {
       attestationVersion: 'guardian-attestation-v1',
       dateOfBirth: '2000-01-01',
     };
-    await expect(appController.attestGuardianPermission(command)).resolves.toEqual({
+    await expect(
+      appController.attestGuardianPermission(command)
+    ).resolves.toEqual({
       attested: true,
     });
     expect(guardianPermissions.attestAsGuardian).toHaveBeenCalledWith(

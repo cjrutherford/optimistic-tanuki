@@ -139,6 +139,11 @@ export class AppComponent implements OnInit, OnDestroy {
           isActive: currentUrl === '/account',
         },
         {
+          label: 'Guardian controls',
+          action: () => this.navigateTo('/guardian'),
+          isActive: currentUrl.startsWith('/guardian'),
+        },
+        {
           label: 'Logout',
           action: () => this.logout(),
         },

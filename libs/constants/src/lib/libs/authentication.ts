@@ -36,6 +36,9 @@ const AuthCommands = {
   CheckGuardianAccess: 'CheckGuardianAccess',
   AuthorizeGuardianProfileOperation: 'AuthorizeGuardianProfileOperation',
   AuthorizeGuardianContentOperation: 'AuthorizeGuardianContentOperation',
+  ListGuardianDependents: 'ListGuardianDependents',
+  WithdrawGuardianPermissionForGuardian:
+    'WithdrawGuardianPermissionForGuardian',
   WithdrawGuardianPermission: 'WithdrawGuardianPermission',
   WithdrawGuardianPermissionByToken: 'WithdrawGuardianPermissionByToken',
   ResendGuardianApplicantContinuation: 'ResendGuardianApplicantContinuation',

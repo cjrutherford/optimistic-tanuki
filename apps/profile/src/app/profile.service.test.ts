@@ -67,6 +67,31 @@ describe('ProfileService', () => {
     expect(service).toBeDefined();
   });
 
+  it('returns only safe guardian console identity fields from the exact app scope', async () => {
+    mockProfileRepository.findOne.mockResolvedValue({
+      id: 'profile-teen',
+      userId: 'teen-user',
+      appScope: 'local-hub',
+      profileName: 'Teen profile',
+      profilePic: 'avatar',
+      coverPic: 'cover',
+      email: 'private@example.invalid',
+    });
+    await expect(
+      service.getGuardianConsoleProfile('teen-user', 'local-hub')
+    ).resolves.toEqual({
+      id: 'profile-teen',
+      userId: 'teen-user',
+      appScope: 'local-hub',
+      profileName: 'Teen profile',
+      profilePic: 'avatar',
+      coverPic: 'cover',
+    });
+    expect(mockProfileRepository.findOne).toHaveBeenCalledWith({
+      where: { userId: 'teen-user', appScope: 'local-hub' },
+    });
+  });
+
   describe('guardian profile access', () => {
     const profile = {
       id: 'profile-1',
@@ -84,7 +109,9 @@ describe('ProfileService', () => {
 
     it('authorizes using the stored profile owner and audits a view before returning private fields', async () => {
       const auditRepository = { save: jest.fn().mockResolvedValue({}) };
-      const manager = { getRepository: jest.fn().mockReturnValue(auditRepository) };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(auditRepository),
+      };
       (repository as any).manager = {
         transaction: jest.fn(async (work: any) => work(manager)),
       };
@@ -130,26 +157,36 @@ describe('ProfileService', () => {
         findOne: jest.fn().mockResolvedValue(profile),
         update: jest.fn().mockResolvedValue({ affected: 1 }),
       };
-      const auditRepository = { save: jest.fn().mockRejectedValue(new Error('audit unavailable')) };
-      const manager = {
-        getRepository: jest.fn((entity: unknown) => entity === Profile ? profileRepository : auditRepository),
+      const auditRepository = {
+        save: jest.fn().mockRejectedValue(new Error('audit unavailable')),
       };
-      const transaction = jest.fn((work: (manager: any) => unknown) => work(manager));
+      const manager = {
+        getRepository: jest.fn((entity: unknown) =>
+          entity === Profile ? profileRepository : auditRepository
+        ),
+      };
+      const transaction = jest.fn((work: (manager: any) => unknown) =>
+        work(manager)
+      );
       (repository as any).manager = { transaction };
       mockAuthClient.send.mockReturnValue(of({ allowed: true }));
 
-      await expect(service.updateGuardianProfile({
-        ...request,
-        operation: 'profile.manage',
-        updates: { bio: 'changed' },
-      })).rejects.toThrow('audit unavailable');
+      await expect(
+        service.updateGuardianProfile({
+          ...request,
+          operation: 'profile.manage',
+          updates: { bio: 'changed' },
+        })
+      ).rejects.toThrow('audit unavailable');
       expect(transaction).toHaveBeenCalledTimes(1);
       expect(profileRepository.update).toHaveBeenCalled();
-      expect(auditRepository.save).toHaveBeenCalledWith(expect.objectContaining({
-        actorUserId: 'guardian-user',
-        dependentUserId: 'dependent-user',
-        changedFieldNames: ['bio'],
-      }));
+      expect(auditRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actorUserId: 'guardian-user',
+          dependentUserId: 'dependent-user',
+          changedFieldNames: ['bio'],
+        })
+      );
     });
 
     it('purges guardian activity at the inclusive 90-day retention boundary', async () => {
@@ -161,7 +198,12 @@ describe('ProfileService', () => {
 
       expect(deleteActivity).toHaveBeenCalledWith(
         expect.any(Function),
-        expect.objectContaining({ createdAt: expect.objectContaining({ type: 'lessThanOrEqual', value: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) }) })
+        expect.objectContaining({
+          createdAt: expect.objectContaining({
+            type: 'lessThanOrEqual',
+            value: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
+          }),
+        })
       );
     });
   });
@@ -188,9 +230,15 @@ describe('ProfileService', () => {
   it('never persists a caller supplied owner through the generic profile update RPC', async () => {
     const id = 'profile-owned';
     mockProfileRepository.update.mockResolvedValue({ affected: 1 });
-    mockProfileRepository.findOne.mockResolvedValue({ id, userId: 'owner' } as Profile);
+    mockProfileRepository.findOne.mockResolvedValue({
+      id,
+      userId: 'owner',
+    } as Profile);
 
-    await service.update(id, { id, userId: 'forged-owner' } as UpdateProfileDto);
+    await service.update(id, {
+      id,
+      userId: 'forged-owner',
+    } as UpdateProfileDto);
 
     expect(mockProfileRepository.update).toHaveBeenCalledWith(
       id,

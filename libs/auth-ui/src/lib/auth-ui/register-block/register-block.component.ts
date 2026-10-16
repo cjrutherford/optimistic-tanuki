@@ -13,6 +13,7 @@ import {
   OAuthButtonsComponent,
   OAuthProviderEvent,
 } from '../oauth-buttons/oauth-buttons.component';
+import { GuardianNoticeComponent } from '@optimistic-tanuki/guardian-ui';
 
 @Component({
   selector: 'lib-register-block',
@@ -24,6 +25,7 @@ import {
     ButtonComponent,
     TextInputComponent,
     OAuthButtonsComponent,
+    GuardianNoticeComponent,
   ],
   templateUrl: './register-block.component.html',
   styleUrls: ['./register-block.component.scss'],
@@ -85,12 +87,14 @@ export class RegisterBlockComponent extends Themeable {
     const value = this.registerForm.get('dateOfBirth')?.value;
     if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
     const dob = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== value) return;
+    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== value)
+      return;
     const today = new Date();
     let age = today.getUTCFullYear() - dob.getUTCFullYear();
     const beforeBirthday =
       today.getUTCMonth() < dob.getUTCMonth() ||
-      (today.getUTCMonth() === dob.getUTCMonth() && today.getUTCDate() < dob.getUTCDate());
+      (today.getUTCMonth() === dob.getUTCMonth() &&
+        today.getUTCDate() < dob.getUTCDate());
     if (beforeBirthday) age -= 1;
     if (age < 13) {
       this.registrationStep = 'blocked';

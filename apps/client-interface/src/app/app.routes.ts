@@ -167,6 +167,14 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard], // Protect the settings route
   },
   {
+    path: 'guardian',
+    loadComponent: () =>
+      import('@optimistic-tanuki/guardian-ui').then(
+        (m) => m.GuardianConsoleComponent
+      ),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'settings/privacy',
     loadComponent: () =>
       import('./components/settings/privacy-settings.component').then(

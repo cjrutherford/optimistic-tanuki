@@ -15,7 +15,11 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (
+  if (url.includes('/api/social/guardian/')) {
+    // Guardian content remains bound to the authenticated application even
+    // though its routes share the Social API prefix.
+    appScope = 'client-interface';
+  } else if (
     url.includes('/api/social') ||
     url.includes('/api/workspaces/communities')
   ) {

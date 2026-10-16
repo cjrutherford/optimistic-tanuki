@@ -1,0 +1,252 @@
+:host {
+  display: block;
+  color: var(--foreground, #18212b);
+}
+.guardian-console {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem);
+}
+.page-heading {
+  margin-bottom: 1.5rem;
+}
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+.eyebrow {
+  margin: 0 0 0.4rem;
+  color: #394174;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.panel,
+.dependent-list,
+.workspace,
+.withdraw {
+  background: var(--surface, #fff);
+  border: 1px solid
+    color-mix(in srgb, var(--foreground, #18212b) 14%, transparent);
+  border-radius: 1rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+.dependent-list {
+  position: sticky;
+  top: 1rem;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.dependent {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+.dependent[aria-pressed='true'],
+.dependent:hover {
+  background: var(--surface-muted, #f3f5f2);
+  border-color: var(--primary, #496b54);
+}
+.dependent img,
+.profile-preview img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.dependent span {
+  display: grid;
+  gap: 0.2rem;
+}
+.dependent small {
+  opacity: 0.75;
+}
+.workspace {
+  min-width: 0;
+}
+.selected-heading {
+  align-items: flex-start;
+}
+.selected-heading h2 {
+  margin-bottom: 0.25rem;
+}
+.section-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  border-bottom: 1px solid #ccd2cc;
+}
+button {
+  min-height: 2.65rem;
+  padding: 0.55rem 0.9rem;
+  color: inherit;
+  background: var(--surface, #fff);
+  border: 1px solid #89948a;
+  border-radius: 0.55rem;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  border-color: var(--primary, #496b54);
+}
+.section-tabs .active {
+  color: #fff;
+  background: var(--primary, #496b54);
+  border-color: var(--primary, #496b54);
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #e49b35;
+  outline-offset: 2px;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.danger {
+  color: #8d1e24;
+  border-color: #a43a40;
+}
+.withdraw {
+  margin: 0.8rem 0;
+  border-color: #a43a40;
+}
+.withdraw label {
+  display: block;
+  margin: 0.75rem 0;
+}
+.panel {
+  padding: 1rem 0;
+  border: 0;
+  border-radius: 0;
+}
+.panel > h3 {
+  margin-bottom: 0.4rem;
+}
+.profile-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.post-form,
+.comment-form {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface-muted, #f3f5f2);
+  border-radius: 0.7rem;
+}
+.post-form input,
+.post-form select,
+.post-form textarea,
+.comment-form textarea,
+.comment-copy textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.7rem;
+  font: inherit;
+}
+fieldset {
+  display: flex;
+  gap: 0.4rem 1rem;
+  flex-wrap: wrap;
+  border: 1px solid #aab3aa;
+  border-radius: 0.5rem;
+}
+.asset-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.post {
+  padding: 1rem 0;
+  border-top: 1px solid #ccd2cc;
+  overflow-wrap: anywhere;
+}
+.post > p {
+  white-space: pre-wrap;
+}
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.comments {
+  padding: 0;
+  list-style: none;
+}
+.comments li,
+.assets li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid #e0e4df;
+}
+.asset-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.asset-name img {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+.private-badge {
+  white-space: nowrap;
+  color: #555;
+  font-size: 0.85rem;
+}
+.feedback {
+  padding: 0.75rem;
+  background: #e7f3e8;
+}
+.error {
+  padding: 0.75rem;
+  color: #8d1e24;
+  background: #fff0f0;
+}
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .dependent-list {
+    position: static;
+  }
+  .selected-heading {
+    flex-direction: column;
+  }
+  .comments li,
+  .assets li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

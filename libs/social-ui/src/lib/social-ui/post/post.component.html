@@ -7,12 +7,17 @@
         [triggerLabel]="'...'"
         (click)="$event.stopPropagation()"
       >
-        <button class="dropdown-item" (click)="onProfileClick()">
+        <button
+          *ngIf="!guardianManagementMode"
+          class="dropdown-item"
+          (click)="onProfileClick()"
+        >
           View Profile
         </button>
         @if (canEdit()) {
         <button class="dropdown-item" (click)="startEdit()">Edit post</button>
-        } @if (profile.id !== currentUserId) { @if (canFollow) {
+        } @if (!guardianManagementMode && profile.id !== currentUserId) { @if
+        (canFollow) {
         <button class="dropdown-item" (click)="onFollowToggle()">
           {{ isFollowing ? 'Unfollow' : 'Follow' }}
         </button>
@@ -136,7 +141,7 @@
         }
       </otui-grid>
     </div>
-    }
+    } @if (!guardianManagementMode) {
     <div class="actions">
       <lib-vote
         [postId]="content.id"
@@ -167,10 +172,19 @@
         [imageUploadCallback]="commentImageUploadCallback"
       ></lib-comment>
     </div>
+    } @else if (canDelete) {
+    <div class="actions">
+      <otui-button variant="danger" (action)="onDelete()"
+        >Delete eligible post</otui-button
+      >
+    </div>
+    }
   </div>
+  @if (!guardianManagementMode) {
   <lib-comment-list
     [availableProfiles]="availableProfiles"
     (commentAdded)="onCommentReply($event)"
     [comments]="comments"
   ></lib-comment-list>
+  }
 </otui-card>

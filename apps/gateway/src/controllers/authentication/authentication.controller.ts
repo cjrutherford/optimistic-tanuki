@@ -273,6 +273,8 @@ export class AuthenticationController {
       'GUARDIAN_ATTESTATION_REQUIRED',
       'GUARDIAN_ADULT_REQUIRED',
       'GUARDIAN_TOKEN_USED',
+      'GUARDIAN_PERMISSION_REQUIRED',
+      'GUARDIAN_CONTROL_ACCESS_DENIED',
     ]);
     const pending: unknown[] = [error];
     const visited = new Set<object>();
@@ -302,6 +304,33 @@ export class AuthenticationController {
         { token: data.token }
       )
     );
+  }
+
+  @Post('guardian-consent/withdraw-linked')
+  @UseGuards(AuthGuard)
+  withdrawLinkedGuardianPermission(
+    @Body() data: { dependentUserId: string },
+    @User() user: UserDetails
+  ) {
+    if (
+      !user?.userId ||
+      !data?.dependentUserId ||
+      !['client-interface', 'local-hub'].includes(user.appId)
+    ) {
+      throw new ForbiddenException('Guardian control is unavailable');
+    }
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.WithdrawGuardianPermissionForGuardian },
+        { guardianUserId: user.userId, dependentUserId: data.dependentUserId }
+      )
+    ).catch((error) => {
+      const code = this.guardianAttestationRpcCode(error);
+      if (code === 'GUARDIAN_CONTROL_ACCESS_DENIED') {
+        throw new ForbiddenException('Guardian control is unavailable');
+      }
+      throw error;
+    });
   }
 
   @Post('guardian-consent/resend-continuation')
@@ -414,6 +443,18 @@ export class AuthenticationController {
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
+      }
+      const errorCode = this.guardianAttestationRpcCode(error);
+      if (errorCode === 'GUARDIAN_PERMISSION_REQUIRED') {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.FORBIDDEN,
+            code: 'GUARDIAN_PERMISSION_REQUIRED',
+            message:
+              'This account cannot sign in because guardian permission is no longer active.',
+          },
+          HttpStatus.FORBIDDEN
+        );
       }
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(

@@ -1,8 +1,25 @@
-import { Inject, Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
-import { EmailService, renderDomainEmailTemplate } from '@optimistic-tanuki/email';
+import {
+  EmailService,
+  renderDomainEmailTemplate,
+} from '@optimistic-tanuki/email';
 import { createHash, randomBytes } from 'crypto';
-import { In, IsNull, LessThan, LessThanOrEqual, MoreThan, Not, Repository } from 'typeorm';
+import {
+  EntityManager,
+  In,
+  IsNull,
+  LessThan,
+  LessThanOrEqual,
+  MoreThan,
+  Not,
+  Repository,
+} from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -24,7 +41,9 @@ const ATTESTATION_TEXT =
   'I am the parent or legal guardian of this user and give permission for them to use Optimistic Tanuki and Towne Square while they are under 18.';
 
 @Injectable()
-export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy {
+export class GuardianPermissionService
+  implements OnModuleInit, OnModuleDestroy
+{
   private cleanupTimer?: ReturnType<typeof setInterval>;
   constructor(
     @Inject(getRepositoryToken(GuardianPermissionEntity))
@@ -37,7 +56,10 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
   ) {}
 
   onModuleInit(): void {
-    this.cleanupTimer = setInterval(() => void this.cleanupExpired(), 24 * 60 * 60 * 1000);
+    this.cleanupTimer = setInterval(
+      () => void this.cleanupExpired(),
+      24 * 60 * 60 * 1000
+    );
     this.cleanupTimer.unref?.();
     void this.cleanupExpired();
   }
@@ -74,7 +96,9 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     const existing = await this.permissions.findOne({
       where: [
         { applicantEmail, status: 'pending' },
-        ...(input.userId ? [{ userId: input.userId, status: 'pending' as const }] : []),
+        ...(input.userId
+          ? [{ userId: input.userId, status: 'pending' as const }]
+          : []),
       ],
       order: { createdAt: 'DESC' },
     });
@@ -99,12 +123,14 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     const guardianToken = randomBytes(32).toString('base64url');
     const tokenHash = this.hash(guardianToken);
     const now = new Date();
-    const requestCreatedAt = priorForUser?.status === 'expired' && priorForUser.expiresAt > now
-      ? priorForUser.createdAt
-      : now;
-    const requestExpiresAt = priorForUser?.status === 'expired' && priorForUser.expiresAt > now
-      ? priorForUser.expiresAt
-      : new Date(requestCreatedAt.getTime() + PENDING_TTL_MS);
+    const requestCreatedAt =
+      priorForUser?.status === 'expired' && priorForUser.expiresAt > now
+        ? priorForUser.createdAt
+        : now;
+    const requestExpiresAt =
+      priorForUser?.status === 'expired' && priorForUser.expiresAt > now
+        ? priorForUser.expiresAt
+        : new Date(requestCreatedAt.getTime() + PENDING_TTL_MS);
     const permissionData: Omit<GuardianPermissionEntity, 'id'> = {
       applicantEmail,
       guardianEmail,
@@ -150,7 +176,10 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
           .slice(0, 10),
       });
     }
-    const link = `${input.context.uiBaseUrl.replace(/\/$/, '')}/auth/guardian-consent#token=${encodeURIComponent(guardianToken)}`;
+    const link = `${input.context.uiBaseUrl.replace(
+      /\/$/,
+      ''
+    )}/auth/guardian-consent#token=${encodeURIComponent(guardianToken)}`;
     const template = renderDomainEmailTemplate({
       domain: input.context.uiBaseUrl,
       appName: input.context.appName,
@@ -181,16 +210,20 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       await this.permissions.update(permission.id, {
         status: 'expired',
         guardianTokenHash: null,
-        deleteAfter: new Date(Math.min(
-          Date.now() + ACTIVE_DELETE_DELAY_MS,
-          permission.createdAt.getTime() + PENDING_TTL_MS
-        )),
+        deleteAfter: new Date(
+          Math.min(
+            Date.now() + ACTIVE_DELETE_DELAY_MS,
+            permission.createdAt.getTime() + PENDING_TTL_MS
+          )
+        ),
       });
     } else if (input.userId) {
       // Only mark the account pending after the guardian request was actually
       // accepted by the shared mail service. A delivery failure leaves the
       // account eligible to retry the assessment on its next login.
-      await this.users.update(input.userId, { ageEligibilityStatus: 'minor-pending' });
+      await this.users.update(input.userId, {
+        ageEligibilityStatus: 'minor-pending',
+      });
     }
     return { pending: true, sent: emailSent };
   }
@@ -214,11 +247,15 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       },
     });
     if (!permission) throw new RpcException({ code: 'GUARDIAN_TOKEN_INVALID' });
-    const guardian = await this.users.findOne({ where: { id: guardianUserId } });
+    const guardian = await this.users.findOne({
+      where: { id: guardianUserId },
+    });
     if (
       !guardian ||
-      guardian.email.trim().toLowerCase() !== permission.guardianEmail?.toLowerCase() ||
-      guardian.email.trim().toLowerCase() === permission.applicantEmail.toLowerCase() ||
+      guardian.email.trim().toLowerCase() !==
+        permission.guardianEmail?.toLowerCase() ||
+      guardian.email.trim().toLowerCase() ===
+        permission.applicantEmail.toLowerCase() ||
       guardian.id === permission.userId ||
       input?.attested !== true ||
       input.attestationVersion !== ATTESTATION_VERSION
@@ -227,7 +264,10 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     }
     const guardianStatus = guardian.ageEligibilityStatus || 'legacy';
     if (guardianStatus !== 'adult') {
-      if (!['legacy', 'unassessed'].includes(guardianStatus) || !input.dateOfBirth) {
+      if (
+        !['legacy', 'unassessed'].includes(guardianStatus) ||
+        !input.dateOfBirth
+      ) {
         throw new RpcException({ code: 'GUARDIAN_ADULT_REQUIRED' });
       }
       if (this.ageFromDate(input.dateOfBirth) < 18) {
@@ -248,10 +288,12 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     const resumeToken = randomBytes(32).toString('base64url');
     const withdrawalToken = randomBytes(32).toString('base64url');
     const now = new Date();
-    const unattachedDeadline = new Date(Math.min(
-      now.getTime() + TOKEN_TTL_MS,
-      permission.createdAt.getTime() + PENDING_TTL_MS
-    ));
+    const unattachedDeadline = new Date(
+      Math.min(
+        now.getTime() + TOKEN_TTL_MS,
+        permission.createdAt.getTime() + PENDING_TTL_MS
+      )
+    );
     const updated = await this.permissions.update(
       {
         id: permission.id,
@@ -272,10 +314,13 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
         deleteAfter: permission.userId ? null : unattachedDeadline,
       }
     );
-    if (!updated.affected) throw new RpcException({ code: 'GUARDIAN_TOKEN_USED' });
+    if (!updated.affected)
+      throw new RpcException({ code: 'GUARDIAN_TOKEN_USED' });
 
     if (permission.userId) {
-      await this.users.update(permission.userId, { ageEligibilityStatus: 'minor' });
+      await this.users.update(permission.userId, {
+        ageEligibilityStatus: 'minor',
+      });
       await this.sendWithdrawalLink(permission, withdrawalToken);
       return {
         attested: true,
@@ -286,12 +331,17 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     }
 
     const context = this.contextFor(permission);
-    const resumeUrl = `${context.uiBaseUrl.replace(/\/$/, '')}/register#token=${encodeURIComponent(resumeToken)}`;
+    const resumeUrl = `${context.uiBaseUrl.replace(
+      /\/$/,
+      ''
+    )}/register#token=${encodeURIComponent(resumeToken)}`;
     const template = renderDomainEmailTemplate({
       domain: context.uiBaseUrl,
       appName: context.appName,
       heading: 'Permission recorded',
-      body: ['Your parent or guardian has recorded permission. Continue registration using your private link.'],
+      body: [
+        'Your parent or guardian has recorded permission. Continue registration using your private link.',
+      ],
       action: { label: 'Continue registration', url: resumeUrl },
       note: `This private link can be used once and expires on ${unattachedDeadline.toISOString()}.`,
       tone: 'security',
@@ -320,50 +370,105 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     };
   }
 
-  async validateResume(rawToken: string): Promise<{ valid: true; email: string }> {
+  async validateResume(
+    rawToken: string
+  ): Promise<{ valid: true; email: string }> {
     const permission = await this.findResume(rawToken);
     return { valid: true, email: permission.applicantEmail };
   }
 
-  async attachAccount(rawToken: string, userId: string): Promise<{ attached: true }> {
+  async attachAccount(
+    rawToken: string,
+    userId: string
+  ): Promise<{ attached: true }> {
     const permission = await this.findResume(rawToken);
     const user = await this.users.findOne({ where: { id: userId } });
-    if (!user || user.email.trim().toLowerCase() !== permission.applicantEmail.toLowerCase()) {
+    if (
+      !user ||
+      user.email.trim().toLowerCase() !==
+        permission.applicantEmail.toLowerCase()
+    ) {
       throw new RpcException({ code: 'GUARDIAN_RESUME_IDENTITY_MISMATCH' });
     }
-    const updated = await this.permissions.update(
-      {
-        id: permission.id,
-        status: 'approved',
-        resumeTokenHash: this.hash(rawToken),
-        userId: IsNull(),
-      },
-      { userId, resumeTokenHash: null, deleteAfter: null }
+    await this.permissions.manager.transaction(
+      async (manager: EntityManager) => {
+        const updated = await manager
+          .getRepository(GuardianPermissionEntity)
+          .update(
+            {
+              id: permission.id,
+              status: 'approved',
+              resumeTokenHash: this.hash(rawToken),
+              userId: IsNull(),
+            },
+            { userId, resumeTokenHash: null, deleteAfter: null }
+          );
+        if (!updated.affected)
+          throw new RpcException({ code: 'GUARDIAN_RESUME_USED' });
+        const userUpdated = await manager.getRepository(UserEntity).update(
+          { id: userId, ageEligibilityStatus: Not('revoked') },
+          {
+            ageEligibilityStatus: 'minor',
+            ageEligibilityEndsAt: this.eighteenthBirthday(
+              permission.dateOfBirth!
+            )
+              .toISOString()
+              .slice(0, 10),
+          }
+        );
+        if (!userUpdated.affected)
+          throw new RpcException({ code: 'GUARDIAN_PERMISSION_REQUIRED' });
+      }
     );
-    if (!updated.affected) throw new RpcException({ code: 'GUARDIAN_RESUME_USED' });
-    await this.users.update(userId, {
-      ageEligibilityStatus: 'minor',
-      ageEligibilityEndsAt: this.eighteenthBirthday(permission.dateOfBirth!)
-        .toISOString()
-        .slice(0, 10),
-    });
     return { attached: true };
   }
 
   async assertAccountAccess(userId: string, appId?: string): Promise<void> {
-    const user = await this.users.findOne({ where: { id: userId } });
+    let user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new RpcException('User not found');
     let status = user.ageEligibilityStatus || 'legacy';
-    if (
-      ['minor-pending', 'minor', 'revoked'].includes(status) &&
+    const ageEligibilityEnded =
       user.ageEligibilityEndsAt &&
-      new Date(`${user.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <= Date.now()
-    ) {
-      await this.users.update(userId, {
-        ageEligibilityStatus: 'adult',
-        ageEligibilityEndsAt: null,
+      new Date(`${user.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <=
+        Date.now();
+    if (status === 'minor-pending' && ageEligibilityEnded) {
+      const promoted = await this.users.manager.transaction(async (manager) =>
+        manager.getRepository(UserEntity).update(
+          {
+            id: userId,
+            ageEligibilityStatus: 'minor-pending',
+            ageEligibilityEndsAt: LessThanOrEqual(
+              new Date().toISOString().slice(0, 10)
+            ),
+          },
+          { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
+        )
+      );
+      if (promoted.affected) {
+        status = 'adult';
+      } else {
+        user = await this.users.findOne({ where: { id: userId } });
+        if (!user) throw new RpcException('User not found');
+        status = user?.ageEligibilityStatus || 'legacy';
+      }
+    }
+    if (status === 'minor' && ageEligibilityEnded) {
+      const ageOutPermission = await this.permissions.findOne({
+        where: { userId, status: 'approved' },
       });
-      status = 'adult';
+      if (
+        ageOutPermission?.dateOfBirth &&
+        this.ageFromDate(ageOutPermission.dateOfBirth) >= 18
+      ) {
+        await this.expireAtAgeOut(
+          ageOutPermission.id,
+          userId,
+          ageOutPermission.dateOfBirth
+        );
+        user = await this.users.findOne({ where: { id: userId } });
+        if (!user) throw new RpcException('User not found');
+        status = user?.ageEligibilityStatus || 'legacy';
+      }
     }
     // Pending or withdrawn minor accounts are inactive globally. Check these
     // before the app-specific exemption so an untrusted app label cannot
@@ -380,13 +485,18 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       permission.dateOfBirth
     ) {
       if (this.ageFromDate(permission.dateOfBirth) < 18) return;
-      await this.permissions.update(permission.id, {
-        deleteAfter: this.retentionDateAfterEighteenthBirthday(permission.dateOfBirth),
-      });
-      await this.users.update(userId, { ageEligibilityStatus: 'adult' });
-      return;
+      await this.expireAtAgeOut(permission.id, userId, permission.dateOfBirth);
+      user = await this.users.findOne({ where: { id: userId } });
+      if (!user) throw new RpcException('User not found');
+      status = user?.ageEligibilityStatus || 'legacy';
+      if (status === 'adult') return;
     }
-    throw new RpcException({ code: status === 'unassessed' ? 'AGE_CHECK_REQUIRED' : 'GUARDIAN_PERMISSION_REQUIRED' });
+    throw new RpcException({
+      code:
+        status === 'unassessed'
+          ? 'AGE_CHECK_REQUIRED'
+          : 'GUARDIAN_PERMISSION_REQUIRED',
+    });
   }
 
   async assertDelegatedProfileAccess(input: {
@@ -397,7 +507,12 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
   }): Promise<void> {
     const allowedApps = new Set(['client-interface', 'local-hub']);
     const allowedOperations = new Set(['profile.view', 'profile.manage']);
-    await this.assertDelegatedAccess(input, allowedApps, allowedOperations, 'GUARDIAN_PROFILE_ACCESS_DENIED');
+    await this.assertDelegatedAccess(
+      input,
+      allowedApps,
+      allowedOperations,
+      'GUARDIAN_PROFILE_ACCESS_DENIED'
+    );
   }
 
   async assertDelegatedContentAccess(input: {
@@ -408,7 +523,158 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
   }): Promise<void> {
     const allowedApps = new Set(['client-interface', 'local-hub']);
     const allowedOperations = new Set(['content.view', 'content.manage']);
-    await this.assertDelegatedAccess(input, allowedApps, allowedOperations, 'GUARDIAN_CONTENT_ACCESS_DENIED');
+    await this.assertDelegatedAccess(
+      input,
+      allowedApps,
+      allowedOperations,
+      'GUARDIAN_CONTENT_ACCESS_DENIED'
+    );
+  }
+
+  /** Return only currently linked minor IDs; profile identity is resolved by the profile service. */
+  async listGuardianDependents(
+    guardianUserId: string
+  ): Promise<Array<{ dependentUserId: string; status: 'approved' }>> {
+    await this.assertGuardianAccount(guardianUserId);
+    const links = await this.permissions.find({
+      where: { guardianUserId, status: 'approved' },
+      select: ['id', 'userId', 'dateOfBirth'],
+    });
+    const result: Array<{ dependentUserId: string; status: 'approved' }> = [];
+    for (const link of links) {
+      if (
+        !link.userId ||
+        !link.dateOfBirth ||
+        this.ageFromDate(link.dateOfBirth) >= 18
+      ) {
+        if (
+          link.userId &&
+          link.dateOfBirth &&
+          this.ageFromDate(link.dateOfBirth) >= 18
+        ) {
+          await this.expireAtAgeOut(link.id, link.userId, link.dateOfBirth);
+        }
+        continue;
+      }
+      const dependent = await this.users.findOne({
+        where: { id: link.userId },
+      });
+      if (
+        dependent?.ageEligibilityStatus === 'minor' &&
+        dependent.ageEligibilityEndsAt &&
+        new Date(`${dependent.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() >
+          Date.now()
+      ) {
+        result.push({ dependentUserId: link.userId, status: 'approved' });
+      }
+    }
+    return result;
+  }
+
+  async withdrawForGuardian(
+    guardianUserId: string,
+    dependentUserId: string
+  ): Promise<{ revoked: true }> {
+    await this.assertGuardianAccount(guardianUserId);
+    const permission = await this.permissions.findOne({
+      where: { guardianUserId, userId: dependentUserId, status: 'approved' },
+    });
+    if (
+      !permission ||
+      !permission.dateOfBirth ||
+      this.ageFromDate(permission.dateOfBirth) >= 18
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        code: 'GUARDIAN_CONTROL_ACCESS_DENIED',
+      });
+    }
+    const now = new Date();
+    await this.permissions.manager.transaction(
+      async (manager: EntityManager) => {
+        const permissions = manager.getRepository(GuardianPermissionEntity);
+        const users = manager.getRepository(UserEntity);
+        const sessions = manager.getRepository(TokenEntity);
+        const updated = await permissions.update(
+          {
+            id: permission.id,
+            guardianUserId,
+            userId: dependentUserId,
+            status: 'approved',
+          },
+          {
+            status: 'revoked',
+            deleteAfter: new Date(now.getTime() + ACTIVE_DELETE_DELAY_MS),
+            guardianTokenHash: null,
+            resumeTokenHash: null,
+            withdrawalTokenHash: null,
+          }
+        );
+        if (!updated.affected)
+          throw new RpcException({
+            statusCode: 403,
+            code: 'GUARDIAN_CONTROL_ACCESS_DENIED',
+          });
+        await users.update(dependentUserId, {
+          ageEligibilityStatus: 'revoked',
+        });
+        await sessions.update(
+          { userId: dependentUserId, revoked: false },
+          { revoked: true }
+        );
+      }
+    );
+    return { revoked: true };
+  }
+
+  private async assertGuardianAccount(guardianUserId: string): Promise<void> {
+    const [guardian, session] = await Promise.all([
+      this.users.findOne({ where: { id: guardianUserId } }),
+      this.sessions.findOne({
+        where: { userId: guardianUserId, revoked: false },
+      }),
+    ]);
+    if (
+      !guardian ||
+      guardian.ageEligibilityStatus !== 'adult' ||
+      !session ||
+      (guardian.lockedUntil &&
+        new Date(guardian.lockedUntil).getTime() > Date.now())
+    ) {
+      throw new RpcException({
+        statusCode: 403,
+        code: 'GUARDIAN_CONTROL_ACCESS_DENIED',
+      });
+    }
+  }
+
+  private async expireAtAgeOut(
+    permissionId: string,
+    userId: string,
+    dateOfBirth: string
+  ): Promise<void> {
+    await this.permissions.manager.transaction(async (manager) => {
+      const permissions = manager.getRepository(GuardianPermissionEntity);
+      const users = manager.getRepository(UserEntity);
+      const expired = await permissions.update(
+        { id: permissionId, userId, status: 'approved' },
+        {
+          status: 'expired',
+          deleteAfter: this.retentionDateAfterEighteenthBirthday(dateOfBirth),
+          guardianTokenHash: null,
+          resumeTokenHash: null,
+          withdrawalTokenHash: null,
+        }
+      );
+      if (!expired.affected) return;
+      await users.update(
+        { id: userId, ageEligibilityStatus: 'minor' },
+        {
+          ageEligibilityStatus: 'adult',
+          ageEligibilityEndsAt: null,
+        }
+      );
+    });
   }
 
   private async assertDelegatedAccess(
@@ -435,7 +701,9 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     const session = await this.sessions.findOne({
       where: { userId: input.actorUserId, revoked: false },
     });
-    const actor = await this.users.findOne({ where: { id: input.actorUserId } });
+    const actor = await this.users.findOne({
+      where: { id: input.actorUserId },
+    });
     if (
       !session ||
       !actor ||
@@ -452,7 +720,8 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       !dependent ||
       dependent.ageEligibilityStatus !== 'minor' ||
       !dependent.ageEligibilityEndsAt ||
-      new Date(`${dependent.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <= Date.now()
+      new Date(`${dependent.ageEligibilityEndsAt}T00:00:00.000Z`).getTime() <=
+        Date.now()
     ) {
       throw new RpcException({ statusCode: 403, code: deniedCode });
     }
@@ -487,10 +756,13 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     ) {
       return { pending: false, sent: false };
     }
-    if (!input.dateOfBirth) throw new RpcException({ code: 'AGE_CHECK_REQUIRED' });
+    if (!input.dateOfBirth)
+      throw new RpcException({ code: 'AGE_CHECK_REQUIRED' });
     if (input.ageEligibilityEndsAt) {
       const submittedEnd = this.eighteenthBirthday(input.dateOfBirth);
-      const expectedEnd = new Date(`${input.ageEligibilityEndsAt}T00:00:00.000Z`);
+      const expectedEnd = new Date(
+        `${input.ageEligibilityEndsAt}T00:00:00.000Z`
+      );
       if (submittedEnd.getTime() !== expectedEnd.getTime()) {
         throw new RpcException({ code: 'AGE_ASSESSMENT_MISMATCH' });
       }
@@ -528,67 +800,135 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
   }
 
   async withdraw(userId: string): Promise<{ revoked: true }> {
-    const permission = await this.permissions.findOne({ where: { userId, status: 'approved' } });
-    if (!permission) throw new RpcException({ code: 'GUARDIAN_PERMISSION_NOT_FOUND' });
-    const now = new Date();
-    await this.permissions.update(permission.id, {
-      status: 'revoked',
-      deleteAfter: new Date(now.getTime() + ACTIVE_DELETE_DELAY_MS),
-      guardianTokenHash: null,
-      resumeTokenHash: null,
-      withdrawalTokenHash: null,
+    const permission = await this.permissions.findOne({
+      where: { userId, status: 'approved' },
     });
-    await this.users.update(userId, { ageEligibilityStatus: 'revoked' });
-    await this.sessions.update({ userId, revoked: false }, { revoked: true });
+    if (!permission)
+      throw new RpcException({ code: 'GUARDIAN_PERMISSION_NOT_FOUND' });
+    const now = new Date();
+    await this.permissions.manager.transaction(
+      async (manager: EntityManager) => {
+        await manager
+          .getRepository(GuardianPermissionEntity)
+          .update(permission.id, {
+            status: 'revoked',
+            deleteAfter: new Date(now.getTime() + ACTIVE_DELETE_DELAY_MS),
+            guardianTokenHash: null,
+            resumeTokenHash: null,
+            withdrawalTokenHash: null,
+          });
+        await manager
+          .getRepository(UserEntity)
+          .update(userId, { ageEligibilityStatus: 'revoked' });
+        await manager
+          .getRepository(TokenEntity)
+          .update({ userId, revoked: false }, { revoked: true });
+      }
+    );
     return { revoked: true };
   }
 
-  async withdrawByToken(rawToken: string): Promise<{ revoked: true; noLongerNeeded?: true }> {
-    if (!rawToken) throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
+  async withdrawByToken(
+    rawToken: string
+  ): Promise<{ revoked: true; noLongerNeeded?: true }> {
+    if (!rawToken)
+      throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
     const permission = await this.permissions.findOne({
       where: { withdrawalTokenHash: this.hash(rawToken), status: 'approved' },
     });
-    if (!permission) throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
-    if (permission.dateOfBirth && this.ageFromDate(permission.dateOfBirth) >= 18) {
-      await this.permissions.update(
-        { id: permission.id, withdrawalTokenHash: this.hash(rawToken), status: 'approved' },
-        {
-          status: 'expired',
-          deleteAfter: this.retentionDateAfterEighteenthBirthday(permission.dateOfBirth),
-          guardianTokenHash: null,
-          resumeTokenHash: null,
-          withdrawalTokenHash: null,
+    if (!permission)
+      throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
+    if (
+      permission.dateOfBirth &&
+      this.ageFromDate(permission.dateOfBirth) >= 18
+    ) {
+      await this.permissions.manager.transaction(
+        async (manager: EntityManager) => {
+          const permissions = manager.getRepository(GuardianPermissionEntity);
+          const updated = await permissions.update(
+            {
+              id: permission.id,
+              withdrawalTokenHash: this.hash(rawToken),
+              status: 'approved',
+            },
+            {
+              status: 'expired',
+              deleteAfter: this.retentionDateAfterEighteenthBirthday(
+                permission.dateOfBirth!
+              ),
+              guardianTokenHash: null,
+              resumeTokenHash: null,
+              withdrawalTokenHash: null,
+            }
+          );
+          if (!updated.affected)
+            throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
+          const currentPermission = await permissions.findOne({
+            where: { id: permission.id },
+          });
+          if (currentPermission?.userId) {
+            await manager.getRepository(UserEntity).update(
+              {
+                id: currentPermission.userId,
+                ageEligibilityStatus: In(['minor-pending', 'minor']),
+              },
+              { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
+            );
+          }
         }
       );
-      if (permission.userId) {
-        await this.users.update(permission.userId, {
-          ageEligibilityStatus: 'adult',
-          ageEligibilityEndsAt: null,
-        });
-      }
       return { revoked: true, noLongerNeeded: true };
     }
     const now = new Date();
-    const updated = await this.permissions.update(
-      { id: permission.id, withdrawalTokenHash: this.hash(rawToken), status: 'approved' },
-      {
-        status: 'revoked',
-        deleteAfter: new Date(now.getTime() + ACTIVE_DELETE_DELAY_MS),
-        guardianTokenHash: null,
-        resumeTokenHash: null,
-        withdrawalTokenHash: null,
+    await this.permissions.manager.transaction(
+      async (manager: EntityManager) => {
+        const permissions = manager.getRepository(GuardianPermissionEntity);
+        const updated = await permissions.update(
+          {
+            id: permission.id,
+            withdrawalTokenHash: this.hash(rawToken),
+            status: 'approved',
+          },
+          {
+            status: 'revoked',
+            deleteAfter: new Date(now.getTime() + ACTIVE_DELETE_DELAY_MS),
+            guardianTokenHash: null,
+            resumeTokenHash: null,
+            withdrawalTokenHash: null,
+          }
+        );
+        if (!updated.affected)
+          throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_USED' });
+        const currentPermission = await permissions.findOne({
+          where: { id: permission.id },
+        });
+        if (currentPermission?.userId) {
+          await manager
+            .getRepository(UserEntity)
+            .update(
+              {
+                id: currentPermission.userId,
+                ageEligibilityStatus: Not('revoked'),
+              },
+              { ageEligibilityStatus: 'revoked' }
+            );
+          await manager
+            .getRepository(TokenEntity)
+            .update(
+              { userId: currentPermission.userId, revoked: false },
+              { revoked: true }
+            );
+        }
       }
     );
-    if (!updated.affected) throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_USED' });
-    if (permission.userId) {
-      await this.users.update(permission.userId, { ageEligibilityStatus: 'revoked' });
-      await this.sessions.update({ userId: permission.userId, revoked: false }, { revoked: true });
-    }
     return { revoked: true };
   }
 
-  async resendApplicantContinuation(rawToken: string): Promise<{ sent: boolean }> {
-    if (!rawToken) throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
+  async resendApplicantContinuation(
+    rawToken: string
+  ): Promise<{ sent: boolean }> {
+    if (!rawToken)
+      throw new RpcException({ code: 'GUARDIAN_WITHDRAWAL_INVALID' });
     const now = new Date();
     const permission = await this.permissions.findOne({
       where: {
@@ -603,7 +943,8 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       !permission.dateOfBirth ||
       this.ageFromDate(permission.dateOfBirth) >= 18 ||
       !permission.resumeExpiresAt ||
-      permission.resumeExpiresAt.getTime() > permission.createdAt.getTime() + PENDING_TTL_MS
+      permission.resumeExpiresAt.getTime() >
+        permission.createdAt.getTime() + PENDING_TTL_MS
     ) {
       throw new RpcException({ code: 'GUARDIAN_RESEND_UNAVAILABLE' });
     }
@@ -619,17 +960,25 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       },
       { resumeTokenHash: this.hash(resumeToken) }
     );
-    if (!rotated.affected) throw new RpcException({ code: 'GUARDIAN_RESEND_UNAVAILABLE' });
+    if (!rotated.affected)
+      throw new RpcException({ code: 'GUARDIAN_RESEND_UNAVAILABLE' });
 
     const context = this.contextFor(permission);
-    const resumeUrl = `${context.uiBaseUrl.replace(/\/$/, '')}/register#token=${encodeURIComponent(resumeToken)}`;
+    const resumeUrl = `${context.uiBaseUrl.replace(
+      /\/$/,
+      ''
+    )}/register#token=${encodeURIComponent(resumeToken)}`;
     const template = renderDomainEmailTemplate({
       domain: context.uiBaseUrl,
       appName: context.appName,
       heading: 'Continue registration',
-      body: ['Your parent or guardian has recorded permission. Continue registration using your private link.'],
+      body: [
+        'Your parent or guardian has recorded permission. Continue registration using your private link.',
+      ],
       action: { label: 'Continue registration', url: resumeUrl },
-      note: `This private link can be used once and expires on ${permission.resumeExpiresAt?.toISOString() || 'its original deadline'}.`,
+      note: `This private link can be used once and expires on ${
+        permission.resumeExpiresAt?.toISOString() || 'its original deadline'
+      }.`,
       tone: 'security',
     });
     try {
@@ -649,31 +998,57 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
 
   async cleanupExpired(): Promise<void> {
     const now = new Date();
-    await this.permissions.delete({ status: 'pending', expiresAt: LessThan(now) });
+    await this.permissions.delete({
+      status: 'pending',
+      expiresAt: LessThan(now),
+    });
     await this.users.update(
       {
-        ageEligibilityStatus: In(['minor-pending', 'minor', 'revoked']),
+        // Revocation is terminal; age-out must not restore a withdrawn account.
+        // Linked minors are promoted only in the same transaction that expires
+        // their approved permission below.
+        ageEligibilityStatus: In(['minor-pending']),
         ageEligibilityEndsAt: LessThanOrEqual(now.toISOString().slice(0, 10)),
       },
       { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
     );
     const active = await this.permissions.find({
-      where: { status: 'approved', dateOfBirth: Not(IsNull()), deleteAfter: IsNull() },
+      where: {
+        status: 'approved',
+        dateOfBirth: Not(IsNull()),
+        deleteAfter: IsNull(),
+      },
     });
     for (const permission of active) {
-      if (permission.dateOfBirth && this.ageFromDate(permission.dateOfBirth) >= 18) {
-        await this.permissions.update(permission.id, {
-          deleteAfter: this.retentionDateAfterEighteenthBirthday(permission.dateOfBirth),
-        });
+      if (
+        permission.dateOfBirth &&
+        this.ageFromDate(permission.dateOfBirth) >= 18
+      ) {
         if (permission.userId) {
-          await this.users.update(permission.userId, { ageEligibilityStatus: 'adult' });
+          await this.expireAtAgeOut(
+            permission.id,
+            permission.userId,
+            permission.dateOfBirth
+          );
+        } else {
+          await this.permissions.update(permission.id, {
+            status: 'expired',
+            deleteAfter: this.retentionDateAfterEighteenthBirthday(
+              permission.dateOfBirth
+            ),
+            guardianTokenHash: null,
+            resumeTokenHash: null,
+            withdrawalTokenHash: null,
+          });
         }
       }
     }
     await this.permissions.delete({ deleteAfter: LessThan(now) });
   }
 
-  private async findResume(rawToken: string): Promise<GuardianPermissionEntity> {
+  private async findResume(
+    rawToken: string
+  ): Promise<GuardianPermissionEntity> {
     if (!rawToken) throw new RpcException({ code: 'GUARDIAN_RESUME_INVALID' });
     const permission = await this.permissions.findOne({
       where: {
@@ -683,7 +1058,8 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
         resumeExpiresAt: MoreThan(new Date()),
       },
     });
-    if (!permission) throw new RpcException({ code: 'GUARDIAN_RESUME_INVALID' });
+    if (!permission)
+      throw new RpcException({ code: 'GUARDIAN_RESUME_INVALID' });
     return permission;
   }
 
@@ -692,15 +1068,26 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
       throw new RpcException('A valid date of birth is required');
     }
     const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
-    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== dateOfBirth) {
+    if (
+      Number.isNaN(dob.getTime()) ||
+      dob.toISOString().slice(0, 10) !== dateOfBirth
+    ) {
       throw new RpcException('A valid date of birth is required');
     }
     const now = new Date();
-    if (dob.getTime() > Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) {
+    if (
+      dob.getTime() >
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    ) {
       throw new RpcException('A valid date of birth is required');
     }
     let age = now.getUTCFullYear() - dob.getUTCFullYear();
-    if (now.getUTCMonth() < dob.getUTCMonth() || (now.getUTCMonth() === dob.getUTCMonth() && now.getUTCDate() < dob.getUTCDate())) age -= 1;
+    if (
+      now.getUTCMonth() < dob.getUTCMonth() ||
+      (now.getUTCMonth() === dob.getUTCMonth() &&
+        now.getUTCDate() < dob.getUTCDate())
+    )
+      age -= 1;
     return age;
   }
 
@@ -715,10 +1102,14 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
 
   private eighteenthBirthday(dateOfBirth: string): Date {
     const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
-    return new Date(Date.UTC(dob.getUTCFullYear() + 18, dob.getUTCMonth(), dob.getUTCDate()));
+    return new Date(
+      Date.UTC(dob.getUTCFullYear() + 18, dob.getUTCMonth(), dob.getUTCDate())
+    );
   }
 
-  private contextFor(permission: GuardianPermissionEntity): GuardianPermissionContext {
+  private contextFor(
+    permission: GuardianPermissionEntity
+  ): GuardianPermissionContext {
     return {
       appId: permission.appId,
       appName: permission.appName,
@@ -728,14 +1119,19 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     };
   }
 
-  private async sendWithdrawalLink(permission: GuardianPermissionEntity, rawToken: string): Promise<boolean> {
+  private async sendWithdrawalLink(
+    permission: GuardianPermissionEntity,
+    rawToken: string
+  ): Promise<boolean> {
     const context = this.contextFor(permission);
     const link = this.withdrawalUrl(permission, rawToken);
     const template = renderDomainEmailTemplate({
       domain: context.uiBaseUrl,
       appName: context.appName,
       heading: 'Guardian permission controls',
-      body: ['Use this private link if you later withdraw permission. Withdrawing will disable the minor account across Optimistic Tanuki and Towne Square.'],
+      body: [
+        'Use this private link if you later withdraw permission. Withdrawing will disable the minor account across Optimistic Tanuki and Towne Square.',
+      ],
       action: { label: 'Withdraw permission', url: link },
       note: 'Keep this link private. It remains available while the permission is active.',
       tone: 'security',
@@ -756,8 +1152,14 @@ export class GuardianPermissionService implements OnModuleInit, OnModuleDestroy 
     }
   }
 
-  private withdrawalUrl(permission: GuardianPermissionEntity, rawToken: string): string {
-    return `${permission.uiBaseUrl.replace(/\/$/, '')}/auth/guardian-consent#withdrawToken=${encodeURIComponent(rawToken)}`;
+  private withdrawalUrl(
+    permission: GuardianPermissionEntity,
+    rawToken: string
+  ): string {
+    return `${permission.uiBaseUrl.replace(
+      /\/$/,
+      ''
+    )}/auth/guardian-consent#withdrawToken=${encodeURIComponent(rawToken)}`;
   }
 
   private hash(value: string): string {

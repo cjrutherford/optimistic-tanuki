@@ -42,6 +42,16 @@ export class ProfilesController {
     throw new Error('Must provide either id or userId to get profile');
   }
 
+  @MessagePattern({ cmd: ProfileCommands.GetGuardianConsoleProfile })
+  getGuardianConsoleProfile(
+    @Payload() data: { userId: string; appScope: string }
+  ) {
+    return this.profileService.getGuardianConsoleProfile(
+      data.userId,
+      data.appScope
+    );
+  }
+
   @MessagePattern({ cmd: ProfileCommands.GetAll })
   async getAllProfiles(@Payload() query: FindManyOptions<Profile>) {
     return await this.profileService.findAll(query || {});
