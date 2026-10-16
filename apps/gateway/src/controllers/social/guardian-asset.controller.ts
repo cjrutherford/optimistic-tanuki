@@ -32,7 +32,8 @@ export class GuardianAssetController {
     const allowed = new Set(['name', 'type', 'content', 'fileExtension']);
     if (Object.keys(body).some((key) => !allowed.has(key))) throw new HttpException('Unsupported guardian asset field', 400);
     if (typeof body.name !== 'string' || body.name.length < 1 || body.name.length > 255 ||
-        /[\\/\u0000-\u001f]/.test(body.name) || !Object.values(AssetType).includes(body.type)) {
+        /[\\/]/.test(body.name) || [...body.name].some((character) => character.charCodeAt(0) <= 0x1f) ||
+        !Object.values(AssetType).includes(body.type)) {
       throw new HttpException('Invalid asset upload', 400);
     }
     if (typeof body.content !== 'string' || body.content.length === 0) throw new HttpException('Asset content is required', 400);

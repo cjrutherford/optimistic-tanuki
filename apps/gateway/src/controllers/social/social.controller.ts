@@ -152,9 +152,13 @@ export class SocialController {
   @UseGuards(IdentityThrottlerGuard)
   @Throttle(POST_THROTTLE)
   async post(@User() user, @Body() postDto: CreatePostDto) {
+    if (!user?.userId || !user?.profileId || !user?.appId) {
+      throw new ForbiddenException('A verified Social application session is required');
+    }
     this.l.log(`Creating post for user: ${user.userId}`);
     postDto.userId = user.userId;
     postDto.profileId = user.profileId;
+    postDto.appScope = user.appId;
     this.l.log(`Post Data: ${JSON.stringify(postDto)}`);
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
@@ -337,9 +341,20 @@ export class SocialController {
     type: AttachmentDto,
   })
   @Post('attachment')
-  async attachment(@User() user, @Body() attachmentDto: CreateAttachmentDto) {
+  async attachment(
+    @User() user: UserDetails,
+    @Body() attachmentDto: CreateAttachmentDto
+  ) {
+    const { postId, ...attachment } = attachmentDto;
     return await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.CREATE }, attachmentDto)
+      this.socialClient.send(
+        { cmd: AttachmentCommands.CREATE },
+        {
+          attachment,
+          postId,
+          actor: this.attachmentActor(user),
+        }
+      )
     );
   }
 
@@ -497,7 +512,10 @@ export class SocialController {
     @User() user: UserDetails
   ): Promise<AttachmentDto> {
     const attachment = await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: AttachmentCommands.FIND },
+        { id, appId: user.appId }
+      )
     );
     if (!attachment) throw new NotFoundException('Attachment not found');
     const parentPostId = attachment.post?.id ?? attachment.postId;
@@ -625,7 +643,7 @@ export class SocialController {
     const attachments = await firstValueFrom(
       this.socialClient.send(
         { cmd: AttachmentCommands.FIND_MANY },
-        searchCriteria
+        { criteria: searchCriteria, appId: user.appId }
       )
     );
     const visible = await Promise.all(
@@ -733,12 +751,17 @@ export class SocialController {
   @Put('attachment/update/:id')
   async updateAttachment(
     @Param('id') id: string,
+    @User() user: UserDetails,
     @Body() updateAttachmentDto: UpdateAttachmentDto
   ): Promise<AttachmentDto> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: AttachmentCommands.UPDATE },
-        { id, data: updateAttachmentDto }
+        {
+          id,
+          update: updateAttachmentDto,
+          actor: this.attachmentActor(user),
+        }
       )
     );
   }
@@ -828,10 +851,27 @@ export class SocialController {
     description: 'The attachment has been successfully deleted.',
   })
   @Delete('attachment/:id')
-  async deleteAttachment(@Param('id') id: string): Promise<void> {
+  async deleteAttachment(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<{ id: string; deleted: true }> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: AttachmentCommands.DELETE }, { id })
+      this.socialClient.send(
+        { cmd: AttachmentCommands.DELETE },
+        { id, actor: this.attachmentActor(user) }
+      )
     );
+  }
+
+  private attachmentActor(user: UserDetails) {
+    if (!user?.userId || !user?.profileId || !user?.appId) {
+      throw new ForbiddenException('A verified Social application session is required');
+    }
+    return {
+      userId: user.userId,
+      profileId: user.profileId,
+      appId: user.appId,
+    };
   }
 
   private guardianActor(user: UserDetails, targetProfileId: string) {

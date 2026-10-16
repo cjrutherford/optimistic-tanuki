@@ -42,6 +42,7 @@ describe('SocialController', () => {
     username: 'test',
     email: 'someone@somewhere.net',
     profileId: '1',
+    appId: 'client-interface',
     // Add fields expected by UserDetails (exp/iat/name)
     exp: Math.floor(Date.now() / 1000) + 3600,
     iat: Math.floor(Date.now() / 1000),
@@ -141,8 +142,22 @@ describe('SocialController', () => {
       expect.objectContaining({
         userId: mockUser.userId,
         profileId: mockUser.profileId,
+        appScope: mockUser.appId,
         communityId: 'community-1',
       })
+    );
+  });
+
+  it('does not create posts without verified app context', async () => {
+    await expect(
+      socialController.post(
+        { userId: 'user-1', profileId: 'profile-1' } as any,
+        { title: 'title', content: 'body', profileId: 'profile-1' } as any
+      )
+    ).rejects.toThrow('verified Social application session');
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: PostCommands.CREATE },
+      expect.anything()
     );
   });
 
@@ -219,12 +234,49 @@ describe('SocialController', () => {
       url: 'http://test.com',
       type: AttachmentType.IMAGE,
       size: 1024,
+      postId: 'post-1',
     };
-    await socialController.attachment(mockUser, attachmentDto);
+    await socialController.attachment(mockUser as any, attachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.CREATE },
-      attachmentDto
+      {
+        attachment: {
+          name: attachmentDto.name,
+          url: attachmentDto.url,
+          type: attachmentDto.type,
+          size: attachmentDto.size,
+        },
+        postId: 'post-1',
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
+  });
+
+  it('rejects attachment bodies that try to provide their own actor or app scope', async () => {
+    const pipe = new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    });
+    await expect(
+      pipe.transform(
+        {
+          name: 'file.png',
+          url: 'https://cdn.example.test/file.png',
+          type: 'IMAGE',
+          size: 100,
+          postId: '123e4567-e89b-42d3-a456-426614174001',
+          profileId: 'forged-profile',
+          userId: 'forged-user',
+          appScope: 'local-hub',
+        },
+        { type: 'body', metatype: CreateAttachmentDto }
+      )
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should get a post by id', async () => {
@@ -315,7 +367,7 @@ describe('SocialController', () => {
     ).resolves.toMatchObject(attachment);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND },
-      { id }
+      { id, appId: mockUser.appId }
     );
   });
 
@@ -460,7 +512,7 @@ describe('SocialController', () => {
     await socialController.searchAttachments(searchCriteria, mockUser as any);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.FIND_MANY },
-      searchCriteria
+      { criteria: searchCriteria, appId: mockUser.appId }
     );
   });
 
@@ -514,10 +566,18 @@ describe('SocialController', () => {
       url: 'http://test.com',
       type: AttachmentType.IMAGE,
     };
-    await socialController.updateAttachment(id, updateAttachmentDto);
+    await socialController.updateAttachment(id, mockUser as any, updateAttachmentDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.UPDATE },
-      { id, data: updateAttachmentDto }
+      {
+        id,
+        update: updateAttachmentDto,
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
   });
 
@@ -553,10 +613,22 @@ describe('SocialController', () => {
 
   it('should delete an attachment', async () => {
     const id = '1';
-    await socialController.deleteAttachment(id);
+    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(
+      of({ id, deleted: true }) as any
+    );
+    await expect(
+      socialController.deleteAttachment(id, mockUser as any)
+    ).resolves.toEqual({ id, deleted: true });
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AttachmentCommands.DELETE },
-      { id }
+      {
+        id,
+        actor: {
+          userId: mockUser.userId,
+          profileId: mockUser.profileId,
+          appId: mockUser.appId,
+        },
+      }
     );
   });
 

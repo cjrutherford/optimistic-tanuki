@@ -1,7 +1,7 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 
 import { PostService } from './services/post.service';
-import { AttachmentService } from './services/attachment.service';
+import { AttachmentActor, AttachmentService } from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
 import { ReactionService } from './services/reaction.service';
@@ -672,48 +672,62 @@ export class AppController {
 
   @MessagePattern({ cmd: AttachmentCommands.CREATE })
   async createAttachment(
-    @Payload('attachment') data: CreateAttachmentDto,
-    @Payload('postId') postId: string
+    @Payload('attachment') data: Omit<CreateAttachmentDto, 'postId'>,
+    @Payload('postId') postId: string,
+    @Payload('actor') actor: AttachmentActor
   ) {
-    const post = await this.postService.findOne(postId);
-    return await this.attachmentService.create(data, post);
+    return this.attachmentService.create(data, postId, actor);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND_MANY })
-  async findAllAttachments(@Payload() options: SearchAttachmentDto = {}) {
+  async findAllAttachments(@Payload() request: { criteria?: SearchAttachmentDto; appId?: string } = {}) {
+    if (typeof request?.appId !== 'string' || !request.appId.trim()) {
+      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_SCOPE_REQUIRED', message: 'A verified app scope is required to read attachments' });
+    }
+    const options = request?.criteria ?? {};
     const search = toFindOptions(options ?? {});
-    return await this.attachmentService.findAll({
-      ...search,
-      relations: ['post'],
-    } as FindManyOptions<Attachment>);
+    return this.attachmentService.findAllForApp(
+      { ...search, relations: ['post'] } as FindManyOptions<Attachment>,
+      request.appId
+    );
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND })
   async findAttachment(
     @Payload('id') id: string,
-    @Payload('options') opts: SearchAttachmentDto = {}
+    @Payload('options') opts: SearchAttachmentDto = {},
+    @Payload('appId') appId?: string
   ) {
+    if (typeof appId !== 'string' || !appId.trim()) {
+      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_SCOPE_REQUIRED', message: 'A verified app scope is required to read attachments' });
+    }
     if (typeof id !== 'string' || id.trim().length === 0) {
       return undefined;
     }
     const search = toFindOptions(opts ?? {});
-    return await this.attachmentService.findOne(id, {
+    const options = {
       ...search,
       relations: ['post'],
-    } as FindOneOptions<Attachment>);
+    } as FindOneOptions<Attachment>;
+    return this.attachmentService.findOneForApp(id, appId, options);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.UPDATE })
   async updateAttachment(
     @Payload('id') id: string,
-    @Payload('update') update: UpdateAttachmentDto
+    @Payload('update') update: UpdateAttachmentDto,
+    @Payload('actor') actor: AttachmentActor
   ) {
-    return await this.attachmentService.update(id, update);
+    return this.attachmentService.update(id, update, actor);
   }
 
   @MessagePattern({ cmd: AttachmentCommands.DELETE })
-  async deleteAttachment(@Payload('id') id: string) {
-    return await this.attachmentService.remove(id);
+  async deleteAttachment(
+    @Payload('id') id: string,
+    @Payload('actor') actor: AttachmentActor
+  ) {
+    await this.attachmentService.remove(id, actor);
+    return { id, deleted: true };
   }
 
   @MessagePattern({ cmd: LinkCommands.CREATE })

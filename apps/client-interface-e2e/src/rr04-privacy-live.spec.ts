@@ -1786,6 +1786,11 @@ test('RR04 I01 API: membership, alternate profiles, comments and search use the 
         type: 'IMAGE',
         size: 1,
       },
+      actor: {
+        userId: owner.userId,
+        profileId: owner.profileId,
+        appId: 'client-interface',
+      },
     });
     const attachmentUrl = origin + `/api/social/attachment/${attachment.id}`;
     expect(await privacyText(memberContext, attachmentUrl)).toContain(

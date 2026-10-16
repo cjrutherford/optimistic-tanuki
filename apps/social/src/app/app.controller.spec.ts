@@ -61,7 +61,9 @@ describe('AppController', () => {
     attachmentService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      findAllForApp: jest.fn(),
       findOne: jest.fn(),
+      findOneForApp: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
     } as any;
@@ -582,46 +584,59 @@ describe('AppController', () => {
   });
 
   it('should create an attachment', async () => {
-    postService.findOne.mockResolvedValue('post');
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
     attachmentService.create.mockResolvedValue('attachment');
-    const result = await controller.createAttachment({} as any, '1');
+    const result = await controller.createAttachment({} as any, '1', actor);
     expect(result).toBe('attachment');
-    expect(postService.findOne).toHaveBeenCalledWith('1');
-    expect(attachmentService.create).toHaveBeenCalledWith({} as any, 'post');
+    expect(attachmentService.create).toHaveBeenCalledWith({} as any, '1', actor);
   });
 
-  it('should find all attachments', async () => {
-    attachmentService.findAll.mockResolvedValue(['attachment']);
-    const result = await controller.findAllAttachments({} as any);
+  it('should find all attachments only in the requested app scope', async () => {
+    attachmentService.findAllForApp.mockResolvedValue(['attachment']);
+    const result = await controller.findAllAttachments({ appId: 'client-interface' });
     expect(result).toEqual(['attachment']);
-    expect(attachmentService.findAll).toHaveBeenCalledWith({
+    expect(attachmentService.findAllForApp).toHaveBeenCalledWith({
       where: {},
       relations: ['post'],
-    });
+    }, 'client-interface');
+  });
+
+  it('rejects attachment list reads without verified app scope', async () => {
+    await expect(controller.findAllAttachments({})).rejects.toThrow();
+    expect(attachmentService.findAll).not.toHaveBeenCalled();
+    expect(attachmentService.findAllForApp).not.toHaveBeenCalled();
   });
 
   it('should find an attachment', async () => {
-    attachmentService.findOne.mockResolvedValue('attachment');
-    const result = await controller.findAttachment('1', undefined);
+    attachmentService.findOneForApp.mockResolvedValue('attachment');
+    const result = await controller.findAttachment('1', undefined, 'client-interface');
     expect(result).toBe('attachment');
-    expect(attachmentService.findOne).toHaveBeenCalledWith('1', {
+    expect(attachmentService.findOneForApp).toHaveBeenCalledWith('1', 'client-interface', {
       where: {},
       relations: ['post'],
     });
+  });
+
+  it('rejects attachment reads without verified app scope', async () => {
+    await expect(controller.findAttachment('1', undefined, undefined)).rejects.toThrow();
+    expect(attachmentService.findOne).not.toHaveBeenCalled();
+    expect(attachmentService.findOneForApp).not.toHaveBeenCalled();
   });
 
   it('should update an attachment', async () => {
     attachmentService.update.mockResolvedValue('updated');
-    const result = await controller.updateAttachment('1', {} as any);
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
+    const result = await controller.updateAttachment('1', {} as any, actor);
     expect(result).toBe('updated');
-    expect(attachmentService.update).toHaveBeenCalledWith('1', {});
+    expect(attachmentService.update).toHaveBeenCalledWith('1', {}, actor);
   });
 
   it('should delete an attachment', async () => {
-    attachmentService.remove.mockResolvedValue('deleted');
-    const result = await controller.deleteAttachment('1');
-    expect(result).toBe('deleted');
-    expect(attachmentService.remove).toHaveBeenCalledWith('1');
+    attachmentService.remove.mockResolvedValue(undefined);
+    const actor = { userId: 'u1', profileId: 'p1', appId: 'client-interface' };
+    const result = await controller.deleteAttachment('1', actor);
+    expect(result).toEqual({ id: '1', deleted: true });
+    expect(attachmentService.remove).toHaveBeenCalledWith('1', actor);
   });
 
   it('should throw for unimplemented link methods', async () => {
