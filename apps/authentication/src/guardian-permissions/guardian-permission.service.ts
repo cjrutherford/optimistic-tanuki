@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
@@ -44,6 +45,7 @@ const ATTESTATION_TEXT =
 export class GuardianPermissionService
   implements OnModuleInit, OnModuleDestroy
 {
+  private readonly logger = new Logger(GuardianPermissionService.name);
   private cleanupTimer?: ReturnType<typeof setInterval>;
   constructor(
     @Inject(getRepositoryToken(GuardianPermissionEntity))
@@ -57,11 +59,11 @@ export class GuardianPermissionService
 
   onModuleInit(): void {
     this.cleanupTimer = setInterval(
-      () => void this.cleanupExpired(),
+      () => void this.runScheduledCleanup(),
       24 * 60 * 60 * 1000
     );
     this.cleanupTimer.unref?.();
-    void this.cleanupExpired();
+    void this.runScheduledCleanup();
   }
 
   onModuleDestroy(): void {
@@ -903,15 +905,13 @@ export class GuardianPermissionService
           where: { id: permission.id },
         });
         if (currentPermission?.userId) {
-          await manager
-            .getRepository(UserEntity)
-            .update(
-              {
-                id: currentPermission.userId,
-                ageEligibilityStatus: Not('revoked'),
-              },
-              { ageEligibilityStatus: 'revoked' }
-            );
+          await manager.getRepository(UserEntity).update(
+            {
+              id: currentPermission.userId,
+              ageEligibilityStatus: Not('revoked'),
+            },
+            { ageEligibilityStatus: 'revoked' }
+          );
           await manager
             .getRepository(TokenEntity)
             .update(
@@ -1000,7 +1000,7 @@ export class GuardianPermissionService
     const now = new Date();
     await this.permissions.delete({
       status: 'pending',
-      expiresAt: LessThan(now),
+      expiresAt: LessThanOrEqual(now),
     });
     await this.users.update(
       {
@@ -1043,7 +1043,18 @@ export class GuardianPermissionService
         }
       }
     }
-    await this.permissions.delete({ deleteAfter: LessThan(now) });
+    await this.permissions.delete({ deleteAfter: LessThanOrEqual(now) });
+  }
+
+  private async runScheduledCleanup(): Promise<void> {
+    try {
+      await this.cleanupExpired();
+    } catch {
+      // Keep lifecycle failures observable without logging retained account data.
+      this.logger.error(
+        'Guardian permission cleanup failed; a later scheduled run will retry'
+      );
+    }
   }
 
   private async findResume(

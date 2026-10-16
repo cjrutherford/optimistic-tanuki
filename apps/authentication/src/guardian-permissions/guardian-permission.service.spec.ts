@@ -1,6 +1,6 @@
 import { RpcException } from '@nestjs/microservices';
 import { createHash } from 'crypto';
-import { In, IsNull } from 'typeorm';
+import { In, IsNull, LessThanOrEqual } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { GuardianPermissionEntity } from './entities/guardian-permission.entity';
@@ -71,6 +71,11 @@ describe('GuardianPermissionService', () => {
           if (expected.type === 'lessThan') {
             return (
               new Date(row[key]).getTime() < new Date(expected.value).getTime()
+            );
+          }
+          if (expected.type === 'lessThanOrEqual') {
+            return (
+              new Date(row[key]).getTime() <= new Date(expected.value).getTime()
             );
           }
           if (expected.type === 'moreThan') {
@@ -1736,6 +1741,37 @@ describe('GuardianPermissionService', () => {
     expect(users.update).toHaveBeenCalledWith(
       { id: 'aged-out-user', ageEligibilityStatus: 'minor' },
       { ageEligibilityStatus: 'adult', ageEligibilityEndsAt: null }
+    );
+  });
+
+  it('deletes pending and inactive permission rows at the exact retention deadline', async () => {
+    permissions.find.mockResolvedValue([]);
+    await service.cleanupExpired();
+
+    expect(permissions.delete).toHaveBeenNthCalledWith(1, {
+      status: 'pending',
+      expiresAt: LessThanOrEqual(NOW),
+    });
+    expect(permissions.delete).toHaveBeenNthCalledWith(2, {
+      deleteAfter: LessThanOrEqual(NOW),
+    });
+  });
+
+  it('reports scheduled cleanup failures without logging retained account details', async () => {
+    const error = jest
+      .spyOn((service as any).logger, 'error')
+      .mockImplementation();
+    jest
+      .spyOn(service, 'cleanupExpired')
+      .mockRejectedValue(new Error('private database detail'));
+
+    await (service as any).runScheduledCleanup();
+
+    expect(error).toHaveBeenCalledWith(
+      'Guardian permission cleanup failed; a later scheduled run will retry'
+    );
+    expect(error.mock.calls.flat().join(' ')).not.toContain(
+      'private database detail'
     );
   });
 });
