@@ -78,6 +78,13 @@
           "TS_NODE_PROJECT": "tsconfig.app.json"
         }
       }
+    },
+    "guardian-policy-notice": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "TS_NODE_PROJECT=../../apps/authentication/tsconfig.app.json node -r ts-node/register -r tsconfig-paths/register ../../tools/scripts/guardian-policy-notice.ts {args.operation} {args.policyVersion}",
+        "cwd": "apps/authentication"
+      }
     }
   }
 }

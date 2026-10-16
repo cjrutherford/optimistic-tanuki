@@ -35,7 +35,7 @@ describe('loadDatabase', () => {
     expect(dbConfig.database).toBe('testdb');
     expect(dbConfig.entities).toBeInstanceOf(Array);
     expect(dbConfig.migrationsRun).toBe(false);
-    expect(dbConfig.migrations).toHaveLength(11);
+    expect(dbConfig.migrations).toHaveLength(12);
   });
 
   it('runs the bundled version-matched migrations only when opted in', () => {

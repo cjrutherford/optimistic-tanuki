@@ -36,6 +36,8 @@ import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.
 import { EmailAuthService } from './email-auth.service';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
 
 @Module({
   imports: [
@@ -90,6 +92,7 @@ import { GuardianPermissionService } from '../guardian-permissions/guardian-perm
     OAuthConfigValidator,
     EmailAuthService,
     GuardianPermissionService,
+    GuardianPolicyNoticeService,
     SaltedHashService,
     PasswordPolicyService,
     KeyService,
@@ -153,7 +156,14 @@ import { GuardianPermissionService } from '../guardian-permissions/guardian-perm
     },
     {
       provide: getRepositoryToken(GuardianPermissionEntity),
-      useFactory: (ds: DataSource) => ds.getRepository(GuardianPermissionEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPermissionEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(GuardianPolicyNoticeEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(GuardianPolicyNoticeEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
     {

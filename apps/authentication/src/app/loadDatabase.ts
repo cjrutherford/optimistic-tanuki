@@ -5,6 +5,7 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Initial1729455565251 } from '../../migrations/1729455565251-initial';
 import { Second1730238679999 } from '../../migrations/1730238679999-second';
@@ -17,6 +18,7 @@ import { GuardianPermissionFlow1791985246527 } from '../../migrations/1791985246
 import { BackfillLegacyAgeEligibility1791985263488 } from '../../migrations/1791985263488-BackfillLegacyAgeEligibility';
 import { GuardianAgeEligibilityEnd1791986174677 } from '../../migrations/1791986174677-guardian-age-eligibility-end';
 import { GuardianAdultAccountBinding1792004425354 } from '../../migrations/1792004425354-guardian-adult-account-binding';
+import { GuardianPolicyNoticeOutbox1792163157529 } from '../../migrations/1792163157529-guardian-policy-notice-outbox';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -30,6 +32,7 @@ const loadDatabase = (config: ConfigService) => {
     OAuthProviderEntity,
     AuthActionTokenEntity,
     GuardianPermissionEntity,
+    GuardianPolicyNoticeEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
@@ -54,6 +57,7 @@ const loadDatabase = (config: ConfigService) => {
       BackfillLegacyAgeEligibility1791985263488,
       GuardianAgeEligibilityEnd1791986174677,
       GuardianAdultAccountBinding1792004425354,
+      GuardianPolicyNoticeOutbox1792163157529,
     ],
     migrationsRun: process.env.OT_RUN_MIGRATIONS_ON_START === 'true',
   };

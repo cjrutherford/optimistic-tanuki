@@ -63,7 +63,11 @@ export class SmtpEmailProvider implements EmailProvider {
       return { success: true, messageId: info.messageId };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`SMTP send failed: ${errMsg}`);
+      this.logger.error(
+        message.sensitive
+          ? 'Sensitive SMTP send failed'
+          : `SMTP send failed: ${errMsg}`
+      );
       return { success: false, error: errMsg };
     }
   }

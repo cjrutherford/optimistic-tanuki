@@ -23,14 +23,20 @@ export class EmailService {
     }
     try {
       this.logger.debug(
-        `Sending email via ${provider.name} to ${
-          Array.isArray(message.to) ? message.to.join(', ') : message.to
-        }`
+        message.sensitive
+          ? `Sending sensitive email via ${provider.name}`
+          : `Sending email via ${provider.name} to ${
+              Array.isArray(message.to) ? message.to.join(', ') : message.to
+            }`
       );
       return await provider.sendEmail(message);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send email via ${provider.name}: ${errMsg}`);
+      this.logger.error(
+        message.sensitive
+          ? `Failed to send sensitive email via ${provider.name}`
+          : `Failed to send email via ${provider.name}: ${errMsg}`
+      );
       return { success: false, error: errMsg };
     }
   }

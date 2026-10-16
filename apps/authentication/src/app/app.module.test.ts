@@ -15,6 +15,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { EmailAuthService } from './email-auth.service';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 
 jest.mock('../config', () => {
   const mockConfig = {
@@ -72,6 +75,8 @@ describe('AppModule', () => {
       .useValue({}) // Mock OAuthService
       .overrideProvider(EmailAuthService)
       .useValue({})
+      .overrideProvider(GuardianPolicyNoticeService)
+      .useValue({})
       .overrideProvider(getRepositoryToken(UserEntity))
       .useValue({ target: UserEntity })
       .overrideProvider(getRepositoryToken(TokenEntity))
@@ -82,6 +87,10 @@ describe('AppModule', () => {
       .useValue({ target: OAuthProviderEntity })
       .overrideProvider(getRepositoryToken(AuthActionTokenEntity))
       .useValue({ target: AuthActionTokenEntity })
+      .overrideProvider(getRepositoryToken(GuardianPermissionEntity))
+      .useValue({ target: GuardianPermissionEntity })
+      .overrideProvider(getRepositoryToken(GuardianPolicyNoticeEntity))
+      .useValue({ target: GuardianPolicyNoticeEntity })
       .overrideProvider('AUTHENTICATION_CONNECTION')
       .useValue({
         // Mock DatabaseModule

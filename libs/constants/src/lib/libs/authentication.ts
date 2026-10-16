@@ -42,6 +42,9 @@ const AuthCommands = {
   WithdrawGuardianPermission: 'WithdrawGuardianPermission',
   WithdrawGuardianPermissionByToken: 'WithdrawGuardianPermissionByToken',
   ResendGuardianApplicantContinuation: 'ResendGuardianApplicantContinuation',
+  ScheduleGuardianPolicyNotice: 'ScheduleGuardianPolicyNotice',
+  RetryGuardianPolicyNoticeFailures: 'RetryGuardianPolicyNoticeFailures',
+  GetGuardianPolicyNoticeStatus: 'GetGuardianPolicyNoticeStatus',
 };
 
 export default AuthCommands;

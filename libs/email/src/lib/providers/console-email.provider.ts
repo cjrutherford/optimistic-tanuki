@@ -14,6 +14,12 @@ export class ConsoleEmailProvider implements EmailProvider {
   async sendEmail(message: EmailMessage): Promise<EmailSendResult> {
     this.counter++;
     const messageId = `console-${this.counter}-${Date.now()}`;
+    if (message.sensitive) {
+      this.logger.log(
+        '[Console Email] Sensitive email recipient and content suppressed'
+      );
+      return { success: true, messageId };
+    }
     this.logger.log(
       `[Console Email] To: ${
         Array.isArray(message.to) ? message.to.join(', ') : message.to

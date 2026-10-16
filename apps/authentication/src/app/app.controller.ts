@@ -20,6 +20,7 @@ import {
   GuardianPermissionService,
   GuardianPermissionContext,
 } from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 
 @Controller()
 export class AppController {
@@ -28,6 +29,7 @@ export class AppController {
     private readonly oauthService: OAuthService,
     private readonly emailAuthService: EmailAuthService,
     private readonly guardianPermissions: GuardianPermissionService,
+    private readonly guardianPolicyNotices: GuardianPolicyNoticeService,
     private readonly l: Logger
   ) {}
 
@@ -204,6 +206,60 @@ export class AppController {
   @MessagePattern({ cmd: AuthCommands.ResendGuardianApplicantContinuation })
   resendGuardianApplicantContinuation(@Payload() data: { token: string }) {
     return this.guardianPermissions.resendApplicantContinuation(data.token);
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ScheduleGuardianPolicyNotice })
+  scheduleGuardianPolicyNotice(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.schedulePolicyNotice(
+      data.policyVersion,
+      data.operatorToken
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.RetryGuardianPolicyNoticeFailures })
+  retryGuardianPolicyNoticeFailures(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.retryFailedNotices(
+      data.policyVersion,
+      data.operatorToken
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.GetGuardianPolicyNoticeStatus })
+  getGuardianPolicyNoticeStatus(
+    @Payload() data: { policyVersion?: string; operatorToken?: string }
+  ) {
+    if (
+      typeof data?.policyVersion !== 'string' ||
+      typeof data?.operatorToken !== 'string'
+    ) {
+      throw new RpcException(
+        'A guardian policy version and operator token are required'
+      );
+    }
+    return this.guardianPolicyNotices.getNoticeStatus(
+      data.policyVersion,
+      data.operatorToken
+    );
   }
 
   @MessagePattern({ cmd: AuthCommands.ConfirmEmailVerification })

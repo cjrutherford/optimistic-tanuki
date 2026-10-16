@@ -14,12 +14,14 @@ import {
 import { Logger } from '@nestjs/common';
 import { EmailAuthService } from './email-auth.service';
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
+import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 
 describe('AppController', () => {
   let appController: AppController;
   let appService: AppService;
   let oauthService: OAuthService;
   let guardianPermissions: any;
+  let guardianPolicyNotices: any;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
@@ -66,6 +68,14 @@ describe('AppController', () => {
             withdrawForGuardian: jest.fn(),
           },
         },
+        {
+          provide: GuardianPolicyNoticeService,
+          useValue: {
+            schedulePolicyNotice: jest.fn(),
+            retryFailedNotices: jest.fn(),
+            getNoticeStatus: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -73,6 +83,7 @@ describe('AppController', () => {
     appService = app.get<AppService>(AppService);
     oauthService = app.get<OAuthService>(OAuthService);
     guardianPermissions = app.get(GuardianPermissionService);
+    guardianPolicyNotices = app.get(GuardianPolicyNoticeService);
   });
 
   it('does not forward a caller-supplied user id to public guardian requests', async () => {
@@ -102,6 +113,35 @@ describe('AppController', () => {
       guardianEmail: data.guardianEmail,
       context: data.context,
     });
+  });
+
+  it('routes only the policy version through the internal guardian notice command', async () => {
+    guardianPolicyNotices.schedulePolicyNotice.mockResolvedValue({
+      policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+      scheduled: 1,
+      alreadyScheduled: 0,
+    });
+
+    await expect(
+      appController.scheduleGuardianPolicyNotice({
+        policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+        operatorToken: 'test-operator-token',
+      })
+    ).resolves.toEqual({
+      policyVersion: 'TEST-GUARDIAN-NOTICE-v1',
+      scheduled: 1,
+      alreadyScheduled: 0,
+    });
+    expect(guardianPolicyNotices.schedulePolicyNotice).toHaveBeenCalledWith(
+      'TEST-GUARDIAN-NOTICE-v1',
+      'test-operator-token'
+    );
+    expect(() =>
+      appController.scheduleGuardianPolicyNotice({
+        policyVersion: undefined,
+        operatorToken: 'test-operator-token',
+      })
+    ).toThrow(RpcException);
   });
 
   it('routes guardian-authorized continuation retries to the bound applicant service', async () => {

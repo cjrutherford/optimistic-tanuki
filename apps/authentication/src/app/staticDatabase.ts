@@ -8,6 +8,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
 
 const resolveConfigPath = () => {
   const candidates = [
@@ -57,6 +58,7 @@ const entities = [
   OAuthProviderEntity,
   AuthActionTokenEntity,
   GuardianPermissionEntity,
+  GuardianPolicyNoticeEntity,
 ];
 
 console.log(

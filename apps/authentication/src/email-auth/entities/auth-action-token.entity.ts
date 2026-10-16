@@ -5,6 +5,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { UserEntity } from '../../user/entities/user.entity';
 
@@ -15,11 +16,17 @@ export enum AuthActionPurpose {
 }
 
 @Entity({ name: 'auth_action_token' })
+@Unique('UQ_auth_action_token_hash', ['tokenHash'])
+@Index('IDX_auth_action_token_lookup', [
+  'userId',
+  'purpose',
+  'appId',
+  'consumedAt',
+])
 export class AuthActionTokenEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Index({ unique: true })
   @Column({ length: 64 })
   tokenHash!: string;
 
@@ -47,6 +54,9 @@ export class AuthActionTokenEntity {
   @ManyToOne(() => UserEntity, (user) => user.authActionTokens, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({
+    name: 'userId',
+    foreignKeyConstraintName: 'FK_auth_action_token_user',
+  })
   user!: UserEntity;
 }

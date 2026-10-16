@@ -72,6 +72,33 @@ describe('EmailService', () => {
     expect(result.error).toBe('SMTP timeout');
   });
 
+  it('redacts recipient and provider error details for sensitive email logs', async () => {
+    const logger = (service as any).logger;
+    const logMessages: string[] = [];
+    jest.spyOn(logger, 'debug').mockImplementation((...args: unknown[]) => {
+      logMessages.push(args.map(String).join(' '));
+    });
+    jest.spyOn(logger, 'error').mockImplementation((...args: unknown[]) => {
+      logMessages.push(args.map(String).join(' '));
+    });
+    mockProvider.sendEmailFn.mockRejectedValue(
+      new Error('rejected private-guardian@example.test')
+    );
+
+    await service.sendEmail({
+      to: 'private-guardian@example.test',
+      subject: 'Guardian notice',
+      text: 'Private notice content',
+      sensitive: true,
+    });
+
+    expect(logMessages.join('\n')).not.toContain(
+      'private-guardian@example.test'
+    );
+    expect(logMessages.join('\n')).not.toContain('Private notice content');
+    expect(logMessages.join('\n')).toContain('Failed to send sensitive email');
+  });
+
   it('should verify connection via active provider', async () => {
     mockProvider.verifyFn.mockResolvedValue(true);
     expect(await service.verifyConnection()).toBe(true);
