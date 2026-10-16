@@ -32,6 +32,7 @@ import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -47,6 +48,7 @@ const loadDatabase = (config: ConfigService) => {
     CommunityMember,
     CommunityMembershipAudit,
     GuardianContentAudit,
+    GuardianPublishedAssetGrant,
     CommunityInvite,
     Notification,
     Reaction,

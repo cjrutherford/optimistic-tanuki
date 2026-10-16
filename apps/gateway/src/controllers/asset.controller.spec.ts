@@ -20,6 +20,8 @@ import { ConfigService } from '@nestjs/config';
 import { Readable, Writable } from 'node:stream';
 import { createServer, Server } from 'node:http';
 import { AddressInfo } from 'node:net';
+import { createHmac } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 
 describe('AssetController', () => {
   let controller: AssetController;
@@ -143,6 +145,147 @@ describe('AssetController', () => {
       })
     ).resolves.toBe('d5a7d0e3-a183-46bc-92e5-57cc84d9c534');
     expect(assetService.send).not.toHaveBeenCalled();
+  });
+
+  it('signs the exact public path, internal path, range, and selected social grant for staged publication', async () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    const dependentProfileId = '223e4567-e89b-42d3-a456-426614174000';
+    assetService.send.mockReturnValue(
+      of({
+        id,
+        profileId: dependentProfileId,
+        originKind: 'guardian-staged',
+        originProfileId: dependentProfileId,
+        originAppId: 'client-interface',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: dependentProfileId,
+            appId: 'client-interface',
+          },
+        ],
+        audienceCommunityIds: [],
+      })
+    );
+    const social = (controller as any).socialService;
+    social.send.mockReturnValue(
+      of({
+        assetId: id,
+        dependentProfileId,
+        appId: 'client-interface',
+        resourceType: 'post',
+        resourceId: '323e4567-e89b-42d3-a456-426614174000',
+      })
+    );
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(new Response(Buffer.from('image'), { status: 206 }));
+    const res = Object.assign(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+      { setHeader: jest.fn(), status: jest.fn() }
+    ) as any;
+    res.status.mockReturnValue(res);
+    const request = Object.assign(new EventEmitter(), {
+      originalUrl: `/api/asset/${id}?download=1`,
+      path: `/api/asset/${id}`,
+      headers: { host: 'localhost' },
+    }) as any;
+
+    await controller.getAssetById(
+      id,
+      res,
+      'bytes=0-4',
+      {
+        userId: 'viewer',
+        profileId: 'viewer-profile',
+        appId: 'client-interface',
+      } as any,
+      'client-interface',
+      request
+    );
+
+    const [, init] = fetchSpy.mock.calls[0];
+    const headers = init!.headers as Record<string, string>;
+    const payload = JSON.parse(
+      Buffer.from(
+        headers['X-Internal-Media-Authorization'],
+        'base64url'
+      ).toString('utf8')
+    );
+    expect(payload).toMatchObject({
+      assetId: id,
+      appId: 'client-interface',
+      dependentProfileId,
+      resourceType: 'post',
+      resourceId: '323e4567-e89b-42d3-a456-426614174000',
+      path: `/api/asset/${id}`,
+      internalPath: `/internal/media/${id}`,
+      range: 'bytes=0-4',
+      accessMode: 'published',
+    });
+    expect(headers['X-Internal-Media-Authorization-Signature']).toBe(
+      createHmac('sha256', 'gateway-secret')
+        .update(`${id}:${headers['X-Internal-Media-Authorization']}`)
+        .digest('hex')
+    );
+    expect(social.send).toHaveBeenCalledWith(
+      expect.objectContaining({ cmd: expect.any(String) }),
+      expect.objectContaining({ assetId: id, appId: 'client-interface' })
+    );
+    fetchSpy.mockRestore();
+  });
+
+  it('rejects staged public-path aliases before signing or fetching media', async () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    assetService.send.mockReturnValue(
+      of({
+        id,
+        profileId: '223e4567-e89b-42d3-a456-426614174000',
+        originKind: 'guardian-staged',
+        originProfileId: '223e4567-e89b-42d3-a456-426614174000',
+        originAppId: 'client-interface',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: '223e4567-e89b-42d3-a456-426614174000',
+            appId: 'client-interface',
+          },
+        ],
+        audienceCommunityIds: [],
+      })
+    );
+    const fetchSpy = jest.spyOn(global, 'fetch');
+    const res = {
+      setHeader: jest.fn(),
+      status: jest.fn(),
+      end: jest.fn(),
+      once: jest.fn(),
+    } as any;
+    const request = Object.assign(new EventEmitter(), {
+      originalUrl: `/api/asset/${id}`,
+      path: `/api%2fasset/${id}`,
+      headers: { host: 'localhost' },
+    }) as any;
+    await expect(
+      controller.getAssetById(
+        id,
+        res,
+        undefined,
+        {
+          userId: 'viewer',
+          profileId: 'viewer-profile',
+          appId: 'client-interface',
+        } as any,
+        'client-interface',
+        request
+      )
+    ).rejects.toMatchObject({ status: 404 });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 
   it('should create an asset', async () => {

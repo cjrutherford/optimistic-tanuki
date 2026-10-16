@@ -1,7 +1,8 @@
 export interface AssetAudienceRestriction {
-  type: 'owner' | 'followers' | 'community';
+  type: 'owner' | 'followers' | 'community' | 'guardian-staged';
   profileId: string;
   communityId?: string;
+  appId?: string;
 }
 
 export const ASSET_UPLOAD_LIMIT_BYTES: Record<CreateAssetDto['type'], number> =

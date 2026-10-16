@@ -11,6 +11,60 @@ describe('LoginAccountBootstrapService', () => {
     jest.useRealTimers();
   });
 
+  it('uses the verified app id when login has no raw app scope header', async () => {
+    const authClient = {
+      send: jest.fn((pattern: { cmd: string }) =>
+        pattern.cmd === AuthCommands.UserIdFromEmail
+          ? of('user-1')
+          : of({ code: 0 })
+      ),
+    };
+    const profileClient = {
+      send: jest.fn((pattern: { cmd: string }) =>
+        pattern.cmd === ProfileCommands.GetAll
+          ? of([
+              {
+                id: 'global-profile',
+                userId: 'user-1',
+                profileName: 'Owner',
+                appScope: 'global',
+              },
+            ])
+          : of({
+              id: 'local-hub-profile',
+              userId: 'user-1',
+              appScope: 'local-hub',
+            })
+      ),
+    };
+    const roleInit = { processNow: jest.fn() };
+    const service = new LoginAccountBootstrapService(
+      authClient as any,
+      profileClient as any,
+      { send: jest.fn() } as any,
+      roleInit as any
+    );
+
+    await expect(
+      service.login(
+        { email: 'owner@example.invalid', password: 'password' },
+        undefined as any,
+        'local-hub'
+      )
+    ).resolves.toEqual({ code: 0 });
+
+    expect(roleInit.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({ scopeName: 'local-hub' })
+    );
+    expect(authClient.send).toHaveBeenLastCalledWith(
+      { cmd: AuthCommands.Login },
+      expect.objectContaining({
+        appId: 'local-hub',
+        profileId: 'local-hub-profile',
+      })
+    );
+  });
+
   it('connects the auth client before the first auth send', async () => {
     const callOrder: string[] = [];
     let resolveConnect!: () => void;

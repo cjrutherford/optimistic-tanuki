@@ -49,6 +49,10 @@ import { Public } from '../decorators/public.decorator';
 import { User, UserDetails } from '../decorators/user.decorator';
 import { AppScope } from '../decorators/appscope.decorator';
 import { createHmac } from 'node:crypto';
+import { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
+import { InternalGuardianMediaAssertion } from '@optimistic-tanuki/models';
+import { GuardianContentCommands } from '@optimistic-tanuki/constants';
+import { GATEWAY_APP_REGISTRY } from './registry/registry.tokens';
 
 @Controller('asset')
 export class AssetController {
@@ -70,7 +74,10 @@ export class AssetController {
     private readonly forumService?: ClientProxy,
     @Optional()
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
-    private readonly authenticationService?: ClientProxy
+    private readonly authenticationService?: ClientProxy,
+    @Optional()
+    @Inject(GATEWAY_APP_REGISTRY)
+    private readonly appRegistry?: AppRegistry
   ) {}
 
   private toHttpException(
@@ -216,13 +223,17 @@ export class AssetController {
           .pipe(timeout({ first: 5000 }))
       )) as {
         profileId?: string;
+        originKind?: 'ordinary' | 'guardian-staged';
+        originProfileId?: string | null;
+        originAppId?: string | null;
         audienceCommunityIds?: string[];
         audienceRestrictions?: AssetAudienceRestriction[];
       };
+      const trustedAppId = this.trustedRequestAppId(request, user);
       const legacyReferences = await this.getLegacyAssetAudienceReferences(
         id,
         asset.profileId,
-        appScope || undefined
+        trustedAppId
       );
       const legacyRestrictions = legacyReferences.restrictions.filter(
         (restriction) =>
@@ -246,10 +257,15 @@ export class AssetController {
       if (
         storedRestrictions.some(
           (restriction) =>
-            !['owner', 'followers', 'community'].includes(restriction.type) ||
+            !['owner', 'followers', 'community', 'guardian-staged'].includes(
+              restriction.type
+            ) ||
             !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
               restriction.profileId
             ) ||
+            (restriction.type === 'guardian-staged' &&
+              (!['client-interface', 'local-hub'].includes(restriction.appId) ||
+                restriction.profileId !== asset.originProfileId)) ||
             (restriction.type === 'community' &&
               (typeof restriction.communityId !== 'string' ||
                 !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -269,6 +285,24 @@ export class AssetController {
           ])
         ).values(),
       ];
+      const stagedRestrictions = restrictions.filter(
+        (restriction) => restriction.type === 'guardian-staged'
+      );
+      const isStaged = asset.originKind === 'guardian-staged';
+      if (
+        isStaged !== (stagedRestrictions.length === 1) ||
+        (isStaged &&
+          (!asset.originProfileId ||
+            asset.originProfileId !== asset.profileId ||
+            !['client-interface', 'local-hub'].includes(
+              asset.originAppId ?? ''
+            ) ||
+            stagedRestrictions[0].profileId !== asset.originProfileId ||
+            stagedRestrictions[0].appId !== asset.originAppId ||
+            trustedAppId !== asset.originAppId)) ||
+        (!isStaged && (asset.originProfileId || asset.originAppId))
+      )
+        throw new NotFoundException('Asset not found');
       const storedAudienceCommunityIds = new Set(
         Array.isArray(asset.audienceCommunityIds)
           ? asset.audienceCommunityIds
@@ -318,19 +352,31 @@ export class AssetController {
         if (!community) throw new NotFoundException('Asset not found');
         if (community.isPrivate) restrictedCommunityIds.add(communityId);
       }
-      const hasDependentOwnerRestriction = restrictions.some(
-        (restriction) => restriction.type === 'owner' && restriction.profileId === asset.profileId
-      );
-      const guardianRead = hasDependentOwnerRestriction
+      const assetOwner =
+        !!user?.userId &&
+        !!user.profileId &&
+        !!asset.profileId &&
+        (user.profileId === asset.profileId ||
+          (await this.isProfileOwnedByUser(asset.profileId, user.userId)));
+      const pureLegacyGuardianLibrary =
+        !isStaged &&
+        restrictedCommunityIds.size === 0 &&
+        restrictions.length === 1 &&
+        restrictions[0].type === 'owner' &&
+        restrictions[0].profileId === asset.profileId;
+      const guardianRead = pureLegacyGuardianLibrary
         ? await this.assertGuardianAssetRead(asset.profileId, user)
         : undefined;
-      if (restrictedCommunityIds.size > 0 || restrictions.length > 0) {
+      const stagedGuardianRead = isStaged
+        ? await this.assertGuardianAssetRead(asset.profileId, user)
+        : undefined;
+      const ordinaryRestrictions = restrictions.filter(
+        (restriction) => restriction.type !== 'guardian-staged'
+      );
+      if (restrictedCommunityIds.size > 0 || ordinaryRestrictions.length > 0) {
         if (!user?.userId || !user.profileId) {
           throw new NotFoundException('Asset not found');
         }
-        const assetOwner =
-          user.profileId === asset.profileId ||
-          (await this.isProfileOwnedByUser(asset.profileId, user.userId));
         for (const communityId of restrictedCommunityIds) {
           const legacyOwner = legacyAudiences.some(
             (audience) =>
@@ -353,7 +399,7 @@ export class AssetController {
             }
           }
         }
-        for (const restriction of restrictions) {
+        for (const restriction of ordinaryRestrictions) {
           if (restriction.type === 'owner') {
             if (
               user.profileId !== restriction.profileId &&
@@ -428,15 +474,95 @@ export class AssetController {
       }
       if (guardianRead) {
         const timestamp = String(Date.now());
-        const assertion = Buffer.from(JSON.stringify({
-          actorUserId: user!.userId,
-          targetProfileId: asset.profileId,
-          appId: user!.appId,
-          operation: 'content.view',
-        })).toString('base64url');
+        const assertion = Buffer.from(
+          JSON.stringify({
+            actorUserId: user!.userId,
+            targetProfileId: asset.profileId,
+            appId: user!.appId,
+            operation: 'content.view',
+          })
+        ).toString('base64url');
         headers['X-Internal-Media-Guardian'] = assertion;
         headers['X-Internal-Media-Guardian-Timestamp'] = timestamp;
-        headers['X-Internal-Media-Guardian-Signature'] = this.signGuardianAssertion(id, timestamp, assertion, mediaToken);
+        headers['X-Internal-Media-Guardian-Signature'] =
+          this.signGuardianAssertion(id, timestamp, assertion, mediaToken);
+      }
+      if (isStaged) {
+        const publicPath = request?.originalUrl?.split('?', 1)[0];
+        const expectedPublicPath = `/api/asset/${id}`;
+        if (
+          publicPath !== expectedPublicPath ||
+          request?.path !== `/api/asset/${id}`
+        ) {
+          throw new NotFoundException('Asset not found');
+        }
+        let accessMode: InternalGuardianMediaAssertion['accessMode'];
+        let resourceType: InternalGuardianMediaAssertion['resourceType'] = null;
+        let resourceId: string | null = null;
+        if (assetOwner) {
+          accessMode = 'dependent-owner';
+        } else if (stagedGuardianRead) {
+          accessMode = 'guardian-library';
+        } else {
+          if (!this.socialService || !trustedAppId)
+            throw new NotFoundException('Asset not found');
+          const context = await firstValueFrom(
+            this.socialService
+              .send<{
+                assetId: string;
+                dependentProfileId: string;
+                appId: string;
+                resourceType: 'post' | 'comment';
+                resourceId: string;
+              } | null>(
+                { cmd: GuardianContentCommands.ResolvePublishedAssetGrant },
+                {
+                  assetId: id,
+                  appId: trustedAppId,
+                  viewerProfileId: user?.profileId,
+                  viewerUserId: user?.userId,
+                }
+              )
+              .pipe(timeout({ first: 3000 }))
+          );
+          if (
+            !context ||
+            context.assetId !== id ||
+            context.dependentProfileId !== asset.originProfileId ||
+            context.appId !== asset.originAppId ||
+            !['post', 'comment'].includes(context.resourceType) ||
+            !context.resourceId
+          )
+            throw new NotFoundException('Asset not found');
+          accessMode = 'published';
+          resourceType = context.resourceType;
+          resourceId = context.resourceId;
+        }
+        const assertion: InternalGuardianMediaAssertion = {
+          version: 1,
+          assetId: id,
+          viewerUserId: user?.userId ?? null,
+          viewerProfileId: user?.profileId ?? null,
+          appId: trustedAppId!,
+          dependentProfileId: asset.originProfileId!,
+          resourceType,
+          resourceId,
+          path: publicPath,
+          internalPath: `/internal/media/${id}`,
+          range: range ?? null,
+          accessMode,
+          issuedAt: Date.now(),
+        };
+        const payload = Buffer.from(JSON.stringify(assertion)).toString(
+          'base64url'
+        );
+        headers['X-Internal-Media-Authorization'] = payload;
+        headers['X-Internal-Media-Authorization-Signature'] = createHmac(
+          'sha256',
+          mediaToken
+        )
+          .update(`${id}:${payload}`)
+          .digest('hex');
       }
       if (range) {
         headers['Range'] = range;
@@ -550,6 +676,62 @@ export class AssetController {
       .pipe(timeout({ first: 5000 }));
   }
 
+  private trustedRequestAppId(
+    request: Request | undefined,
+    user: UserDetails | undefined
+  ): string | undefined {
+    const allowed = new Set(['client-interface', 'local-hub']);
+    const host = request?.headers?.host;
+    let hostApp: string | undefined;
+    if (host && this.appRegistry) {
+      try {
+        const normalized = new URL(`http://${host}`).host.toLowerCase();
+        const matches = this.appRegistry.apps.filter((app) =>
+          [app.uiBaseUrl, app.apiBaseUrl].some((url) => {
+            try {
+              return new URL(url).host.toLowerCase() === normalized;
+            } catch {
+              return false;
+            }
+          })
+        );
+        if (matches.length === 1) hostApp = matches[0].appId;
+      } catch {
+        /* invalid Host fails closed below */
+      }
+    }
+    const origin = request?.headers?.origin;
+    let originApp: string | undefined;
+    if (origin && this.appRegistry) {
+      try {
+        const normalized = new URL(origin).origin;
+        const matches = this.appRegistry.apps.filter((app) => {
+          try {
+            return new URL(app.uiBaseUrl).origin === normalized;
+          } catch {
+            return false;
+          }
+        });
+        if (matches.length === 1) originApp = matches[0].appId;
+      } catch {
+        return undefined;
+      }
+      if (!originApp || (hostApp && hostApp !== originApp)) return undefined;
+    }
+    const appId = user?.appId ?? hostApp ?? originApp;
+    if (
+      !appId ||
+      !allowed.has(appId) ||
+      (hostApp && hostApp !== appId) ||
+      (originApp && originApp !== appId)
+    )
+      return undefined;
+    // Anonymous media reads need a registry-bound Host. Authenticated app IDs
+    // were assigned by AuthGuard from the validated application origin/host.
+    if (!user?.appId && !hostApp) return undefined;
+    return appId;
+  }
+
   private async assertProfileOwned(
     profileId: string,
     user: UserDetails
@@ -576,23 +758,57 @@ export class AssetController {
     profileId: string | undefined,
     user: UserDetails | undefined
   ): Promise<boolean> {
-    if (!profileId || !user?.userId || !['client-interface', 'local-hub'].includes(user.appId ?? '')) return false;
-    if (!this.authenticationService) throw new BadGatewayException('Guardian asset authorization is unavailable');
-    const profile = await firstValueFrom(this.assetProfileRequest(profileId)) as { id?: string; userId?: string; appScope?: string };
-    if (!profile || profile.id !== profileId || profile.appScope !== user.appId || !profile.userId || profile.userId === user.userId) return false;
+    if (
+      !profileId ||
+      !user?.userId ||
+      !['client-interface', 'local-hub'].includes(user.appId ?? '')
+    )
+      return false;
+    if (!this.authenticationService)
+      throw new BadGatewayException(
+        'Guardian asset authorization is unavailable'
+      );
+    const profile = (await firstValueFrom(
+      this.assetProfileRequest(profileId)
+    )) as { id?: string; userId?: string; appScope?: string };
+    if (
+      !profile ||
+      profile.id !== profileId ||
+      profile.appScope !== user.appId ||
+      !profile.userId ||
+      profile.userId === user.userId
+    )
+      return false;
     try {
-      await firstValueFrom(this.authenticationService.send({ cmd: AuthCommands.AuthorizeGuardianContentOperation }, {
-        actorUserId: user.userId,
-        dependentUserId: profile.userId,
-        appId: user.appId,
-        operation: 'content.view',
-      }).pipe(timeout({ first: 3000 })));
+      await firstValueFrom(
+        this.authenticationService
+          .send(
+            { cmd: AuthCommands.AuthorizeGuardianContentOperation },
+            {
+              actorUserId: user.userId,
+              dependentUserId: profile.userId,
+              appId: user.appId,
+              operation: 'content.view',
+            }
+          )
+          .pipe(timeout({ first: 3000 }))
+      );
       return true;
     } catch (error) {
-      const nested = error as { statusCode?: number; code?: string; error?: { statusCode?: number; code?: string } };
+      const nested = error as {
+        statusCode?: number;
+        code?: string;
+        error?: { statusCode?: number; code?: string };
+      };
       const detail = nested?.error ?? nested;
-      if (detail?.statusCode === 403 && detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED') return false;
-      throw new BadGatewayException('Guardian asset authorization is unavailable');
+      if (
+        detail?.statusCode === 403 &&
+        detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED'
+      )
+        return false;
+      throw new BadGatewayException(
+        'Guardian asset authorization is unavailable'
+      );
     }
   }
 

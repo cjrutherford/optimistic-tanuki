@@ -1,9 +1,22 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { StorageStrategy } from '@optimistic-tanuki/models';
+import {
+  GuardianContentCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import {
+  InternalGuardianMediaAssertion,
+  StorageStrategy,
+} from '@optimistic-tanuki/models';
 import { basename, extname } from 'node:path';
 import { Readable } from 'node:stream';
+import { firstValueFrom, timeout } from 'rxjs';
 
 import { AppService } from './app.service';
 import { GuardianAssetActor } from './guardian-asset-authorization.service';
@@ -28,7 +41,10 @@ export class InternalMediaService {
 
   constructor(
     private readonly appService: AppService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @Optional()
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialService?: ClientProxy
   ) {
     const configured = this.configService.get<number>('mediaMaxReadBytes');
     this.maxPlaintextBytes =
@@ -42,7 +58,9 @@ export class InternalMediaService {
     range?: string,
     viewerAuthorized = false,
     signal?: AbortSignal,
-    guardianActor?: GuardianAssetActor
+    guardianActor?: GuardianAssetActor,
+    mediaAssertion?: InternalGuardianMediaAssertion,
+    signedViewerProfileId?: string
   ): Promise<MediaStreamResult | UnsatisfiedMediaRange> {
     let asset: Awaited<ReturnType<AppService['retrieveAsset']>>;
     try {
@@ -58,36 +76,135 @@ export class InternalMediaService {
       }
       throw error;
     }
-    if (guardianActor) {
-      const ownerOnlyRestrictions =
-        Array.isArray(asset.audienceRestrictions) &&
-        asset.audienceRestrictions.length > 0 &&
-        asset.audienceRestrictions.every(
+    const restrictions = Array.isArray(asset.audienceRestrictions)
+      ? asset.audienceRestrictions
+      : [];
+    const staged = asset.originKind === 'guardian-staged';
+    const stageMarkers = restrictions.filter(
+      (restriction) => restriction?.type === 'guardian-staged'
+    );
+    let legacyGuardianLibraryAuthorized = false;
+    if (!staged && guardianActor) {
+      const pureOwnerLibrary =
+        asset.profileId === guardianActor.targetProfileId &&
+        !asset.audienceCommunityIds?.length &&
+        restrictions.length > 0 &&
+        restrictions.every(
           (restriction) =>
             restriction?.type === 'owner' &&
             restriction.profileId === guardianActor.targetProfileId
         );
-      if (
-        asset.profileId !== guardianActor.targetProfileId ||
-        asset.audienceCommunityIds?.length ||
-        !ownerOnlyRestrictions
-      ) {
-        throw new NotFoundException(`Asset with id ${id} not found`);
-      }
-      try {
-        await this.appService.authorizeGuardianRead({ ...guardianActor, id });
-      } catch (error) {
-        const detail = error instanceof RpcException ? error.getError() : error;
-        if (detail && typeof detail === 'object' && 'code' in detail && detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED') {
-          throw new NotFoundException(`Asset with id ${id} not found`);
+      if (pureOwnerLibrary) {
+        try {
+          await this.appService.authorizeGuardianRead({ ...guardianActor, id });
+          legacyGuardianLibraryAuthorized = true;
+        } catch (error) {
+          const detail =
+            error instanceof RpcException ? error.getError() : error;
+          if (
+            detail &&
+            typeof detail === 'object' &&
+            'code' in detail &&
+            detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED'
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+          throw error;
         }
-        throw error;
       }
     }
+    if (staged || stageMarkers.length) {
+      if (
+        !staged ||
+        asset.originProfileId !== asset.profileId ||
+        !['client-interface', 'local-hub'].includes(asset.originAppId ?? '') ||
+        stageMarkers.length !== 1 ||
+        stageMarkers[0].profileId !== asset.originProfileId ||
+        stageMarkers[0].appId !== asset.originAppId ||
+        !mediaAssertion ||
+        mediaAssertion.version !== 1 ||
+        mediaAssertion.assetId !== id ||
+        mediaAssertion.dependentProfileId !== asset.originProfileId ||
+        mediaAssertion.appId !== asset.originAppId ||
+        mediaAssertion.path !== `/api/asset/${id}` ||
+        mediaAssertion.range !== (range ?? null) ||
+        mediaAssertion.viewerProfileId !==
+          (signedViewerProfileId === 'public'
+            ? null
+            : signedViewerProfileId ?? null)
+      )
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      try {
+        if (mediaAssertion.accessMode === 'published') {
+          if (
+            !this.socialService ||
+            !mediaAssertion.resourceType ||
+            !mediaAssertion.resourceId
+          )
+            throw new Error('grant unavailable');
+          const allowed = await firstValueFrom(
+            this.socialService
+              .send<boolean>(
+                { cmd: GuardianContentCommands.CheckPublishedAssetGrant },
+                {
+                  assetId: id,
+                  appId: mediaAssertion.appId,
+                  dependentProfileId: mediaAssertion.dependentProfileId,
+                  resourceType: mediaAssertion.resourceType,
+                  resourceId: mediaAssertion.resourceId,
+                  viewerProfileId: mediaAssertion.viewerProfileId ?? undefined,
+                  viewerUserId: mediaAssertion.viewerUserId ?? undefined,
+                }
+              )
+              .pipe(timeout({ first: 3000 }))
+          );
+          if (allowed !== true)
+            throw new NotFoundException(`Asset with id ${id} not found`);
+        } else if (mediaAssertion.accessMode === 'guardian-library') {
+          if (
+            !mediaAssertion.viewerUserId ||
+            !guardianActor ||
+            guardianActor.actorUserId !== mediaAssertion.viewerUserId ||
+            guardianActor.targetProfileId !==
+              mediaAssertion.dependentProfileId ||
+            guardianActor.appId !== mediaAssertion.appId
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+          await this.appService.authorizeGuardianRead({ ...guardianActor, id });
+        } else if (mediaAssertion.accessMode === 'dependent-owner') {
+          if (
+            !mediaAssertion.viewerProfileId ||
+            mediaAssertion.viewerProfileId !== asset.profileId ||
+            mediaAssertion.resourceId !== null ||
+            mediaAssertion.resourceType !== null
+          )
+            throw new NotFoundException(`Asset with id ${id} not found`);
+        } else throw new NotFoundException(`Asset with id ${id} not found`);
+      } catch (error) {
+        if (error instanceof NotFoundException) throw error;
+        const detail = error instanceof RpcException ? error.getError() : error;
+        if (
+          detail &&
+          typeof detail === 'object' &&
+          'code' in detail &&
+          detail.code === 'GUARDIAN_CONTENT_ACCESS_DENIED'
+        )
+          throw new NotFoundException(`Asset with id ${id} not found`);
+        throw new NotFoundException(`Asset with id ${id} not found`);
+      }
+    } else if (
+      asset.originKind !== 'ordinary' ||
+      asset.originProfileId ||
+      asset.originAppId
+    ) {
+      throw new NotFoundException(`Asset with id ${id} not found`);
+    }
+    const ordinaryRestrictions = restrictions.filter(
+      (restriction) => restriction?.type !== 'guardian-staged'
+    );
     if (
-      (asset.audienceCommunityIds?.length ||
-        asset.audienceRestrictions?.length) &&
-      !viewerAuthorized
+      (asset.audienceCommunityIds?.length || ordinaryRestrictions.length) &&
+      !viewerAuthorized &&
+      !legacyGuardianLibraryAuthorized
     ) {
       throw new NotFoundException(`Asset with id ${id} not found`);
     }

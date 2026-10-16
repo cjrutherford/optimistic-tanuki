@@ -31,6 +31,7 @@ import { Poll } from '../entities/poll.entity';
 import { PostShare } from '../entities/post-share.entity';
 import { CommunityMembershipAudit } from '../entities/community-membership-audit.entity';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../entities/guardian-published-asset-grant.entity';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -63,6 +64,7 @@ const entities = [
   CommunityMember,
   CommunityMembershipAudit,
   GuardianContentAudit,
+  GuardianPublishedAssetGrant,
   CommunityInvite,
   Notification,
   Reaction,

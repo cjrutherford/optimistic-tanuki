@@ -214,7 +214,13 @@ export class AuthenticationController {
   @UseGuards(AuthGuard)
   @Throttle(EMAIL_CONFIRM_THROTTLE)
   attestGuardianPermission(
-    @Body() data: { token: string; attested: boolean; attestationVersion: string; dateOfBirth?: string },
+    @Body()
+    data: {
+      token: string;
+      attested: boolean;
+      attestationVersion: string;
+      dateOfBirth?: string;
+    },
     @User() user: UserDetails
   ) {
     return firstValueFrom(
@@ -235,7 +241,9 @@ export class AuthenticationController {
     });
   }
 
-  private guardianAttestationErrorResponse(error: unknown): HttpException | null {
+  private guardianAttestationErrorResponse(
+    error: unknown
+  ): HttpException | null {
     const code = this.guardianAttestationRpcCode(error);
     switch (code) {
       case 'GUARDIAN_TOKEN_INVALID':
@@ -356,35 +364,51 @@ export class AuthenticationController {
         origin,
         request?.headers.host
       );
-      const ageGateApp = canonicalAppId === 'client-interface' || canonicalAppId === 'local-hub';
+      if (!canonicalAppId) {
+        throw new ForbiddenException('App context is not authorized');
+      }
+      const ageGateApp =
+        canonicalAppId === 'client-interface' || canonicalAppId === 'local-hub';
       const app = ageGateApp ? this.resolveEmailApp(canonicalAppId) : undefined;
       const loginResult = await firstValueFrom(
-        this.authClient.send({
-          cmd: AuthCommands.Login,
-        }, {
-          email: data.email,
-          password: data.password,
-          mfa: data.mfa,
-          appId: canonicalAppId,
-          ...(app ? {
-            ageAssessment: {
-              dateOfBirth: data.dateOfBirth,
-              guardianEmail: data.guardianEmail,
-              context: {
-                appId: canonicalAppId!,
-                appName: app.name,
-                uiBaseUrl: app.uiBaseUrl,
-                from: app.authEmail!.from,
-                replyTo: app.authEmail!.replyTo,
-              },
-            },
-          } : {}),
-          deferSession: true,
-        })
+        this.authClient.send(
+          {
+            cmd: AuthCommands.Login,
+          },
+          {
+            email: data.email,
+            password: data.password,
+            mfa: data.mfa,
+            appId: canonicalAppId,
+            ...(app
+              ? {
+                  ageAssessment: {
+                    dateOfBirth: data.dateOfBirth,
+                    guardianEmail: data.guardianEmail,
+                    context: {
+                      appId: canonicalAppId!,
+                      appName: app.name,
+                      uiBaseUrl: app.uiBaseUrl,
+                      from: app.authEmail!.from,
+                      replyTo: app.authEmail!.replyTo,
+                    },
+                  },
+                }
+              : {}),
+            deferSession: true,
+          }
+        )
       );
       if (loginResult?.data?.guardianConsentPending) return loginResult;
       const result = await this.withLoginBootstrapTimeout(
-        this.loginBootstrap.login(data, appScope, canonicalAppId || undefined)
+        this.loginBootstrap.login(
+          data,
+          appScope?.trim() ||
+            (canonicalAppId
+              ? this.profileScopeForApp(canonicalAppId)
+              : undefined),
+          canonicalAppId || undefined
+        )
       );
       return this.withBrowserSession(result, sessionMode, response);
     } catch (error) {
@@ -482,12 +506,16 @@ export class AuthenticationController {
         : undefined;
 
       if (!targetProfile) {
-        throw new ForbiddenException('Profile is not owned by the authenticated user');
+        throw new ForbiddenException(
+          'Profile is not owned by the authenticated user'
+        );
       }
 
       const isSameProfileRefresh = requestedProfileId === currentProfileId;
       if (!canonicalAppId && !isOwnerConsole && !isSameProfileRefresh) {
-        throw new ForbiddenException('A registered app scope is required to select another profile');
+        throw new ForbiddenException(
+          'A registered app scope is required to select another profile'
+        );
       }
 
       if (canonicalAppId || isOwnerConsole) {
@@ -501,7 +529,9 @@ export class AuthenticationController {
           ? isGlobalProfile
           : isGlobalProfile || canonicalTargetAppId === canonicalAppId;
         if (!scopeMatches) {
-          throw new ForbiddenException('Profile does not belong to the requested app scope');
+          throw new ForbiddenException(
+            'Profile does not belong to the requested app scope'
+          );
         }
       }
 
@@ -608,7 +638,9 @@ export class AuthenticationController {
       this.logger.debug('registerUser called');
       const submittedAge = this.ageAtRegistration(data.dateOfBirth);
       if (submittedAge !== null && submittedAge < 13) {
-        throw new ForbiddenException('Registration is unavailable under age 13.');
+        throw new ForbiddenException(
+          'Registration is unavailable under age 13.'
+        );
       }
       if (
         appScope === 'owner-console' &&
@@ -635,13 +667,16 @@ export class AuthenticationController {
       let computedAgeEligibility: 'adult' | undefined;
       if (ageGateApp) {
         if (data.guardianResumeToken) {
-          const resume = await firstValueFrom(
+          const resume = (await firstValueFrom(
             this.authClient.send(
               { cmd: AuthCommands.ValidateGuardianResume },
               { token: data.guardianResumeToken }
             )
-          ) as { valid: true; email: string };
-          if (resume.email.trim().toLowerCase() !== data.email.trim().toLowerCase()) {
+          )) as { valid: true; email: string };
+          if (
+            resume.email.trim().toLowerCase() !==
+            data.email.trim().toLowerCase()
+          ) {
             throw new HttpException(
               'The private permission link is for a different applicant.',
               HttpStatus.FORBIDDEN
@@ -650,12 +685,21 @@ export class AuthenticationController {
         } else {
           const age = this.ageAtRegistration(data.dateOfBirth);
           if (age === null) {
-            throw new HttpException('A valid date of birth is required to register.', HttpStatus.BAD_REQUEST);
+            throw new HttpException(
+              'A valid date of birth is required to register.',
+              HttpStatus.BAD_REQUEST
+            );
           }
-          if (age < 13) throw new ForbiddenException('Registration is unavailable under age 13.');
+          if (age < 13)
+            throw new ForbiddenException(
+              'Registration is unavailable under age 13.'
+            );
           if (age < 18) {
             if (!data.guardianEmail || !validator.isEmail(data.guardianEmail)) {
-              throw new HttpException('A parent or guardian email is required to request permission.', HttpStatus.BAD_REQUEST);
+              throw new HttpException(
+                'A parent or guardian email is required to request permission.',
+                HttpStatus.BAD_REQUEST
+              );
             }
             const app = this.resolveEmailApp(canonicalAppId);
             const requested = await firstValueFrom(
@@ -677,9 +721,10 @@ export class AuthenticationController {
               )
             );
             return {
-              message: requested?.sent === false
-                ? 'Guardian permission request is pending, but the email could not be sent.'
-                : 'Guardian permission request sent.',
+              message:
+                requested?.sent === false
+                  ? 'Guardian permission request is pending, but the email could not be sent.'
+                  : 'Guardian permission request sent.',
               data: { guardianConsentPending: true, request: requested },
             };
           }
@@ -742,18 +787,26 @@ export class AuthenticationController {
   private ageAtRegistration(dateOfBirth?: string): number | null {
     if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return null;
     const dob = new Date(`${dateOfBirth}T00:00:00.000Z`);
-    if (Number.isNaN(dob.getTime()) || dob.toISOString().slice(0, 10) !== dateOfBirth) {
+    if (
+      Number.isNaN(dob.getTime()) ||
+      dob.toISOString().slice(0, 10) !== dateOfBirth
+    ) {
       return null;
     }
     const now = new Date();
-    if (dob.getTime() > Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) {
+    if (
+      dob.getTime() >
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    ) {
       return null;
     }
     let age = now.getUTCFullYear() - dob.getUTCFullYear();
     if (
       now.getUTCMonth() < dob.getUTCMonth() ||
-      (now.getUTCMonth() === dob.getUTCMonth() && now.getUTCDate() < dob.getUTCDate())
-    ) age -= 1;
+      (now.getUTCMonth() === dob.getUTCMonth() &&
+        now.getUTCDate() < dob.getUTCDate())
+    )
+      age -= 1;
     return age;
   }
 
@@ -1080,7 +1133,11 @@ export class AuthenticationController {
     const issued = await firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Issue },
-        { userId: consumed.data.userId, profileId: profile.id, appId: consumed.appId }
+        {
+          userId: consumed.data.userId,
+          profileId: profile.id,
+          appId: consumed.appId,
+        }
       )
     );
     return {
@@ -1165,8 +1222,13 @@ export class AuthenticationController {
       }
       const explicitAppId = appId?.trim();
       const scopedAppId = appScope?.trim();
-      if (explicitAppId && this.canonicalAppForScope(explicitAppId) !== originAppId) return null;
-      if (scopedAppId && this.canonicalAppForScope(scopedAppId) !== originAppId) return null;
+      if (
+        explicitAppId &&
+        this.canonicalAppForScope(explicitAppId) !== originAppId
+      )
+        return null;
+      if (scopedAppId && this.canonicalAppForScope(scopedAppId) !== originAppId)
+        return null;
       return originAppId;
     } catch {
       return null;

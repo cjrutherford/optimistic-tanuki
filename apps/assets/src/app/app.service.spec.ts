@@ -69,7 +69,14 @@ describe('AppService', () => {
         { provide: STORAGE_ADAPTERS, useValue: storageAdapter },
         { provide: FileValidationService, useValue: fileValidationService },
         { provide: VirusScanService, useValue: virusScanService },
-        { provide: GuardianAssetAuthorizationService, useValue: { assertAccess: jest.fn().mockResolvedValue({ userId: 'dependent-user' }) } },
+        {
+          provide: GuardianAssetAuthorizationService,
+          useValue: {
+            assertAccess: jest
+              .fn()
+              .mockResolvedValue({ userId: 'dependent-user' }),
+          },
+        },
       ],
     }).compile();
 
@@ -93,40 +100,142 @@ describe('AppService', () => {
   });
 
   it('rejects a guardian upload without bytes before reserving an asset row', async () => {
-    await expect(appService.createGuardianAsset({
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile', appId: 'client-interface',
-      asset: { name: 'photo.png', type: 'image', profileId: 'dependent-profile', content: '' } as any,
-    })).rejects.toBeInstanceOf(RpcException);
+    await expect(
+      appService.createGuardianAsset({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        asset: {
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'dependent-profile',
+          content: '',
+        } as any,
+      })
+    ).rejects.toBeInstanceOf(RpcException);
     expect(assetRepo.create).not.toHaveBeenCalled();
     expect(storageAdapter.create).not.toHaveBeenCalled();
   });
 
-  it('uses a server reservation ID and compensates storage when the audit insert fails', async () => {
-    const reserved: any = { id: '11111111-1111-4111-8111-111111111111', lifecycleState: 'pending-upload', lifecycleLeaseUntil: new Date(Date.now() + 60_000) };
-    (assetRepo as any).create = jest.fn((data) => ({ ...data }));
-    (assetRepo as any).save = jest.fn().mockResolvedValue(reserved);
-    (assetRepo as any).findOne = jest.fn().mockResolvedValue({ ...reserved });
-    (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
-    (storageAdapter as any).reservationPath = jest.fn(() => 'assets/11111111-1111-4111-8111-111111111111/photo.png');
+  it('creates new guardian uploads with only the reserved staged restriction and immutable scope', async () => {
+    const reservedId = '11111111-1111-4111-8111-111111111111';
+    (assetRepo as any).create = jest.fn((row) => ({ ...row }));
+    (assetRepo as any).save = jest.fn(async (row) => row);
+    (assetRepo as any).findOne = jest.fn(async () => ({
+      id: reservedId,
+      lifecycleState: 'pending-upload',
+      lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+    }));
+    (storageAdapter as any).reservationPath = jest.fn(
+      () => `assets/${reservedId}/photo.png`
+    );
     (storageAdapter.create as jest.Mock).mockResolvedValue({
-      ...reserved, name: 'photo.png', storagePath: 'assets/11111111-1111-4111-8111-111111111111/photo.png',
-      profileId: 'dependent-profile', type: 'image', storageStrategy: 'local_block_storage',
+      id: reservedId,
+      name: 'photo.png',
+      storagePath: `assets/${reservedId}/photo.png`,
+      profileId: 'dependent-profile',
+      type: 'image',
+      storageStrategy: 'local_block_storage',
     });
-    const activityRepository = { save: jest.fn().mockRejectedValue(new Error('audit unavailable')) };
+    const auditRepository = { save: jest.fn(async (row) => row) };
     const manager: any = {
-      getRepository: (entity: unknown) => entity === GuardianAssetActivity ? activityRepository : assetRepo,
+      getRepository: (entity: unknown) =>
+        entity === GuardianAssetActivity ? auditRepository : assetRepo,
       transaction: async (work: (value: unknown) => unknown) => work(manager),
     };
     (assetRepo as any).manager = manager;
 
-    await expect(appService.createGuardianAsset({
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile', appId: 'client-interface',
-      asset: { id: 'attacker-chosen-id', name: 'photo.png', type: 'image', profileId: 'dependent-profile', content: Buffer.from('photo') } as any,
-    })).rejects.toThrow('audit unavailable');
+    await appService.createGuardianAsset({
+      actorUserId: 'guardian-user',
+      targetProfileId: 'dependent-profile',
+      appId: 'client-interface',
+      asset: {
+        name: 'photo.png',
+        type: 'image',
+        profileId: 'dependent-profile',
+        content: Buffer.from('photo'),
+      } as any,
+    });
 
-    expect(storageAdapter.create).toHaveBeenCalledWith(expect.objectContaining({ id: reserved.id }));
-    expect(storageAdapter.create).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'attacker-chosen-id' }));
-    expect(storageAdapter.remove).toHaveBeenCalledWith(expect.objectContaining({ id: reserved.id }));
+    expect(assetRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'dependent-profile',
+        originKind: 'guardian-staged',
+        originProfileId: 'dependent-profile',
+        originAppId: 'client-interface',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: 'dependent-profile',
+            appId: 'client-interface',
+          },
+        ],
+      })
+    );
+    expect(assetRepo.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        audienceRestrictions: [
+          { type: 'owner', profileId: 'dependent-profile' },
+        ],
+      })
+    );
+  });
+
+  it('uses a server reservation ID and compensates storage when the audit insert fails', async () => {
+    const reserved: any = {
+      id: '11111111-1111-4111-8111-111111111111',
+      lifecycleState: 'pending-upload',
+      lifecycleLeaseUntil: new Date(Date.now() + 60_000),
+    };
+    (assetRepo as any).create = jest.fn((data) => ({ ...data }));
+    (assetRepo as any).save = jest.fn().mockResolvedValue(reserved);
+    (assetRepo as any).findOne = jest.fn().mockResolvedValue({ ...reserved });
+    (assetRepo as any).delete = jest.fn().mockResolvedValue({ affected: 1 });
+    (storageAdapter as any).reservationPath = jest.fn(
+      () => 'assets/11111111-1111-4111-8111-111111111111/photo.png'
+    );
+    (storageAdapter.create as jest.Mock).mockResolvedValue({
+      ...reserved,
+      name: 'photo.png',
+      storagePath: 'assets/11111111-1111-4111-8111-111111111111/photo.png',
+      profileId: 'dependent-profile',
+      type: 'image',
+      storageStrategy: 'local_block_storage',
+    });
+    const activityRepository = {
+      save: jest.fn().mockRejectedValue(new Error('audit unavailable')),
+    };
+    const manager: any = {
+      getRepository: (entity: unknown) =>
+        entity === GuardianAssetActivity ? activityRepository : assetRepo,
+      transaction: async (work: (value: unknown) => unknown) => work(manager),
+    };
+    (assetRepo as any).manager = manager;
+
+    await expect(
+      appService.createGuardianAsset({
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        asset: {
+          id: 'attacker-chosen-id',
+          name: 'photo.png',
+          type: 'image',
+          profileId: 'dependent-profile',
+          content: Buffer.from('photo'),
+        } as any,
+      })
+    ).rejects.toThrow('audit unavailable');
+
+    expect(storageAdapter.create).toHaveBeenCalledWith(
+      expect.objectContaining({ id: reserved.id })
+    );
+    expect(storageAdapter.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'attacker-chosen-id' })
+    );
+    expect(storageAdapter.remove).toHaveBeenCalledWith(
+      expect.objectContaining({ id: reserved.id })
+    );
     expect(activityRepository.save).toHaveBeenCalledTimes(1);
   });
 
@@ -157,8 +266,15 @@ describe('AppService', () => {
         profileId: undefined,
         audienceCommunityIds: [],
         audienceRestrictions: [],
+        originKind: 'ordinary',
+        originProfileId: null,
+        originAppId: null,
       });
-      expect(storageAdapter.create).toHaveBeenCalledWith(expect.objectContaining({ id: expect.stringMatching(/^[0-9a-f-]{36}$/i) }));
+      expect(storageAdapter.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+        })
+      );
       expect(assetRepo.save).toHaveBeenCalledWith({
         ...asset,
         storagePath: 'some/path',
@@ -240,6 +356,63 @@ describe('AppService', () => {
       expect(assetRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ audienceRestrictions: [restriction] })
       );
+    });
+
+    it('rejects the reserved guardian stage marker on the generic asset path', async () => {
+      const dto = {
+        name: 'forged.png',
+        type: 'image',
+        profileId: 'profile-1',
+        audienceRestrictions: [
+          {
+            type: 'guardian-staged',
+            profileId: 'profile-1',
+            appId: 'client-interface',
+          },
+        ],
+      } as any;
+
+      await expect(appService.createAsset(dto)).rejects.toBeInstanceOf(
+        RpcException
+      );
+      expect(assetRepo.create).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects reserved provenance fields smuggled inside a generic restriction', async () => {
+      const input = {
+        name: 'forged',
+        type: 'image',
+        content: Buffer.from('bytes'),
+        profileId: 'owner-profile',
+        audienceRestrictions: [
+          {
+            type: 'owner',
+            profileId: 'owner-profile',
+            originAppId: 'local-hub',
+          },
+        ],
+      } as any;
+      await expect(appService.createAsset(input)).rejects.toBeInstanceOf(
+        RpcException
+      );
+      expect(assetRepo.create).not.toHaveBeenCalled();
+      expect(storageAdapter.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects reserved nested provenance fields on ADD_AUDIENCE_RESTRICTIONS', async () => {
+      await expect(
+        appService.addAudienceRestrictions({
+          id: 'asset-1',
+          restrictions: [
+            {
+              type: 'owner',
+              profileId: 'owner-profile',
+              guardianStaged: true,
+            } as any,
+          ],
+        })
+      ).rejects.toBeInstanceOf(RpcException);
     });
 
     it('merges restrictions atomically and monotonically', async () => {
@@ -690,7 +863,10 @@ describe('AppService', () => {
 
       await appService.removeAsset(handle);
 
-      expect(assetRepo.findOneBy).toHaveBeenCalledWith({ id: handle.id, lifecycleState: 'active' });
+      expect(assetRepo.findOneBy).toHaveBeenCalledWith({
+        id: handle.id,
+        lifecycleState: 'active',
+      });
       expect(storageAdapter.remove).toHaveBeenCalledWith(asset);
       expect(assetRepo.remove).toHaveBeenCalledWith(asset);
     });
@@ -726,7 +902,10 @@ describe('AppService', () => {
       const result = await appService.retrieveAsset(handle);
 
       expect(result).toEqual(asset);
-      expect(assetRepo.findOneBy).toHaveBeenCalledWith({ id: handle.id, lifecycleState: 'active' });
+      expect(assetRepo.findOneBy).toHaveBeenCalledWith({
+        id: handle.id,
+        lifecycleState: 'active',
+      });
     });
 
     it('should throw an error if asset not found', async () => {
@@ -815,7 +994,11 @@ describe('AppService', () => {
 
       expect(result).toEqual(assets);
       expect(assetRepo.find).toHaveBeenCalledWith({
-        where: { profileId: 'profile-1', type: 'image', lifecycleState: 'active' },
+        where: {
+          profileId: 'profile-1',
+          type: 'image',
+          lifecycleState: 'active',
+        },
         order: { id: 'DESC' },
         take: 48,
       });

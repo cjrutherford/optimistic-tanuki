@@ -35,7 +35,39 @@ export class AssetAudienceRestrictionDto {
 
 export type AssetAudienceRestriction =
   | { type: 'owner' | 'followers'; profileId: string }
-  | { type: 'community'; profileId: string; communityId: string };
+  | { type: 'community'; profileId: string; communityId: string }
+  /** Reserved for Assets GUARDIAN_CREATE. Generic callers must reject it. */
+  | { type: 'guardian-staged'; profileId: string; appId: string };
+
+export type AssetOriginKind = 'ordinary' | 'guardian-staged';
+
+export type GuardianMediaResourceType = 'post' | 'comment';
+
+export interface GuardianPublishedAssetGrantContext {
+  assetId: string;
+  dependentProfileId: string;
+  appId: string;
+  viewerProfileId: string | null;
+  resourceType?: GuardianMediaResourceType;
+  resourceId?: string;
+}
+
+export interface InternalGuardianMediaAssertion {
+  version: 1;
+  assetId: string;
+  viewerUserId: string | null;
+  viewerProfileId: string | null;
+  appId: string;
+  dependentProfileId: string;
+  resourceType: GuardianMediaResourceType | null;
+  resourceId: string | null;
+  /** Canonical public gateway path and the internal Assets route, both request-bound. */
+  path: string;
+  internalPath: string;
+  range: string | null;
+  accessMode: 'published' | 'guardian-library' | 'dependent-owner';
+  issuedAt: number;
+}
 
 export interface AssetContentAudienceReference {
   restrictions: AssetAudienceRestriction[];

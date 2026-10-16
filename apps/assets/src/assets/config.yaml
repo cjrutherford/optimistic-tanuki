@@ -13,6 +13,9 @@ services:
   profile:
     host: profile
     port: 3002
+  social:
+    host: social
+    port: 3003
 storage-module-options:
   enabledAdapters:
     - local

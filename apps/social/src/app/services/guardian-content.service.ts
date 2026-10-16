@@ -12,10 +12,19 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
-import { DataSource, IsNull, LessThan, LessThanOrEqual } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  IsNull,
+  LessThan,
+  LessThanOrEqual,
+} from 'typeorm';
 import DOMPurify from 'isomorphic-dompurify';
 import { Inject } from '@nestjs/common';
 import { GuardianContentAudit } from '../../entities/guardian-content-audit.entity';
+import { GuardianPublishedAssetGrant } from '../../entities/guardian-published-asset-grant.entity';
+import FollowEntity from '../../entities/Follow.entity';
+import { guardianPublishedAssetReferences } from './guardian-published-asset-reference.util';
 import { Post } from '../../entities/post.entity';
 import { Comment } from '../../entities/comment.entity';
 import { Attachment } from '../../entities/attachment.entity';
@@ -27,8 +36,15 @@ type ContentInput = Record<string, unknown>;
 
 const APP_IDS = new Set(['client-interface', 'local-hub']);
 const LEGACY_SCOPE = 'social';
-const POST_FIELDS = new Set(['title', 'content', 'visibility']);
-const COMMENT_FIELDS = new Set(['content']);
+const POST_FIELDS = new Set([
+  'title',
+  'content',
+  'visibility',
+  'publishAssetIds',
+]);
+const COMMENT_FIELDS = new Set(['content', 'publishAssetIds']);
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
@@ -158,8 +174,21 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         appScope: input.appId,
         communityId: null,
       });
-      await this.postService.latchPrivateAssetReferences(post);
+      await this.postService.latchPrivateAssetReferences(post, {
+        dependentProfileId: profile.id,
+        appId: input.appId,
+        allowedAssetIds: this.selectedAssetIds(fields.publishAssetIds),
+      });
       const saved = await repo.save(post);
+      await this.persistPublishedAssetGrants(
+        manager,
+        input,
+        profile,
+        'post',
+        saved.id,
+        fields.publishAssetIds,
+        saved.content
+      );
       await this.audit(
         manager,
         input,
@@ -212,7 +241,8 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         'Guardian content requires a visible personal post owned by the dependent'
       );
       await this.authorize(input, profile, 'content.manage');
-      const update: Partial<Post> = { ...fields } as Partial<Post>;
+      const { publishAssetIds, ...postFields } = fields;
+      const update: Partial<Post> = { ...postFields } as Partial<Post>;
       if (typeof fields.content === 'string')
         update.content = this.sanitize(fields.content);
       const nextAudience = {
@@ -220,15 +250,49 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         ...update,
         profileId: post.profileId,
       } as Post;
-      await this.postService.latchPostAndCommentAssetReferences(post);
+      const guardianStageContext = {
+        dependentProfileId: profile.id,
+        appId: input.appId,
+        allowedAssetIds: await this.allowedStageAssetIds(
+          manager,
+          profile.id,
+          input.appId,
+          'post',
+          post.id,
+          publishAssetIds
+        ),
+        commentAllowedAssetIds: await this.allowedStageCommentAssetIds(
+          manager,
+          profile.id,
+          input.appId,
+          post.id
+        ),
+      };
+      await this.postService.latchPostAndCommentAssetReferences(
+        post,
+        guardianStageContext
+      );
       if (
         nextAudience.visibility !== 'public' ||
         nextAudience.content !== post.content
       ) {
-        await this.postService.latchPostAndCommentAssetReferences(nextAudience);
+        await this.postService.latchPostAndCommentAssetReferences(
+          nextAudience,
+          guardianStageContext
+        );
       }
       await repo.update(post.id, update);
       const saved = await repo.findOne({ where: { id: post.id } });
+      if (saved)
+        await this.persistPublishedAssetGrants(
+          manager,
+          input,
+          profile,
+          'post',
+          saved.id,
+          publishAssetIds,
+          saved.content
+        );
       await this.audit(
         manager,
         input,
@@ -261,7 +325,24 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
       );
       await this.authorize(input, profile, 'content.manage');
       const postId = post.id;
-      await this.postService.latchPostAndCommentAssetReferences(post);
+      await this.postService.latchPostAndCommentAssetReferences(post, {
+        dependentProfileId: profile.id,
+        appId: input.appId,
+        allowedAssetIds: await this.allowedStageAssetIds(
+          manager,
+          profile.id,
+          input.appId,
+          'post',
+          post.id,
+          undefined
+        ),
+        commentAllowedAssetIds: await this.allowedStageCommentAssetIds(
+          manager,
+          profile.id,
+          input.appId,
+          post.id
+        ),
+      });
       await manager.getRepository(Comment).delete({ post: { id: postId } });
       await manager.getRepository(Attachment).delete({ post: { id: postId } });
       await repo.delete(postId);
@@ -345,7 +426,7 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
   async createComment(input: Actor & { data: ContentInput }) {
     const fields = this.validateFields(
       input.data,
-      new Set(['postId', 'content']),
+      new Set(['postId', 'content', 'publishAssetIds']),
       ['postId', 'content']
     );
     if (
@@ -369,7 +450,12 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
       await this.postService.latchCommentAssetContent(
         sanitizedContent,
         post,
-        profile.id
+        profile.id,
+        {
+          dependentProfileId: profile.id,
+          appId: input.appId,
+          allowedAssetIds: this.selectedAssetIds(fields.publishAssetIds),
+        }
       );
       const repo = manager.getRepository(Comment);
       const comment = repo.create({
@@ -380,9 +466,24 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         appScope: input.appId,
       });
       const saved = await repo.save(comment);
-      await this.audit(manager, input, profile, 'comment', saved.id, 'create', [
-        'content',
-      ]);
+      await this.persistPublishedAssetGrants(
+        manager,
+        input,
+        profile,
+        'comment',
+        saved.id,
+        fields.publishAssetIds,
+        saved.content
+      );
+      await this.audit(
+        manager,
+        input,
+        profile,
+        'comment',
+        saved.id,
+        'create',
+        Object.keys(fields)
+      );
       return saved;
     });
   }
@@ -431,17 +532,35 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         'Guardian comments require a visible personal post owned by the dependent'
       );
       await this.authorize(input, profile, 'content.manage');
+      const allowedAssetIds = await this.allowedStageAssetIds(
+        manager,
+        profile.id,
+        input.appId,
+        'comment',
+        comment.id,
+        fields.publishAssetIds
+      );
       if (typeof fields.content === 'string') {
         const sanitizedContent = this.sanitize(fields.content);
         await this.postService.latchCommentAssetContent(
           comment.content,
           lockedParent,
-          profile.id
+          profile.id,
+          {
+            dependentProfileId: profile.id,
+            appId: input.appId,
+            allowedAssetIds,
+          }
         );
         await this.postService.latchCommentAssetContent(
           sanitizedContent,
           lockedParent,
-          profile.id
+          profile.id,
+          {
+            dependentProfileId: profile.id,
+            appId: input.appId,
+            allowedAssetIds,
+          }
         );
         await repo.update(comment.id, { content: sanitizedContent });
       }
@@ -449,6 +568,16 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
         where: { id: comment.id },
         relations: ['post'],
       });
+      if (saved)
+        await this.persistPublishedAssetGrants(
+          manager,
+          input,
+          profile,
+          'comment',
+          saved.id,
+          fields.publishAssetIds,
+          saved.content
+        );
       await this.audit(
         manager,
         input,
@@ -499,10 +628,19 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
       );
       await this.authorize(input, profile, 'content.manage');
       const commentId = comment.id;
+      const allowedAssetIds = await this.allowedStageAssetIds(
+        manager,
+        profile.id,
+        input.appId,
+        'comment',
+        comment.id,
+        undefined
+      );
       await this.postService.latchCommentAssetContent(
         comment.content,
         lockedParent,
-        profile.id
+        profile.id,
+        { dependentProfileId: profile.id, appId: input.appId, allowedAssetIds }
       );
       await repo.remove(comment);
       await this.audit(
@@ -516,6 +654,247 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
       );
       return { success: true };
     });
+  }
+
+  private async persistPublishedAssetGrants(
+    manager: EntityManager,
+    input: Actor,
+    profile: ProfileRecord,
+    resourceType: 'post' | 'comment',
+    resourceId: string,
+    rawAssetIds: unknown,
+    resultingContent: string
+  ): Promise<void> {
+    if (rawAssetIds === undefined) return;
+    if (
+      !Array.isArray(rawAssetIds) ||
+      rawAssetIds.length > 50 ||
+      rawAssetIds.some((id) => typeof id !== 'string' || !UUID.test(id))
+    ) {
+      throw this.denied('Invalid published asset identifiers');
+    }
+    const assetIds = (rawAssetIds as string[]).map((id) => id.toLowerCase());
+    if (new Set(assetIds).size !== assetIds.length) {
+      throw this.denied('Published asset identifiers must be unique');
+    }
+    const references = guardianPublishedAssetReferences(resultingContent);
+    if (assetIds.some((id) => !references.has(id.toLowerCase()))) {
+      throw this.denied(
+        'Every published asset must be referenced by the resource'
+      );
+    }
+    const grantRepo = manager.getRepository(GuardianPublishedAssetGrant);
+    for (const assetId of assetIds) {
+      const asset = await this.postService.getAssetForGuardianPublication(
+        assetId
+      );
+      const stage = asset.audienceRestrictions?.some(
+        (restriction) =>
+          restriction.type === 'guardian-staged' &&
+          restriction.profileId === profile.id &&
+          restriction.appId === input.appId
+      );
+      if (
+        asset.id !== assetId ||
+        asset.originKind !== 'guardian-staged' ||
+        asset.profileId !== profile.id ||
+        asset.originProfileId !== profile.id ||
+        asset.originAppId !== input.appId ||
+        !stage
+      )
+        throw this.denied(
+          'Asset is not staged for this dependent and application'
+        );
+      const existing = await grantRepo.findOne({
+        where: {
+          assetId,
+          resourceType,
+          resourceId,
+          dependentProfileId: profile.id,
+          appId: input.appId,
+        },
+      });
+      if (!existing)
+        await grantRepo.save(
+          grantRepo.create({
+            assetId,
+            resourceType,
+            resourceId,
+            dependentProfileId: profile.id,
+            appId: input.appId,
+            actorUserId: input.actorUserId,
+          })
+        );
+    }
+  }
+
+  private selectedAssetIds(raw: unknown): Set<string> {
+    return new Set(
+      Array.isArray(raw)
+        ? raw
+            .filter(
+              (id): id is string => typeof id === 'string' && UUID.test(id)
+            )
+            .map((id) => id.toLowerCase())
+        : []
+    );
+  }
+
+  private async allowedStageAssetIds(
+    manager: EntityManager,
+    dependentProfileId: string,
+    appId: string,
+    resourceType: 'post' | 'comment',
+    resourceId: string,
+    selected: unknown
+  ): Promise<Set<string>> {
+    const ids = this.selectedAssetIds(selected);
+    const existing = await manager
+      .getRepository(GuardianPublishedAssetGrant)
+      .find({
+        where: { dependentProfileId, appId, resourceType, resourceId },
+      });
+    for (const grant of existing) ids.add(grant.assetId.toLowerCase());
+    return ids;
+  }
+
+  private async allowedStageCommentAssetIds(
+    manager: EntityManager,
+    dependentProfileId: string,
+    appId: string,
+    postId: string
+  ): Promise<Map<string, Set<string>>> {
+    const comments = await manager
+      .getRepository(Comment)
+      .find({ where: { post: { id: postId } } });
+    const result = new Map<string, Set<string>>();
+    for (const comment of comments) {
+      result.set(
+        comment.id,
+        await this.allowedStageAssetIds(
+          manager,
+          dependentProfileId,
+          appId,
+          'comment',
+          comment.id,
+          undefined
+        )
+      );
+    }
+    return result;
+  }
+
+  async resolvePublishedAssetGrant(input: {
+    assetId: string;
+    appId: string;
+    viewerProfileId?: string;
+    viewerUserId?: string;
+  }) {
+    if (!UUID.test(input.assetId) || !APP_IDS.has(input.appId)) return null;
+    const grants = await this.dataSource
+      .getRepository(GuardianPublishedAssetGrant)
+      .find({
+        where: { assetId: input.assetId, appId: input.appId },
+        order: { resourceType: 'ASC', resourceId: 'ASC' },
+      });
+    for (const grant of grants) {
+      if (await this.isLivePublishedAssetGrant(grant, input)) {
+        return {
+          assetId: grant.assetId,
+          resourceType: grant.resourceType,
+          resourceId: grant.resourceId,
+          dependentProfileId: grant.dependentProfileId,
+          appId: grant.appId,
+        };
+      }
+    }
+    return null;
+  }
+
+  async checkPublishedAssetGrant(input: {
+    assetId: string;
+    appId: string;
+    resourceType: 'post' | 'comment';
+    resourceId: string;
+    dependentProfileId: string;
+    viewerProfileId?: string;
+    viewerUserId?: string;
+  }) {
+    if (
+      !UUID.test(input.assetId) ||
+      !UUID.test(input.resourceId) ||
+      !UUID.test(input.dependentProfileId) ||
+      !APP_IDS.has(input.appId)
+    )
+      return false;
+    const grant = await this.dataSource
+      .getRepository(GuardianPublishedAssetGrant)
+      .findOne({
+        where: {
+          assetId: input.assetId,
+          appId: input.appId,
+          resourceType: input.resourceType,
+          resourceId: input.resourceId,
+          dependentProfileId: input.dependentProfileId,
+        },
+      });
+    return !!grant && this.isLivePublishedAssetGrant(grant, input);
+  }
+
+  private async isLivePublishedAssetGrant(
+    grant: GuardianPublishedAssetGrant,
+    input: { appId: string; viewerProfileId?: string; viewerUserId?: string }
+  ): Promise<boolean> {
+    if (grant.appId !== input.appId || !APP_IDS.has(input.appId)) return false;
+    let post: Post | null = null;
+    let currentReference: string | undefined;
+    if (grant.resourceType === 'post') {
+      post = await this.dataSource
+        .getRepository(Post)
+        .findOne({ where: { id: grant.resourceId } });
+      currentReference = post?.content;
+    } else if (grant.resourceType === 'comment') {
+      const comment = await this.dataSource
+        .getRepository(Comment)
+        .findOne({ where: { id: grant.resourceId }, relations: ['post'] });
+      if (
+        !comment ||
+        comment.moderationStatus !== 'visible' ||
+        comment.appScope !== input.appId ||
+        !this.referencesAsset(comment.content, grant.assetId)
+      )
+        return false;
+      post = comment.post;
+      currentReference = comment.content;
+    } else return false;
+    if (
+      !post ||
+      post.profileId !== grant.dependentProfileId ||
+      post.appScope !== input.appId ||
+      post.communityId ||
+      post.moderationStatus !== 'visible' ||
+      post.isScheduled ||
+      (post.scheduledAt && post.scheduledAt.getTime() > Date.now()) ||
+      !currentReference ||
+      !this.referencesAsset(currentReference, grant.assetId)
+    )
+      return false;
+    if (post.visibility === 'public') return true;
+    if (post.visibility !== 'followers' || !input.viewerProfileId) return false;
+    if (input.viewerProfileId === post.profileId) return true;
+    return !!(await this.dataSource
+      .getRepository(FollowEntity)
+      .findOne({
+        where: {
+          followerId: input.viewerProfileId,
+          followeeId: post.profileId,
+          appScope: input.appId,
+        },
+      }));
+  }
+
+  private referencesAsset(content: string, assetId: string): boolean {
+    return guardianPublishedAssetReferences(content).has(assetId.toLowerCase());
   }
 
   private async resolveProfile(input: Actor): Promise<ProfileRecord> {
@@ -658,8 +1037,29 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
 
   private sanitize(value: string): string {
     return DOMPurify.sanitize(value, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'code', 'img'],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title'],
+      ALLOWED_TAGS: [
+        'p',
+        'br',
+        'strong',
+        'em',
+        'u',
+        'a',
+        'code',
+        'img',
+        'video',
+        'audio',
+        'source',
+      ],
+      ALLOWED_ATTR: [
+        'href',
+        'src',
+        'alt',
+        'title',
+        'controls',
+        'width',
+        'height',
+        'poster',
+      ],
       ALLOW_DATA_ATTR: false,
     });
   }

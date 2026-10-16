@@ -29,6 +29,24 @@ import {
   CommunityMembershipStatus,
 } from '../../entities/community-member.entity';
 
+export interface GuardianStageAudienceContext {
+  dependentProfileId: string;
+  appId: string;
+  /** Asset IDs selected for publication, plus exact resources with a durable existing grant. */
+  allowedAssetIds: ReadonlySet<string>;
+  /** Existing asset grants for child comments, keyed by exact comment resource ID. */
+  commentAllowedAssetIds?: ReadonlyMap<string, ReadonlySet<string>>;
+}
+
+function denyGuardianStagePublication(): RpcException {
+  return new RpcException({
+    statusCode: 403,
+    code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
+    message:
+      'Guardian-staged media requires an authorized guardian content mutation',
+  });
+}
+
 @Injectable()
 export class PostService {
   constructor(
@@ -44,15 +62,40 @@ export class PostService {
     private readonly assetService?: ClientProxy
   ) {}
 
-  async latchPrivateAssetReferences(post: {
-    id?: string;
-    content?: string;
-    attachments?: Array<{ filePath?: string }>;
-    profileId?: string;
-    visibility?: string;
-    communityId?: string;
-    publicAudienceExplicit?: boolean;
-  }): Promise<void> {
+  async getAssetForGuardianPublication(assetId: string): Promise<{
+    id: string;
+    profileId: string;
+    originKind?: string;
+    originProfileId?: string | null;
+    originAppId?: string | null;
+    audienceRestrictions?: Array<{
+      type: string;
+      profileId?: string;
+      appId?: string;
+    }>;
+  }> {
+    if (!this.assetService)
+      throw new Error('Asset authorization service unavailable');
+    return firstValueFrom(
+      this.assetService
+        .send({ cmd: AssetCommands.RETRIEVE }, { id: assetId })
+        .pipe(timeout({ first: 5000 }))
+    );
+  }
+
+  async latchPrivateAssetReferences(
+    post: {
+      id?: string;
+      content?: string;
+      attachments?: Array<{ filePath?: string }>;
+      profileId?: string;
+      visibility?: string;
+      communityId?: string;
+      publicAudienceExplicit?: boolean;
+      appScope?: string;
+    },
+    guardianStageContext?: GuardianStageAudienceContext
+  ): Promise<void> {
     const persistedAttachments = post.id
       ? (await this.attachmentRepo.find({
           where: { post: { id: post.id } },
@@ -99,8 +142,28 @@ export class PostService {
       const storedCommunities = Array.isArray(asset.audienceCommunityIds)
         ? asset.audienceCommunityIds
         : [];
+      const stageMarkers = storedRestrictions.filter(
+        (restriction) => restriction?.type === 'guardian-staged'
+      );
+      const stageRestrictionCompatible =
+        stageMarkers.length === 1 &&
+        guardianStageContext?.allowedAssetIds.has(id.toLowerCase()) &&
+        guardianStageContext?.dependentProfileId === post.profileId &&
+        guardianStageContext.appId === post.appScope &&
+        asset.id === id &&
+        asset.originKind === 'guardian-staged' &&
+        asset.profileId === guardianStageContext.dependentProfileId &&
+        asset.originProfileId === guardianStageContext.dependentProfileId &&
+        asset.originAppId === guardianStageContext.appId &&
+        stageMarkers[0].profileId === guardianStageContext.dependentProfileId &&
+        stageMarkers[0].appId === guardianStageContext.appId;
+      if (stageMarkers.length && !stageRestrictionCompatible) {
+        throw denyGuardianStagePublication();
+      }
       const compatibleRestrictions = storedRestrictions.every(
         (restriction) =>
+          (restriction.type === 'guardian-staged' &&
+            stageRestrictionCompatible) ||
           (restriction.type === 'followers' &&
             post.visibility === 'followers' &&
             restriction.profileId === post.profileId) ||
@@ -179,14 +242,18 @@ export class PostService {
 
   private async getCommentAssetReferences(
     post: Post
-  ): Promise<Array<{ id: string; profileId: string }>> {
+  ): Promise<Array<{ id: string; profileId: string; commentId: string }>> {
     const comments =
       (await this.commentRepo.find({
         where: { post: { id: post.id } },
       })) ?? [];
     const pattern =
       /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi;
-    const references: Array<{ id: string; profileId: string }> = [];
+    const references: Array<{
+      id: string;
+      profileId: string;
+      commentId: string;
+    }> = [];
     for (const comment of comments) {
       const ids = [
         ...new Set(
@@ -196,7 +263,11 @@ export class PostService {
         ),
       ];
       for (const id of ids) {
-        references.push({ id, profileId: comment.profileId });
+        references.push({
+          id,
+          profileId: comment.profileId,
+          commentId: comment.id,
+        });
       }
     }
     return references;
@@ -204,7 +275,8 @@ export class PostService {
 
   private async latchCommentAssetReferences(
     post: Post,
-    references: Array<{ id: string; profileId: string }>
+    references: Array<{ id: string; profileId: string; commentId?: string }>,
+    guardianStageContext?: GuardianStageAudienceContext
   ): Promise<void> {
     const community = post.communityId
       ? await this.communityService.findOne(post.communityId)
@@ -215,17 +287,51 @@ export class PostService {
         post.publicAudienceExplicit === false &&
         !!post.communityId);
     const privateCommunity = !!community?.isPrivate;
-    if (post.visibility !== 'followers' && !memberOnly && !privateCommunity)
-      return;
+    const audienceRestricted =
+      post.visibility === 'followers' || memberOnly || privateCommunity;
+    if (!audienceRestricted && !guardianStageContext) return;
     if (references.length && !this.assetService) {
       throw new Error('Asset audience service unavailable');
     }
-    for (const { id, profileId } of references) {
+    for (const { id, profileId, commentId } of references) {
+      const allowedAssetIds =
+        guardianStageContext && guardianStageContext.commentAllowedAssetIds
+          ? guardianStageContext.commentAllowedAssetIds.get(commentId ?? '') ??
+            new Set<string>()
+          : guardianStageContext?.allowedAssetIds;
+      const resourceContext =
+        guardianStageContext && allowedAssetIds
+          ? { ...guardianStageContext, allowedAssetIds }
+          : guardianStageContext;
       const asset = await firstValueFrom(
         this.assetService!.send({ cmd: AssetCommands.RETRIEVE }, { id }).pipe(
           timeout({ first: 5000 })
         )
       );
+      const markers = Array.isArray(asset.audienceRestrictions)
+        ? asset.audienceRestrictions.filter(
+            (restriction) => restriction?.type === 'guardian-staged'
+          )
+        : [];
+      if (
+        markers.length &&
+        !(
+          markers.length === 1 &&
+          resourceContext?.allowedAssetIds.has(id.toLowerCase()) &&
+          resourceContext?.dependentProfileId === post.profileId &&
+          resourceContext.appId === post.appScope &&
+          asset.id === id &&
+          asset.originKind === 'guardian-staged' &&
+          asset.profileId === resourceContext.dependentProfileId &&
+          asset.originProfileId === resourceContext.dependentProfileId &&
+          asset.originAppId === resourceContext.appId &&
+          markers[0].profileId === resourceContext.dependentProfileId &&
+          markers[0].appId === resourceContext.appId
+        )
+      ) {
+        throw denyGuardianStagePublication();
+      }
+      if (!audienceRestricted) continue;
       // Only the commenter can authorize narrowing their asset. Reject the
       // parent change rather than silently privatizing a third party's URL.
       if (asset.profileId !== profileId) {
@@ -266,7 +372,8 @@ export class PostService {
   async latchCommentAssetContent(
     content: string,
     post: Post,
-    commenterProfileId: string
+    commenterProfileId: string,
+    guardianStageContext?: GuardianStageAudienceContext
   ): Promise<void> {
     const pattern =
       /(?:\/api)?\/asset\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?=$|[^0-9a-f-])/gi;
@@ -275,13 +382,24 @@ export class PostService {
         (content.match(pattern) ?? []).map((match) => match.split('/').pop()!)
       ),
     ].map((id) => ({ id, profileId: commenterProfileId }));
-    await this.latchCommentAssetReferences(post, references);
+    await this.latchCommentAssetReferences(
+      post,
+      references,
+      guardianStageContext
+    );
   }
 
-  async latchPostAndCommentAssetReferences(post: Post): Promise<void> {
-    await this.latchPrivateAssetReferences(post);
+  async latchPostAndCommentAssetReferences(
+    post: Post,
+    guardianStageContext?: GuardianStageAudienceContext
+  ): Promise<void> {
+    await this.latchPrivateAssetReferences(post, guardianStageContext);
     const references = await this.getCommentAssetReferences(post);
-    await this.latchCommentAssetReferences(post, references);
+    await this.latchCommentAssetReferences(
+      post,
+      references,
+      guardianStageContext
+    );
   }
 
   private sanitizeContent(content: string): string {

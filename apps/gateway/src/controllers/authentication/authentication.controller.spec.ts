@@ -184,7 +184,10 @@ describe('AuthenticationController', () => {
   });
 
   it('requires an authenticated guardian and derives guardian identity from the verified session', async () => {
-    const user = { userId: 'session-guardian', email: 'guardian@example.invalid' } as any;
+    const user = {
+      userId: 'session-guardian',
+      email: 'guardian@example.invalid',
+    } as any;
     const forgedBody = {
       token: 'private-link-token',
       attested: true,
@@ -205,8 +208,12 @@ describe('AuthenticationController', () => {
         dateOfBirth: '2000-01-01',
       }
     );
-    expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.attestGuardianPermission)).not.toBe(true);
-    expect(Reflect.getMetadata('__guards__', controller.attestGuardianPermission)).toContain(AuthGuard);
+    expect(
+      Reflect.getMetadata(IS_PUBLIC_KEY, controller.attestGuardianPermission)
+    ).not.toBe(true);
+    expect(
+      Reflect.getMetadata('__guards__', controller.attestGuardianPermission)
+    ).toContain(AuthGuard);
   });
 
   it.each([
@@ -214,22 +221,25 @@ describe('AuthenticationController', () => {
     [{ code: 'GUARDIAN_ATTESTATION_REQUIRED' }, 400],
     [{ code: 'GUARDIAN_ADULT_REQUIRED' }, 403],
     [{ code: 'GUARDIAN_TOKEN_USED' }, 409],
-  ])('maps expected guardian attestation refusal %j to HTTP %s', async (rpcError, status) => {
-    (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      throwError(() => rpcError)
-    );
+  ])(
+    'maps expected guardian attestation refusal %j to HTTP %s',
+    async (rpcError, status) => {
+      (clientProxy.send as jest.Mock).mockReturnValueOnce(
+        throwError(() => rpcError)
+      );
 
-    await expect(
-      controller.attestGuardianPermission(
-        {
-          token: 'private-link-token',
-          attested: true,
-          attestationVersion: 'guardian-attestation-v1',
-        },
-        { userId: 'session-guardian' } as any
-      )
-    ).rejects.toMatchObject({ status });
-  });
+      await expect(
+        controller.attestGuardianPermission(
+          {
+            token: 'private-link-token',
+            attested: true,
+            attestationVersion: 'guardian-attestation-v1',
+          },
+          { userId: 'session-guardian' } as any
+        )
+      ).rejects.toMatchObject({ status });
+    }
+  );
 
   it('leaves unexpected guardian attestation backend failures unclassified', async () => {
     const failure = new Error('database unavailable');
@@ -402,6 +412,58 @@ describe('AuthenticationController', () => {
     ).toBe('local-hub');
   });
 
+  it('derives a missing login scope from the verified app while preserving app scope aliases', async () => {
+    await expect(
+      controller.loginUser(
+        { email: 'owner@example.invalid', password: 'password' },
+        undefined as any,
+        undefined,
+        'https://opportunities.example.com',
+        undefined,
+        undefined,
+        { headers: { host: 'opportunities.example.com' } } as any
+      )
+    ).resolves.toBe(true);
+
+    expect(loginBootstrap.login).toHaveBeenCalledWith(
+      expect.anything(),
+      'leads-app',
+      'opportunity-compass'
+    );
+  });
+
+  it.each([
+    {
+      label: 'rejects a mismatched app scope',
+      appScope: 'local-hub',
+      appId: 'client-interface',
+      origin: 'https://optimistic-tanuki.com',
+      host: 'optimistic-tanuki.com',
+    },
+    {
+      label: 'rejects an unregistered origin',
+      appScope: undefined,
+      appId: undefined,
+      origin: 'https://unknown.example.invalid',
+      host: 'unknown.example.invalid',
+    },
+  ])('$label before authentication or bootstrap RPCs', async (request) => {
+    await expect(
+      controller.loginUser(
+        { email: 'owner@example.invalid', password: 'password' },
+        request.appScope as any,
+        request.appId,
+        request.origin,
+        undefined,
+        undefined,
+        { headers: { host: request.host } } as any
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(clientProxy.send).not.toHaveBeenCalled();
+    expect(loginBootstrap.login).not.toHaveBeenCalled();
+  });
+
   it('does not return the private age expiry field in a public registration response', async () => {
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 30);
@@ -460,7 +522,15 @@ describe('AuthenticationController', () => {
     });
 
     await expect(
-      controller.loginUser(loginRequest, 'test')
+      controller.loginUser(
+        loginRequest,
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
+      )
     ).rejects.toMatchObject({
       status: 500,
     });
@@ -483,7 +553,12 @@ describe('AuthenticationController', () => {
     await expect(
       controller.loginUser(
         { email: 'valid@test.com', password: 'correct-password' },
-        'test'
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).resolves.toEqual({ code: 0, data: { newToken: 'authenticated-token' } });
     expect(callOrder).toEqual([AuthCommands.Login, 'bootstrap']);
@@ -495,7 +570,12 @@ describe('AuthenticationController', () => {
 
     const loginPromise = controller.loginUser(
       { email: 'valid@test.com', password: 'correct-password' },
-      'test'
+      'client-interface',
+      'client-interface',
+      'https://optimistic-tanuki.com',
+      undefined,
+      undefined,
+      { headers: { host: 'optimistic-tanuki.com' } } as any
     );
     const rejection = expect(loginPromise).rejects.toMatchObject({
       status: 503,
@@ -514,7 +594,12 @@ describe('AuthenticationController', () => {
     await expect(
       controller.loginUser(
         { email: 'valid@test.com', password: 'correct-password' },
-        'test'
+        'client-interface',
+        'client-interface',
+        'https://optimistic-tanuki.com',
+        undefined,
+        undefined,
+        { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).rejects.toMatchObject({
       status: 500,
@@ -535,7 +620,15 @@ describe('AuthenticationController', () => {
       of({ code: 0, data: { newToken: token } })
     );
 
-    await controller.loginUser({ email: 'valid@test.com', password }, 'test');
+    await controller.loginUser(
+      { email: 'valid@test.com', password },
+      'client-interface',
+      'client-interface',
+      'https://optimistic-tanuki.com',
+      undefined,
+      undefined,
+      { headers: { host: 'optimistic-tanuki.com' } } as any
+    );
 
     expect(debugSpy.mock.calls.flat().join(' ')).not.toContain(password);
     expect(errorSpy.mock.calls.flat().join(' ')).not.toContain(password);
@@ -686,7 +779,7 @@ describe('AuthenticationController', () => {
       name: 'U',
       profileId: 'profile-current',
     } as any;
-    const browserResponse = () => ({ cookie: jest.fn() }) as any;
+    const browserResponse = () => ({ cookie: jest.fn() } as any);
 
     it('issues a same-profile refresh after verifying ownership, even without app scope', async () => {
       const response = browserResponse();
@@ -699,12 +792,18 @@ describe('AuthenticationController', () => {
           },
         ])
       ) as any;
-      clientProxy.send = jest.fn().mockReturnValueOnce(
-        of({ data: { newToken: 'fresh-token' } })
-      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'fresh-token' } })) as any;
 
       await expect(
-        controller.issueTokenForProfile(currentUser, {}, undefined, 'cookie', response)
+        controller.issueTokenForProfile(
+          currentUser,
+          {},
+          undefined,
+          'cookie',
+          response
+        )
       ).resolves.toEqual({ data: {} });
 
       expect(profileService.send).toHaveBeenCalledWith(
@@ -738,9 +837,9 @@ describe('AuthenticationController', () => {
           },
         ])
       ) as any;
-      clientProxy.send = jest.fn().mockReturnValueOnce(
-        of({ data: { newToken: 'global-token' } })
-      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'global-token' } })) as any;
 
       await expect(
         controller.issueTokenForProfile(
@@ -754,7 +853,11 @@ describe('AuthenticationController', () => {
 
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Issue },
-        { userId: 'user-1', profileId: 'profile-global', appId: 'opportunity-compass' }
+        {
+          userId: 'user-1',
+          profileId: 'profile-global',
+          appId: 'opportunity-compass',
+        }
       );
       expect(response.cookie).toHaveBeenCalledWith(
         'ot_session',
@@ -799,9 +902,9 @@ describe('AuthenticationController', () => {
           },
         ])
       ) as any;
-      clientProxy.send = jest.fn().mockReturnValueOnce(
-        of({ data: { newToken: 'lead-token' } })
-      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(of({ data: { newToken: 'lead-token' } })) as any;
 
       await expect(
         controller.issueTokenForProfile(
@@ -813,7 +916,11 @@ describe('AuthenticationController', () => {
 
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Issue },
-        { userId: 'user-1', profileId: 'lead-profile', appId: 'opportunity-compass' }
+        {
+          userId: 'user-1',
+          profileId: 'lead-profile',
+          appId: 'opportunity-compass',
+        }
       );
     });
 
@@ -827,9 +934,11 @@ describe('AuthenticationController', () => {
           },
         ])
       ) as any;
-      clientProxy.send = jest.fn().mockReturnValueOnce(
-        of({ data: { newToken: 'null-scope-token' } })
-      ) as any;
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValueOnce(
+          of({ data: { newToken: 'null-scope-token' } })
+        ) as any;
 
       await expect(
         controller.issueTokenForProfile(
@@ -843,64 +952,73 @@ describe('AuthenticationController', () => {
     it.each([
       ['another user profile', 'leads-app', 'other-user'],
       ['a foreign app-scope profile', 'leads-app', 'user-1'],
-    ])('denies %s before issuing or setting a cookie', async (reason, scope, ownerId) => {
-      const response = browserResponse();
-      const profileScope = reason === 'a foreign app-scope profile' ? 'fin-commander' : 'leads-app';
-      profileService.send = jest.fn().mockReturnValueOnce(
-        of([
-          {
-            id: 'profile-target',
-            userId: ownerId,
-            appScope: profileScope,
-          },
-        ])
-      ) as any;
+    ])(
+      'denies %s before issuing or setting a cookie',
+      async (reason, scope, ownerId) => {
+        const response = browserResponse();
+        const profileScope =
+          reason === 'a foreign app-scope profile'
+            ? 'fin-commander'
+            : 'leads-app';
+        profileService.send = jest.fn().mockReturnValueOnce(
+          of([
+            {
+              id: 'profile-target',
+              userId: ownerId,
+              appScope: profileScope,
+            },
+          ])
+        ) as any;
 
-      await expect(
-        controller.issueTokenForProfile(
-          currentUser,
-          { profileId: 'profile-target' },
-          scope,
-          'cookie',
-          response
-        )
-      ).rejects.toBeInstanceOf(ForbiddenException);
+        await expect(
+          controller.issueTokenForProfile(
+            currentUser,
+            { profileId: 'profile-target' },
+            scope,
+            'cookie',
+            response
+          )
+        ).rejects.toBeInstanceOf(ForbiddenException);
 
-      expect(clientProxy.send).not.toHaveBeenCalledWith(
-        { cmd: AuthCommands.Issue },
-        expect.anything()
-      );
-      expect(response.cookie).not.toHaveBeenCalled();
-    });
+        expect(clientProxy.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.Issue },
+          expect.anything()
+        );
+        expect(response.cookie).not.toHaveBeenCalled();
+      }
+    );
 
-    it.each([undefined, 'not-registered'])('denies a different profile when scope is %s', async (scope) => {
-      const response = browserResponse();
-      profileService.send = jest.fn().mockReturnValueOnce(
-        of([
-          {
-            id: 'profile-target',
-            userId: 'user-1',
-            appScope: 'leads-app',
-          },
-        ])
-      ) as any;
+    it.each([undefined, 'not-registered'])(
+      'denies a different profile when scope is %s',
+      async (scope) => {
+        const response = browserResponse();
+        profileService.send = jest.fn().mockReturnValueOnce(
+          of([
+            {
+              id: 'profile-target',
+              userId: 'user-1',
+              appScope: 'leads-app',
+            },
+          ])
+        ) as any;
 
-      await expect(
-        controller.issueTokenForProfile(
-          currentUser,
-          { profileId: 'profile-target' },
-          scope,
-          'cookie',
-          response
-        )
-      ).rejects.toBeInstanceOf(ForbiddenException);
+        await expect(
+          controller.issueTokenForProfile(
+            currentUser,
+            { profileId: 'profile-target' },
+            scope,
+            'cookie',
+            response
+          )
+        ).rejects.toBeInstanceOf(ForbiddenException);
 
-      expect(clientProxy.send).not.toHaveBeenCalledWith(
-        { cmd: AuthCommands.Issue },
-        expect.anything()
-      );
-      expect(response.cookie).not.toHaveBeenCalled();
-    });
+        expect(clientProxy.send).not.toHaveBeenCalledWith(
+          { cmd: AuthCommands.Issue },
+          expect.anything()
+        );
+        expect(response.cookie).not.toHaveBeenCalled();
+      }
+    );
 
     it('rejects a current-profile refresh if that profile is not owned by the authenticated user', async () => {
       const response = browserResponse();
@@ -915,7 +1033,13 @@ describe('AuthenticationController', () => {
       ) as any;
 
       await expect(
-        controller.issueTokenForProfile(currentUser, {}, 'leads-app', 'cookie', response)
+        controller.issueTokenForProfile(
+          currentUser,
+          {},
+          'leads-app',
+          'cookie',
+          response
+        )
       ).rejects.toBeInstanceOf(ForbiddenException);
 
       expect(clientProxy.send).not.toHaveBeenCalledWith(
@@ -983,7 +1107,8 @@ describe('AuthenticationController', () => {
         { headers: { host: 'optimistic-tanuki.com' } } as any
       )
     ).resolves.toEqual({
-      message: 'Guardian permission request is pending, but the email could not be sent.',
+      message:
+        'Guardian permission request is pending, but the email could not be sent.',
       data: {
         guardianConsentPending: true,
         request: { pending: true, sent: false },
@@ -1066,7 +1191,9 @@ describe('AuthenticationController', () => {
         registration,
         'configurable-client',
         'configurable-client',
-        DEFAULT_APP_REGISTRY.apps.find((app) => app.appId === 'configurable-client')!.uiBaseUrl
+        DEFAULT_APP_REGISTRY.apps.find(
+          (app) => app.appId === 'configurable-client'
+        )!.uiBaseUrl
       )
     ).resolves.toEqual(
       expect.objectContaining({

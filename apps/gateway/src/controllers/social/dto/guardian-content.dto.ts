@@ -1,4 +1,12 @@
-import { IsIn, IsOptional, IsString, Length } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+} from 'class-validator';
 
 const VISIBILITIES = ['public', 'followers'] as const;
 
@@ -14,6 +22,12 @@ export class CreateGuardianPostDto {
   @IsOptional()
   @IsIn(VISIBILITIES)
   visibility?: (typeof VISIBILITIES)[number];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  publishAssetIds?: string[];
 }
 
 export class UpdateGuardianPostDto {
@@ -30,12 +44,24 @@ export class UpdateGuardianPostDto {
   @IsOptional()
   @IsIn(VISIBILITIES)
   visibility?: (typeof VISIBILITIES)[number];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  publishAssetIds?: string[];
 }
 
 export class CreateGuardianCommentDto {
   @IsString()
   @Length(1, 10000)
   content!: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  publishAssetIds?: string[];
 }
 
 export class UpdateGuardianCommentDto {
@@ -43,4 +69,10 @@ export class UpdateGuardianCommentDto {
   @IsString()
   @Length(1, 10000)
   content?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('4', { each: true })
+  publishAssetIds?: string[];
 }

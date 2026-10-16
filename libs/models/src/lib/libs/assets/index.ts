@@ -7,5 +7,11 @@ export {
   CreateAssetDto,
   AssetDto,
 } from './asset.dto';
-export type { AssetAudienceRestriction } from './asset.dto';
-export type { AssetContentAudienceReference } from './asset.dto';
+export type {
+  AssetAudienceRestriction,
+  AssetContentAudienceReference,
+  AssetOriginKind,
+  GuardianMediaResourceType,
+  GuardianPublishedAssetGrantContext,
+  InternalGuardianMediaAssertion,
+} from './asset.dto';

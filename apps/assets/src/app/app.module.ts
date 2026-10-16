@@ -78,16 +78,39 @@ import { GuardianAssetAuthorizationService } from './guardian-asset-authorizatio
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const target = configService.get<{ host: string; port: number }>('services.authentication');
-        return ClientProxyFactory.create({ transport: Transport.TCP, options: target });
+        const target = configService.get<{ host: string; port: number }>(
+          'services.authentication'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
       },
       inject: [ConfigService],
     },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const target = configService.get<{ host: string; port: number }>('services.profile');
-        return ClientProxyFactory.create({ transport: Transport.TCP, options: target });
+        const target = configService.get<{ host: string; port: number }>(
+          'services.profile'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.SOCIAL_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.social'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
       },
       inject: [ConfigService],
     },

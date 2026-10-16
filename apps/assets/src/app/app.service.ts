@@ -17,7 +17,10 @@ import {
   AssetAudienceRestriction,
 } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
-import { GuardianAssetAuthorizationService, GuardianAssetActor } from './guardian-asset-authorization.service';
+import {
+  GuardianAssetAuthorizationService,
+  GuardianAssetActor,
+} from './guardian-asset-authorization.service';
 import { GuardianAssetActivity } from '../entities/guardian-asset-activity.entity';
 import { LessThan, IsNull } from 'typeorm';
 import { OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
@@ -44,13 +47,28 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     private readonly storageAdapter: StorageAdapter,
     private readonly fileValidationService: FileValidationService,
     private readonly virusScanService: VirusScanService,
-    @Optional() private readonly guardianAssetAuthorization?: GuardianAssetAuthorizationService
+    @Optional()
+    private readonly guardianAssetAuthorization?: GuardianAssetAuthorizationService
   ) {}
 
   onModuleInit(): void {
-    this.cleanupTimer = setInterval(() => void this.cleanupPendingAssets().catch(() => this.l.error('Asset lifecycle cleanup failed')), 60_000);
-    void this.cleanupExpiredGuardianActivity().catch(() => this.l.error('Guardian asset audit cleanup failed'));
-    this.auditCleanupTimer = setInterval(() => void this.cleanupExpiredGuardianActivity().catch(() => this.l.error('Guardian asset audit cleanup failed')), 24 * 60 * 60 * 1000);
+    this.cleanupTimer = setInterval(
+      () =>
+        void this.cleanupPendingAssets().catch(() =>
+          this.l.error('Asset lifecycle cleanup failed')
+        ),
+      60_000
+    );
+    void this.cleanupExpiredGuardianActivity().catch(() =>
+      this.l.error('Guardian asset audit cleanup failed')
+    );
+    this.auditCleanupTimer = setInterval(
+      () =>
+        void this.cleanupExpiredGuardianActivity().catch(() =>
+          this.l.error('Guardian asset audit cleanup failed')
+        ),
+      24 * 60 * 60 * 1000
+    );
     this.auditCleanupTimer.unref?.();
     this.cleanupTimer.unref?.();
   }
@@ -60,26 +78,51 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     if (this.auditCleanupTimer) clearInterval(this.auditCleanupTimer);
   }
 
-  async createGuardianAsset(input: GuardianAssetActor & { asset: CreateAssetDto }): Promise<AssetEntity> {
+  async createGuardianAsset(
+    input: GuardianAssetActor & { asset: CreateAssetDto }
+  ): Promise<AssetEntity> {
     const { asset: rawAsset } = input;
     const profile = await this.assertGuardianAccess(input, 'content.manage');
-    if (!rawAsset || rawAsset.profileId !== input.targetProfileId || rawAsset.sourcePath ||
-        rawAsset.content === undefined || rawAsset.content === null || rawAsset.content === '' ||
-        (Buffer.isBuffer(rawAsset.content) && rawAsset.content.length === 0)) {
+    if (
+      !rawAsset ||
+      rawAsset.profileId !== input.targetProfileId ||
+      rawAsset.sourcePath ||
+      rawAsset.content === undefined ||
+      rawAsset.content === null ||
+      rawAsset.content === '' ||
+      (Buffer.isBuffer(rawAsset.content) && rawAsset.content.length === 0)
+    ) {
       throw this.guardianDenied('Invalid guardian asset upload');
     }
-    let data = { ...rawAsset, audienceRestrictions: [{ type: 'owner', profileId: input.targetProfileId }] } as CreateAssetDto;
+    const stagedRestriction: AssetAudienceRestriction = {
+      type: 'guardian-staged',
+      profileId: input.targetProfileId,
+      appId: input.appId,
+    };
+    let data = {
+      ...rawAsset,
+      audienceRestrictions: [stagedRestriction],
+    } as CreateAssetDto;
     data.name = data.name.replace(/\s+/g, '_');
     const prepared = await this.prepareAssetPayload(data);
     data = prepared.data;
-    if (prepared.validation.sanitizedFilename) data.name = prepared.validation.sanitizedFilename;
-    if (!prepared.scanResult.isClean) throw new RpcException({ statusCode: 400, message: 'File failed virus scan' });
+    if (prepared.validation.sanitizedFilename)
+      data.name = prepared.validation.sanitizedFilename;
+    if (!prepared.scanResult.isClean)
+      throw new RpcException({
+        statusCode: 400,
+        message: 'File failed virus scan',
+      });
 
     const reservedId = randomUUID();
     data.name = this.buildPersistedFilename(data.name, data.fileExtension);
     data.id = reservedId;
     const reservationPath = this.storageAdapter.reservationPath?.(data);
-    if (!reservationPath) throw new RpcException({ statusCode: 503, message: 'Storage adapter cannot reserve asset paths' });
+    if (!reservationPath)
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Storage adapter cannot reserve asset paths',
+      });
     const asset = this.assetRepo.create({
       id: reservedId,
       name: data.name,
@@ -88,7 +131,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       type: data.type,
       storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
       audienceCommunityIds: [],
-      audienceRestrictions: [{ type: 'owner', profileId: input.targetProfileId }],
+      audienceRestrictions: [stagedRestriction],
+      originKind: 'guardian-staged',
+      originProfileId: input.targetProfileId,
+      originAppId: input.appId,
       lifecycleState: 'pending-upload',
       lifecycleLeaseUntil: new Date(Date.now() + 15 * 60_000),
     } as Partial<AssetEntity>);
@@ -97,27 +143,53 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     try {
       return await this.assetRepo.manager.transaction(async (manager) => {
         const repo = manager.getRepository(AssetEntity);
-        const current = await repo.findOne({ where: { id: reserved.id }, lock: { mode: 'pessimistic_write' } });
-        if (!current || current.lifecycleState !== 'pending-upload' || !current.lifecycleLeaseUntil || current.lifecycleLeaseUntil <= new Date()) throw this.guardianDenied('Guardian upload is no longer active');
+        const current = await repo.findOne({
+          where: { id: reserved.id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (
+          !current ||
+          current.lifecycleState !== 'pending-upload' ||
+          !current.lifecycleLeaseUntil ||
+          current.lifecycleLeaseUntil <= new Date()
+        )
+          throw this.guardianDenied('Guardian upload is no longer active');
         // Hold the reservation row lock during the bounded storage write. The
         // cleanup worker uses SKIP LOCKED, so it cannot delete an in-flight
         // upload and a late writer cannot recreate bytes after cleanup.
         data.id = reserved.id;
-        stored = await this.storageAdapter.create(data) as AssetEntity;
-        if (!current.lifecycleLeaseUntil || current.lifecycleLeaseUntil <= new Date()) {
-          throw this.guardianDenied('Guardian upload reservation expired during storage write');
+        stored = (await this.storageAdapter.create(data)) as AssetEntity;
+        if (
+          !current.lifecycleLeaseUntil ||
+          current.lifecycleLeaseUntil <= new Date()
+        ) {
+          throw this.guardianDenied(
+            'Guardian upload reservation expired during storage write'
+          );
         }
         await this.assertGuardianAccess(input, 'content.manage');
-        Object.assign(current, stored, { lifecycleState: 'active', lifecycleLeaseUntil: null });
+        Object.assign(current, stored, {
+          lifecycleState: 'active',
+          lifecycleLeaseUntil: null,
+          audienceRestrictions: [stagedRestriction],
+          originKind: 'guardian-staged',
+          originProfileId: input.targetProfileId,
+          originAppId: input.appId,
+        });
         const active = await repo.save(current);
-        await manager.getRepository(GuardianAssetActivity).save(this.audit(input, active, 'upload', profile.userId));
+        await manager
+          .getRepository(GuardianAssetActivity)
+          .save(this.audit(input, active, 'upload', profile.userId));
         return active;
       });
     } catch (error) {
       if (stored) {
         try {
           await this.storageAdapter.remove(stored);
-          await this.assetRepo.delete({ id: reserved.id, lifecycleState: 'pending-upload' });
+          await this.assetRepo.delete({
+            id: reserved.id,
+            lifecycleState: 'pending-upload',
+          });
         } catch {
           // The inaccessible reservation is retained for the lifecycle worker.
         }
@@ -126,48 +198,84 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async listGuardianAssets(input: GuardianAssetActor & { type?: AssetType }): Promise<AssetEntity[]> {
+  async listGuardianAssets(
+    input: GuardianAssetActor & { type?: AssetType }
+  ): Promise<AssetEntity[]> {
     return this.assetRepo.manager.transaction(async (manager) => {
       const profile = await this.assertGuardianAccess(input, 'content.view');
       const rows = await manager.getRepository(AssetEntity).find({
-        where: { profileId: input.targetProfileId, lifecycleState: 'active', ...(input.type ? { type: input.type } : {}) },
-        order: { id: 'DESC' }, take: 48,
+        where: {
+          profileId: input.targetProfileId,
+          lifecycleState: 'active',
+          ...(input.type ? { type: input.type } : {}),
+        },
+        order: { id: 'DESC' },
+        take: 48,
       });
       await this.assertGuardianAccess(input, 'content.view');
-      await manager.getRepository(GuardianAssetActivity).save(this.audit(input, { id: '*' } as AssetEntity, 'list', profile.userId));
+      await manager
+        .getRepository(GuardianAssetActivity)
+        .save(
+          this.audit(input, { id: '*' } as AssetEntity, 'list', profile.userId)
+        );
       return rows;
     });
   }
 
-  async deleteGuardianAsset(input: GuardianAssetActor & { id: string }): Promise<AssetEntity> {
+  async deleteGuardianAsset(
+    input: GuardianAssetActor & { id: string }
+  ): Promise<AssetEntity> {
     const initial = await this.retrieveAsset({ id: input.id });
-    if (initial.profileId !== input.targetProfileId || initial.lifecycleState !== 'active') throw this.guardianDenied('Asset not found');
+    if (
+      initial.profileId !== input.targetProfileId ||
+      initial.lifecycleState !== 'active'
+    )
+      throw this.guardianDenied('Asset not found');
     await this.assetRepo.manager.transaction(async (manager) => {
       const repo = manager.getRepository(AssetEntity);
-      const current = await repo.findOne({ where: { id: input.id }, lock: { mode: 'pessimistic_write' } });
-      if (!current || current.profileId !== input.targetProfileId || current.lifecycleState !== 'active') throw this.guardianDenied('Asset not found');
+      const current = await repo.findOne({
+        where: { id: input.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (
+        !current ||
+        current.profileId !== input.targetProfileId ||
+        current.lifecycleState !== 'active'
+      )
+        throw this.guardianDenied('Asset not found');
       const profile = await this.assertGuardianAccess(input, 'content.manage');
       current.lifecycleState = 'pending-delete';
       current.lifecycleLeaseUntil = null;
       await repo.save(current);
-      await manager.getRepository(GuardianAssetActivity).save(this.audit(input, current, 'delete', profile.userId));
+      await manager
+        .getRepository(GuardianAssetActivity)
+        .save(this.audit(input, current, 'delete', profile.userId));
     });
     await this.finishPendingDelete(input.id);
     return initial;
   }
 
-  async authorizeGuardianRead(input: GuardianAssetActor & { id: string }): Promise<void> {
+  async authorizeGuardianRead(
+    input: GuardianAssetActor & { id: string }
+  ): Promise<void> {
     await this.assetRepo.manager.transaction(async (manager) => {
-      const asset = await manager.getRepository(AssetEntity).findOne({ where: { id: input.id, lifecycleState: 'active' } });
-      if (!asset || asset.profileId !== input.targetProfileId) throw this.guardianDenied('Asset not found');
+      const asset = await manager
+        .getRepository(AssetEntity)
+        .findOne({ where: { id: input.id, lifecycleState: 'active' } });
+      if (!asset || asset.profileId !== input.targetProfileId)
+        throw this.guardianDenied('Asset not found');
       const profile = await this.assertGuardianAccess(input, 'content.view');
-      await manager.getRepository(GuardianAssetActivity).save(this.audit(input, asset, 'read', profile.userId));
+      await manager
+        .getRepository(GuardianAssetActivity)
+        .save(this.audit(input, asset, 'read', profile.userId));
     });
   }
 
   async cleanupExpiredGuardianActivity(now = new Date()): Promise<number> {
     const cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    const result = await this.assetRepo.manager.getRepository(GuardianAssetActivity).delete({ createdAt: LessThan(cutoff) });
+    const result = await this.assetRepo.manager
+      .getRepository(GuardianAssetActivity)
+      .delete({ createdAt: LessThan(cutoff) });
     return result.affected ?? 0;
   }
 
@@ -177,35 +285,51 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       let failedId: string | undefined;
       let failedState: AssetEntity['lifecycleState'] | undefined;
       try {
-        const removed = await this.assetRepo.manager.transaction(async (manager) => {
-          const repo = manager.getRepository(AssetEntity);
-          const candidate = await repo.createQueryBuilder('asset')
-            .setLock('pessimistic_write')
-            .setOnLocked('skip_locked')
-            .where("(asset.lifecycleState = 'pending-delete' AND (asset.lifecycleRetryAfter IS NULL OR asset.lifecycleRetryAfter <= :now)) OR (asset.lifecycleState = 'pending-upload' AND asset.lifecycleLeaseUntil < :now)", { now: new Date() })
-            .orderBy('asset.lifecycleRetryAfter', 'ASC', 'NULLS FIRST')
-            .getOne();
-          if (!candidate) return false;
-          failedId = candidate.id;
-          failedState = candidate.lifecycleState;
-          if (candidate.lifecycleState === 'pending-upload') {
-            candidate.lifecycleState = 'pending-delete';
-            candidate.lifecycleLeaseUntil = null;
-            await repo.save(candidate);
+        const removed = await this.assetRepo.manager.transaction(
+          async (manager) => {
+            const repo = manager.getRepository(AssetEntity);
+            const candidate = await repo
+              .createQueryBuilder('asset')
+              .setLock('pessimistic_write')
+              .setOnLocked('skip_locked')
+              .where(
+                "(asset.lifecycleState = 'pending-delete' AND (asset.lifecycleRetryAfter IS NULL OR asset.lifecycleRetryAfter <= :now)) OR (asset.lifecycleState = 'pending-upload' AND asset.lifecycleLeaseUntil < :now)",
+                { now: new Date() }
+              )
+              .orderBy('asset.lifecycleRetryAfter', 'ASC', 'NULLS FIRST')
+              .getOne();
+            if (!candidate) return false;
+            failedId = candidate.id;
+            failedState = candidate.lifecycleState;
+            if (candidate.lifecycleState === 'pending-upload') {
+              candidate.lifecycleState = 'pending-delete';
+              candidate.lifecycleLeaseUntil = null;
+              await repo.save(candidate);
+            }
+            await this.removeStoredFileIdempotently(candidate);
+            await repo.delete({
+              id: candidate.id,
+              lifecycleState: 'pending-delete',
+            });
+            return true;
           }
-          await this.removeStoredFileIdempotently(candidate);
-          await repo.delete({ id: candidate.id, lifecycleState: 'pending-delete' });
-          return true;
-        });
+        );
         if (!removed) break;
         completed++;
       } catch {
         if (failedId) {
-          const patch: Partial<AssetEntity> = failedState === 'pending-upload'
-            ? { lifecycleState: 'pending-delete', lifecycleLeaseUntil: null, lifecycleRetryAfter: new Date(Date.now() + 15 * 60_000) }
-            : { lifecycleRetryAfter: new Date(Date.now() + 15 * 60_000) };
+          const patch: Partial<AssetEntity> =
+            failedState === 'pending-upload'
+              ? {
+                  lifecycleState: 'pending-delete',
+                  lifecycleLeaseUntil: null,
+                  lifecycleRetryAfter: new Date(Date.now() + 15 * 60_000),
+                }
+              : { lifecycleRetryAfter: new Date(Date.now() + 15 * 60_000) };
           const criteria = { id: failedId, lifecycleState: failedState };
-          const backedOff = await this.assetRepo.update(criteria, patch).catch(() => undefined);
+          const backedOff = await this.assetRepo
+            .update(criteria, patch)
+            .catch(() => undefined);
           if (!backedOff?.affected) break;
         } else {
           break;
@@ -219,7 +343,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   private async finishPendingDelete(id: string): Promise<boolean> {
     return this.assetRepo.manager.transaction(async (manager) => {
       const repo = manager.getRepository(AssetEntity);
-      const asset = await repo.findOne({ where: { id, lifecycleState: 'pending-delete' }, lock: { mode: 'pessimistic_write' } });
+      const asset = await repo.findOne({
+        where: { id, lifecycleState: 'pending-delete' },
+        lock: { mode: 'pessimistic_write' },
+      });
       if (!asset) return false;
       await this.removeStoredFileIdempotently(asset);
       await repo.delete({ id: asset.id, lifecycleState: 'pending-delete' });
@@ -227,17 +354,37 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private async removeStoredFileIdempotently(asset: AssetEntity): Promise<void> {
-    try { await this.storageAdapter.remove(asset); }
-    catch (error) { if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error; }
+  private async removeStoredFileIdempotently(
+    asset: AssetEntity
+  ): Promise<void> {
+    try {
+      await this.storageAdapter.remove(asset);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== 'ENOENT') throw error;
+    }
   }
 
-  private async assertGuardianAccess(input: GuardianAssetActor, operation: 'content.view' | 'content.manage') {
-    if (!this.guardianAssetAuthorization) throw new RpcException({ statusCode: 503, message: 'Guardian asset authorization unavailable' });
-    return this.guardianAssetAuthorization.assertAccess({ ...input, operation });
+  private async assertGuardianAccess(
+    input: GuardianAssetActor,
+    operation: 'content.view' | 'content.manage'
+  ) {
+    if (!this.guardianAssetAuthorization)
+      throw new RpcException({
+        statusCode: 503,
+        message: 'Guardian asset authorization unavailable',
+      });
+    return this.guardianAssetAuthorization.assertAccess({
+      ...input,
+      operation,
+    });
   }
 
-  private audit(input: GuardianAssetActor, asset: AssetEntity, operation: 'upload' | 'list' | 'read' | 'delete', dependentUserId?: string): Partial<GuardianAssetActivity> {
+  private audit(
+    input: GuardianAssetActor,
+    asset: AssetEntity,
+    operation: 'upload' | 'list' | 'read' | 'delete',
+    dependentUserId?: string
+  ): Partial<GuardianAssetActivity> {
     return {
       actorUserId: input.actorUserId,
       dependentUserId: dependentUserId ?? '',
@@ -250,11 +397,16 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   }
 
   private guardianDenied(message: string): RpcException {
-    return new RpcException({ statusCode: 403, code: 'GUARDIAN_CONTENT_ACCESS_DENIED', message });
+    return new RpcException({
+      statusCode: 403,
+      code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
+      message,
+    });
   }
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
     try {
+      this.assertGenericAssetInput(data);
       // Asset IDs are server-owned. Assign one before storage so the database
       // row and encrypted bytes share an immutable identifier.
       data = { ...data, id: randomUUID() };
@@ -297,6 +449,9 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
         audienceCommunityIds: data.communityId ? [data.communityId] : [],
         audienceRestrictions: data.audienceRestrictions ?? [],
+        originKind: 'ordinary',
+        originProfileId: null,
+        originAppId: null,
       };
       const asset = this.assetRepo.create(entityAsset);
       const persistedAsset = await this.storageAdapter.create(data);
@@ -317,6 +472,31 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         throw new RpcException({ statusCode: 400, message: error.message });
       }
       throw new RpcException('Failed to create asset');
+    }
+  }
+
+  private assertGenericAssetInput(data: CreateAssetDto): void {
+    const reserved = new Set([
+      'originKind',
+      'originProfileId',
+      'originAppId',
+      'guardianStaged',
+      'publicationGrant',
+      'resourceType',
+      'resourceId',
+    ]);
+    if (
+      !data ||
+      Object.keys(data as object).some((key) => reserved.has(key)) ||
+      !Array.isArray(data.audienceRestrictions ?? []) ||
+      data.audienceRestrictions?.some(
+        (restriction) => !this.isGenericRestrictionValid(restriction, reserved)
+      )
+    ) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Reserved guardian asset metadata is not accepted',
+      });
     }
   }
 
@@ -527,7 +707,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   async removeAsset(data: AssetHandle): Promise<AssetEntity> {
     this.l.log('Removing asset with data:', data);
-    const asset = await this.assetRepo.findOneBy({ id: data.id, lifecycleState: 'active' });
+    const asset = await this.assetRepo.findOneBy({
+      id: data.id,
+      lifecycleState: 'active',
+    });
     if (!asset) {
       this.l.error(`Asset with id ${data.id} not found`);
       throw new RpcException(`Asset with id ${data.id} not found`);
@@ -537,7 +720,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   }
 
   async retrieveAsset(data: AssetHandle): Promise<AssetEntity> {
-    const asset = await this.assetRepo.findOneBy({ id: data.id, lifecycleState: 'active' });
+    const asset = await this.assetRepo.findOneBy({
+      id: data.id,
+      lifecycleState: 'active',
+    });
     if (!asset) {
       this.l.error(`Asset with id ${data.id} not found`);
       throw new RpcException({ statusCode: 404, message: 'Asset not found' });
@@ -569,6 +755,33 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     id: string;
     restrictions: AssetAudienceRestriction[];
   }): Promise<AssetEntity> {
+    if (
+      !data ||
+      Object.keys(data as object).some(
+        (key) => key !== 'id' && key !== 'restrictions'
+      ) ||
+      !Array.isArray(data?.restrictions) ||
+      data.restrictions.some(
+        (restriction) =>
+          !this.isGenericRestrictionValid(
+            restriction,
+            new Set([
+              'originKind',
+              'originProfileId',
+              'originAppId',
+              'guardianStaged',
+              'publicationGrant',
+              'resourceType',
+              'resourceId',
+            ])
+          )
+      )
+    ) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Guardian stage restrictions are reserved',
+      });
+    }
     const updated = (await this.assetRepo.query(
       `UPDATE "asset_entity"
        SET "audienceRestrictions" = (
@@ -583,6 +796,38 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       throw new RpcException(`Asset with id ${data.id} not found`);
     }
     return updated[0];
+  }
+
+  private isGenericRestrictionValid(
+    restriction: unknown,
+    reserved: Set<string>
+  ): boolean {
+    if (
+      !restriction ||
+      typeof restriction !== 'object' ||
+      Array.isArray(restriction)
+    )
+      return false;
+    const value = restriction as {
+      type?: unknown;
+      profileId?: unknown;
+      communityId?: unknown;
+    };
+    const keys = Object.keys(restriction);
+    return (
+      !keys.some(
+        (key) =>
+          reserved.has(key) ||
+          !['type', 'profileId', 'communityId'].includes(key)
+      ) &&
+      typeof value.profileId === 'string' &&
+      value.profileId.length > 0 &&
+      (value.type === 'owner' || value.type === 'followers'
+        ? value.communityId == null
+        : value.type === 'community' &&
+          typeof value.communityId === 'string' &&
+          value.communityId.length > 0)
+    );
   }
 
   async listAssets(data: AssetListQuery): Promise<AssetEntity[]> {

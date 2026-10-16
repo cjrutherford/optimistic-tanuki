@@ -73,6 +73,9 @@ describe('RR10-I01 authenticated media HTTP integration', () => {
       storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
       audienceCommunityIds: [],
       audienceRestrictions: [],
+      originKind: 'ordinary',
+      originProfileId: null,
+      originAppId: null,
     } as any;
     const appService = {
       retrieveAsset: jest.fn((query: { id: string }) =>

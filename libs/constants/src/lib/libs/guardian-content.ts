@@ -9,4 +9,6 @@ export const GuardianContentCommands = {
   CreateComment: 'GuardianContent:CreateComment',
   UpdateComment: 'GuardianContent:UpdateComment',
   DeleteComment: 'GuardianContent:DeleteComment',
+  ResolvePublishedAssetGrant: 'GuardianContent:ResolvePublishedAssetGrant',
+  CheckPublishedAssetGrant: 'GuardianContent:CheckPublishedAssetGrant',
 } as const;

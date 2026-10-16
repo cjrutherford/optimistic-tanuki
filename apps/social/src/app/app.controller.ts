@@ -1,7 +1,10 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 
 import { PostService } from './services/post.service';
-import { AttachmentActor, AttachmentService } from './services/attachment.service';
+import {
+  AttachmentActor,
+  AttachmentService,
+} from './services/attachment.service';
 import { CommentService } from './services/comment.service';
 import { VoteService } from './services/vote.service';
 import { ReactionService } from './services/reaction.service';
@@ -142,39 +145,70 @@ export class AppController {
   ) {}
 
   private guardianContent() {
-    if (!this.guardianContentService) throw new RpcException('Guardian content service unavailable');
+    if (!this.guardianContentService)
+      throw new RpcException('Guardian content service unavailable');
     return this.guardianContentService;
   }
 
   @MessagePattern({ cmd: GuardianContentCommands.ListPosts })
-  listGuardianPosts(@Payload() data: any) { return this.guardianContent().listPosts(data); }
+  listGuardianPosts(@Payload() data: any) {
+    return this.guardianContent().listPosts(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.GetPost })
-  getGuardianPost(@Payload() data: any) { return this.guardianContent().getPost(data); }
+  getGuardianPost(@Payload() data: any) {
+    return this.guardianContent().getPost(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.CreatePost })
-  createGuardianPost(@Payload() data: any) { return this.guardianContent().createPost(data); }
+  createGuardianPost(@Payload() data: any) {
+    return this.guardianContent().createPost(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.UpdatePost })
-  updateGuardianPost(@Payload() data: any) { return this.guardianContent().updatePost(data); }
+  updateGuardianPost(@Payload() data: any) {
+    return this.guardianContent().updatePost(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.DeletePost })
-  deleteGuardianPost(@Payload() data: any) { return this.guardianContent().deletePost(data); }
+  deleteGuardianPost(@Payload() data: any) {
+    return this.guardianContent().deletePost(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.ListComments })
-  listGuardianComments(@Payload() data: any) { return this.guardianContent().listComments(data); }
+  listGuardianComments(@Payload() data: any) {
+    return this.guardianContent().listComments(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.GetComment })
-  getGuardianComment(@Payload() data: any) { return this.guardianContent().getComment(data); }
+  getGuardianComment(@Payload() data: any) {
+    return this.guardianContent().getComment(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.CreateComment })
-  createGuardianComment(@Payload() data: any) { return this.guardianContent().createComment(data); }
+  createGuardianComment(@Payload() data: any) {
+    return this.guardianContent().createComment(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.UpdateComment })
-  updateGuardianComment(@Payload() data: any) { return this.guardianContent().updateComment(data); }
+  updateGuardianComment(@Payload() data: any) {
+    return this.guardianContent().updateComment(data);
+  }
 
   @MessagePattern({ cmd: GuardianContentCommands.DeleteComment })
-  deleteGuardianComment(@Payload() data: any) { return this.guardianContent().deleteComment(data); }
+  deleteGuardianComment(@Payload() data: any) {
+    return this.guardianContent().deleteComment(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.ResolvePublishedAssetGrant })
+  resolvePublishedAssetGrant(@Payload() data: any) {
+    return this.guardianContent().resolvePublishedAssetGrant(data);
+  }
+
+  @MessagePattern({ cmd: GuardianContentCommands.CheckPublishedAssetGrant })
+  checkPublishedAssetGrant(@Payload() data: any) {
+    return this.guardianContent().checkPublishedAssetGrant(data);
+  }
 
   private async buildPostVisibilityScope(
     viewerProfileId: string
@@ -680,9 +714,15 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: AttachmentCommands.FIND_MANY })
-  async findAllAttachments(@Payload() request: { criteria?: SearchAttachmentDto; appId?: string } = {}) {
+  async findAllAttachments(
+    @Payload() request: { criteria?: SearchAttachmentDto; appId?: string } = {}
+  ) {
     if (typeof request?.appId !== 'string' || !request.appId.trim()) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_SCOPE_REQUIRED', message: 'A verified app scope is required to read attachments' });
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_SCOPE_REQUIRED',
+        message: 'A verified app scope is required to read attachments',
+      });
     }
     const options = request?.criteria ?? {};
     const search = toFindOptions(options ?? {});
@@ -699,7 +739,11 @@ export class AppController {
     @Payload('appId') appId?: string
   ) {
     if (typeof appId !== 'string' || !appId.trim()) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_SCOPE_REQUIRED', message: 'A verified app scope is required to read attachments' });
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_SCOPE_REQUIRED',
+        message: 'A verified app scope is required to read attachments',
+      });
     }
     if (typeof id !== 'string' || id.trim().length === 0) {
       return undefined;

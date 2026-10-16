@@ -3,6 +3,8 @@ import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Readable } from 'node:stream';
 import { AssetType, StorageStrategy } from '@optimistic-tanuki/models';
+import { GuardianContentCommands } from '@optimistic-tanuki/constants';
+import { of } from 'rxjs';
 
 import { AppService } from './app.service';
 import { InternalMediaService } from './internal-media.service';
@@ -14,8 +16,14 @@ describe('InternalMediaService', () => {
     storagePath: 'assets/asset-1/episode.mp4',
     storageStrategy: StorageStrategy.LOCAL_BLOCK_STORAGE,
     type: AssetType.VIDEO,
+    originKind: 'ordinary',
+    originProfileId: null,
+    originAppId: null,
   } as any;
-  let appService: Pick<AppService, 'retrieveAsset' | 'openAuthenticatedMedia' | 'authorizeGuardianRead'>;
+  let appService: Pick<
+    AppService,
+    'retrieveAsset' | 'openAuthenticatedMedia' | 'authorizeGuardianRead'
+  >;
   let configService: Pick<ConfigService, 'get'>;
   let service: InternalMediaService;
   let plaintext: Buffer;
@@ -103,16 +111,23 @@ describe('InternalMediaService', () => {
 
   it('rechecks a signed guardian relationship for every full or ranged read', async () => {
     const guardian = {
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile',
-      appId: 'client-interface', operation: 'content.view' as const,
+      actorUserId: 'guardian-user',
+      targetProfileId: 'dependent-profile',
+      appId: 'client-interface',
+      operation: 'content.view' as const,
     };
     (appService.retrieveAsset as jest.Mock).mockResolvedValue({
       ...asset,
       profileId: 'dependent-profile',
       audienceRestrictions: [{ type: 'owner', profileId: 'dependent-profile' }],
     });
-    await expect(service.open('asset-1', 'bytes=0-3', true, undefined, guardian)).resolves.toMatchObject({ statusCode: 206 });
-    expect(appService.authorizeGuardianRead).toHaveBeenCalledWith({ ...guardian, id: 'asset-1' });
+    await expect(
+      service.open('asset-1', 'bytes=0-3', true, undefined, guardian)
+    ).resolves.toMatchObject({ statusCode: 206 });
+    expect(appService.authorizeGuardianRead).toHaveBeenCalledWith({
+      ...guardian,
+      id: 'asset-1',
+    });
   });
 
   it.each([
@@ -134,32 +149,206 @@ describe('InternalMediaService', () => {
         { type: 'owner', profileId: 'different-profile' },
       ],
     },
-  ])('denies guardian reads when additional audience restrictions exist: %j', async (audience) => {
+  ])(
+    'denies guardian reads when additional audience restrictions exist: %j',
+    async (audience) => {
+      const guardian = {
+        actorUserId: 'guardian-user',
+        targetProfileId: 'dependent-profile',
+        appId: 'client-interface',
+        operation: 'content.view' as const,
+      };
+      (appService.retrieveAsset as jest.Mock).mockResolvedValue({
+        ...asset,
+        profileId: 'dependent-profile',
+        ...audience,
+      });
+
+      await expect(
+        service.open('asset-1', undefined, false, undefined, guardian)
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(appService.authorizeGuardianRead).not.toHaveBeenCalled();
+      expect(appService.openAuthenticatedMedia).not.toHaveBeenCalled();
+    }
+  );
+
+  it('denies a revoked guardian before opening storage', async () => {
     const guardian = {
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile',
-      appId: 'client-interface', operation: 'content.view' as const,
+      actorUserId: 'guardian-user',
+      targetProfileId: 'dependent-profile',
+      appId: 'client-interface',
+      operation: 'content.view' as const,
     };
     (appService.retrieveAsset as jest.Mock).mockResolvedValue({
       ...asset,
       profileId: 'dependent-profile',
-      ...audience,
+      audienceRestrictions: [{ type: 'owner', profileId: 'dependent-profile' }],
     });
-
-    await expect(service.open('asset-1', undefined, true, undefined, guardian)).rejects.toBeInstanceOf(NotFoundException);
-    expect(appService.authorizeGuardianRead).not.toHaveBeenCalled();
+    (appService.authorizeGuardianRead as jest.Mock).mockRejectedValue({
+      code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
+      statusCode: 403,
+    });
+    await expect(
+      service.open('asset-1', undefined, false, undefined, guardian)
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(appService.openAuthenticatedMedia).not.toHaveBeenCalled();
   });
 
-  it('denies a revoked guardian before opening storage', async () => {
-    const guardian = {
-      actorUserId: 'guardian-user', targetProfileId: 'dependent-profile',
-      appId: 'client-interface', operation: 'content.view' as const,
-    };
-    (appService.retrieveAsset as jest.Mock).mockResolvedValue({ ...asset, profileId: 'dependent-profile' });
-    (appService.authorizeGuardianRead as jest.Mock).mockRejectedValue({
-      code: 'GUARDIAN_CONTENT_ACCESS_DENIED', statusCode: 403,
+  it('does not let the legacy viewer boolean authorize a guardian-staged asset', async () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    (appService.retrieveAsset as jest.Mock).mockResolvedValue({
+      ...asset,
+      id,
+      profileId: '223e4567-e89b-42d3-a456-426614174000',
+      originKind: 'guardian-staged',
+      originProfileId: '223e4567-e89b-42d3-a456-426614174000',
+      originAppId: 'client-interface',
+      audienceRestrictions: [
+        {
+          type: 'guardian-staged',
+          profileId: '223e4567-e89b-42d3-a456-426614174000',
+          appId: 'client-interface',
+        },
+      ],
     });
-    await expect(service.open('asset-1', undefined, true, undefined, guardian)).rejects.toBeInstanceOf(NotFoundException);
+
+    await expect(service.open(id, undefined, true)).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+    expect(appService.openAuthenticatedMedia).not.toHaveBeenCalled();
+  });
+
+  it('rechecks the exact live grant for each full and ranged staged-media read', async () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    const dependentProfileId = '223e4567-e89b-42d3-a456-426614174000';
+    const resourceId = '323e4567-e89b-42d3-a456-426614174000';
+    const stagedAsset = {
+      ...asset,
+      id,
+      profileId: dependentProfileId,
+      originKind: 'guardian-staged',
+      originProfileId: dependentProfileId,
+      originAppId: 'client-interface',
+      audienceRestrictions: [
+        {
+          type: 'guardian-staged',
+          profileId: dependentProfileId,
+          appId: 'client-interface',
+        },
+      ],
+    };
+    (appService.retrieveAsset as jest.Mock).mockResolvedValue(stagedAsset);
+    const socialService = { send: jest.fn().mockReturnValue(of(true)) };
+    const stagedService = new InternalMediaService(
+      appService as AppService,
+      configService as ConfigService,
+      socialService as any
+    );
+    const assertion = (range: string | null) => ({
+      version: 1 as const,
+      assetId: id,
+      viewerUserId: null,
+      viewerProfileId: null,
+      appId: 'client-interface',
+      dependentProfileId,
+      resourceType: 'post' as const,
+      resourceId,
+      path: `/api/asset/${id}`,
+      internalPath: `/internal/media/${id}`,
+      range,
+      accessMode: 'published' as const,
+      issuedAt: Date.now(),
+    });
+
+    await expect(
+      stagedService.open(
+        id,
+        undefined,
+        false,
+        undefined,
+        undefined,
+        assertion(null),
+        null
+      )
+    ).resolves.toMatchObject({ statusCode: 200 });
+    await expect(
+      stagedService.open(
+        id,
+        'bytes=0-3',
+        false,
+        undefined,
+        undefined,
+        assertion('bytes=0-3'),
+        null
+      )
+    ).resolves.toMatchObject({ statusCode: 206 });
+    expect(socialService.send).toHaveBeenCalledTimes(2);
+    expect(socialService.send).toHaveBeenCalledWith(
+      { cmd: GuardianContentCommands.CheckPublishedAssetGrant },
+      expect.objectContaining({
+        assetId: id,
+        appId: 'client-interface',
+        dependentProfileId,
+        resourceType: 'post',
+        resourceId,
+      })
+    );
+  });
+
+  it('keeps ordinary owner restrictions conjunctive with a staged publication grant', async () => {
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    const dependentProfileId = '223e4567-e89b-42d3-a456-426614174000';
+    const resourceId = '323e4567-e89b-42d3-a456-426614174000';
+    (appService.retrieveAsset as jest.Mock).mockResolvedValue({
+      ...asset,
+      id,
+      profileId: dependentProfileId,
+      originKind: 'guardian-staged',
+      originProfileId: dependentProfileId,
+      originAppId: 'client-interface',
+      audienceRestrictions: [
+        {
+          type: 'guardian-staged',
+          profileId: dependentProfileId,
+          appId: 'client-interface',
+        },
+        { type: 'owner', profileId: dependentProfileId },
+      ],
+    });
+    const socialService = { send: jest.fn().mockReturnValue(of(true)) };
+    const stagedService = new InternalMediaService(
+      appService as AppService,
+      configService as ConfigService,
+      socialService as any
+    );
+    const assertion = {
+      version: 1 as const,
+      assetId: id,
+      viewerUserId: null,
+      viewerProfileId: null,
+      appId: 'client-interface',
+      dependentProfileId,
+      resourceType: 'post' as const,
+      resourceId,
+      path: `/api/asset/${id}`,
+      internalPath: `/internal/media/${id}`,
+      range: null,
+      accessMode: 'published' as const,
+      issuedAt: Date.now(),
+    };
+
+    await expect(
+      stagedService.open(
+        id,
+        undefined,
+        false,
+        undefined,
+        undefined,
+        assertion,
+        null
+      )
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(socialService.send).toHaveBeenCalledTimes(1);
     expect(appService.openAuthenticatedMedia).not.toHaveBeenCalled();
   });
 
