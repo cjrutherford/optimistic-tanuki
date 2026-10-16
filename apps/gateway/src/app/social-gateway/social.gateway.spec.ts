@@ -181,11 +181,13 @@ describe('SocialGateway', () => {
   it('revalidates an active socket before protected packets and disconnects revoked users', async () => {
     const user = { userId: 'minor-user', profileId: 'minor-profile' };
     let revoked = false;
-    mockSocketSessionAuth.authenticate.mockImplementation(async (client: any) => {
-      if (revoked) throw new Error('revoked session');
-      client.data.user = user;
-      return user;
-    });
+    mockSocketSessionAuth.authenticate.mockImplementation(
+      async (client: any) => {
+        if (revoked) throw new Error('revoked session');
+        client.data.user = user;
+        return user;
+      }
+    );
     mockSocketSessionAuth.assertProfile.mockImplementation(
       (client: any, requestedProfileId: string) => {
         if (client.data.user?.profileId !== requestedProfileId) {
@@ -202,10 +204,7 @@ describe('SocialGateway', () => {
     };
     await gateway.handleConnection(client);
     expect(gateway['connectedClients'].get('minor-profile')?.size).toBe(1);
-    await gateway.handleGetFollowing(
-      { profileId: 'minor-profile' },
-      client
-    );
+    await gateway.handleGetFollowing({ profileId: 'minor-profile' }, client);
     expect(mockSocialClient.send).toHaveBeenCalled();
     mockSocialClient.send.mockClear();
 
@@ -223,11 +222,13 @@ describe('SocialGateway', () => {
   it('does not send private broadcasts to an active socket after session revocation', async () => {
     const user = { userId: 'minor-user', profileId: 'minor-profile' };
     let revoked = false;
-    mockSocketSessionAuth.authenticate.mockImplementation(async (client: any) => {
-      if (revoked) throw new Error('revoked session');
-      client.data.user = user;
-      return user;
-    });
+    mockSocketSessionAuth.authenticate.mockImplementation(
+      async (client: any) => {
+        if (revoked) throw new Error('revoked session');
+        client.data.user = user;
+        return user;
+      }
+    );
     mockSocketSessionAuth.assertProfile.mockImplementation(
       (client: any, requestedProfileId: string) => {
         if (client.data.user?.profileId !== requestedProfileId) {
@@ -441,6 +442,60 @@ describe('SocialGateway', () => {
   });
 
   describe('handleSubscribePosts', () => {
+    it('does not acknowledge a deferred post subscription after session revocation', async () => {
+      const response = new Subject<{ id: string }>();
+      let resolveLookupStarted!: () => void;
+      const lookupStarted = new Promise<void>((resolve) => {
+        resolveLookupStarted = resolve;
+      });
+      let revoked = false;
+      mockSocketSessionAuth.authenticate.mockImplementation(
+        async (client: any) => {
+          if (revoked) throw new Error('revoked session');
+          client.data.user ??= { userId: 'account-1', profileId: 'reader' };
+          return client.data.user;
+        }
+      );
+      mockSocketSessionAuth.assertProfile.mockImplementation(
+        (client: any, profileId: string) => {
+          if (client.data.user?.profileId !== profileId) {
+            throw new Error('wrong profile');
+          }
+          return client.data.user;
+        }
+      );
+      mockSocialClient.send.mockImplementation(() => {
+        resolveLookupStarted();
+        return response;
+      });
+      const client: any = {
+        id: 'socket-revoked-during-post-subscription',
+        data: { user: { userId: 'account-1', profileId: 'reader' } },
+        emit: jest.fn(),
+        disconnect: jest.fn(),
+      };
+
+      await gateway.handleConnection(client);
+      client.emit.mockClear();
+      const pendingSubscription = gateway.handleSubscribePosts(
+        { profileId: 'reader', postIds: ['scoped-post'] },
+        client
+      );
+      await lookupStarted;
+      revoked = true;
+      response.next({ id: 'scoped-post' });
+      response.complete();
+      await pendingSubscription;
+
+      expect(client.emit).not.toHaveBeenCalledWith(
+        'subscribed',
+        expect.anything()
+      );
+      expect(client.disconnect).toHaveBeenCalledWith(true);
+      expect((gateway as any).connectedClients.size).toBe(0);
+      expect((gateway as any).clientToConnectedClient(client)).toBeUndefined();
+    });
+
     it('should subscribe client to specific posts', async () => {
       const mockClient: any = {
         emit: jest.fn(),
@@ -474,6 +529,65 @@ describe('SocialGateway', () => {
   });
 
   describe('broadcastPostCreated', () => {
+    it('suppresses a deferred scoped post broadcast after session revocation', async () => {
+      const response = new Subject<{ id: string; content: string }>();
+      let resolveLookupStarted!: () => void;
+      const lookupStarted = new Promise<void>((resolve) => {
+        resolveLookupStarted = resolve;
+      });
+      let revoked = false;
+      mockSocketSessionAuth.authenticate.mockImplementation(
+        async (client: any) => {
+          if (revoked) throw new Error('revoked session');
+          client.data.user ??= { userId: 'account-1', profileId: 'reader' };
+          return client.data.user;
+        }
+      );
+      mockSocketSessionAuth.assertProfile.mockImplementation(
+        (client: any, profileId: string) => {
+          if (client.data.user?.profileId !== profileId) {
+            throw new Error('wrong profile');
+          }
+          return client.data.user;
+        }
+      );
+      const client: any = {
+        id: 'socket-revoked-during-post-broadcast',
+        data: { user: { userId: 'account-1', profileId: 'reader' } },
+        emit: jest.fn(),
+        disconnect: jest.fn(),
+      };
+
+      await gateway.handleConnection(client);
+      await gateway.handleSubscribePosts({ profileId: 'reader' }, client);
+      client.emit.mockClear();
+      mockSocialClient.send.mockImplementation(() => {
+        resolveLookupStarted();
+        return response;
+      });
+      const pendingBroadcast = gateway.broadcastPostCreated({
+        id: 'scoped-post',
+        content: 'private post payload',
+      });
+      await lookupStarted;
+      revoked = true;
+      response.next({ id: 'scoped-post', content: 'authorized lookup result' });
+      response.complete();
+      await pendingBroadcast;
+
+      expect(client.emit).not.toHaveBeenCalledWith(
+        'post_created',
+        expect.anything()
+      );
+      expect(client.emit).not.toHaveBeenCalledWith(
+        'social_content_invalidated',
+        expect.anything()
+      );
+      expect(client.disconnect).toHaveBeenCalledWith(true);
+      expect((gateway as any).connectedClients.size).toBe(0);
+      expect((gateway as any).clientToConnectedClient(client)).toBeUndefined();
+    });
+
     it('authorizes each subscriber before broadcasting post content', async () => {
       const client: any = { emit: jest.fn() };
       await gateway.handleSubscribePosts({ profileId: 'user123' }, client);
