@@ -1,0 +1,9 @@
+{
+  "sourceArtifactSha256": "d9625333057359287c41da67a462124c463addb14866d53b802a790daf329a28",
+  "scope": ["client-interface", "local-hub"],
+  "validFullRead": 200,
+  "validRangeRead": 206,
+  "wrongAssetPathRangeOrAlias": 403,
+  "removedGrantWithPreviouslyValidAssertion": 404,
+  "privateIdentifiersIncluded": false
+}

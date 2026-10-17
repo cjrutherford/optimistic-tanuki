@@ -1,0 +1,9 @@
+{
+  "sourceArtifactSha256": "b30bf0f19d63feef0f91f1c8bdac7c6e64aaca6d2564aca36137b28a1405d57a",
+  "ga4": "local-database-lifecycle-rollback-retry-and-startup-cleanup-verified",
+  "ga5": "durable-notice-outbox-dedupe-retry-restart-and-mailpit-delivery-verified",
+  "migration": "fresh-up-down-reapply-and-validator-passed",
+  "24HourWallClockObservation": "not-run",
+  "productionEmailProviderAndDeployment": "not-verified",
+  "privateIdentifiersIncluded": false
+}

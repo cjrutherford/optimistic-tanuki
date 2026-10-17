@@ -1,0 +1,8 @@
+{
+  "sourceArtifactSha256": "3b08930e2e4398067cc43a10da39af002467aa40cb14352d85e1e36c85395c5a",
+  "scope": ["client-interface", "local-hub"],
+  "guardianOwnProfile": "allowed",
+  "sameAppDependentSelector": "denied",
+  "foreignAppDependentSelector": "denied",
+  "privateIdentifiersIncluded": false
+}
