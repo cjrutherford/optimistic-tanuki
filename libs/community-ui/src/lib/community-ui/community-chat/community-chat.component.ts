@@ -59,20 +59,20 @@ import { skip } from 'rxjs';
       .no-chat {
         text-align: center;
         padding: 2rem;
-        color: var(--local-complement, #666);
+        color: var(--local-complement);
       }
       .error {
         color: #dc3545;
       }
       .connection-status {
-        color: var(--local-complement, #666);
+        color: var(--local-complement);
         text-align: center;
       }
       .create-btn {
         margin-top: 1rem;
         padding: 0.75rem 1.5rem;
-        background: var(--local-accent, #4a90d9);
-        color: white;
+        background: var(--local-accent);
+        color: var(--primary-foreground);
         border: none;
         border-radius: 8px;
         cursor: pointer;

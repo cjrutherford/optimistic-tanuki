@@ -158,8 +158,14 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
-      this.guardianResumeToken = new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
-      if (this.guardianResumeToken) history.replaceState(history.state, '', `${location.pathname}${location.search}`);
+      this.guardianResumeToken =
+        new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
+      if (this.guardianResumeToken)
+        history.replaceState(
+          history.state,
+          '',
+          `${location.pathname}${location.search}`
+        );
     }
     void this.loadOAuthConfig();
   }
@@ -190,9 +196,10 @@ export class RegisterComponent implements OnInit {
         });
       });
       if (data.guardianConsentRequest) {
-        this.error = response?.data?.request?.sent === false
-          ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
-          : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
+        this.error =
+          response?.data?.request?.sent === false
+            ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
+            : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
         return;
       }
       this.router.navigate(['/login']);

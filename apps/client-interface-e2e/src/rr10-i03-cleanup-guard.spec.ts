@@ -154,7 +154,8 @@ test('RR10-I03 cleanup pool requires an explicit database port', () => {
       'RR10_I03_CHAT_DB_PORT is required'
     );
   } finally {
-    if (originalPassword === undefined) delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
+    if (originalPassword === undefined)
+      delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
     else process.env['RR10_I03_CHAT_DB_PASSWORD'] = originalPassword;
     if (originalPort === undefined) delete process.env['RR10_I03_CHAT_DB_PORT'];
     else process.env['RR10_I03_CHAT_DB_PORT'] = originalPort;
@@ -172,7 +173,8 @@ test('RR10-I03 cleanup pool uses the explicitly configured isolated port', async
     expect(pool.options.port).toBe(15432);
   } finally {
     await pool.end();
-    if (originalPassword === undefined) delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
+    if (originalPassword === undefined)
+      delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
     else process.env['RR10_I03_CHAT_DB_PASSWORD'] = originalPassword;
     if (originalPort === undefined) delete process.env['RR10_I03_CHAT_DB_PORT'];
     else process.env['RR10_I03_CHAT_DB_PORT'] = originalPort;
@@ -192,11 +194,13 @@ test('RR10-I03 cleanup pool refuses canonical port without an explicit opt-in', 
       '5432 requires RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT=true'
     );
   } finally {
-    if (originalPassword === undefined) delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
+    if (originalPassword === undefined)
+      delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
     else process.env['RR10_I03_CHAT_DB_PASSWORD'] = originalPassword;
     if (originalPort === undefined) delete process.env['RR10_I03_CHAT_DB_PORT'];
     else process.env['RR10_I03_CHAT_DB_PORT'] = originalPort;
-    if (originalOptIn === undefined) delete process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'];
+    if (originalOptIn === undefined)
+      delete process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'];
     else process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'] = originalOptIn;
   }
 });
@@ -214,11 +218,13 @@ test('RR10-I03 cleanup pool allows canonical port only after explicit opt-in', a
     expect(pool.options.port).toBe(5432);
   } finally {
     await pool.end();
-    if (originalPassword === undefined) delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
+    if (originalPassword === undefined)
+      delete process.env['RR10_I03_CHAT_DB_PASSWORD'];
     else process.env['RR10_I03_CHAT_DB_PASSWORD'] = originalPassword;
     if (originalPort === undefined) delete process.env['RR10_I03_CHAT_DB_PORT'];
     else process.env['RR10_I03_CHAT_DB_PORT'] = originalPort;
-    if (originalOptIn === undefined) delete process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'];
+    if (originalOptIn === undefined)
+      delete process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'];
     else process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'] = originalOptIn;
   }
 });

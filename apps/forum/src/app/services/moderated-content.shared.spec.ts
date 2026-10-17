@@ -70,6 +70,9 @@ describe.each(services)(
         providers: [
           serviceClass,
           { provide: getRepositoryToken(entity), useValue: repo },
+          ...(serviceClass === ThreadService
+            ? [{ provide: getRepositoryToken(ForumPost), useValue: repo }]
+            : []),
         ],
       }).compile();
 

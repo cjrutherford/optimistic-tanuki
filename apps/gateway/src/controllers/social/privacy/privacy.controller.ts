@@ -142,16 +142,14 @@ export class PrivacyController {
   private invalidateSocialContent(): void {
     void Promise.resolve(
       this.socialGateway?.broadcastSocialContentInvalidated()
-    )
-      .catch(() =>
-        this.logger.warn('Live social invalidation unavailable')
-      );
+    ).catch(() => this.logger.warn('Live social invalidation unavailable'));
   }
 
   private async resolveReportWorkspaceId(
     dto: ReportContentDto,
     appScope: string,
-    viewerProfileId: string
+    viewerProfileId: string,
+    requestingUserId: string
   ): Promise<string | null> {
     let communityId: string | null = null;
 
@@ -214,7 +212,7 @@ export class PrivacyController {
       const listing = await firstValueFrom(
         this.classifiedsClient.send(
           { cmd: ClassifiedCommands.FIND_BY_ID },
-          { id: dto.contentId, appScope }
+          { id: dto.contentId, appScope, requestingUserId }
         )
       );
       if (!listing || listing.appScope !== appScope) {
@@ -424,7 +422,8 @@ export class PrivacyController {
     const workspaceId = await this.resolveReportWorkspaceId(
       dto,
       appScope,
-      user.profileId
+      user.profileId,
+      user.userId
     );
 
     return await firstValueFrom(

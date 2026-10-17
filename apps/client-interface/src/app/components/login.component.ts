@@ -99,9 +99,10 @@ export class LoginComponent implements OnDestroy, OnInit {
     try {
       const response = await this.authStateService.login(loginRequest);
       if (response?.data?.['guardianConsentPending']) {
-        this.errorMessage = response?.data?.['guardianEmailSent'] === true
-          ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
-          : 'The guardian permission email could not be sent. Check the guardian address and try again.';
+        this.errorMessage =
+          response?.data?.['guardianEmailSent'] === true
+            ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
+            : 'The guardian permission email could not be sent. Check the guardian address and try again.';
         return;
       }
 
@@ -110,15 +111,16 @@ export class LoginComponent implements OnDestroy, OnInit {
       }
     } catch (err: any) {
       const detail = err?.error?.message || err?.message || '';
-      this.errorMessage = err?.status === 401
-        ? 'Invalid email or password. Please try again.'
-        : String(detail).includes('AGE_CHECK_REQUIRED')
+      this.errorMessage =
+        err?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : String(detail).includes('AGE_CHECK_REQUIRED')
           ? 'For this newly registered account, enter your date of birth to continue.'
           : String(detail).includes('GUARDIAN_EMAIL_REQUIRED')
-            ? 'A parent or guardian email is required to request permission.'
-            : String(detail).includes('AGE_UNDER_13')
-              ? 'Sign in is unavailable under age 13.'
-              : 'Sign-in could not be completed. Please try again.';
+          ? 'A parent or guardian email is required to request permission.'
+          : String(detail).includes('AGE_UNDER_13')
+          ? 'Sign in is unavailable under age 13.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 

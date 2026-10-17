@@ -23,6 +23,10 @@ import { InternalMediaController } from './internal-media.controller';
 import { InternalMediaService } from './internal-media.service';
 
 describe('RR10-I01 authenticated media HTTP integration', () => {
+  // This suite encrypts and streams a 30 MiB payload through HTTP and a child
+  // process; the default 5 s unit-test timeout is too short under CI load.
+  jest.setTimeout(30_000);
+
   const token = 'rr10-isolated-integration-token';
   const payloadSize = 30 * 1024 * 1024;
   let root: string;

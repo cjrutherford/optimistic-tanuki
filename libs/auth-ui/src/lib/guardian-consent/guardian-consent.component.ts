@@ -139,16 +139,16 @@ export function guardianConsentRoutes(): Routes {
         display: block;
         min-height: 100vh;
         padding: clamp(1rem, 5vw, 4rem);
-        background: var(--background, #f5f6f8);
-        color: var(--foreground, #17212b);
+        background: var(--background);
+        color: var(--foreground);
       }
       section {
         max-width: 38rem;
         margin: 4vh auto;
         padding: clamp(1.25rem, 4vw, 2.5rem);
         border-radius: 1rem;
-        background: var(--surface, #fff);
-        box-shadow: 0 1rem 3rem #14202b18;
+        background: var(--surface);
+        box-shadow: var(--shadow-lg);
       }
       form {
         display: grid;

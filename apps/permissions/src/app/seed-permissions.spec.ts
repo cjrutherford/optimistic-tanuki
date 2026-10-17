@@ -120,9 +120,7 @@ describe('permissions seed integrity', () => {
     expect(shellSeed).toContain(
       "('asset.create', 'Create asset (local-hub)', 'asset', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))"
     );
-    expect(shellSeed).toContain(
-      "  'asset.create',\n  'election.vote'"
-    );
+    expect(shellSeed).toContain("  'asset.create',\n  'election.vote'");
     expect(shellSeed).toContain(
       "WHERE r.name = 'local_hub_member'\nON CONFLICT DO NOTHING;"
     );

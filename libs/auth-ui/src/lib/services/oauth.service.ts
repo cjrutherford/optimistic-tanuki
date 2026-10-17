@@ -301,9 +301,12 @@ export class OAuthService {
         });
 
       const popupName = `oauth-popup-${Date.now()}`;
-      const requiresAgeProof = appScope === 'client-interface' || appScope === 'local-hub';
+      const requiresAgeProof =
+        appScope === 'client-interface' || appScope === 'local-hub';
       this.popup = window.open(
-        requiresAgeProof ? 'about:blank' : this.buildStartUrl(provider, appScope, cookieSession),
+        requiresAgeProof
+          ? 'about:blank'
+          : this.buildStartUrl(provider, appScope, cookieSession),
         popupName,
         this.popupFeatures
       );
@@ -319,13 +322,29 @@ export class OAuthService {
       }
       if (requiresAgeProof) {
         const returnTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
-        firstValueFrom(this.http.post<{ authorizationUrl: string }>(
-          `${this.apiBaseUrl}/oauth/start/${encodeURIComponent(provider)}`,
-          { returnTo, appScope, sessionMode: cookieSession ? 'cookie' : undefined, dateOfBirth, guardianResumeToken },
-          { withCredentials: true }
-        )).then(({ authorizationUrl }) => {
-          if (this.popup && !this.popup.closed) this.popup.location.href = authorizationUrl;
-        }).catch(() => finish({ success: false, error: 'Age eligibility could not be verified for OAuth.' }));
+        firstValueFrom(
+          this.http.post<{ authorizationUrl: string }>(
+            `${this.apiBaseUrl}/oauth/start/${encodeURIComponent(provider)}`,
+            {
+              returnTo,
+              appScope,
+              sessionMode: cookieSession ? 'cookie' : undefined,
+              dateOfBirth,
+              guardianResumeToken,
+            },
+            { withCredentials: true }
+          )
+        )
+          .then(({ authorizationUrl }) => {
+            if (this.popup && !this.popup.closed)
+              this.popup.location.href = authorizationUrl;
+          })
+          .catch(() =>
+            finish({
+              success: false,
+              error: 'Age eligibility could not be verified for OAuth.',
+            })
+          );
       }
       checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {

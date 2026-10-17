@@ -87,7 +87,10 @@ export class AuthGuard implements CanActivate {
     appId?: string
   ): Promise<{ isValid: boolean; emailVerified: boolean }> {
     const response = (await firstValueFrom(
-      this.authService.send({ cmd: AuthCommands.Validate }, { token, userId, appId })
+      this.authService.send(
+        { cmd: AuthCommands.Validate },
+        { token, userId, appId }
+      )
     )) as { isValid?: boolean; emailVerified?: boolean };
     return {
       isValid: Boolean(response?.isValid),
@@ -115,14 +118,20 @@ export class AuthGuard implements CanActivate {
     return matches.length === 1 ? matches[0].appId : undefined;
   }
 
-  private requestAppId(request: { headers?: Record<string, string | undefined> }): string | undefined {
+  private requestAppId(request: {
+    headers?: Record<string, string | undefined>;
+  }): string | undefined {
     const origin = request.headers?.origin;
     const hostAppId = this.registeredHostAppId(request.headers?.host);
     if (!origin) return hostAppId;
     try {
       const normalized = new URL(origin).origin;
       const originAppId = this.appRegistry.apps.find((app) => {
-        try { return new URL(app.uiBaseUrl).origin === normalized; } catch { return false; }
+        try {
+          return new URL(app.uiBaseUrl).origin === normalized;
+        } catch {
+          return false;
+        }
       })?.appId;
       // Origin is caller-controlled. When the gateway can identify the app
       // from its actual Host header, require both signals to identify it.
@@ -172,11 +181,15 @@ export class AuthGuard implements CanActivate {
             : undefined;
         if (
           (origin && !originAppId) ||
-          (origin && !hostAppId && (!signedAppId || signedAppId !== originAppId)) ||
+          (origin &&
+            !hostAppId &&
+            (!signedAppId || signedAppId !== originAppId)) ||
           (signedAppId && originAppId && signedAppId !== originAppId) ||
           (signedAppId && hostAppId && signedAppId !== hostAppId)
         ) {
-          throw new UnauthorizedException('Session application scope does not match request origin.');
+          throw new UnauthorizedException(
+            'Session application scope does not match request origin.'
+          );
         }
         const authentication = await this.introspectToken(
           credential,

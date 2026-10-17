@@ -200,9 +200,15 @@ export class VerifiedMediaSpoolService {
         await writePlaintext(decipher!.update(chunk));
       };
       const decryptBounded = async (chunk: Buffer): Promise<void> => {
-        for (let offset = 0; offset < chunk.length; offset += MAX_DECRYPTION_CHUNK_BYTES) {
+        for (
+          let offset = 0;
+          offset < chunk.length;
+          offset += MAX_DECRYPTION_CHUNK_BYTES
+        ) {
           if (options.signal?.aborted) throw abortError();
-          await decryptChunk(chunk.subarray(offset, offset + MAX_DECRYPTION_CHUNK_BYTES));
+          await decryptChunk(
+            chunk.subarray(offset, offset + MAX_DECRYPTION_CHUNK_BYTES)
+          );
         }
       };
 

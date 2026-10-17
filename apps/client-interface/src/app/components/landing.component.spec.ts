@@ -47,10 +47,12 @@ describe('LandingComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/feed']);
   });
 
-  it('brands the landing page as Optimistic Tanuki with the current community message', () => {
-    expect(fixture.nativeElement.textContent).toContain('Optimistic Tanuki');
+  it('uses the current user-centered landing message', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Your space. Your people.'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'An early-stage social network organized around you'
     );
   });
 

@@ -1455,8 +1455,7 @@ test.describe('RR10 I04 community chat recovery', () => {
       expect(deletedCommunityRead.status()).toBe(200);
       const deletedCommunityBody = await deletedCommunityRead.text();
       expect(
-        deletedCommunityBody === '' ||
-          JSON.parse(deletedCommunityBody) === null
+        deletedCommunityBody === '' || JSON.parse(deletedCommunityBody) === null
       ).toBe(true);
       checks.push({
         name: 'normal owner API deleted the exact private community',

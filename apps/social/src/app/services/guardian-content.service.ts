@@ -882,15 +882,13 @@ export class GuardianContentService implements OnModuleInit, OnModuleDestroy {
     if (post.visibility === 'public') return true;
     if (post.visibility !== 'followers' || !input.viewerProfileId) return false;
     if (input.viewerProfileId === post.profileId) return true;
-    return !!(await this.dataSource
-      .getRepository(FollowEntity)
-      .findOne({
-        where: {
-          followerId: input.viewerProfileId,
-          followeeId: post.profileId,
-          appScope: input.appId,
-        },
-      }));
+    return !!(await this.dataSource.getRepository(FollowEntity).findOne({
+      where: {
+        followerId: input.viewerProfileId,
+        followeeId: post.profileId,
+        appScope: input.appId,
+      },
+    }));
   }
 
   private referencesAsset(content: string, assetId: string): boolean {

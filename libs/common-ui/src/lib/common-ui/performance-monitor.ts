@@ -33,7 +33,10 @@ export interface GatedPerformanceMonitor {
   stop(): void;
 }
 
-const eligibilityListeners = new Map<string, Set<(eligible: boolean) => void>>();
+const eligibilityListeners = new Map<
+  string,
+  Set<(eligible: boolean) => void>
+>();
 
 /** Publish the result of an app-scoped session restore validated by the server. */
 export function setPerformanceMonitoringEligibility(
@@ -187,11 +190,12 @@ export function startPerformanceMonitoring(
   observe('layout-shift', 'cls', (entry) => (entry as LayoutShiftEntry).value);
   observe('longtask', 'long_task', (entry) => entry.duration);
 
-  const navigation = options.includeBufferedEntries === false
-    ? undefined
-    : (performance.getEntriesByType('navigation')[0] as
-        | PerformanceNavigationTiming
-        | undefined);
+  const navigation =
+    options.includeBufferedEntries === false
+      ? undefined
+      : (performance.getEntriesByType('navigation')[0] as
+          | PerformanceNavigationTiming
+          | undefined);
   if (navigation) {
     reporter.record({
       name: 'ttfb',

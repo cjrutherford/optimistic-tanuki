@@ -571,16 +571,30 @@ describe('AppController', () => {
 
   it('should update a comment', async () => {
     commentService.update.mockResolvedValue(undefined);
-    const result = await controller.updateComment('1', {} as any, 'user-1', 'profile-1');
+    const result = await controller.updateComment(
+      '1',
+      {} as any,
+      'user-1',
+      'profile-1'
+    );
     expect(result).toEqual({ success: true });
-    expect(commentService.update).toHaveBeenCalledWith('1', {}, 'user-1', 'profile-1');
+    expect(commentService.update).toHaveBeenCalledWith(
+      '1',
+      {},
+      'user-1',
+      'profile-1'
+    );
   });
 
   it('should remove a comment', async () => {
     commentService.remove.mockResolvedValue('removed');
     const result = await controller.removeComment('1', 'user-1', 'profile-1');
     expect(result).toBe('removed');
-    expect(commentService.remove).toHaveBeenCalledWith('1', 'user-1', 'profile-1');
+    expect(commentService.remove).toHaveBeenCalledWith(
+      '1',
+      'user-1',
+      'profile-1'
+    );
   });
 
   it('should create an attachment', async () => {
@@ -588,17 +602,26 @@ describe('AppController', () => {
     attachmentService.create.mockResolvedValue('attachment');
     const result = await controller.createAttachment({} as any, '1', actor);
     expect(result).toBe('attachment');
-    expect(attachmentService.create).toHaveBeenCalledWith({} as any, '1', actor);
+    expect(attachmentService.create).toHaveBeenCalledWith(
+      {} as any,
+      '1',
+      actor
+    );
   });
 
   it('should find all attachments only in the requested app scope', async () => {
     attachmentService.findAllForApp.mockResolvedValue(['attachment']);
-    const result = await controller.findAllAttachments({ appId: 'client-interface' });
+    const result = await controller.findAllAttachments({
+      appId: 'client-interface',
+    });
     expect(result).toEqual(['attachment']);
-    expect(attachmentService.findAllForApp).toHaveBeenCalledWith({
-      where: {},
-      relations: ['post'],
-    }, 'client-interface');
+    expect(attachmentService.findAllForApp).toHaveBeenCalledWith(
+      {
+        where: {},
+        relations: ['post'],
+      },
+      'client-interface'
+    );
   });
 
   it('rejects attachment list reads without verified app scope', async () => {
@@ -609,16 +632,26 @@ describe('AppController', () => {
 
   it('should find an attachment', async () => {
     attachmentService.findOneForApp.mockResolvedValue('attachment');
-    const result = await controller.findAttachment('1', undefined, 'client-interface');
+    const result = await controller.findAttachment(
+      '1',
+      undefined,
+      'client-interface'
+    );
     expect(result).toBe('attachment');
-    expect(attachmentService.findOneForApp).toHaveBeenCalledWith('1', 'client-interface', {
-      where: {},
-      relations: ['post'],
-    });
+    expect(attachmentService.findOneForApp).toHaveBeenCalledWith(
+      '1',
+      'client-interface',
+      {
+        where: {},
+        relations: ['post'],
+      }
+    );
   });
 
   it('rejects attachment reads without verified app scope', async () => {
-    await expect(controller.findAttachment('1', undefined, undefined)).rejects.toThrow();
+    await expect(
+      controller.findAttachment('1', undefined, undefined)
+    ).rejects.toThrow();
     expect(attachmentService.findOne).not.toHaveBeenCalled();
     expect(attachmentService.findOneForApp).not.toHaveBeenCalled();
   });

@@ -16,11 +16,13 @@ describe('AuthGuard', () => {
   let jwtService: JwtService;
   let clientProxy: any;
   let permissionsClient: any;
-  const appRegistry: any = { apps: [
-    { appId: 'client-interface', uiBaseUrl: 'http://localhost:8080' },
-    { appId: 'local-hub', uiBaseUrl: 'http://localhost:8081' },
-    { appId: 'opportunity-compass', uiBaseUrl: 'http://localhost:8090' },
-  ] };
+  const appRegistry: any = {
+    apps: [
+      { appId: 'client-interface', uiBaseUrl: 'http://localhost:8080' },
+      { appId: 'local-hub', uiBaseUrl: 'http://localhost:8081' },
+      { appId: 'opportunity-compass', uiBaseUrl: 'http://localhost:8090' },
+    ],
+  };
 
   const mockUserDetails = {
     userId: '123450',
@@ -89,7 +91,11 @@ describe('AuthGuard', () => {
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'optional-token', userId: mockUserDetails.userId, appId: undefined }
+        {
+          token: 'optional-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+        }
       );
       expect(request.user).toEqual(
         expect.objectContaining({
@@ -119,7 +125,11 @@ describe('AuthGuard', () => {
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'revoked-token', userId: mockUserDetails.userId, appId: undefined }
+        {
+          token: 'revoked-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+        }
       );
       expect(request.user).toBeUndefined();
     });
@@ -142,7 +152,9 @@ describe('AuthGuard', () => {
     });
 
     it('binds auth introspection to registered Origin and ignores a forged app-scope header', async () => {
-      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true, emailVerified: true }));
+      clientProxy.send = jest
+        .fn()
+        .mockReturnValue(of({ isValid: true, emailVerified: true }));
       const request: any = {
         headers: {
           authorization: 'Bearer valid-token',
@@ -159,7 +171,11 @@ describe('AuthGuard', () => {
       await expect(authGuard.canActivate(context)).resolves.toBe(true);
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'valid-token', userId: mockUserDetails.userId, appId: 'client-interface' }
+        {
+          token: 'valid-token',
+          userId: mockUserDetails.userId,
+          appId: 'client-interface',
+        }
       );
       expect(request.user.appId).toBe('client-interface');
     });
@@ -250,7 +266,11 @@ describe('AuthGuard', () => {
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('valid-token');
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'valid-token', userId: mockUserDetails.userId, appId: undefined }
+        {
+          token: 'valid-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+        }
       );
       expect(canActivate).toBe(true); // Assuming your guard validates 'valid-token'
     });
@@ -312,7 +332,11 @@ describe('AuthGuard', () => {
       expect(jwtService.verifyAsync).toHaveBeenCalledWith('invalid-token');
       expect(clientProxy.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.Validate },
-        { token: 'invalid-token', userId: mockUserDetails.userId, appId: undefined }
+        {
+          token: 'invalid-token',
+          userId: mockUserDetails.userId,
+          appId: undefined,
+        }
       );
     });
 

@@ -98,7 +98,9 @@ import { GuardianContentService } from './services/guardian-content.service';
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>('services.authentication');
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.authentication'
+        );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: { host: serviceConfig.host, port: serviceConfig.port },

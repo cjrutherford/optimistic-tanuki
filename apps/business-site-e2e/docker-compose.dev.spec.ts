@@ -78,7 +78,7 @@ describe('business-site dev compose wiring', () => {
     );
   });
 
-  it('runs every dev service with a writable dist mount as the local host user', () => {
+  it('runs dev services with writable dist mounts without retaining root privileges', () => {
     const compose = readFileSync(
       join(workspaceRoot, 'docker-compose.dev.yaml'),
       'utf8'
@@ -97,9 +97,15 @@ describe('business-site dev compose wiring', () => {
     expect(servicesWithDistMounts).not.toHaveLength(0);
 
     for (const [service, , section] of servicesWithDistMounts) {
-      expect(section).toContain(
+      const runsAsLocalUser = section.includes(
         "user: '${LOCAL_UID:-1000}:${LOCAL_GID:-1000}'"
       );
+      const dropsBootstrapRoot =
+        section.includes("user: '0:0'") &&
+        section.includes('chown -R ${LOCAL_UID:-1000}:${LOCAL_GID:-1000}') &&
+        section.includes('exec su-exec ${LOCAL_UID:-1000}:${LOCAL_GID:-1000}');
+
+      expect(runsAsLocalUser || dropsBootstrapRoot).toBe(true);
     }
   });
 

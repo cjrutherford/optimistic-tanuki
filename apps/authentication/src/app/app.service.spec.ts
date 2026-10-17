@@ -163,7 +163,9 @@ describe('AppService', () => {
           provide: GuardianPermissionService,
           useValue: {
             assertAccountAccess: jest.fn().mockResolvedValue(undefined),
-            assessUnassessedLogin: jest.fn().mockResolvedValue({ pending: false }),
+            assessUnassessedLogin: jest
+              .fn()
+              .mockResolvedValue({ pending: false }),
           },
         },
         {
@@ -327,7 +329,9 @@ describe('AppService', () => {
         ...mockUser,
         ageEligibilityStatus: 'unassessed',
       } as any);
-      jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
       const guardianPermissions = (service as any).guardianPermissionService;
       guardianPermissions.assessUnassessedLogin.mockResolvedValue({
         pending: true,
@@ -364,7 +368,9 @@ describe('AppService', () => {
         ...mockUser,
         ageEligibilityStatus: 'adult',
       } as any);
-      jest.spyOn(saltedHashService, 'validateHash').mockReturnValue(true as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
       const guardianPermissions = (service as any).guardianPermissionService;
       guardianPermissions.assertAccountAccess.mockResolvedValue(undefined);
 

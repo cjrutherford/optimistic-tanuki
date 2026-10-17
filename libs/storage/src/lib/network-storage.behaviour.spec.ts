@@ -72,11 +72,16 @@ describe('NetworkStorageAdapter behaviour', () => {
   describe('create', () => {
     it('uses a caller-reserved id in the S3 object key', async () => {
       const created = await adapter.create({
-        id: '11111111-1111-4111-8111-111111111111', name: 'photo.png', profileId: 'profile-9',
-        type: AssetType.IMAGE, content: Buffer.from('bytes'),
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'photo.png',
+        profileId: 'profile-9',
+        type: AssetType.IMAGE,
+        content: Buffer.from('bytes'),
       } as never);
       expect(created.id).toBe('11111111-1111-4111-8111-111111111111');
-      expect(s3.uploadObject.mock.calls[0][0]).toBe('assets/profile-9/11111111-1111-4111-8111-111111111111/photo.png');
+      expect(s3.uploadObject.mock.calls[0][0]).toBe(
+        'assets/profile-9/11111111-1111-4111-8111-111111111111/photo.png'
+      );
     });
 
     it('uploads under a profile-scoped key and returns an s3:// path', async () => {

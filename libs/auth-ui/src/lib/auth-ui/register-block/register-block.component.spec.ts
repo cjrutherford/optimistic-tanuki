@@ -149,7 +149,9 @@ describe('RegisterBlockComponent', () => {
 
     expect(root.querySelector('input[type="date"]')).toBeTruthy();
     expect(root.querySelector('input[autocomplete="username"]')).toBeFalsy();
-    expect(root.querySelector('input[autocomplete="new-password"]')).toBeFalsy();
+    expect(
+      root.querySelector('input[autocomplete="new-password"]')
+    ).toBeFalsy();
   });
 
   it('blocks under-13 registration without emitting account data', () => {
@@ -180,7 +182,9 @@ describe('RegisterBlockComponent', () => {
     fixture.detectChanges();
 
     expect(component.registrationStep).toBe('guardian');
-    expect(root.querySelector('input[autocomplete="new-password"]')).toBeFalsy();
+    expect(
+      root.querySelector('input[autocomplete="new-password"]')
+    ).toBeFalsy();
     expect(root.querySelector('input[autocomplete="given-name"]')).toBeFalsy();
   });
 

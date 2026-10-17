@@ -56,7 +56,8 @@ const loadConfig = () => {
     );
   }
   if (process.env.SERVICE_AUTHENTICATION_HOST) {
-    configData.services.authentication.host = process.env.SERVICE_AUTHENTICATION_HOST;
+    configData.services.authentication.host =
+      process.env.SERVICE_AUTHENTICATION_HOST;
   }
   if (process.env.SERVICE_AUTHENTICATION_PORT) {
     configData.services.authentication.port = parseInt(

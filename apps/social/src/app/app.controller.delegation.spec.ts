@@ -1294,10 +1294,7 @@ describe('AppController delegation', () => {
       await expect(
         h.controller.markNotificationRead(notificationMutation)
       ).resolves.toEqual({ success: true });
-      expect(h.notificationService.markAsRead).toHaveBeenCalledWith(
-        'n1',
-        'r1'
-      );
+      expect(h.notificationService.markAsRead).toHaveBeenCalledWith('n1', 'r1');
 
       await expect(
         h.controller.markAllNotificationsRead('r1')

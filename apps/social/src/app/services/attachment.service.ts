@@ -1,10 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  Attachment,
-  AttachmentType,
-} from '../../entities/attachment.entity';
+import { Attachment, AttachmentType } from '../../entities/attachment.entity';
 import {
   DataSource,
   FindOneOptions,
@@ -16,10 +13,7 @@ import {
   UpdateAttachmentDto,
 } from '@optimistic-tanuki/models';
 import { Post } from '../../entities/post.entity';
-import {
-  ProfileCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+import { ProfileCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PostService } from './post.service';
 
@@ -56,17 +50,15 @@ export class AttachmentService {
     return this.dataSource.transaction(async (manager) => {
       const post = await this.lockPost(manager, postId);
       this.assertOwner(post, profile, actor.appId);
-      await this.latchReferences(
-        post,
-        [{ filePath: createAttachmentDto.url }]
-      );
+      await this.latchReferences(post, [{ filePath: createAttachmentDto.url }]);
 
       const repo = manager.getRepository(Attachment);
       const attachment = repo.create({
         name: createAttachmentDto.name || 'Attachment',
         post,
         filePath: createAttachmentDto.url,
-        type: (createAttachmentDto.type || AttachmentType.IMAGE) as AttachmentType,
+        type: (createAttachmentDto.type ||
+          AttachmentType.IMAGE) as AttachmentType,
         appScope: actor.appId,
       });
       return repo.save(attachment);
@@ -84,7 +76,9 @@ export class AttachmentService {
     if (!appId?.trim()) return [];
     const attachments = await this.attachmentRepo.find({
       ...options,
-      relations: [...new Set([...(options.relations as string[] ?? []), 'post'])],
+      relations: [
+        ...new Set([...((options.relations as string[]) ?? []), 'post']),
+      ],
     });
     const visible: Attachment[] = [];
     for (const attachment of attachments) {
@@ -114,7 +108,9 @@ export class AttachmentService {
     if (!appId?.trim()) return null;
     const attachment = await this.findOne(id, {
       ...options,
-      relations: [...new Set([...(options?.relations as string[] ?? []), 'post'])],
+      relations: [
+        ...new Set([...((options?.relations as string[]) ?? []), 'post']),
+      ],
     });
     return attachment && (await this.isInAppScope(attachment, appId))
       ? attachment
@@ -134,11 +130,12 @@ export class AttachmentService {
         where: { id },
         relations: ['post'],
       });
-      if (!attachment?.post) throw new RpcException({
-        statusCode: 404,
-        code: 'ATTACHMENT_NOT_FOUND',
-        message: 'Attachment not found',
-      });
+      if (!attachment?.post)
+        throw new RpcException({
+          statusCode: 404,
+          code: 'ATTACHMENT_NOT_FOUND',
+          message: 'Attachment not found',
+        });
       const post = await this.lockPost(manager, attachment.post.id);
       this.assertAttachmentOwner(attachment, post, profile, actor.appId);
       await this.latchReferences(post, [
@@ -166,11 +163,12 @@ export class AttachmentService {
         where: { id },
         relations: ['post'],
       });
-      if (!attachment?.post) throw new RpcException({
-        statusCode: 404,
-        code: 'ATTACHMENT_NOT_FOUND',
-        message: 'Attachment not found',
-      });
+      if (!attachment?.post)
+        throw new RpcException({
+          statusCode: 404,
+          code: 'ATTACHMENT_NOT_FOUND',
+          message: 'Attachment not found',
+        });
       const post = await this.lockPost(manager, attachment.post.id);
       this.assertAttachmentOwner(attachment, post, profile, actor.appId);
       await this.latchReferences(post, [{ filePath: attachment.filePath }]);
@@ -180,26 +178,32 @@ export class AttachmentService {
 
   private async lockPost(manager: any, postId: string): Promise<Post> {
     if (typeof postId !== 'string' || !postId.trim())
-      throw new RpcException({ statusCode: 400, message: 'A post ID is required' });
+      throw new RpcException({
+        statusCode: 400,
+        message: 'A post ID is required',
+      });
     const post = await manager.getRepository(Post).findOne({
       where: { id: postId },
       lock: { mode: 'pessimistic_write' },
     });
-    if (!post) throw new RpcException({ statusCode: 404, message: 'Post not found' });
+    if (!post)
+      throw new RpcException({ statusCode: 404, message: 'Post not found' });
     return post;
   }
 
   private validateActor(actor: AttachmentActor): void {
-    if (
-      !actor?.userId ||
-      !actor.profileId ||
-      !actor.appId?.trim()
-    ) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_ACCESS_DENIED', message: 'A verified Social application actor is required' });
+    if (!actor?.userId || !actor.profileId || !actor.appId?.trim()) {
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_ACCESS_DENIED',
+        message: 'A verified Social application actor is required',
+      });
     }
   }
 
-  private async resolveActorProfile(actor: AttachmentActor): Promise<ProfileRecord> {
+  private async resolveActorProfile(
+    actor: AttachmentActor
+  ): Promise<ProfileRecord> {
     let profile: ProfileRecord;
     try {
       profile = (await firstValueFrom(
@@ -208,7 +212,11 @@ export class AttachmentService {
           .pipe(timeout(3000))
       )) as ProfileRecord;
     } catch {
-      throw new RpcException({ statusCode: 503, code: 'ATTACHMENT_PROFILE_UNAVAILABLE', message: 'Unable to verify the attachment owner profile' });
+      throw new RpcException({
+        statusCode: 503,
+        code: 'ATTACHMENT_PROFILE_UNAVAILABLE',
+        message: 'Unable to verify the attachment owner profile',
+      });
     }
     if (
       !profile ||
@@ -216,22 +224,28 @@ export class AttachmentService {
       profile.userId !== actor.userId ||
       profile.appScope !== actor.appId
     ) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_ACCESS_DENIED', message: 'Attachment owner profile does not match the verified actor and application' });
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_ACCESS_DENIED',
+        message:
+          'Attachment owner profile does not match the verified actor and application',
+      });
     }
     return profile;
   }
 
-  private assertOwner(
-    post: Post,
-    profile: ProfileRecord,
-    appId: string
-  ): void {
+  private assertOwner(post: Post, profile: ProfileRecord, appId: string): void {
     if (
       post.profileId !== profile.id ||
       post.userId !== profile.userId ||
       ![LEGACY_SCOPE, appId].includes(post.appScope ?? '')
     ) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_ACCESS_DENIED', message: 'Attachment parent is outside the verified owner or application scope' });
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_ACCESS_DENIED',
+        message:
+          'Attachment parent is outside the verified owner or application scope',
+      });
     }
   }
 
@@ -246,7 +260,12 @@ export class AttachmentService {
       attachment.post?.id !== post.id ||
       ![LEGACY_SCOPE, appId].includes(attachment.appScope ?? '')
     ) {
-      throw new RpcException({ statusCode: 403, code: 'ATTACHMENT_ACCESS_DENIED', message: 'Attachment is outside the verified owner or application scope' });
+      throw new RpcException({
+        statusCode: 403,
+        code: 'ATTACHMENT_ACCESS_DENIED',
+        message:
+          'Attachment is outside the verified owner or application scope',
+      });
     }
   }
 
@@ -259,7 +278,8 @@ export class AttachmentService {
       !post ||
       ![LEGACY_SCOPE, appId].includes(post.appScope ?? '') ||
       ![LEGACY_SCOPE, appId].includes(attachment.appScope ?? '')
-    ) return false;
+    )
+      return false;
     let profile: ProfileRecord;
     try {
       profile = (await firstValueFrom(
@@ -268,10 +288,18 @@ export class AttachmentService {
           .pipe(timeout(3000))
       )) as ProfileRecord;
     } catch {
-      throw new RpcException({ statusCode: 503, code: 'ATTACHMENT_PROFILE_UNAVAILABLE', message: 'Unable to verify attachment read scope' });
+      throw new RpcException({
+        statusCode: 503,
+        code: 'ATTACHMENT_PROFILE_UNAVAILABLE',
+        message: 'Unable to verify attachment read scope',
+      });
     }
-    return !!profile && profile.id === post.profileId &&
-      profile.userId === post.userId && profile.appScope === appId;
+    return (
+      !!profile &&
+      profile.id === post.profileId &&
+      profile.userId === post.userId &&
+      profile.appScope === appId
+    );
   }
 
   private async latchReferences(
@@ -286,9 +314,17 @@ export class AttachmentService {
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (/audience|restricted|another profile/i.test(message)) {
-        throw new RpcException({ statusCode: 400, code: 'ATTACHMENT_AUDIENCE_DENIED', message: 'Attachment media is incompatible with the post audience' });
+        throw new RpcException({
+          statusCode: 400,
+          code: 'ATTACHMENT_AUDIENCE_DENIED',
+          message: 'Attachment media is incompatible with the post audience',
+        });
       }
-      throw new RpcException({ statusCode: 503, code: 'ATTACHMENT_ASSET_UNAVAILABLE', message: 'Unable to verify attachment media audience' });
+      throw new RpcException({
+        statusCode: 503,
+        code: 'ATTACHMENT_ASSET_UNAVAILABLE',
+        message: 'Unable to verify attachment media audience',
+      });
     }
   }
 }

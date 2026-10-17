@@ -37,10 +37,9 @@ export const TEEN_ELIGIBILITY_NOTICE =
       .guardian-notice {
         padding: clamp(1rem, 2vw, 1.5rem);
         margin: 1rem 0;
-        border: 1px solid
-          color-mix(in srgb, var(--foreground, #18212b) 14%, transparent);
+        border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
         border-radius: 1rem;
-        background: var(--surface-muted, #f3f5f2);
+        background: var(--surface-variant);
       }
       .guardian-notice p:last-child {
         margin-bottom: 0;
@@ -48,7 +47,7 @@ export const TEEN_ELIGIBILITY_NOTICE =
       }
       .guardian-notice__version {
         margin: 0 0 0.4rem;
-        color: #394174;
+        color: var(--accent);
         font-size: 0.78rem;
         font-weight: 700;
         letter-spacing: 0.08em;

@@ -23,7 +23,9 @@ describe('SocketSessionAuthService', () => {
     const service = new SocketSessionAuthService(
       jwt,
       authenticationService as never,
-      { apps: [{ appId: 'client-interface', uiBaseUrl: 'https://ot.example' }] } as any
+      {
+        apps: [{ appId: 'client-interface', uiBaseUrl: 'https://ot.example' }],
+      } as any
     );
     const socket = {
       handshake: {

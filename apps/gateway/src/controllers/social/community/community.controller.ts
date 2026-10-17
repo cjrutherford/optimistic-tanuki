@@ -97,8 +97,7 @@ export class CommunityController {
     void this.chatGateway?.invalidateConversations();
     void Promise.resolve(
       this.socialGateway?.broadcastSocialContentInvalidated()
-    )
-      .catch(() => this.logger.warn('Live social invalidation unavailable'));
+    ).catch(() => this.logger.warn('Live social invalidation unavailable'));
   }
 
   @Post()

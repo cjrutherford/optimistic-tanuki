@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 @Index(['createdAt'])
@@ -9,7 +15,12 @@ export class GuardianAssetActivity {
   @Column() profileId!: string;
   @Column() assetId!: string;
   @Column() appId!: string;
-  @Column({ type: 'varchar' }) operation!: 'upload' | 'list' | 'read' | 'delete';
-  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" }) changedFieldNames!: string[];
+  @Column({ type: 'varchar' }) operation!:
+    | 'upload'
+    | 'list'
+    | 'read'
+    | 'delete';
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  changedFieldNames!: string[];
   @CreateDateColumn({ type: 'timestamptz' }) createdAt!: Date;
 }

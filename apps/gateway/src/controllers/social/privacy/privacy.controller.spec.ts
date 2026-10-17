@@ -158,13 +158,17 @@ describe('PrivacyController report workspace scope', () => {
 
     await controller.reportContent(
       { contentType: 'classified', contentId: 'ad-1', reason: 'spam' },
-      { profileId: 'reporter-1' } as any,
+      { userId: 'reporter-user-1', profileId: 'reporter-1' } as any,
       'local-hub'
     );
 
     expect(classifiedsClient.send).toHaveBeenCalledWith(
       { cmd: ClassifiedCommands.FIND_BY_ID },
-      { id: 'ad-1', appScope: 'local-hub' }
+      {
+        id: 'ad-1',
+        appScope: 'local-hub',
+        requestingUserId: 'reporter-user-1',
+      }
     );
     expect(socialClient.send).toHaveBeenLastCalledWith(
       { cmd: PrivacyCommands.REPORT_CONTENT },

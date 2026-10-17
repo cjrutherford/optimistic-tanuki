@@ -155,7 +155,10 @@ export class EmailAuthService {
     // Check before consuming the one-time action or allowing profile creation.
     // A denied age-gated login can then use password assessment or an approved
     // guardian link without losing this email action.
-    await this.guardianPermissions.assertAccountAccess(action.user.id, action.appId);
+    await this.guardianPermissions.assertAccountAccess(
+      action.user.id,
+      action.appId
+    );
     const consumed = await this.actions.update(
       { id: action.id, consumedAt: IsNull() },
       { consumedAt: new Date() }

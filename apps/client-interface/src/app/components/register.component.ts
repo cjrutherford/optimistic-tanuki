@@ -45,8 +45,14 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      this.guardianResumeToken = new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
-      if (this.guardianResumeToken) history.replaceState(history.state, '', `${location.pathname}${location.search}`);
+      this.guardianResumeToken =
+        new URLSearchParams(location.hash.replace(/^#/, '')).get('token') || '';
+      if (this.guardianResumeToken)
+        history.replaceState(
+          history.state,
+          '',
+          `${location.pathname}${location.search}`
+        );
     }
     this.loadOAuthConfig();
   }
@@ -77,7 +83,8 @@ export class RegisterComponent implements OnInit {
       bio: formValue.bio,
       dateOfBirth: formValue.dateOfBirth,
       guardianEmail: formValue.guardianEmail,
-      guardianResumeToken: formValue.guardianResumeToken || this.guardianResumeToken,
+      guardianResumeToken:
+        formValue.guardianResumeToken || this.guardianResumeToken,
       guardianConsentRequest: formValue.guardianConsentRequest,
     };
 
@@ -85,9 +92,10 @@ export class RegisterComponent implements OnInit {
       next: (response: any) => {
         if (formValue.guardianConsentRequest) {
           const sent = response?.data?.request?.sent;
-          this.errorMessage = sent === false
-            ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
-            : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
+          this.errorMessage =
+            sent === false
+              ? "We couldn't send the permission email, and no account was created. Check the guardian address and try again."
+              : 'Your guardian request is pending. No account or profile was created. A parent or guardian must record permission before you can register.';
           return;
         }
         this.router.navigate(['/login']);

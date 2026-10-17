@@ -14,7 +14,10 @@ export {
   emailAuthRoutes,
   parseEmailActionToken,
 } from './lib/email-action/email-action.component';
-export { GuardianConsentComponent, guardianConsentRoutes } from './lib/guardian-consent/guardian-consent.component';
+export {
+  GuardianConsentComponent,
+  guardianConsentRoutes,
+} from './lib/guardian-consent/guardian-consent.component';
 export type {
   OAuthLoginResult,
   OAuthPopupResult,

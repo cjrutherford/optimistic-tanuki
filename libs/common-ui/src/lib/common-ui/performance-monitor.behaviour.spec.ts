@@ -156,7 +156,9 @@ describe('startPerformanceMonitoring', () => {
     setPerformanceMonitoringEligibility('client-interface', true);
 
     expect(registrations).toHaveLength(4);
-    expect(registrations.every((registration) => registration.buffered === false)).toBe(true);
+    expect(
+      registrations.every((registration) => registration.buffered === false)
+    ).toBe(true);
     expect(performance.getEntriesByType).not.toHaveBeenCalled();
     registrations[0].emit([{ startTime: 300 } as Partial<PerformanceEntry>]);
 

@@ -81,9 +81,9 @@
   margin: 0;
   padding: 0.6rem 0.75rem;
   border-radius: var(--border-radius-sm, 4px);
-  border: 1px solid var(--error, #b3261e);
-  background: color-mix(in srgb, var(--error, #b3261e) 10%, transparent);
-  color: var(--error, #b3261e);
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
   font-size: 0.9rem;
 }
 

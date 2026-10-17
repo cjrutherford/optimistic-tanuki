@@ -180,7 +180,9 @@ describe('AppService flows', () => {
           provide: GuardianPermissionService,
           useValue: {
             assertAccountAccess: jest.fn().mockResolvedValue(undefined),
-            assessUnassessedLogin: jest.fn().mockResolvedValue({ pending: false, sent: false }),
+            assessUnassessedLogin: jest
+              .fn()
+              .mockResolvedValue({ pending: false, sent: false }),
           },
         },
         {

@@ -74,16 +74,24 @@ describe('SchemaBlockInspectorComponent', () => {
 
   it('renders stable ids for select-backed schema fields', () => {
     const styleField = fixture.nativeElement.querySelector(
-      '#field-gallery\\.style'
+      '#field-gallery\\.style-control'
     );
     const columnsField = fixture.nativeElement.querySelector(
-      '#field-gallery\\.columns'
+      '#field-gallery\\.columns-control'
     );
 
-    expect(styleField?.tagName).toBe('LIB-SELECT');
-    expect(columnsField?.tagName).toBe('LIB-SELECT');
-    expect(styleField?.querySelector('select')).toBeTruthy();
-    expect(columnsField?.querySelector('select')).toBeTruthy();
+    expect(styleField?.tagName).toBe('SELECT');
+    expect(columnsField?.tagName).toBe('SELECT');
+    expect(
+      fixture.nativeElement.querySelector(
+        'label[for="field-gallery.style-control"]'
+      )
+    ).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector(
+        'label[for="field-gallery.columns-control"]'
+      )
+    ).toBeTruthy();
   });
 
   it('emits a typed collection with its configured default item', () => {

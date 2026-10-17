@@ -5,7 +5,10 @@ import { ProfileService } from '../app/profile.service';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ProfileCommands } from '@optimistic-tanuki/constants';
 import { CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/models';
-import { GuardianProfileRequestDto } from '@optimistic-tanuki/profile-contracts';
+import {
+  GuardianConsoleProfileRequestDto,
+  GuardianProfileRequestDto,
+} from '@optimistic-tanuki/profile-contracts';
 
 @Controller('profiles')
 export class ProfilesController {
@@ -43,9 +46,7 @@ export class ProfilesController {
   }
 
   @MessagePattern({ cmd: ProfileCommands.GetGuardianConsoleProfile })
-  getGuardianConsoleProfile(
-    @Payload() data: { userId: string; appScope: string }
-  ) {
+  getGuardianConsoleProfile(@Payload() data: GuardianConsoleProfileRequestDto) {
     return this.profileService.getGuardianConsoleProfile(
       data.userId,
       data.appScope

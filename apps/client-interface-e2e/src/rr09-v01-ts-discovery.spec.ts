@@ -160,13 +160,19 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     );
   });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await timedStage(timings, 'signed-in login and session hydration', async () => {
-    await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
-    await page.getByLabel('Email', { exact: true }).fill(credentials.email);
-    await page.getByLabel('Password', { exact: true }).fill(credentials.password);
-    await page.getByRole('button', { name: 'Login', exact: true }).click();
-    await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
-  });
+  await timedStage(
+    timings,
+    'signed-in login and session hydration',
+    async () => {
+      await page.goto(`${origin}/login`, { waitUntil: 'domcontentloaded' });
+      await page.getByLabel('Email', { exact: true }).fill(credentials.email);
+      await page
+        .getByLabel('Password', { exact: true })
+        .fill(credentials.password);
+      await page.getByRole('button', { name: 'Login', exact: true }).click();
+      await expect(page).not.toHaveURL(/\/login(?:$|\?)/, { timeout: 20_000 });
+    }
+  );
   expect(new URL(page.url()).origin, 'browser uses explicit TS origin').toBe(
     origin
   );
@@ -351,12 +357,16 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     cardCount: document.querySelectorAll('.community-card').length,
     communityEntryHeadingCount: document.querySelectorAll('main h3').length,
   }));
-  await timedStage(timings, 'signed-in community deep-link hydration', async () => {
-    await page.goto(`${origin}/c/${community.slug}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await expect(page.locator('.community-page')).toBeVisible();
-  });
+  await timedStage(
+    timings,
+    'signed-in community deep-link hydration',
+    async () => {
+      await page.goto(`${origin}/c/${community.slug}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await expect(page.locator('.community-page')).toBeVisible();
+    }
+  );
   expect(new URL(page.url()).origin, 'community route stays on TS origin').toBe(
     origin
   );
@@ -507,13 +517,16 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
       continue;
     }
     const listingCommunity = await communityResponse.json();
-    await timedStage(timings, 'signed-in listing detail deep-link hydration', () =>
-      page.goto(
-        `${origin}/c/${encodeURIComponent(
-          listingCommunity.slug
-        )}/classifieds/${listingId}`,
-        { waitUntil: 'domcontentloaded' }
-      )
+    await timedStage(
+      timings,
+      'signed-in listing detail deep-link hydration',
+      () =>
+        page.goto(
+          `${origin}/c/${encodeURIComponent(
+            listingCommunity.slug
+          )}/classifieds/${listingId}`,
+          { waitUntil: 'domcontentloaded' }
+        )
     );
     const detailPage = page.locator('.detail-page');
     const visible = await detailPage.isVisible().catch(() => false);
@@ -562,6 +575,7 @@ test('RR09 V01 TS locality membership, listing and contact route discovery', asy
     rows: detailStates,
     timings,
     servedMainAssets,
-    sourceProvenance: 'SHA256 captured from actual browser-served main JavaScript response; compare with workspace dist separately',
+    sourceProvenance:
+      'SHA256 captured from actual browser-served main JavaScript response; compare with workspace dist separately',
   });
 });

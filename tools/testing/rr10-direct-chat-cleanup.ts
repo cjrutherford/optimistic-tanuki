@@ -107,7 +107,9 @@ export function assertDirectConversationFixtureSafe(
     if (messageCreatedAt < startedAt || messageCreatedAt > finishedAt)
       throw new Error('Message is outside the bounded test time window');
     if (!participantSet.has(message.senderId))
-      throw new Error('Conversation contains a message from an uncontrolled sender');
+      throw new Error(
+        'Conversation contains a message from an uncontrolled sender'
+      );
     if (message.type === 'system')
       throw new Error('Conversation contains an unexpected system message');
     if (message.recipients.some((recipient) => !participantSet.has(recipient)))
@@ -133,7 +135,10 @@ function messageDigest(messages: DirectMessageRow[]): string {
 async function readExactRows(
   client: PoolClient,
   conversationId: string
-): Promise<{ conversation: DirectConversationRow | undefined; messages: DirectMessageRow[] }> {
+): Promise<{
+  conversation: DirectConversationRow | undefined;
+  messages: DirectMessageRow[];
+}> {
   const conversationResult = await client.query<DirectConversationRow>(
     `SELECT id, type, "ownerId", "communityId", "projectId", "isDeleted",
             "createdAt" AT TIME ZONE 'UTC' AS "createdAt", participants
@@ -152,7 +157,10 @@ async function readExactRows(
       FOR UPDATE`,
     [conversationId]
   );
-  return { conversation: conversationResult.rows[0], messages: messageResult.rows };
+  return {
+    conversation: conversationResult.rows[0],
+    messages: messageResult.rows,
+  };
 }
 
 export async function softDeleteExactDirectConversation(
@@ -160,11 +168,17 @@ export async function softDeleteExactDirectConversation(
   input: Omit<DirectConversationCleanupInput, 'conversation' | 'messages'>
 ): Promise<DirectConversationCleanupReceipt> {
   if (process.env['RR10_I03_LIVE_STACK'] !== 'true')
-    throw new Error('Direct conversation cleanup requires RR10_I03_LIVE_STACK=true');
+    throw new Error(
+      'Direct conversation cleanup requires RR10_I03_LIVE_STACK=true'
+    );
   if (pool.options.host !== '127.0.0.1' && pool.options.host !== 'localhost')
-    throw new Error('Direct conversation cleanup is restricted to local PostgreSQL');
+    throw new Error(
+      'Direct conversation cleanup is restricted to local PostgreSQL'
+    );
   if (pool.options.database !== 'ot_chat_collector')
-    throw new Error('Direct conversation cleanup is restricted to ot_chat_collector');
+    throw new Error(
+      'Direct conversation cleanup is restricted to ot_chat_collector'
+    );
 
   const client = await pool.connect();
   try {
@@ -172,7 +186,10 @@ export async function softDeleteExactDirectConversation(
       'SHOW TIME ZONE'
     );
     const databaseTimeZone = timeZoneResult.rows[0]?.TimeZone;
-    if (!databaseTimeZone || !['UTC', 'Etc/UTC', 'GMT'].includes(databaseTimeZone))
+    if (
+      !databaseTimeZone ||
+      !['UTC', 'Etc/UTC', 'GMT'].includes(databaseTimeZone)
+    )
       throw new Error('Chat database session timezone is not UTC');
     await client.query('BEGIN');
     await client.query("SET LOCAL TIME ZONE 'UTC'");
@@ -205,7 +222,9 @@ export async function softDeleteExactDirectConversation(
       ]
     );
     if (update.rowCount !== 1)
-      throw new Error('Exact direct conversation soft-delete affected no single row');
+      throw new Error(
+        'Exact direct conversation soft-delete affected no single row'
+      );
 
     const after = await readExactRows(client, input.conversationId);
     if (!after.conversation?.isDeleted)
@@ -243,7 +262,10 @@ export async function readDeletedDirectMessageRetention(
     `SELECT "isDeleted" FROM "conversation" WHERE id = $1`,
     [conversationId]
   );
-  if (conversationResult.rows.length !== 1 || !conversationResult.rows[0].isDeleted)
+  if (
+    conversationResult.rows.length !== 1 ||
+    !conversationResult.rows[0].isDeleted
+  )
     throw new Error('Exact direct conversation is not soft-deleted');
   const messageResult = await pool.query<DirectMessageRow>(
     `SELECT id, content, "senderId", type, recipients,
@@ -263,36 +285,53 @@ export async function readDeletedDirectMessageRetention(
 export async function timedAwaitedStage<T>(
   label: string,
   action: () => Promise<T>,
-  log: (record: { stage: string; durationMs: number; outcome: 'pass' | 'fail' }) => void = (record) =>
+  log: (record: {
+    stage: string;
+    durationMs: number;
+    outcome: 'pass' | 'fail';
+  }) => void = (record) =>
     console.info('[RR10-I03 stage]', JSON.stringify(record))
 ): Promise<T> {
   const startedAt = performance.now();
   try {
     const result = await action();
-    log({ stage: label, durationMs: Math.round(performance.now() - startedAt), outcome: 'pass' });
+    log({
+      stage: label,
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: 'pass',
+    });
     return result;
   } catch (error) {
-    log({ stage: label, durationMs: Math.round(performance.now() - startedAt), outcome: 'fail' });
+    log({
+      stage: label,
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: 'fail',
+    });
     throw error;
   }
 }
 
 export function createLocalChatCleanupPool(): Pool {
   const password = process.env['RR10_I03_CHAT_DB_PASSWORD'];
-  if (!password) throw new Error('RR10_I03_CHAT_DB_PASSWORD is required for exact fixture cleanup');
+  if (!password)
+    throw new Error(
+      'RR10_I03_CHAT_DB_PASSWORD is required for exact fixture cleanup'
+    );
   const requestedPort = process.env['RR10_I03_CHAT_DB_PORT'];
   if (!requestedPort)
-    throw new Error('RR10_I03_CHAT_DB_PORT is required for exact fixture cleanup');
+    throw new Error(
+      'RR10_I03_CHAT_DB_PORT is required for exact fixture cleanup'
+    );
   const port = Number(requestedPort);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
-    throw new Error('RR10_I03_CHAT_DB_PORT must be an integer between 1 and 65535');
+    throw new Error(
+      'RR10_I03_CHAT_DB_PORT must be an integer between 1 and 65535'
+    );
   if (
     port === 5432 &&
     process.env['RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT'] !== 'true'
   )
-    throw new Error(
-      '5432 requires RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT=true'
-    );
+    throw new Error('5432 requires RR10_I03_CHAT_DB_ALLOW_CANONICAL_PORT=true');
   return new Pool({
     host: '127.0.0.1',
     port,

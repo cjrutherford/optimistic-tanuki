@@ -8,6 +8,8 @@ import {
 } from '../index';
 import {
   BlogRole,
+  GuardianConsoleProfileRequestDto,
+  GuardianProfileRequestDto,
   CreateProfileDto,
   CreateTimelineDto,
   GetProfileDto,
@@ -76,6 +78,49 @@ const COVERED: Array<{
     valid: { profileId: 'profile-1', blogRole: BlogRole.OWNER },
     invalid: { profileId: 'profile-1', blogRole: 'admin' },
     invalidProps: ['blogRole'],
+  },
+  {
+    pattern: ProfileCommands.GetGuardian,
+    dto: GuardianProfileRequestDto,
+    valid: {
+      profileId: '2d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a11',
+      actorUserId: '3d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a22',
+      appId: 'client-interface',
+      operation: 'profile.view',
+    },
+    invalid: {
+      profileId: 'not-a-uuid',
+      actorUserId: 'not-a-uuid',
+      appId: 'other',
+      operation: 'profile.read',
+    },
+    invalidProps: ['profileId', 'actorUserId', 'appId', 'operation'],
+  },
+  {
+    pattern: ProfileCommands.UpdateGuardian,
+    dto: GuardianProfileRequestDto,
+    valid: {
+      profileId: '2d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a11',
+      actorUserId: '3d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a22',
+      appId: 'local-hub',
+      operation: 'profile.manage',
+      updates: { bio: 'Updated bio' },
+    },
+    invalid: {
+      profileId: 'not-a-uuid',
+      actorUserId: 'not-a-uuid',
+      appId: 'other',
+      operation: 'profile.write',
+      updates: [],
+    },
+    invalidProps: ['profileId', 'actorUserId', 'appId', 'operation', 'updates'],
+  },
+  {
+    pattern: ProfileCommands.GetGuardianConsoleProfile,
+    dto: GuardianConsoleProfileRequestDto,
+    valid: { userId: 'user-1', appScope: 'local-hub' },
+    invalid: { userId: 42, appScope: 'social' },
+    invalidProps: ['userId', 'appScope'],
   },
   {
     pattern: TimelineCommands.Create,

@@ -22,39 +22,42 @@ async function registeredBrowserSession(
   role: string
 ) {
   return timedAwaitedStage(`RR06 register/login/session ${role}`, async () => {
-  const email = `rr06-${role}-${unique()}@example.test`;
-  const registration = await request.post(
-    `${getBaseUrl()}/api/authentication/register`,
-    {
-      headers: LOCAL_HUB_HEADERS,
-      data: {
-        fn: 'RR06',
-        ln: role,
-        email,
-        password,
-        confirm: password,
-        bio: 'RR06 live acceptance fixture',
-      },
-    }
-  );
-  expect(registration.status(), await registration.text()).toBe(201);
-  const login = await request.post(`${getBaseUrl()}/api/authentication/login`, {
-    headers: { ...LOCAL_HUB_HEADERS, 'X-ot-session-mode': 'cookie' },
-    data: { email, password },
-  });
-  expect(login.status(), await login.text()).toBe(201);
-  const session = await request.get(
-    `${getBaseUrl()}/api/authentication/session`,
-    { headers: LOCAL_HUB_HEADERS }
-  );
-  expect(session.status()).toBe(200);
-  const data = (await session.json()).data;
-  expect(data.profileId).toEqual(expect.any(String));
-  return { email, ...data } as {
-    email: string;
-    userId: string;
-    profileId: string;
-  };
+    const email = `rr06-${role}-${unique()}@example.test`;
+    const registration = await request.post(
+      `${getBaseUrl()}/api/authentication/register`,
+      {
+        headers: LOCAL_HUB_HEADERS,
+        data: {
+          fn: 'RR06',
+          ln: role,
+          email,
+          password,
+          confirm: password,
+          bio: 'RR06 live acceptance fixture',
+        },
+      }
+    );
+    expect(registration.status(), await registration.text()).toBe(201);
+    const login = await request.post(
+      `${getBaseUrl()}/api/authentication/login`,
+      {
+        headers: { ...LOCAL_HUB_HEADERS, 'X-ot-session-mode': 'cookie' },
+        data: { email, password },
+      }
+    );
+    expect(login.status(), await login.text()).toBe(201);
+    const session = await request.get(
+      `${getBaseUrl()}/api/authentication/session`,
+      { headers: LOCAL_HUB_HEADERS }
+    );
+    expect(session.status()).toBe(200);
+    const data = (await session.json()).data;
+    expect(data.profileId).toEqual(expect.any(String));
+    return { email, ...data } as {
+      email: string;
+      userId: string;
+      profileId: string;
+    };
   });
 }
 
@@ -76,10 +79,7 @@ function observeChatSocketFrames(
   const evidence: SocketFrameEvidence[] = [];
   page.on('websocket', (socket) => {
     const namespace = new URL(socket.url()).pathname;
-    const record = (
-      direction: 'sent' | 'received',
-      raw: string | Buffer
-    ) => {
+    const record = (direction: 'sent' | 'received', raw: string | Buffer) => {
       const frame = typeof raw === 'string' ? raw : raw.toString('utf8');
       let event = frame.slice(0, 2) === '40' ? 'connect' : 'control';
       let fields: unknown;
@@ -821,8 +821,8 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         const messages = Array.isArray(body)
           ? body
           : Array.isArray(body?.data)
-            ? body.data
-            : [];
+          ? body.data
+          : [];
         sellerHistoryReads.push({
           status: response.status(),
           isTargetConversation:
@@ -896,9 +896,9 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       const sellerConversation = sellerMessagesPage
         .locator('.contact-item')
         .filter({ hasText: /RR06 buyer/i });
-      await expect(sellerConversation).toHaveCount(1, { timeout: 15000 }).catch(
-        () => undefined
-      );
+      await expect(sellerConversation)
+        .toHaveCount(1, { timeout: 15000 })
+        .catch(() => undefined);
       const sellerConversationList = await sellerContext.request.get(
         apiUrl('/api/chat/conversations/find'),
         { headers: auth(sellerToken) }
@@ -909,8 +909,8 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
       const sellerConversationRows = Array.isArray(sellerConversationListBody)
         ? sellerConversationListBody
         : Array.isArray(sellerConversationListBody?.data)
-          ? sellerConversationListBody.data
-          : [];
+        ? sellerConversationListBody.data
+        : [];
       const targetSocketFrames = sellerSocketEvidence.filter(
         (frame) => frame.matchedConversation
       );
@@ -919,17 +919,20 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         JSON.stringify({
           inboxHttpStatus: sellerConversationList.status(),
           apiListContainsTarget: sellerConversationRows.some(
-            (conversation: { id?: string }) => conversation.id === conversationId
+            (conversation: { id?: string }) =>
+              conversation.id === conversationId
           ),
           uiContactCount: await sellerConversation.count(),
           socketConnectFrames: sellerSocketEvidence.filter(
             (frame) => frame.event === 'connect'
           ).length,
-          socketEvents: sellerSocketEvidence.map(({ direction, namespace, event }) => ({
-            direction,
-            namespace,
-            event,
-          })),
+          socketEvents: sellerSocketEvidence.map(
+            ({ direction, namespace, event }) => ({
+              direction,
+              namespace,
+              event,
+            })
+          ),
           targetConversationFrameEvents: targetSocketFrames.map(
             ({ direction, event, elapsedMs }) => ({
               direction,
@@ -1097,7 +1100,8 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
     console.info(
       '[RR06 browser chat transport evidence]',
       JSON.stringify({
-        transport: 'observed browser websocket frames; HTTP chat calls separately timed',
+        transport:
+          'observed browser websocket frames; HTTP chat calls separately timed',
         frameCount: socketFrames.length,
         targetConversationMatchedFrameCount: socketFrames.filter(
           (frame) => frame.matchedConversation
@@ -1105,14 +1109,23 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         controlledProfileMatchedFrameCount: socketFrames.filter(
           (frame) => frame.matchedParticipant
         ).length,
-        frames: socketFrames.map(({ direction, namespace, event, elapsedMs, matchedConversation, matchedParticipant }) => ({
-          direction,
-          namespace,
-          event,
-          elapsedMs,
-          matchedConversation,
-          matchedParticipant,
-        })),
+        frames: socketFrames.map(
+          ({
+            direction,
+            namespace,
+            event,
+            elapsedMs,
+            matchedConversation,
+            matchedParticipant,
+          }) => ({
+            direction,
+            namespace,
+            event,
+            elapsedMs,
+            matchedConversation,
+            matchedParticipant,
+          })
+        ),
       })
     );
     listingId = undefined;
@@ -1169,9 +1182,9 @@ test('RR06 live locality, classified authorization, and buyer/seller flow', asyn
         chatCleanupErrors.push('exact RR06 direct-chat cleanup failed');
       }
     }
-    expect.soft(chatCleanupErrors, 'RR06 direct-chat fixture cleanup').toEqual(
-      []
-    );
+    expect
+      .soft(chatCleanupErrors, 'RR06 direct-chat fixture cleanup')
+      .toEqual([]);
     console.info(
       '[RR06 exact-fixture cleanup]',
       JSON.stringify({

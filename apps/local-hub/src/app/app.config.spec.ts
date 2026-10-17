@@ -8,9 +8,9 @@ describe('resolveLocalHubSocketHost', () => {
   });
 
   it('uses the same-origin proxy for path-only values', () => {
-    expect(resolveLocalHubSocketHost('/socket.io', 'http://localhost:8087')).toBe(
-      'http://localhost:8087'
-    );
+    expect(
+      resolveLocalHubSocketHost('/socket.io', 'http://localhost:8087')
+    ).toBe('http://localhost:8087');
   });
 
   it('uses the same-origin proxy for the legacy malformed port fallback', () => {

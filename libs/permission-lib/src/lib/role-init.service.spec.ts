@@ -11,34 +11,36 @@ import {
 describe('RoleInitService', () => {
   it('attaches an existing permission by exact name and app scope', async () => {
     const permissionsClient = {
-      send: jest.fn().mockImplementation((pattern: { cmd: string }, payload: any) => {
-        if (pattern.cmd === AppScopeCommands.GetByName) {
-          return of({ id: 'scope-local-hub', name: payload.name });
-        }
-        if (pattern.cmd === PermissionCommands.Create) {
-          return throwError(() => new Error('permission already exists'));
-        }
-        if (pattern.cmd === PermissionCommands.GetAll) {
-          return of(
-            payload.where.name === 'asset.create'
-              ? [
-                  {
-                    id: 'permission-localhub-asset-create',
-                    name: 'asset.create',
-                    resource: 'asset',
-                    action: 'create',
-                    appScopeId: 'scope-local-hub',
-                    targetId: null,
-                  },
-                ]
-              : []
-          );
-        }
-        if (pattern.cmd === RoleCommands.Create) {
-          return of({ id: 'role-local-hub-member', name: payload.name });
-        }
-        return of({ ok: true });
-      }),
+      send: jest
+        .fn()
+        .mockImplementation((pattern: { cmd: string }, payload: any) => {
+          if (pattern.cmd === AppScopeCommands.GetByName) {
+            return of({ id: 'scope-local-hub', name: payload.name });
+          }
+          if (pattern.cmd === PermissionCommands.Create) {
+            return throwError(() => new Error('permission already exists'));
+          }
+          if (pattern.cmd === PermissionCommands.GetAll) {
+            return of(
+              payload.where.name === 'asset.create'
+                ? [
+                    {
+                      id: 'permission-localhub-asset-create',
+                      name: 'asset.create',
+                      resource: 'asset',
+                      action: 'create',
+                      appScopeId: 'scope-local-hub',
+                      targetId: null,
+                    },
+                  ]
+                : []
+            );
+          }
+          if (pattern.cmd === RoleCommands.Create) {
+            return of({ id: 'role-local-hub-member', name: payload.name });
+          }
+          return of({ ok: true });
+        }),
     };
     const service = new RoleInitService(permissionsClient as any);
     (service as any).logger = {

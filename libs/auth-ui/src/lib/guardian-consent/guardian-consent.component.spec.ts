@@ -27,7 +27,9 @@ describe('GuardianConsentComponent', () => {
     component.attested = true;
 
     const pending = component.submit();
-    const request = http.expectOne('/api/authentication/guardian-consent/attest');
+    const request = http.expectOne(
+      '/api/authentication/guardian-consent/attest'
+    );
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       token: 'guardian-one-use-token',
@@ -68,22 +70,30 @@ describe('GuardianConsentComponent', () => {
     fixture.detectChanges();
 
     expect(component.message).toContain('existing account');
-    expect(fixture.nativeElement.textContent).not.toContain('Retry applicant email');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Retry applicant email'
+    );
   });
 
   it('keeps the private link in the current tab while guardian sign-in opens separately', () => {
     component.token = 'private-fragment-capability';
     component.state = 'ready';
     fixture.detectChanges();
-    const link = fixture.nativeElement.querySelector('a[href="/login"]') as HTMLAnchorElement;
-    const registerLink = fixture.nativeElement.querySelector('a[href="/register"]') as HTMLAnchorElement;
+    const link = fixture.nativeElement.querySelector(
+      'a[href="/login"]'
+    ) as HTMLAnchorElement;
+    const registerLink = fixture.nativeElement.querySelector(
+      'a[href="/register"]'
+    ) as HTMLAnchorElement;
     expect(link.target).toBe('_blank');
     expect(link.rel).toContain('noopener');
     expect(registerLink.target).toBe('_blank');
     expect(link.href).not.toContain('private-fragment-capability');
     expect(registerLink.href).not.toContain('private-fragment-capability');
     expect(component.token).toBe('private-fragment-capability');
-    expect(fixture.nativeElement.textContent).toContain('return here to continue');
+    expect(fixture.nativeElement.textContent).toContain(
+      'return here to continue'
+    );
   });
 
   it('submits legacy adult assessment only in the authenticated POST body and clears the input immediately', async () => {
@@ -92,7 +102,9 @@ describe('GuardianConsentComponent', () => {
     component.dateOfBirth = '2000-01-01';
 
     const pending = component.submit();
-    const request = http.expectOne('/api/authentication/guardian-consent/attest');
+    const request = http.expectOne(
+      '/api/authentication/guardian-consent/attest'
+    );
     expect(request.request.body).toEqual({
       token: 'guardian-one-use-token',
       attested: true,
@@ -105,7 +117,8 @@ describe('GuardianConsentComponent', () => {
       attested: true,
       applicantNotified: true,
       continuationRequired: true,
-      withdrawalUrl: 'https://app.example.invalid/auth/guardian-consent#withdrawToken=control',
+      withdrawalUrl:
+        'https://app.example.invalid/auth/guardian-consent#withdrawToken=control',
     });
     await pending;
     expect(component.dateOfBirth).toBe('');

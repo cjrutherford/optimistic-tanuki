@@ -61,7 +61,9 @@ export class AuthStateService {
     return null;
   }
 
-  async login(credentials: LoginRequest): Promise<'pending' | 'pending-undelivered' | void> {
+  async login(
+    credentials: LoginRequest
+  ): Promise<'pending' | 'pending-undelivered' | void> {
     const request: LoginRequest = { ...credentials };
     const generation = ++this.restoreGeneration;
     const response = await this.authService.login(request);

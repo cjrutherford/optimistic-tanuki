@@ -35,10 +35,14 @@ export class SocketSessionAuthService {
       const origin = socket.handshake.headers.origin;
       const originAppId = this.requestAppId(origin);
       const signedAppId =
-        typeof (tokenPayload as UserDetails & { appId?: unknown }).appId === 'string'
+        typeof (tokenPayload as UserDetails & { appId?: unknown }).appId ===
+        'string'
           ? (tokenPayload as UserDetails & { appId: string }).appId
           : undefined;
-      if ((origin && !originAppId) || (signedAppId && originAppId && signedAppId !== originAppId)) {
+      if (
+        (origin && !originAppId) ||
+        (signedAppId && originAppId && signedAppId !== originAppId)
+      ) {
         throw new UnauthorizedException('Unauthorized socket connection');
       }
       const validation = await firstValueFrom(

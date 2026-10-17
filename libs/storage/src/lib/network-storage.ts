@@ -40,7 +40,8 @@ export class NetworkStorageAdapter implements StorageAdapter {
       data.name
     );
 
-    if (data.id && !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    if (data.id && !isUuid(data.id))
+      throw new Error('Reserved asset id must be a UUID');
     const newAssetId = data.id ?? uuidv4();
     const s3Key = data.id
       ? `assets/${data.profileId}/${newAssetId}/${data.name}`
@@ -92,8 +93,11 @@ export class NetworkStorageAdapter implements StorageAdapter {
   }
 
   reservationPath(data: CreateAssetDto): string {
-    if (!data.id || !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
-    return `s3://${this.s3Service['bucketName']}/assets/${data.profileId}/${data.id}/${this.normalizeSafeFilename(data.name)}`;
+    if (!data.id || !isUuid(data.id))
+      throw new Error('Reserved asset id must be a UUID');
+    return `s3://${this.s3Service['bucketName']}/assets/${data.profileId}/${
+      data.id
+    }/${this.normalizeSafeFilename(data.name)}`;
   }
 
   async remove(data: AssetDto): Promise<void> {
@@ -173,7 +177,15 @@ export class NetworkStorageAdapter implements StorageAdapter {
 
   private normalizeSafeFilename(name: string): string {
     const safeName = name.replace(/\s+/g, '_');
-    if (!safeName || safeName === '.' || safeName === '..' || /[\\/\u0000-\u001f]/.test(safeName)) {
+    const containsUnsafeCharacter =
+      /[\\/]/.test(safeName) ||
+      Array.from(safeName).some((character) => character.charCodeAt(0) <= 0x1f);
+    if (
+      !safeName ||
+      safeName === '.' ||
+      safeName === '..' ||
+      containsUnsafeCharacter
+    ) {
       throw new Error('Asset filename is invalid');
     }
     return safeName;
@@ -181,7 +193,9 @@ export class NetworkStorageAdapter implements StorageAdapter {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 function toAsciiMetadataValue(value: string): string {

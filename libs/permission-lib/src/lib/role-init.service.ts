@@ -136,7 +136,9 @@ export class RoleInitService {
       const permissionAppScope = await getAppScope(permissionAppScopeName);
       if (!permissionAppScope?.id) {
         throw new RpcException(
-          `Permission app scope ${permissionAppScopeName || '(missing)'} not found`
+          `Permission app scope ${
+            permissionAppScopeName || '(missing)'
+          } not found`
         );
       }
       const payload = {
@@ -173,7 +175,7 @@ export class RoleInitService {
                   name: p.name,
                   appScopeId: permissionAppScope.id,
                 },
-              },
+              }
             )
           );
           const existing = (existingPermissions || []).find(
@@ -187,7 +189,8 @@ export class RoleInitService {
             }) =>
               permission.name === p.name &&
               permission.appScopeId === permissionAppScope.id &&
-              (p.resource === undefined || permission.resource === p.resource) &&
+              (p.resource === undefined ||
+                permission.resource === p.resource) &&
               (p.action === undefined || permission.action === p.action) &&
               (permission.targetId ?? null) === (p.targetId ?? null)
           );

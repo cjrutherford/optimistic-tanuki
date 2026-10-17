@@ -63,11 +63,11 @@ describe('AttachmentService', () => {
         .mockImplementation(options?.latch ?? (() => Promise.resolve())),
     };
     const profileClient = {
-      send: jest.fn().mockReturnValue(
-        options?.resolvedProfile
-          ? of(options.resolvedProfile)
-          : of(profile)
-      ),
+      send: jest
+        .fn()
+        .mockReturnValue(
+          options?.resolvedProfile ? of(options.resolvedProfile) : of(profile)
+        ),
     };
     const service = new AttachmentService(
       attachmentRepo as any,
@@ -147,7 +147,9 @@ describe('AttachmentService', () => {
         post.id,
         undefined as any
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 403 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 403 }),
+    });
     expect(h.profileClient.send).not.toHaveBeenCalled();
     expect(h.dataSource.transaction).not.toHaveBeenCalled();
   });
@@ -173,7 +175,9 @@ describe('AttachmentService', () => {
         post.id,
         actor
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 403 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 403 }),
+    });
     expect(h.postService.latchPrivateAssetReferences).not.toHaveBeenCalled();
     expect(h.attachmentRepo.save).not.toHaveBeenCalled();
   });
@@ -197,7 +201,9 @@ describe('AttachmentService', () => {
         post.id,
         actor
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 403 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 403 }),
+    });
     expect(h.dataSource.transaction).not.toHaveBeenCalled();
     expect(h.postService.latchPrivateAssetReferences).not.toHaveBeenCalled();
   });
@@ -221,7 +227,9 @@ describe('AttachmentService', () => {
         post.id,
         actor
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 403 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 403 }),
+    });
     expect(h.postService.latchPrivateAssetReferences).not.toHaveBeenCalled();
     expect(h.attachmentRepo.save).not.toHaveBeenCalled();
   });
@@ -239,7 +247,11 @@ describe('AttachmentService', () => {
 
       const action =
         operation === 'update'
-          ? h.service.update('attachment-1', { url: 'https://cdn.example.test/new.png' }, actor)
+          ? h.service.update(
+              'attachment-1',
+              { url: 'https://cdn.example.test/new.png' },
+              actor
+            )
           : h.service.remove('attachment-1', actor);
       await expect(action).rejects.toMatchObject({
         error: expect.objectContaining({ statusCode: 403 }),
@@ -259,14 +271,16 @@ describe('AttachmentService', () => {
         appScope: 'local-hub',
       },
     });
-    await expect(
-      h.service.remove('attachment-1', actor)
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 403 }) });
+    await expect(h.service.remove('attachment-1', actor)).rejects.toMatchObject(
+      { error: expect.objectContaining({ statusCode: 403 }) }
+    );
     expect(h.attachmentRepo.remove).not.toHaveBeenCalled();
   });
 
   it('does not write when the media audience cannot be verified', async () => {
-    const h = setup({ latch: () => Promise.reject(new Error('asset service down')) });
+    const h = setup({
+      latch: () => Promise.reject(new Error('asset service down')),
+    });
 
     await expect(
       h.service.create(
@@ -280,13 +294,18 @@ describe('AttachmentService', () => {
         post.id,
         actor
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 503 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 503 }),
+    });
     expect(h.attachmentRepo.save).not.toHaveBeenCalled();
   });
 
   it('returns a controlled audience denial and makes no write when latching rejects', async () => {
     const h = setup({
-      latch: () => Promise.reject(new Error('Asset audience is narrower than post audience')),
+      latch: () =>
+        Promise.reject(
+          new Error('Asset audience is narrower than post audience')
+        ),
     });
     await expect(
       h.service.create(
@@ -297,7 +316,9 @@ describe('AttachmentService', () => {
         post.id,
         actor
       )
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 400 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 400 }),
+    });
     expect(h.attachmentRepo.save).not.toHaveBeenCalled();
   });
 
@@ -314,10 +335,7 @@ describe('AttachmentService', () => {
     });
     expect(h.postService.latchPrivateAssetReferences).toHaveBeenCalledWith(
       expect.objectContaining({
-        attachments: [
-          { filePath: original },
-          { filePath: replacement },
-        ],
+        attachments: [{ filePath: original }, { filePath: replacement }],
       })
     );
     expect(h.attachmentRepo.save).toHaveBeenCalledWith(
@@ -350,10 +368,14 @@ describe('AttachmentService', () => {
 
   it('fails closed on a profile service outage for attachment reads', async () => {
     const h = setup();
-    h.profileClient.send.mockReturnValue(throwError(() => new Error('offline')));
+    h.profileClient.send.mockReturnValue(
+      throwError(() => new Error('offline'))
+    );
 
     await expect(
       h.service.findAllForApp({}, actor.appId)
-    ).rejects.toMatchObject({ error: expect.objectContaining({ statusCode: 503 }) });
+    ).rejects.toMatchObject({
+      error: expect.objectContaining({ statusCode: 503 }),
+    });
   });
 });

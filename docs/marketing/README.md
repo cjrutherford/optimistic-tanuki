@@ -20,7 +20,7 @@ This section contains internal positioning notes for people evaluating products,
 | ------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
 | external evaluator                   | [Repo Story](./repo-story.md)                                      | the whole portfolio-platform-proof narrative                          |
 | product buyer or operator            | [Platform Product Matrix](./platform-product-matrix.md)            | which product fits which audience and workflow                        |
-| community or local-commerce operator | [Towne Square](./towne-square.md)                                  | local coordination and early-access classifieds                        |
+| community or local-commerce operator | [Towne Square](./towne-square.md)                                  | local coordination and early-access classifieds                       |
 | execution-focused team               | [Forge of Will](./forge-of-will.md)                                | project delivery, risks, journals, timers, and context                |
 | finance workflow evaluator           | [Fin Commander](./fin-commander.md)                                | guided setup, scoped plans, imports, and scenarios                    |
 | marketer or launch team              | [Signal Foundry](./signal-foundry.md)                              | campaign briefs, concepts, materials, exports, and refinement history |
@@ -67,13 +67,13 @@ The one-pagers are internal working material. Check their claims against RR-01 a
 
 These prompts live in `.github/prompts/` and can be used with any AI agent that supports prompt files. Each prompt loads supporting material and provides output structure and tone guidance. Supporting material is not claim approval.
 
-| Prompt | Use it to |
-| ---------------------------------------------------------- | ----------------------------------------------------------------- |
-| `generate-product-landing-copy.prompt.md` | Write landing page hero copy, feature highlights, and CTAs for any product |
-| `generate-social-posts.prompt.md` | Write Twitter/X, LinkedIn, and Mastodon post sets per product or theme |
-| `generate-email-campaign.prompt.md` | Write announcement, nurture, onboarding, or developer email sequences |
-| `generate-developer-pitch.prompt.md` | Write SDK getting-started guides, README sections, blog posts, and API overviews |
-| `generate-platform-pitch.prompt.md` | Write pitch deck narratives, one-pagers, capabilities briefs, and demo scripts for operator and platform audiences |
+| Prompt                                    | Use it to                                                                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `generate-product-landing-copy.prompt.md` | Write landing page hero copy, feature highlights, and CTAs for any product                                         |
+| `generate-social-posts.prompt.md`         | Write Twitter/X, LinkedIn, and Mastodon post sets per product or theme                                             |
+| `generate-email-campaign.prompt.md`       | Write announcement, nurture, onboarding, or developer email sequences                                              |
+| `generate-developer-pitch.prompt.md`      | Write SDK getting-started guides, README sections, blog posts, and API overviews                                   |
+| `generate-platform-pitch.prompt.md`       | Write pitch deck narratives, one-pagers, capabilities briefs, and demo scripts for operator and platform audiences |
 
 These prompts are drafting aids only. Do not treat marketing documents or repository source presence as claim approval. Any OT/TS public claim must map to RR-01's disposition and, where required, an accepted owning journey and the RR-12 reviewed revision. Do not generate or distribute launch material while RR-12 is unaccepted.
 

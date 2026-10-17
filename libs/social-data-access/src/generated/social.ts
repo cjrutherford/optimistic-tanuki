@@ -17,6 +17,18 @@ import { Injectable, inject } from '@angular/core';
 
 import type { Observable } from 'rxjs';
 
+/**
+ * Who can read the post. Community posts default to community members; public must be selected explicitly to reach outside the community.
+ */
+export type CreatePostDtoVisibility =
+  (typeof CreatePostDtoVisibility)[keyof typeof CreatePostDtoVisibility];
+
+export const CreatePostDtoVisibility = {
+  public: 'public',
+  followers: 'followers',
+  community: 'community',
+} as const;
+
 export interface CreatePostDto {
   /** The title of the post */
   title: string;
@@ -32,7 +44,18 @@ export interface CreatePostDto {
   appScope?: string;
   /** Community ID for community posts */
   communityId?: string;
+  /** Who can read the post. Community posts default to community members; public must be selected explicitly to reach outside the community. */
+  visibility?: CreatePostDtoVisibility;
 }
+
+export type PostDtoVisibility =
+  (typeof PostDtoVisibility)[keyof typeof PostDtoVisibility];
+
+export const PostDtoVisibility = {
+  public: 'public',
+  followers: 'followers',
+  community: 'community',
+} as const;
 
 export interface PostDto {
   /** The unique identifier of the post */
@@ -49,6 +72,11 @@ export interface PostDto {
   userId: string;
   /** The ID of the profile associated with the post */
   profileId: string;
+  visibility: PostDtoVisibility;
+  /** Whether the author explicitly chose public visibility for this community post */
+  publicAudienceExplicit: boolean;
+  /** @nullable */
+  communityId?: string | null;
 }
 
 /**
@@ -168,13 +196,15 @@ export interface CommentDto {
 
 export interface CreateAttachmentDto {
   /** Name of the attachment */
-  name: string;
+  name?: string;
   /** URL of the attachment */
   url: string;
   /** MIME type of the attachment */
   type: string;
   /** Size of the attachment in bytes */
-  size: number;
+  size?: number;
+  /** ID of the Social post that owns this attachment */
+  postId: string;
 }
 
 export interface AttachmentDto {
@@ -325,6 +355,22 @@ export interface UpdateCommentDto {
 }
 
 export interface UpdateAttachmentDto {
+  [key: string]: unknown;
+}
+
+export interface CreateGuardianPostDto {
+  [key: string]: unknown;
+}
+
+export interface UpdateGuardianPostDto {
+  [key: string]: unknown;
+}
+
+export interface CreateGuardianCommentDto {
+  [key: string]: unknown;
+}
+
+export interface UpdateGuardianCommentDto {
   [key: string]: unknown;
 }
 
@@ -645,6 +691,10 @@ export interface PollWithResultsDto {
   [key: string]: unknown;
 }
 
+export interface SharePostRequestDto {
+  [key: string]: unknown;
+}
+
 export interface PostShareDto {
   [key: string]: unknown;
 }
@@ -680,6 +730,7 @@ export type SocialControllerGetFeedParams = {
   includePublic: string;
   includeFollowing: string;
   includeCommunities: string;
+  communityIds: string;
   limit: string;
   offset: string;
 };
@@ -2021,6 +2072,516 @@ export class OptomisitcTanukiAPIService {
     return this.http.put<TData>(
       `/api/social/attachment/update/${id}`,
       updateAttachmentDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerListGuardianPosts<TData = void>(
+    profileId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerListGuardianPosts<TData = void>(
+    profileId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerListGuardianPosts<TData = void>(
+    profileId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerListGuardianPosts<TData = void>(
+    profileId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerCreateGuardianPost<TData = void>(
+    profileId: string,
+    createGuardianPostDto: CreateGuardianPostDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerCreateGuardianPost<TData = void>(
+    profileId: string,
+    createGuardianPostDto: CreateGuardianPostDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerCreateGuardianPost<TData = void>(
+    profileId: string,
+    createGuardianPostDto: CreateGuardianPostDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerCreateGuardianPost<TData = void>(
+    profileId: string,
+    createGuardianPostDto: CreateGuardianPostDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts`,
+        createGuardianPostDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts`,
+        createGuardianPostDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts`,
+      createGuardianPostDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerGetGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerGetGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerGetGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerGetGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerUpdateGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    updateGuardianPostDto: UpdateGuardianPostDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerUpdateGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    updateGuardianPostDto: UpdateGuardianPostDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerUpdateGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    updateGuardianPostDto: UpdateGuardianPostDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerUpdateGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    updateGuardianPostDto: UpdateGuardianPostDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.put<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        updateGuardianPostDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.put<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        updateGuardianPostDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.put<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+      updateGuardianPostDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerDeleteGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerDeleteGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerDeleteGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerDeleteGuardianPost<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.delete<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.delete<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.delete<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts/${postId}`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerListGuardianComments<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerListGuardianComments<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerListGuardianComments<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerListGuardianComments<TData = void>(
+    profileId: string,
+    postId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerCreateGuardianComment<TData = void>(
+    profileId: string,
+    postId: string,
+    createGuardianCommentDto: CreateGuardianCommentDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerCreateGuardianComment<TData = void>(
+    profileId: string,
+    postId: string,
+    createGuardianCommentDto: CreateGuardianCommentDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerCreateGuardianComment<TData = void>(
+    profileId: string,
+    postId: string,
+    createGuardianCommentDto: CreateGuardianCommentDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerCreateGuardianComment<TData = void>(
+    profileId: string,
+    postId: string,
+    createGuardianCommentDto: CreateGuardianCommentDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.post<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+        createGuardianCommentDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.post<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+        createGuardianCommentDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.post<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/posts/${postId}/comments`,
+      createGuardianCommentDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerGetGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerGetGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerGetGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerGetGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.get<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerUpdateGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    updateGuardianCommentDto: UpdateGuardianCommentDto,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerUpdateGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    updateGuardianCommentDto: UpdateGuardianCommentDto,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerUpdateGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    updateGuardianCommentDto: UpdateGuardianCommentDto,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerUpdateGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    updateGuardianCommentDto: UpdateGuardianCommentDto,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.put<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        updateGuardianCommentDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.put<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        updateGuardianCommentDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.put<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+      updateGuardianCommentDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  socialControllerDeleteGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  socialControllerDeleteGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  socialControllerDeleteGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  socialControllerDeleteGuardianComment<TData = void>(
+    profileId: string,
+    commentId: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.delete<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.delete<TData>(
+        `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.delete<TData>(
+      `/api/social/guardian/content/profiles/${profileId}/comments/${commentId}`,
       {
         ...(options as Omit<NonNullable<typeof options>, 'observe'>),
         observe: 'body',
@@ -5664,6 +6225,92 @@ export class OptomisitcTanukiAPIService {
   }
 
   /**
+   * @summary List all reports within the authorized app scope
+   */
+  privacyControllerGetOperatorReports<TData = void>(
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  privacyControllerGetOperatorReports<TData = void>(
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  privacyControllerGetOperatorReports<TData = void>(
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  privacyControllerGetOperatorReports<TData = void>(
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.get<TData>(`/api/privacy/operator/reports`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'events',
+      });
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.get<TData>(`/api/privacy/operator/reports`, {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'response',
+      });
+    }
+
+    return this.http.get<TData>(`/api/privacy/operator/reports`, {
+      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+      observe: 'body',
+    });
+  }
+
+  /**
+   * @summary Resolve a report within the authorized app scope
+   */
+  privacyControllerUpdateOperatorReportStatus<TData = void>(
+    id: string,
+    options?: HttpClientBodyOptions
+  ): Observable<TData>;
+  privacyControllerUpdateOperatorReportStatus<TData = void>(
+    id: string,
+    options?: HttpClientEventOptions
+  ): Observable<HttpEvent<TData>>;
+  privacyControllerUpdateOperatorReportStatus<TData = void>(
+    id: string,
+    options?: HttpClientResponseOptions
+  ): Observable<AngularHttpResponse<TData>>;
+  privacyControllerUpdateOperatorReportStatus<TData = void>(
+    id: string,
+    options?: HttpClientObserveOptions
+  ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
+    if (options?.observe === 'events') {
+      return this.http.put<TData>(
+        `/api/privacy/operator/reports/${id}`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
+    }
+
+    if (options?.observe === 'response') {
+      return this.http.put<TData>(
+        `/api/privacy/operator/reports/${id}`,
+        undefined,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
+    }
+
+    return this.http.put<TData>(
+      `/api/privacy/operator/reports/${id}`,
+      undefined,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
+  }
+
+  /**
    * @summary Update a content report moderation status
    */
   privacyControllerUpdateReportStatus<TData = void>(
@@ -6697,38 +7344,54 @@ export class OptomisitcTanukiAPIService {
    */
   postShareControllerSharePost<TData = PostShareDto>(
     id: string,
+    sharePostRequestDto: SharePostRequestDto,
     options?: HttpClientBodyOptions
   ): Observable<TData>;
   postShareControllerSharePost<TData = PostShareDto>(
     id: string,
+    sharePostRequestDto: SharePostRequestDto,
     options?: HttpClientEventOptions
   ): Observable<HttpEvent<TData>>;
   postShareControllerSharePost<TData = PostShareDto>(
     id: string,
+    sharePostRequestDto: SharePostRequestDto,
     options?: HttpClientResponseOptions
   ): Observable<AngularHttpResponse<TData>>;
   postShareControllerSharePost<TData = PostShareDto>(
     id: string,
+    sharePostRequestDto: SharePostRequestDto,
     options?: HttpClientObserveOptions
   ): Observable<TData | HttpEvent<TData> | AngularHttpResponse<TData>> {
     if (options?.observe === 'events') {
-      return this.http.post<TData>(`/api/posts/${id}/share`, undefined, {
-        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
-        observe: 'events',
-      });
+      return this.http.post<TData>(
+        `/api/posts/${id}/share`,
+        sharePostRequestDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'events',
+        }
+      );
     }
 
     if (options?.observe === 'response') {
-      return this.http.post<TData>(`/api/posts/${id}/share`, undefined, {
-        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
-        observe: 'response',
-      });
+      return this.http.post<TData>(
+        `/api/posts/${id}/share`,
+        sharePostRequestDto,
+        {
+          ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+          observe: 'response',
+        }
+      );
     }
 
-    return this.http.post<TData>(`/api/posts/${id}/share`, undefined, {
-      ...(options as Omit<NonNullable<typeof options>, 'observe'>),
-      observe: 'body',
-    });
+    return this.http.post<TData>(
+      `/api/posts/${id}/share`,
+      sharePostRequestDto,
+      {
+        ...(options as Omit<NonNullable<typeof options>, 'observe'>),
+        observe: 'body',
+      }
+    );
   }
 
   /**

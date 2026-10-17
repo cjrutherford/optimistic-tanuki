@@ -69,9 +69,9 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const config = configService.get<ProfileConfigType['services']['authentication']>(
-          'services.authentication'
-        );
+        const config = configService.get<
+          ProfileConfigType['services']['authentication']
+        >('services.authentication');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: { host: config.host, port: config.port },

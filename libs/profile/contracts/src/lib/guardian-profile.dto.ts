@@ -17,6 +17,16 @@ export type GuardianProfileUpdates = Partial<
   Record<GuardianProfileField, string | null>
 >;
 
+export class GuardianConsoleProfileRequestDto {
+  @ApiProperty()
+  @IsString()
+  userId!: string;
+
+  @ApiProperty({ enum: ['client-interface', 'local-hub'] })
+  @IsIn(['client-interface', 'local-hub'])
+  appScope!: string;
+}
+
 /** Internal gateway-to-profile request. Dependent owner is always resolved by profile service. */
 export class GuardianProfileRequestDto {
   @ApiProperty()

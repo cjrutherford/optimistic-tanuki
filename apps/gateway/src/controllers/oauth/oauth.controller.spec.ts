@@ -511,20 +511,23 @@ describe('OAuthController', () => {
     it.each([
       [{ dateOfBirth: '2016-01-01' }, HttpStatus.FORBIDDEN],
       [{ dateOfBirth: '2010-01-01' }, HttpStatus.FORBIDDEN],
-    ])('rejects an underage OAuth registration context', async (body, status) => {
-      await expect(
-        controller.startAgeCheckedOAuth(
-          { params: { provider: 'google' }, cookies: {} } as any,
-          { cookie: jest.fn() } as any,
-          'google',
-          {
-            returnTo: 'https://optimistic-tanuki.example/register',
-            ...body,
-          } as any
-        )
-      ).rejects.toMatchObject({ status });
-      expect(authClient.send).not.toHaveBeenCalled();
-    });
+    ])(
+      'rejects an underage OAuth registration context',
+      async (body, status) => {
+        await expect(
+          controller.startAgeCheckedOAuth(
+            { params: { provider: 'google' }, cookies: {} } as any,
+            { cookie: jest.fn() } as any,
+            'google',
+            {
+              returnTo: 'https://optimistic-tanuki.example/register',
+              ...body,
+            } as any
+          )
+        ).rejects.toMatchObject({ status });
+        expect(authClient.send).not.toHaveBeenCalled();
+      }
+    );
 
     it('starts existing-account-only OAuth when DOB is omitted', async () => {
       const response = { cookie: jest.fn() } as any;
@@ -538,7 +541,9 @@ describe('OAuthController', () => {
         } as any
       );
 
-      const stateId = new URL(result.authorizationUrl).searchParams.get('state')!.split('.')[0];
+      const stateId = new URL(result.authorizationUrl).searchParams
+        .get('state')!
+        .split('.')[0];
       const stored = await (controller as any).oauthStateStore.consume(stateId);
       expect(stored.payload).toMatchObject({
         appScope: 'client-interface',
@@ -565,7 +570,9 @@ describe('OAuthController', () => {
 
       const authorizationUrl = new URL(result.authorizationUrl);
       expect(authorizationUrl.searchParams.has('dateOfBirth')).toBe(false);
-      expect(authorizationUrl.searchParams.has('guardianResumeToken')).toBe(false);
+      expect(authorizationUrl.searchParams.has('guardianResumeToken')).toBe(
+        false
+      );
       const stateId = authorizationUrl.searchParams.get('state')!.split('.')[0];
       const stored = await (controller as any).oauthStateStore.consume(stateId);
       expect(stored.payload).toMatchObject({
@@ -891,14 +898,19 @@ describe('OAuthController', () => {
             command.cmd === AuthCommands.OAuthLogin
               ? { data: { userId: 'legacy-user' } }
               : command.cmd === AuthCommands.Issue
-                ? { data: { newToken: 'legacy-platform-token' } }
-                : { data: { id: 'oauth-legacy' } }
+              ? { data: { newToken: 'legacy-platform-token' } }
+              : { data: { id: 'oauth-legacy' } }
           )
       );
-      const registerOAuthUser = jest.spyOn(controller as any, 'registerOAuthUser');
-      jest.spyOn(controller as any, 'getOrCreateAppScopedProfile').mockResolvedValue({
-        id: 'legacy-profile',
-      });
+      const registerOAuthUser = jest.spyOn(
+        controller as any,
+        'registerOAuthUser'
+      );
+      jest
+        .spyOn(controller as any, 'getOrCreateAppScopedProfile')
+        .mockResolvedValue({
+          id: 'legacy-profile',
+        });
       const response = { redirect: jest.fn() } as any;
 
       await controller.oauthRedirectCallback(
@@ -924,7 +936,9 @@ describe('OAuthController', () => {
         })
       );
       expect(
-        new URL(response.redirect.mock.calls[0][0]).searchParams.has('callbackCode')
+        new URL(response.redirect.mock.calls[0][0]).searchParams.has(
+          'callbackCode'
+        )
       ).toBe(true);
     });
 
@@ -1111,7 +1125,11 @@ describe('OAuthController', () => {
         undefined,
         resumeToken
       );
-      expect(new URL(response.redirect.mock.calls[0][0]).searchParams.has('callbackCode')).toBe(true);
+      expect(
+        new URL(response.redirect.mock.calls[0][0]).searchParams.has(
+          'callbackCode'
+        )
+      ).toBe(true);
     });
 
     it('rejects an existing OAuth user without a global owner role from Owner Console', async () => {

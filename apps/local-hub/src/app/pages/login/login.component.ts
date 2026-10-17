@@ -172,9 +172,10 @@ export class LoginComponent {
     try {
       const result = await this.authState.login(credentials);
       if (result === 'pending' || result === 'pending-undelivered') {
-        this.error = result === 'pending'
-          ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
-          : 'The guardian permission email could not be sent. Check the guardian address and try again.';
+        this.error =
+          result === 'pending'
+            ? 'A parent or guardian permission request was sent. Sign in again after they approve it.'
+            : 'The guardian permission email could not be sent. Check the guardian address and try again.';
         return;
       }
       const returnUrl =
@@ -182,15 +183,16 @@ export class LoginComponent {
       this.router.navigateByUrl(returnUrl);
     } catch (error: any) {
       const detail = error?.error?.message || error?.message || '';
-      this.error = error?.status === 401
-        ? 'Invalid email or password. Please try again.'
-        : String(detail).includes('AGE_CHECK_REQUIRED')
+      this.error =
+        error?.status === 401
+          ? 'Invalid email or password. Please try again.'
+          : String(detail).includes('AGE_CHECK_REQUIRED')
           ? 'For this newly registered account, enter your date of birth to continue.'
           : String(detail).includes('GUARDIAN_EMAIL_REQUIRED')
-            ? 'A parent or guardian email is required to request permission.'
-            : String(detail).includes('AGE_UNDER_13')
-              ? 'Sign in is unavailable under age 13.'
-              : 'Sign-in could not be completed. Please try again.';
+          ? 'A parent or guardian email is required to request permission.'
+          : String(detail).includes('AGE_UNDER_13')
+          ? 'Sign in is unavailable under age 13.'
+          : 'Sign-in could not be completed. Please try again.';
     }
   }
 

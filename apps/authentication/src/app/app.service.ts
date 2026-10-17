@@ -238,15 +238,16 @@ export class AppService {
       // Successful authentication clears any accumulated failed attempts.
       await this.clearFailedLogins(user);
       if (ageAssessment) {
-        const assessment = await this.guardianPermissionService.assessUnassessedLogin({
-          userId: user.id,
-          email: normalizedEmail,
-          status: user.ageEligibilityStatus || 'legacy',
-          ageEligibilityEndsAt: user.ageEligibilityEndsAt,
-          dateOfBirth: ageAssessment.dateOfBirth,
-          guardianEmail: ageAssessment.guardianEmail,
-          context: ageAssessment.context,
-        });
+        const assessment =
+          await this.guardianPermissionService.assessUnassessedLogin({
+            userId: user.id,
+            email: normalizedEmail,
+            status: user.ageEligibilityStatus || 'legacy',
+            ageEligibilityEndsAt: user.ageEligibilityEndsAt,
+            dateOfBirth: ageAssessment.dateOfBirth,
+            guardianEmail: ageAssessment.guardianEmail,
+            context: ageAssessment.context,
+          });
         if (assessment.pending) {
           return {
             message: assessment.sent
@@ -262,7 +263,11 @@ export class AppService {
       await this.guardianPermissionService.assertAccountAccess(user.id, appId);
 
       if (deferSession) {
-        return { message: 'Eligibility checked', code: 0, data: { eligibilityChecked: true } };
+        return {
+          message: 'Eligibility checked',
+          code: 0,
+          data: { eligibilityChecked: true },
+        };
       }
 
       const tk = this.tokenIssuerService.issueForUser(
@@ -473,7 +478,9 @@ export class AppService {
       const userId = String((valid as { userId?: string }).userId || '');
       const tokenAppId = (valid as { appId?: string }).appId;
       if (tokenAppId && appId && tokenAppId !== appId) {
-        throw new RpcException('Token application scope does not match request');
+        throw new RpcException(
+          'Token application scope does not match request'
+        );
       }
       const user = userId
         ? await this.userRepo.findOne({ where: { id: userId } })
@@ -481,7 +488,10 @@ export class AppService {
       if (!user) {
         throw new RpcException('Token user was not found');
       }
-      await this.guardianPermissionService.assertAccountAccess(user.id, tokenAppId || appId);
+      await this.guardianPermissionService.assertAccountAccess(
+        user.id,
+        tokenAppId || appId
+      );
       return {
         message: 'Token is valid',
         code: 0,

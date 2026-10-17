@@ -466,10 +466,11 @@
     "line-height": 1
   },
   "apps/client-interface/src/app/app.component.scss": {
-    "border-radius": 3,
+    "border-radius": 5,
     "box-shadow": 4,
-    "font-size": 3,
-    "letter-spacing": 1
+    "font-size": 5,
+    "letter-spacing": 2,
+    "line-height": 1
   },
   "apps/client-interface/src/app/components/landing.component.scss": {
     "font-size": 21,
@@ -933,5 +934,21 @@
   },
   "apps/whitebox-project-nexus/src/app/app.component.scss": {
     "font-size": 2
+  },
+  "libs/common-ui/src/lib/common-ui/public-contact-page/public-contact-page.component.scss": {
+    "font-size": 4,
+    "letter-spacing": 2,
+    "line-height": 4,
+    "border-radius": 2,
+    "box-shadow": 1
+  },
+  "libs/common-ui/src/lib/common-ui/public-info-footer/public-info-footer.component.scss": {
+    "font-size": 1,
+    "line-height": 1
+  },
+  "libs/guardian-ui/src/lib/guardian-ui/guardian-console.component.scss": {
+    "font-size": 2,
+    "letter-spacing": 1,
+    "border-radius": 6
   }
 }

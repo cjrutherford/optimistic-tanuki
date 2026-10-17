@@ -32,7 +32,11 @@ export class TokenIssuerService {
     private readonly expiresIn: AuthTokenExpiry = '1h'
   ) {}
 
-  issueForUser(user: AuthTokenUser, profileId?: string, appId?: string): string {
+  issueForUser(
+    user: AuthTokenUser,
+    profileId?: string,
+    appId?: string
+  ): string {
     return this.signer.sign(
       {
         userId: user.userId,

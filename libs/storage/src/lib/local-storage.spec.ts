@@ -80,19 +80,26 @@ describe('LocalStorageAdapter', () => {
 
   describe('create', () => {
     it('rejects a traversal filename before reserving bytes', () => {
-      expect(() => adapter.reservationPath({
-        id: '11111111-1111-4111-8111-111111111111', name: '../sentinel',
-      } as never)).toThrow('Asset filename is invalid');
+      expect(() =>
+        adapter.reservationPath({
+          id: '11111111-1111-4111-8111-111111111111',
+          name: '../sentinel',
+        } as never)
+      ).toThrow('Asset filename is invalid');
     });
     it('uses a caller-reserved id so lifecycle cleanup can find the same bytes', async () => {
       const created = await adapter.create({
-        id: '11111111-1111-4111-8111-111111111111', name: 'photo.png', profileId: 'profile-1',
-        type: AssetType.IMAGE, content: Buffer.from('lifecycle'),
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'photo.png',
+        profileId: 'profile-1',
+        type: AssetType.IMAGE,
+        content: Buffer.from('lifecycle'),
       } as never);
       expect(created.id).toBe('11111111-1111-4111-8111-111111111111');
-      expect(created.storagePath).toBe(path.join('assets', '11111111-1111-4111-8111-111111111111', 'photo.png'));
+      expect(created.storagePath).toBe(
+        path.join('assets', '11111111-1111-4111-8111-111111111111', 'photo.png')
+      );
     });
-
 
     it('writes a data-url payload and returns a relative storage path', async () => {
       const created = await adapter.create({
@@ -295,7 +302,9 @@ describe('LocalStorageAdapter', () => {
     it('refuses a persisted traversal path without touching a sibling sentinel', async () => {
       const sentinel = path.join(basePath, 'sentinel');
       writeFileSync(sentinel, 'keep');
-      await expect(adapter.remove(asset({ storagePath: path.join('..', 'sentinel') }))).rejects.toThrow('outside local storage');
+      await expect(
+        adapter.remove(asset({ storagePath: path.join('..', 'sentinel') }))
+      ).rejects.toThrow('outside local storage');
       expect(existsSync(sentinel)).toBe(true);
     });
     it('deletes the stored file', async () => {

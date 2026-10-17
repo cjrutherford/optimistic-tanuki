@@ -70,7 +70,8 @@ export class LocalStorageAdapter implements StorageAdapter {
       data.type,
       data.content?.length
     );
-    if (data.id && !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    if (data.id && !isUuid(data.id))
+      throw new Error('Reserved asset id must be a UUID');
     const assetId = data.id ?? uuidv4();
     // Create a unique path for the file within the base path
     const relativePath = path.join('assets', assetId, data.name);
@@ -141,7 +142,8 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   reservationPath(data: CreateAssetDto): string {
-    if (!data.id || !isUuid(data.id)) throw new Error('Reserved asset id must be a UUID');
+    if (!data.id || !isUuid(data.id))
+      throw new Error('Reserved asset id must be a UUID');
     return path.join('assets', data.id, this.normalizeSafeFilename(data.name));
   }
 
@@ -152,8 +154,15 @@ export class LocalStorageAdapter implements StorageAdapter {
 
     try {
       const assetDirectory = path.dirname(absolutePath);
-      const relative = path.relative(path.resolve(this.basePath), absolutePath).split(path.sep);
-      if (relative.length === 3 && relative[0] === 'assets' && relative[1] === data.id && isUuid(relative[1])) {
+      const relative = path
+        .relative(path.resolve(this.basePath), absolutePath)
+        .split(path.sep);
+      if (
+        relative.length === 3 &&
+        relative[0] === 'assets' &&
+        relative[1] === data.id &&
+        isUuid(relative[1])
+      ) {
         await fs.rm(assetDirectory, { recursive: true, force: true });
       } else {
         await fs.unlink(absolutePath);
@@ -278,7 +287,16 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   private normalizeSafeFilename(name: string): string {
     const safeName = name.replace(/\s+/g, '_');
-    if (!safeName || safeName === '.' || safeName === '..' || path.basename(safeName) !== safeName || /[\\/\u0000-\u001f]/.test(safeName)) {
+    const containsUnsafeCharacter =
+      /[\\/]/.test(safeName) ||
+      Array.from(safeName).some((character) => character.charCodeAt(0) <= 0x1f);
+    if (
+      !safeName ||
+      safeName === '.' ||
+      safeName === '..' ||
+      path.basename(safeName) !== safeName ||
+      containsUnsafeCharacter
+    ) {
       throw new Error('Asset filename is invalid');
     }
     return safeName;
@@ -402,8 +420,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       const handle = await fs.open(tempPath, 'wx', mode);
       try {
-      await handle.writeFile(payload);
-      await handle.sync();
+        await handle.writeFile(payload);
+        await handle.sync();
       } finally {
         await handle.close();
       }
@@ -436,5 +454,7 @@ export class LocalStorageAdapter implements StorageAdapter {
 }
 
 function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }

@@ -99,7 +99,8 @@ export class LoginBlockComponent extends Themeable {
   onFormChange(_e: string) {}
 
   onSubmit() {
-    const { email, password, dateOfBirth, guardianEmail } = this.loginForm.value;
+    const { email, password, dateOfBirth, guardianEmail } =
+      this.loginForm.value;
     this.submitEvent.emit({
       email,
       password,
@@ -109,11 +110,18 @@ export class LoginBlockComponent extends Themeable {
   }
 
   get showAgeEligibilityFields(): boolean {
-    return this.ageGateEnabled && /AGE_CHECK_REQUIRED|AGE_UNDER_13|GUARDIAN_EMAIL_REQUIRED/.test(this.errorMessage);
+    return (
+      this.ageGateEnabled &&
+      /AGE_CHECK_REQUIRED|AGE_UNDER_13|GUARDIAN_EMAIL_REQUIRED/.test(
+        this.errorMessage
+      )
+    );
   }
 
   get showGuardianEmailField(): boolean {
-    return this.ageGateEnabled && /GUARDIAN_EMAIL_REQUIRED/.test(this.errorMessage);
+    return (
+      this.ageGateEnabled && /GUARDIAN_EMAIL_REQUIRED/.test(this.errorMessage)
+    );
   }
 
   onOAuthProvider(event: OAuthProviderEvent) {

@@ -335,15 +335,13 @@ describe('ProfileController', () => {
   });
 
   it('rejects a legacy profile owner change before forwarding a write', async () => {
-    const profileSend = jest
-      .spyOn(clientProxy, 'send')
-      .mockReturnValue(
-        of({
-          id: 'target',
-          userId: 'dependent',
-          appScope: 'client-interface',
-        }) as any
-      );
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({
+        id: 'target',
+        userId: 'dependent',
+        appScope: 'client-interface',
+      }) as any
+    );
     await expect(
       controller.updateProfile(
         'target',
@@ -414,15 +412,13 @@ describe('ProfileController', () => {
       },
       { type: 'body', metatype: UpdateProfileDto }
     );
-    const profileSend = jest
-      .spyOn(clientProxy, 'send')
-      .mockReturnValue(
-        of({
-          id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
-          userId: ownerId,
-          appScope: 'client-interface',
-        }) as any
-      );
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({
+        id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+        userId: ownerId,
+        appScope: 'client-interface',
+      }) as any
+    );
 
     await expect(
       controller.updateProfile('6dc2fdad-ef99-48a0-98e0-9e2f223354c1', body, {
@@ -434,15 +430,13 @@ describe('ProfileController', () => {
   });
 
   it('rejects a legacy body profile ID that differs from the route ID', async () => {
-    const profileSend = jest
-      .spyOn(clientProxy, 'send')
-      .mockReturnValue(
-        of({
-          id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
-          userId: '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631',
-          appScope: 'client-interface',
-        }) as any
-      );
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({
+        id: '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
+        userId: '9d8c3a2f-1a7c-4c2b-91a4-0db6a291f631',
+        appScope: 'client-interface',
+      }) as any
+    );
     await expect(
       controller.updateProfile(
         '6dc2fdad-ef99-48a0-98e0-9e2f223354c1',
@@ -482,28 +476,26 @@ describe('ProfileController', () => {
         { dependentUserId: 'foreign-user', status: 'approved' },
       ]) as any
     );
-    jest
-      .spyOn(clientProxy, 'send')
-      .mockImplementation(
-        (_pattern: any, payload: any) =>
-          of(
-            payload.userId === 'linked-user'
-              ? {
-                  id: 'linked-profile',
-                  userId: 'linked-user',
-                  appScope: 'local-hub',
-                  profileName: 'Linked teen',
-                  email: 'private@example.invalid',
-                  dateOfBirth: '2010-01-01',
-                }
-              : {
-                  id: 'foreign-profile',
-                  userId: 'foreign-user',
-                  appScope: 'client-interface',
-                  profileName: 'Wrong app',
-                }
-          ) as any
-      );
+    jest.spyOn(clientProxy, 'send').mockImplementation(
+      (_pattern: any, payload: any) =>
+        of(
+          payload.userId === 'linked-user'
+            ? {
+                id: 'linked-profile',
+                userId: 'linked-user',
+                appScope: 'local-hub',
+                profileName: 'Linked teen',
+                email: 'private@example.invalid',
+                dateOfBirth: '2010-01-01',
+              }
+            : {
+                id: 'foreign-profile',
+                userId: 'foreign-user',
+                appScope: 'client-interface',
+                profileName: 'Wrong app',
+              }
+        ) as any
+    );
     await expect(
       controller.listGuardianDependents({
         userId: 'guardian',
@@ -602,15 +594,13 @@ describe('ProfileController', () => {
   });
 
   it('fails closed for an owned app profile while lifecycle deletion is unavailable', async () => {
-    const profileSend = jest
-      .spyOn(clientProxy, 'send')
-      .mockReturnValue(
-        of({
-          id: 'owned-app',
-          userId: 'user-1',
-          appScope: 'client-interface',
-        }) as any
-      );
+    const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
+      of({
+        id: 'owned-app',
+        userId: 'user-1',
+        appScope: 'client-interface',
+      }) as any
+    );
 
     await expect(
       controller.deleteProfile('owned-app', 'client-interface', {

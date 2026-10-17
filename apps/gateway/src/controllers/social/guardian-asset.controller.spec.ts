@@ -1,4 +1,10 @@
-import { BadGatewayException, ForbiddenException, HttpException, ParseUUIDPipe, ValidationPipe } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ForbiddenException,
+  HttpException,
+  ParseUUIDPipe,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { of, throwError } from 'rxjs';
 import { GuardianAssetController } from './guardian-asset.controller';
@@ -7,7 +13,11 @@ import { AssetCommands } from '@optimistic-tanuki/constants';
 
 describe('GuardianAssetController', () => {
   const actor = { userId: 'guardian-user', appId: 'client-interface' } as any;
-  const profile = { id: 'dependent-profile', userId: 'dependent-user', appScope: 'client-interface' };
+  const profile = {
+    id: 'dependent-profile',
+    userId: 'dependent-user',
+    appScope: 'client-interface',
+  };
 
   function createController(
     assetReply: () => any = () => of({ id: 'asset-id' }),
@@ -15,16 +25,38 @@ describe('GuardianAssetController', () => {
   ) {
     const assets = { send: jest.fn(assetReply) } as any;
     const profiles = { send: jest.fn(() => of(profileReply)) } as any;
-    const authentication = { send: jest.fn(() => of({ allowed: true })) } as any;
-    return { controller: new GuardianAssetController(assets, profiles, authentication), assets };
+    const authentication = {
+      send: jest.fn(() => of({ allowed: true })),
+    } as any;
+    return {
+      controller: new GuardianAssetController(assets, profiles, authentication),
+      assets,
+    };
   }
 
   it('rejects missing bytes and forged actor/profile/audience fields before asset RPC', async () => {
     const { controller, assets } = createController();
-    await expect(controller.upload('dependent-profile', { name: 'photo.png', type: 'image' } as any, actor)).rejects.toMatchObject({ status: 400 });
-    await expect(controller.upload('dependent-profile', {
-      name: 'photo.png', type: 'image', content: 'aGVsbG8=', actorUserId: 'forged', profileId: 'other-profile', audienceRestrictions: [],
-    } as any, actor)).rejects.toMatchObject({ status: 400 });
+    await expect(
+      controller.upload(
+        'dependent-profile',
+        { name: 'photo.png', type: 'image' } as any,
+        actor
+      )
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(
+      controller.upload(
+        'dependent-profile',
+        {
+          name: 'photo.png',
+          type: 'image',
+          content: 'aGVsbG8=',
+          actorUserId: 'forged',
+          profileId: 'other-profile',
+          audienceRestrictions: [],
+        } as any,
+        actor
+      )
+    ).rejects.toMatchObject({ status: 400 });
     expect(assets.send).not.toHaveBeenCalled();
   });
 
@@ -87,7 +119,12 @@ describe('GuardianAssetController', () => {
       data: '',
     };
     const body = await validation.transform(
-      { name: 'photo.png', type: AssetType.IMAGE, content: 'aGVsbG8=', fileExtension: 'png' },
+      {
+        name: 'photo.png',
+        type: AssetType.IMAGE,
+        content: 'aGVsbG8=',
+        fileExtension: 'png',
+      },
       context
     );
 
@@ -122,24 +159,48 @@ describe('GuardianAssetController', () => {
       transform: true,
     });
 
-    await expect(validation.transform(
-      { name: 'photo.png', type: AssetType.IMAGE, content: 'aGVsbG8=', ...extra },
-      { type: 'body', metatype: parameterTypes[1], data: '' }
-    )).rejects.toMatchObject({ status: 400 });
+    await expect(
+      validation.transform(
+        {
+          name: 'photo.png',
+          type: AssetType.IMAGE,
+          content: 'aGVsbG8=',
+          ...extra,
+        },
+        { type: 'body', metatype: parameterTypes[1], data: '' }
+      )
+    ).rejects.toMatchObject({ status: 400 });
   });
 
   it('maps only an exact downstream guardian 403 to forbidden', async () => {
-    const denied = createController(() => throwError(() => ({ statusCode: 403, code: 'GUARDIAN_CONTENT_ACCESS_DENIED' })));
-    await expect(denied.controller.list('dependent-profile', undefined, actor)).rejects.toBeInstanceOf(ForbiddenException);
+    const denied = createController(() =>
+      throwError(() => ({
+        statusCode: 403,
+        code: 'GUARDIAN_CONTENT_ACCESS_DENIED',
+      }))
+    );
+    await expect(
+      denied.controller.list('dependent-profile', undefined, actor)
+    ).rejects.toBeInstanceOf(ForbiddenException);
 
-    const unknown = createController(() => throwError(() => ({ statusCode: 403, code: 'OTHER_DENIAL' })));
-    await expect(unknown.controller.list('dependent-profile', undefined, actor)).rejects.toBeInstanceOf(BadGatewayException);
+    const unknown = createController(() =>
+      throwError(() => ({ statusCode: 403, code: 'OTHER_DENIAL' }))
+    );
+    await expect(
+      unknown.controller.list('dependent-profile', undefined, actor)
+    ).rejects.toBeInstanceOf(BadGatewayException);
   });
 
   it('does not promote unknown downstream service failures into authorization denials', async () => {
-    const { controller } = createController(() => throwError(() => new Error('connection reset')));
+    const { controller } = createController(() =>
+      throwError(() => new Error('connection reset'))
+    );
     let failure: unknown;
-    try { await controller.list('dependent-profile', undefined, actor); } catch (error) { failure = error; }
+    try {
+      await controller.list('dependent-profile', undefined, actor);
+    } catch (error) {
+      failure = error;
+    }
     expect(failure).toBeInstanceOf(HttpException);
     expect((failure as HttpException).getStatus()).toBe(502);
   });

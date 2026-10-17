@@ -60,7 +60,12 @@ export class OAuthService {
       });
 
       if (linked && linked.user) {
-        await this.applyEligibility(linked.user, appId, ageEligibilityStatus, guardianResumeToken);
+        await this.applyEligibility(
+          linked.user,
+          appId,
+          ageEligibilityStatus,
+          guardianResumeToken
+        );
         // Issue JWT for the linked user
         return await this.issueTokenForUser(linked.user, profileId, appId);
       }
@@ -88,7 +93,12 @@ export class OAuthService {
 
           // Evaluate age eligibility before persisting the provider binding.
           // A denied pending/revoked account must not retain a new identity.
-          await this.applyEligibility(existingUser, appId, ageEligibilityStatus, guardianResumeToken);
+          await this.applyEligibility(
+            existingUser,
+            appId,
+            ageEligibilityStatus,
+            guardianResumeToken
+          );
 
           // Auto-link the provider to the existing user
           await this.oauthRepo.save({
@@ -320,7 +330,10 @@ export class OAuthService {
     guardianResumeToken?: string
   ): Promise<void> {
     if (guardianResumeToken) {
-      await this.guardianPermissions.attachAccount(guardianResumeToken, user.id);
+      await this.guardianPermissions.attachAccount(
+        guardianResumeToken,
+        user.id
+      );
       user.ageEligibilityStatus = 'minor';
     } else if (user.ageEligibilityEndsAt) {
       const eligibilityEndsAt = new Date(
@@ -336,7 +349,10 @@ export class OAuthService {
       } else if (ageEligibilityStatus === 'adult') {
         throw new RpcException({ code: 'AGE_ASSESSMENT_MISMATCH' });
       }
-    } else if (ageEligibilityStatus === 'adult' && user.ageEligibilityStatus === 'unassessed') {
+    } else if (
+      ageEligibilityStatus === 'adult' &&
+      user.ageEligibilityStatus === 'unassessed'
+    ) {
       await this.userRepo.update(user.id, {
         ageEligibilityStatus: 'adult',
         ageEligibilityEndsAt: null,

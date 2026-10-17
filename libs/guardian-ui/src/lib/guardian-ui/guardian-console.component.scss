@@ -1,6 +1,6 @@
 :host {
   display: block;
-  color: var(--foreground, #18212b);
+  color: var(--foreground);
 }
 .guardian-console {
   max-width: 76rem;
@@ -19,7 +19,7 @@ p {
 }
 .eyebrow {
   margin: 0 0 0.4rem;
-  color: #394174;
+  color: var(--accent);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -29,9 +29,8 @@ p {
 .dependent-list,
 .workspace,
 .withdraw {
-  background: var(--surface, #fff);
-  border: 1px solid
-    color-mix(in srgb, var(--foreground, #18212b) 14%, transparent);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
   border-radius: 1rem;
   padding: clamp(1rem, 2vw, 1.5rem);
 }
@@ -67,8 +66,8 @@ p {
 }
 .dependent[aria-pressed='true'],
 .dependent:hover {
-  background: var(--surface-muted, #f3f5f2);
-  border-color: var(--primary, #496b54);
+  background: var(--surface-variant);
+  border-color: var(--primary);
 }
 .dependent img,
 .profile-preview img {
@@ -98,29 +97,29 @@ p {
   gap: 0.4rem;
   flex-wrap: wrap;
   margin: 1rem 0;
-  border-bottom: 1px solid #ccd2cc;
+  border-bottom: 1px solid var(--border);
 }
 button {
   min-height: 2.65rem;
   padding: 0.55rem 0.9rem;
   color: inherit;
-  background: var(--surface, #fff);
-  border: 1px solid #89948a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.55rem;
   cursor: pointer;
 }
 button:hover:not(:disabled) {
-  border-color: var(--primary, #496b54);
+  border-color: var(--primary);
 }
 .section-tabs .active {
-  color: #fff;
-  background: var(--primary, #496b54);
-  border-color: var(--primary, #496b54);
+  color: var(--primary-foreground);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #e49b35;
+  outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
 button:disabled {
@@ -128,12 +127,12 @@ button:disabled {
   opacity: 0.6;
 }
 .danger {
-  color: #8d1e24;
-  border-color: #a43a40;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 .withdraw {
   margin: 0.8rem 0;
-  border-color: #a43a40;
+  border-color: var(--danger);
 }
 .withdraw label {
   display: block;
@@ -159,7 +158,7 @@ button:disabled {
   gap: 0.5rem;
   margin: 1rem 0 1.5rem;
   padding: 1rem;
-  background: var(--surface-muted, #f3f5f2);
+  background: var(--surface-variant);
   border-radius: 0.7rem;
 }
 .post-form input,
@@ -176,7 +175,7 @@ fieldset {
   display: flex;
   gap: 0.4rem 1rem;
   flex-wrap: wrap;
-  border: 1px solid #aab3aa;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
 }
 .asset-choice {
@@ -186,7 +185,7 @@ fieldset {
 }
 .post {
   padding: 1rem 0;
-  border-top: 1px solid #ccd2cc;
+  border-top: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
 .post > p {
@@ -207,7 +206,7 @@ fieldset {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.6rem 0;
-  border-top: 1px solid #e0e4df;
+  border-top: 1px solid var(--border);
 }
 .asset-name {
   display: flex;
@@ -222,17 +221,18 @@ fieldset {
 }
 .private-badge {
   white-space: nowrap;
-  color: #555;
+  color: var(--foreground);
   font-size: 0.85rem;
 }
 .feedback {
   padding: 0.75rem;
-  background: #e7f3e8;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
 }
 .error {
   padding: 0.75rem;
-  color: #8d1e24;
-  background: #fff0f0;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
 }
 @media (max-width: 760px) {
   .layout {
