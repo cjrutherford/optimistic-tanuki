@@ -643,7 +643,7 @@ export class ProfileController {
     }
     if (
       profile.userId !== user.userId ||
-      profile.appScope !== user.appId ||
+      profile.appScope !== this.profileScopeForApp(user.appId) ||
       (updateProfileDto.userId && updateProfileDto.userId !== profile.userId) ||
       (Object.prototype.hasOwnProperty.call(raw, 'appScope') &&
         raw.appScope !== profile.appScope)
@@ -661,6 +661,12 @@ export class ProfileController {
     return firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Update }, { id, ...fields })
     );
+  }
+
+  private profileScopeForApp(appId: string): string {
+    // Fin Commander authenticates with its app id, while profile permissions
+    // and profile rows use the finance scope.
+    return appId === 'fin-commander' ? 'finance' : appId;
   }
 
   @UseGuards(AuthGuard)

@@ -320,6 +320,8 @@ test('resolves a manifest target to its compose files, dependency closure, and t
       'permissions',
       'store',
       'lead-tracker',
+      'blogging',
+      'workspace',
       'gateway',
       'business-site',
     ],

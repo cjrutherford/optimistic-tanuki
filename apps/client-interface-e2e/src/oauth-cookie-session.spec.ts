@@ -1,10 +1,45 @@
 import { expect, test } from '@playwright/test';
+import { clientInterfaceHeaders } from './e2e-headers';
 
 test.describe('OAuth cookie session', () => {
   test('opens a popup, follows the provider redirect, and restores the opener from an HttpOnly session', async ({
     page,
     context,
   }) => {
+    const email = 'oauth-e2e@example.test';
+    const password = 'TestPassword123!';
+    const existingAccount = await page.request.post(
+      '/api/authentication/login',
+      {
+        headers: clientInterfaceHeaders,
+        data: { email, password },
+      }
+    );
+    const loginBody = await existingAccount.text();
+    if (
+      existingAccount.status() === 401 ||
+      (existingAccount.status() === 500 && /user not found/i.test(loginBody))
+    ) {
+      const registration = await page.request.post(
+        '/api/authentication/register',
+        {
+          headers: clientInterfaceHeaders,
+          data: {
+            email,
+            password,
+            confirm: password,
+            fn: 'OAuth',
+            ln: 'E2E',
+            dateOfBirth: '1990-01-01',
+            bio: 'OAuth cookie session test participant',
+          },
+        }
+      );
+      expect(registration.status(), await registration.text()).toBe(201);
+    } else {
+      expect(existingAccount.status(), loginBody).toBe(201);
+    }
+
     // The login page requests /api/oauth/config in its constructor, but these
     // apps enable provideClientHydration(), which turns on Angular's HTTP
     // transfer cache. The request is therefore issued during SSR and replayed

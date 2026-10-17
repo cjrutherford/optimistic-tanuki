@@ -93,39 +93,16 @@ describe('LandingComponent', () => {
     expect(contrast([248, 250, 252], [10, 10, 15])).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps Forge muted normal text at least 4.5:1 in representative light and dark themes', () => {
+  it('uses the shared contrast-corrected muted token for normal text', () => {
     const styles = readFileSync(
       join(__dirname, 'landing.component.scss'),
       'utf8'
     );
-    const mix = (foreground: number[], background: number[]) =>
-      foreground.map((channel, index) =>
-        Math.round(channel * 0.8 + background[index] * 0.2)
-      );
-    const luminance = (color: number[]) => {
-      const linear = color.map((channel) => {
-        const normalized = channel / 255;
-        return normalized <= 0.04045
-          ? normalized / 12.92
-          : Math.pow((normalized + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-    };
-    const contrast = (first: number[], second: number[]) => {
-      const [lighter, darker] = [luminance(first), luminance(second)].sort(
-        (a, b) => b - a
-      );
-      return (lighter + 0.05) / (darker + 0.05);
-    };
 
+    // ThemeService corrects this token against both the page and its surfaces.
+    // Rendered contrast is exercised by the browser accessibility suite.
     expect(styles).toMatch(
-      /--forge-readable-muted:\s*color-mix\(\s*in srgb,\s*var\(--foreground\) 80%,\s*var\(--background\)\s*\)/
+      /--forge-readable-muted:\s*var\(--muted-foreground,\s*var\(--foreground\)\)/
     );
-    expect(
-      contrast(mix([15, 23, 42], [255, 255, 255]), [255, 255, 255])
-    ).toBeGreaterThanOrEqual(4.5);
-    expect(
-      contrast(mix([240, 240, 245], [10, 10, 15]), [10, 10, 15])
-    ).toBeGreaterThanOrEqual(4.5);
   });
 });

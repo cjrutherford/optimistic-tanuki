@@ -7,6 +7,7 @@
 **Companion standard:** [HAI philosophy](../product/HAI-PUBLIC-GOOD-PHILOSOPHY.md)
 
 **Status:** Active audit / execution plan
+**2026-10-17 closeout status:** Local release-readiness repair verification passed; see [the pre-PR evidence index](./evidence/pre-pr-2026-10-16/README.md) for revision-specific gates and limitations. Directory stubs and their Compose/alias changes remain excluded by owner direction. RR-11 remains not accepted and RR-12 remains conditional.
 **Product intent authority:** The owner-supplied audit and philosophy define the baseline below. RR-00 preserves that intent; runtime conformity is evaluated in later slices. Changes to product boundaries require an explicit documented owner decision/ADR.
 
 ---

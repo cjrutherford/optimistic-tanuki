@@ -165,6 +165,21 @@ describe('OAuthController', () => {
     ).toBe('forgeofwill');
   });
 
+  it('resolves the finance profile-scope alias to the registered Fin Commander app ID', () => {
+    process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+      finance: 'http://fin-commander.localhost:8089',
+    });
+
+    expect(
+      (controller as any).resolveAppScopeForReturnTo(
+        'http://fin-commander.localhost:8089/login'
+      )
+    ).toBe('fin-commander');
+    expect((controller as any).profileScopeForApp('fin-commander')).toBe(
+      'finance'
+    );
+  });
+
   it('rejects production OAuth registration for owner-console', async () => {
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';

@@ -5,6 +5,7 @@ import {
   TestInfo,
   test,
 } from '@playwright/test';
+import { appOrigin, clientInterfaceHeaders } from './e2e-headers';
 
 const PASSWORD = 'TestPassword123!';
 
@@ -124,13 +125,14 @@ function collectBrowserDiagnostics(
 
 async function ensureSeededUser(request: APIRequestContext, user: SeedUser) {
   const response = await request.post('/api/authentication/register', {
-    headers: { 'X-ot-appscope': 'client-interface' },
+    headers: clientInterfaceHeaders,
     data: {
       email: user.email,
       fn: user.firstName,
       ln: user.lastName,
       password: PASSWORD,
       confirm: PASSWORD,
+      dateOfBirth: '1990-01-01',
       bio: 'Playwright chat test participant',
     },
   });
@@ -152,7 +154,7 @@ async function bootstrapAuth(
   email: string
 ): Promise<BootstrappedUser> {
   const loginResponse = await request.post('/api/authentication/login', {
-    headers: { 'X-ot-appscope': 'client-interface' },
+    headers: clientInterfaceHeaders,
     data: {
       email,
       password: PASSWORD,
@@ -169,7 +171,7 @@ async function bootstrapAuth(
   const profilesResponse = await request.get('/api/profile', {
     headers: {
       Authorization: `Bearer ${token}`,
-      'X-ot-appscope': 'client-interface',
+      ...clientInterfaceHeaders,
     },
   });
   expect(profilesResponse.ok()).toBeTruthy();
@@ -194,7 +196,7 @@ async function bootstrapAuth(
     {
       name: 'ot_session',
       value: token,
-      url: 'http://127.0.0.1:8080',
+      url: appOrigin,
       httpOnly: true,
       sameSite: 'Lax',
     },
@@ -234,7 +236,7 @@ async function getOrCreateConversation(
     {
       headers: {
         Authorization: `Bearer ${token}`,
-        'X-ot-appscope': 'client-interface',
+        ...clientInterfaceHeaders,
       },
       data: {
         recipientProfileId,

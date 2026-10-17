@@ -14,13 +14,15 @@ The branch adds 15 service-owned TypeORM migrations across authentication, asset
 
 ## Review guide
 
-- Read [the release-readiness master audit](./MASTER-AUDIT.md) and [execution plan](./EXECUTION-PLAN.md) for accepted slices, open gates, and sequencing.
-- Start with [the sanitized pre-PR evidence index](./evidence/pre-pr-2026-10-16/README.md) for guardian runtime proof and its limits.
+- Read [the release-readiness master audit](https://github.com/cjrutherford/optimistic-tanuki/blob/chore/ot-ts-release-readiness/docs/release-readiness/MASTER-AUDIT.md) and [execution plan](https://github.com/cjrutherford/optimistic-tanuki/blob/chore/ot-ts-release-readiness/docs/release-readiness/EXECUTION-PLAN.md) for accepted slices, open gates, and sequencing.
+- Start with [the sanitized pre-PR evidence index](https://github.com/cjrutherford/optimistic-tanuki/blob/chore/ot-ts-release-readiness/docs/release-readiness/evidence/pre-pr-2026-10-16/README.md) for guardian runtime proof and its limits.
 - The full review range is `efef92fec0fee2c8cb2879e98b08d046e9f3b0a3..HEAD`; this draft covers the complete branch range, not only the last guardian commits.
 
 ## Validation
 
-Final workflow-equivalent results are recorded in the evidence index above. The source readiness commit checked against `main` is `a14e902c102671673cb14e9f03e05fed6fd8e9f8`; the evidence and this draft are included in a documentation-only follow-up commit. GitHub required checks remain pending because this preparation did not create a PR. No check is represented as green unless it completed against the stated source revision. Local-checkout contamination and infrastructure-dependent checks not run are listed explicitly.
+Local validation passed: 148 affected test projects, 148 lint projects, 88 build tasks and the final 75-task development aggregate. All six originally repaired E2E targets and the additional 21-test Business Site suite pass; Client Interface retains 384 existing skips and Gateway retains two. The final Forgeofwill token correction passed 319 unit tests, lint, heuristics, a new immutable-source production image, the full 34-test E2E suite and settled light/dark Axe checks. The animation-wait correction preserves the Axe assertions. Business Site also passed 168 unit tests, 36 setup tests, lint, a new immutable-source image and all 21 browser tests on a fresh private database. Its repairs align service composition, app identity and proxy Origin handling; the Studio selector correction targets the existing shared select. Migration governance, setup-script and 39 E2E workflow contracts pass.
+
+The evidence index separates initial committed-source checks from the final repairs and their per-file source manifest over base commit `c31729d990912aa7769f76a6014f3eabc612e669`. The full affected gates preceded the final localized Forgeofwill and Business Site corrections; their targeted unit/lint/build/runtime checks and the final development aggregate document the later source states. Nx ran in the shared checkout with directory projects excluded; their pre-existing aliases and Compose edits remain on disk, while the final Forgeofwill image used an immutable archive plus only intended patches. Directory service/worker/library stubs and their root Compose/alias changes are excluded from this PR. No PR or push was performed during preparation; GitHub clean-checkout checks and production gates remain pending.
 
 ## Remaining release work
 

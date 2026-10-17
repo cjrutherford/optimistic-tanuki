@@ -38,6 +38,9 @@ test('the registry exposes the CI microservice and UI suites by kind', () => {
 });
 
 test('target resolution returns bounded, purpose-specific service sets for pull and start', () => {
+  // TrainerController requires blogging alongside store and lead-tracker.
+  assert.ok(resolveE2eServices('business-site-e2e').includes('blogging'));
+  assert.ok(resolveE2eServices('business-site-e2e').includes('workspace'));
   assert.deepEqual(resolveE2eServices('authentication-e2e'), [
     'db',
     'db-setup',

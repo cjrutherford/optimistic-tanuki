@@ -13,6 +13,8 @@ describe('Communities E2E Tests', () => {
     headers: {
       'x-ot-appscope': 'client-interface',
       'x-ot-app-id': 'client-interface',
+      Origin: 'http://127.0.0.1:8080',
+      Host: '127.0.0.1:8080',
     },
     validateStatus: () => true,
   });
@@ -28,6 +30,7 @@ describe('Communities E2E Tests', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Community test user',
+    dateOfBirth: '1990-01-01',
   };
   const inviteeUser = {
     ...testUser,

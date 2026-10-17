@@ -11,6 +11,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
+import { createApiProxyOptions } from './server-proxy';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -27,15 +28,7 @@ const ssrOptions = applySsrProxyTrust(app);
 app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: gatewayUrl,
-    changeOrigin: true,
-    ws: true,
-    pathRewrite: (_path, req) => (req as express.Request).originalUrl,
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 app.use(
   express.static(browserDistFolder, {

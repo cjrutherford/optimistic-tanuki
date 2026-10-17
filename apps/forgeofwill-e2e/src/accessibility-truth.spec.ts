@@ -22,20 +22,22 @@ test.describe('Forge public accessibility and product truth', () => {
       'true'
     );
 
-    // The landing stats deliberately animate in. Wait for the browser's
-    // animation promise instead of sampling the page while the items are
-    // still transparent, which can make Axe report blended foreground colors.
-    await page.locator('.stat-item').evaluateAll(async (elements) => {
+    // Text sections reveal on different schedules. Sample their settled
+    // colors after finite entrances, while decorative loops keep running.
+    await page.getByRole('main').evaluate(async (element) => {
       await Promise.all(
-        elements
-          .flatMap((element) => element.getAnimations())
+        element
+          .getAnimations({ subtree: true })
+          .filter((animation) =>
+            Number.isFinite(animation.effect?.getTiming().iterations ?? 1)
+          )
           .map((animation) => animation.finished.catch(() => undefined))
       );
     });
     await expect
       .poll(() =>
         page
-          .locator('.stat-item')
+          .locator('.stat-item, .forge-trust')
           .evaluateAll(
             (elements) =>
               elements.length > 0 &&

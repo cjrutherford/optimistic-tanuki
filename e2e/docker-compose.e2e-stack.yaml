@@ -664,7 +664,10 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     ports:
       - '3000:3000'
+    volumes:
+      - ./app-registry.e2e.json:/usr/src/app/app-registry.e2e.json:ro
     environment:
+      APP_REGISTRY_PATH: /usr/src/app/app-registry.e2e.json
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: postgres

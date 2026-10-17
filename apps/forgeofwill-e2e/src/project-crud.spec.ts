@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { continueAsAdult } from '../../e2e/support/workspace-ui';
 
 test.describe('Forge project CRUD', () => {
   test('an authenticated planner creates, reads, updates, and deletes a project', async ({
@@ -15,6 +16,7 @@ test.describe('Forge project CRUD', () => {
       'The planner updated this project through Forge.';
 
     await page.goto('/register');
+    await continueAsAdult(page);
     await page
       .locator('lib-text-input[formControlName="firstName"] input')
       .fill('Forge');

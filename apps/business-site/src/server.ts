@@ -4,14 +4,13 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
-import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isEvaluatorGuideEnabled } from './server-evaluator-guide';
-import { shouldPreserveClientOrigin } from './server-proxy';
+import { createBusinessApiProxy } from './server-proxy';
 import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 import { applySsrProxyTrust } from '@optimistic-tanuki/common-ui/ssr-config';
 
@@ -27,8 +26,6 @@ const ssrOptions = applySsrProxyTrust(app);
 app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine(ssrOptions as never);
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
-const gatewayOrigin = new URL(gatewayUrl).origin;
-const gatewayHost = new URL(gatewayUrl).host;
 
 const applyPublicAppSecurityHeaders: express.RequestHandler = (
   req,
@@ -96,34 +93,7 @@ if (isEvaluatorGuideEnabled()) {
 
 app.use(express.json({ limit: '1mb' }));
 
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    ws: true,
-    changeOrigin: true,
-    on: {
-      proxyReq: (proxyReq, req) => {
-        fixRequestBody(proxyReq, req);
-        proxyReq.setHeader('host', gatewayHost);
-        // OAuth endpoints validate Origin against the grant's app origin;
-        // rewriting it to the gateway origin 401s every redeem. The hook's
-        // request is typed as http.IncomingMessage (no originalUrl), so read
-        // the Express original URL defensively and fall back to req.url.
-        const originalUrl = (req as { originalUrl?: unknown }).originalUrl;
-        const rawUrl =
-          typeof originalUrl === 'string'
-            ? originalUrl
-            : typeof req.url === 'string'
-            ? req.url
-            : '';
-        if (req.headers.origin && !shouldPreserveClientOrigin(rawUrl)) {
-          proxyReq.setHeader('origin', gatewayOrigin);
-        }
-      },
-    },
-  })
-);
+app.use('/api', createBusinessApiProxy(gatewayUrl));
 
 app.use('/**', (req, res, next) => {
   angularApp

@@ -1,6 +1,8 @@
 enabledServices:
   - authentication
+  - blogging
   - lead-tracker
   - permissions
   - profile
   - store
+  - workspace

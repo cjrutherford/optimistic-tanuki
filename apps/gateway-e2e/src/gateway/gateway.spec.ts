@@ -13,6 +13,8 @@ describe('Gateway E2E Tests', () => {
     headers: {
       'x-ot-appscope': 'client-interface',
       'x-ot-app-id': 'client-interface',
+      Origin: 'http://127.0.0.1:8080',
+      Host: '127.0.0.1:8080',
     },
     validateStatus: () => true, // Don't throw on any status code
   });
@@ -26,6 +28,7 @@ describe('Gateway E2E Tests', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Gateway test user',
+    dateOfBirth: '1990-01-01',
   };
 
   describe('Authentication Endpoints', () => {

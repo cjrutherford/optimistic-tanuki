@@ -362,10 +362,13 @@ export class ProfileService implements OnModuleInit, OnModuleDestroy {
       profilePic: profile.profilePic,
       coverPic: profile.coverPic,
       bio: profile.bio,
-      location: profile.location,
-      occupation: profile.occupation,
-      interests: profile.interests,
-      skills: profile.skills,
+      // The profile editor treats these fields as optional, while their
+      // database columns are non-nullable. Normalize omitted values at the
+      // persistence boundary instead of inserting SQL NULL.
+      location: profile.location ?? '',
+      occupation: profile.occupation ?? '',
+      interests: profile.interests ?? '',
+      skills: profile.skills ?? '',
     };
     let savedProfile: Profile;
     try {

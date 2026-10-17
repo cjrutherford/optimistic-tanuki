@@ -182,6 +182,7 @@ describe('build command', () => {
       'permissions',
       'store',
       'lead-tracker',
+      'workspace',
       'blogging',
       'gateway',
       'business-site',
@@ -218,7 +219,7 @@ describe('stack startup commands', () => {
       'up -d postgres redis',
       'up -d db-setup',
       'wait db-setup',
-      'up -d --no-deps authentication profile permissions store lead-tracker blogging gateway',
+      'up -d --no-deps authentication profile permissions store lead-tracker workspace blogging gateway',
       'up -d --no-deps business-site',
     ]);
   });
@@ -265,6 +266,7 @@ describe('seed commands', () => {
 
   it('points the business seed at the gateway and the business-site scope', () => {
     expect(seeds[1].env).toEqual({
+      BUSINESS_SITE_PUBLIC_ORIGIN: 'http://127.0.0.1:8094',
       GATEWAY_URL: 'http://localhost:3000/api',
       APP_SCOPE: 'business-site',
       POSTGRES_HOST: '127.0.0.1',

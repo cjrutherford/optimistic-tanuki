@@ -1239,24 +1239,32 @@ export class AuthenticationController {
       if (requestHost) {
         let host: string;
         try {
-          host = new URL(`http://${requestHost.trim()}`).hostname
-            .toLowerCase()
-            .replace(/\.$/, '');
+          const requestUrl = new URL(
+            `${new URL(origin).protocol}//${requestHost.trim()}`
+          );
+          const defaultPort = requestUrl.protocol === 'https:' ? '443' : '80';
+          host = `${requestUrl.hostname.toLowerCase().replace(/\.$/, '')}:${
+            requestUrl.port || defaultPort
+          }`;
         } catch {
           return null;
         }
-        const hostname = (baseUrl: string): string | null => {
+        const authority = (baseUrl: string): string | null => {
           try {
-            return new URL(baseUrl).hostname.toLowerCase().replace(/\.$/, '');
+            const url = new URL(baseUrl);
+            const defaultPort = url.protocol === 'https:' ? '443' : '80';
+            return `${url.hostname.toLowerCase().replace(/\.$/, '')}:${
+              url.port || defaultPort
+            }`;
           } catch {
             return null;
           }
         };
         const uiHostApps = this.appRegistry.apps.filter(
-          (app) => hostname(app.uiBaseUrl) === host
+          (app) => authority(app.uiBaseUrl) === host
         );
         const apiHostApps = this.appRegistry.apps.filter(
-          (app) => hostname(app.apiBaseUrl) === host
+          (app) => authority(app.apiBaseUrl) === host
         );
         const hostApps = uiHostApps.length === 1 ? uiHostApps : apiHostApps;
         if (!hostApps.some((app) => app.appId === originAppId)) return null;
@@ -1291,7 +1299,9 @@ export class AuthenticationController {
     targetAppId: string
   ): Promise<ProfileDto> {
     const effectiveAppScope =
-      targetAppId === 'owner-console' ? 'global' : targetAppId;
+      targetAppId === 'owner-console'
+        ? 'global'
+        : this.profileScopeForApp(targetAppId);
     const profiles = (await firstValueFrom(
       this.profileClient.send(
         { cmd: ProfileCommands.GetAll },

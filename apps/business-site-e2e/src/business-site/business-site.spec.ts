@@ -128,8 +128,9 @@ function businessNameInput(page: Page) {
 
 function schemaFieldControl(scope: Locator, key: string) {
   return scope
-    .locator(`[id="field-${key}"]`)
-    .locator('input, textarea, select')
+    .locator(
+      `[id="field-${key}-control"], [id="field-${key}"] input, [id="field-${key}"] textarea, [id="field-${key}"] select`
+    )
     .first();
 }
 

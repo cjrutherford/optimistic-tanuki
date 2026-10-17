@@ -78,6 +78,31 @@ export async function submitProfileEditor(page: Page): Promise<void> {
   await submitButton.click();
 }
 
+/** Complete the shared registration age screen for a synthetic adult test user. */
+export async function continueAsAdult(
+  page: Page,
+  required = false
+): Promise<void> {
+  const dateOfBirth = page.locator('#registration-date-of-birth');
+  let ageScreenShown = await dateOfBirth.isVisible().catch(() => false);
+  if (required) {
+    await expect(dateOfBirth).toBeVisible();
+    ageScreenShown = true;
+  } else if (!ageScreenShown) {
+    ageScreenShown = await dateOfBirth
+      .waitFor({ state: 'visible', timeout: 1000 })
+      .then(() => true)
+      .catch(() => false);
+  }
+  if (ageScreenShown) {
+    await dateOfBirth.fill('1990-01-01');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(
+      page.locator('lib-text-input[formControlName="firstName"] input')
+    ).toBeVisible();
+  }
+}
+
 function isApiResponse(response: Response, path: string): boolean {
   return response.url().includes(path);
 }
@@ -115,6 +140,7 @@ export async function registerAndCreateProfile(
 ): Promise<void> {
   await page.goto('/register');
   await expect(page).toHaveURL(/\/register/);
+  await continueAsAdult(page, true);
 
   await page
     .locator('lib-text-input[formControlName="firstName"] input')

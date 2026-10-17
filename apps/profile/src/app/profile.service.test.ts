@@ -268,6 +268,30 @@ describe('ProfileService', () => {
       expect(await service.create(createProfileDto)).toBe(result);
     });
 
+    it('normalizes omitted optional fields for non-null profile columns', async () => {
+      const createProfileDto = {
+        name: 'Optional fields',
+        userId: 'user-optional-fields',
+        profilePic: '',
+        coverPic: '',
+        bio: 'A profile with optional fields omitted',
+      } as CreateProfileDto;
+      const savedProfile = { id: 'new-profile' } as Profile;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(repository, 'save').mockResolvedValue(savedProfile);
+
+      await service.create(createProfileDto);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+        })
+      );
+    });
+
     it('should return existing profile if one already exists for user+appScope', async () => {
       const createProfileDto: CreateProfileDto & { appScope?: string } = {
         name: 'Test',

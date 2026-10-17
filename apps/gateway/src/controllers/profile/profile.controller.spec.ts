@@ -334,6 +334,33 @@ describe('ProfileController', () => {
     expect(updateResponse).toEqual({});
   });
 
+  it('allows Fin Commander owners to update their finance-scoped profile', async () => {
+    const profileSend = jest
+      .spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(
+        of({
+          id: 'finance-profile',
+          userId: 'finance-owner',
+          appScope: 'finance',
+        }) as any
+      )
+      .mockReturnValueOnce(
+        of({ id: 'finance-profile', bio: 'Updated' }) as any
+      );
+
+    await controller.updateProfile(
+      'finance-profile',
+      { bio: 'Updated' } as UpdateProfileDto,
+      { userId: 'finance-owner', appId: 'fin-commander' } as UserDetails
+    );
+
+    expect(profileSend).toHaveBeenNthCalledWith(
+      2,
+      { cmd: ProfileCommands.Update },
+      { id: 'finance-profile', bio: 'Updated' }
+    );
+  });
+
   it('rejects a legacy profile owner change before forwarding a write', async () => {
     const profileSend = jest.spyOn(clientProxy, 'send').mockReturnValue(
       of({

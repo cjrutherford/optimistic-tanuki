@@ -331,7 +331,7 @@ export class OAuthController {
     const resolvedAppScope = this.resolveAppScopeForReturnTo(validatedReturnTo);
     if (
       requestedAppScope?.trim() &&
-      requestedAppScope.trim() !== resolvedAppScope
+      this.canonicalAppIdForScope(requestedAppScope.trim()) !== resolvedAppScope
     ) {
       throw new HttpException(
         'appScope must match the registered returnTo application',
@@ -1029,7 +1029,7 @@ export class OAuthController {
     const configuredScope = [...this.configuredAppScopeOrigins()].find(
       ([, configuredOrigin]) => configuredOrigin === origin
     )?.[0];
-    if (configuredScope) return configuredScope;
+    if (configuredScope) return this.canonicalAppIdForScope(configuredScope);
 
     if (origin === this.safeOrigin(this.resolveClientInterfaceCallbackBase())) {
       return 'client-interface';
@@ -1039,6 +1039,32 @@ export class OAuthController {
       (entry) => this.safeOrigin(entry.uiBaseUrl) === origin
     );
     return app?.appId ?? null;
+  }
+
+  private canonicalAppIdForScope(scope: string): string {
+    return (
+      (
+        {
+          finance: 'fin-commander',
+          'leads-app': 'opportunity-compass',
+          'video-client': 'video-platform',
+          D6: 'd6',
+        } as Record<string, string>
+      )[scope] || scope
+    );
+  }
+
+  private profileScopeForApp(appId: string): string {
+    return (
+      (
+        {
+          'fin-commander': 'finance',
+          'opportunity-compass': 'leads-app',
+          'video-platform': 'video-platform',
+          d6: 'D6',
+        } as Record<string, string>
+      )[appId] || appId
+    );
   }
 
   private configuredAppScopeOrigins(): Map<string, string> {
@@ -1097,8 +1123,12 @@ export class OAuthController {
   }
 
   private resolveCallbackBase(appScope?: string): string {
+    const configuredOrigins = this.configuredAppScopeOrigins();
     const configuredOrigin = appScope
-      ? this.configuredAppScopeOrigins().get(appScope)
+      ? configuredOrigins.get(appScope) ||
+        [...configuredOrigins].find(
+          ([scope]) => this.canonicalAppIdForScope(scope) === appScope
+        )?.[1]
       : undefined;
 
     if (configuredOrigin) return configuredOrigin;
@@ -1736,7 +1766,9 @@ export class OAuthController {
     email: string
   ): Promise<ProfileDto> {
     const effectiveAppScope =
-      targetAppId === 'owner-console' ? 'global' : targetAppId;
+      targetAppId === 'owner-console'
+        ? 'global'
+        : this.profileScopeForApp(targetAppId);
     const profiles = (await firstValueFrom(
       this.profileClient.send(
         { cmd: ProfileCommands.GetAll },

@@ -434,6 +434,36 @@ describe('AuthenticationController', () => {
     ).toBe('local-hub');
   });
 
+  it('uses the registered UI port to disambiguate apps sharing a local hostname', () => {
+    const registry = (controller as any).appRegistry;
+    const clientInterface = registry.apps.find(
+      (app: any) => app.appId === 'client-interface'
+    );
+    clientInterface.uiBaseUrl = 'http://127.0.0.1:8080';
+    registry.apps.push({
+      ...clientInterface,
+      appId: 'forgeofwill',
+      uiBaseUrl: 'http://127.0.0.1:8081',
+    });
+
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'forgeofwill',
+        'forgeofwill',
+        'http://127.0.0.1:8081',
+        '127.0.0.1:8081'
+      )
+    ).toBe('forgeofwill');
+    expect(
+      (controller as any).resolveRegistrationAppId(
+        'forgeofwill',
+        'forgeofwill',
+        'http://127.0.0.1:8081',
+        '127.0.0.1:8080'
+      )
+    ).toBeNull();
+  });
+
   it('derives a missing login scope from the verified app while preserving app scope aliases', async () => {
     await expect(
       controller.loginUser(
@@ -1722,6 +1752,37 @@ describe('AuthenticationController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Issue },
       { userId: 'user-1', profileId: 'profile-target', appId: 'hai' }
+    );
+  });
+
+  it('exchanges Fin Commander sessions using the finance-scoped profile', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([{ id: 'finance-profile', userId: 'user-1', appScope: 'finance' }])
+    );
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of(true))
+      .mockReturnValueOnce(of({ data: { newToken: 'fin-commander-token' } }));
+
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-source',
+          exp: 1,
+          iat: 1,
+        },
+        { targetAppId: 'fin-commander' }
+      )
+    ).resolves.toEqual({
+      token: 'fin-commander-token',
+      targetAppId: 'fin-commander',
+      profileId: 'finance-profile',
+    });
+    expect(clientProxy.send).toHaveBeenLastCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'user-1', profileId: 'finance-profile', appId: 'fin-commander' }
     );
   });
 

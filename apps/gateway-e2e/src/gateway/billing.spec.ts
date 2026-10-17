@@ -23,6 +23,8 @@ describe('Billing gateway (O5 mount)', () => {
     headers: {
       'x-ot-appscope': 'client-interface',
       'x-ot-app-id': 'client-interface',
+      Origin: 'http://127.0.0.1:8080',
+      Host: '127.0.0.1:8080',
     },
     validateStatus: () => true,
   });
@@ -34,6 +36,7 @@ describe('Billing gateway (O5 mount)', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Billing mount probe',
+    dateOfBirth: '1990-01-01',
   };
 
   let authToken: string;
@@ -56,6 +59,8 @@ describe('Billing gateway (O5 mount)', () => {
       headers: {
         'x-ot-appscope': 'client-interface',
         'x-ot-app-id': 'client-interface',
+        Origin: 'http://127.0.0.1:8080',
+        Host: '127.0.0.1:8080',
         Authorization: `Bearer ${authToken}`,
       },
       validateStatus: () => true,

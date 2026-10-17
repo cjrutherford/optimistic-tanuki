@@ -67,6 +67,14 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+
+      // The age eligibility step is the first registration interaction. Keep
+      // its native date control and continue action reachable at touch size
+      // across the density variants used by host applications.
+      input[type='date'],
+      button[type='submit'] {
+        min-height: 44px;
+      }
     }
 
     .actions {

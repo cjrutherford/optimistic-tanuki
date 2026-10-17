@@ -1,4 +1,5 @@
-import { bootstrap } from './seed-trainer.mjs';
+import { bootstrap, fetchJson } from './seed-trainer.mjs';
+import http from 'node:http';
 
 type FakeResponse = { status: number; data: unknown };
 
@@ -60,6 +61,44 @@ function successfulResponses(): Record<string, FakeResponse> {
 }
 
 describe('business seed required operations', () => {
+  it('sends the registered public Host and Origin to the gateway on the wire', async () => {
+    let received: http.IncomingMessage | undefined;
+    const server = http.createServer((req, res) => {
+      received = req;
+      res.setHeader('content-type', 'application/json');
+      res.end('{"ok":true}');
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve)
+    );
+    try {
+      const address = server.address();
+      if (!address || typeof address === 'string')
+        throw new Error('No test port');
+      const response = await fetchJson(
+        `http://127.0.0.1:${address.port}/api/authentication/register`,
+        { method: 'POST', body: '{"email":"owner@example.test"}' },
+        'business-site',
+        'http://127.0.0.1:8094'
+      );
+      expect(response).toEqual({ status: 200, data: { ok: true } });
+      expect(received?.headers.host).toBe('127.0.0.1:8094');
+      expect(received?.headers.origin).toBe('http://127.0.0.1:8094');
+      expect(received?.headers['x-ot-app-id']).toBe('business-site');
+      expect(received?.headers['x-ot-appscope']).toBe('business-site');
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
+  });
+
+  it('rejects a noncanonical business app scope', async () => {
+    await expect(
+      fetchJson('http://127.0.0.1:1', {}, 'unregistered-app')
+    ).rejects.toThrow(/only supports app scope business-site/i);
+  });
+
   it('rejects registration failures instead of reporting a successful seed', async () => {
     const responses = successfulResponses();
     responses['http://gateway:3000/api/authentication/register'] = {

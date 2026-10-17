@@ -12,6 +12,8 @@
 
 **Tech stack:** Angular, NestJS, Nx/pnpm, TypeORM, Docker, and the checked-in browser/API E2E suites.
 
+**2026-10-17 closeout note:** Local pre-PR repair checks pass: affected test/lint/build, the development aggregate, workflow contracts, all six originally repaired E2E targets and the additional 21-test Business Site suite. The final Forgeofwill image also passed settled light/dark accessibility checks. [The evidence index](./evidence/pre-pr-2026-10-16/README.md) records exact source identities, the final targeted correction, skips and unrun external gates. Directory stubs and their root Compose/alias changes remain excluded by owner direction. This checkpoint does not change slice acceptance or authorize launch: RR-11 remains not accepted and RR-12 remains conditional.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

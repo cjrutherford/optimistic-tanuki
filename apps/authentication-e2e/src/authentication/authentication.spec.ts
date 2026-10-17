@@ -15,6 +15,10 @@ describe('Authentication Microservice E2E', () => {
     password: 'Test@Password123',
     confirm: 'Test@Password123',
     bio: 'Test user bio',
+    // The internal auth RPC accepts the adult assessment produced by the
+    // gateway. This fixture exercises auth mechanics with a synthetic adult;
+    // it must not create an unassessed account that login correctly blocks.
+    ageEligibilityStatus: 'adult' as const,
   };
   let authToken: string;
   let userId: string;
