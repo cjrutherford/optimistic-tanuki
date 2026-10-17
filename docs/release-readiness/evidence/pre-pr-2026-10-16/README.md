@@ -5,7 +5,8 @@
 - Intended base: `main`, fetched as `494802e5f173669cb5257cabe9fe1cf461e530a6`.
 - Reviewed merge base: `efef92fec0fee2c8cb2879e98b08d046e9f3b0a3`.
 - Final source revision checked: `a14e902c102671673cb14e9f03e05fed6fd8e9f8`.
-- The full merge-base-to-source-commit range contains 677 paths (84,265 insertions and 3,850 deletions).
+- Evidence/documentation commit: `70c5f1936be26e497110a5c4785689aab21cb728` (documentation only).
+- Final prepared PR range contains 684 paths (84,413 insertions and 3,850 deletions); the 677-path source revision contains 84,265 insertions and 3,850 deletions.
 - The initial GitHub check found no PR for this branch. No PR was created.
 - The user-owned directory-service WIP remains outside the commit and is excluded from this evidence.
 
