@@ -33,6 +33,9 @@ export declare type AuthConfigType = {
     microsoft?: OAuthProviderConfig;
     facebook?: OAuthProviderConfig;
   };
+  services?: {
+    profile?: { host: string; port: number };
+  };
 };
 
 const oauthProviders = ['google', 'github', 'microsoft', 'facebook'] as const;
@@ -167,6 +170,19 @@ const loadConfig = () => {
 
   return {
     ...configData,
+    services: {
+      ...configData.services,
+      profile: {
+        host:
+          process.env.SERVICE_PROFILE_HOST ||
+          configData.services?.profile?.host ||
+          'profile',
+        port:
+          Number(process.env.SERVICE_PROFILE_PORT) ||
+          configData.services?.profile?.port ||
+          3002,
+      },
+    },
     database: {
       ...configData.database,
       host: process.env.POSTGRES_HOST || configData.database.host,

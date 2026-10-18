@@ -8,6 +8,7 @@
 
 **Status:** Active audit / execution plan
 **2026-10-17 closeout status:** Local release-readiness repair verification passed; see [the pre-PR evidence index](./evidence/pre-pr-2026-10-16/README.md) for revision-specific gates and limitations. Directory stubs and their Compose/alias changes remain excluded by owner direction. RR-11 remains not accepted and RR-12 remains conditional.
+**2026-10-17 follow-on work:** DF-007 checkpoint A is locally verified as an internal incomplete Authentication/Profile export preview. [Findings](./findings/DF-007-A.md) and the [sanitized receipt](./evidence/df-007/checkpoint-a.json) record 81 affected test projects, 79 lint projects, 79 production build tasks, the 75-task development build, independent static GO, and 20/20 private TCP E2E tests with cleanup. Continue the [account-rights plan](../plans/2026-10-17-account-rights-implementation.md) at B1. The ownership inventory is unaccepted; portable export, deletion, media, all participants and provider/backup acceptance remain open. DF-007 and RR-11 are not accepted.
 **Product intent authority:** The owner-supplied audit and philosophy define the baseline below. RR-00 preserves that intent; runtime conformity is evaluated in later slices. Changes to product boundaries require an explicit documented owner decision/ADR.
 
 ---

@@ -12,6 +12,7 @@ export const ProfileCommands = {
   GetCover: 'Get:ProfileCover',
   SetBlogRole: 'Set:BlogRole',
   GetBlogRole: 'Get:BlogRole',
+  GetAccountExportSnapshot: 'Get:AccountExportSnapshot',
 };
 
 export const ProjectCommands = {

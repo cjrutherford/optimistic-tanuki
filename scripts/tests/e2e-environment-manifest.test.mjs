@@ -44,9 +44,17 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   assert.deepEqual(resolveE2eServices('authentication-e2e'), [
     'db',
     'db-setup',
+    'profile',
     'authentication',
   ]);
-  assert.equal(resolveE2eTarget('authentication-e2e').readiness.url, null);
+  const authentication = resolveE2eTarget('authentication-e2e');
+  assert.equal(authentication.readiness.url, null);
+  assert.equal(authentication.imageBudget.maxPullServices, 4);
+  assert.ok(
+    authentication.lifecycle.phases
+      .find((phase) => phase.name === 'dependencies')
+      .services.includes('profile')
+  );
   assert.deepEqual(resolveE2eServices('client-interface-e2e'), [
     'db',
     'db-setup',
@@ -127,6 +135,25 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'permissions-seed',
   ]);
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
+});
+
+test('dedicated Authentication E2E stack includes its authenticated Profile participant', () => {
+  const compose = readFileSync(
+    new URL(
+      '../../e2e/docker-compose.authentication-e2e.yaml',
+      import.meta.url
+    ),
+    'utf8'
+  );
+
+  assert.match(compose, /^  profile:\n/m);
+  assert.match(compose, /AUTH_AUTO_VERIFY_EMAILS: ['"]true['"]/);
+  assert.match(compose, /SERVICE_AUTHENTICATION_HOST: authentication/);
+  assert.match(compose, /SERVICE_AUTHENTICATION_PORT: 3001/);
+  assert.match(
+    compose,
+    /^  profile:\n[\s\S]*?3002:3002[\s\S]*?DATABASE_NAME: ot_profile/m
+  );
 });
 
 test('client-interface closure includes every service reached by its chat and forum routes', () => {

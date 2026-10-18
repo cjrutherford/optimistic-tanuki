@@ -17,6 +17,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import loadConfig, { ProfileConfigType } from '../config';
 import loadDatabase from './loadDatabase';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { ProfileAccountExportService } from './account-export.service';
+import { AccountExportController } from '../profiles/account-export.controller';
 
 @Module({
   imports: [
@@ -30,11 +32,17 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     }),
     LoggerModule,
   ],
-  controllers: [AppController, ProfilesController, TimelinesController],
+  controllers: [
+    AppController,
+    ProfilesController,
+    TimelinesController,
+    AccountExportController,
+  ],
   providers: [
     AppService,
     ProfileService,
     TimelineService,
+    ProfileAccountExportService,
     {
       provide: getRepositoryToken(Profile),
       useFactory: (ds: DataSource) => ds.getRepository(Profile),

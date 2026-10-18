@@ -38,6 +38,10 @@ import { GuardianPermissionEntity } from '../guardian-permissions/entities/guard
 import { GuardianPermissionService } from '../guardian-permissions/guardian-permission.service';
 import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-policy-notice.service';
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { AccountExportService } from './account-export.service';
+import { AccountExportController } from './account-export.controller';
+import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 @Module({
   imports: [
@@ -77,7 +81,7 @@ import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/gua
       },
     }),
   ],
-  controllers: [AppController, BootstrapController],
+  controllers: [AppController, BootstrapController, AccountExportController],
   providers: [
     {
       provide: JwtService,
@@ -88,6 +92,20 @@ import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/gua
       inject: [ConfigService],
     },
     AppService,
+    AccountExportService,
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.profile'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,

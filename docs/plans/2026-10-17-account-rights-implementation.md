@@ -1,0 +1,78 @@
+# Account deletion and portable export implementation plan
+
+> Execute checkpoints in order, using the existing current checkout. No worktrees. Use the delivery workflow with flat delegation and independent verification/review.
+
+**Goal:** Deliver DF-007 account-level deletion and portable JSON export across the shared platform, including media and provider/backup acceptance, before claiming availability.
+
+**Architecture:** Authentication is the account authority and intended coordinator. Owning services implement explicit export/deletion/readback participants; no generic cross-database deletion or profile-delete shortcut is permitted. Completion requires an accepted ownership inventory, every required participant, portable media and provider/backup proof. Unknown or unavailable coverage remains incomplete.
+
+**Tech stack:** Existing NestJS services, shared models/constants, TypeORM/PostgreSQL, Nx/pnpm, local Docker E2E, existing reusable Angular UI when the complete feature is ready.
+
+## Existing decisions
+
+- Delete the account's own data/content; preserve other people's content.
+- Leave deleted-account placeholders in affected conversations.
+- Export portable JSON with associated images/video; encrypted storage bytes or expiring internal URLs are not portable exports.
+- Do not expose password hashes, raw session/action/provider tokens, TOTP secrets or private key material in exports.
+- Do not introduce retained-data exceptions or describe support contact as a working deletion route.
+- Keep Gateway's current profile DELETE fail-closed until supported downstream deletion exists.
+- Preserve directory stubs and their root Compose/TypeScript alias changes unchanged and excluded.
+
+## Design alternatives considered
+
+1. Generic database cascade/profile deletion: rejected because identity/content span services, media bytes are separate, and shared records include other users' content.
+2. A new lifecycle microservice: deferred; the existing Authentication authority can coordinate without adding another deployment boundary.
+3. Explicit service participants with a durable Authentication coordinator: selected. Start with safe, internal read-only export participants, then add complete coverage and durable orchestration before public success or deletion.
+
+## Checkpoint A — Internal core export and fail-closed coverage
+
+**Status (2026-10-17):** Locally verified; see [findings](../release-readiness/findings/DF-007-A.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-a.json). This is not full DF-007 acceptance.
+
+**Owners:** existing shared models/constants; Authentication; Profile; their focused test/E2E projects.
+
+1. Add typed internal participant/snapshot contracts and versioned known participant coverage. Mark the inventory unaccepted/incomplete; the mapper found candidates across the whole workspace, not a complete ownership proof.
+2. Add a strict allowlisted Authentication identity snapshot and Profile snapshot covering all profiles owned by the account and their timelines. Missing/invalid account IDs must never become unscoped ORM predicates.
+3. Add explicit completeness evaluation: missing, failed, partial, duplicate/unknown or unverified participants cannot yield a complete export. Internal previews must remain visibly incomplete, and no downloadable artifact/public complete endpoint is enabled.
+4. Add meaningful regression tests for cross-account isolation, multi-profile coverage, secret exclusion, missing participants and service failure. Preserve the existing Gateway deletion denial/501 tests.
+5. Run pre-E2E checks below, then the smallest real Authentication/Profile integration test with controlled accounts and exact cleanup.
+6. Record the checkpoint findings and remaining coverage in the DF-007 report and master/execution references. This checkpoint does not accept DF-007 or RR-11.
+
+No schema change is needed just to read snapshots. Add a durable ledger only when implementing orchestration; use Authentication's Nx TypeORM migration generation target for any new schema.
+
+## Checkpoint B — Complete the ownership inventory and export participants
+
+- Start with B1, Authentication/Profile field classification: age eligibility, profile role, local OAuth linkage metadata, role-specific guardian records, notice/activity records, and explicit credential exclusions. Shared guardian rows need separate projections for the dependent and guardian; do not export the other person's identifiers, email, DOB, or credential fields wholesale. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.
+- Profile images can be inline data URLs, internal references, or arbitrary URLs. Checkpoint A omits them explicitly while its preview is incomplete. The complete exporter must support bounded, validated inline-image bytes and owned Assets media without fetching arbitrary URLs. Tests must use real image bytes when claiming MIME validation; a base64-encoded text string with an image MIME label is not a valid image fixture.
+- Trace account, user, profile, owner/creator references and indirect/shared relationships across every owning service. Candidate services include Social, Forum, Chat Collector, Classifieds, Assets, Videos, Workspace, Permissions, App Configurator, Blogging, Civic, Finance, Learning, Payments, Project Planning, Store and Wellness; this list is not exhaustive.
+- Implement explicit allowlists/pagination and ownership readback per participant. Authentication's basic identity snapshot is not its whole data inventory: guardian relationships/notices, provider linkage metadata and other user-facing records require classification too.
+- Add portable decrypted media streaming with bounded resource use, filenames/MIME information and a manifest. Resolve source/playback/thumbnail/manifest assets and URL references.
+- Add durable idempotent orchestration, concurrency/state rules, failure recovery and artifact access/expiry. Do not mark complete while any inventory, participant, media or provider/backup gate is open.
+
+## Checkpoint C — Deletion and readback
+
+- Implement idempotent owning-service deletion after explicit ownership/shared-content policy review.
+- Revoke sessions and prevent races during deletion; preserve coordinator retryability until all participants and readbacks succeed. Delete account credentials/keys only in an order that cannot strand recoverable media or remaining work.
+- Preserve others' content, conversation placeholders and referential integrity; remove the deleted account's content and stored media as required.
+- Validate retry after each injected failure, repeated requests, concurrent writes, zero-row acknowledgements and final independent readback. Provider/backup deletion remains required.
+
+## Checkpoint D — Shared UI and final acceptance
+
+Reuse existing account/settings controls and reusable libraries. Explain that this is a shared-account operation and show its real scope. Require account-level authorization and appropriate confirmation; no public claim or successful export/delete flow before complete backend acceptance. Validate OT and Towne Square, accessibility, failure recovery, provider/backup behavior and production configuration before accepting DF-007.
+
+## Pre-E2E gate at every implementation checkpoint
+
+Source of truth: `.github/workflows/ci-cd.yml` (`validate`, `quality`, applicable `storybook`/package/build and image checks).
+
+- Node 24, pnpm pinned by package manager; `pnpm install --frozen-lockfile`.
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false NX_NO_CLOUD=true CI=true` for local Nx checks.
+- Migration governance: `pnpm run validate:typeorm-migrations` and `node --test scripts/tests/setup-and-migrate.test.mjs`.
+- Exact workflow contracts: `node --test scripts/tests/e2e-environment-manifest.test.mjs scripts/tests/wait-for-e2e-readiness.test.mjs scripts/tests/resolve-e2e-images.test.mjs scripts/tests/ui-e2e-ci-contract.test.mjs`.
+- Nx workspace graph; workflow Playwright config collection; scoped formatting and `git diff --check`.
+- Explicit intended-file affected selection: `test -c ci`, lint (workflow excludes E2E projects; run changed E2E lint separately), production build. Exclude directory stubs without hiding real dependents. Record selected counts so zero-task runs cannot count as passes.
+- OpenAPI/Orval drift check for API/model changes; workflow UI heuristics/personality checks; Storybook tooling/build and publishable-package checks when their workflow triggers apply.
+- Build and inspect the changed local images and actual service closure before runtime E2E. No image publishing or production deployment.
+- After a cross-stack checkpoint, `pnpm run build:dev` must complete. Capture source identity, exact commands, exit codes, logs/hashes, skipped/not-run checks and independent review.
+
+## Baseline
+
+At source `6fc407676`, frozen installation, migration governance, migration setup contract, all 39 workflow E2E contracts and Nx project graph pass. Private logs: `.runtime-artifacts/account-rights/pre-e2e-baseline/`. These baseline checks do not validate future implementation.

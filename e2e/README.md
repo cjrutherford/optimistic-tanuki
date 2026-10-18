@@ -8,7 +8,7 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 
 ### Microservice E2E Tests
 
-- `docker-compose.authentication-e2e.yaml` - Authentication service tests
+- `docker-compose.authentication-e2e.yaml` - Authentication and Profile session-bound account-export tests
 - `docker-compose.blogging-e2e.yaml` - Blogging service tests
 - `docker-compose.permissions-e2e.yaml` - Permissions service tests
 - `docker-compose.profile-e2e.yaml` - Profile service tests
@@ -36,10 +36,10 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 
 ```bash
 # Start the authentication E2E environment
-docker-compose -f e2e/docker-compose.authentication-e2e.yaml up -d
+E2E_DB_PORT=5439 docker compose -f e2e/docker-compose.authentication-e2e.yaml up -d --build authentication profile
 
 # Run the E2E tests
-pnpm exec nx e2e authentication-e2e
+ACCOUNT_EXPORT_E2E_DB_MARKER=auth-profile-export-fixture-v1 ACCOUNT_EXPORT_E2E_DB_HOST=127.0.0.1 E2E_DB_PORT=5439 pnpm exec nx e2e authentication-e2e
 
 # Clean up
 docker-compose -f e2e/docker-compose.authentication-e2e.yaml down -v

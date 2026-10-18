@@ -8,6 +8,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.GOOGLE_CLIENT_ID;
     delete process.env.GOOGLE_CLIENT_SECRET;
     delete process.env.GOOGLE_REDIRECT_URI;
+    delete process.env.SERVICE_PROFILE_HOST;
+    delete process.env.SERVICE_PROFILE_PORT;
   });
 
   afterAll(() => {
@@ -45,6 +47,21 @@ describe('authentication config oauth env loading', () => {
         clientSecret: '',
       })
     );
+  });
+
+  it('loads the profile participant target from config with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.profile).toEqual({
+      host: 'profile',
+      port: 3002,
+    });
+
+    process.env.SERVICE_PROFILE_HOST = 'profile-internal';
+    process.env.SERVICE_PROFILE_PORT = '43002';
+    expect(loadConfig().services?.profile).toEqual({
+      host: 'profile-internal',
+      port: 43002,
+    });
   });
 
   it('loads yaml values and lets non-empty environment values override individual fields', async () => {

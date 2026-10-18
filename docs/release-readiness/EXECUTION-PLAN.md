@@ -14,6 +14,8 @@
 
 **2026-10-17 closeout note:** Local pre-PR repair checks pass: affected test/lint/build, the development aggregate, workflow contracts, all six originally repaired E2E targets and the additional 21-test Business Site suite. The final Forgeofwill image also passed settled light/dark accessibility checks. [The evidence index](./evidence/pre-pr-2026-10-16/README.md) records exact source identities, the final targeted correction, skips and unrun external gates. Directory stubs and their root Compose/alias changes remain excluded by owner direction. This checkpoint does not change slice acceptance or authorize launch: RR-11 remains not accepted and RR-12 remains conditional.
 
+**2026-10-17 follow-on implementation:** Work proceeds through the [status report recommendations](./STATUS-2026-10-17.md) in order. Mandatory DF-007 checkpoint A is locally verified: the internal partial Auth/Profile preview passed its pre-E2E CI gates, independent review, 75-task development build and 20/20 private TCP tests with fixture readback/teardown. See [findings](./findings/DF-007-A.md) and [receipt](./evidence/df-007/checkpoint-a.json). Continue at B1 of the [implementation plan](../plans/2026-10-17-account-rights-implementation.md). This does not accept DF-007 or RR-11; full export/deletion and the remaining ownership/media/provider/backup gates stay open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

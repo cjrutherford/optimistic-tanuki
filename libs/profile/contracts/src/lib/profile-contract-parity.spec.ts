@@ -168,6 +168,8 @@ const FIND_MANY: string[] = [ProfileCommands.GetAll, TimelineCommands.GetAll];
 
 /** Raw-string payloads — complete by definition. */
 const SCALAR: string[] = [ProfileCommands.GetBlogRole, TimelineCommands.Get];
+/** Internal object payload with strict validation at the handler boundary. */
+const OBJECT: string[] = [ProfileCommands.GetAccountExportSnapshot];
 
 /**
  * Sent or defined with no live handler (Delete), or neither sender nor
@@ -206,7 +208,7 @@ describe('profile-contract-parity', () => {
 
   it('accounts for every Profile/Timeline command key', () => {
     const coveredValues = new Set(COVERED.map((c) => c.pattern));
-    const allowed = new Set([...FIND_MANY, ...SCALAR, ...UNHANDLED]);
+    const allowed = new Set([...FIND_MANY, ...SCALAR, ...OBJECT, ...UNHANDLED]);
     for (const commands of [ProfileCommands, TimelineCommands]) {
       for (const value of Object.values(commands)) {
         expect(coveredValues.has(value) || allowed.has(value)).toBe(true);

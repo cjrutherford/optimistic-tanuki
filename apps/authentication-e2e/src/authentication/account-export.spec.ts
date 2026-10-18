@@ -1,0 +1,474 @@
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
+import { Client as PgClient } from 'pg';
+import {
+  AuthCommands,
+  ProfileCommands,
+  TimelineCommands,
+} from '@optimistic-tanuki/constants';
+import { firstValueFrom } from 'rxjs';
+
+describe('Account export session boundary over TCP', () => {
+  let authClient: ClientProxy;
+  let profileClient: ClientProxy;
+  let accountId: string;
+  let otherAccountId: string;
+  let sessionToken: string;
+  let otherSessionToken: string;
+  let ownedProfileIds: string[] = [];
+  let ownedTimelineIds: string[] = [];
+  let foreignProfileId: string;
+  let foreignTimelineId: string;
+  const fixtureEmails: string[] = [];
+  const fixtureUserIds: string[] = [];
+  const fixtureProfileIds: string[] = [];
+  const fixtureTimelineIds: string[] = [];
+
+  const registerAndLogin = async (label: string) => {
+    const email = `account-export-${label}-${Date.now()}@example.test`;
+    fixtureEmails.push(email);
+    const password = 'AccountExportE2E!123';
+    const registration = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.Register },
+        {
+          email,
+          fn: 'Export',
+          ln: label,
+          password,
+          confirm: password,
+          ageEligibilityStatus: 'adult',
+        }
+      )
+    );
+    const userId = registration?.data?.user?.id as string;
+    if (userId) fixtureUserIds.push(userId);
+    const login = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.Login },
+        { email, password, appId: 'client-interface' }
+      )
+    );
+    return { userId, token: login?.data?.newToken as string };
+  };
+
+  const expectDenied = async (payload: Record<string, unknown>) => {
+    let observedError: unknown;
+    try {
+      await firstValueFrom(
+        profileClient.send(
+          { cmd: ProfileCommands.GetAccountExportSnapshot },
+          payload
+        )
+      );
+    } catch (error) {
+      observedError = error;
+    }
+    expect(observedError).toBeDefined();
+    const serializedError = JSON.stringify(observedError);
+    expect((observedError as { message?: string })?.message).toContain(
+      'Invalid account export session'
+    );
+    expect(serializedError).not.toContain(sessionToken);
+    expect(serializedError).not.toMatch(/password|postgres|select\s+.+from/i);
+  };
+
+  const expectAuthenticationDenied = async (
+    payload: Record<string, unknown>
+  ) => {
+    let observedError: unknown;
+    try {
+      await firstValueFrom(
+        authClient.send({ cmd: AuthCommands.GetAccountExportSnapshot }, payload)
+      );
+    } catch (error) {
+      observedError = error;
+    }
+    expect(observedError).toBeDefined();
+    const serializedError = JSON.stringify(observedError);
+    expect((observedError as { message?: string })?.message).toContain(
+      'Invalid account export session'
+    );
+    expect(serializedError).not.toMatch(/password|postgres|select\s+.+from/i);
+    expect(serializedError).not.toContain(sessionToken);
+  };
+
+  const createProfile = async (userId: string, appScope: string) => {
+    const profile = await firstValueFrom(
+      profileClient.send(
+        { cmd: ProfileCommands.Create },
+        {
+          userId,
+          appScope,
+          name: `Export ${appScope}`,
+          profilePic: '',
+          coverPic: '',
+          bio: `Profile for ${appScope}`,
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+          copyPermissionsFromGlobalProfile: false,
+        }
+      )
+    );
+    if (profile?.id) fixtureProfileIds.push(profile.id);
+    return profile;
+  };
+
+  const createTimeline = async (
+    userId: string,
+    profileId: string,
+    label: string
+  ) => {
+    const timeline = await firstValueFrom(
+      profileClient.send(
+        { cmd: TimelineCommands.Create },
+        {
+          userId,
+          title: `Timeline ${label}`,
+          description: `Timeline for ${label}`,
+          timeStamp: new Date('2026-01-01T00:00:00Z'),
+          eventType: 'Posted',
+          related_profile: { id: profileId },
+        }
+      )
+    );
+    if (timeline?.id) fixtureTimelineIds.push(timeline.id);
+    return timeline;
+  };
+
+  const setInlinePng = async (id: string) =>
+    firstValueFrom(
+      profileClient.send(
+        { cmd: ProfileCommands.Update },
+        {
+          id,
+          profilePic:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pXcAAAAASUVORK5CYII=',
+          coverPic:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pXcAAAAASUVORK5CYII=',
+        }
+      )
+    );
+
+  const cleanupFixtures = async () => {
+    const host = process.env.ACCOUNT_EXPORT_E2E_DB_HOST;
+    const configuredPort = process.env.E2E_DB_PORT;
+    const port = Number(configuredPort);
+    if (
+      process.env.ACCOUNT_EXPORT_E2E_DB_MARKER !==
+        'auth-profile-export-fixture-v1' ||
+      host !== '127.0.0.1' ||
+      !configuredPort ||
+      !Number.isInteger(port) ||
+      port < 1 ||
+      port > 65535
+    ) {
+      throw new Error('Account export E2E database cleanup is not configured');
+    }
+    const authDatabase = new PgClient({
+      host,
+      port,
+      user: 'postgres',
+      password: 'postgres',
+      database: 'ot_authentication',
+    });
+    await authDatabase.connect();
+    let userIds = [...new Set(fixtureUserIds)];
+    try {
+      await authDatabase.query('BEGIN');
+      if (fixtureEmails.length > 0) {
+        const users = await authDatabase.query<{ id: string }>(
+          'SELECT id FROM user_entity WHERE email = ANY($1::varchar[])',
+          [fixtureEmails]
+        );
+        userIds = [...new Set([...userIds, ...users.rows.map(({ id }) => id)])];
+      }
+      if (userIds.length > 0) {
+        const keys = await authDatabase.query<{ id: string | null }>(
+          `SELECT id FROM key_datum WHERE "userId" = ANY($1::uuid[])
+           UNION
+           SELECT "keyDataId" AS id FROM user_entity
+           WHERE id = ANY($1::uuid[]) AND "keyDataId" IS NOT NULL`,
+          [userIds]
+        );
+        const keyIds = keys.rows
+          .map(({ id }) => id)
+          .filter((id): id is string => Boolean(id));
+        await authDatabase.query(
+          'DELETE FROM guardian_policy_notice WHERE "guardianUserId" = ANY($1::uuid[])',
+          [userIds]
+        );
+        await authDatabase.query(
+          'DELETE FROM guardian_permission WHERE "userId" = ANY($1::uuid[]) OR "guardianUserId" = ANY($1::uuid[])',
+          [userIds]
+        );
+        await authDatabase.query(
+          'DELETE FROM token WHERE "userId" = ANY($1::uuid[])',
+          [userIds]
+        );
+        await authDatabase.query(
+          'DELETE FROM auth_action_token WHERE "userId" = ANY($1::uuid[])',
+          [userIds]
+        );
+        await authDatabase.query(
+          'DELETE FROM oauth_provider WHERE "userId" = ANY($1::uuid[])',
+          [userIds]
+        );
+        await authDatabase.query(
+          'UPDATE user_entity SET "keyDataId" = NULL WHERE id = ANY($1::uuid[])',
+          [userIds]
+        );
+        if (keyIds.length > 0) {
+          await authDatabase.query(
+            'UPDATE key_datum SET "userId" = NULL WHERE id = ANY($1::uuid[])',
+            [keyIds]
+          );
+        }
+        await authDatabase.query(
+          'DELETE FROM user_entity WHERE id = ANY($1::uuid[])',
+          [userIds]
+        );
+        if (keyIds.length > 0) {
+          await authDatabase.query(
+            'DELETE FROM key_datum WHERE id = ANY($1::uuid[])',
+            [keyIds]
+          );
+        }
+      }
+      await authDatabase.query('COMMIT');
+    } catch (error) {
+      await authDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await authDatabase.end();
+    }
+
+    const profileDatabase = new PgClient({
+      host,
+      port,
+      user: 'postgres',
+      password: 'postgres',
+      database: 'ot_profile',
+    });
+    await profileDatabase.connect();
+    try {
+      await profileDatabase.query('BEGIN');
+      if (userIds.length > 0) {
+        await profileDatabase.query(
+          'DELETE FROM guardian_profile_activity WHERE "actorUserId" = ANY($1::uuid[]) OR "dependentUserId" = ANY($1::uuid[]) OR "profileId" = ANY($2::uuid[])',
+          [userIds, fixtureProfileIds]
+        );
+        await profileDatabase.query(
+          'DELETE FROM timeline WHERE id = ANY($1::uuid[]) OR "userId" = ANY($2::varchar[])',
+          [fixtureTimelineIds, userIds]
+        );
+        await profileDatabase.query(
+          'DELETE FROM profile WHERE id = ANY($1::uuid[]) OR "userId" = ANY($2::varchar[])',
+          [fixtureProfileIds, userIds]
+        );
+      }
+      await profileDatabase.query('COMMIT');
+    } catch (error) {
+      await profileDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await profileDatabase.end();
+    }
+  };
+
+  beforeAll(async () => {
+    const host = globalThis.socketConnectionOptions?.host || '127.0.0.1';
+    authClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port: 3001 },
+    });
+    profileClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port: 3002 },
+    });
+    try {
+      await Promise.all([authClient.connect(), profileClient.connect()]);
+      const first = await registerAndLogin('one');
+      const second = await registerAndLogin('two');
+      accountId = first.userId;
+      otherAccountId = second.userId;
+      sessionToken = first.token;
+      otherSessionToken = second.token;
+
+      const firstProfile = await createProfile(accountId, 'account-export-a');
+      const secondProfile = await createProfile(accountId, 'account-export-b');
+      await setInlinePng(firstProfile.id);
+      const foreignProfile = await createProfile(
+        otherAccountId,
+        'account-export-b'
+      );
+      const firstTimeline = await createTimeline(
+        accountId,
+        firstProfile.id,
+        'owned-a'
+      );
+      const secondTimeline = await createTimeline(
+        accountId,
+        secondProfile.id,
+        'owned-b'
+      );
+      const foreignTimeline = await createTimeline(
+        otherAccountId,
+        foreignProfile.id,
+        'foreign'
+      );
+      ownedProfileIds = [firstProfile.id, secondProfile.id];
+      ownedTimelineIds = [firstTimeline.id, secondTimeline.id];
+      foreignProfileId = foreignProfile.id;
+      foreignTimelineId = foreignTimeline.id;
+    } catch (error) {
+      await cleanupFixtures().catch(() => undefined);
+      throw error;
+    }
+  });
+
+  afterAll(async () => {
+    try {
+      await Promise.all(
+        [sessionToken, otherSessionToken]
+          .filter(Boolean)
+          .map((token) =>
+            firstValueFrom(
+              authClient.send({ cmd: AuthCommands.Logout }, { token })
+            ).catch(() => undefined)
+          )
+      );
+      await cleanupFixtures();
+    } finally {
+      await Promise.all([authClient?.close(), profileClient?.close()]);
+    }
+  });
+
+  it('returns a partial internal snapshot for the authenticated account without returning its token', async () => {
+    const preview = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.PreviewAccountExport },
+        {
+          accountId,
+          token: sessionToken,
+          appId: 'client-interface',
+        }
+      )
+    );
+
+    expect(preview.accountId).toBe(accountId);
+    expect(preview.complete).toBe(false);
+    expect(preview.status).toBe('EXPORT_INCOMPLETE');
+    expect(JSON.stringify(preview)).not.toContain(sessionToken);
+
+    const profileParticipant = preview.participants.find(
+      ({ participantId }) => participantId === 'profile'
+    );
+    expect(profileParticipant.data.profiles.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(ownedProfileIds)
+    );
+    expect(profileParticipant.data.profiles).toHaveLength(
+      ownedProfileIds.length
+    );
+    expect(profileParticipant.data.timelines.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(ownedTimelineIds)
+    );
+    expect(profileParticipant.data.timelines).toHaveLength(
+      ownedTimelineIds.length
+    );
+    expect(profileParticipant.data.media).toMatchObject({
+      referencesIncluded: false,
+      inlineMediaExcluded: true,
+      portableBytesIncluded: false,
+    });
+    expect(profileParticipant.uncovered).toContain(
+      'inline-profile-media-excluded'
+    );
+    expect(
+      profileParticipant.data.profiles.map(({ appScope }) => appScope)
+    ).toEqual(expect.arrayContaining(['account-export-a', 'account-export-b']));
+    expect(profileParticipant.data.profiles.map(({ id }) => id)).not.toContain(
+      foreignProfileId
+    );
+    expect(profileParticipant.data.timelines.map(({ id }) => id)).not.toContain(
+      foreignTimelineId
+    );
+
+    const directProfileSnapshot = await firstValueFrom(
+      profileClient.send(
+        { cmd: ProfileCommands.GetAccountExportSnapshot },
+        { accountId, token: sessionToken, appId: 'client-interface' }
+      )
+    );
+    expect(directProfileSnapshot.data.profiles.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(ownedProfileIds)
+    );
+    expect(directProfileSnapshot.data.timelines.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(ownedTimelineIds)
+    );
+  });
+
+  it('binds the direct Authentication snapshot command to a validated session subject', async () => {
+    const snapshot = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.GetAccountExportSnapshot },
+        { accountId, token: sessionToken, appId: 'client-interface' }
+      )
+    );
+
+    expect(snapshot.accountId).toBe(accountId);
+    expect(snapshot.status).toBe('partial');
+    expect(JSON.stringify(snapshot)).not.toContain(sessionToken);
+    await expectAuthenticationDenied({
+      accountId,
+      appId: 'client-interface',
+    });
+    await expectAuthenticationDenied({
+      accountId,
+      token: 'invalid-session-token',
+      appId: 'client-interface',
+    });
+    await expectAuthenticationDenied({ accountId, token: sessionToken });
+    await expectAuthenticationDenied({
+      accountId: otherAccountId,
+      token: sessionToken,
+      appId: 'client-interface',
+    });
+  });
+
+  it('rejects missing credentials, missing scope, invalid sessions, and a different account subject', async () => {
+    await expectDenied({ accountId, appId: 'client-interface' });
+    await expectDenied({ accountId, token: sessionToken });
+    await expectDenied({
+      accountId,
+      token: 'invalid-session-token',
+      appId: 'client-interface',
+    });
+    await expectDenied({
+      accountId: otherAccountId,
+      token: sessionToken,
+      appId: 'client-interface',
+    });
+  });
+
+  it('rejects the session after Authentication revokes it', async () => {
+    await firstValueFrom(
+      authClient.send({ cmd: AuthCommands.Logout }, { token: sessionToken })
+    );
+    await expectDenied({
+      accountId,
+      token: sessionToken,
+      appId: 'client-interface',
+    });
+    await expectAuthenticationDenied({
+      accountId,
+      token: sessionToken,
+      appId: 'client-interface',
+    });
+  });
+});
