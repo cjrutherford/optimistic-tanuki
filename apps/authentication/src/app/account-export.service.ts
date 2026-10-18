@@ -9,7 +9,11 @@ import {
   ACCOUNT_EXPORT_PREVIEW_BUDGETS,
   evaluateAccountExportCompleteness,
 } from '@optimistic-tanuki/models';
-import { ProfileCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  PermissionCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
 import validator from 'validator';
 import { Repository } from 'typeorm';
@@ -25,6 +29,21 @@ const MAX_STRING_FIELD_CHARACTERS =
   ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxStringFieldCharacters;
 const MAX_PARTICIPANT_BYTES =
   ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxParticipantSerializedBytes;
+const PERMISSIONS_UNCOVERED_MARKERS = new Set([
+  'permissions-role-assignment-preview',
+  'profile-id-pages-unfenced',
+  'shared-role-scope-permission-definitions-uncovered',
+  'target-resources-uncovered',
+  'profile-id-page-invalid',
+  'role-assignment-read-failed',
+  'profile-or-assignment-row-malformed-or-foreign',
+  'profile-id-preview-limit-exceeded',
+  'role-assignment-preview-limit-exceeded',
+  'permission-preview-time-budget-exceeded',
+  'permission-preview-string-limit-exceeded',
+  'permission-preview-response-budget-exceeded',
+  'permission-preview-data-omitted-for-budget',
+]);
 const MAX_COMBINED_PREVIEW_BYTES =
   ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxCombinedPreviewSerializedBytes;
 const IDENTITY_FIELDS = [
@@ -74,6 +93,8 @@ export class AccountExportService {
     private readonly actionRepository: Repository<AuthActionTokenEntity>,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy,
     private readonly appService: AppService
   ) {}
 
@@ -401,6 +422,61 @@ export class AccountExportService {
     }
 
     const participants = [authentication, profile];
+    let permissions: AccountExportParticipantSnapshot;
+    try {
+      const response = await firstValueFrom(
+        this.permissionsClient
+          .send(
+            { cmd: PermissionCommands.GetAccountExportSnapshot },
+            { accountId, token, appId }
+          )
+          .pipe(timeout({ first: PROFILE_RPC_TIMEOUT_MS }))
+      );
+      if (
+        !response ||
+        response.contractVersion !== ACCOUNT_EXPORT_CONTRACT_VERSION ||
+        response.participantId !== 'permissions' ||
+        response.accountId !== accountId ||
+        response.status !== 'partial' ||
+        !Array.isArray(response.uncovered) ||
+        !response.uncovered.every(
+          (marker: unknown) =>
+            typeof marker === 'string' &&
+            PERMISSIONS_UNCOVERED_MARKERS.has(marker)
+        ) ||
+        typeof response.data !== 'object' ||
+        response.data === null
+      )
+        throw new Error('invalid participant response');
+      permissions = response as AccountExportParticipantSnapshot;
+      if (
+        containsOversizedString(permissions.data) ||
+        Buffer.byteLength(JSON.stringify(permissions), 'utf8') >
+          MAX_PARTICIPANT_BYTES
+      ) {
+        permissions = {
+          contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+          participantId: 'permissions',
+          accountId,
+          status: 'partial',
+          uncovered: [
+            ...permissions.uncovered,
+            'participant-payload-omitted-for-budget',
+          ],
+          data: {},
+        };
+      }
+    } catch {
+      permissions = {
+        contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+        participantId: 'permissions',
+        accountId,
+        status: 'failed',
+        uncovered: ['participant-unavailable'],
+        data: {},
+      };
+    }
+    participants.push(permissions);
     let uncovered: string[] = [];
     let dataOmittedForBudget = false;
     let preview = {

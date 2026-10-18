@@ -5,6 +5,7 @@ export const PermissionCommands = {
   Get: 'Get:Permission',
   GetAll: 'GetAll:Permission',
   Search: 'Search:Permission',
+  GetAccountExportSnapshot: 'Get:AccountExportSnapshot:Permissions',
 };
 
 export const RoleCommands = {

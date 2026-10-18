@@ -169,7 +169,10 @@ const FIND_MANY: string[] = [ProfileCommands.GetAll, TimelineCommands.GetAll];
 /** Raw-string payloads — complete by definition. */
 const SCALAR: string[] = [ProfileCommands.GetBlogRole, TimelineCommands.Get];
 /** Internal object payload with strict validation at the handler boundary. */
-const OBJECT: string[] = [ProfileCommands.GetAccountExportSnapshot];
+const OBJECT: string[] = [
+  ProfileCommands.GetAccountExportSnapshot,
+  ProfileCommands.GetOwnedAccountProfileIdPage,
+];
 
 /**
  * Sent or defined with no live handler (Delete), or neither sender nor

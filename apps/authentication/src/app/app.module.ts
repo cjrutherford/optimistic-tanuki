@@ -106,6 +106,19 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
       },
       inject: [ConfigService],
     },
+    {
+      provide: ServiceTokens.PERMISSIONS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const target = configService.get<{ host: string; port: number }>(
+          'services.permissions'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: target,
+        });
+      },
+      inject: [ConfigService],
+    },
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,

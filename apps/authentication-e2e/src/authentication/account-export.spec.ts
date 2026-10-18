@@ -15,6 +15,7 @@ import { firstValueFrom } from 'rxjs';
 describe('Account export session boundary over TCP', () => {
   let authClient: ClientProxy;
   let profileClient: ClientProxy;
+  let permissionsClient: ClientProxy;
   let accountId: string;
   let otherAccountId: string;
   let sessionToken: string;
@@ -32,6 +33,13 @@ describe('Account export session boundary over TCP', () => {
   const fixtureGuardianNoticeId = randomUUID();
   const fixtureActionTokenId = randomUUID();
   const fixtureActivityIds = [randomUUID(), randomUUID()].sort();
+  const fixtureRoleAssignmentIds = [
+    randomUUID(),
+    randomUUID(),
+    randomUUID(),
+  ].sort();
+  const fixtureRoleId = randomUUID();
+  const fixtureAppScopeId = randomUUID();
 
   const registerAndLogin = async (label: string) => {
     const email = `account-export-${label}-${Date.now()}@example.test`;
@@ -169,6 +177,9 @@ describe('Account export session boundary over TCP', () => {
       process.env.ACCOUNT_EXPORT_E2E_DB_MARKER !==
         'auth-profile-export-fixture-v1' ||
       host !== '127.0.0.1' ||
+      !['ot_authentication', 'ot_profile', 'ot_permissions'].includes(
+        database
+      ) ||
       !configuredPort ||
       !Number.isInteger(port) ||
       port < 1 ||
@@ -177,6 +188,81 @@ describe('Account export session boundary over TCP', () => {
       throw new Error('Account export E2E database fixture is not configured');
     }
     return { host, port, user: 'postgres', password: 'postgres', database };
+  };
+
+  const insertPermissionFixtures = async (
+    ownProfileIds: string[],
+    foreignProfile: string
+  ) => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_permissions'));
+    await database.connect();
+    try {
+      await database.query('BEGIN');
+      await database.query(
+        'INSERT INTO app_scope (id, name, description, active, created_at) VALUES ($1::uuid, $2, $3, true, now())',
+        [
+          fixtureAppScopeId,
+          `account-export-${fixtureAppScopeId}`,
+          'Generated account export fixture',
+        ]
+      );
+      await database.query(
+        'INSERT INTO role (id, name, description, "appScopeId", created_at) VALUES ($1::uuid, $2, $3, $4::uuid, now())',
+        [
+          fixtureRoleId,
+          `account-export-${fixtureRoleId}`,
+          'Generated account export fixture role',
+          fixtureAppScopeId,
+        ]
+      );
+      await database.query(
+        `INSERT INTO role_assignment (id, "profileId", "targetId", "roleId", "appScopeId", created_at)
+         VALUES ($1::uuid, $2, NULL, $4::uuid, $5::uuid, now()),
+                ($3::uuid, $6, NULL, $4::uuid, $5::uuid, now()),
+                ($7::uuid, $8, NULL, $4::uuid, $5::uuid, now())`,
+        [
+          fixtureRoleAssignmentIds[0],
+          ownProfileIds[0],
+          fixtureRoleAssignmentIds[1],
+          fixtureRoleId,
+          fixtureAppScopeId,
+          ownProfileIds[1],
+          fixtureRoleAssignmentIds[2],
+          foreignProfile,
+        ]
+      );
+      await database.query('COMMIT');
+    } catch (error) {
+      await database.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await database.end();
+    }
+  };
+
+  const expectPermissionFixturesPersisted = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_permissions'));
+    await database.connect();
+    try {
+      const assignments = await database.query<{
+        id: string;
+        profileId: string;
+      }>(
+        'SELECT id, "profileId" FROM role_assignment WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureRoleAssignmentIds]
+      );
+      expect(assignments.rowCount).toBe(3);
+      expect(
+        assignments.rows.some(({ profileId }) => profileId === foreignProfileId)
+      ).toBe(true);
+      const definitions = await database.query(
+        'SELECT id FROM role WHERE id = $1::uuid UNION ALL SELECT id FROM app_scope WHERE id = $2::uuid',
+        [fixtureRoleId, fixtureAppScopeId]
+      );
+      expect(definitions.rowCount).toBe(2);
+    } finally {
+      await database.end();
+    }
   };
 
   const insertOAuthProviderFixtures = async () => {
@@ -284,6 +370,36 @@ describe('Account export session boundary over TCP', () => {
   };
 
   const cleanupFixtures = async () => {
+    const permissionsDatabase = new PgClient(
+      getFixtureDatabaseOptions('ot_permissions')
+    );
+    await permissionsDatabase.connect();
+    try {
+      await permissionsDatabase.query('BEGIN');
+      await permissionsDatabase.query(
+        'DELETE FROM role_assignment WHERE id = ANY($1::uuid[])',
+        [fixtureRoleAssignmentIds]
+      );
+      await permissionsDatabase.query('DELETE FROM role WHERE id = $1::uuid', [
+        fixtureRoleId,
+      ]);
+      await permissionsDatabase.query(
+        'DELETE FROM app_scope WHERE id = $1::uuid',
+        [fixtureAppScopeId]
+      );
+      await permissionsDatabase.query('COMMIT');
+      const rows = await permissionsDatabase.query(
+        'SELECT id FROM role_assignment WHERE id = ANY($1::uuid[]) UNION ALL SELECT id FROM role WHERE id = $2::uuid UNION ALL SELECT id FROM app_scope WHERE id = $3::uuid',
+        [fixtureRoleAssignmentIds, fixtureRoleId, fixtureAppScopeId]
+      );
+      expect(rows.rowCount).toBe(0);
+    } catch (error) {
+      await permissionsDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await permissionsDatabase.end();
+    }
+
     const authDatabase = new PgClient(
       getFixtureDatabaseOptions('ot_authentication')
     );
@@ -417,8 +533,16 @@ describe('Account export session boundary over TCP', () => {
       transport: Transport.TCP,
       options: { host, port: 3002 },
     });
+    permissionsClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port: 3012 },
+    });
     try {
-      await Promise.all([authClient.connect(), profileClient.connect()]);
+      await Promise.all([
+        authClient.connect(),
+        profileClient.connect(),
+        permissionsClient.connect(),
+      ]);
       const first = await registerAndLogin('one');
       const second = await registerAndLogin('two');
       accountId = first.userId;
@@ -434,6 +558,11 @@ describe('Account export session boundary over TCP', () => {
       const foreignProfile = await createProfile(
         otherAccountId,
         'account-export-b'
+      );
+      foreignProfileId = foreignProfile.id;
+      await insertPermissionFixtures(
+        [firstProfile.id, secondProfile.id],
+        foreignProfile.id
       );
       await insertGuardianExportFixtures(firstProfile.id, foreignProfile.id);
       const firstTimeline = await createTimeline(
@@ -453,7 +582,6 @@ describe('Account export session boundary over TCP', () => {
       );
       ownedProfileIds = [firstProfile.id, secondProfile.id];
       ownedTimelineIds = [firstTimeline.id, secondTimeline.id];
-      foreignProfileId = foreignProfile.id;
       foreignTimelineId = foreignTimeline.id;
     } catch (error) {
       await cleanupFixtures().catch(() => undefined);
@@ -474,7 +602,11 @@ describe('Account export session boundary over TCP', () => {
       );
       await cleanupFixtures();
     } finally {
-      await Promise.all([authClient?.close(), profileClient?.close()]);
+      await Promise.all([
+        authClient?.close(),
+        profileClient?.close(),
+        permissionsClient?.close(),
+      ]);
     }
   });
 
@@ -523,6 +655,24 @@ describe('Account export session boundary over TCP', () => {
       inlineMediaExcluded: true,
       portableBytesIncluded: false,
     });
+    const permissionsParticipant = preview.participants.find(
+      ({ participantId }) => participantId === 'permissions'
+    );
+    expect(permissionsParticipant.status).toBe('partial');
+    expect(permissionsParticipant.uncovered).toContain(
+      'profile-id-pages-unfenced'
+    );
+    expect(
+      permissionsParticipant.data.assignments.map(({ profileId }) => profileId)
+    ).toEqual(expect.arrayContaining(ownedProfileIds));
+    expect(permissionsParticipant.data.assignments).toHaveLength(2);
+    expect(
+      permissionsParticipant.data.assignments.map(({ id }) => id)
+    ).not.toContain(fixtureRoleAssignmentIds[2]);
+    expect(JSON.stringify(permissionsParticipant)).not.toContain(
+      foreignProfileId
+    );
+    await expectPermissionFixturesPersisted();
     const authenticationParticipant = preview.participants.find(
       ({ participantId }) => participantId === 'authentication'
     );

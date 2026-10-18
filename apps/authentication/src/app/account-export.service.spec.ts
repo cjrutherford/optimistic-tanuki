@@ -27,6 +27,7 @@ describe('AccountExportService', () => {
   const noticeRepository = { find: jest.fn() };
   const actionRepository = { find: jest.fn() };
   const profileClient = { send: jest.fn() };
+  const permissionsClient = { send: jest.fn() };
   const appService = { validateToken: jest.fn() };
   let service: AccountExportService;
 
@@ -47,6 +48,16 @@ describe('AccountExportService', () => {
         data: { profiles: [], timelines: [] },
       })
     );
+    permissionsClient.send.mockReturnValue(
+      of({
+        contractVersion: 1,
+        participantId: 'permissions',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: ['profile-id-pages-unfenced'],
+        data: { assignments: [] },
+      })
+    );
     appService.validateToken.mockResolvedValue({
       isValid: true,
       data: { userId: ACCOUNT_ID, appId: 'client-interface' },
@@ -58,6 +69,7 @@ describe('AccountExportService', () => {
       noticeRepository as never,
       actionRepository as never,
       profileClient as never,
+      permissionsClient as never,
       appService as never
     );
   });
@@ -589,6 +601,7 @@ describe('AccountExportService', () => {
     expect(noticeRepository.find).not.toHaveBeenCalled();
     expect(actionRepository.find).not.toHaveBeenCalled();
     expect(profileClient.send).not.toHaveBeenCalled();
+    expect(permissionsClient.send).not.toHaveBeenCalled();
     expect(appService.validateToken).not.toHaveBeenCalled();
   });
 
@@ -688,6 +701,77 @@ describe('AccountExportService', () => {
     });
   });
 
+  it('turns unavailable and cross-account Permissions replies into sanitized failures', async () => {
+    permissionsClient.send.mockReturnValueOnce(
+      throwError(() => new Error('private database connection details'))
+    );
+    const unavailable = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(unavailable.coverage.blockers).toContain(
+      'failed-participant:permissions'
+    );
+    expect(JSON.stringify(unavailable)).not.toContain(
+      'private database connection details'
+    );
+
+    permissionsClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'permissions',
+        accountId: OTHER_ACCOUNT_ID,
+        status: 'complete',
+        uncovered: [],
+        data: { assignments: [] },
+      })
+    );
+    const foreign = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(foreign.coverage.blockers).toContain(
+      'failed-participant:permissions'
+    );
+    expect(
+      foreign.participants.find(
+        ({ participantId }) => participantId === 'permissions'
+      )
+    ).toMatchObject({
+      status: 'failed',
+      uncovered: ['participant-unavailable'],
+    });
+  });
+
+  it('does not echo an unrecognized Permissions marker into the account preview', async () => {
+    permissionsClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'permissions',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: [SESSION_TOKEN],
+        data: { assignments: [] },
+      })
+    );
+    const preview = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(JSON.stringify(preview)).not.toContain(SESSION_TOKEN);
+    expect(
+      preview.participants.find(
+        ({ participantId }) => participantId === 'permissions'
+      )
+    ).toMatchObject({
+      status: 'failed',
+      uncovered: ['participant-unavailable'],
+    });
+  });
+
   it('omits participant payloads when the combined preview exceeds its byte budget', async () => {
     profileClient.send.mockReturnValue(
       of({
@@ -696,11 +780,17 @@ describe('AccountExportService', () => {
         accountId: ACCOUNT_ID,
         status: 'partial',
         uncovered: [],
-        data: {
-          payload: 'x'.repeat(
-            ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxCombinedPreviewSerializedBytes
-          ),
-        },
+        data: { payload: Array.from({ length: 173 }, () => 'x'.repeat(3025)) },
+      })
+    );
+    permissionsClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'permissions',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: [],
+        data: { payload: Array.from({ length: 173 }, () => 'y'.repeat(3025)) },
       })
     );
 

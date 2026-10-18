@@ -10,6 +10,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.GOOGLE_REDIRECT_URI;
     delete process.env.SERVICE_PROFILE_HOST;
     delete process.env.SERVICE_PROFILE_PORT;
+    delete process.env.SERVICE_PERMISSIONS_HOST;
+    delete process.env.SERVICE_PERMISSIONS_PORT;
   });
 
   afterAll(() => {
@@ -61,6 +63,20 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.profile).toEqual({
       host: 'profile-internal',
       port: 43002,
+    });
+  });
+
+  it('loads the Permissions participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.permissions).toEqual({
+      host: 'permissions',
+      port: 3012,
+    });
+    process.env.SERVICE_PERMISSIONS_HOST = 'permissions-internal';
+    process.env.SERVICE_PERMISSIONS_PORT = '43012';
+    expect(loadConfig().services?.permissions).toEqual({
+      host: 'permissions-internal',
+      port: 43012,
     });
   });
 

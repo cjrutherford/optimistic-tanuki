@@ -28,6 +28,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions
     depends_on:
       db:
         condition: service_healthy
@@ -50,6 +51,8 @@ services:
       AUTH_AUTO_VERIFY_EMAILS: 'true'
       SERVICE_PROFILE_HOST: profile
       SERVICE_PROFILE_PORT: 3002
+      SERVICE_PERMISSIONS_HOST: permissions
+      SERVICE_PERMISSIONS_PORT: 3012
     depends_on:
       db:
         condition: service_healthy
@@ -78,4 +81,30 @@ services:
       db-setup:
         condition: service_completed_successfully
       authentication:
+        condition: service_started
+
+  permissions:
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - '3012:3012'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_permissions
+      SERVICE_AUTHENTICATION_HOST: authentication
+      SERVICE_AUTHENTICATION_PORT: 3001
+      SERVICE_PROFILE_HOST: profile
+      SERVICE_PROFILE_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      authentication:
+        condition: service_started
+      profile:
         condition: service_started

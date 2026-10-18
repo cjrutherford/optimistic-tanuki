@@ -45,15 +45,17 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'db',
     'db-setup',
     'profile',
+    'permissions',
     'authentication',
   ]);
   const authentication = resolveE2eTarget('authentication-e2e');
   assert.equal(authentication.readiness.url, null);
-  assert.equal(authentication.imageBudget.maxPullServices, 4);
-  assert.ok(
-    authentication.lifecycle.phases
-      .find((phase) => phase.name === 'dependencies')
-      .services.includes('profile')
+  assert.equal(authentication.imageBudget.maxPullServices, 5);
+  assert.deepEqual(
+    authentication.lifecycle.phases.find(
+      (phase) => phase.name === 'dependencies'
+    ).services,
+    ['profile', 'permissions']
   );
   assert.deepEqual(resolveE2eServices('client-interface-e2e'), [
     'db',
@@ -137,7 +139,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });
 
-test('dedicated Authentication E2E stack includes its authenticated Profile participant', () => {
+test('dedicated Authentication E2E stack includes Profile and Permissions participants', () => {
   const compose = readFileSync(
     new URL(
       '../../e2e/docker-compose.authentication-e2e.yaml',
@@ -147,9 +149,16 @@ test('dedicated Authentication E2E stack includes its authenticated Profile part
   );
 
   assert.match(compose, /^  profile:\n/m);
+  assert.match(compose, /^  permissions:\n/m);
   assert.match(compose, /AUTH_AUTO_VERIFY_EMAILS: ['"]true['"]/);
   assert.match(compose, /SERVICE_AUTHENTICATION_HOST: authentication/);
   assert.match(compose, /SERVICE_AUTHENTICATION_PORT: 3001/);
+  assert.match(compose, /SERVICE_PERMISSIONS_HOST: permissions/);
+  assert.match(compose, /SERVICE_PROFILE_HOST: profile/);
+  assert.match(
+    compose,
+    /ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions/
+  );
   assert.match(
     compose,
     /^  profile:\n[\s\S]*?3002:3002[\s\S]*?DATABASE_NAME: ot_profile/m

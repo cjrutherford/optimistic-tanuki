@@ -35,6 +35,7 @@ export declare type AuthConfigType = {
   };
   services?: {
     profile?: { host: string; port: number };
+    permissions?: { host: string; port: number };
   };
 };
 
@@ -181,6 +182,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_PROFILE_PORT) ||
           configData.services?.profile?.port ||
           3002,
+      },
+      permissions: {
+        host:
+          process.env.SERVICE_PERMISSIONS_HOST ||
+          configData.services?.permissions?.host ||
+          'permissions',
+        port:
+          Number(process.env.SERVICE_PERMISSIONS_PORT) ||
+          configData.services?.permissions?.port ||
+          3012,
       },
     },
     database: {

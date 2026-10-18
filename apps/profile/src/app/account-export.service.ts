@@ -9,11 +9,14 @@ import {
   ACCOUNT_EXPORT_CONTRACT_VERSION,
 } from '@optimistic-tanuki/models';
 import validator from 'validator';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Profile } from '../profiles/entities/profile.entity';
 import { Timeline } from '../timelines/entities/timeline.entity';
 import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
+import type { OwnedAccountProfileIdPage } from '@optimistic-tanuki/profile-contracts';
+
+const MAX_PROFILE_ID_PAGE_SIZE = 100;
 
 const MAX_PREVIEW_RECORDS = 1000;
 const AUTH_VALIDATION_TIMEOUT_MS = 3000;
@@ -59,6 +62,68 @@ export class ProfileAccountExportService {
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy
   ) {}
+
+  async getOwnedProfileIdPage(request: {
+    accountId?: unknown;
+    token?: unknown;
+    appId?: unknown;
+    afterId?: unknown;
+    limit?: unknown;
+  }): Promise<OwnedAccountProfileIdPage> {
+    const { accountId, token, appId, afterId, limit } = request ?? {};
+    if (typeof accountId !== 'string' || !validator.isUUID(accountId, 4)) {
+      throw new RpcException('Invalid account export subject');
+    }
+    if (
+      (afterId !== undefined &&
+        (typeof afterId !== 'string' || !validator.isUUID(afterId, 4))) ||
+      typeof limit !== 'number' ||
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > MAX_PROFILE_ID_PAGE_SIZE
+    ) {
+      throw new RpcException('Invalid account profile page request');
+    }
+    await this.assertAuthenticatedSubject(accountId, token, appId);
+    let rows: Profile[];
+    try {
+      rows = await this.profileRepository.find({
+        where: {
+          userId: accountId,
+          ...(afterId ? { id: MoreThan<string>(afterId as string) } : {}),
+        },
+        select: ['id', 'userId'],
+        order: { id: 'ASC' },
+        take: limit + 1,
+      });
+    } catch {
+      throw new RpcException('Profile identity page unavailable');
+    }
+    const seen = new Set<string>();
+    let previous = typeof afterId === 'string' ? afterId : '';
+    for (const row of rows) {
+      if (
+        row.userId !== accountId ||
+        typeof row.id !== 'string' ||
+        !validator.isUUID(row.id, 4) ||
+        (previous && row.id <= previous) ||
+        seen.has(row.id)
+      ) {
+        throw new RpcException('Malformed profile identity page');
+      }
+      seen.add(row.id);
+      previous = row.id;
+    }
+    const hasMore = rows.length > limit;
+    const profileIds = rows.slice(0, limit).map(({ id }) => id);
+    return {
+      accountId,
+      profileIds,
+      hasMore,
+      nextCursor: hasMore ? profileIds[profileIds.length - 1] ?? null : null,
+      unfenced: true,
+    };
+  }
 
   async getAccountExportSnapshot(
     accountId: unknown,

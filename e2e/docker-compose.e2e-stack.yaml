@@ -65,6 +65,8 @@ services:
       JWT_SECRET: e2e-test-jwt-secret
       SERVICE_PROFILE_HOST: profile
       SERVICE_PROFILE_PORT: 3002
+      SERVICE_PERMISSIONS_HOST: permissions
+      SERVICE_PERMISSIONS_PORT: 3012
     depends_on:
       db:
         condition: service_healthy

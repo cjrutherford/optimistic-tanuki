@@ -13,7 +13,24 @@ export const ProfileCommands = {
   SetBlogRole: 'Set:BlogRole',
   GetBlogRole: 'Get:BlogRole',
   GetAccountExportSnapshot: 'Get:AccountExportSnapshot',
+  GetOwnedAccountProfileIdPage: 'Get:OwnedAccountProfileIdPage',
 };
+
+export interface OwnedAccountProfileIdPageRequest {
+  accountId: string;
+  token: string;
+  appId: string;
+  afterId?: string;
+  limit: number;
+}
+
+export interface OwnedAccountProfileIdPage {
+  accountId: string;
+  profileIds: string[];
+  hasMore: boolean;
+  nextCursor: string | null;
+  unfenced: true;
+}
 
 export const ProjectCommands = {
   Create: 'Create:Project',

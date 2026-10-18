@@ -108,6 +108,130 @@ describe('ProfileAccountExportService', () => {
     ]);
   });
 
+  it('returns a bounded unfenced owned-profile ID page with a stable cursor', async () => {
+    profileRepository.find.mockResolvedValueOnce([
+      { id: '10000000-0000-4000-8000-000000000001', userId: ACCOUNT_ID },
+      { id: '10000000-0000-4000-8000-000000000002', userId: ACCOUNT_ID },
+      { id: '10000000-0000-4000-8000-000000000003', userId: ACCOUNT_ID },
+    ]);
+
+    const page = await service.getOwnedProfileIdPage({
+      accountId: ACCOUNT_ID,
+      token: SESSION_TOKEN,
+      appId: 'client-interface',
+      limit: 2,
+    });
+
+    expect(page).toEqual({
+      accountId: ACCOUNT_ID,
+      profileIds: [
+        '10000000-0000-4000-8000-000000000001',
+        '10000000-0000-4000-8000-000000000002',
+      ],
+      hasMore: true,
+      nextCursor: '10000000-0000-4000-8000-000000000002',
+      unfenced: true,
+    });
+    expect(profileRepository.find).toHaveBeenCalledWith({
+      where: { userId: ACCOUNT_ID },
+      select: ['id', 'userId'],
+      order: { id: 'ASC' },
+      take: 3,
+    });
+  });
+
+  it('rejects invalid page requests before querying profiles', async () => {
+    await expect(
+      service.getOwnedProfileIdPage({
+        accountId: ACCOUNT_ID,
+        token: SESSION_TOKEN,
+        appId: 'client-interface',
+        afterId: 'not-a-uuid',
+        limit: 10,
+      })
+    ).rejects.toBeDefined();
+    await expect(
+      service.getOwnedProfileIdPage({
+        accountId: ACCOUNT_ID,
+        token: SESSION_TOKEN,
+        appId: 'client-interface',
+        limit: 101,
+      })
+    ).rejects.toBeDefined();
+    expect(profileRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('does not read profile IDs for an invalid session', async () => {
+    authClient.send.mockReturnValueOnce(
+      of({ isValid: true, data: { userId: OTHER_ACCOUNT_ID } })
+    );
+    await expect(
+      service.getOwnedProfileIdPage({
+        accountId: ACCOUNT_ID,
+        token: SESSION_TOKEN,
+        appId: 'client-interface',
+        limit: 10,
+      })
+    ).rejects.toBeDefined();
+    expect(profileRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('rejects foreign or malformed identity rows rather than returning them', async () => {
+    profileRepository.find.mockResolvedValueOnce([
+      { id: '10000000-0000-4000-8000-000000000001', userId: OTHER_ACCOUNT_ID },
+    ]);
+    await expect(
+      service.getOwnedProfileIdPage({
+        accountId: ACCOUNT_ID,
+        token: SESSION_TOKEN,
+        appId: 'client-interface',
+        limit: 10,
+      })
+    ).rejects.toBeDefined();
+  });
+
+  it('rejects duplicate, unordered, and invalid owned profile IDs', async () => {
+    const validId = '10000000-0000-4000-8000-000000000001';
+    for (const rows of [
+      [
+        { id: validId, userId: ACCOUNT_ID },
+        { id: validId, userId: ACCOUNT_ID },
+      ],
+      [
+        { id: '10000000-0000-4000-8000-000000000002', userId: ACCOUNT_ID },
+        { id: validId, userId: ACCOUNT_ID },
+      ],
+      [{ id: 'malformed-id', userId: ACCOUNT_ID }],
+    ]) {
+      profileRepository.find.mockResolvedValueOnce(rows);
+      await expect(
+        service.getOwnedProfileIdPage({
+          accountId: ACCOUNT_ID,
+          token: SESSION_TOKEN,
+          appId: 'client-interface',
+          limit: 10,
+        })
+      ).rejects.toBeDefined();
+    }
+  });
+
+  it('uses the cursor predicate for a subsequent identity page', async () => {
+    const cursor = '10000000-0000-4000-8000-000000000001';
+    profileRepository.find.mockResolvedValueOnce([]);
+    await service.getOwnedProfileIdPage({
+      accountId: ACCOUNT_ID,
+      token: SESSION_TOKEN,
+      appId: 'client-interface',
+      afterId: cursor,
+      limit: 10,
+    });
+    expect(profileRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: ACCOUNT_ID, id: expect.anything() },
+      })
+    );
+  });
+
   it('omits owner-matched activity rows with an unsupported operation', async () => {
     profileRepository.find
       .mockResolvedValueOnce([])
