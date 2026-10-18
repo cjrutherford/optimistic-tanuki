@@ -14,6 +14,11 @@ describe('SocialAccountExportService', () => {
   const vote = repo();
   const attachment = repo();
   const poll = repo();
+  const savedItems = repo();
+  const searchHistory = repo();
+  const follows = repo();
+  const blocks = repo();
+  const mutes = repo();
   const auth = { send: jest.fn().mockReturnValue(of({})) };
   const profiles = { send: jest.fn().mockReturnValue(of({})) };
 
@@ -91,6 +96,11 @@ describe('SocialAccountExportService', () => {
       vote as never,
       attachment as never,
       poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
       auth as never,
       profiles as never
     );
@@ -171,6 +181,11 @@ describe('SocialAccountExportService', () => {
       vote as never,
       attachment as never,
       poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
       auth as never,
       profiles as never
     );
@@ -215,6 +230,11 @@ describe('SocialAccountExportService', () => {
       vote as never,
       attachment as never,
       poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
       auth as never,
       profiles as never
     );
@@ -223,7 +243,21 @@ describe('SocialAccountExportService', () => {
     ).rejects.toThrow();
     expect(auth.send).not.toHaveBeenCalled();
     expect(profiles.send).not.toHaveBeenCalled();
-    expect(post.find).not.toHaveBeenCalled();
+    expect(
+      [
+        post,
+        comment,
+        reaction,
+        vote,
+        attachment,
+        poll,
+        savedItems,
+        searchHistory,
+        follows,
+        blocks,
+        mutes,
+      ].every((repository) => repository.find.mock.calls.length === 0)
+    ).toBe(true);
   });
 
   it('returns an explicit partial diagnostic and performs no reads when Profile identity resolution fails', async () => {
@@ -240,6 +274,11 @@ describe('SocialAccountExportService', () => {
       vote as never,
       attachment as never,
       poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
       auth as never,
       profiles as never
     );
@@ -257,6 +296,11 @@ describe('SocialAccountExportService', () => {
         vote.find,
         attachment.find,
         poll.find,
+        savedItems.find,
+        searchHistory.find,
+        follows.find,
+        blocks.find,
+        mutes.find,
       ].every((find) => find.mock.calls.length === 0)
     ).toBe(true);
   });
@@ -314,6 +358,11 @@ describe('SocialAccountExportService', () => {
         vote as never,
         attachment as never,
         poll as never,
+        savedItems as never,
+        searchHistory as never,
+        follows as never,
+        blocks as never,
+        mutes as never,
         auth as never,
         profiles as never
       );
@@ -333,6 +382,11 @@ describe('SocialAccountExportService', () => {
           vote.find,
           attachment.find,
           poll.find,
+          savedItems.find,
+          searchHistory.find,
+          follows.find,
+          blocks.find,
+          mutes.find,
         ].every((find) => find.mock.calls.length === 0)
       ).toBe(true);
     }
@@ -368,6 +422,11 @@ describe('SocialAccountExportService', () => {
       vote as never,
       attachment as never,
       poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
       auth as never,
       profiles as never
     );
@@ -376,5 +435,319 @@ describe('SocialAccountExportService', () => {
 
     expect(snapshot.data.reactions).toEqual([]);
     expect(snapshot.uncovered).toContain('reactions-owner-mismatch');
+  });
+
+  it('projects only actor-owned saved, search, follow, block, and mute fields', async () => {
+    auth.send.mockReturnValue(
+      of({ isValid: true, data: { userId: accountId } })
+    );
+    profiles.send.mockReturnValue(
+      of({
+        accountId,
+        profileIds: [profileId],
+        hasMore: false,
+        nextCursor: null,
+        unfenced: true,
+      })
+    );
+    savedItems.find.mockResolvedValue([
+      {
+        id: postId,
+        profileId,
+        itemType: 'post',
+        itemId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b914',
+        itemTitle: 'foreign title must not escape',
+        savedAt: new Date(0),
+      },
+    ]);
+    searchHistory.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b915',
+        profileId,
+        query: 'private owner query',
+        searchType: 'users',
+        resultCount: 99,
+        createdAt: new Date(0),
+      },
+    ]);
+    follows.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b916',
+        followerId: profileId,
+        followeeId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b917',
+        appScope: 'social',
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+        isMutual: true,
+      },
+    ]);
+    blocks.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b918',
+        blockerId: profileId,
+        blockedId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b919',
+        reason: 'private owner reason',
+        createdAt: new Date(0),
+        blockedName: 'counterpart identity must not escape',
+      },
+    ]);
+    mutes.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b920',
+        muterId: profileId,
+        mutedId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b921',
+        duration: null,
+        createdAt: new Date(0),
+        mutedName: 'counterpart identity must not escape',
+      },
+    ]);
+    const service = new SocialAccountExportService(
+      post as never,
+      comment as never,
+      reaction as never,
+      vote as never,
+      attachment as never,
+      poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
+      auth as never,
+      profiles as never
+    );
+
+    const snapshot = await service.getAccountExportSnapshot(accountId, session);
+    const data = snapshot.data as Record<string, any[]>;
+
+    expect(data.savedItems).toEqual([
+      {
+        id: postId,
+        profileId,
+        itemType: 'post',
+        itemId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b914',
+        savedAt: new Date(0),
+      },
+    ]);
+    expect(data.searchHistory[0]).toEqual({
+      id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b915',
+      profileId,
+      query: 'private owner query',
+      searchType: 'users',
+      createdAt: new Date(0),
+    });
+    expect(data.follows[0]).toEqual({
+      id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b916',
+      followerId: profileId,
+      followeeId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b917',
+      appScope: 'social',
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    expect(data.blocks[0]).toEqual({
+      id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b918',
+      blockerId: profileId,
+      blockedId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b919',
+      reason: 'private owner reason',
+      createdAt: new Date(0),
+    });
+    expect(data.mutes[0]).toEqual({
+      id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b920',
+      muterId: profileId,
+      mutedId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b921',
+      duration: null,
+      createdAt: new Date(0),
+    });
+    expect(snapshot.status).toBe('partial');
+    expect(snapshot.uncovered).toContain('social-preview-unfenced');
+    expect(JSON.stringify(snapshot)).not.toMatch(
+      /foreign title must not escape|resultCount|isMutual|counterpart identity must not escape/
+    );
+    for (const [repository, actorField] of [
+      [savedItems, 'profileId'],
+      [searchHistory, 'profileId'],
+      [follows, 'followerId'],
+      [blocks, 'blockerId'],
+      [mutes, 'muterId'],
+    ] as const) {
+      const query = repository.find.mock.calls[0][0];
+      expect(query.where[actorField]).toEqual(expect.anything());
+      expect(query.select).toEqual(expect.arrayContaining(['id', actorField]));
+      expect(query.order).toEqual({ id: 'ASC' });
+      expect(query.take).toBe(100);
+    }
+    expect(savedItems.find.mock.calls[0][0].select).toEqual([
+      'id',
+      'profileId',
+      'itemType',
+      'itemId',
+      'savedAt',
+    ]);
+    expect(searchHistory.find.mock.calls[0][0].select).toEqual([
+      'id',
+      'profileId',
+      'query',
+      'searchType',
+      'createdAt',
+    ]);
+    expect(follows.find.mock.calls[0][0].select).toEqual([
+      'id',
+      'followerId',
+      'followeeId',
+      'appScope',
+      'createdAt',
+      'updatedAt',
+    ]);
+    expect(blocks.find.mock.calls[0][0].select).toEqual([
+      'id',
+      'blockerId',
+      'blockedId',
+      'reason',
+      'createdAt',
+    ]);
+    expect(mutes.find.mock.calls[0][0].select).toEqual([
+      'id',
+      'muterId',
+      'mutedId',
+      'duration',
+      'createdAt',
+    ]);
+  });
+
+  it('omits malformed rows and records store read failures without echoing data', async () => {
+    auth.send.mockReturnValue(
+      of({ isValid: true, data: { userId: accountId } })
+    );
+    profiles.send.mockReturnValue(
+      of({
+        accountId,
+        profileIds: [profileId],
+        hasMore: false,
+        nextCursor: null,
+        unfenced: true,
+      })
+    );
+    savedItems.find.mockResolvedValue([
+      {
+        id: postId,
+        profileId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b922',
+        itemType: 'post',
+        itemId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b914',
+        savedAt: new Date(0),
+      },
+    ]);
+    searchHistory.find.mockRejectedValue(new Error('private search SQL'));
+    follows.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b916',
+        followerId: profileId,
+        followeeId: profileId,
+        appScope: 'social',
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+      },
+    ]);
+    blocks.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b918',
+        blockerId: profileId,
+        blockedId: profileId,
+        reason: null,
+        createdAt: new Date(0),
+      },
+    ]);
+    mutes.find.mockResolvedValue([
+      {
+        id: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b920',
+        muterId: profileId,
+        mutedId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b921',
+        duration: 31536001,
+        createdAt: new Date(0),
+      },
+    ]);
+    const service = new SocialAccountExportService(
+      post as never,
+      comment as never,
+      reaction as never,
+      vote as never,
+      attachment as never,
+      poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
+      auth as never,
+      profiles as never
+    );
+
+    const snapshot = await service.getAccountExportSnapshot(accountId, session);
+    const data = snapshot.data as Record<string, any[]>;
+
+    expect(data.savedItems).toEqual([]);
+    expect(data.searchHistory).toEqual([]);
+    expect(data.follows).toEqual([]);
+    expect(data.blocks).toEqual([]);
+    expect(data.mutes).toEqual([]);
+    expect(snapshot.uncovered).toEqual(
+      expect.arrayContaining([
+        'saved-items-owner-mismatch',
+        'search-history-read-failed',
+        'follows-malformed-or-duplicate-row',
+        'blocks-malformed-or-duplicate-row',
+        'mutes-malformed-or-duplicate-row',
+      ])
+    );
+    expect(JSON.stringify(snapshot)).not.toContain('private search SQL');
+  });
+
+  it('caps inspected store rows at 1,000 plus one truncation probe', async () => {
+    auth.send.mockReturnValue(
+      of({ isValid: true, data: { userId: accountId } })
+    );
+    profiles.send.mockReturnValue(
+      of({
+        accountId,
+        profileIds: [profileId],
+        hasMore: false,
+        nextCursor: null,
+        unfenced: true,
+      })
+    );
+    const rows = Array.from({ length: 1001 }, (_, index) => ({
+      id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      profileId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b922',
+      itemType: 'invalid-legacy-value',
+      itemId: '7b8f0c2e-5509-4f9f-94dd-ced7e8d1b914',
+      savedAt: new Date(0),
+    }));
+    for (let page = 0; page < 10; page++) {
+      savedItems.find.mockResolvedValueOnce(
+        rows.slice(page * 100, page * 100 + 100)
+      );
+    }
+    savedItems.find.mockResolvedValueOnce([rows[1000]]);
+    const service = new SocialAccountExportService(
+      post as never,
+      comment as never,
+      reaction as never,
+      vote as never,
+      attachment as never,
+      poll as never,
+      savedItems as never,
+      searchHistory as never,
+      follows as never,
+      blocks as never,
+      mutes as never,
+      auth as never,
+      profiles as never
+    );
+
+    const snapshot = await service.getAccountExportSnapshot(accountId, session);
+
+    expect(snapshot.data.savedItems).toEqual([]);
+    expect(snapshot.uncovered).toContain('saved-items-preview-limit-exceeded');
+    expect(savedItems.find).toHaveBeenCalledTimes(11);
+    expect(savedItems.find.mock.calls.at(-1)?.[0].take).toBe(1);
   });
 });

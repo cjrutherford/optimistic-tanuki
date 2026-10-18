@@ -40,6 +40,11 @@ describe('Account export session boundary over TCP', () => {
   const socialAttachmentId = randomUUID();
   const socialPollIds = [randomUUID(), randomUUID(), randomUUID()];
   const socialComponentId = randomUUID();
+  const socialSavedItemIds = [randomUUID(), randomUUID()];
+  const socialSearchHistoryIds = [randomUUID(), randomUUID()];
+  const socialFollowIds = [randomUUID(), randomUUID(), randomUUID()];
+  const socialBlockIds = [randomUUID(), randomUUID()];
+  const socialMuteIds = [randomUUID(), randomUUID()];
   const fixtureVoteIds: number[] = [];
   const fixtureLinkIds: number[] = [];
   const fixtureActivityIds = [randomUUID(), randomUUID()].sort();
@@ -279,6 +284,56 @@ describe('Account export session boundary over TCP', () => {
         ]
       );
       await database.query(
+        `INSERT INTO saved_item (id, "profileId", "itemType", "itemId", "itemTitle")
+         VALUES ($1::uuid, $3, 'post', $4, 'foreign post title must stay private'),
+                ($2::uuid, $5, 'comment', $6, 'foreign comment title must stay private')`,
+        [
+          socialSavedItemIds[0],
+          socialSavedItemIds[1],
+          ownProfiles[0],
+          socialPostIds[1],
+          ownProfiles[1],
+          socialCommentIds[0],
+        ]
+      );
+      await database.query(
+        `INSERT INTO search_history (id, "profileId", query, "searchType", "resultCount")
+         VALUES ($1::uuid, $3, 'private account A1 query', 'users', 47),
+                ($2::uuid, $4, 'private account A2 query', 'posts', 23)`,
+        [
+          socialSearchHistoryIds[0],
+          socialSearchHistoryIds[1],
+          ownProfiles[0],
+          ownProfiles[1],
+        ]
+      );
+      await database.query(
+        `INSERT INTO follow_entity (id, "followerId", "followeeId", "appScope", "isMutual")
+         VALUES ($1::uuid, $4, $5, 'social', true),
+                ($2::uuid, $5, $4, 'social', true),
+                ($3::uuid, $5, $6, 'social', false)`,
+        [
+          socialFollowIds[0],
+          socialFollowIds[1],
+          socialFollowIds[2],
+          ownProfiles[0],
+          foreignProfile,
+          ownProfiles[1],
+        ]
+      );
+      await database.query(
+        `INSERT INTO user_block (id, "blockerId", "blockedId", reason)
+         VALUES ($1::uuid, $3, $4, 'private actor reason'),
+                ($2::uuid, $4, $3, 'foreign actor reason must stay private')`,
+        [socialBlockIds[0], socialBlockIds[1], ownProfiles[1], foreignProfile]
+      );
+      await database.query(
+        `INSERT INTO user_mute (id, "muterId", "mutedId", duration)
+         VALUES ($1::uuid, $3, $4, 3600),
+                ($2::uuid, $4, $3, 7200)`,
+        [socialMuteIds[0], socialMuteIds[1], ownProfiles[1], foreignProfile]
+      );
+      await database.query(
         `INSERT INTO comment (id, content, "userId", "profileId", "appScope", "postId")
          VALUES ($1::uuid, 'foreign comment under own post', $2, $3, 'social', $4::uuid),
                 ($5::uuid, 'own comment on foreign post', $6, $7, 'social', $8::uuid)`,
@@ -441,6 +496,47 @@ describe('Account export session boundary over TCP', () => {
     }
   };
 
+  const readSocialStateFixtures = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_social'));
+    await database.connect();
+    try {
+      const savedItems = await database.query(
+        'SELECT id, "profileId", "itemType", "itemId", "itemTitle", "savedAt" FROM saved_item WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialSavedItemIds]
+      );
+      const searchHistory = await database.query(
+        'SELECT id, "profileId", query, "searchType", "resultCount", "createdAt" FROM search_history WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialSearchHistoryIds]
+      );
+      const follows = await database.query(
+        'SELECT id, "followerId", "followeeId", "appScope", "isMutual", "createdAt", "updatedAt" FROM follow_entity WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialFollowIds]
+      );
+      const blocks = await database.query(
+        'SELECT id, "blockerId", "blockedId", reason, "createdAt" FROM user_block WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialBlockIds]
+      );
+      const mutes = await database.query(
+        'SELECT id, "muterId", "mutedId", duration, "createdAt" FROM user_mute WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialMuteIds]
+      );
+      expect(savedItems.rowCount).toBe(socialSavedItemIds.length);
+      expect(searchHistory.rowCount).toBe(socialSearchHistoryIds.length);
+      expect(follows.rowCount).toBe(socialFollowIds.length);
+      expect(blocks.rowCount).toBe(socialBlockIds.length);
+      expect(mutes.rowCount).toBe(socialMuteIds.length);
+      return {
+        savedItems: savedItems.rows,
+        searchHistory: searchHistory.rows,
+        follows: follows.rows,
+        blocks: blocks.rows,
+        mutes: mutes.rows,
+      };
+    } finally {
+      await database.end();
+    }
+  };
+
   const expectPermissionFixturesPersisted = async () => {
     const database = new PgClient(getFixtureDatabaseOptions('ot_permissions'));
     await database.connect();
@@ -575,6 +671,26 @@ describe('Account export session boundary over TCP', () => {
     await socialDatabase.connect();
     try {
       await socialDatabase.query('BEGIN');
+      await socialDatabase.query(
+        'DELETE FROM user_mute WHERE id = ANY($1::uuid[])',
+        [socialMuteIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM user_block WHERE id = ANY($1::uuid[])',
+        [socialBlockIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM follow_entity WHERE id = ANY($1::uuid[])',
+        [socialFollowIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM search_history WHERE id = ANY($1::uuid[])',
+        [socialSearchHistoryIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM saved_item WHERE id = ANY($1::uuid[])',
+        [socialSavedItemIds]
+      );
       if (fixtureVoteIds.length)
         await socialDatabase.query(
           'DELETE FROM vote WHERE id = ANY($1::integer[])',
@@ -611,7 +727,7 @@ describe('Account export session boundary over TCP', () => {
       );
       await socialDatabase.query('COMMIT');
       const leftovers = await socialDatabase.query(
-        'SELECT id::text FROM post WHERE id = ANY($1::uuid[]) UNION ALL SELECT id::text FROM comment WHERE id = ANY($2::uuid[]) UNION ALL SELECT id::text FROM attachment WHERE id = $3::uuid UNION ALL SELECT id::text FROM poll WHERE id = ANY($4::uuid[]) UNION ALL SELECT id::text FROM reaction WHERE id = ANY($5::uuid[]) UNION ALL SELECT id::text FROM social_components WHERE id = $6::uuid UNION ALL SELECT id::text FROM vote WHERE id = ANY($7::integer[]) UNION ALL SELECT id::text FROM link WHERE id = ANY($8::integer[])',
+        'SELECT id::text FROM post WHERE id = ANY($1::uuid[]) UNION ALL SELECT id::text FROM comment WHERE id = ANY($2::uuid[]) UNION ALL SELECT id::text FROM attachment WHERE id = $3::uuid UNION ALL SELECT id::text FROM poll WHERE id = ANY($4::uuid[]) UNION ALL SELECT id::text FROM reaction WHERE id = ANY($5::uuid[]) UNION ALL SELECT id::text FROM social_components WHERE id = $6::uuid UNION ALL SELECT id::text FROM vote WHERE id = ANY($7::integer[]) UNION ALL SELECT id::text FROM link WHERE id = ANY($8::integer[]) UNION ALL SELECT id::text FROM saved_item WHERE id = ANY($9::uuid[]) UNION ALL SELECT id::text FROM search_history WHERE id = ANY($10::uuid[]) UNION ALL SELECT id::text FROM follow_entity WHERE id = ANY($11::uuid[]) UNION ALL SELECT id::text FROM user_block WHERE id = ANY($12::uuid[]) UNION ALL SELECT id::text FROM user_mute WHERE id = ANY($13::uuid[])',
         [
           socialPostIds,
           socialCommentIds,
@@ -621,6 +737,11 @@ describe('Account export session boundary over TCP', () => {
           socialComponentId,
           fixtureVoteIds,
           fixtureLinkIds,
+          socialSavedItemIds,
+          socialSearchHistoryIds,
+          socialFollowIds,
+          socialBlockIds,
+          socialMuteIds,
         ]
       );
       expect(leftovers.rowCount).toBe(0);
@@ -879,6 +1000,7 @@ describe('Account export session boundary over TCP', () => {
   });
 
   it('returns a partial internal snapshot for the authenticated account without returning its token', async () => {
+    const socialStateBefore = await readSocialStateFixtures();
     const preview = await firstValueFrom(
       authClient.send(
         { cmd: AuthCommands.PreviewAccountExport },
@@ -945,6 +1067,119 @@ describe('Account export session boundary over TCP', () => {
     );
     expect(socialParticipant.status).toBe('partial');
     expect(socialParticipant.uncovered).toContain('social-preview-unfenced');
+    expect(socialParticipant.data.savedItems.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(socialSavedItemIds)
+    );
+    expect(socialParticipant.data.savedItems).toHaveLength(2);
+    expect(
+      socialParticipant.data.savedItems.find(
+        ({ id }) => id === socialSavedItemIds[0]
+      )
+    ).toMatchObject({
+      profileId: ownedProfileIds[0],
+      itemType: 'post',
+      itemId: socialPostIds[1],
+    });
+    expect(
+      socialParticipant.data.savedItems.find(
+        ({ id }) => id === socialSavedItemIds[1]
+      )
+    ).toMatchObject({
+      profileId: ownedProfileIds[1],
+      itemType: 'comment',
+      itemId: socialCommentIds[0],
+    });
+    expect(socialParticipant.data.savedItems[0]).not.toHaveProperty(
+      'itemTitle'
+    );
+    expect(socialParticipant.data.searchHistory.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(socialSearchHistoryIds)
+    );
+    expect(socialParticipant.data.searchHistory).toHaveLength(2);
+    expect(
+      socialParticipant.data.searchHistory.find(
+        ({ id }) => id === socialSearchHistoryIds[0]
+      )?.profileId
+    ).toBe(ownedProfileIds[0]);
+    expect(
+      socialParticipant.data.searchHistory.find(
+        ({ id }) => id === socialSearchHistoryIds[1]
+      )?.profileId
+    ).toBe(ownedProfileIds[1]);
+    expect(
+      socialParticipant.data.searchHistory.every(
+        (row) => !('resultCount' in row)
+      )
+    ).toBe(true);
+    expect(socialParticipant.data.follows.map(({ id }) => id)).toEqual([
+      socialFollowIds[0],
+    ]);
+    expect(socialParticipant.data.follows[0]).toMatchObject({
+      followerId: ownedProfileIds[0],
+      followeeId: foreignProfileId,
+    });
+    expect(socialParticipant.data.follows[0]).not.toHaveProperty('isMutual');
+    expect(socialParticipant.data.blocks.map(({ id }) => id)).toEqual([
+      socialBlockIds[0],
+    ]);
+    expect(socialParticipant.data.blocks[0]).toMatchObject({
+      blockerId: ownedProfileIds[1],
+      blockedId: foreignProfileId,
+    });
+    expect(socialParticipant.data.blocks[0].reason).toBe(
+      'private actor reason'
+    );
+    expect(socialParticipant.data.mutes.map(({ id }) => id)).toEqual([
+      socialMuteIds[0],
+    ]);
+    expect(socialParticipant.data.mutes[0]).toMatchObject({
+      muterId: ownedProfileIds[1],
+      mutedId: foreignProfileId,
+    });
+    const expectExactKeys = (rows: object[], keys: string[]) => {
+      rows.forEach((row) =>
+        expect(Object.keys(row).sort()).toEqual([...keys].sort())
+      );
+    };
+    expectExactKeys(socialParticipant.data.savedItems, [
+      'id',
+      'profileId',
+      'itemType',
+      'itemId',
+      'savedAt',
+    ]);
+    expectExactKeys(socialParticipant.data.searchHistory, [
+      'id',
+      'profileId',
+      'query',
+      'searchType',
+      'createdAt',
+    ]);
+    expectExactKeys(socialParticipant.data.follows, [
+      'id',
+      'followerId',
+      'followeeId',
+      'appScope',
+      'createdAt',
+      'updatedAt',
+    ]);
+    expectExactKeys(socialParticipant.data.blocks, [
+      'id',
+      'blockerId',
+      'blockedId',
+      'reason',
+      'createdAt',
+    ]);
+    expectExactKeys(socialParticipant.data.mutes, [
+      'id',
+      'muterId',
+      'mutedId',
+      'duration',
+      'createdAt',
+    ]);
+    expect(JSON.stringify(socialParticipant)).not.toMatch(
+      /foreign post title must stay private|foreign comment title must stay private|foreign actor reason must stay private|resultCount|isMutual/
+    );
     const exportedPostIds = socialParticipant.data.posts.map(({ id }) => id);
     expect(
       exportedPostIds.filter((id) => id === socialPostIds[0])
@@ -1040,6 +1275,50 @@ describe('Account export session boundary over TCP', () => {
     expect(socialParticipant.uncovered).toContain('post-link-urls-omitted');
     await expectPermissionFixturesPersisted();
     await expectSocialFixturesPersisted();
+    expect(await readSocialStateFixtures()).toEqual(socialStateBefore);
+    const otherPreview = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.PreviewAccountExport },
+        {
+          accountId: otherAccountId,
+          token: otherSessionToken,
+          appId: 'client-interface',
+        }
+      )
+    );
+    const otherSocial = otherPreview.participants.find(
+      ({ participantId }) => participantId === 'social'
+    );
+    expect(otherSocial.status).toBe('partial');
+    expect(otherSocial.data.savedItems).toEqual([]);
+    expect(otherSocial.data.searchHistory).toEqual([]);
+    expect(otherSocial.data.follows.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([socialFollowIds[1], socialFollowIds[2]])
+    );
+    expect(otherSocial.data.follows).toHaveLength(2);
+    expect(
+      otherSocial.data.follows.every(
+        ({ followerId }) => followerId === foreignProfileId
+      )
+    ).toBe(true);
+    expect(
+      otherSocial.data.follows.map(({ followeeId }) => followeeId)
+    ).toEqual(expect.arrayContaining(ownedProfileIds));
+    expect(otherSocial.data.blocks.map(({ id }) => id)).toEqual([
+      socialBlockIds[1],
+    ]);
+    expect(otherSocial.data.blocks[0]).toMatchObject({
+      blockerId: foreignProfileId,
+      blockedId: ownedProfileIds[1],
+    });
+    expect(otherSocial.data.mutes.map(({ id }) => id)).toEqual([
+      socialMuteIds[1],
+    ]);
+    expect(otherSocial.data.mutes[0]).toMatchObject({
+      muterId: foreignProfileId,
+      mutedId: ownedProfileIds[1],
+    });
+    expect(JSON.stringify(otherSocial)).not.toContain('private actor reason');
     const authenticationParticipant = preview.participants.find(
       ({ participantId }) => participantId === 'authentication'
     );

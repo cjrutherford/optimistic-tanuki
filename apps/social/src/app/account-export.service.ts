@@ -22,6 +22,11 @@ import { Reaction } from '../entities/reaction.entity';
 import { Vote } from '../entities/vote.entity';
 import { Attachment, AttachmentType } from '../entities/attachment.entity';
 import { Poll } from '../entities/poll.entity';
+import { SavedItem } from '../entities/saved-item.entity';
+import { SearchHistory } from '../entities/search-history.entity';
+import FollowEntity from '../entities/Follow.entity';
+import { UserBlock } from '../entities/user-block.entity';
+import { UserMute } from '../entities/user-mute.entity';
 
 const RPC_TIMEOUT_MS = 3000;
 const MAX_IDS = 1000;
@@ -45,6 +50,16 @@ export class SocialAccountExportService {
     @Inject(getRepositoryToken(Attachment))
     private readonly attachments: Repository<Attachment>,
     @Inject(getRepositoryToken(Poll)) private readonly polls: Repository<Poll>,
+    @Inject(getRepositoryToken(SavedItem))
+    private readonly savedItems: Repository<SavedItem>,
+    @Inject(getRepositoryToken(SearchHistory))
+    private readonly searchHistory: Repository<SearchHistory>,
+    @Inject(getRepositoryToken(FollowEntity))
+    private readonly follows: Repository<FollowEntity>,
+    @Inject(getRepositoryToken(UserBlock))
+    private readonly blocks: Repository<UserBlock>,
+    @Inject(getRepositoryToken(UserMute))
+    private readonly mutes: Repository<UserMute>,
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly auth: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE) private readonly profile: ClientProxy
@@ -91,14 +106,9 @@ export class SocialAccountExportService {
       'social-legacy-guardian-ownership-unverified',
       'attachment-file-references-omitted',
       'portable-media-bytes-not-included',
-      'social-follow-entity-uncovered',
       'social-activity-uncovered',
-      'social-saved-item-uncovered',
-      'social-search-history-uncovered',
       'social-user-presence-uncovered',
       'social-profile-view-uncovered',
-      'social-user-block-uncovered',
-      'social-user-mute-uncovered',
       'social-notification-uncovered',
       'social-post-share-uncovered',
       'social-event-uncovered',
@@ -193,6 +203,11 @@ export class SocialAccountExportService {
         votes: [],
         attachments: [],
         polls: [],
+        savedItems: [],
+        searchHistory: [],
+        follows: [],
+        blocks: [],
+        mutes: [],
         portableMediaBytesIncluded: false,
       });
     }
@@ -308,6 +323,72 @@ export class SocialAccountExportService {
         if (accepted.length >= MAX_ROWS) break;
       }
       if (accepted.length > MAX_ROWS) accepted.length = MAX_ROWS;
+      return accepted;
+    };
+
+    const actorRows = async <T extends { id: string }>(
+      label: string,
+      repository: Repository<T>,
+      actorField: 'profileId' | 'followerId' | 'blockerId' | 'muterId',
+      select: string[]
+    ): Promise<T[]> => {
+      const accepted: T[] = [];
+      const seen = new Set<string>();
+      let scannedRows = 0;
+      let limitReached = false;
+      for (let offset = 0; offset < ids.length; offset += ID_PAGE_SIZE) {
+        const ownedPage = ids.slice(offset, offset + ID_PAGE_SIZE);
+        const ownedPageSet = new Set(ownedPage);
+        let cursor: string | undefined;
+        while (true) {
+          const remaining = MAX_ROWS - scannedRows;
+          const pageSize = Math.min(100, remaining + 1);
+          const rows = await read(label, () =>
+            repository.find({
+              where: {
+                [actorField]: In(ownedPage),
+                ...(cursor === undefined ? {} : { id: MoreThan(cursor) }),
+              } as any,
+              select: select as any,
+              order: { id: 'ASC' } as any,
+              take: pageSize,
+            })
+          );
+          scannedRows += Math.min(rows.length, remaining);
+          let previous = cursor;
+          for (const row of rows.slice(0, remaining)) {
+            const key = row.id;
+            if (
+              !validUuid(key) ||
+              (previous !== undefined && key <= previous) ||
+              seen.has(key)
+            ) {
+              uncovered.add(`${label}-malformed-or-duplicate-row`);
+              continue;
+            }
+            previous = key;
+            seen.add(key);
+            if (!ownedPageSet.has((row as any)[actorField])) {
+              uncovered.add(`${label}-owner-mismatch`);
+              continue;
+            }
+            accepted.push(row);
+          }
+          if (rows.length > remaining) {
+            uncovered.add(`${label}-preview-limit-exceeded`);
+            limitReached = true;
+            break;
+          }
+          if (rows.length < pageSize) break;
+          const next = rows.at(-1)?.id;
+          if (!validUuid(next) || next === cursor) {
+            uncovered.add(`${label}-repeated-cursor`);
+            break;
+          }
+          cursor = next;
+        }
+        if (limitReached) break;
+      }
       return accepted;
     };
 
@@ -606,6 +687,166 @@ export class SocialAccountExportService {
         },
       ];
     });
+    const savedItemRows = await actorRows(
+      'saved-items',
+      this.savedItems,
+      'profileId',
+      ['id', 'profileId', 'itemType', 'itemId', 'savedAt']
+    );
+    const savedItemsOut = savedItemRows.flatMap((row: SavedItem) => {
+      if (
+        !validUuid(row.profileId) ||
+        !validUuid(row.itemId) ||
+        !['post', 'comment'].includes(row.itemType) ||
+        !(row.savedAt instanceof Date) ||
+        !Number.isFinite(row.savedAt.getTime())
+      ) {
+        uncovered.add('saved-items-malformed-or-duplicate-row');
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          profileId: row.profileId,
+          itemType: row.itemType,
+          itemId: row.itemId,
+          savedAt: row.savedAt,
+        },
+      ];
+    });
+    const searchRows = await actorRows(
+      'search-history',
+      this.searchHistory,
+      'profileId',
+      ['id', 'profileId', 'query', 'searchType', 'createdAt']
+    );
+    const searchHistoryOut = searchRows.flatMap((row: SearchHistory) => {
+      if (
+        !validUuid(row.profileId) ||
+        typeof row.query !== 'string' ||
+        row.query.length > MAX_STRING ||
+        !['all', 'users', 'posts', 'communities'].includes(row.searchType) ||
+        !(row.createdAt instanceof Date) ||
+        !Number.isFinite(row.createdAt.getTime())
+      ) {
+        uncovered.add(
+          typeof row.query === 'string' && row.query.length > MAX_STRING
+            ? 'social-preview-string-limit-exceeded'
+            : 'search-history-malformed-or-duplicate-row'
+        );
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          profileId: row.profileId,
+          query: row.query,
+          searchType: row.searchType,
+          createdAt: row.createdAt,
+        },
+      ];
+    });
+    const followRows = await actorRows('follows', this.follows, 'followerId', [
+      'id',
+      'followerId',
+      'followeeId',
+      'appScope',
+      'createdAt',
+      'updatedAt',
+    ]);
+    const followsOut = followRows.flatMap((row: FollowEntity) => {
+      if (
+        !validUuid(row.followerId) ||
+        !validUuid(row.followeeId) ||
+        row.followerId === row.followeeId ||
+        typeof row.appScope !== 'string' ||
+        !row.appScope.trim() ||
+        row.appScope.length > MAX_STRING ||
+        !(row.createdAt instanceof Date) ||
+        !Number.isFinite(row.createdAt.getTime()) ||
+        !(row.updatedAt instanceof Date) ||
+        !Number.isFinite(row.updatedAt.getTime())
+      ) {
+        uncovered.add('follows-malformed-or-duplicate-row');
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          followerId: row.followerId,
+          followeeId: row.followeeId,
+          appScope: row.appScope,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        },
+      ];
+    });
+    const blockRows = await actorRows('blocks', this.blocks, 'blockerId', [
+      'id',
+      'blockerId',
+      'blockedId',
+      'reason',
+      'createdAt',
+    ]);
+    const blocksOut = blockRows.flatMap((row: UserBlock) => {
+      if (
+        !validUuid(row.blockerId) ||
+        !validUuid(row.blockedId) ||
+        row.blockerId === row.blockedId ||
+        (row.reason !== null &&
+          (typeof row.reason !== 'string' || row.reason.length > MAX_STRING)) ||
+        !(row.createdAt instanceof Date) ||
+        !Number.isFinite(row.createdAt.getTime())
+      ) {
+        uncovered.add(
+          typeof row.reason === 'string' && row.reason.length > MAX_STRING
+            ? 'social-preview-string-limit-exceeded'
+            : 'blocks-malformed-or-duplicate-row'
+        );
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          blockerId: row.blockerId,
+          blockedId: row.blockedId,
+          reason: row.reason ?? null,
+          createdAt: row.createdAt,
+        },
+      ];
+    });
+    const muteRows = await actorRows('mutes', this.mutes, 'muterId', [
+      'id',
+      'muterId',
+      'mutedId',
+      'duration',
+      'createdAt',
+    ]);
+    const mutesOut = muteRows.flatMap((row: UserMute) => {
+      if (
+        !validUuid(row.muterId) ||
+        !validUuid(row.mutedId) ||
+        row.muterId === row.mutedId ||
+        (row.duration !== null &&
+          (!Number.isSafeInteger(row.duration) ||
+            row.duration <= 0 ||
+            row.duration > 31536000)) ||
+        !(row.createdAt instanceof Date) ||
+        !Number.isFinite(row.createdAt.getTime())
+      ) {
+        uncovered.add('mutes-malformed-or-duplicate-row');
+        return [];
+      }
+      return [
+        {
+          id: row.id,
+          muterId: row.muterId,
+          mutedId: row.mutedId,
+          duration: row.duration ?? null,
+          createdAt: row.createdAt,
+        },
+      ];
+    });
     const postsOut = postRows.flatMap((row) => {
       if (!['public', 'followers', 'community'].includes(row.visibility)) {
         uncovered.add('posts-malformed-or-duplicate-row');
@@ -642,6 +883,11 @@ export class SocialAccountExportService {
       votes: votesOut,
       attachments: attachmentsOut,
       polls: pollsOut,
+      savedItems: savedItemsOut,
+      searchHistory: searchHistoryOut,
+      follows: followsOut,
+      blocks: blocksOut,
+      mutes: mutesOut,
       portableMediaBytesIncluded: false,
     };
     if (Date.now() - startedAt > READ_BUDGET_MS)
@@ -655,6 +901,11 @@ export class SocialAccountExportService {
         votes: [],
         attachments: [],
         polls: [],
+        savedItems: [],
+        searchHistory: [],
+        follows: [],
+        blocks: [],
+        mutes: [],
         portableMediaBytesIncluded: false,
       });
     }
@@ -679,6 +930,11 @@ export class SocialAccountExportService {
         votes: [],
         attachments: [],
         polls: [],
+        savedItems: [],
+        searchHistory: [],
+        follows: [],
+        blocks: [],
+        mutes: [],
         portableMediaBytesIncluded: false,
       });
     }

@@ -1,0 +1,224 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-18T23:46:14.404244+00:00",
+  "baseRevision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+  "overlayCount": 5,
+  "overlayPaths": [
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts",
+    "apps/authentication/src/app/account-export.service.spec.ts",
+    "apps/authentication/src/app/account-export.service.ts",
+    "apps/social/src/app/account-export.service.spec.ts",
+    "apps/social/src/app/account-export.service.ts"
+  ],
+  "sourceHashes": {
+    "apps/social/src/app/account-export.service.ts": "a41c5c5ca97c38563320d58ff71e47dcedb5e42b76f3a39604526acdd3983197",
+    "apps/social/src/app/account-export.service.spec.ts": "78bbfffe314d7c934f73a36b640cc84d3ea69545538d136ff021c864b1a785e2",
+    "apps/authentication/src/app/account-export.service.ts": "ebba90b4abbdde14824209a13d440cbefbdc86947856d70c216998055770dcf0",
+    "apps/authentication/src/app/account-export.service.spec.ts": "56e6ad3a5d9661682d91a5e71d74037cb55b64abbc3ab68ec083b8157f8f2896",
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "95d7f8445c8fcea2a34dc4dc33a4196a924ce1ce6e7cf4e6be8f413772120339"
+  },
+  "patchSha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+  "overlayManifestSha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+  "imageIDs": {
+    "authentication": {
+      "tag": "ot-df007-b5-social-state/authentication:b5-7cdb1d7f1581",
+      "id": "sha256:a68a68e48b869df0b232c1c184c1e8cdb96f7ff8ed656e9b5148621ea81cc6a4",
+      "labels": {
+        "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+        "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state"
+      }
+    },
+    "profile": {
+      "tag": "ot-df007-b5-social-state/profile:b5-7cdb1d7f1581",
+      "id": "sha256:25c3a811f5e0c936ed6fbbc8f815de959d9122c03c748f390f9e3de408e3fafb",
+      "labels": {
+        "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+        "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state"
+      }
+    },
+    "permissions": {
+      "tag": "ot-df007-b5-social-state/permissions:b5-7cdb1d7f1581",
+      "id": "sha256:6dbeb2420b300683b1d10e2e3a3b651341d4682e32317cf896d9f7926e696f79",
+      "labels": {
+        "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+        "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state"
+      }
+    },
+    "social": {
+      "tag": "ot-df007-b5-social-state/social:b5-7cdb1d7f1581",
+      "id": "sha256:72907f2b647366595c72e912abf6569193c33b05b76c778a64645e7ee6778baf",
+      "labels": {
+        "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+        "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+        "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+        "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state"
+      }
+    }
+  },
+  "project": "ot-df007-b5-social-state",
+  "e2e": {
+    "command": "pnpm exec nx run authentication-e2e:e2e:ci --skip-nx-cache",
+    "exitCode": 0,
+    "actualExecution": true,
+    "suitesPassed": 2,
+    "testsPassed": 21,
+    "ciCoverage": true,
+    "coverageSemantics": "Checked-in Nx CI configuration enables Jest codeCoverage; this expected test coverage is distinct from service/app diagnostics.",
+    "skipSetup": true,
+    "nodeOptionsUnset": true,
+    "nodeV8CoverageUnset": true,
+    "serviceDiagnosticInstrumentationOrPreloadAdded": false,
+    "fixtureAssertions": "Passed account-export E2E suite. Generated Social rows were read before and just after Account A\u2019s coordinator preview and remained unchanged. Account B\u2019s coordinator preview separately checked actor ownership; no post-B readback of those same rows was performed. Exact generated-ID cleanup after both previews found no leftovers in the scoped fixture tables.",
+    "claimLimit": "No full-account deletion, orphan cleanup, or completeness claim."
+  },
+  "databaseReadback": {
+    "database": "ot_social",
+    "newTableCountsBefore": {
+      "follow_entity": 0,
+      "saved_item": 0,
+      "search_history": 0,
+      "user_block": 0,
+      "user_mute": 0
+    },
+    "newTableCountsAfter": {
+      "follow_entity": 0,
+      "saved_item": 0,
+      "search_history": 0,
+      "user_block": 0,
+      "user_mute": 0
+    },
+    "legacyMarkerCountsAfter": {
+      "fixture_users": 0,
+      "fixture_guardian_permissions": 0,
+      "fixture_guardian_notice": 0,
+      "fixture_action_tokens": 0,
+      "fixture_roles": 0,
+      "fixture_app_scopes": 0,
+      "fixture_profiles": 0,
+      "fixture_profile_activity": 0,
+      "fixture_posts": 0,
+      "fixture_comments": 0,
+      "fixture_attachments": 0,
+      "fixture_polls": 0,
+      "fixture_components": 0,
+      "fixture_links": 0,
+      "fixture_votes": 0
+    },
+    "legacyCount": 15,
+    "allLegacyCountsZero": true
+  },
+  "email": {
+    "composeSMTPHostUserPasswordEmpty": true,
+    "serviceLogPatternCounts": {
+      "smtp_or_nodemailer": 0,
+      "email_or_mail_send_confirmation": 0,
+      "sendmail_command": 0
+    },
+    "sendPatternObserved": false,
+    "claimLimit": "No SMTP/email delivery behavior was tested."
+  },
+  "integrity": {
+    "checks": {
+      "actual_e2e_not_nx_cached": true,
+      "e2e_test_exit_zero": true,
+      "all_expected_suites_passed": true,
+      "five_new_table_pre_counts_zero": true,
+      "five_new_table_post_counts_zero": true,
+      "legacy_selected_counts_15_all_zero": true,
+      "teardown_exit_zero": true,
+      "project_resource_counts_zero": true,
+      "live_source5_match": true,
+      "capture_overlay5_match": true,
+      "db_setup_copy_overlay5_match": true,
+      "protected43_match": true,
+      "capture_root_configs4_match_base": true
+    },
+    "allPass": true,
+    "gitDiffCheck": "PASS",
+    "captureRootConfigHashes": {
+      "docker-compose.yaml": "b2d1c7fa4f69dfe36a43870e2d39e26188eba76adf59066148767c68271c724f",
+      "docker-compose.dev.yaml": "a37e46afcccc80f25b5688fad28d9d7dbeacb8d97b5145a1dbca985124980781",
+      "docker-compose.local-hub-e2e.yaml": "716d3179a0712d0e9a86e5d9f3c3690519b3df75cf9f4f70ecb9d820cf547120",
+      "tsconfig.base.json": "0679536834237530f3fd37b68eb2fe4b7894c49ac141458bb5d0d7ee80b22e34"
+    }
+  },
+  "teardown": {
+    "composeDownExit": 0,
+    "containers": 0,
+    "networks": 0,
+    "volumes": 0,
+    "runtimeLeftRunning": false
+  },
+  "logSha256": {
+    "preflight-r3.json": "195d1db761a5d21ca788b56c70ca5ef59695c59ffa19ae339fe317fa7d490814",
+    "compose-up.log": "3dd3cf69a66dc4818346cd6efec66a3eb39eff2fe1c72d8434996186596a2940",
+    "db-setup.log": "6e386fd77968f788334f940edb94d2b3bcc003002e97ffae5330fb5c3d8d3456",
+    "compose-ps-health.jsonl": "91a840690dee0fe62a5de884c50a06092dacbadf5eb60a52c0d19f4c5736ca6f",
+    "authentication-e2e-ci.log": "37fbc2cb255280ce9f9503ef025b879a8097fe6bef43fc0a21e9d33794bfe9f7",
+    "service-runtime.log": "94d5925a531c5c74a2b3efec9d8d2979f821994cacd24d98ef798d58fe608b0d",
+    "social-state-counts-before.tsv": "65e8973923d6595624f9ba29f88323aa161efebad6670c4962487888db32ea9c",
+    "social-state-counts-after.tsv": "65e8973923d6595624f9ba29f88323aa161efebad6670c4962487888db32ea9c",
+    "legacy-social-counts-after.tsv": "0c16f1805f4f00962704caaa5e7815ace39c483040da9a55029569c26f5a2064",
+    "legacy-auth-counts-after.tsv": "b184a988a1d99ffe05f670cf069d9ce89b961b699635271dcfbf5ec8765fe0f7",
+    "legacy-profile-counts-after.tsv": "2048971e2f234644564a6984795f0dc8353f37208717a8b42441e3669b443f52",
+    "legacy-permissions-counts-after.tsv": "a9b9da9bdca56e6249f290cd01a7d937b6c83fcaa29eaec0fbf6fdb533b64ca7",
+    "compose-down.log": "d7b642cb0315317bce33b6789c6ea89a44ae47013f4efd7d15b6025d762c42d3",
+    "project-containers-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "project-networks-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "project-volumes-after-down.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "teardown-summary.txt": "e925d6155ae207c8573574cb881b36c8331a07e0b8f02a7e46444162605f9efd",
+    "e2e-command.txt": "ef2199c8093b091a6db646461ea721298a536426095f035c78e7bb9c5ccfe6c5",
+    "e2e-environment.txt": "35161b1d94dd391016069c1501d579c1c0a9928e964d3664b5a74d159157194e"
+  },
+  "note": "R1 actual 21/21 run is separately retained as a verification failure because its post-query omitted -d ot_social. R2 corrected counts are separately retained but E2E replayed local Nx cache. R3 is the qualifying actual run with cache bypass and correct DB readbacks.",
+  "checkpoint": "DF-007-B5",
+  "verifiedDate": "2026-10-18",
+  "acceptance": "PASS \u2014 bounded internal Social personal-state preview only; DF-007 and RR-11 remain open",
+  "result": "Five actor-owned Social personal-state projections added to the existing always-partial preview; not a full inventory, export, or deletion workflow.",
+  "source": {
+    "project": "ot-df007-b5-social-state",
+    "baseRevision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f",
+    "patchSha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+    "overlayManifestSha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+    "overlayManifestDigestSemantics": "SHA-256 of canonical JSON for base revision, private project, and five path/content hashes; not a digest of the full staged filesystem.",
+    "overlayCount": 5,
+    "sourceFilesSha256": {
+      "apps/social/src/app/account-export.service.ts": "a41c5c5ca97c38563320d58ff71e47dcedb5e42b76f3a39604526acdd3983197",
+      "apps/social/src/app/account-export.service.spec.ts": "78bbfffe314d7c934f73a36b640cc84d3ea69545538d136ff021c864b1a785e2",
+      "apps/authentication/src/app/account-export.service.ts": "ebba90b4abbdde14824209a13d440cbefbdc86947856d70c216998055770dcf0",
+      "apps/authentication/src/app/account-export.service.spec.ts": "56e6ad3a5d9661682d91a5e71d74037cb55b64abbc3ab68ec083b8157f8f2896",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts": "95d7f8445c8fcea2a34dc4dc33a4196a924ce1ce6e7cf4e6be8f413772120339"
+    },
+    "rootIndependentCheck": {
+      "overlaysMatched": 5,
+      "baseConfigsMatched": 4,
+      "directoryWipAbsent": 39,
+      "protectedFilesUnchanged": 43
+    }
+  },
+  "verification": {
+    "preRuntimeGates": {
+      "total": 31,
+      "staticAndWorkflow": 17,
+      "quality": 5,
+      "remainingContractsPackagesAndBuild": 9,
+      "status": "all passed",
+      "focusedSocialTests": "496 passed",
+      "focusedAuthenticationTests": "287 passed",
+      "workflowContracts": "40 passed"
+    },
+    "cacheEvidence": {
+      "R1": "21/21 actually passed, but post-run SQL targeted the wrong database; non-acceptance.",
+      "R2": "Correct five-table readback was zero, but Nx replayed cached E2E output; non-acceptance.",
+      "R3": "Actual execution with --skip-nx-cache and same-run correct-database readback; sole accepted run."
+    },
+    "fixtureAndCleanupLimits": "Account A Social fixture rows were directly read before and just after A preview and remained unchanged. B coordinator ownership was asserted separately, without a post-B readback of those same rows. Exact generated-ID post-delete assertions are scoped to named Social, Permissions, and Authentication guardian tables. OAuth and key-data cleanup had no post-delete absence assertion. No account-wide deletion or cleanup claim.",
+    "queryLimit": "The five B5 stores each cap scanning at 1,000 rows plus one truncation probe; this scan cap does not extend to B4's existing collection readers. Always partial/unfenced. No bounded database-read memory or SQL-cancellation claim."
+  }
+}
