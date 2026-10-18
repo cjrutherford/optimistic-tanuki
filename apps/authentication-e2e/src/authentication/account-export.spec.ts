@@ -4,6 +4,7 @@ import {
   Transport,
 } from '@nestjs/microservices';
 import { Client as PgClient } from 'pg';
+import { randomUUID } from 'node:crypto';
 import {
   AuthCommands,
   ProfileCommands,
@@ -22,6 +23,7 @@ describe('Account export session boundary over TCP', () => {
   let ownedTimelineIds: string[] = [];
   let foreignProfileId: string;
   let foreignTimelineId: string;
+  let globalProfileBlogRole: string;
   const fixtureEmails: string[] = [];
   const fixtureUserIds: string[] = [];
   const fixtureProfileIds: string[] = [];
@@ -155,7 +157,7 @@ describe('Account export session boundary over TCP', () => {
       )
     );
 
-  const cleanupFixtures = async () => {
+  const getFixtureDatabaseOptions = (database: string) => {
     const host = process.env.ACCOUNT_EXPORT_E2E_DB_HOST;
     const configuredPort = process.env.E2E_DB_PORT;
     const port = Number(configuredPort);
@@ -168,15 +170,45 @@ describe('Account export session boundary over TCP', () => {
       port < 1 ||
       port > 65535
     ) {
-      throw new Error('Account export E2E database cleanup is not configured');
+      throw new Error('Account export E2E database fixture is not configured');
     }
-    const authDatabase = new PgClient({
-      host,
-      port,
-      user: 'postgres',
-      password: 'postgres',
-      database: 'ot_authentication',
-    });
+    return { host, port, user: 'postgres', password: 'postgres', database };
+  };
+
+  const insertOAuthProviderFixtures = async () => {
+    const database = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await database.connect();
+    try {
+      await database.query(
+        `INSERT INTO oauth_provider
+          (id, provider, "providerUserId", "providerEmail", "providerDisplayName", "userId", "createdAt", "updatedAt")
+         VALUES
+          ($1::uuid, 'google', $2, $3, $4, $5::uuid, now(), now()),
+          ($6::uuid, 'github', $7, $8, $9, $10::uuid, now(), now())`,
+        [
+          randomUUID(),
+          `fixture-owned-${accountId}`,
+          'owned-link@example.test',
+          'Owned fixture link',
+          accountId,
+          randomUUID(),
+          `fixture-foreign-${otherAccountId}`,
+          'foreign-link@example.test',
+          'Foreign fixture link',
+          otherAccountId,
+        ]
+      );
+    } finally {
+      await database.end();
+    }
+  };
+
+  const cleanupFixtures = async () => {
+    const authDatabase = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
     await authDatabase.connect();
     let userIds = [...new Set(fixtureUserIds)];
     try {
@@ -248,13 +280,9 @@ describe('Account export session boundary over TCP', () => {
       await authDatabase.end();
     }
 
-    const profileDatabase = new PgClient({
-      host,
-      port,
-      user: 'postgres',
-      password: 'postgres',
-      database: 'ot_profile',
-    });
+    const profileDatabase = new PgClient(
+      getFixtureDatabaseOptions('ot_profile')
+    );
     await profileDatabase.connect();
     try {
       await profileDatabase.query('BEGIN');
@@ -299,8 +327,10 @@ describe('Account export session boundary over TCP', () => {
       otherAccountId = second.userId;
       sessionToken = first.token;
       otherSessionToken = second.token;
+      await insertOAuthProviderFixtures();
 
       const firstProfile = await createProfile(accountId, 'account-export-a');
+      globalProfileBlogRole = firstProfile.blogRole;
       const secondProfile = await createProfile(accountId, 'account-export-b');
       await setInlinePng(firstProfile.id);
       const foreignProfile = await createProfile(
@@ -369,6 +399,14 @@ describe('Account export session boundary over TCP', () => {
     const profileParticipant = preview.participants.find(
       ({ participantId }) => participantId === 'profile'
     );
+    expect(
+      profileParticipant.data.profiles.find(
+        ({ id }) => id === ownedProfileIds[0]
+      ).blogRole
+    ).toBe(globalProfileBlogRole);
+    expect(
+      profileParticipant.data.profiles.find(({ id }) => id === foreignProfileId)
+    ).toBeUndefined();
     expect(profileParticipant.data.profiles.map(({ id }) => id)).toEqual(
       expect.arrayContaining(ownedProfileIds)
     );
@@ -386,6 +424,30 @@ describe('Account export session boundary over TCP', () => {
       inlineMediaExcluded: true,
       portableBytesIncluded: false,
     });
+    const authenticationParticipant = preview.participants.find(
+      ({ participantId }) => participantId === 'authentication'
+    );
+    expect(authenticationParticipant.data.identity).toMatchObject({
+      id: accountId,
+      ageEligibilityStatus: 'adult',
+    });
+    expect(authenticationParticipant.data.identity).not.toHaveProperty(
+      'password'
+    );
+    expect(authenticationParticipant.data.identity).not.toHaveProperty(
+      'totpSecret'
+    );
+    expect(authenticationParticipant.data.oauthProviders).toEqual([
+      expect.objectContaining({
+        provider: 'google',
+        providerUserId: `fixture-owned-${accountId}`,
+        providerEmail: 'owned-link@example.test',
+        providerDisplayName: 'Owned fixture link',
+      }),
+    ]);
+    expect(JSON.stringify(preview)).not.toContain(
+      `fixture-foreign-${otherAccountId}`
+    );
     expect(profileParticipant.uncovered).toContain(
       'inline-profile-media-excluded'
     );
@@ -410,6 +472,27 @@ describe('Account export session boundary over TCP', () => {
     );
     expect(directProfileSnapshot.data.timelines.map(({ id }) => id)).toEqual(
       expect.arrayContaining(ownedTimelineIds)
+    );
+    expect(
+      directProfileSnapshot.data.profiles.find(
+        ({ id }) => id === ownedProfileIds[0]
+      ).blogRole
+    ).toBe(globalProfileBlogRole);
+    const directAuthenticationSnapshot = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.GetAccountExportSnapshot },
+        { accountId, token: sessionToken, appId: 'client-interface' }
+      )
+    );
+    expect(directAuthenticationSnapshot.data.oauthProviders).toEqual([
+      expect.objectContaining({
+        provider: 'google',
+        providerUserId: `fixture-owned-${accountId}`,
+        providerEmail: 'owned-link@example.test',
+      }),
+    ]);
+    expect(JSON.stringify(directAuthenticationSnapshot)).not.toContain(
+      `fixture-foreign-${otherAccountId}`
     );
   });
 

@@ -31,6 +31,7 @@ describe('ProfileAccountExportService', () => {
         userId: ACCOUNT_ID,
         appScope: 'global',
         profileName: 'Owner',
+        blogRole: 'poster',
         profilePic: 'encrypted://avatar',
         coverPic: 'encrypted://cover',
         bio: 'Bio',
@@ -97,6 +98,10 @@ describe('ProfileAccountExportService', () => {
     expect(snapshot.data.timelines.map(({ id }) => id)).toEqual([
       'owned-timeline',
     ]);
+    expect(snapshot.data.profiles[0].blogRole).toBe('poster');
+    expect(profileRepository.find.mock.calls[0][0].select).toContain(
+      'blogRole'
+    );
     expect(JSON.stringify(snapshot)).not.toContain('must-not-leak');
     expect(snapshot.data.media).toEqual({
       referencesIncluded: false,

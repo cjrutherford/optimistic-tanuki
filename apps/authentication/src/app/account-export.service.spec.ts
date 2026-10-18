@@ -10,6 +10,8 @@ const identityRow = {
   firstName: 'Account',
   lastName: 'Owner',
   bio: 'Basic identity',
+  ageEligibilityStatus: 'adult',
+  ageEligibilityEndsAt: '2025-01-01',
   emailVerifiedAt: new Date('2025-01-01T00:00:00Z'),
   password: 'private-hash',
   totpSecret: 'private-totp',
@@ -19,6 +21,7 @@ const identityRow = {
 
 describe('AccountExportService', () => {
   const userRepository = { findOne: jest.fn() };
+  const oauthRepository = { find: jest.fn() };
   const profileClient = { send: jest.fn() };
   const appService = { validateToken: jest.fn() };
   let service: AccountExportService;
@@ -26,6 +29,7 @@ describe('AccountExportService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     userRepository.findOne.mockResolvedValue(identityRow);
+    oauthRepository.find.mockResolvedValue([]);
     profileClient.send.mockReturnValue(
       of({
         contractVersion: 1,
@@ -42,6 +46,7 @@ describe('AccountExportService', () => {
     });
     service = new AccountExportService(
       userRepository as never,
+      oauthRepository as never,
       profileClient as never,
       appService as never
     );
@@ -61,6 +66,8 @@ describe('AccountExportService', () => {
       firstName: 'Account',
       lastName: 'Owner',
       bio: 'Basic identity',
+      ageEligibilityStatus: 'adult',
+      ageEligibilityEndsAt: identityRow.ageEligibilityEndsAt,
       emailVerifiedAt: identityRow.emailVerifiedAt,
     });
     expect(JSON.stringify(snapshot)).not.toMatch(
@@ -69,8 +76,10 @@ describe('AccountExportService', () => {
     expect(snapshot.uncovered).toEqual(
       expect.arrayContaining([
         'guardian-permissions',
-        'provider-linkage-metadata',
-        'account-key-data',
+        'guardian-policy-notices',
+        'auth-action-token-security-history',
+        'authentication-security-control-state',
+        'session-history',
       ])
     );
     expect(userRepository.findOne.mock.calls[0][0].select).toEqual([
@@ -80,11 +89,164 @@ describe('AccountExportService', () => {
       'lastName',
       'bio',
       'emailVerifiedAt',
+      'ageEligibilityStatus',
+      'ageEligibilityEndsAt',
     ]);
+    expect(snapshot.data.oauthProviders).toEqual([]);
+    expect(snapshot.data.excluded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ category: 'credentials' }),
+        expect.objectContaining({ category: 'cryptographic-key-material' }),
+        expect.objectContaining({ category: 'security-control-state' }),
+      ])
+    );
     expect(appService.validateToken).toHaveBeenCalledWith(
       SESSION_TOKEN,
       'client-interface'
     );
+  });
+
+  it('exports only selected provider linkage metadata for owned records', async () => {
+    oauthRepository.find.mockResolvedValue([
+      {
+        id: 'owned-provider-id',
+        userId: ACCOUNT_ID,
+        provider: 'google',
+        providerUserId: 'provider-subject-1',
+        providerEmail: 'linked@example.test',
+        providerDisplayName: 'Linked owner',
+        createdAt: new Date('2025-02-01T00:00:00Z'),
+        updatedAt: new Date('2025-03-01T00:00:00Z'),
+        accessToken: 'raw-provider-token',
+        refreshToken: 'raw-refresh-token',
+      },
+      {
+        id: 'foreign-provider-id',
+        userId: 'a40b2c3a-5648-47e2-8c35-e9d4a54ef67d',
+        provider: 'github',
+        providerUserId: 'foreign-subject',
+      },
+    ]);
+
+    const snapshot = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+
+    expect(oauthRepository.find).toHaveBeenCalledWith({
+      where: { userId: ACCOUNT_ID },
+      select: [
+        'id',
+        'userId',
+        'provider',
+        'providerUserId',
+        'providerEmail',
+        'providerDisplayName',
+        'createdAt',
+        'updatedAt',
+      ],
+      order: { id: 'ASC' },
+      take: 1001,
+    });
+    expect(snapshot.data.oauthProviders).toEqual([
+      {
+        id: 'owned-provider-id',
+        provider: 'google',
+        providerUserId: 'provider-subject-1',
+        providerEmail: 'linked@example.test',
+        providerDisplayName: 'Linked owner',
+        createdAt: new Date('2025-02-01T00:00:00Z'),
+        updatedAt: new Date('2025-03-01T00:00:00Z'),
+      },
+    ]);
+    expect(JSON.stringify(snapshot)).not.toMatch(
+      /raw-provider-token|raw-refresh-token|foreign-subject|foreign-provider-id/
+    );
+  });
+
+  it('keeps provider failures and provider truncation visibly partial', async () => {
+    oauthRepository.find.mockRejectedValueOnce(new Error('database detail'));
+    const failed = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(failed.uncovered).toContain('oauth-provider-read-failed');
+    expect(JSON.stringify(failed)).not.toContain('database detail');
+
+    oauthRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 1001 }, (_, index) => ({
+        id: `provider-${index}`,
+        userId: ACCOUNT_ID,
+        provider: 'google',
+        providerUserId: `subject-${index}`,
+      }))
+    );
+    const truncated = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(truncated.data.oauthProviders).toHaveLength(1000);
+    expect(truncated.uncovered).toContain(
+      'oauth-provider-preview-limit-exceeded'
+    );
+  });
+
+  it('omits over-budget provider metadata and records the string limit', async () => {
+    oauthRepository.find.mockResolvedValue([
+      {
+        id: 'oversized-provider',
+        userId: ACCOUNT_ID,
+        provider: 'google',
+        providerUserId: 'subject',
+        providerDisplayName: 'x'.repeat(
+          ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxStringFieldCharacters + 1
+        ),
+      },
+    ]);
+
+    const snapshot = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+
+    expect(snapshot.data).toEqual({});
+    expect(snapshot.uncovered).toContain(
+      'authentication-preview-string-limit-exceeded'
+    );
+    expect(JSON.stringify(snapshot)).not.toContain('x'.repeat(100));
+  });
+
+  it('omits provider data when the participant byte budget is exceeded', async () => {
+    oauthRepository.find.mockResolvedValue(
+      Array.from({ length: 1000 }, (_, index) => ({
+        id: `provider-${index}`,
+        userId: ACCOUNT_ID,
+        provider: 'google',
+        providerUserId: `subject-${index}`,
+        providerEmail: 'x'.repeat(700),
+      }))
+    );
+
+    const snapshot = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+
+    expect(snapshot.data).toEqual({});
+    expect(snapshot.uncovered).toContain(
+      'authentication-preview-response-budget-exceeded'
+    );
+    expect(
+      Buffer.byteLength(JSON.stringify(snapshot), 'utf8')
+    ).toBeLessThanOrEqual(
+      ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxParticipantSerializedBytes
+    );
+    expect(JSON.stringify(snapshot)).not.toContain('x'.repeat(100));
   });
 
   it('omits oversized authentication identity data and records the string budget', async () => {
@@ -155,6 +317,7 @@ describe('AccountExportService', () => {
     ).rejects.toThrow('Invalid account export subject');
 
     expect(userRepository.findOne).not.toHaveBeenCalled();
+    expect(oauthRepository.find).not.toHaveBeenCalled();
     expect(profileClient.send).not.toHaveBeenCalled();
     expect(appService.validateToken).not.toHaveBeenCalled();
   });
@@ -187,6 +350,7 @@ describe('AccountExportService', () => {
     ).rejects.toThrow('Invalid account export session');
 
     expect(userRepository.findOne).not.toHaveBeenCalled();
+    expect(oauthRepository.find).not.toHaveBeenCalled();
     expect(profileClient.send).not.toHaveBeenCalled();
   });
 

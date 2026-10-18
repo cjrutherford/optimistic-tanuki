@@ -41,7 +41,29 @@ No schema change is needed just to read snapshots. Add a durable ledger only whe
 
 ## Checkpoint B — Complete the ownership inventory and export participants
 
-- Start with B1, Authentication/Profile field classification: age eligibility, profile role, local OAuth linkage metadata, role-specific guardian records, notice/activity records, and explicit credential exclusions. Shared guardian rows need separate projections for the dependent and guardian; do not export the other person's identifiers, email, DOB, or credential fields wholesale. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.
+### B1 — Safe local account metadata
+
+**Status:** Locally verified; see [findings](../release-readiness/findings/DF-007-B1.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-b1.json). Continue at B2. DF-007 remains open.
+
+Expand the existing internal snapshots with the account's age-eligibility status/end date, each owned profile's stored `blogRole`, and local OAuth linkage metadata. Query provider records by the authenticated account ID, select explicit fields, recheck ownership, and apply the existing row/string/response limits. A failed or truncated provider read must remain explicit; it cannot become a successful zero-data acknowledgement.
+
+Distinguish intentionally excluded credentials from unimplemented account data. Never serialize passwords/hashes, TOTP secrets, private keys, raw session/action tokens, token hashes, or provider bearer credentials. Keep guardian shared rows, email-action/security metadata, media, pagination and the wider inventory visibly unresolved for the following checkpoints. B1 does not enable a public route, artifact, deletion, schema change or UI.
+
+Acceptance requires focused field/secret/ownership/budget tests, CI-aligned pre-E2E checks, independent review, and a private Auth/Profile TCP run. The integration fixture must include owned and foreign provider-link metadata and prove that only the authenticated account's records appear. Seed only generated test accounts in the explicitly configured private database, use parameterized statements, and remove/read back those fixture rows before project-scoped teardown. No external provider or email operation is needed.
+
+### B2 — Linked guardian records and own security-event metadata
+
+Continue the internal preview with role-relative linked guardian permissions, own policy-notice records, own email-action metadata and Profile guardian activity. Use exact account-ID predicates, explicit selected fields and independent ownership/role checks. Do not assign unlinked guardian requests by email.
+
+Dependent projections may contain their own DOB and owned profile ID. Guardian projections omit the dependent’s DOB, account and profile IDs. Both omit counterpart identities/contact details and all token hashes. Permission output is limited to role, status, app, creation/attestation timestamps and recorded attestation version; full attestation text and lifecycle/transport fields stay explicitly uncovered. Policy notices report provider acceptance with that exact meaning, never inbox delivery. Export only own action purpose/app/creation/consumption metadata; active-token, return-path and credential fields remain excluded, and pruned history remains uncovered.
+
+Profile activity must match a real profile owned by the recorded dependent. Export role, app, operation and timestamp; include profile ID and changed field names only for the dependent’s own profile. Omit those fields in the guardian projection and keep that redaction explicit. Reject malformed, self-actor, orphan or owner-mismatched rows with partial-coverage markers. Existing retention limits do not establish a complete lifetime history or authorize new retention exceptions.
+
+Apply the existing row/string/byte limits to every new store. Reads that fail or truncate remain partial. Preserve all session/foreign-account/inline-media tests, add role-specific and field-exclusion unit tests, then seed current-schema records for generated accounts in the private TCP test. Run the same pre-E2E gates, independent review, direct fixture readback and project teardown. No public route, artifact, deletion, schema, provider/email operation or UI is included.
+
+### Remaining export coverage
+
+- After B1, add role-specific guardian records, notice/activity records, and reviewed email-action/security metadata. Shared guardian rows need separate projections for the dependent and guardian; do not export the other person's identifiers, email, DOB, or credential fields wholesale. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.
 - Profile images can be inline data URLs, internal references, or arbitrary URLs. Checkpoint A omits them explicitly while its preview is incomplete. The complete exporter must support bounded, validated inline-image bytes and owned Assets media without fetching arbitrary URLs. Tests must use real image bytes when claiming MIME validation; a base64-encoded text string with an image MIME label is not a valid image fixture.
 - Trace account, user, profile, owner/creator references and indirect/shared relationships across every owning service. Candidate services include Social, Forum, Chat Collector, Classifieds, Assets, Videos, Workspace, Permissions, App Configurator, Blogging, Civic, Finance, Learning, Payments, Project Planning, Store and Wellness; this list is not exhaustive.
 - Implement explicit allowlists/pagination and ownership readback per participant. Authentication's basic identity snapshot is not its whole data inventory: guardian relationships/notices, provider linkage metadata and other user-facing records require classification too.

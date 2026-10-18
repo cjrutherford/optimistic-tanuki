@@ -30,6 +30,7 @@ const PROFILE_SELECT = [
   'occupation',
   'interests',
   'skills',
+  'blogRole',
   'created_at',
 ] as const;
 @Injectable()
@@ -135,6 +136,7 @@ export class ProfileAccountExportService {
       occupation: profile.occupation,
       interests: profile.interests,
       skills: profile.skills,
+      blogRole: profile.blogRole,
       created_at: profile.created_at,
     }));
     const timelines = ownedTimelines.map((timeline) => ({

@@ -14,6 +14,7 @@ import { firstValueFrom, timeout } from 'rxjs';
 import validator from 'validator';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
+import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { AppService } from './app.service';
 
 const PROFILE_RPC_TIMEOUT_MS = 3000;
@@ -30,13 +31,28 @@ const IDENTITY_FIELDS = [
   'lastName',
   'bio',
   'emailVerifiedAt',
+  'ageEligibilityStatus',
+  'ageEligibilityEndsAt',
 ] as const;
+const OAUTH_PROVIDER_FIELDS = [
+  'id',
+  'userId',
+  'provider',
+  'providerUserId',
+  'providerEmail',
+  'providerDisplayName',
+  'createdAt',
+  'updatedAt',
+] as const;
+const MAX_PROVIDER_RECORDS = 1000;
 
 @Injectable()
 export class AccountExportService {
   constructor(
     @Inject(getRepositoryToken(UserEntity))
     private readonly userRepository: Repository<UserEntity>,
+    @Inject(getRepositoryToken(OAuthProviderEntity))
+    private readonly oauthRepository: Repository<OAuthProviderEntity>,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly appService: AppService
@@ -55,7 +71,11 @@ export class AccountExportService {
         lastName: string;
         bio: string;
         emailVerifiedAt: Date | null;
+        ageEligibilityStatus: string;
+        ageEligibilityEndsAt: string | null;
       };
+      oauthProviders: Array<Record<string, unknown>>;
+      excluded: Array<{ category: string; reason: string }>;
     }>
   > {
     this.assertAccountId(accountId);
@@ -71,6 +91,38 @@ export class AccountExportService {
     }
     if (!user) throw new RpcException('Account export subject not found');
 
+    let providerRows: OAuthProviderEntity[] = [];
+    let providerReadFailed = false;
+    try {
+      providerRows = await this.oauthRepository.find({
+        where: { userId: accountId },
+        select: [...OAUTH_PROVIDER_FIELDS],
+        order: { id: 'ASC' },
+        take: MAX_PROVIDER_RECORDS + 1,
+      });
+    } catch {
+      providerReadFailed = true;
+    }
+    const foreignProviderRows = providerRows.some(
+      (provider) => provider.userId !== accountId
+    );
+    const accountProviderRows = providerRows.filter(
+      (provider) => provider.userId === accountId
+    );
+    const truncatedProviders =
+      accountProviderRows.length > MAX_PROVIDER_RECORDS;
+    const oauthProviders = accountProviderRows
+      .slice(0, MAX_PROVIDER_RECORDS)
+      .map((provider) => ({
+        id: provider.id,
+        provider: provider.provider,
+        providerUserId: provider.providerUserId,
+        providerEmail: provider.providerEmail ?? null,
+        providerDisplayName: provider.providerDisplayName ?? null,
+        createdAt: provider.createdAt,
+        updatedAt: provider.updatedAt,
+      }));
+
     const identity = {
       id: user.id,
       email: user.email,
@@ -78,9 +130,13 @@ export class AccountExportService {
       lastName: user.lastName,
       bio: user.bio,
       emailVerifiedAt: user.emailVerifiedAt ?? null,
+      ageEligibilityStatus: user.ageEligibilityStatus,
+      ageEligibilityEndsAt: user.ageEligibilityEndsAt ?? null,
     };
     const snapshot: AccountExportParticipantSnapshot<{
       identity: typeof identity;
+      oauthProviders: typeof oauthProviders;
+      excluded: Array<{ category: string; reason: string }>;
     }> = {
       contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
       participantId: 'authentication',
@@ -89,13 +145,40 @@ export class AccountExportService {
       uncovered: [
         'guardian-permissions',
         'guardian-policy-notices',
-        'provider-linkage-metadata',
-        'account-key-data',
+        'auth-action-token-security-history',
+        'authentication-security-control-state',
         'session-history',
+        ...(providerReadFailed ? ['oauth-provider-read-failed'] : []),
+        ...(truncatedProviders
+          ? ['oauth-provider-preview-limit-exceeded']
+          : []),
+        ...(foreignProviderRows ? ['oauth-provider-ownership-mismatch'] : []),
       ],
-      data: { identity },
+      data: {
+        identity,
+        oauthProviders,
+        excluded: [
+          {
+            category: 'credentials',
+            reason:
+              'Passwords, TOTP secrets, session tokens, action tokens, and provider credentials are excluded.',
+          },
+          {
+            category: 'cryptographic-key-material',
+            reason: 'Private key material and key metadata are excluded.',
+          },
+          {
+            category: 'security-control-state',
+            reason:
+              'Login lock and failure counters are operational security state.',
+          },
+        ],
+      },
     };
-    const hasOversizedString = Object.values(identity).some(
+    const hasOversizedString = [
+      ...Object.values(identity),
+      ...oauthProviders.flatMap((provider) => Object.values(provider)),
+    ].some(
       (value) =>
         typeof value === 'string' && value.length > MAX_STRING_FIELD_CHARACTERS
     );
