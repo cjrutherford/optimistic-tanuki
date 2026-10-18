@@ -15,6 +15,9 @@ import validator from 'validator';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
+import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
+import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { AppService } from './app.service';
 
 const PROFILE_RPC_TIMEOUT_MS = 3000;
@@ -45,6 +48,16 @@ const OAUTH_PROVIDER_FIELDS = [
   'updatedAt',
 ] as const;
 const MAX_PROVIDER_RECORDS = 1000;
+const MAX_ACCOUNT_RECORDS = 1000;
+const containsOversizedString = (value: unknown): boolean => {
+  if (typeof value === 'string')
+    return value.length > MAX_STRING_FIELD_CHARACTERS;
+  if (Array.isArray(value)) return value.some(containsOversizedString);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.values(value).some(containsOversizedString);
+  }
+  return false;
+};
 
 @Injectable()
 export class AccountExportService {
@@ -53,6 +66,12 @@ export class AccountExportService {
     private readonly userRepository: Repository<UserEntity>,
     @Inject(getRepositoryToken(OAuthProviderEntity))
     private readonly oauthRepository: Repository<OAuthProviderEntity>,
+    @Inject(getRepositoryToken(GuardianPermissionEntity))
+    private readonly permissionRepository: Repository<GuardianPermissionEntity>,
+    @Inject(getRepositoryToken(GuardianPolicyNoticeEntity))
+    private readonly noticeRepository: Repository<GuardianPolicyNoticeEntity>,
+    @Inject(getRepositoryToken(AuthActionTokenEntity))
+    private readonly actionRepository: Repository<AuthActionTokenEntity>,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly appService: AppService
@@ -75,6 +94,9 @@ export class AccountExportService {
         ageEligibilityEndsAt: string | null;
       };
       oauthProviders: Array<Record<string, unknown>>;
+      guardianPermissions: Array<Record<string, unknown>>;
+      guardianPolicyNotices: Array<Record<string, unknown>>;
+      authActionMetadata: Array<Record<string, unknown>>;
       excluded: Array<{ category: string; reason: string }>;
     }>
   > {
@@ -123,6 +145,139 @@ export class AccountExportService {
         updatedAt: provider.updatedAt,
       }));
 
+    const uncovered: string[] = [
+      'authentication-security-control-state',
+      'session-history',
+      'auth-action-pruned-history',
+      'active-auth-action-token-details-excluded',
+      'guardian-permission-full-attestation-and-lifecycle-fields',
+      'guardian-permission-unlinked-legacy-rows',
+      'guardian-policy-notice-delivery-and-retry-state',
+    ];
+    const readBounded = async <T>(
+      label: string,
+      read: () => Promise<T[]>
+    ): Promise<T[]> => {
+      try {
+        const rows = await read();
+        if (rows.length > MAX_ACCOUNT_RECORDS) {
+          uncovered.push(`${label}-preview-limit-exceeded`);
+        }
+        return rows.slice(0, MAX_ACCOUNT_RECORDS);
+      } catch {
+        uncovered.push(`${label}-read-failed`);
+        return [];
+      }
+    };
+    const permissionRows = await readBounded('guardian-permissions', () =>
+      this.permissionRepository.find({
+        where: [{ userId: accountId }, { guardianUserId: accountId }],
+        select: [
+          'id',
+          'userId',
+          'guardianUserId',
+          'status',
+          'appId',
+          'appName',
+          'createdAt',
+          'attestedAt',
+          'attestationVersion',
+          'dateOfBirth',
+        ],
+        order: { id: 'ASC' },
+        take: MAX_ACCOUNT_RECORDS + 1,
+      })
+    );
+    const guardianPermissions: Array<Record<string, unknown>> = [];
+    let malformedPermission = false;
+    let permissionOwnershipMismatch = false;
+    for (const row of permissionRows) {
+      const dependent = row.userId === accountId;
+      const guardian = row.guardianUserId === accountId;
+      if (!dependent && !guardian) {
+        permissionOwnershipMismatch = true;
+        continue;
+      }
+      if (
+        dependent === guardian ||
+        (dependent && !row.guardianUserId) ||
+        (guardian && !row.userId) ||
+        ![
+          'pending',
+          'approved',
+          'revoked',
+          'expired',
+          'adult-challenge',
+        ].includes(row.status)
+      ) {
+        malformedPermission = true;
+        continue;
+      }
+      guardianPermissions.push({
+        role: dependent ? 'dependent' : 'guardian',
+        status: row.status,
+        appId: row.appId,
+        appName: row.appName,
+        createdAt: row.createdAt,
+        attestedAt: row.attestedAt ?? null,
+        attestationVersion: row.attestationVersion ?? null,
+        ...(dependent ? { dateOfBirth: row.dateOfBirth ?? null } : {}),
+      });
+    }
+    if (malformedPermission) {
+      uncovered.push('guardian-permission-malformed-or-self-row');
+    }
+    if (permissionOwnershipMismatch) {
+      uncovered.push('guardian-permission-ownership-mismatch');
+    }
+
+    const noticeRows = await readBounded('guardian-policy-notices', () =>
+      this.noticeRepository.find({
+        where: { guardianUserId: accountId },
+        select: [
+          'guardianUserId',
+          'policyVersion',
+          'policyUrl',
+          'createdAt',
+          'acceptedAt',
+        ],
+        order: { createdAt: 'ASC' },
+        take: MAX_ACCOUNT_RECORDS + 1,
+      })
+    );
+    const guardianPolicyNotices = noticeRows
+      .filter((row) => row.guardianUserId === accountId)
+      .map((row) => ({
+        policyVersion: row.policyVersion,
+        policyUrl: row.policyUrl,
+        createdAt: row.createdAt,
+        acceptedAt: row.acceptedAt ?? null,
+        acceptanceMeaning: 'provider-accepted-not-delivered',
+      }));
+    if (noticeRows.some((row) => row.guardianUserId !== accountId)) {
+      uncovered.push('guardian-policy-notice-ownership-mismatch');
+    }
+
+    const actionRows = await readBounded('auth-action-metadata', () =>
+      this.actionRepository.find({
+        where: { userId: accountId },
+        select: ['userId', 'purpose', 'appId', 'createdAt', 'consumedAt'],
+        order: { id: 'ASC' },
+        take: MAX_ACCOUNT_RECORDS + 1,
+      })
+    );
+    const authActionMetadata = actionRows
+      .filter((row) => row.userId === accountId)
+      .map((row) => ({
+        purpose: row.purpose,
+        appId: row.appId,
+        createdAt: row.createdAt,
+        consumedAt: row.consumedAt ?? null,
+      }));
+    if (actionRows.some((row) => row.userId !== accountId)) {
+      uncovered.push('auth-action-metadata-ownership-mismatch');
+    }
+
     const identity = {
       id: user.id,
       email: user.email,
@@ -136,6 +291,9 @@ export class AccountExportService {
     const snapshot: AccountExportParticipantSnapshot<{
       identity: typeof identity;
       oauthProviders: typeof oauthProviders;
+      guardianPermissions: typeof guardianPermissions;
+      guardianPolicyNotices: typeof guardianPolicyNotices;
+      authActionMetadata: typeof authActionMetadata;
       excluded: Array<{ category: string; reason: string }>;
     }> = {
       contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
@@ -143,11 +301,7 @@ export class AccountExportService {
       accountId,
       status: 'partial',
       uncovered: [
-        'guardian-permissions',
-        'guardian-policy-notices',
-        'auth-action-token-security-history',
-        'authentication-security-control-state',
-        'session-history',
+        ...uncovered,
         ...(providerReadFailed ? ['oauth-provider-read-failed'] : []),
         ...(truncatedProviders
           ? ['oauth-provider-preview-limit-exceeded']
@@ -157,6 +311,9 @@ export class AccountExportService {
       data: {
         identity,
         oauthProviders,
+        guardianPermissions,
+        guardianPolicyNotices,
+        authActionMetadata,
         excluded: [
           {
             category: 'credentials',
@@ -175,13 +332,13 @@ export class AccountExportService {
         ],
       },
     };
-    const hasOversizedString = [
-      ...Object.values(identity),
-      ...oauthProviders.flatMap((provider) => Object.values(provider)),
-    ].some(
-      (value) =>
-        typeof value === 'string' && value.length > MAX_STRING_FIELD_CHARACTERS
-    );
+    const hasOversizedString = containsOversizedString({
+      identity,
+      oauthProviders,
+      guardianPermissions,
+      guardianPolicyNotices,
+      authActionMetadata,
+    });
     if (hasOversizedString) {
       snapshot.uncovered.push('authentication-preview-string-limit-exceeded');
       snapshot.data = {} as typeof snapshot.data;

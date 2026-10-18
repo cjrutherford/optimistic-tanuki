@@ -1,6 +1,7 @@
 import { ProfileAccountExportService } from './account-export.service';
 import { of } from 'rxjs';
 import { AuthCommands } from '@optimistic-tanuki/constants';
+import { ACCOUNT_EXPORT_PREVIEW_BUDGETS } from '@optimistic-tanuki/models';
 
 const ACCOUNT_ID = 'd816be66-4fb6-4ed6-a91d-cc058bd5c816';
 const OTHER_ACCOUNT_ID = 'a40b2c3a-5648-47e2-8c35-e9d4a54ef67d';
@@ -9,19 +10,239 @@ const SESSION_TOKEN = 'session-bearer-secret';
 describe('ProfileAccountExportService', () => {
   const profileRepository = { find: jest.fn() };
   const timelineRepository = { find: jest.fn() };
+  const activityRepository = { find: jest.fn() };
   const authClient = { send: jest.fn() };
   let service: ProfileAccountExportService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    profileRepository.find.mockResolvedValue([]);
+    timelineRepository.find.mockResolvedValue([]);
     authClient.send.mockReturnValue(
       of({ isValid: true, data: { userId: ACCOUNT_ID } })
     );
+    activityRepository.find.mockResolvedValue([]);
     service = new ProfileAccountExportService(
       profileRepository as never,
       timelineRepository as never,
+      activityRepository as never,
       authClient as never
     );
+  });
+
+  it('projects own guardian activity only after verifying profile ownership', async () => {
+    timelineRepository.find.mockResolvedValueOnce([]);
+    profileRepository.find
+      .mockResolvedValueOnce([{ id: 'owned-profile', userId: ACCOUNT_ID }])
+      .mockResolvedValueOnce([
+        { id: 'owned-profile', userId: ACCOUNT_ID },
+        { id: 'foreign-profile', userId: OTHER_ACCOUNT_ID },
+      ]);
+    activityRepository.find.mockResolvedValue([
+      {
+        actorUserId: OTHER_ACCOUNT_ID,
+        dependentUserId: ACCOUNT_ID,
+        profileId: 'owned-profile',
+        appId: 'client-interface',
+        operation: 'profile.manage',
+        changedFieldNames: ['bio'],
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+      },
+      {
+        actorUserId: ACCOUNT_ID,
+        dependentUserId: OTHER_ACCOUNT_ID,
+        profileId: 'foreign-profile',
+        appId: 'client-interface',
+        operation: 'profile.view',
+        changedFieldNames: ['email'],
+        createdAt: new Date('2025-01-02T00:00:00Z'),
+      },
+      {
+        actorUserId: ACCOUNT_ID,
+        dependentUserId: ACCOUNT_ID,
+        profileId: 'owned-profile',
+        appId: 'client-interface',
+        operation: 'profile.view',
+        changedFieldNames: [],
+        createdAt: new Date(),
+      },
+      {
+        actorUserId: OTHER_ACCOUNT_ID,
+        dependentUserId: ACCOUNT_ID,
+        profileId: 'orphan-profile',
+        appId: 'client-interface',
+        operation: 'profile.view',
+        changedFieldNames: [],
+        createdAt: new Date(),
+      },
+    ]);
+
+    const snapshot = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    const data = snapshot.data as Record<string, any>;
+    expect(data.guardianActivity).toEqual([
+      expect.objectContaining({
+        role: 'dependent',
+        profileId: 'owned-profile',
+        changedFieldNames: ['bio'],
+      }),
+      expect.objectContaining({ role: 'guardian' }),
+    ]);
+    expect(data.guardianActivity[1]).not.toHaveProperty('profileId');
+    expect(data.guardianActivity[1]).not.toHaveProperty('changedFieldNames');
+    expect(snapshot.uncovered).toContain(
+      'guardian-profile-activity-owner-mismatch-or-orphan'
+    );
+    expect(snapshot.uncovered).toContain(
+      'guardian-profile-activity-malformed-or-self-row'
+    );
+    expect(JSON.stringify(snapshot)).not.toMatch(
+      new RegExp(`${OTHER_ACCOUNT_ID}|foreign-profile`)
+    );
+    expect(activityRepository.find.mock.calls[0][0].where).toEqual([
+      { actorUserId: ACCOUNT_ID },
+      { dependentUserId: ACCOUNT_ID },
+    ]);
+  });
+
+  it('omits owner-matched activity rows with an unsupported operation', async () => {
+    profileRepository.find
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'owned-profile', userId: ACCOUNT_ID }]);
+    activityRepository.find.mockResolvedValueOnce([
+      {
+        actorUserId: OTHER_ACCOUNT_ID,
+        dependentUserId: ACCOUNT_ID,
+        profileId: 'owned-profile',
+        appId: 'client-interface',
+        operation: 'profile.delete',
+        changedFieldNames: [],
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+      },
+    ]);
+
+    const snapshot = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+
+    expect((snapshot.data as Record<string, any>).guardianActivity).toEqual([]);
+    expect(snapshot.uncovered).toContain(
+      'guardian-profile-activity-malformed-or-self-row'
+    );
+    expect(snapshot.uncovered).not.toContain(
+      'guardian-profile-activity-owner-mismatch-or-orphan'
+    );
+    expect(profileRepository.find.mock.calls[1][0]).toEqual({
+      where: [{ id: 'owned-profile', userId: ACCOUNT_ID }],
+      select: ['id', 'userId'],
+    });
+  });
+
+  it('marks guardian-activity read failures and row truncation without claiming zero history', async () => {
+    activityRepository.find.mockRejectedValueOnce(
+      new Error('activity SQL secret')
+    );
+    const failed = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(failed.uncovered).toContain('guardian-profile-activity-read-failed');
+    expect(JSON.stringify(failed)).not.toContain('activity SQL secret');
+
+    profileRepository.find.mockResolvedValueOnce([]);
+    activityRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 1001 }, (_, index) => ({
+        actorUserId: ACCOUNT_ID,
+        dependentUserId: OTHER_ACCOUNT_ID,
+        profileId: 'foreign-profile',
+        appId: 'client-interface',
+        operation: 'profile.view',
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+      }))
+    );
+    profileRepository.find.mockResolvedValueOnce([
+      { id: 'foreign-profile', userId: OTHER_ACCOUNT_ID },
+    ]);
+    const truncated = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(truncated.uncovered).toContain(
+      'guardian-profile-activity-preview-limit-exceeded'
+    );
+    expect(
+      (truncated.data as Record<string, any>).guardianActivity
+    ).toHaveLength(1000);
+  });
+
+  it('applies string and serialized participant budgets to changed-field metadata', async () => {
+    profileRepository.find.mockResolvedValueOnce([]);
+    activityRepository.find.mockResolvedValueOnce([
+      {
+        actorUserId: 'd8e3819c-cf3e-424a-a2a7-8aa412ff5db9',
+        dependentUserId: ACCOUNT_ID,
+        profileId: 'owned-profile',
+        appId: 'client-interface',
+        operation: 'profile.manage',
+        changedFieldNames: [
+          'x'.repeat(
+            ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxStringFieldCharacters + 1
+          ),
+        ],
+        createdAt: new Date(),
+      },
+    ]);
+    profileRepository.find.mockResolvedValueOnce([
+      { id: 'owned-profile', userId: ACCOUNT_ID },
+    ]);
+    const overString = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect((overString.data as Record<string, any>).guardianActivity).toEqual(
+      []
+    );
+    expect(overString.uncovered).toContain(
+      'profile-preview-string-limit-exceeded'
+    );
+    expect(JSON.stringify(overString)).not.toContain('x'.repeat(100));
+
+    profileRepository.find.mockResolvedValueOnce([]);
+    activityRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 150 }, () => ({
+        actorUserId: ACCOUNT_ID,
+        dependentUserId: OTHER_ACCOUNT_ID,
+        profileId: 'foreign-profile',
+        appId: 'a'.repeat(4096),
+        operation: 'profile.view',
+        changedFieldNames: [],
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+      }))
+    );
+    profileRepository.find.mockResolvedValueOnce([
+      { id: 'foreign-profile', userId: OTHER_ACCOUNT_ID },
+    ]);
+    const overBytes = await service.getAccountExportSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    const limits = (overBytes.data as Record<string, any>).previewLimits;
+    expect(limits.dataOmittedForBudget).toBe(true);
+    expect(overBytes.uncovered).toContain(
+      'profile-preview-response-budget-exceeded'
+    );
+    expect(
+      Buffer.byteLength(JSON.stringify(overBytes), 'utf8')
+    ).toBeLessThanOrEqual(limits.maxSerializedBytes);
   });
 
   it('returns all owned profiles and their owned timelines without serializing entity extensions', async () => {
@@ -142,6 +363,7 @@ describe('ProfileAccountExportService', () => {
 
     expect(profileRepository.find).not.toHaveBeenCalled();
     expect(timelineRepository.find).not.toHaveBeenCalled();
+    expect(activityRepository.find).not.toHaveBeenCalled();
     expect(authClient.send).not.toHaveBeenCalled();
   });
 
@@ -310,5 +532,6 @@ describe('ProfileAccountExportService', () => {
 
     expect(profileRepository.find).not.toHaveBeenCalled();
     expect(timelineRepository.find).not.toHaveBeenCalled();
+    expect(activityRepository.find).not.toHaveBeenCalled();
   });
 });

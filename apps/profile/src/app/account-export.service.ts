@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import { firstValueFrom, timeout } from 'rxjs';
 import { Profile } from '../profiles/entities/profile.entity';
 import { Timeline } from '../timelines/entities/timeline.entity';
+import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
 
 const MAX_PREVIEW_RECORDS = 1000;
 const AUTH_VALIDATION_TIMEOUT_MS = 3000;
@@ -33,6 +34,19 @@ const PROFILE_SELECT = [
   'blogRole',
   'created_at',
 ] as const;
+const MAX_ACTIVITY_RECORDS = 1000;
+const containsOversizedString = (value: unknown): boolean => {
+  if (
+    typeof value === 'string' &&
+    value.length > MAX_PREVIEW_STRING_FIELD_CHARACTERS
+  )
+    return true;
+  if (Array.isArray(value)) return value.some(containsOversizedString);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.values(value).some(containsOversizedString);
+  }
+  return false;
+};
 @Injectable()
 export class ProfileAccountExportService {
   constructor(
@@ -40,6 +54,8 @@ export class ProfileAccountExportService {
     private readonly profileRepository: Repository<Profile>,
     @Inject(getRepositoryToken(Timeline))
     private readonly timelineRepository: Repository<Timeline>,
+    @Inject(getRepositoryToken(GuardianProfileActivity))
+    private readonly activityRepository: Repository<GuardianProfileActivity>,
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy
   ) {}
@@ -52,6 +68,7 @@ export class ProfileAccountExportService {
     AccountExportParticipantSnapshot<{
       profiles: Array<Record<string, unknown>>;
       timelines: Array<Record<string, unknown>>;
+      guardianActivity: Array<Record<string, unknown>>;
       media: {
         referencesIncluded: false;
         inlineMediaExcluded: true;
@@ -148,6 +165,95 @@ export class ProfileAccountExportService {
       eventType: timeline.eventType,
       relatedProfileId: timeline.related_profile?.id ?? null,
     }));
+    let activityRows: GuardianProfileActivity[] = [];
+    let activityReadFailed = false;
+    try {
+      activityRows = await this.activityRepository.find({
+        where: [{ actorUserId: accountId }, { dependentUserId: accountId }],
+        select: [
+          'actorUserId',
+          'dependentUserId',
+          'profileId',
+          'appId',
+          'operation',
+          'changedFieldNames',
+          'createdAt',
+        ],
+        order: { id: 'ASC' },
+        take: MAX_ACTIVITY_RECORDS + 1,
+      });
+    } catch {
+      activityReadFailed = true;
+    }
+    const activityTruncated = activityRows.length > MAX_ACTIVITY_RECORDS;
+    const candidateActivities = activityRows.slice(0, MAX_ACTIVITY_RECORDS);
+    const relevantActivities = candidateActivities.filter(
+      (row) =>
+        (row.actorUserId === accountId || row.dependentUserId === accountId) &&
+        row.actorUserId !== row.dependentUserId
+    );
+    const profileOwnerPairs = [
+      ...new Map(
+        relevantActivities.map((row) => [
+          `${row.profileId}:${row.dependentUserId}`,
+          { id: row.profileId, userId: row.dependentUserId },
+        ])
+      ).values(),
+    ];
+    let verifiedProfileOwners = new Set<string>();
+    let profileOwnershipReadFailed = false;
+    if (profileOwnerPairs.length > 0) {
+      try {
+        const ownedActivityProfiles = await this.profileRepository.find({
+          where: profileOwnerPairs,
+          select: ['id', 'userId'],
+        });
+        verifiedProfileOwners = new Set(
+          ownedActivityProfiles.map(
+            (profile) => `${profile.id}:${profile.userId}`
+          )
+        );
+      } catch {
+        profileOwnershipReadFailed = true;
+      }
+    }
+    const guardianActivity: Array<Record<string, unknown>> = [];
+    let malformedActivity = false;
+    let activityOwnerMismatch = false;
+    for (const row of candidateActivities) {
+      const isDependent = row.dependentUserId === accountId;
+      const isGuardian = row.actorUserId === accountId;
+      if (
+        isDependent === isGuardian ||
+        row.actorUserId === row.dependentUserId
+      ) {
+        malformedActivity = true;
+        continue;
+      }
+      if (
+        profileOwnershipReadFailed ||
+        !verifiedProfileOwners.has(`${row.profileId}:${row.dependentUserId}`)
+      ) {
+        activityOwnerMismatch = true;
+        continue;
+      }
+      if (!['profile.view', 'profile.manage'].includes(row.operation)) {
+        malformedActivity = true;
+        continue;
+      }
+      guardianActivity.push({
+        role: isDependent ? 'dependent' : 'guardian',
+        appId: row.appId,
+        operation: row.operation,
+        createdAt: row.createdAt,
+        ...(isDependent
+          ? {
+              profileId: row.profileId,
+              changedFieldNames: row.changedFieldNames,
+            }
+          : {}),
+      });
+    }
     const uncovered = [
       'guardian-profile-activity',
       'profile-media-references',
@@ -156,17 +262,29 @@ export class ProfileAccountExportService {
       // TypeORM materializes at most 1001 non-media rows before this projection;
       // future full exports need database pagination/streaming to bound read memory.
       'profile-preview-read-memory-unbounded',
+      'guardian-profile-activity-90-day-retention-limits-history',
+      ...(activityReadFailed ? ['guardian-profile-activity-read-failed'] : []),
+      ...(activityTruncated
+        ? ['guardian-profile-activity-preview-limit-exceeded']
+        : []),
+      ...(profileOwnershipReadFailed
+        ? ['guardian-profile-activity-owner-read-failed']
+        : []),
+      ...(malformedActivity
+        ? ['guardian-profile-activity-malformed-or-self-row']
+        : []),
+      ...(activityOwnerMismatch
+        ? ['guardian-profile-activity-owner-mismatch-or-orphan']
+        : []),
       ...(truncatedProfiles ? ['profile-preview-limit-exceeded'] : []),
       ...(truncatedTimelineEntries ? ['timeline-preview-limit-exceeded'] : []),
     ];
 
-    const stringLimitExceeded = [...profiles, ...timelines].some((record) =>
-      Object.values(record).some(
-        (value) =>
-          typeof value === 'string' &&
-          value.length > MAX_PREVIEW_STRING_FIELD_CHARACTERS
-      )
-    );
+    const stringLimitExceeded = containsOversizedString({
+      profiles,
+      timelines,
+      guardianActivity,
+    });
     let dataOmittedForBudget = stringLimitExceeded;
     if (stringLimitExceeded) {
       uncovered.push('profile-preview-string-limit-exceeded');
@@ -177,6 +295,7 @@ export class ProfileAccountExportService {
     ): {
       profiles: Array<Record<string, unknown>>;
       timelines: Array<Record<string, unknown>>;
+      guardianActivity: Array<Record<string, unknown>>;
       media: {
         referencesIncluded: false;
         inlineMediaExcluded: true;
@@ -194,6 +313,7 @@ export class ProfileAccountExportService {
     } => ({
       profiles: omitRows ? [] : profiles,
       timelines: omitRows ? [] : timelines,
+      guardianActivity: omitRows ? [] : guardianActivity,
       media: {
         referencesIncluded: false,
         inlineMediaExcluded: true,

@@ -28,6 +28,10 @@ describe('Account export session boundary over TCP', () => {
   const fixtureUserIds: string[] = [];
   const fixtureProfileIds: string[] = [];
   const fixtureTimelineIds: string[] = [];
+  const fixtureGuardianPermissionIds = [randomUUID(), randomUUID()].sort();
+  const fixtureGuardianNoticeId = randomUUID();
+  const fixtureActionTokenId = randomUUID();
+  const fixtureActivityIds = [randomUUID(), randomUUID()].sort();
 
   const registerAndLogin = async (label: string) => {
     const email = `account-export-${label}-${Date.now()}@example.test`;
@@ -205,6 +209,80 @@ describe('Account export session boundary over TCP', () => {
     }
   };
 
+  const insertGuardianExportFixtures = async (
+    dependentProfileId: string,
+    foreignProfileId: string
+  ) => {
+    const authDatabase = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await authDatabase.connect();
+    try {
+      await authDatabase.query('BEGIN');
+      await authDatabase.query(
+        `INSERT INTO guardian_permission
+          (id, "applicantEmail", "guardianEmail", "dateOfBirth", "userId", "guardianUserId", "status",
+           "attestationVersion", "attestationText", "createdAt", "expiresAt", "attestedAt", "deleteAfter", "appId", "appName", "uiBaseUrl", "emailFrom")
+         VALUES
+          ($1::uuid, 'dependent@example.test', 'guardian@example.test', '2010-01-01', $2::uuid, $3::uuid, 'revoked', 'fixture-v1', 'private fixture statement', now(), now() + interval '1 year', now(), now() + interval '1 day', 'client-interface', 'Fixture App', 'http://127.0.0.1:8080', 'fixture@example.test'),
+          ($4::uuid, 'other-dependent@example.test', 'owner@example.test', '2011-01-01', $3::uuid, $2::uuid, 'revoked', 'fixture-v2', 'other private statement', now(), now() + interval '1 year', now(), now() + interval '1 day', 'client-interface', 'Fixture App', 'http://127.0.0.1:8080', 'fixture@example.test')`,
+        [
+          fixtureGuardianPermissionIds[0],
+          accountId,
+          otherAccountId,
+          fixtureGuardianPermissionIds[1],
+        ]
+      );
+      await authDatabase.query(
+        `INSERT INTO guardian_policy_notice
+          (id, "policyVersion", "policyUrl", "guardianUserId", status, "acceptedAt", "createdAt", "updatedAt", "nextAttemptAt")
+         VALUES ($1::uuid, 'fixture-policy-v1', 'https://example.test/policy', $2::uuid, 'accepted', now(), now(), now(), now())`,
+        [fixtureGuardianNoticeId, accountId]
+      );
+      await authDatabase.query(
+        `INSERT INTO auth_action_token
+          (id, "tokenHash", purpose, "appId", "returnPath", "expiresAt", "consumedAt", "createdAt", "userId")
+         VALUES ($1::uuid, $2, 'verification', 'client-interface', '/private-fixture-return', now() + interval '1 hour', NULL, now(), $3::uuid)`,
+        [fixtureActionTokenId, 'a'.repeat(64), accountId]
+      );
+      await authDatabase.query('COMMIT');
+    } catch (error) {
+      await authDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await authDatabase.end();
+    }
+
+    const profileDatabase = new PgClient(
+      getFixtureDatabaseOptions('ot_profile')
+    );
+    await profileDatabase.connect();
+    try {
+      await profileDatabase.query('BEGIN');
+      await profileDatabase.query(
+        `INSERT INTO guardian_profile_activity
+          (id, "actorUserId", "dependentUserId", "profileId", "appId", operation, "changedFieldNames", "createdAt")
+         VALUES
+          ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'client-interface', 'profile.manage', ARRAY['bio','location'], now()),
+          ($5::uuid, $3::uuid, $2::uuid, $6::uuid, 'client-interface', 'profile.view', ARRAY['email'], now())`,
+        [
+          fixtureActivityIds[0],
+          otherAccountId,
+          accountId,
+          dependentProfileId,
+          fixtureActivityIds[1],
+          foreignProfileId,
+        ]
+      );
+      await profileDatabase.query('COMMIT');
+    } catch (error) {
+      await profileDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await profileDatabase.end();
+    }
+  };
+
   const cleanupFixtures = async () => {
     const authDatabase = new PgClient(
       getFixtureDatabaseOptions('ot_authentication')
@@ -273,6 +351,21 @@ describe('Account export session boundary over TCP', () => {
         }
       }
       await authDatabase.query('COMMIT');
+      const guardianRows = await authDatabase.query(
+        'SELECT id FROM guardian_permission WHERE id = ANY($1::uuid[])',
+        [fixtureGuardianPermissionIds]
+      );
+      const noticeRows = await authDatabase.query(
+        'SELECT id FROM guardian_policy_notice WHERE id = $1::uuid',
+        [fixtureGuardianNoticeId]
+      );
+      const actionRows = await authDatabase.query(
+        'SELECT id FROM auth_action_token WHERE id = $1::uuid',
+        [fixtureActionTokenId]
+      );
+      expect(guardianRows.rowCount).toBe(0);
+      expect(noticeRows.rowCount).toBe(0);
+      expect(actionRows.rowCount).toBe(0);
     } catch (error) {
       await authDatabase.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -301,6 +394,11 @@ describe('Account export session boundary over TCP', () => {
         );
       }
       await profileDatabase.query('COMMIT');
+      const activityRows = await profileDatabase.query(
+        'SELECT id FROM guardian_profile_activity WHERE id = ANY($1::uuid[])',
+        [fixtureActivityIds]
+      );
+      expect(activityRows.rowCount).toBe(0);
     } catch (error) {
       await profileDatabase.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -337,6 +435,7 @@ describe('Account export session boundary over TCP', () => {
         otherAccountId,
         'account-export-b'
       );
+      await insertGuardianExportFixtures(firstProfile.id, foreignProfile.id);
       const firstTimeline = await createTimeline(
         accountId,
         firstProfile.id,
@@ -445,9 +544,55 @@ describe('Account export session boundary over TCP', () => {
         providerDisplayName: 'Owned fixture link',
       }),
     ]);
+    expect(
+      authenticationParticipant.data.guardianPermissions.map(({ role }) => role)
+    ).toEqual(['dependent', 'guardian']);
+    const dependentPermission =
+      authenticationParticipant.data.guardianPermissions.find(
+        ({ role }) => role === 'dependent'
+      );
+    const guardianPermission =
+      authenticationParticipant.data.guardianPermissions.find(
+        ({ role }) => role === 'guardian'
+      );
+    expect(dependentPermission.dateOfBirth).toBe('2010-01-01');
+    expect(guardianPermission).not.toHaveProperty('dateOfBirth');
+    for (const permission of authenticationParticipant.data
+      .guardianPermissions) {
+      expect(permission).not.toHaveProperty('id');
+      expect(permission).not.toHaveProperty('userId');
+      expect(permission).not.toHaveProperty('guardianUserId');
+    }
+    expect(authenticationParticipant.data.guardianPolicyNotices).toEqual([
+      expect.objectContaining({
+        policyVersion: 'fixture-policy-v1',
+        acceptanceMeaning: 'provider-accepted-not-delivered',
+      }),
+    ]);
+    expect(authenticationParticipant.data.authActionMetadata).toEqual([
+      expect.objectContaining({
+        purpose: 'verification',
+        appId: 'client-interface',
+      }),
+    ]);
+    expect(JSON.stringify(authenticationParticipant)).not.toMatch(
+      /dependent@example\.test|guardian@example\.test|private fixture statement|private-fixture-return|a{64}/
+    );
+    const activities = profileParticipant.data.guardianActivity;
+    expect(activities.map(({ role }) => role)).toEqual([
+      'dependent',
+      'guardian',
+    ]);
+    expect(activities[0]).toMatchObject({
+      profileId: ownedProfileIds[0],
+      changedFieldNames: ['bio', 'location'],
+    });
+    expect(activities[1]).not.toHaveProperty('profileId');
+    expect(activities[1]).not.toHaveProperty('changedFieldNames');
     expect(JSON.stringify(preview)).not.toContain(
       `fixture-foreign-${otherAccountId}`
     );
+    expect(JSON.stringify(preview)).not.toContain(otherAccountId);
     expect(profileParticipant.uncovered).toContain(
       'inline-profile-media-excluded'
     );

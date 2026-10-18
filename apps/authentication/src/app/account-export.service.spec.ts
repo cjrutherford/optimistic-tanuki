@@ -3,6 +3,7 @@ import { AccountExportService } from './account-export.service';
 import { ACCOUNT_EXPORT_PREVIEW_BUDGETS } from '@optimistic-tanuki/models';
 
 const ACCOUNT_ID = 'd816be66-4fb6-4ed6-a91d-cc058bd5c816';
+const OTHER_ACCOUNT_ID = 'a40b2c3a-5648-47e2-8c35-e9d4a54ef67d';
 const SESSION_TOKEN = 'session-bearer-secret';
 const identityRow = {
   id: ACCOUNT_ID,
@@ -22,6 +23,9 @@ const identityRow = {
 describe('AccountExportService', () => {
   const userRepository = { findOne: jest.fn() };
   const oauthRepository = { find: jest.fn() };
+  const permissionRepository = { find: jest.fn() };
+  const noticeRepository = { find: jest.fn() };
+  const actionRepository = { find: jest.fn() };
   const profileClient = { send: jest.fn() };
   const appService = { validateToken: jest.fn() };
   let service: AccountExportService;
@@ -30,6 +34,9 @@ describe('AccountExportService', () => {
     jest.clearAllMocks();
     userRepository.findOne.mockResolvedValue(identityRow);
     oauthRepository.find.mockResolvedValue([]);
+    permissionRepository.find.mockResolvedValue([]);
+    noticeRepository.find.mockResolvedValue([]);
+    actionRepository.find.mockResolvedValue([]);
     profileClient.send.mockReturnValue(
       of({
         contractVersion: 1,
@@ -47,8 +54,267 @@ describe('AccountExportService', () => {
     service = new AccountExportService(
       userRepository as never,
       oauthRepository as never,
+      permissionRepository as never,
+      noticeRepository as never,
+      actionRepository as never,
       profileClient as never,
       appService as never
+    );
+  });
+
+  it('projects guardian permissions and notices by the authenticated role without counterpart identifiers', async () => {
+    const guardianId = 'd8e3819c-cf3e-424a-a2a7-8aa412ff5db9';
+    permissionRepository.find.mockResolvedValue([
+      {
+        id: 'dependent-row',
+        userId: ACCOUNT_ID,
+        guardianUserId: guardianId,
+        status: 'approved',
+        appId: 'client-interface',
+        appName: 'Client',
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+        attestedAt: new Date('2025-01-02T00:00:00Z'),
+        attestationVersion: 'v1',
+        dateOfBirth: '2010-01-01',
+        applicantEmail: 'dependent@example.test',
+        guardianEmail: 'guardian@example.test',
+        guardianTokenHash: 'secret-hash',
+        attestationText: 'secret statement',
+      },
+      {
+        id: 'guardian-row',
+        userId: guardianId,
+        guardianUserId: ACCOUNT_ID,
+        status: 'approved',
+        appId: 'client-interface',
+        appName: 'Client',
+        createdAt: new Date('2025-02-01T00:00:00Z'),
+        attestedAt: new Date('2025-02-02T00:00:00Z'),
+        attestationVersion: 'v2',
+        dateOfBirth: '2011-01-01',
+        applicantEmail: 'other-dependent@example.test',
+        guardianEmail: 'owner@example.test',
+        resumeTokenHash: 'another-secret-hash',
+      },
+      {
+        id: 'malformed',
+        userId: ACCOUNT_ID,
+        guardianUserId: ACCOUNT_ID,
+        status: 'approved',
+      },
+      {
+        id: 'foreign-row',
+        userId: OTHER_ACCOUNT_ID,
+        guardianUserId: '59a04d1b-b62f-47d6-91da-a8ecc420c799',
+        status: 'approved',
+      },
+    ]);
+    noticeRepository.find.mockResolvedValue([
+      {
+        guardianUserId: ACCOUNT_ID,
+        policyVersion: 'p1',
+        policyUrl: 'https://example.test/policy',
+        createdAt: new Date('2025-03-01T00:00:00Z'),
+        acceptedAt: new Date('2025-03-02T00:00:00Z'),
+        status: 'accepted',
+        attempts: 5,
+        lastFailureCode: 'secret-internal',
+      },
+    ]);
+    actionRepository.find.mockResolvedValue([
+      {
+        userId: ACCOUNT_ID,
+        purpose: 'password-reset',
+        appId: 'client-interface',
+        createdAt: new Date('2025-03-03T00:00:00Z'),
+        consumedAt: null,
+        tokenHash: 'action-secret-hash',
+        returnPath: '/secret',
+        expiresAt: new Date(),
+      },
+    ]);
+
+    const snapshot = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    const data = snapshot.data as Record<string, any>;
+    expect(data.guardianPermissions).toEqual([
+      expect.objectContaining({
+        role: 'dependent',
+        dateOfBirth: '2010-01-01',
+        attestationVersion: 'v1',
+      }),
+      expect.objectContaining({ role: 'guardian', attestationVersion: 'v2' }),
+    ]);
+    expect(data.guardianPermissions[1]).not.toHaveProperty('dateOfBirth');
+    expect(data.guardianPolicyNotices[0]).toMatchObject({
+      acceptanceMeaning: 'provider-accepted-not-delivered',
+    });
+    expect(data.authActionMetadata[0]).toMatchObject({
+      purpose: 'password-reset',
+      appId: 'client-interface',
+    });
+    expect(snapshot.uncovered).toContain(
+      'guardian-permission-malformed-or-self-row'
+    );
+    expect(snapshot.uncovered).toContain(
+      'guardian-permission-ownership-mismatch'
+    );
+    expect(JSON.stringify(snapshot)).not.toMatch(
+      new RegExp(
+        `${guardianId}|${OTHER_ACCOUNT_ID}|dependent@example.test|guardian@example.test|secret-hash|secret statement|action-secret-hash|/secret|secret-internal`
+      )
+    );
+    expect(permissionRepository.find.mock.calls[0][0].where).toEqual([
+      { userId: ACCOUNT_ID },
+      { guardianUserId: ACCOUNT_ID },
+    ]);
+  });
+
+  it('keeps new Auth stores failed, truncated, and over budget visibly partial', async () => {
+    permissionRepository.find.mockRejectedValueOnce(
+      new Error('database secret')
+    );
+    noticeRepository.find.mockResolvedValueOnce([]);
+    actionRepository.find.mockResolvedValueOnce([]);
+    const failed = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(failed.uncovered).toContain('guardian-permissions-read-failed');
+    expect(JSON.stringify(failed)).not.toContain('database secret');
+
+    permissionRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 1001 }, (_, i) => ({
+        userId: ACCOUNT_ID,
+        guardianUserId: 'd8e3819c-cf3e-424a-a2a7-8aa412ff5db9',
+        status: 'approved',
+        appId: 'a',
+        appName: 'b',
+        createdAt: new Date(),
+        attestedAt: null,
+        attestationVersion: `x${i}`,
+      }))
+    );
+    const truncated = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(truncated.uncovered).toContain(
+      'guardian-permissions-preview-limit-exceeded'
+    );
+    expect(
+      (truncated.data as Record<string, any>).guardianPermissions
+    ).toHaveLength(1000);
+  });
+
+  it('marks notice and action read failures and row truncation independently', async () => {
+    noticeRepository.find.mockRejectedValueOnce(new Error('notice SQL secret'));
+    actionRepository.find.mockRejectedValueOnce(new Error('action SQL secret'));
+    const failed = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(failed.uncovered).toEqual(
+      expect.arrayContaining([
+        'guardian-policy-notices-read-failed',
+        'auth-action-metadata-read-failed',
+      ])
+    );
+    expect(JSON.stringify(failed)).not.toMatch(
+      /notice SQL secret|action SQL secret/
+    );
+
+    noticeRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 1001 }, (_, index) => ({
+        guardianUserId: ACCOUNT_ID,
+        policyVersion: `version-${index}`,
+        policyUrl: '/policy',
+        createdAt: new Date(),
+        acceptedAt: null,
+      }))
+    );
+    actionRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 1001 }, (_, index) => ({
+        userId: ACCOUNT_ID,
+        purpose: 'verification',
+        appId: `app-${index}`,
+        createdAt: new Date(),
+        consumedAt: null,
+      }))
+    );
+    const truncated = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(truncated.uncovered).toEqual(
+      expect.arrayContaining([
+        'guardian-policy-notices-preview-limit-exceeded',
+        'auth-action-metadata-preview-limit-exceeded',
+      ])
+    );
+    expect(
+      (truncated.data as Record<string, any>).guardianPolicyNotices
+    ).toHaveLength(1000);
+    expect(
+      (truncated.data as Record<string, any>).authActionMetadata
+    ).toHaveLength(1000);
+  });
+
+  it('applies string and serialized participant budgets to newly added nested Auth metadata', async () => {
+    permissionRepository.find.mockResolvedValueOnce([
+      {
+        userId: ACCOUNT_ID,
+        guardianUserId: 'd8e3819c-cf3e-424a-a2a7-8aa412ff5db9',
+        status: 'approved',
+        appId: 'client-interface',
+        appName: 'Client',
+        createdAt: new Date(),
+        attestedAt: null,
+        attestationVersion: 'x'.repeat(4097),
+        dateOfBirth: '2010-01-01',
+      },
+    ]);
+    const overString = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(overString.data).toEqual({});
+    expect(overString.uncovered).toContain(
+      'authentication-preview-string-limit-exceeded'
+    );
+    expect(JSON.stringify(overString)).not.toContain('x'.repeat(100));
+
+    permissionRepository.find.mockResolvedValueOnce([]);
+    actionRepository.find.mockResolvedValueOnce(
+      Array.from({ length: 150 }, () => ({
+        userId: ACCOUNT_ID,
+        purpose: 'verification',
+        appId: 'a'.repeat(4096),
+        createdAt: new Date(),
+        consumedAt: null,
+      }))
+    );
+    const overBytes = await service.getAuthenticationSnapshot(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(overBytes.data).toEqual({});
+    expect(overBytes.uncovered).toContain(
+      'authentication-preview-response-budget-exceeded'
+    );
+    expect(
+      Buffer.byteLength(JSON.stringify(overBytes), 'utf8')
+    ).toBeLessThanOrEqual(
+      ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxParticipantSerializedBytes
     );
   });
 
@@ -75,9 +341,10 @@ describe('AccountExportService', () => {
     );
     expect(snapshot.uncovered).toEqual(
       expect.arrayContaining([
-        'guardian-permissions',
-        'guardian-policy-notices',
-        'auth-action-token-security-history',
+        'guardian-permission-unlinked-legacy-rows',
+        'guardian-permission-full-attestation-and-lifecycle-fields',
+        'guardian-policy-notice-delivery-and-retry-state',
+        'auth-action-pruned-history',
         'authentication-security-control-state',
         'session-history',
       ])
@@ -318,6 +585,9 @@ describe('AccountExportService', () => {
 
     expect(userRepository.findOne).not.toHaveBeenCalled();
     expect(oauthRepository.find).not.toHaveBeenCalled();
+    expect(permissionRepository.find).not.toHaveBeenCalled();
+    expect(noticeRepository.find).not.toHaveBeenCalled();
+    expect(actionRepository.find).not.toHaveBeenCalled();
     expect(profileClient.send).not.toHaveBeenCalled();
     expect(appService.validateToken).not.toHaveBeenCalled();
   });
@@ -351,6 +621,9 @@ describe('AccountExportService', () => {
 
     expect(userRepository.findOne).not.toHaveBeenCalled();
     expect(oauthRepository.find).not.toHaveBeenCalled();
+    expect(permissionRepository.find).not.toHaveBeenCalled();
+    expect(noticeRepository.find).not.toHaveBeenCalled();
+    expect(actionRepository.find).not.toHaveBeenCalled();
     expect(profileClient.send).not.toHaveBeenCalled();
   });
 
