@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import {
   AuthCommands,
   ProfileCommands,
+  SocialCommands,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
@@ -16,6 +17,7 @@ describe('Account export session boundary over TCP', () => {
   let authClient: ClientProxy;
   let profileClient: ClientProxy;
   let permissionsClient: ClientProxy;
+  let socialClient: ClientProxy;
   let accountId: string;
   let otherAccountId: string;
   let sessionToken: string;
@@ -32,6 +34,14 @@ describe('Account export session boundary over TCP', () => {
   const fixtureGuardianPermissionIds = [randomUUID(), randomUUID()].sort();
   const fixtureGuardianNoticeId = randomUUID();
   const fixtureActionTokenId = randomUUID();
+  const socialPostIds = [randomUUID(), randomUUID(), randomUUID()];
+  const socialCommentIds = [randomUUID(), randomUUID()];
+  const socialReactionIds = [randomUUID(), randomUUID()];
+  const socialAttachmentId = randomUUID();
+  const socialPollIds = [randomUUID(), randomUUID(), randomUUID()];
+  const socialComponentId = randomUUID();
+  const fixtureVoteIds: number[] = [];
+  const fixtureLinkIds: number[] = [];
   const fixtureActivityIds = [randomUUID(), randomUUID()].sort();
   const fixtureRoleAssignmentIds = [
     randomUUID(),
@@ -177,9 +187,12 @@ describe('Account export session boundary over TCP', () => {
       process.env.ACCOUNT_EXPORT_E2E_DB_MARKER !==
         'auth-profile-export-fixture-v1' ||
       host !== '127.0.0.1' ||
-      !['ot_authentication', 'ot_profile', 'ot_permissions'].includes(
-        database
-      ) ||
+      ![
+        'ot_authentication',
+        'ot_profile',
+        'ot_permissions',
+        'ot_social',
+      ].includes(database) ||
       !configuredPort ||
       !Number.isInteger(port) ||
       port < 1 ||
@@ -235,6 +248,194 @@ describe('Account export session boundary over TCP', () => {
     } catch (error) {
       await database.query('ROLLBACK').catch(() => undefined);
       throw error;
+    } finally {
+      await database.end();
+    }
+  };
+
+  const insertSocialFixtures = async (
+    ownProfiles: string[],
+    foreignProfile: string
+  ) => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_social'));
+    await database.connect();
+    try {
+      await database.query('BEGIN');
+      await database.query(
+        `INSERT INTO post (id, title, content, "profileId", "userId", "appScope", visibility, "publicAudienceExplicit")
+         VALUES ($1::uuid, 'owned social fixture', 'owned body', $2, $3, 'social', 'public', true),
+                ($4::uuid, 'foreign social fixture', 'foreign body', $5, $6, 'social', 'public', true),
+                ($7::uuid, 'second owned social fixture', 'second owned body', $8, $9, 'social', 'public', true)`,
+        [
+          socialPostIds[0],
+          ownProfiles[0],
+          accountId,
+          socialPostIds[1],
+          foreignProfile,
+          otherAccountId,
+          socialPostIds[2],
+          ownProfiles[1],
+          accountId,
+        ]
+      );
+      await database.query(
+        `INSERT INTO comment (id, content, "userId", "profileId", "appScope", "postId")
+         VALUES ($1::uuid, 'foreign comment under own post', $2, $3, 'social', $4::uuid),
+                ($5::uuid, 'own comment on foreign post', $6, $7, 'social', $8::uuid)`,
+        [
+          socialCommentIds[0],
+          otherAccountId,
+          foreignProfile,
+          socialPostIds[0],
+          socialCommentIds[1],
+          accountId,
+          ownProfiles[0],
+          socialPostIds[1],
+        ]
+      );
+      await database.query(
+        `INSERT INTO reaction (id, value, "userId", "profileId", "appScope", "postId")
+         VALUES ($1::uuid, 1, $3, $4, 'social', $5::uuid),
+                ($2::uuid, 1, $3, $6, 'social', $5::uuid)`,
+        [
+          socialReactionIds[0],
+          socialReactionIds[1],
+          accountId,
+          ownProfiles[0],
+          socialPostIds[1],
+          ownProfiles[1],
+        ]
+      );
+      const vote = await database.query<{ id: number }>(
+        `INSERT INTO vote (value, "userId", "profileId", "appScope", "postId") VALUES (1, $1, $2, 'social', $3::uuid) RETURNING id`,
+        [accountId, ownProfiles[0], socialPostIds[1]]
+      );
+      fixtureVoteIds.push(vote.rows[0].id);
+      await database.query(
+        `INSERT INTO attachment (id, name, "filePath", type, "appScope", "postId") VALUES ($1::uuid, 'fixture image', 'https://private.invalid/?secret=omit', 'IMAGE', 'social', $2::uuid)`,
+        [socialAttachmentId, socialPostIds[0]]
+      );
+      await database.query(
+        `INSERT INTO poll (id, question, options, votes, "isMultipleChoice", "showResultsBeforeVote", "isAnonymous", "profileId", "userId")
+         VALUES ($1::uuid, 'fixture poll', 'yes,no', 'foreign-vote-must-not-export', false, true, false, $2, $3),
+                ($4::uuid, 'second profile fixture poll', 'one,two', NULL, false, true, false, $5, $6),
+                ($7::uuid, 'foreign fixture poll', 'foreign,no', NULL, false, true, false, $8, $9)`,
+        [
+          socialPollIds[0],
+          ownProfiles[0],
+          accountId,
+          socialPollIds[1],
+          ownProfiles[1],
+          accountId,
+          socialPollIds[2],
+          foreignProfile,
+          otherAccountId,
+        ]
+      );
+      await database.query(
+        `INSERT INTO social_components (id, "postId", "instanceId", "componentType", "componentData", position) VALUES ($1::uuid, $2::uuid, $3, 'fixture', '{"secret":"arbitrary-json-must-not-export"}'::jsonb, 0)`,
+        [socialComponentId, socialPostIds[0], `fixture-${socialComponentId}`]
+      );
+      const link = await database.query<{ id: number }>(
+        `INSERT INTO link (url, "appScope") VALUES ($1, 'social') RETURNING id`,
+        ['https://fixture.invalid/?credential=link-url-must-not-export']
+      );
+      fixtureLinkIds.push(link.rows[0].id);
+      await database.query('COMMIT');
+    } catch (error) {
+      await database.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await database.end();
+    }
+  };
+
+  const expectSocialFixturesPersisted = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_social'));
+    await database.connect();
+    try {
+      const rows = await database.query(
+        'SELECT id, "userId", "profileId" FROM post WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialPostIds]
+      );
+      expect(rows.rowCount).toBe(3);
+      expect(rows.rows.map(({ id }) => id)).toEqual(
+        expect.arrayContaining(socialPostIds)
+      );
+      expect(rows.rows.find(({ id }) => id === socialPostIds[0])).toMatchObject(
+        { userId: accountId, profileId: ownedProfileIds[0] }
+      );
+      expect(rows.rows.find(({ id }) => id === socialPostIds[1])).toMatchObject(
+        { userId: otherAccountId, profileId: foreignProfileId }
+      );
+      expect(rows.rows.find(({ id }) => id === socialPostIds[2])).toMatchObject(
+        { userId: accountId, profileId: ownedProfileIds[1] }
+      );
+      const pollRows = await database.query<{
+        id: string;
+        userId: string;
+        profileId: string;
+      }>(
+        'SELECT id, "userId", "profileId" FROM poll WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialPollIds]
+      );
+      expect(pollRows.rowCount).toBe(socialPollIds.length);
+      expect(
+        pollRows.rows.find(({ id }) => id === socialPollIds[0])
+      ).toMatchObject({ userId: accountId, profileId: ownedProfileIds[0] });
+      expect(
+        pollRows.rows.find(({ id }) => id === socialPollIds[1])
+      ).toMatchObject({ userId: accountId, profileId: ownedProfileIds[1] });
+      expect(
+        pollRows.rows.find(({ id }) => id === socialPollIds[2])
+      ).toMatchObject({ userId: otherAccountId, profileId: foreignProfileId });
+      const fixtureRows = await database.query<{ id: string }>(
+        `SELECT id::text AS id FROM comment WHERE id = ANY($1::uuid[])
+         UNION ALL SELECT id::text FROM attachment WHERE id = $2::uuid
+         UNION ALL SELECT id::text FROM poll WHERE id = ANY($3::uuid[])
+         UNION ALL SELECT id::text FROM reaction WHERE id = ANY($4::uuid[])
+         UNION ALL SELECT id::text FROM social_components WHERE id = $5::uuid
+         UNION ALL SELECT id::text FROM vote WHERE id = ANY($6::integer[])
+         UNION ALL SELECT id::text FROM link WHERE id = ANY($7::integer[])`,
+        [
+          socialCommentIds,
+          socialAttachmentId,
+          socialPollIds,
+          socialReactionIds,
+          socialComponentId,
+          fixtureVoteIds,
+          fixtureLinkIds,
+        ]
+      );
+      const expectedIds = [
+        ...socialCommentIds,
+        socialAttachmentId,
+        ...socialPollIds,
+        ...socialReactionIds,
+        socialComponentId,
+        ...fixtureVoteIds.map(String),
+        ...fixtureLinkIds.map(String),
+      ];
+      expect(fixtureRows.rowCount).toBe(expectedIds.length);
+      expect(fixtureRows.rows.map(({ id }) => id)).toEqual(
+        expect.arrayContaining(expectedIds)
+      );
+      const reactionRows = await database.query<{
+        id: string;
+        userId: string;
+        profileId: string;
+        postId: string;
+      }>(
+        'SELECT id, "userId", "profileId", "postId" FROM reaction WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialReactionIds]
+      );
+      expect(reactionRows.rowCount).toBe(socialReactionIds.length);
+      expect(reactionRows.rows.map(({ profileId }) => profileId)).toEqual(
+        expect.arrayContaining(ownedProfileIds)
+      );
+      expect(
+        reactionRows.rows.every(({ userId }) => userId === accountId)
+      ).toBe(true);
     } finally {
       await database.end();
     }
@@ -370,6 +571,66 @@ describe('Account export session boundary over TCP', () => {
   };
 
   const cleanupFixtures = async () => {
+    const socialDatabase = new PgClient(getFixtureDatabaseOptions('ot_social'));
+    await socialDatabase.connect();
+    try {
+      await socialDatabase.query('BEGIN');
+      if (fixtureVoteIds.length)
+        await socialDatabase.query(
+          'DELETE FROM vote WHERE id = ANY($1::integer[])',
+          [fixtureVoteIds]
+        );
+      await socialDatabase.query(
+        'DELETE FROM social_components WHERE id = $1::uuid',
+        [socialComponentId]
+      );
+      if (fixtureLinkIds.length) {
+        await socialDatabase.query(
+          'DELETE FROM link WHERE id = ANY($1::integer[])',
+          [fixtureLinkIds]
+        );
+      }
+      await socialDatabase.query('DELETE FROM attachment WHERE id = $1::uuid', [
+        socialAttachmentId,
+      ]);
+      await socialDatabase.query(
+        'DELETE FROM poll WHERE id = ANY($1::uuid[])',
+        [socialPollIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM reaction WHERE id = ANY($1::uuid[])',
+        [socialReactionIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM comment WHERE id = ANY($1::uuid[])',
+        [socialCommentIds]
+      );
+      await socialDatabase.query(
+        'DELETE FROM post WHERE id = ANY($1::uuid[])',
+        [socialPostIds]
+      );
+      await socialDatabase.query('COMMIT');
+      const leftovers = await socialDatabase.query(
+        'SELECT id::text FROM post WHERE id = ANY($1::uuid[]) UNION ALL SELECT id::text FROM comment WHERE id = ANY($2::uuid[]) UNION ALL SELECT id::text FROM attachment WHERE id = $3::uuid UNION ALL SELECT id::text FROM poll WHERE id = ANY($4::uuid[]) UNION ALL SELECT id::text FROM reaction WHERE id = ANY($5::uuid[]) UNION ALL SELECT id::text FROM social_components WHERE id = $6::uuid UNION ALL SELECT id::text FROM vote WHERE id = ANY($7::integer[]) UNION ALL SELECT id::text FROM link WHERE id = ANY($8::integer[])',
+        [
+          socialPostIds,
+          socialCommentIds,
+          socialAttachmentId,
+          socialPollIds,
+          socialReactionIds,
+          socialComponentId,
+          fixtureVoteIds,
+          fixtureLinkIds,
+        ]
+      );
+      expect(leftovers.rowCount).toBe(0);
+    } catch (error) {
+      await socialDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await socialDatabase.end();
+    }
+
     const permissionsDatabase = new PgClient(
       getFixtureDatabaseOptions('ot_permissions')
     );
@@ -537,11 +798,16 @@ describe('Account export session boundary over TCP', () => {
       transport: Transport.TCP,
       options: { host, port: 3012 },
     });
+    socialClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port: 3003 },
+    });
     try {
       await Promise.all([
         authClient.connect(),
         profileClient.connect(),
         permissionsClient.connect(),
+        socialClient.connect(),
       ]);
       const first = await registerAndLogin('one');
       const second = await registerAndLogin('two');
@@ -564,6 +830,8 @@ describe('Account export session boundary over TCP', () => {
         [firstProfile.id, secondProfile.id],
         foreignProfile.id
       );
+      ownedProfileIds = [firstProfile.id, secondProfile.id];
+      await insertSocialFixtures(ownedProfileIds, foreignProfile.id);
       await insertGuardianExportFixtures(firstProfile.id, foreignProfile.id);
       const firstTimeline = await createTimeline(
         accountId,
@@ -580,7 +848,6 @@ describe('Account export session boundary over TCP', () => {
         foreignProfile.id,
         'foreign'
       );
-      ownedProfileIds = [firstProfile.id, secondProfile.id];
       ownedTimelineIds = [firstTimeline.id, secondTimeline.id];
       foreignTimelineId = foreignTimeline.id;
     } catch (error) {
@@ -606,6 +873,7 @@ describe('Account export session boundary over TCP', () => {
         authClient?.close(),
         profileClient?.close(),
         permissionsClient?.close(),
+        socialClient?.close(),
       ]);
     }
   });
@@ -672,7 +940,106 @@ describe('Account export session boundary over TCP', () => {
     expect(JSON.stringify(permissionsParticipant)).not.toContain(
       foreignProfileId
     );
+    const socialParticipant = preview.participants.find(
+      ({ participantId }) => participantId === 'social'
+    );
+    expect(socialParticipant.status).toBe('partial');
+    expect(socialParticipant.uncovered).toContain('social-preview-unfenced');
+    const exportedPostIds = socialParticipant.data.posts.map(({ id }) => id);
+    expect(
+      exportedPostIds.filter((id) => id === socialPostIds[0])
+    ).toHaveLength(1);
+    expect(
+      exportedPostIds.filter((id) => id === socialPostIds[2])
+    ).toHaveLength(1);
+    expect(
+      socialParticipant.data.posts.find(({ id }) => id === socialPostIds[0])
+        ?.profileId
+    ).toBe(ownedProfileIds[0]);
+    expect(
+      socialParticipant.data.posts.find(({ id }) => id === socialPostIds[2])
+        ?.profileId
+    ).toBe(ownedProfileIds[1]);
+    expect(socialParticipant.data.posts.map(({ id }) => id)).not.toContain(
+      socialPostIds[1]
+    );
+    expect(socialParticipant.data.comments.map(({ id }) => id)).toEqual([
+      socialCommentIds[1],
+    ]);
+    expect(socialParticipant.data.comments[0].postId).toBe(socialPostIds[1]);
+    expect(socialParticipant.data.attachments).toEqual([
+      expect.objectContaining({
+        id: socialAttachmentId,
+        name: 'fixture image',
+      }),
+    ]);
+    expect(JSON.stringify(socialParticipant)).not.toContain('private.invalid');
+    expect(JSON.stringify(socialParticipant)).not.toContain(
+      'foreign-vote-must-not-export'
+    );
+    const exportedPollIds = socialParticipant.data.polls.map(({ id }) => id);
+    expect(
+      exportedPollIds.filter((id) => id === socialPollIds[0])
+    ).toHaveLength(1);
+    expect(
+      exportedPollIds.filter((id) => id === socialPollIds[1])
+    ).toHaveLength(1);
+    expect(exportedPollIds).not.toContain(socialPollIds[2]);
+    expect(
+      socialParticipant.data.polls.find(({ id }) => id === socialPollIds[0])
+        ?.profileId
+    ).toBe(ownedProfileIds[0]);
+    expect(
+      socialParticipant.data.polls.find(({ id }) => id === socialPollIds[1])
+        ?.profileId
+    ).toBe(ownedProfileIds[1]);
+    expect(socialParticipant.data.polls.every((row) => !('votes' in row))).toBe(
+      true
+    );
+    expect(socialParticipant.uncovered).toContain(
+      'poll-post-association-unverified'
+    );
+    expect(socialParticipant.data.reactions).toHaveLength(2);
+    expect(
+      socialParticipant.data.reactions.filter(
+        ({ profileId }) => profileId === ownedProfileIds[0]
+      )
+    ).toEqual([
+      expect.objectContaining({
+        targetType: 'post',
+        targetId: socialPostIds[1],
+      }),
+    ]);
+    expect(
+      socialParticipant.data.reactions.filter(
+        ({ profileId }) => profileId === ownedProfileIds[1]
+      )
+    ).toEqual([
+      expect.objectContaining({
+        targetType: 'post',
+        targetId: socialPostIds[1],
+      }),
+    ]);
+    expect(socialParticipant.data.votes).toEqual([
+      expect.objectContaining({
+        profileId: ownedProfileIds[0],
+        targetType: 'post',
+        targetId: socialPostIds[1],
+      }),
+    ]);
+    expect(JSON.stringify(socialParticipant)).not.toContain(
+      'arbitrary-json-must-not-export'
+    );
+    expect(JSON.stringify(socialParticipant)).not.toContain(
+      'link-url-must-not-export'
+    );
+    expect(socialParticipant.data.portableMediaBytesIncluded).toBe(false);
+    expect(socialParticipant.uncovered).toContain(
+      'social-components-unreviewed'
+    );
+    expect(socialParticipant.uncovered).toContain('post-link-urls-omitted');
     await expectPermissionFixturesPersisted();
+    await expectSocialFixturesPersisted();
     const authenticationParticipant = preview.participants.find(
       ({ participantId }) => participantId === 'authentication'
     );
@@ -789,6 +1156,21 @@ describe('Account export session boundary over TCP', () => {
     expect(JSON.stringify(directAuthenticationSnapshot)).not.toContain(
       `fixture-foreign-${otherAccountId}`
     );
+  });
+
+  it('rejects a cross-account direct Social participant request', async () => {
+    await expect(
+      firstValueFrom(
+        socialClient.send(
+          { cmd: SocialCommands.GetAccountExportSnapshot },
+          {
+            accountId: otherAccountId,
+            token: sessionToken,
+            appId: 'client-interface',
+          }
+        )
+      )
+    ).rejects.toBeDefined();
   });
 
   it('binds the direct Authentication snapshot command to a validated session subject', async () => {

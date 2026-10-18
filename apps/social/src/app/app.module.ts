@@ -61,6 +61,8 @@ import { CommunitySponsorshipContent } from '../entities/community-sponsorship-c
 import { BusinessContentService } from './services/business-content.service';
 import { GuardianContentAudit } from '../entities/guardian-content-audit.entity';
 import { GuardianContentService } from './services/guardian-content.service';
+import { SocialAccountExportService } from './account-export.service';
+import { SocialAccountExportController } from './account-export.controller';
 
 @Module({
   imports: [
@@ -73,7 +75,7 @@ import { GuardianContentService } from './services/guardian-content.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, SocialAccountExportController],
   providers: [
     VoteService,
     ReactionService,
@@ -95,6 +97,7 @@ import { GuardianContentService } from './services/guardian-content.service';
     EventService,
     BusinessContentService,
     GuardianContentService,
+    SocialAccountExportService,
     {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {

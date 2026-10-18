@@ -12,6 +12,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_PROFILE_PORT;
     delete process.env.SERVICE_PERMISSIONS_HOST;
     delete process.env.SERVICE_PERMISSIONS_PORT;
+    delete process.env.SERVICE_SOCIAL_HOST;
+    delete process.env.SERVICE_SOCIAL_PORT;
   });
 
   afterAll(() => {
@@ -77,6 +79,20 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.permissions).toEqual({
       host: 'permissions-internal',
       port: 43012,
+    });
+  });
+
+  it('loads the Social participant target with environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.social).toEqual({
+      host: 'social',
+      port: 3003,
+    });
+    process.env.SERVICE_SOCIAL_HOST = 'social-internal';
+    process.env.SERVICE_SOCIAL_PORT = '43003';
+    expect(loadConfig().services?.social).toEqual({
+      host: 'social-internal',
+      port: 43003,
     });
   });
 

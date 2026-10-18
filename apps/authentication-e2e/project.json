@@ -2,7 +2,12 @@
   "name": "authentication-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "implicitDependencies": ["authentication", "profile", "permissions"],
+  "implicitDependencies": [
+    "authentication",
+    "profile",
+    "permissions",
+    "social"
+  ],
   "targets": {
     "e2e": {
       "executor": "@nx/jest:jest",
@@ -14,7 +19,8 @@
       "dependsOn": [
         "authentication:build",
         "profile:build",
-        "permissions:build"
+        "permissions:build",
+        "social:build"
       ]
     }
   },

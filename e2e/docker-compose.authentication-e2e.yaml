@@ -28,7 +28,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions
+      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions,ot_social
     depends_on:
       db:
         condition: service_healthy
@@ -53,6 +53,8 @@ services:
       SERVICE_PROFILE_PORT: 3002
       SERVICE_PERMISSIONS_HOST: permissions
       SERVICE_PERMISSIONS_PORT: 3012
+      SERVICE_SOCIAL_HOST: social
+      SERVICE_SOCIAL_PORT: 3003
     depends_on:
       db:
         condition: service_healthy
@@ -95,6 +97,34 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_permissions
+      SERVICE_AUTHENTICATION_HOST: authentication
+      SERVICE_AUTHENTICATION_PORT: 3001
+      SERVICE_PROFILE_HOST: profile
+      SERVICE_PROFILE_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+
+  social:
+    build:
+      context: ..
+      dockerfile: ./apps/social/Dockerfile
+    volumes:
+      - ../apps/social/src/assets/config.yaml:/usr/src/app/assets/config.yaml:ro
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_social
       SERVICE_AUTHENTICATION_HOST: authentication
       SERVICE_AUTHENTICATION_PORT: 3001
       SERVICE_PROFILE_HOST: profile

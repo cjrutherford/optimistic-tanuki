@@ -46,16 +46,17 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
     'db-setup',
     'profile',
     'permissions',
+    'social',
     'authentication',
   ]);
   const authentication = resolveE2eTarget('authentication-e2e');
   assert.equal(authentication.readiness.url, null);
-  assert.equal(authentication.imageBudget.maxPullServices, 5);
+  assert.equal(authentication.imageBudget.maxPullServices, 6);
   assert.deepEqual(
     authentication.lifecycle.phases.find(
       (phase) => phase.name === 'dependencies'
     ).services,
-    ['profile', 'permissions']
+    ['profile', 'permissions', 'social']
   );
   assert.deepEqual(resolveE2eServices('client-interface-e2e'), [
     'db',
@@ -139,7 +140,7 @@ test('target resolution returns bounded, purpose-specific service sets for pull 
   assert.throws(() => resolveE2eTarget('missing-e2e'), /Unknown E2E target/);
 });
 
-test('dedicated Authentication E2E stack includes Profile and Permissions participants', () => {
+test('dedicated Authentication E2E stack includes Profile, Permissions, and Social participants', () => {
   const compose = readFileSync(
     new URL(
       '../../e2e/docker-compose.authentication-e2e.yaml',
@@ -150,14 +151,16 @@ test('dedicated Authentication E2E stack includes Profile and Permissions partic
 
   assert.match(compose, /^  profile:\n/m);
   assert.match(compose, /^  permissions:\n/m);
+  assert.match(compose, /^  social:\n/m);
   assert.match(compose, /AUTH_AUTO_VERIFY_EMAILS: ['"]true['"]/);
   assert.match(compose, /SERVICE_AUTHENTICATION_HOST: authentication/);
   assert.match(compose, /SERVICE_AUTHENTICATION_PORT: 3001/);
   assert.match(compose, /SERVICE_PERMISSIONS_HOST: permissions/);
   assert.match(compose, /SERVICE_PROFILE_HOST: profile/);
+  assert.match(compose, /SERVICE_SOCIAL_HOST: social/);
   assert.match(
     compose,
-    /ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions/
+    /ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions,ot_social/
   );
   assert.match(
     compose,

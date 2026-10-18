@@ -119,6 +119,17 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
       },
       inject: [ConfigService],
     },
+    {
+      provide: ServiceTokens.SOCIAL_SERVICE,
+      useFactory: (configService: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: configService.get<{ host: string; port: number }>(
+            'services.social'
+          ),
+        }),
+      inject: [ConfigService],
+    },
     OAuthService,
     OAuthConfigValidator,
     EmailAuthService,

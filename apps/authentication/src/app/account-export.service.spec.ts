@@ -28,6 +28,7 @@ describe('AccountExportService', () => {
   const actionRepository = { find: jest.fn() };
   const profileClient = { send: jest.fn() };
   const permissionsClient = { send: jest.fn() };
+  const socialClient = { send: jest.fn() };
   const appService = { validateToken: jest.fn() };
   let service: AccountExportService;
 
@@ -70,6 +71,7 @@ describe('AccountExportService', () => {
       actionRepository as never,
       profileClient as never,
       permissionsClient as never,
+      socialClient as never,
       appService as never
     );
   });
@@ -694,6 +696,61 @@ describe('AccountExportService', () => {
     expect(
       preview.participants.find(
         ({ participantId }) => participantId === 'profile'
+      )
+    ).toMatchObject({
+      status: 'failed',
+      uncovered: ['participant-unavailable'],
+    });
+  });
+
+  it('accepts only partial Social snapshots with markers from the bounded contract', async () => {
+    socialClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'social',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: [
+          'social-preview-unfenced',
+          'social-follow-entity-uncovered',
+          'poll-post-association-unverified',
+          'polls-owner-mismatch',
+          'polls-malformed-or-duplicate-row',
+          'portable-media-bytes-not-included',
+        ],
+        data: { posts: [] },
+      })
+    );
+    const accepted = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(
+      accepted.participants.find(
+        ({ participantId }) => participantId === 'social'
+      )
+    ).toMatchObject({ status: 'partial', data: { posts: [] } });
+
+    socialClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'social',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: [SESSION_TOKEN],
+        data: { posts: [] },
+      })
+    );
+    const rejected = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(JSON.stringify(rejected)).not.toContain(SESSION_TOKEN);
+    expect(
+      rejected.participants.find(
+        ({ participantId }) => participantId === 'social'
       )
     ).toMatchObject({
       status: 'failed',

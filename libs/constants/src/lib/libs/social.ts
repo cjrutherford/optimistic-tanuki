@@ -25,3 +25,8 @@ export {
   EventCommands,
   ScheduledPostCommands,
 } from '@optimistic-tanuki/social-contracts';
+
+/** Internal TCP-only commands; never expose through the public gateway. */
+export const SocialCommands = {
+  GetAccountExportSnapshot: 'Get:SocialAccountExportSnapshot',
+} as const;

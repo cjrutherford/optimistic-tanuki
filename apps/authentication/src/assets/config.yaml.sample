@@ -15,6 +15,9 @@ services:
   permissions:
     host: permissions
     port: 3012
+  social:
+    host: social
+    port: 3003
 oauth:
   google:
     enabled: true

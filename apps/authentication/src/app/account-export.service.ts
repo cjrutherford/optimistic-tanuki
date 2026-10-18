@@ -12,6 +12,7 @@ import {
 import {
   PermissionCommands,
   ProfileCommands,
+  SocialCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -68,6 +69,87 @@ const OAUTH_PROVIDER_FIELDS = [
 ] as const;
 const MAX_PROVIDER_RECORDS = 1000;
 const MAX_ACCOUNT_RECORDS = 1000;
+const SOCIAL_UNCOVERED_MARKERS = new Set([
+  'social-preview-unfenced',
+  'social-components-unreviewed',
+  'post-link-urls-omitted',
+  'social-poll-vote-history-uncovered',
+  'poll-post-association-unverified',
+  'social-account-profile-selection-ambiguous',
+  'social-legacy-guardian-ownership-unverified',
+  'attachment-file-references-omitted',
+  'portable-media-bytes-not-included',
+  'social-follow-entity-uncovered',
+  'social-activity-uncovered',
+  'social-saved-item-uncovered',
+  'social-search-history-uncovered',
+  'social-user-presence-uncovered',
+  'social-profile-view-uncovered',
+  'social-user-block-uncovered',
+  'social-user-mute-uncovered',
+  'social-notification-uncovered',
+  'social-post-share-uncovered',
+  'social-event-uncovered',
+  'social-community-uncovered',
+  'social-community-member-uncovered',
+  'social-community-invite-uncovered',
+  'social-community-membership-audit-uncovered',
+  'social-community-election-uncovered',
+  'social-election-candidate-uncovered',
+  'social-election-vote-uncovered',
+  'social-business-page-content-uncovered',
+  'social-business-theme-content-uncovered',
+  'social-community-sponsorship-content-uncovered',
+  'social-guardian-content-audit-uncovered',
+  'social-guardian-published-asset-grant-uncovered',
+  'social-content-report-uncovered',
+  'social-content-moderation-action-uncovered',
+  'profile-id-preview-limit-exceeded',
+  'profile-id-resolution-failed',
+  'social-read-time-budget-exceeded',
+  'posts-preview-limit-exceeded',
+  'posts-read-failed',
+  'posts-owner-mismatch',
+  'posts-malformed-or-duplicate-row',
+  'comments-preview-limit-exceeded',
+  'comments-read-failed',
+  'comments-owner-mismatch',
+  'comments-malformed-or-duplicate-row',
+  'comments-orphan-or-malformed-relation',
+  'foreign-parent-comment-reference-omitted',
+  'reactions-preview-limit-exceeded',
+  'reactions-read-failed',
+  'reactions-owner-mismatch',
+  'reactions-malformed-or-duplicate-row',
+  'post-target-existence-read-failed',
+  'comment-target-existence-read-failed',
+  'reactions-ambiguous-or-orphan-target',
+  'reactions-orphan-target',
+  'reactions-owner-or-target-mismatch',
+  'votes-preview-limit-exceeded',
+  'votes-read-failed',
+  'votes-owner-mismatch',
+  'votes-malformed-or-duplicate-row',
+  'votes-ambiguous-or-orphan-target',
+  'votes-orphan-target',
+  'votes-owner-or-target-mismatch',
+  'attachments-preview-limit-exceeded',
+  'attachments-read-failed',
+  'attachments-owner-or-row-malformed',
+  'attachments-repeated-cursor',
+  'polls-preview-limit-exceeded',
+  'polls-read-failed',
+  'polls-owner-mismatch',
+  'polls-malformed-or-duplicate-row',
+  'poll-owner-or-row-malformed',
+  'polls-repeated-cursor',
+  'social-preview-string-limit-exceeded',
+  'social-preview-response-budget-exceeded',
+  'posts-repeated-cursor',
+  'comments-repeated-cursor',
+  'reactions-repeated-cursor',
+  'votes-repeated-cursor',
+]);
 const containsOversizedString = (value: unknown): boolean => {
   if (typeof value === 'string')
     return value.length > MAX_STRING_FIELD_CHARACTERS;
@@ -95,6 +177,8 @@ export class AccountExportService {
     private readonly profileClient: ClientProxy,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
+    @Inject(ServiceTokens.SOCIAL_SERVICE)
+    private readonly socialClient: ClientProxy,
     private readonly appService: AppService
   ) {}
 
@@ -477,6 +561,60 @@ export class AccountExportService {
       };
     }
     participants.push(permissions);
+    let social: AccountExportParticipantSnapshot;
+    try {
+      const response = await firstValueFrom(
+        this.socialClient
+          .send(
+            { cmd: SocialCommands.GetAccountExportSnapshot },
+            { accountId, token, appId }
+          )
+          .pipe(timeout({ first: PROFILE_RPC_TIMEOUT_MS }))
+      );
+      if (
+        !response ||
+        response.contractVersion !== ACCOUNT_EXPORT_CONTRACT_VERSION ||
+        response.participantId !== 'social' ||
+        response.accountId !== accountId ||
+        response.status !== 'partial' ||
+        !Array.isArray(response.uncovered) ||
+        !response.uncovered.every(
+          (marker: unknown) =>
+            typeof marker === 'string' && SOCIAL_UNCOVERED_MARKERS.has(marker)
+        ) ||
+        typeof response.data !== 'object' ||
+        response.data === null
+      )
+        throw new Error('invalid social participant response');
+      social = response as AccountExportParticipantSnapshot;
+      if (
+        containsOversizedString(social.data) ||
+        Buffer.byteLength(JSON.stringify(social), 'utf8') >
+          MAX_PARTICIPANT_BYTES
+      ) {
+        social = {
+          contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+          participantId: 'social',
+          accountId,
+          status: 'partial',
+          uncovered: [
+            ...social.uncovered,
+            'participant-payload-omitted-for-budget',
+          ],
+          data: {},
+        };
+      }
+    } catch {
+      social = {
+        contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+        participantId: 'social',
+        accountId,
+        status: 'failed',
+        uncovered: ['participant-unavailable'],
+        data: {},
+      };
+    }
+    participants.push(social);
     let uncovered: string[] = [];
     let dataOmittedForBudget = false;
     let preview = {

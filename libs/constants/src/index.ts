@@ -14,6 +14,7 @@ export {
   LinkCommands,
   FollowCommands,
   SocialComponentCommands,
+  SocialCommands,
   SocialRealtimeCommands,
   CommunityCommands,
   NotificationCommands,
