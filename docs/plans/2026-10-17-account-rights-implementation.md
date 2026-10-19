@@ -99,6 +99,10 @@ Independent source review passed. All 31 recorded pre-runtime gates passed. The 
 
 This is not a complete Social/account inventory, portable export/download or deletion implementation. No schema, public route, new participant/configuration entry, UI, or provider operation was added. Keep remaining stores, other participants, portable media, durable orchestration, providers/backups, deletion and account-wide readback in the broader DF-007 work. The Authentication E2E target now sets `cache: false`; the default command executed against a fresh private stack and passed 21/21 with same-run database readback and teardown. See the [cache-baseline findings](../release-readiness/findings/AUTHENTICATION-E2E-CACHE.md) and [receipt](../release-readiness/evidence/df-007/e2e-cache-baseline.json). This host-side Nx change does not alter B5 application-image provenance or expand DF-007/RR-11 acceptance.
 
+### Gateway cache diagnostic redaction
+
+**Status (verified 2026-10-19):** The cache factory's debug diagnostic now uses an explicit non-secret allowlist (`provider`, `ttl`, `maxSize`); the configured Redis password still reaches the Redis client. A synthetic sentinel regression failed before the fix and passed afterward. All 29 independent verification commands passed. See the [finding](../release-readiness/findings/GATEWAY-CACHE-LOG-REDACTION.md) and [receipt](../release-readiness/evidence/df-007/gateway-cache-log-redaction.json). This is one source-level log-call repair, not evidence about production log levels, sinks, retention, deletion, or all application logs. No account-rights implementation or acceptance status changes; DF-007 and RR-11 remain open.
+
 ### Remaining export coverage
 
 - After B2, resolve full guardian attestation/lifecycle fields, unlinked-row ownership and history limitations. Keep counterpart redactions explicit. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.
