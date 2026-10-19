@@ -42,4 +42,5 @@ export const ForumLinkCommands = {
 export const ForumCommands = {
   SEED_DEMO_TOPICS: 'SEED_DEMO_FORUM_TOPICS',
   SEED_PRODUCTION_TOPICS: 'SEED_PRODUCTION_FORUM_TOPICS',
+  GetAccountExportSnapshot: 'GET_FORUM_ACCOUNT_EXPORT_SNAPSHOT',
 };

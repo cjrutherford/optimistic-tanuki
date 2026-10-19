@@ -4,11 +4,12 @@ import {
   Transport,
 } from '@nestjs/microservices';
 import { Client as PgClient } from 'pg';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   AuthCommands,
   ProfileCommands,
   SocialCommands,
+  ForumCommands,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
@@ -18,6 +19,7 @@ describe('Account export session boundary over TCP', () => {
   let profileClient: ClientProxy;
   let permissionsClient: ClientProxy;
   let socialClient: ClientProxy;
+  let forumClient: ClientProxy;
   let accountId: string;
   let otherAccountId: string;
   let sessionToken: string;
@@ -34,6 +36,9 @@ describe('Account export session boundary over TCP', () => {
   const fixtureGuardianPermissionIds = [randomUUID(), randomUUID()].sort();
   const fixtureGuardianNoticeId = randomUUID();
   const fixtureActionTokenId = randomUUID();
+  const fixtureOAuthProviderIds = [randomUUID(), randomUUID()];
+  const fixtureKeyDataIds: string[] = [];
+  const fixtureAuthTokenIds: string[] = [];
   const socialPostIds = [randomUUID(), randomUUID(), randomUUID()];
   const socialCommentIds = [randomUUID(), randomUUID()];
   const socialReactionIds = [randomUUID(), randomUUID()];
@@ -45,6 +50,9 @@ describe('Account export session boundary over TCP', () => {
   const socialFollowIds = [randomUUID(), randomUUID(), randomUUID()];
   const socialBlockIds = [randomUUID(), randomUUID()];
   const socialMuteIds = [randomUUID(), randomUUID()];
+  const forumTopicIds = [randomUUID(), randomUUID(), randomUUID()];
+  const forumThreadIds = [randomUUID(), randomUUID(), randomUUID()];
+  const forumPostIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
   const fixtureVoteIds: number[] = [];
   const fixtureLinkIds: number[] = [];
   const fixtureActivityIds = [randomUUID(), randomUUID()].sort();
@@ -190,13 +198,14 @@ describe('Account export session boundary over TCP', () => {
     const port = Number(configuredPort);
     if (
       process.env.ACCOUNT_EXPORT_E2E_DB_MARKER !==
-        'auth-profile-export-fixture-v1' ||
+        'auth-profile-forum-export-fixture-v1' ||
       host !== '127.0.0.1' ||
       ![
         'ot_authentication',
         'ot_profile',
         'ot_permissions',
         'ot_social',
+        'ot_forum',
       ].includes(database) ||
       !configuredPort ||
       !Number.isInteger(port) ||
@@ -500,6 +509,38 @@ describe('Account export session boundary over TCP', () => {
     const database = new PgClient(getFixtureDatabaseOptions('ot_social'));
     await database.connect();
     try {
+      const posts = await database.query(
+        'SELECT * FROM post WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialPostIds]
+      );
+      const comments = await database.query(
+        'SELECT * FROM comment WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialCommentIds]
+      );
+      const reactions = await database.query(
+        'SELECT * FROM reaction WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialReactionIds]
+      );
+      const attachments = await database.query(
+        'SELECT * FROM attachment WHERE id = $1::uuid',
+        [socialAttachmentId]
+      );
+      const polls = await database.query(
+        'SELECT * FROM poll WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [socialPollIds]
+      );
+      const components = await database.query(
+        'SELECT * FROM social_components WHERE id = $1::uuid',
+        [socialComponentId]
+      );
+      const links = await database.query(
+        'SELECT * FROM link WHERE id = ANY($1::integer[]) ORDER BY id',
+        [fixtureLinkIds]
+      );
+      const votes = await database.query(
+        'SELECT * FROM vote WHERE id = ANY($1::integer[]) ORDER BY id',
+        [fixtureVoteIds]
+      );
       const savedItems = await database.query(
         'SELECT id, "profileId", "itemType", "itemId", "itemTitle", "savedAt" FROM saved_item WHERE id = ANY($1::uuid[]) ORDER BY id',
         [socialSavedItemIds]
@@ -520,12 +561,28 @@ describe('Account export session boundary over TCP', () => {
         'SELECT id, "muterId", "mutedId", duration, "createdAt" FROM user_mute WHERE id = ANY($1::uuid[]) ORDER BY id',
         [socialMuteIds]
       );
+      expect(posts.rowCount).toBe(socialPostIds.length);
+      expect(comments.rowCount).toBe(socialCommentIds.length);
+      expect(reactions.rowCount).toBe(socialReactionIds.length);
+      expect(attachments.rowCount).toBe(1);
+      expect(polls.rowCount).toBe(socialPollIds.length);
+      expect(components.rowCount).toBe(1);
+      expect(links.rowCount).toBe(fixtureLinkIds.length);
+      expect(votes.rowCount).toBe(fixtureVoteIds.length);
       expect(savedItems.rowCount).toBe(socialSavedItemIds.length);
       expect(searchHistory.rowCount).toBe(socialSearchHistoryIds.length);
       expect(follows.rowCount).toBe(socialFollowIds.length);
       expect(blocks.rowCount).toBe(socialBlockIds.length);
       expect(mutes.rowCount).toBe(socialMuteIds.length);
       return {
+        posts: posts.rows,
+        comments: comments.rows,
+        reactions: reactions.rows,
+        attachments: attachments.rows,
+        polls: polls.rows,
+        components: components.rows,
+        links: links.rows,
+        votes: votes.rows,
         savedItems: savedItems.rows,
         searchHistory: searchHistory.rows,
         follows: follows.rows,
@@ -562,6 +619,176 @@ describe('Account export session boundary over TCP', () => {
     }
   };
 
+  const captureAuthenticationFixtureIds = async () => {
+    const database = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await database.connect();
+    try {
+      const keys = await database.query<{ id: string; userId: string }>(
+        'SELECT k.id, u.id AS "userId" FROM user_entity u JOIN key_datum k ON k.id = u."keyDataId" WHERE u.id = ANY($1::uuid[]) ORDER BY k.id',
+        [fixtureUserIds]
+      );
+      expect(keys.rows).toHaveLength(fixtureUserIds.length);
+      expect(new Set(keys.rows.map(({ id }) => id)).size).toBe(
+        fixtureUserIds.length
+      );
+      expect(keys.rows.map(({ userId }) => userId).sort()).toEqual(
+        [...fixtureUserIds].sort()
+      );
+      const tokens = await database.query<{ id: string }>(
+        'SELECT id FROM token WHERE "userId" = ANY($1::uuid[]) ORDER BY id',
+        [fixtureUserIds]
+      );
+      fixtureKeyDataIds.push(...keys.rows.map(({ id }) => id));
+      fixtureAuthTokenIds.push(...tokens.rows.map(({ id }) => id));
+      expect(fixtureKeyDataIds).toHaveLength(fixtureUserIds.length);
+      expect(fixtureAuthTokenIds.length).toBeGreaterThan(0);
+    } finally {
+      await database.end();
+    }
+  };
+
+  const readAuthenticationStateFixtures = async () => {
+    const database = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await database.connect();
+    try {
+      const users = await database.query(
+        'SELECT id, email, "firstName", "lastName", "emailVerifiedAt", "ageEligibilityStatus", "ageEligibilityEndsAt", "keyDataId" FROM user_entity WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureUserIds]
+      );
+      const keys = await database.query<{
+        id: string;
+        public: Buffer;
+        salt: string;
+      }>(
+        'SELECT id, public, salt FROM key_datum WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureKeyDataIds]
+      );
+      const tokens = await database.query<{
+        id: string;
+        userId: string | null;
+        revoked: boolean;
+        tokenData: string;
+        profileId: string | null;
+      }>(
+        'SELECT id, "userId", revoked, "tokenData", "profileId" FROM token WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureAuthTokenIds]
+      );
+      const oauth = await database.query(
+        'SELECT id, provider, "providerUserId", "providerEmail", "providerDisplayName", "userId", "createdAt", "updatedAt" FROM oauth_provider WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureOAuthProviderIds]
+      );
+      const permissions = await database.query(
+        'SELECT id, "userId", "guardianUserId", status, "attestationVersion", "attestedAt", "expiresAt" FROM guardian_permission WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureGuardianPermissionIds]
+      );
+      const notices = await database.query(
+        'SELECT id, "policyVersion", "policyUrl", "guardianUserId", status, "acceptedAt", "createdAt", "updatedAt", "nextAttemptAt" FROM guardian_policy_notice WHERE id = $1::uuid',
+        [fixtureGuardianNoticeId]
+      );
+      const actions = await database.query<{
+        id: string;
+        tokenHash: string;
+        purpose: string;
+        appId: string;
+        returnPath: string;
+        expiresAt: Date;
+        consumedAt: Date | null;
+        createdAt: Date;
+        userId: string;
+      }>(
+        'SELECT id, "tokenHash", purpose, "appId", "returnPath", "expiresAt", "consumedAt", "createdAt", "userId" FROM auth_action_token WHERE id = $1::uuid',
+        [fixtureActionTokenId]
+      );
+      expect(users.rowCount).toBe(fixtureUserIds.length);
+      expect(keys.rowCount).toBe(fixtureKeyDataIds.length);
+      expect(tokens.rowCount).toBe(fixtureAuthTokenIds.length);
+      expect(oauth.rowCount).toBe(fixtureOAuthProviderIds.length);
+      return {
+        users: users.rows,
+        keys: keys.rows.map(({ public: publicKey, salt, ...row }) => ({
+          ...row,
+          publicDigest: createHash('sha256').update(publicKey).digest('hex'),
+          saltDigest: createHash('sha256').update(salt).digest('hex'),
+        })),
+        tokens: tokens.rows.map(({ tokenData, ...row }) => ({
+          ...row,
+          tokenDigest: createHash('sha256').update(tokenData).digest('hex'),
+        })),
+        oauth: oauth.rows,
+        permissions: permissions.rows,
+        notices: notices.rows,
+        actions: actions.rows.map(({ tokenHash, ...row }) => ({
+          ...row,
+          tokenHashDigest: createHash('sha256').update(tokenHash).digest('hex'),
+        })),
+      };
+    } finally {
+      await database.end();
+    }
+  };
+
+  const readProfileStateFixtures = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_profile'));
+    await database.connect();
+    try {
+      const profiles = await database.query(
+        'SELECT id, "userId", "appScope", "profileName", "profilePic", "coverPic", bio, location, occupation, interests, skills, "blogRole" FROM profile WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureProfileIds]
+      );
+      const timelines = await database.query(
+        'SELECT id, "userId", title, description, "timeStamp", "eventType", "relatedProfileId" FROM timeline WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureTimelineIds]
+      );
+      const activities = await database.query(
+        'SELECT id, "actorUserId", "dependentUserId", "profileId", "appId", operation, "changedFieldNames", "createdAt" FROM guardian_profile_activity WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureActivityIds]
+      );
+      expect(profiles.rowCount).toBe(fixtureProfileIds.length);
+      expect(timelines.rowCount).toBe(fixtureTimelineIds.length);
+      expect(activities.rowCount).toBe(fixtureActivityIds.length);
+      return {
+        profiles: profiles.rows,
+        timelines: timelines.rows,
+        activities: activities.rows,
+      };
+    } finally {
+      await database.end();
+    }
+  };
+
+  const readPermissionStateFixtures = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_permissions'));
+    await database.connect();
+    try {
+      const assignments = await database.query(
+        'SELECT id, "profileId", "roleId", "appScopeId", "targetId", created_at FROM role_assignment WHERE id = ANY($1::uuid[]) ORDER BY id',
+        [fixtureRoleAssignmentIds]
+      );
+      const roles = await database.query(
+        'SELECT id, name, description, "appScopeId", created_at FROM role WHERE id = $1::uuid',
+        [fixtureRoleId]
+      );
+      const scopes = await database.query(
+        'SELECT id, name, description, active, created_at, updated_at FROM app_scope WHERE id = $1::uuid',
+        [fixtureAppScopeId]
+      );
+      expect(assignments.rowCount).toBe(fixtureRoleAssignmentIds.length);
+      expect(roles.rowCount).toBe(1);
+      expect(scopes.rowCount).toBe(1);
+      return {
+        assignments: assignments.rows,
+        roles: roles.rows,
+        scopes: scopes.rows,
+      };
+    } finally {
+      await database.end();
+    }
+  };
+
   const insertOAuthProviderFixtures = async () => {
     const database = new PgClient(
       getFixtureDatabaseOptions('ot_authentication')
@@ -575,12 +802,12 @@ describe('Account export session boundary over TCP', () => {
           ($1::uuid, 'google', $2, $3, $4, $5::uuid, now(), now()),
           ($6::uuid, 'github', $7, $8, $9, $10::uuid, now(), now())`,
         [
-          randomUUID(),
+          fixtureOAuthProviderIds[0],
           `fixture-owned-${accountId}`,
           'owned-link@example.test',
           'Owned fixture link',
           accountId,
-          randomUUID(),
+          fixtureOAuthProviderIds[1],
           `fixture-foreign-${otherAccountId}`,
           'foreign-link@example.test',
           'Foreign fixture link',
@@ -666,7 +893,162 @@ describe('Account export session boundary over TCP', () => {
     }
   };
 
+  const insertForumFixtures = async (
+    ownProfiles: string[],
+    foreignProfile: string
+  ) => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_forum'));
+    await database.connect();
+    try {
+      await database.query('BEGIN');
+      await database.query(
+        `INSERT INTO topic (id, title, description, "userId", "profileId", "appScope", visibility)
+         VALUES ($1::uuid, $2, $3, $4, $5, 'forum', 'public'),
+                ($6::uuid, 'foreign forum topic sentinel', 'foreign topic description sentinel', $7, $8, 'forum', 'public'),
+                ($9::uuid, 'second owned topic sentinel', 'second profile topic description sentinel', $10, $11, 'forum', 'public')`,
+        [
+          forumTopicIds[0],
+          '<a href="https://example.test/topic">owned topic sentinel</a>',
+          '<img src="https://example.test/topic.png">',
+          accountId,
+          ownProfiles[0],
+          forumTopicIds[1],
+          otherAccountId,
+          foreignProfile,
+          forumTopicIds[2],
+          accountId,
+          ownProfiles[1],
+        ]
+      );
+      await database.query(
+        `INSERT INTO thread (id, title, description, content, "userId", "profileId", "appScope", "topicId", visibility, "viewCount", "moderationStatus", "moderationNotes")
+         VALUES ($1::uuid, 'owned thread sentinel', 'owned description sentinel', '<img src="https://example.test/thread.png">', $2, $3, 'forum', $4::uuid, 'public', 17, 'hidden', 'private moderation sentinel'),
+                ($5::uuid, 'foreign parent thread sentinel', 'foreign parent description sentinel', 'foreign parent content sentinel', $6, $7, 'forum', $8::uuid, 'public', 29, 'visible', 'foreign ops sentinel'),
+                ($9::uuid, 'second owned thread sentinel', 'second profile description sentinel', 'second profile thread body sentinel', $10, $11, 'forum', $12::uuid, 'private', 31, 'visible', NULL)`,
+        [
+          forumThreadIds[0],
+          accountId,
+          ownProfiles[0],
+          forumTopicIds[0],
+          forumThreadIds[1],
+          otherAccountId,
+          foreignProfile,
+          forumTopicIds[1],
+          forumThreadIds[2],
+          accountId,
+          ownProfiles[1],
+          forumTopicIds[2],
+        ]
+      );
+      await database.query(
+        `INSERT INTO forum_post (id, content, "userId", "profileId", "appScope", "threadId", "moderationStatus", "moderationNotes")
+         VALUES ($1::uuid, '<a href="https://example.test/post">owned post sentinel</a>', $2, $3, 'forum', $4::uuid, 'visible', 'private post ops sentinel'),
+                ($5::uuid, 'owned reply in foreign thread sentinel', $2, $6, 'forum', $7::uuid, 'visible', NULL),
+                ($8::uuid, 'foreign reply sentinel must not be included', $9, $10, 'forum', $11::uuid, 'visible', NULL),
+                ($12::uuid, 'foreign reply under owned thread must stay hidden', $9, $10, 'forum', $13::uuid, 'hidden', 'foreign reply ops sentinel')`,
+        [
+          forumPostIds[0],
+          accountId,
+          ownProfiles[0],
+          forumThreadIds[0],
+          forumPostIds[1],
+          ownProfiles[1],
+          forumThreadIds[1],
+          forumPostIds[2],
+          otherAccountId,
+          foreignProfile,
+          forumThreadIds[1],
+          forumPostIds[3],
+          forumThreadIds[2],
+        ]
+      );
+      await database.query('COMMIT');
+    } catch (error) {
+      await database.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await database.end();
+    }
+  };
+
+  const readForumStateFixtures = async () => {
+    const database = new PgClient(getFixtureDatabaseOptions('ot_forum'));
+    await database.connect();
+    try {
+      const topics = await database.query(
+        `SELECT id, title, description, "userId", "profileId", "appScope", "createdAt", "updatedAt", visibility, "isPinned", "isLocked" FROM topic WHERE id = ANY($1::uuid[]) ORDER BY id`,
+        [forumTopicIds]
+      );
+      const threads = await database.query(
+        `SELECT id, title, description, content, "userId", "profileId", "appScope", "topicId", "createdAt", "updatedAt", visibility, "isPinned", "isLocked", "viewCount", "moderationStatus", "moderationNotes", "moderatedBy", "moderatedAt" FROM thread WHERE id = ANY($1::uuid[]) ORDER BY id`,
+        [forumThreadIds]
+      );
+      const posts = await database.query(
+        `SELECT id, content, "userId", "profileId", "appScope", "threadId", "createdAt", "updatedAt", "isEdited", "moderationStatus", "moderationNotes", "moderatedBy", "moderatedAt" FROM forum_post WHERE id = ANY($1::uuid[]) ORDER BY id`,
+        [forumPostIds]
+      );
+      return { topics: topics.rows, threads: threads.rows, posts: posts.rows };
+    } finally {
+      await database.end();
+    }
+  };
+
+  const expectForumFixturesPersisted = async () => {
+    const state = await readForumStateFixtures();
+    expect(state.topics).toHaveLength(forumTopicIds.length);
+    expect(state.threads).toHaveLength(forumThreadIds.length);
+    expect(state.posts).toHaveLength(forumPostIds.length);
+    expect(state.posts.find(({ id }) => id === forumPostIds[1])).toMatchObject({
+      userId: accountId,
+      profileId: ownedProfileIds[1],
+      threadId: forumThreadIds[1],
+    });
+    expect(
+      state.threads.find(({ id }) => id === forumThreadIds[1])
+    ).toMatchObject({
+      userId: otherAccountId,
+      profileId: foreignProfileId,
+    });
+  };
+
+  const readAllFixtureState = async () => ({
+    authentication: await readAuthenticationStateFixtures(),
+    profile: await readProfileStateFixtures(),
+    permissions: await readPermissionStateFixtures(),
+    social: await readSocialStateFixtures(),
+    forum: await readForumStateFixtures(),
+  });
+
   const cleanupFixtures = async () => {
+    const forumDatabase = new PgClient(getFixtureDatabaseOptions('ot_forum'));
+    await forumDatabase.connect();
+    try {
+      await forumDatabase.query('BEGIN');
+      await forumDatabase.query(
+        'DELETE FROM forum_post WHERE id = ANY($1::uuid[])',
+        [forumPostIds]
+      );
+      await forumDatabase.query(
+        'DELETE FROM thread WHERE id = ANY($1::uuid[])',
+        [forumThreadIds]
+      );
+      await forumDatabase.query(
+        'DELETE FROM topic WHERE id = ANY($1::uuid[])',
+        [forumTopicIds]
+      );
+      await forumDatabase.query('COMMIT');
+      const leftovers = await forumDatabase.query(
+        'SELECT id::text FROM forum_post WHERE id = ANY($1::uuid[]) UNION ALL SELECT id::text FROM thread WHERE id = ANY($2::uuid[]) UNION ALL SELECT id::text FROM topic WHERE id = ANY($3::uuid[])',
+        [forumPostIds, forumThreadIds, forumTopicIds]
+      );
+      expect(leftovers.rowCount).toBe(0);
+    } catch (error) {
+      await forumDatabase.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      await forumDatabase.end();
+    }
+
     const socialDatabase = new PgClient(getFixtureDatabaseOptions('ot_social'));
     await socialDatabase.connect();
     try {
@@ -786,46 +1168,30 @@ describe('Account export session boundary over TCP', () => {
       getFixtureDatabaseOptions('ot_authentication')
     );
     await authDatabase.connect();
-    let userIds = [...new Set(fixtureUserIds)];
+    const userIds = [...new Set(fixtureUserIds)];
+    const keyIds = [...new Set(fixtureKeyDataIds)];
     try {
       await authDatabase.query('BEGIN');
-      if (fixtureEmails.length > 0) {
-        const users = await authDatabase.query<{ id: string }>(
-          'SELECT id FROM user_entity WHERE email = ANY($1::varchar[])',
-          [fixtureEmails]
-        );
-        userIds = [...new Set([...userIds, ...users.rows.map(({ id }) => id)])];
-      }
       if (userIds.length > 0) {
-        const keys = await authDatabase.query<{ id: string | null }>(
-          `SELECT id FROM key_datum WHERE "userId" = ANY($1::uuid[])
-           UNION
-           SELECT "keyDataId" AS id FROM user_entity
-           WHERE id = ANY($1::uuid[]) AND "keyDataId" IS NOT NULL`,
-          [userIds]
-        );
-        const keyIds = keys.rows
-          .map(({ id }) => id)
-          .filter((id): id is string => Boolean(id));
         await authDatabase.query(
-          'DELETE FROM guardian_policy_notice WHERE "guardianUserId" = ANY($1::uuid[])',
-          [userIds]
+          'DELETE FROM guardian_policy_notice WHERE id = $1::uuid',
+          [fixtureGuardianNoticeId]
         );
         await authDatabase.query(
-          'DELETE FROM guardian_permission WHERE "userId" = ANY($1::uuid[]) OR "guardianUserId" = ANY($1::uuid[])',
-          [userIds]
+          'DELETE FROM guardian_permission WHERE id = ANY($1::uuid[])',
+          [fixtureGuardianPermissionIds]
         );
         await authDatabase.query(
-          'DELETE FROM token WHERE "userId" = ANY($1::uuid[])',
-          [userIds]
+          'DELETE FROM token WHERE id = ANY($1::uuid[])',
+          [fixtureAuthTokenIds]
         );
         await authDatabase.query(
-          'DELETE FROM auth_action_token WHERE "userId" = ANY($1::uuid[])',
-          [userIds]
+          'DELETE FROM auth_action_token WHERE id = $1::uuid',
+          [fixtureActionTokenId]
         );
         await authDatabase.query(
-          'DELETE FROM oauth_provider WHERE "userId" = ANY($1::uuid[])',
-          [userIds]
+          'DELETE FROM oauth_provider WHERE id = ANY($1::uuid[])',
+          [fixtureOAuthProviderIds]
         );
         await authDatabase.query(
           'UPDATE user_entity SET "keyDataId" = NULL WHERE id = ANY($1::uuid[])',
@@ -861,9 +1227,29 @@ describe('Account export session boundary over TCP', () => {
         'SELECT id FROM auth_action_token WHERE id = $1::uuid',
         [fixtureActionTokenId]
       );
+      const oauthRows = await authDatabase.query(
+        'SELECT id FROM oauth_provider WHERE id = ANY($1::uuid[])',
+        [fixtureOAuthProviderIds]
+      );
+      const tokenRows = await authDatabase.query(
+        'SELECT id FROM token WHERE id = ANY($1::uuid[])',
+        [fixtureAuthTokenIds]
+      );
+      const keyRows = await authDatabase.query(
+        'SELECT id FROM key_datum WHERE id = ANY($1::uuid[])',
+        [fixtureKeyDataIds]
+      );
+      const userRows = await authDatabase.query(
+        'SELECT id FROM user_entity WHERE id = ANY($1::uuid[])',
+        [fixtureUserIds]
+      );
       expect(guardianRows.rowCount).toBe(0);
       expect(noticeRows.rowCount).toBe(0);
       expect(actionRows.rowCount).toBe(0);
+      expect(oauthRows.rowCount).toBe(0);
+      expect(tokenRows.rowCount).toBe(0);
+      expect(keyRows.rowCount).toBe(0);
+      expect(userRows.rowCount).toBe(0);
     } catch (error) {
       await authDatabase.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -923,12 +1309,17 @@ describe('Account export session boundary over TCP', () => {
       transport: Transport.TCP,
       options: { host, port: 3003 },
     });
+    forumClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host, port: 3015 },
+    });
     try {
       await Promise.all([
         authClient.connect(),
         profileClient.connect(),
         permissionsClient.connect(),
         socialClient.connect(),
+        forumClient.connect(),
       ]);
       const first = await registerAndLogin('one');
       const second = await registerAndLogin('two');
@@ -936,6 +1327,7 @@ describe('Account export session boundary over TCP', () => {
       otherAccountId = second.userId;
       sessionToken = first.token;
       otherSessionToken = second.token;
+      await captureAuthenticationFixtureIds();
       await insertOAuthProviderFixtures();
 
       const firstProfile = await createProfile(accountId, 'account-export-a');
@@ -953,6 +1345,7 @@ describe('Account export session boundary over TCP', () => {
       );
       ownedProfileIds = [firstProfile.id, secondProfile.id];
       await insertSocialFixtures(ownedProfileIds, foreignProfile.id);
+      await insertForumFixtures(ownedProfileIds, foreignProfile.id);
       await insertGuardianExportFixtures(firstProfile.id, foreignProfile.id);
       const firstTimeline = await createTimeline(
         accountId,
@@ -995,12 +1388,13 @@ describe('Account export session boundary over TCP', () => {
         profileClient?.close(),
         permissionsClient?.close(),
         socialClient?.close(),
+        forumClient?.close(),
       ]);
     }
   });
 
   it('returns a partial internal snapshot for the authenticated account without returning its token', async () => {
-    const socialStateBefore = await readSocialStateFixtures();
+    const fixtureStateBefore = await readAllFixtureState();
     const preview = await firstValueFrom(
       authClient.send(
         { cmd: AuthCommands.PreviewAccountExport },
@@ -1273,9 +1667,62 @@ describe('Account export session boundary over TCP', () => {
       'social-components-unreviewed'
     );
     expect(socialParticipant.uncovered).toContain('post-link-urls-omitted');
+    const forumParticipant = preview.participants.find(
+      ({ participantId }) => participantId === 'forum'
+    );
+    expect(forumParticipant.status).toBe('partial');
+    expect(forumParticipant.uncovered).toContain(
+      'embedded-media-and-link-references-unresolved'
+    );
+    expect(forumParticipant.data.topics.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([forumTopicIds[0], forumTopicIds[2]])
+    );
+    expect(forumParticipant.data.topics).toHaveLength(2);
+    expect(forumParticipant.data.threads.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([forumThreadIds[0], forumThreadIds[2]])
+    );
+    expect(forumParticipant.data.threads).toHaveLength(2);
+    expect(forumParticipant.data.posts.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(forumPostIds.slice(0, 2))
+    );
+    expect(forumParticipant.data.posts).toHaveLength(2);
+    expect(
+      forumParticipant.data.posts.find(({ id }) => id === forumPostIds[1])
+        .threadId
+    ).toBe(forumThreadIds[1]);
+    for (const row of [
+      ...forumParticipant.data.topics,
+      ...forumParticipant.data.threads,
+      ...forumParticipant.data.posts,
+    ]) {
+      expect(row).not.toHaveProperty('viewCount');
+      expect(row).not.toHaveProperty('moderationNotes');
+      expect(row).not.toHaveProperty('moderatedBy');
+      expect(row).not.toHaveProperty('moderatedAt');
+    }
+    expect(
+      forumParticipant.data.topics.find(({ id }) => id === forumTopicIds[0])
+        .title
+    ).toBe('<a href="https://example.test/topic">owned topic sentinel</a>');
+    expect(JSON.stringify(forumParticipant)).not.toContain(
+      'foreign parent thread sentinel'
+    );
+    expect(JSON.stringify(forumParticipant)).not.toContain(
+      'foreign reply sentinel'
+    );
+    expect(JSON.stringify(forumParticipant)).not.toContain(
+      'private moderation sentinel'
+    );
+    expect(JSON.stringify(forumParticipant)).not.toContain(
+      'private post ops sentinel'
+    );
+    expect(JSON.stringify(forumParticipant)).not.toContain(
+      'foreign reply ops sentinel'
+    );
     await expectPermissionFixturesPersisted();
     await expectSocialFixturesPersisted();
-    expect(await readSocialStateFixtures()).toEqual(socialStateBefore);
+    await expectForumFixturesPersisted();
+    expect(await readAllFixtureState()).toEqual(fixtureStateBefore);
     const otherPreview = await firstValueFrom(
       authClient.send(
         { cmd: AuthCommands.PreviewAccountExport },
@@ -1286,6 +1733,26 @@ describe('Account export session boundary over TCP', () => {
         }
       )
     );
+    expect(await readAllFixtureState()).toEqual(fixtureStateBefore);
+    const otherForum = otherPreview.participants.find(
+      ({ participantId }) => participantId === 'forum'
+    );
+    expect(otherForum.status).toBe('partial');
+    expect(otherForum.data.topics.map(({ id }) => id)).toEqual([
+      forumTopicIds[1],
+    ]);
+    expect(otherForum.data.threads.map(({ id }) => id)).toEqual([
+      forumThreadIds[1],
+    ]);
+    expect(otherForum.data.posts.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([forumPostIds[2], forumPostIds[3]])
+    );
+    expect(otherForum.data.posts).toHaveLength(2);
+    expect(JSON.stringify(otherForum)).not.toContain('owned thread sentinel');
+    expect(JSON.stringify(otherForum)).not.toContain(
+      'owned reply in foreign thread sentinel'
+    );
+    expect(JSON.stringify(otherForum)).not.toContain('owned topic sentinel');
     const otherSocial = otherPreview.participants.find(
       ({ participantId }) => participantId === 'social'
     );

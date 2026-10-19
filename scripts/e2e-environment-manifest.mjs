@@ -133,8 +133,15 @@ const MICROSERVICE_ENTRIES = [
     suiteKind: 'microservice',
     baseUrl: 'http://127.0.0.1:3001',
     port: 3001,
-    backendDependencies: ['db', 'db-setup', 'profile', 'permissions', 'social'],
-    imageBudget: 6,
+    backendDependencies: [
+      'db',
+      'db-setup',
+      'profile',
+      'permissions',
+      'social',
+      'forum',
+    ],
+    imageBudget: 7,
     readinessUrl: null,
   }),
   sharedEntry({

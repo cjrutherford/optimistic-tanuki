@@ -37,6 +37,7 @@ export declare type AuthConfigType = {
     profile?: { host: string; port: number };
     permissions?: { host: string; port: number };
     social?: { host: string; port: number };
+    forum?: { host: string; port: number };
   };
 };
 
@@ -203,6 +204,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_SOCIAL_PORT) ||
           configData.services?.social?.port ||
           3003,
+      },
+      forum: {
+        host:
+          process.env.SERVICE_FORUM_HOST ||
+          configData.services?.forum?.host ||
+          'forum',
+        port:
+          Number(process.env.SERVICE_FORUM_PORT) ||
+          configData.services?.forum?.port ||
+          3015,
       },
     },
     database: {

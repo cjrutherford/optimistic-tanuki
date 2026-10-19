@@ -14,6 +14,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.SERVICE_PERMISSIONS_PORT;
     delete process.env.SERVICE_SOCIAL_HOST;
     delete process.env.SERVICE_SOCIAL_PORT;
+    delete process.env.SERVICE_FORUM_HOST;
+    delete process.env.SERVICE_FORUM_PORT;
   });
 
   afterAll(() => {
@@ -93,6 +95,18 @@ describe('authentication config oauth env loading', () => {
     expect(loadConfig().services?.social).toEqual({
       host: 'social-internal',
       port: 43003,
+    });
+  });
+
+  it('loads the Forum participant target from defaults and environment overrides', async () => {
+    const { default: loadConfig } = await import('./config');
+    expect(loadConfig().services?.forum).toEqual({ host: 'forum', port: 3015 });
+
+    process.env.SERVICE_FORUM_HOST = 'forum-internal';
+    process.env.SERVICE_FORUM_PORT = '43015';
+    expect(loadConfig().services?.forum).toEqual({
+      host: 'forum-internal',
+      port: 43015,
     });
   });
 

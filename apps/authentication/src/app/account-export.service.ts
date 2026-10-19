@@ -13,6 +13,7 @@ import {
   PermissionCommands,
   ProfileCommands,
   SocialCommands,
+  ForumCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -26,6 +27,7 @@ import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.
 import { AppService } from './app.service';
 
 const PROFILE_RPC_TIMEOUT_MS = 3000;
+const FORUM_RPC_TIMEOUT_MS = 16000;
 const MAX_STRING_FIELD_CHARACTERS =
   ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxStringFieldCharacters;
 const MAX_PARTICIPANT_BYTES =
@@ -170,6 +172,35 @@ const SOCIAL_UNCOVERED_MARKERS = new Set([
   'mutes-malformed-or-duplicate-row',
   'mutes-repeated-cursor',
 ]);
+const FORUM_UNCOVERED_MARKERS = new Set([
+  'forum-preview-unfenced',
+  'forum-links-unreviewed',
+  'forum-reports-and-moderation-uncovered',
+  'forum-media-references-unresolved',
+  'embedded-media-and-link-references-unresolved',
+  'forum-legacy-authorship-provenance-unverified',
+  'profile-id-preview-limit-exceeded',
+  'profile-id-resolution-failed',
+  'forum-read-time-budget-exceeded',
+  'topics-preview-limit-exceeded',
+  'topics-read-failed',
+  'topics-owner-mismatch',
+  'topics-malformed-or-duplicate-row',
+  'topics-repeated-cursor',
+  'threads-preview-limit-exceeded',
+  'threads-read-failed',
+  'threads-owner-mismatch',
+  'threads-malformed-or-duplicate-row',
+  'threads-repeated-cursor',
+  'posts-preview-limit-exceeded',
+  'posts-read-failed',
+  'posts-owner-mismatch',
+  'posts-malformed-or-duplicate-row',
+  'posts-repeated-cursor',
+  'forum-preview-string-limit-exceeded',
+  'forum-preview-response-budget-exceeded',
+  'forum-preview-data-omitted-for-budget',
+]);
 const containsOversizedString = (value: unknown): boolean => {
   if (typeof value === 'string')
     return value.length > MAX_STRING_FIELD_CHARACTERS;
@@ -199,6 +230,8 @@ export class AccountExportService {
     private readonly permissionsClient: ClientProxy,
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
+    @Inject(ServiceTokens.FORUM_SERVICE)
+    private readonly forumClient: ClientProxy,
     private readonly appService: AppService
   ) {}
 
@@ -635,6 +668,61 @@ export class AccountExportService {
       };
     }
     participants.push(social);
+    let forum: AccountExportParticipantSnapshot;
+    try {
+      const response = await firstValueFrom(
+        this.forumClient
+          .send(
+            { cmd: ForumCommands.GetAccountExportSnapshot },
+            { accountId, token, appId }
+          )
+          .pipe(timeout({ first: FORUM_RPC_TIMEOUT_MS }))
+      );
+      if (
+        !response ||
+        response.contractVersion !== ACCOUNT_EXPORT_CONTRACT_VERSION ||
+        response.participantId !== 'forum' ||
+        response.accountId !== accountId ||
+        response.status !== 'partial' ||
+        !Array.isArray(response.uncovered) ||
+        !response.uncovered.every(
+          (marker: unknown) =>
+            typeof marker === 'string' && FORUM_UNCOVERED_MARKERS.has(marker)
+        ) ||
+        typeof response.data !== 'object' ||
+        response.data === null ||
+        Array.isArray(response.data)
+      ) {
+        throw new Error('invalid Forum participant response');
+      }
+      forum = response as AccountExportParticipantSnapshot;
+      if (
+        containsOversizedString(forum.data) ||
+        Buffer.byteLength(JSON.stringify(forum), 'utf8') > MAX_PARTICIPANT_BYTES
+      ) {
+        forum = {
+          contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+          participantId: 'forum',
+          accountId,
+          status: 'partial',
+          uncovered: [
+            ...forum.uncovered,
+            'participant-payload-omitted-for-budget',
+          ],
+          data: {},
+        };
+      }
+    } catch {
+      forum = {
+        contractVersion: ACCOUNT_EXPORT_CONTRACT_VERSION,
+        participantId: 'forum',
+        accountId,
+        status: 'failed',
+        uncovered: ['participant-unavailable'],
+        data: {},
+      };
+    }
+    participants.push(forum);
     let uncovered: string[] = [];
     let dataOmittedForBudget = false;
     let preview = {

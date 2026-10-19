@@ -694,7 +694,7 @@ jobs:
         env:
           CI: true
           BASE_URL: ${{ matrix.base_url }}
-          ACCOUNT_EXPORT_E2E_DB_MARKER: ${{ matrix.target == 'authentication-e2e' && 'auth-profile-export-fixture-v1' || '' }}
+          ACCOUNT_EXPORT_E2E_DB_MARKER: ${{ matrix.target == 'authentication-e2e' && 'auth-profile-forum-export-fixture-v1' || '' }}
           ACCOUNT_EXPORT_E2E_DB_HOST: ${{ matrix.target == 'authentication-e2e' && '127.0.0.1' || '' }}
           E2E_DB_PORT: ${{ matrix.target == 'authentication-e2e' && '5439' || '' }}
 

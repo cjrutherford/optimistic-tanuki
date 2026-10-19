@@ -20,6 +20,8 @@ import { ThreadService } from './services/thread.service';
 import { ForumPostService } from './services/forum-post.service';
 import { ForumModerationService } from './services/forum-moderation.service';
 import { ForumSeedService } from './services/forum-seed.service';
+import { ForumAccountExportService } from './account-export.service';
+import { ForumAccountExportController } from './account-export.controller';
 
 @Module({
   imports: [
@@ -32,8 +34,31 @@ import { ForumSeedService } from './services/forum-seed.service';
       factory: loadDatabase,
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, ForumAccountExportController],
   providers: [
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_AUTHENTICATION_HOST || 'authentication',
+            port: Number(process.env.SERVICE_AUTHENTICATION_PORT || 3001),
+          },
+        }),
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env.SERVICE_PROFILE_HOST || 'profile',
+            port: Number(process.env.SERVICE_PROFILE_PORT || 3002),
+          },
+        }),
+    },
+    ForumAccountExportService,
     {
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: () =>

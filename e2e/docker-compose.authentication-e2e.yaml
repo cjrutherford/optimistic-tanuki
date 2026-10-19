@@ -28,7 +28,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions,ot_social
+      ADDITIONAL_DBS: ot_authentication,ot_profile,ot_permissions,ot_social,ot_forum
     depends_on:
       db:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
       context: ..
       dockerfile: ./apps/authentication/Dockerfile
     ports:
-      - '3001:3001'
+      - '127.0.0.1:3001:3001'
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
@@ -55,6 +55,8 @@ services:
       SERVICE_PERMISSIONS_PORT: 3012
       SERVICE_SOCIAL_HOST: social
       SERVICE_SOCIAL_PORT: 3003
+      SERVICE_FORUM_HOST: forum
+      SERVICE_FORUM_PORT: 3015
     depends_on:
       db:
         condition: service_healthy
@@ -68,7 +70,7 @@ services:
     volumes:
       - ../apps/profile/src/assets/config.yaml:/usr/src/app/assets/config.yaml:ro
     ports:
-      - '3002:3002'
+      - '127.0.0.1:3002:3002'
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -90,7 +92,7 @@ services:
       context: ..
       dockerfile: ./apps/permissions/Dockerfile
     ports:
-      - '3012:3012'
+      - '127.0.0.1:3012:3012'
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -118,13 +120,39 @@ services:
     volumes:
       - ../apps/social/src/assets/config.yaml:/usr/src/app/assets/config.yaml:ro
     ports:
-      - '3003:3003'
+      - '127.0.0.1:3003:3003'
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_social
+      SERVICE_AUTHENTICATION_HOST: authentication
+      SERVICE_AUTHENTICATION_PORT: 3001
+      SERVICE_PROFILE_HOST: profile
+      SERVICE_PROFILE_PORT: 3002
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      authentication:
+        condition: service_started
+      profile:
+        condition: service_started
+
+  forum:
+    build:
+      context: ..
+      dockerfile: ./apps/forum/Dockerfile
+    ports:
+      - '127.0.0.1:3015:3015'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_forum
       SERVICE_AUTHENTICATION_HOST: authentication
       SERVICE_AUTHENTICATION_PORT: 3001
       SERVICE_PROFILE_HOST: profile

@@ -1,6 +1,7 @@
-import { of, throwError } from 'rxjs';
+import { from, of, throwError } from 'rxjs';
 import { AccountExportService } from './account-export.service';
 import { ACCOUNT_EXPORT_PREVIEW_BUDGETS } from '@optimistic-tanuki/models';
+import { ForumCommands } from '@optimistic-tanuki/constants';
 
 const ACCOUNT_ID = 'd816be66-4fb6-4ed6-a91d-cc058bd5c816';
 const OTHER_ACCOUNT_ID = 'a40b2c3a-5648-47e2-8c35-e9d4a54ef67d';
@@ -29,6 +30,7 @@ describe('AccountExportService', () => {
   const profileClient = { send: jest.fn() };
   const permissionsClient = { send: jest.fn() };
   const socialClient = { send: jest.fn() };
+  const forumClient = { send: jest.fn() };
   const appService = { validateToken: jest.fn() };
   let service: AccountExportService;
 
@@ -59,6 +61,16 @@ describe('AccountExportService', () => {
         data: { assignments: [] },
       })
     );
+    forumClient.send.mockReturnValue(
+      of({
+        contractVersion: 1,
+        participantId: 'forum',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: ['embedded-media-and-link-references-unresolved'],
+        data: { topics: [], threads: [], posts: [] },
+      })
+    );
     appService.validateToken.mockResolvedValue({
       isValid: true,
       data: { userId: ACCOUNT_ID, appId: 'client-interface' },
@@ -72,7 +84,179 @@ describe('AccountExportService', () => {
       profileClient as never,
       permissionsClient as never,
       socialClient as never,
+      forumClient as never,
       appService as never
+    );
+  });
+
+  it('calls Forum fifth and preserves its bounded partial participant', async () => {
+    const preview = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+
+    expect(
+      preview.participants.map(({ participantId }) => participantId)
+    ).toEqual(['authentication', 'profile', 'permissions', 'social', 'forum']);
+    expect(preview.participants[4]).toMatchObject({
+      participantId: 'forum',
+      status: 'partial',
+      uncovered: ['embedded-media-and-link-references-unresolved'],
+    });
+    expect(forumClient.send).toHaveBeenCalledWith(
+      { cmd: ForumCommands.GetAccountExportSnapshot },
+      { accountId: ACCOUNT_ID, token: SESSION_TOKEN, appId: 'client-interface' }
+    );
+    expect(preview.complete).toBe(false);
+    expect(preview.downloadable).toBe(false);
+    expect(ForumCommands.GetAccountExportSnapshot).toBe(
+      'GET_FORUM_ACCOUNT_EXPORT_SNAPSHOT'
+    );
+  });
+
+  it('allows the bounded Forum participant its 16-second transport window', async () => {
+    jest.useFakeTimers();
+    forumClient.send.mockReturnValueOnce(
+      from(
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                contractVersion: 1,
+                participantId: 'forum',
+                accountId: ACCOUNT_ID,
+                status: 'partial',
+                uncovered: ['embedded-media-and-link-references-unresolved'],
+                data: { topics: [], threads: [], posts: [] },
+              }),
+            4000
+          );
+        })
+      )
+    );
+
+    try {
+      const pending = service.previewAccountExport(
+        ACCOUNT_ID,
+        SESSION_TOKEN,
+        'client-interface'
+      );
+      await jest.advanceTimersByTimeAsync(4000);
+      const preview = await pending;
+      expect(preview.participants[4].status).toBe('partial');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('falls back after the Forum participant exceeds its bounded transport window', async () => {
+    jest.useFakeTimers();
+    forumClient.send.mockReturnValueOnce(
+      from(
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                contractVersion: 1,
+                participantId: 'forum',
+                accountId: ACCOUNT_ID,
+                status: 'partial',
+                uncovered: ['embedded-media-and-link-references-unresolved'],
+                data: {},
+              }),
+            17000
+          );
+        })
+      )
+    );
+
+    try {
+      const pending = service.previewAccountExport(
+        ACCOUNT_ID,
+        SESSION_TOKEN,
+        'client-interface'
+      );
+      await jest.advanceTimersByTimeAsync(16000);
+      const preview = await pending;
+      expect(preview.participants[4]).toMatchObject({
+        participantId: 'forum',
+        status: 'failed',
+        uncovered: ['participant-unavailable'],
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('rejects non-partial Forum envelopes and unknown uncovered markers', async () => {
+    forumClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'forum',
+        accountId: ACCOUNT_ID,
+        status: 'complete',
+        uncovered: [],
+        data: {},
+      })
+    );
+    const invalidStatus = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(invalidStatus.participants[4]).toMatchObject({
+      participantId: 'forum',
+      status: 'failed',
+      uncovered: ['participant-unavailable'],
+    });
+
+    forumClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'forum',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: ['unrecognized-marker'],
+        data: {},
+      })
+    );
+    const invalidMarker = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(invalidMarker.participants[4]).toMatchObject({
+      participantId: 'forum',
+      status: 'failed',
+      uncovered: ['participant-unavailable'],
+    });
+  });
+
+  it('omits Forum participant data when its payload exceeds the participant budget', async () => {
+    forumClient.send.mockReturnValueOnce(
+      of({
+        contractVersion: 1,
+        participantId: 'forum',
+        accountId: ACCOUNT_ID,
+        status: 'partial',
+        uncovered: ['embedded-media-and-link-references-unresolved'],
+        data: {
+          authored: 'x'.repeat(
+            ACCOUNT_EXPORT_PREVIEW_BUDGETS.maxParticipantSerializedBytes
+          ),
+        },
+      })
+    );
+    const preview = await service.previewAccountExport(
+      ACCOUNT_ID,
+      SESSION_TOKEN,
+      'client-interface'
+    );
+    expect(preview.participants[4].status).toBe('partial');
+    expect(preview.participants[4].data).toEqual({});
+    expect(preview.participants[4].uncovered).toContain(
+      'participant-payload-omitted-for-budget'
     );
   });
 

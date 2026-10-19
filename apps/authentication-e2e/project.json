@@ -6,7 +6,8 @@
     "authentication",
     "profile",
     "permissions",
-    "social"
+    "social",
+    "forum"
   ],
   "targets": {
     "e2e": {
@@ -21,7 +22,8 @@
         "authentication:build",
         "profile:build",
         "permissions:build",
-        "social:build"
+        "social:build",
+        "forum:build"
       ]
     }
   },
