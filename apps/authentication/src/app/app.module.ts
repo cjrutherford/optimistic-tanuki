@@ -42,6 +42,7 @@ import { AccountExportService } from './account-export.service';
 import { AccountExportController } from './account-export.controller';
 import { AccountExportJobService } from '../account-export-jobs/account-export-job.service';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
+import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
@@ -96,6 +97,12 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     AppService,
     AccountExportService,
     AccountExportJobService,
+    {
+      provide: AuthenticationAccountExportOwnerService,
+      useFactory: (dataSource: DataSource, auth: AppService) =>
+        new AuthenticationAccountExportOwnerService(dataSource, auth),
+      inject: ['AUTHENTICATION_CONNECTION', AppService],
+    },
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

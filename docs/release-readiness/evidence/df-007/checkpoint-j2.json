@@ -1,0 +1,212 @@
+{
+  "checkpoint": "DF-007-J2",
+  "recordedAt": "2026-10-19T23:19:01.510716+00:00",
+  "status": "Local Authentication DB capture verified; item1/DF007/RR11 open",
+  "baseRevision": "4d4d74b2bd7578bf78f629cd9f9f11886f7ac452",
+  "sourceManifest": {
+    "baseRevision": "4d4d74b2bd7578bf78f629cd9f9f11886f7ac452",
+    "sourceHashes": {
+      "apps/authentication/src/account-export-owner/account-export-owner.service.ts": "6eebae091f4eb0dbd96bc51107c93f832f916a44e0c1f172cb838df8eeb26d30",
+      "apps/authentication/src/account-export-owner/account-export-owner.service.spec.ts": "f030732c395ba9680f1b0d9353ae34936e0bd82f0985905bad37aabf72437527",
+      "apps/authentication/src/account-export-owner/account-export-owner.postgres.spec.ts": "ec673d58f4c57d03d2b056b64a216a4a6e78c23295431103e68d21dfc18e7503",
+      "apps/authentication/src/app/app.module.ts": "a24bff3078911edd4b300f54bf763517a573102723878719196900673733c84d",
+      "libs/models/src/lib/libs/account-export/account-export-owner.contract.ts": "ce0f64e4dec5375f6a60c21d31698df3fb20fcb165e2a3ab1fe71273aa1c39f4",
+      "libs/models/src/lib/libs/account-export/account-export-owner.contract.spec.ts": "7b806fa2386871034bb5a7f1d1579222f2fd8944fe792cd42f6b1dae71323477",
+      "libs/models/src/index.ts": "bbdf4c6f8697dd3780ae0a2785808229b1312d498e259d5180a47b8aace661bc"
+    },
+    "protectedFiles": 43,
+    "scope": "Authentication retained DB-owner capture only; no job/artifact integration"
+  },
+  "verification": {
+    "modelsFocused": {
+      "command": "pnpm exec nx run models:test --testFile=account-export-owner.contract.spec.ts --runInBand",
+      "suites": 1,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    "authenticationFocused": {
+      "command": "pnpm exec nx run authentication:test --testFile=account-export-owner. --runInBand",
+      "envGuard": {
+        "AUTH_OWNER_PG_OPT_IN": "account_owner_j2_fixture",
+        "POSTGRES_HOST": "127.0.0.1",
+        "POSTGRES_PORT": "15549",
+        "POSTGRES_DB": "account_owner_j2_fixture",
+        "POSTGRES_USER": "owner_fixture"
+      },
+      "suites": 2,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "actualPostgresIntegrationCases": 1,
+      "unitCases": 8,
+      "cacheReplay": false
+    },
+    "build": "authentication PASS",
+    "lint": ["authentication PASS", "models PASS"],
+    "migration": "No schema changes. Existing13 migrations applied to fresh private PostgreSQL by actual TypeORM migrations; no synchronize. J1 migration governance remains recorded, not rerun.",
+    "readback": {
+      "scope": "Authenticated account selected records in8 DBsources, counts/SHA256 before and after; intentional concurrent OAuth write removed before comparison",
+      "sources": {
+        "user": {
+          "count": 1,
+          "digest": "243623a922ec162d336766e228a48172175796a073ed6d5dbabfa6d4cf30fb44"
+        },
+        "keyDatum": {
+          "count": 1,
+          "digest": "8056207805cce0973feec0b2039163d97eeb9d7c5d18f81f3dd6915c94e088d5"
+        },
+        "session": {
+          "count": 1006,
+          "digest": "659e2cba041629f2acd35057351efd009a5559b3412364e2127c473c512ea991"
+        },
+        "oauthProvider": {
+          "count": 1,
+          "digest": "5ae4130f1bbc543d456c6c9b62d2f62635c00081d58cdbd7e1bf19a750808daa"
+        },
+        "authAction": {
+          "count": 1,
+          "digest": "ff1e5098ef35ad1abdf19d039beea88ce272e8999be661d65362f599aff03a30"
+        },
+        "guardianPolicyNotice": {
+          "count": 1,
+          "digest": "57fdbd025d642ec1922205f8fdffce187026602faa42acf46b10cd32a52c76a6"
+        },
+        "exportJob": {
+          "count": 1,
+          "digest": "233da300115276bf17a0f2164c337594539a9770c1d708ce57393d41cd22e25c"
+        },
+        "guardianPermission": {
+          "count": 3,
+          "digest": "6b02510bbd95397b06558d5285c28262988d4d746348516548784b1437475db9"
+        }
+      },
+      "independentAfterFixtureCleanup": {
+        "user_entity": 0,
+        "key_datum": 0,
+        "token": 0,
+        "oauth_provider": 0,
+        "auth_action_token": 0,
+        "guardian_permission": 0,
+        "guardian_policy_notice": 0,
+        "account_export_jobs": 0
+      }
+    }
+  },
+  "runtime": {
+    "database": {
+      "id": "b89ff9ad8e13c159be300d74940d2f8365ded5afb7593d38f6cdc0f9bf47dd26",
+      "imageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+      "hostPort": "127.0.0.1:15549",
+      "database": "account_owner_j2_fixture",
+      "bindMounts": 0,
+      "anonymousVolumes": [
+        "4bc7088d79740e11ca79a6d13a6d7baf6503e4f2037a5f6daf509406d353681a"
+      ]
+    },
+    "teardown": {
+      "containerRemoved": true,
+      "trackedAnonymousVolumesRemoved": 1,
+      "remainingPrivateContainers": 0,
+      "remainingTrackedVolumes": 0,
+      "sharedServicesTouched": false
+    },
+    "authAppContainerOrNetworkRouteExercised": false,
+    "realAuthMethods": "AppService.validateToken + JwtService + real User/Token/Guardian repositories; unused unrelated dependencies stubbed",
+    "mailProviderExercised": false
+  },
+  "checks": [
+    "All8 sources populated in private fixture",
+    "1006sessions including minimum UUID; no1000row cap",
+    "Cross-account/wrong-app/revoked-session denial",
+    "Own key public bytes only and FK reconciliation",
+    "Both guardian roles plus null own guardian email; counterpart canaries absent",
+    "Matching unlinked guardian ambiguity fails closed; unrelated row does not block",
+    "Repeatable-read excludes concurrent insert",
+    "Hung sink and terminal abort reject without capture success",
+    "All8 private source tables independently empty after fixture cleanup"
+  ],
+  "fieldDispositions": {
+    "path": "authentication-owner-fields.json",
+    "sha256": "dd3a257d9b6992a9a5094ea3c5e44e74fa81f7f508a38221c895f25d0b1aa4a3"
+  },
+  "evidence": {
+    "models-test.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/models-test.log",
+      "sha256": "07502c066bf2a4ff9f03fbb4336c4b0edef9459689b3da239ae21d2d82f404b7"
+    },
+    "models-test-attempt1.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/models-test-attempt1.log",
+      "sha256": "705e9c10d23e311f1e137b288a0d5038bf8d2cc77e65c0c21edb04a963b17fb3"
+    },
+    "models-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/models-lint.log",
+      "sha256": "446b94e9f46a5fd3fea9dc3ae6daf8eaa785169b71ee1011d9ab4f2498dc4e9b"
+    },
+    "auth-owner-final-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/auth-owner-final-tests.log",
+      "sha256": "cac55a606b61d18dd05876c302e926ca990c2aefa8ae408661d63302a1f30779"
+    },
+    "auth-build-final.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/auth-build-final.log",
+      "sha256": "396366302199a24822f70c06228433b085c268d1ae7922332e73e9ea27bda0f5"
+    },
+    "auth-lint-final.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/auth-lint-final.log",
+      "sha256": "d89e41861d3a26ebe45e93a42da9aa3f929453eca5e8dddaceb13774bb99efcd"
+    },
+    "auth-lint-attempt1.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/auth-lint-attempt1.log",
+      "sha256": "bb15935a4034c566951bf60fce3c8620e3d8dae69bba1e224ddc8366a8e698b1"
+    },
+    "db-container-receipt.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/db-container-receipt.json",
+      "sha256": "17c27b67e6dcf54f409942493ec20ddced5ad9f0869f08ac66fea8a3a9bfb92f"
+    },
+    "independent-db-readback.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/independent-db-readback.json",
+      "sha256": "7fe1918fe2e9cc4678f33beb7fba9fdce08832f6014770b76b7139fed638e88c"
+    },
+    "teardown.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/teardown.json",
+      "sha256": "697d8d65a28a94b4775cbc3effd6b17f1e5d63c240ea54987124dfc18c950a42"
+    },
+    "review.md": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/review.md",
+      "sha256": "83c436594ccfc120388f9978b825576db74684fde3142c38ab06d1851f426b1d"
+    },
+    "postgres-initial-pass.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/postgres-initial-pass.log",
+      "sha256": "d918a7e633b3c96a0ef18760cca413a761ef58574205b4e9ecf90ff5075ef081"
+    },
+    "postgres-expanded-before-minimum-key.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/postgres-expanded-before-minimum-key.log",
+      "sha256": "1bbf8755eafca9f11942d84ee4a7f84512ae5d3d09d982c365d642acfdef00aa"
+    },
+    "source-freeze.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/auth-owner/source-freeze.json",
+      "sha256": "c33abefb7b4e09cbedec7bb6e92f2a6f94c3d570ea9575b5ee2a178e7dcd6107"
+    }
+  },
+  "protectedWip": {
+    "files": 43,
+    "hashManifest": ".runtime-artifacts/account-rights/excluded-files.json",
+    "sha256": "577c3fc01a4b514fc5da5025d0f2a60e34d2fffc65f764dc7e9b67c3f693e3e0",
+    "unchanged": true
+  },
+  "nonAcceptance": [
+    "Model spec first stopped before tests on index-signature syntax; corrected15-test pass is separate.",
+    "First Auth lint failed control-regex rule; equivalent character-code check fixed; final lint/build pass.",
+    "Earlier development found DATE timezone and fixture FK cleanup faults; original failing PG output was overwritten. Subsequent initial and expanded passes are diagnostic; final2suite9test run is acceptance.",
+    "Build/tests ran in current checkout with protected root configuration WIP preserved; no clean Auth application image or production qualification claimed.",
+    "No hard cancellation of unresponsive DB connection acquisition proved; per-query statement timeout and cooperative capture/sink cancellation are implemented."
+  ],
+  "remaining": [
+    "Wire actual staging consumer into job orchestration",
+    "Finish other owner adapters and semantic/non-ORM inventory",
+    "Portable JSON/media artifact plus authorized expiry/download",
+    "Deletion, revocation, counterpart-preserving transforms and independent readback",
+    "Shared user-facing lifecycle controls",
+    "Items2,4,6 in selected sequence; externalflows/releasequalification separatelyowned"
+  ]
+}

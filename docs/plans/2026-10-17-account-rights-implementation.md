@@ -147,6 +147,10 @@ The focused preimplementation review was GO for this bounded, internal, always-p
 
 **Status:** Locally verified; see [finding](../release-readiness/findings/DF-007-J1.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j1.json). Authentication persists authorized create/status/resume, stable idempotency, account-wide active-job serialization and fenced DB-clock leases around existing partial previews. Two new TCP cases passed; five prior cases were intentionally skipped. The generated ledger migration and production acknowledgement SQL have local PostgreSQL proof. No artifact, deletion or unattended worker is implemented. Complete per-owner orchestration, data coverage, media and shared UI next; include the ledger itself in account deletion and retention, without exceptions. Follow the [selected finish sequence](./2026-10-19-release-finish-sequence.md).
 
+### J2 — Authentication database capture
+
+[Finding](../release-readiness/findings/DF-007-J2.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j2.json): a separate eight-source, transaction-consistent DB reader is locally verified by 15 Models tests and nine Authentication tests, including one enabled real-PostgreSQL case. Source counts/hash preservation and independent cleanup passed. The job runner still uses previews; staging, owner integration, global inventory, portable files, deletion and shared controls remain. No download or deletion is enabled.
+
 ### Remaining export coverage
 
 - After B2, resolve full guardian attestation/lifecycle fields, unlinked-row ownership and history limitations. Keep counterpart redactions explicit. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.

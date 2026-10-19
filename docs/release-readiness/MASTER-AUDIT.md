@@ -16,6 +16,8 @@
 
 **2026-10-19 delivery continuation:** [J1](./findings/DF-007-J1.md) locally verifies durable internal export-job status/idempotency/resume and DB-clock fencing; it enables no download or deletion. The [selected finish sequence](../plans/2026-10-19-release-finish-sequence.md) handles account rights, inactivity/log retention, integrated journeys and launch materials in order. External flows and release qualification are separately owned; their required evidence is not waived. DF-007 and RR-11 remain open.
 
+**J2 continuation:** [Authentication DB capture](./findings/DF-007-J2.md) is locally verified across eight retained sources (15 Models tests; nine Auth tests including one real-PostgreSQL case). It is not yet consumed by the job runner. Staging, remaining owners, media, deletion and shared controls remain; item 1/DF-007/RR-11 stay open.
+
 ## 1. Goal
 
 Determine whether Optimistic Tanuki (OT) and Towne Square (TS) meet a responsible public-release standard, document every material gap, and provide small, agent-consumable implementation slices to close those gaps.

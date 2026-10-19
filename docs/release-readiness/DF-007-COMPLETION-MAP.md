@@ -14,7 +14,7 @@ The Gateway cache diagnostic repair is independently source-reviewed. Its debug 
 
 ## Six recommendation areas remain open
 
-1. **Portable shared-account export and deletion:** no complete inventory, user-accessible download, portable image/video export, deletion workflow, counterpart-preservation proof, or durable coordinator exists. Existing partial previews are not an account-wide artifact.
+1. **Portable shared-account export and deletion:** no complete inventory, user-accessible download, portable image/video export, deletion workflow, counterpart-preservation proof exists. Durable job metadata is now implemented by J1; full owner orchestration is not. Existing partial previews are not an account-wide artifact.
 2. **Inactivity, privacy, and log retention:** preserve the owner's policy of seven-day rolling inactivity expiry with no absolute cap and removal of all account-activity logs after 90 days with no exceptions. Source fixes and one scheduled purge are not operational proof; inventory sinks, access, retention, backups, and execution.
 3. **Public support and abuse operations:** account-lifecycle support, escalation, and administrative operations have not been verified.
 4. **OAuth, email, recovery, and invitations:** no live delivery or external-provider acceptance was run. Application-held grants and local identity links must remain distinct from a provider account; provider-side revocation/deletion is not claimed.
@@ -27,9 +27,13 @@ The [J1 job foundation](./findings/DF-007-J1.md) now provides locally verified d
 
 The owner selected local delivery in the order **account rights, inactivity/log retention, integrated journeys, then launch materials**. Real external flows and release qualification will be handled separately, with their evidence still required for release claims. Follow the [finish sequence](../plans/2026-10-19-release-finish-sequence.md).
 
+The [J2 Authentication reader](./findings/DF-007-J2.md) now captures eight retained DB sources transaction-consistently, with 15 Models tests and nine Auth tests (one real-PostgreSQL case). It is not yet consumed by the job runner and enables no artifact or deletion. See the explicit field dispositions and limitations in its receipt.
+
 ## Next bounded work
 
-After principal-binding review, Social Activity metadata is a possible bounded extension. The safe candidate is only `{id, profileId, type, createdAt}` for trusted profiles; omit free-form descriptions and resource references. Presence, ProfileView, and Notification semantics are unresolved: Presence writes accept caller-supplied user IDs behind authentication without binding them to the authenticated subject, so do not treat the current row as user-chosen until that normal-write principal boundary is repaired or otherwise established; ProfileView uses caller-supplied viewer IDs with an unresolved account/profile namespace and no viewer index; Notification creation accepts caller-chosen recipients and arbitrary text/URLs. Treat these as source-level integrity/privacy questions, not confirmed exploitation.
+The current next step is real staging/job integration, then complete Profile identity capture and remaining owner adapters. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
+
+Remaining Social integrity work: after principal-binding review, Activity metadata is a possible bounded extension. The safe candidate is only `{id, profileId, type, createdAt}` for trusted profiles; omit free-form descriptions and resource references. Presence, ProfileView, and Notification semantics are unresolved: Presence writes accept caller-supplied user IDs behind authentication without binding them to the authenticated subject, so do not treat the current row as user-chosen until that normal-write principal boundary is repaired or otherwise established; ProfileView uses caller-supplied viewer IDs with an unresolved account/profile namespace and no viewer index; Notification creation accepts caller-chosen recipients and arbitrary text/URLs. Treat these as source-level integrity/privacy questions, not confirmed exploitation.
 
 The source catalog contains 33 Social entity classes, while the two datasource arrays register 30 and omit CommunityElection, ElectionCandidate, and ElectionVote despite source classes, a migration, and repository providers. This is a source/configuration inconsistency requiring owner verification; it is not evidence of a runtime defect. The ownership catalog is heuristic and not exhaustive.
 
