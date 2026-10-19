@@ -143,6 +143,10 @@ The focused preimplementation review was GO for this bounded, internal, always-p
 
 **Status (verified 2026-10-19):** The cache factory's debug diagnostic now uses an explicit non-secret allowlist (`provider`, `ttl`, `maxSize`); the configured Redis password still reaches the Redis client. A synthetic sentinel regression failed before the fix and passed afterward. All 29 independent verification commands passed. See the [finding](../release-readiness/findings/GATEWAY-CACHE-LOG-REDACTION.md) and [receipt](../release-readiness/evidence/df-007/gateway-cache-log-redaction.json). This is one source-level log-call repair, not evidence about production log levels, sinks, retention, deletion, or all application logs. No account-rights implementation or acceptance status changes; DF-007 and RR-11 remain open.
 
+### J1 — Durable internal export-job foundation
+
+**Status:** Locally verified; see [finding](../release-readiness/findings/DF-007-J1.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j1.json). Authentication persists authorized create/status/resume, stable idempotency, account-wide active-job serialization and fenced DB-clock leases around existing partial previews. Two new TCP cases passed; five prior cases were intentionally skipped. The generated ledger migration and production acknowledgement SQL have local PostgreSQL proof. No artifact, deletion or unattended worker is implemented. Complete per-owner orchestration, data coverage, media and shared UI next; include the ledger itself in account deletion and retention, without exceptions. Follow the [selected finish sequence](./2026-10-19-release-finish-sequence.md).
+
 ### Remaining export coverage
 
 - After B2, resolve full guardian attestation/lifecycle fields, unlinked-row ownership and history limitations. Keep counterpart redactions explicit. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.

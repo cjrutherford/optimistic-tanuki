@@ -731,7 +731,7 @@ export class AccountExportService {
       complete: false as const,
       status: 'EXPORT_INCOMPLETE' as const,
       downloadable: false as const,
-      coverage: evaluateAccountExportCompleteness(participants),
+      coverage: evaluateAccountExportCompleteness(participants, accountId),
       participants,
       uncovered,
       previewLimits: {

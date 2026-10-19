@@ -10,6 +10,9 @@ const AuthCommands = {
   GetUsersByIds: 'GetUsersByIds',
   GetAccountExportSnapshot: 'GetAccountExportSnapshot',
   PreviewAccountExport: 'PreviewAccountExport',
+  CreateAccountExportJob: 'CreateAccountExportJob',
+  GetAccountExportJob: 'GetAccountExportJob',
+  ResumeAccountExportJob: 'ResumeAccountExportJob',
   // Issue a new token for a user (e.g. after profile creation). Payload: { userId, profileId? }
   Issue: 'Issue',
   ValidateTotp: 'ValidateTotp',

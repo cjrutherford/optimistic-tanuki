@@ -64,7 +64,8 @@ export interface AccountExportCompleteness {
  * complete by passing a client-controlled flag.
  */
 export function evaluateAccountExportCompleteness(
-  snapshots: readonly AccountExportParticipantSnapshot[]
+  snapshots: readonly AccountExportParticipantSnapshot[],
+  expectedAccountId: string
 ): AccountExportCompleteness {
   const blockers = new Set<string>();
   const known = new Set<string>(ACCOUNT_EXPORT_COVERAGE_INVENTORY.participants);
@@ -88,7 +89,7 @@ export function evaluateAccountExportCompleteness(
     if (snapshot.contractVersion !== ACCOUNT_EXPORT_CONTRACT_VERSION) {
       blockers.add(`invalid-contract-version:${participantId}`);
     }
-    if (snapshots[0] && snapshot.accountId !== snapshots[0].accountId) {
+    if (snapshot.accountId !== expectedAccountId) {
       blockers.add(`account-id-mismatch:${participantId}`);
     }
     if (!known.has(participantId)) {
@@ -139,4 +140,51 @@ export interface AccountExportPreview {
     maxSerializedBytes: number;
     dataOmittedForBudget: boolean;
   };
+}
+
+export const ACCOUNT_EXPORT_JOB_CONTRACT_VERSION = 1 as const;
+export type AccountExportJobState =
+  | 'queued'
+  | 'incomplete'
+  | 'running'
+  | 'failed'
+  | 'complete';
+export interface AccountExportJobRequest {
+  accountId: string;
+  token: string;
+  appId: string;
+  idempotencyKey: string;
+}
+export interface AccountExportJobResumeRequest {
+  accountId: string;
+  token: string;
+  appId: string;
+  jobId: string;
+}
+export interface AccountExportJobStatus {
+  contractVersion: typeof ACCOUNT_EXPORT_JOB_CONTRACT_VERSION;
+  jobId: string;
+  accountId: string;
+  appId: string;
+  kind: 'export';
+  state: AccountExportJobState;
+  attempt: number;
+  coverageVersion: string;
+  coverageSummary: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  artifactUrl: null;
+}
+
+export type AccountExportJobErrorCode =
+  | 'EXPORT_JOB_INVALID_REQUEST'
+  | 'EXPORT_JOB_SESSION_INVALID'
+  | 'EXPORT_JOB_NOT_FOUND'
+  | 'EXPORT_JOB_BUSY';
+export interface AccountExportJobError {
+  contractVersion: typeof ACCOUNT_EXPORT_JOB_CONTRACT_VERSION;
+  statusCode: 400 | 403 | 404 | 409;
+  code: AccountExportJobErrorCode;
+  message: string;
 }

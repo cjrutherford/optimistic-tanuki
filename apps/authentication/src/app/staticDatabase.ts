@@ -9,6 +9,7 @@ import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 
 const resolveConfigPath = () => {
   const candidates = [
@@ -59,6 +60,7 @@ const entities = [
   AuthActionTokenEntity,
   GuardianPermissionEntity,
   GuardianPolicyNoticeEntity,
+  AccountExportJobEntity,
 ];
 
 console.log(

@@ -13,6 +13,11 @@ import {
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
+import {
+  AccountExportJobRequest,
+  AccountExportJobResumeRequest,
+  AccountExportJobStatus,
+} from '@optimistic-tanuki/models';
 
 describe('Account export session boundary over TCP', () => {
   let authClient: ClientProxy;
@@ -39,6 +44,7 @@ describe('Account export session boundary over TCP', () => {
   const fixtureOAuthProviderIds = [randomUUID(), randomUUID()];
   const fixtureKeyDataIds: string[] = [];
   const fixtureAuthTokenIds: string[] = [];
+  const fixtureExportJobIds: string[] = [];
   const socialPostIds = [randomUUID(), randomUUID(), randomUUID()];
   const socialCommentIds = [randomUUID(), randomUUID()];
   const socialReactionIds = [randomUUID(), randomUUID()];
@@ -1172,6 +1178,12 @@ describe('Account export session boundary over TCP', () => {
     const keyIds = [...new Set(fixtureKeyDataIds)];
     try {
       await authDatabase.query('BEGIN');
+      if (fixtureExportJobIds.length > 0) {
+        await authDatabase.query(
+          'DELETE FROM account_export_jobs WHERE id = ANY($1::uuid[])',
+          [fixtureExportJobIds]
+        );
+      }
       if (userIds.length > 0) {
         await authDatabase.query(
           'DELETE FROM guardian_policy_notice WHERE id = $1::uuid',
@@ -1243,6 +1255,10 @@ describe('Account export session boundary over TCP', () => {
         'SELECT id FROM user_entity WHERE id = ANY($1::uuid[])',
         [fixtureUserIds]
       );
+      const exportJobRows = await authDatabase.query(
+        'SELECT id FROM account_export_jobs WHERE id = ANY($1::uuid[])',
+        [fixtureExportJobIds]
+      );
       expect(guardianRows.rowCount).toBe(0);
       expect(noticeRows.rowCount).toBe(0);
       expect(actionRows.rowCount).toBe(0);
@@ -1250,6 +1266,7 @@ describe('Account export session boundary over TCP', () => {
       expect(tokenRows.rowCount).toBe(0);
       expect(keyRows.rowCount).toBe(0);
       expect(userRows.rowCount).toBe(0);
+      expect(exportJobRows.rowCount).toBe(0);
     } catch (error) {
       await authDatabase.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -1945,6 +1962,184 @@ describe('Account export session boundary over TCP', () => {
       token: sessionToken,
       appId: 'client-interface',
     });
+  });
+
+  it('stores resumable export job status without tokens or preview content and keeps idempotency stable', async () => {
+    const stateBefore = await readAllFixtureState();
+    const candidateKeys = [randomUUID(), randomUUID()];
+    const attempts = await Promise.allSettled(
+      candidateKeys.map((idempotencyKey) =>
+        firstValueFrom(
+          authClient.send(
+            { cmd: AuthCommands.CreateAccountExportJob },
+            {
+              accountId,
+              token: sessionToken,
+              appId: 'client-interface',
+              idempotencyKey,
+            }
+          )
+        )
+      )
+    );
+    const accepted = attempts.filter(
+      (attempt) => attempt.status === 'fulfilled'
+    );
+    const refused = attempts.filter((attempt) => attempt.status === 'rejected');
+    for (const attempt of accepted) {
+      fixtureExportJobIds.push(
+        (attempt as PromiseFulfilledResult<AccountExportJobStatus>).value.jobId
+      );
+    }
+    expect(accepted).toHaveLength(1);
+    expect(refused).toHaveLength(1);
+    expect(
+      JSON.stringify((refused[0] as PromiseRejectedResult).reason)
+    ).toContain('EXPORT_JOB_BUSY');
+    const idempotencyKey =
+      candidateKeys[
+        attempts.findIndex((attempt) => attempt.status === 'fulfilled')
+      ];
+    const first = (
+      accepted[0] as PromiseFulfilledResult<AccountExportJobStatus>
+    ).value;
+    const repeated = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.CreateAccountExportJob },
+        {
+          accountId,
+          token: sessionToken,
+          appId: 'client-interface',
+          idempotencyKey,
+        }
+      )
+    );
+    expect(first).toMatchObject({
+      state: 'incomplete',
+      artifactUrl: null,
+      accountId,
+      appId: 'client-interface',
+    });
+    expect(repeated.jobId).toBe(first.jobId);
+    expect(repeated.attempt).toBe(first.attempt);
+    expect(JSON.stringify(first)).not.toContain(sessionToken);
+    expect(JSON.stringify(first)).not.toContain('owned-a');
+    expect(first.coverageSummary.artifactAvailable).toBe(false);
+    const laterKey = randomUUID();
+    const laterJob = await firstValueFrom(
+      authClient.send(
+        { cmd: AuthCommands.CreateAccountExportJob },
+        {
+          accountId,
+          token: sessionToken,
+          appId: 'client-interface',
+          idempotencyKey: laterKey,
+        }
+      )
+    );
+    fixtureExportJobIds.push(laterJob.jobId);
+    expect(laterJob.state).toBe('incomplete');
+
+    const database = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await database.connect();
+    try {
+      const rows = await database.query<{
+        id: string;
+        coverageSummary: unknown;
+        leaseOwner: string | null;
+      }>(
+        'SELECT id, "coverageSummary", "leaseOwner" FROM account_export_jobs WHERE "accountId" = $1 AND "appId" = $2 AND kind = $3 AND "idempotencyKey" = $4',
+        [accountId, 'client-interface', 'export', idempotencyKey]
+      );
+      expect(rows.rowCount).toBe(1);
+      expect(JSON.stringify(rows.rows[0])).not.toContain(sessionToken);
+      await expect(
+        firstValueFrom(
+          authClient.send(
+            { cmd: AuthCommands.GetAccountExportJob },
+            {
+              accountId: otherAccountId,
+              token: otherSessionToken,
+              appId: 'client-interface',
+              jobId: first.jobId,
+            }
+          )
+        )
+      ).rejects.toMatchObject({
+        code: 'EXPORT_JOB_NOT_FOUND',
+        statusCode: 404,
+      });
+    } finally {
+      await database.end();
+    }
+    expect(await readAllFixtureState()).toEqual(stateBefore);
+  });
+
+  it('recovers an expired job lease and preserves incomplete status', async () => {
+    const stateBefore = await readAllFixtureState();
+    const idempotencyKey = randomUUID();
+    const request: AccountExportJobRequest = {
+      accountId: otherAccountId,
+      token: otherSessionToken,
+      appId: 'client-interface',
+      idempotencyKey,
+    };
+    const created = await firstValueFrom(
+      authClient.send({ cmd: AuthCommands.CreateAccountExportJob }, request)
+    );
+    fixtureExportJobIds.push(created.jobId);
+    const resumeRequest: AccountExportJobResumeRequest = {
+      accountId: otherAccountId,
+      token: otherSessionToken,
+      appId: 'client-interface',
+      jobId: created.jobId,
+    };
+    const database = new PgClient(
+      getFixtureDatabaseOptions('ot_authentication')
+    );
+    await database.connect();
+    try {
+      await database.query(
+        `UPDATE account_export_jobs SET state = $1, attempt = $2, "leaseOwner" = $3, "leaseExpiresAt" = now() + interval '1 minute' WHERE id = $4`,
+        ['running', 17, 'stale-worker', created.jobId]
+      );
+      await expect(
+        firstValueFrom(
+          authClient.send(
+            { cmd: AuthCommands.ResumeAccountExportJob },
+            resumeRequest
+          )
+        )
+      ).rejects.toMatchObject({ code: 'EXPORT_JOB_BUSY', statusCode: 409 });
+      await database.query(
+        `UPDATE account_export_jobs SET "leaseExpiresAt" = now() - interval '1 second' WHERE id = $1`,
+        [created.jobId]
+      );
+      const resumed = await firstValueFrom(
+        authClient.send(
+          { cmd: AuthCommands.ResumeAccountExportJob },
+          resumeRequest
+        )
+      );
+      expect(resumed.state).toBe('incomplete');
+      expect(resumed.attempt).toBe(18);
+      const row = await database.query(
+        'SELECT state, attempt, "leaseOwner", "leaseExpiresAt", "coverageSummary" FROM account_export_jobs WHERE id = $1',
+        [created.jobId]
+      );
+      expect(row.rows[0]).toMatchObject({
+        state: 'incomplete',
+        attempt: 18,
+        leaseOwner: null,
+        leaseExpiresAt: null,
+      });
+      expect(row.rows[0].coverageSummary.artifactAvailable).toBe(false);
+    } finally {
+      await database.end();
+    }
+    expect(await readAllFixtureState()).toEqual(stateBefore);
   });
 
   it('rejects missing credentials, missing scope, invalid sessions, and a different account subject', async () => {

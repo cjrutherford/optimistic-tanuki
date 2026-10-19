@@ -40,6 +40,8 @@ import { GuardianPolicyNoticeService } from '../guardian-permissions/guardian-po
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
 import { AccountExportService } from './account-export.service';
 import { AccountExportController } from './account-export.controller';
+import { AccountExportJobService } from '../account-export-jobs/account-export-job.service';
+import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
@@ -93,6 +95,7 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     },
     AppService,
     AccountExportService,
+    AccountExportJobService,
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {
@@ -222,6 +225,11 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     {
       provide: getRepositoryToken(OAuthProviderEntity),
       useFactory: (ds: DataSource) => ds.getRepository(OAuthProviderEntity),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AccountExportJobEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AccountExportJobEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
   ],

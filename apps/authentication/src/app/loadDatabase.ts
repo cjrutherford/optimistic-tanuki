@@ -6,6 +6,8 @@ import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.
 import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 import { GuardianPermissionEntity } from '../guardian-permissions/entities/guardian-permission.entity';
 import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/guardian-policy-notice.entity';
+import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
+import { AccountExportJobs1792435947180 } from '../../migrations/1792435947180-AccountExportJobs';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { Initial1729455565251 } from '../../migrations/1729455565251-initial';
 import { Second1730238679999 } from '../../migrations/1730238679999-second';
@@ -33,6 +35,7 @@ const loadDatabase = (config: ConfigService) => {
     AuthActionTokenEntity,
     GuardianPermissionEntity,
     GuardianPolicyNoticeEntity,
+    AccountExportJobEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
@@ -58,6 +61,7 @@ const loadDatabase = (config: ConfigService) => {
       GuardianAgeEligibilityEnd1791986174677,
       GuardianAdultAccountBinding1792004425354,
       GuardianPolicyNoticeOutbox1792163157529,
+      AccountExportJobs1792435947180,
     ],
     migrationsRun: process.env.OT_RUN_MIGRATIONS_ON_START === 'true',
   };
