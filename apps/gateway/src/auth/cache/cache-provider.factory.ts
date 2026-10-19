@@ -97,7 +97,13 @@ export class CacheProviderFactory {
       );
     }
 
-    this.logger.debug(`Loaded cache config: ${JSON.stringify(config)}`);
+    this.logger.debug(
+      `Loaded cache config: ${JSON.stringify({
+        provider: config.provider,
+        ttl: config.ttl,
+        maxSize: config.maxSize,
+      })}`
+    );
     return config;
   }
 

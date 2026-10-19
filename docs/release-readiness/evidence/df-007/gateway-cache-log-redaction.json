@@ -1,0 +1,486 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-19T13:10:32.639488+00:00",
+  "baseRevision": "46b6843f35aa71048312b7b1494c11cdf8e5c22b",
+  "sourcePaths": {
+    "apps/gateway/src/auth/cache/cache-provider.factory.ts": "778395bf74dae08fd4c05888b5d59b838d28181e9b74d2a681e8836377264c6f",
+    "apps/gateway/src/auth/cache/cache-provider.factory.spec.ts": "d179a97ce1d7ea5d130bb8e79cfcc7858e00e83bd7c3604ffbad00bbf6d20aac"
+  },
+  "sourceReview": "Independent source review: GO; detailed private review retained in the local verification artifacts.",
+  "scopeGuard": {
+    "protected43Count": 43,
+    "protected43HashesVerified": true,
+    "b5CheckpointSourceCount": 5,
+    "b5CheckpointSourceHashesVerified": true,
+    "cacheBaselineConfigPath": "apps/authentication-e2e/project.json",
+    "cacheBaselineConfigSha256": "9073dc254c841bd6ed5d9e13a26a51c0fe0f3a13b7ef6769b13f20d14950966a",
+    "cacheBaselineConfigHashVerified": true,
+    "worktreeStatusPathCount": 52,
+    "authorizedStatusRule": "The final 52 paths comprise the 43 protected WIP paths, 2 authorized Gateway source paths, and exactly the 7 authorized documentation paths in this receipt scope."
+  },
+  "redGreenEvidence": {
+    "summary": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/red-green-results.md",
+    "redObserved": "Focused regression failed on synthetic sentinel leakage in the pre-fix diagnostic; no persisted raw RED log is claimed.",
+    "green": "Focused regression, full Gateway suite (111 suites / 1,657 tests), lint, production build, format, and diff recorded PASS in worker evidence."
+  },
+  "verification": {
+    "environment": {
+      "node": "24.21.0",
+      "NX_DAEMON": "false",
+      "NX_ISOLATE_PLUGINS": "false",
+      "NX_NO_CLOUD": "true",
+      "CI": "true"
+    },
+    "actualCommandCount": 29,
+    "staticCommandCount": 18,
+    "workflowContracts": {
+      "command": "node --test scripts/tests/e2e-environment-manifest.test.mjs scripts/tests/wait-for-e2e-readiness.test.mjs scripts/tests/resolve-e2e-images.test.mjs scripts/tests/ui-e2e-ci-contract.test.mjs",
+      "exitCode": 0,
+      "reportedTests": 40
+    },
+    "commands": [
+      {
+        "phase": "static",
+        "name": "migration-governance",
+        "command": ["pnpm", "run", "validate:typeorm-migrations"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-migration-governance.log",
+        "logSha256": "842e91f2cd3169a56788f8ed00d42a632a188e65863fe93960773e9666ac0db9"
+      },
+      {
+        "phase": "static",
+        "name": "migration-setup",
+        "command": [
+          "node",
+          "--test",
+          "scripts/tests/setup-and-migrate.test.mjs"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-migration-setup.log",
+        "logSha256": "264da386ffae0cb844f0831f0569314eb6204b7ed87d8a19bfdc4609822a6dec"
+      },
+      {
+        "phase": "static",
+        "name": "e2e-environment",
+        "command": ["node", "scripts/validate-e2e-environment.mjs"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-e2e-environment.log",
+        "logSha256": "6f27f70ad91eec5257492a377d85cda4b45f97a63f3adee0bd91f2b2b9f0e600"
+      },
+      {
+        "phase": "static",
+        "name": "ui-heuristics",
+        "command": ["pnpm", "run", "ui:heuristics:ci"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-ui-heuristics.log",
+        "logSha256": "7d3254309f832127e6770ee157385de768e25a407ae1d5a8f066765523726897"
+      },
+      {
+        "phase": "static",
+        "name": "no-personality-scss",
+        "command": ["pnpm", "run", "check:no-personality-scss"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-no-personality-scss.log",
+        "logSha256": "c0c41ebfcacad923185d62f7cfde2cd49ed055c9be7c7774078ab95addc127ce"
+      },
+      {
+        "phase": "static",
+        "name": "personality-audit",
+        "command": ["pnpm", "run", "check:personality-audit"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-personality-audit.log",
+        "logSha256": "52c0a4ef0a86e32ba56209b0b9fd0bd7671eccded6974b37710cecf639026b5d"
+      },
+      {
+        "phase": "static",
+        "name": "client-interface-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/client-interface-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-client-interface-collection.log",
+        "logSha256": "6d5550f41056f5db71617ec7d07daabc9e824070eb7c94194ee01b00b6741b19"
+      },
+      {
+        "phase": "static",
+        "name": "forgeofwill-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/forgeofwill-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-forgeofwill-collection.log",
+        "logSha256": "c18a9d4f8dc48b4a3eae901d156093f4c845d7f24c4ed3fe3e13192d4c6728c2"
+      },
+      {
+        "phase": "static",
+        "name": "digital-homestead-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/digital-homestead-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-digital-homestead-collection.log",
+        "logSha256": "98d57d38b524212a618cd80ff6fea3fedcd083c3c5d0ac9fa0dd42cc30071e36"
+      },
+      {
+        "phase": "static",
+        "name": "christopherrutherford-net-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/christopherrutherford-net-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-christopherrutherford-net-collection.log",
+        "logSha256": "799a0b1152280bb3dde7aef8e56927a4bf535a9eb7101a7af62e35fba6c5fcaa"
+      },
+      {
+        "phase": "static",
+        "name": "owner-console-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/owner-console-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-owner-console-collection.log",
+        "logSha256": "ff80e980c51d54a1cac275e187d8ccfbd01275a9fba0d83cc30450c5660470fa"
+      },
+      {
+        "phase": "static",
+        "name": "store-client-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/store-client-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-store-client-collection.log",
+        "logSha256": "1fd7e20b1d63aca84f30dc17546a47356e8f7d4826498e887c2b30a747100d37"
+      },
+      {
+        "phase": "static",
+        "name": "learning-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/learning-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-learning-collection.log",
+        "logSha256": "ff8e9b3c7b39a411ca8736ed4ffd57d7e6d211cf8759526a3a64de9a7321a1c1"
+      },
+      {
+        "phase": "static",
+        "name": "configurable-client-collection",
+        "command": [
+          "pnpm",
+          "exec",
+          "playwright",
+          "test",
+          "--config=apps/configurable-client-e2e/playwright.config.ts",
+          "--list"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-configurable-client-collection.log",
+        "logSha256": "2b298db54b2457b8d48fe5beee3187a4cc47fcbff94efdc8a63c54b12f82a085"
+      },
+      {
+        "phase": "static",
+        "name": "workflow-contracts-40",
+        "command": [
+          "node",
+          "--test",
+          "scripts/tests/e2e-environment-manifest.test.mjs",
+          "scripts/tests/wait-for-e2e-readiness.test.mjs",
+          "scripts/tests/resolve-e2e-images.test.mjs",
+          "scripts/tests/ui-e2e-ci-contract.test.mjs"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-workflow-contracts-40.log",
+        "logSha256": "58e6e3fae00d18accc546075af8783b34dedf32187bb48ad02a3c1e92f5c816f"
+      },
+      {
+        "phase": "static",
+        "name": "scoped-format-check",
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "format:check",
+          "--files=apps/gateway/src/auth/cache/cache-provider.factory.ts,apps/gateway/src/auth/cache/cache-provider.factory.spec.ts"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-scoped-format-check.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "phase": "static",
+        "name": "scoped-diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check",
+          "--",
+          "apps/gateway/src/auth/cache/cache-provider.factory.ts"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-scoped-diff-check.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "phase": "static",
+        "name": "untracked-spec-whitespace",
+        "command": [
+          "python3",
+          "-c",
+          "from pathlib import Path; p=Path('apps/gateway/src/auth/cache/cache-provider.factory.spec.ts'); s=p.read_text(); bad=[i for i,l in enumerate(s.splitlines(),1) if l.rstrip('\\r\\n').endswith((' ','\\t'))]; print('trailing-whitespace-lines='+','.join(map(str,bad))); raise SystemExit(bool(bad))"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/static-untracked-spec-whitespace.log",
+        "logSha256": "22048b141cbc933b2fd667f7a58bb227e78e26b262033bc429c068e61941495e"
+      },
+      {
+        "phase": "quality",
+        "name": "affected-test-ci",
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "test",
+          "-c",
+          "ci",
+          "--files=apps/gateway/src/auth/cache/cache-provider.factory.ts,apps/gateway/src/auth/cache/cache-provider.factory.spec.ts",
+          "--parallel=1",
+          "--outputStyle=static",
+          "--exclude=directory-*"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/quality-affected-test-ci.log",
+        "logSha256": "9e952bf8f6bd2936e6446f4d177e001b5faf1562e8d646e8f7fc4d753d945873",
+        "observedWarningCategories": [
+          "Node reported NO_COLOR ignored because FORCE_COLOR was set.",
+          "Nx reported a Validation Warning; details remain in the hashed local log."
+        ]
+      },
+      {
+        "phase": "quality",
+        "name": "affected-lint",
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "lint",
+          "--files=apps/gateway/src/auth/cache/cache-provider.factory.ts,apps/gateway/src/auth/cache/cache-provider.factory.spec.ts",
+          "--parallel=1",
+          "--outputStyle=static",
+          "--exclude=directory-*,*-e2e"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/quality-affected-lint.log",
+        "logSha256": "f613bbca04f8031e63a0df3ac810316da17d85bb12f5595a1388d9f6677d1126",
+        "observedWarningCategories": [
+          "Node reported NO_COLOR ignored because FORCE_COLOR was set."
+        ]
+      },
+      {
+        "phase": "quality",
+        "name": "affected-production-build",
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "affected",
+          "-t",
+          "build",
+          "-c",
+          "production",
+          "--files=apps/gateway/src/auth/cache/cache-provider.factory.ts,apps/gateway/src/auth/cache/cache-provider.factory.spec.ts",
+          "--parallel=1",
+          "--outputStyle=static",
+          "--exclude=directory-*"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/quality-affected-production-build.log",
+        "logSha256": "d6da94b2d89dd6d1424a0be9b2051f02ee667d5b11ddef40b5b25364782fcbf2",
+        "observedWarningCategories": [
+          "Node reported NO_COLOR ignored because FORCE_COLOR was set."
+        ]
+      },
+      {
+        "phase": "builddev",
+        "name": "build-dev",
+        "command": ["pnpm", "run", "build:dev"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/builddev-build-dev.log",
+        "logSha256": "090319c6c697b835e10c267750f208840fb08670c47de66d2a1b2351619cd077",
+        "observedWarningCategories": [
+          "Node reported NO_COLOR ignored because FORCE_COLOR was set.",
+          "TypeScript reported included but unused compilation entries.",
+          "Webpack reported conflicting process.env.NODE_ENV values and asset/entrypoint size notices."
+        ]
+      },
+      {
+        "phase": "supplemental",
+        "name": "nx-show-projects",
+        "command": ["pnpm", "exec", "nx", "show", "projects"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-nx-show-projects.log",
+        "logSha256": "f088a91f31bdfa374501d56651a90f13fe539afe6346f5f865ea59c801a5fd13"
+      },
+      {
+        "phase": "supplemental",
+        "name": "get-openapi",
+        "command": ["pnpm", "run", "get-openapi"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-get-openapi.log",
+        "logSha256": "cf82d5b31077d1800e01c39a0f0a3fcb824fb003d30f84814bd226be4a1ab19a",
+        "observedWarningCategories": [
+          "OpenAPI generation wrote dist/openapi.json and exited 0, then logged asynchronous EAI_AGAIN connection errors for wellness, authentication, social, and blogging services, plus duplicate-DTO warnings. Orval generation and the generated-directory diff passed; no live-service connectivity is established by this check."
+        ]
+      },
+      {
+        "phase": "supplemental",
+        "name": "orval",
+        "command": ["pnpm", "exec", "orval", "--config", "orval.config.ts"],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-orval.log",
+        "logSha256": "cb501bb9be1648ab50f3ba2901b46462850ff289230a46953597e7c71d8382ac"
+      },
+      {
+        "phase": "supplemental",
+        "name": "generated-prettier-write",
+        "command": [
+          "pnpm",
+          "exec",
+          "prettier",
+          "--write",
+          "libs/billing-sdk/src/generated/",
+          "libs/chat-ui-data-access/src/generated/",
+          "libs/payments-ui-data-access/src/generated/",
+          "libs/store-data-access/src/generated/",
+          "libs/finance/data-access/src/generated/",
+          "libs/blogging-data-access/src/generated/",
+          "libs/social-data-access/src/generated/",
+          "libs/learning-ui-data-access/src/generated/",
+          "libs/profile-ui-data-access/src/generated/"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-generated-prettier-write.log",
+        "logSha256": "627d63471471451c823cddd43eb62848f254a566ec40b19e52ea7cb5e60119e8"
+      },
+      {
+        "phase": "supplemental",
+        "name": "generated-diff",
+        "command": [
+          "git",
+          "diff",
+          "--exit-code",
+          "--",
+          "libs/billing-sdk/src/generated/",
+          "libs/chat-ui-data-access/src/generated/",
+          "libs/payments-ui-data-access/src/generated/",
+          "libs/store-data-access/src/generated/",
+          "libs/finance/data-access/src/generated/",
+          "libs/blogging-data-access/src/generated/",
+          "libs/social-data-access/src/generated/",
+          "libs/learning-ui-data-access/src/generated/",
+          "libs/profile-ui-data-access/src/generated/"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-generated-diff.log",
+        "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "phase": "supplemental",
+        "name": "docs-site-jest",
+        "command": [
+          "pnpm",
+          "exec",
+          "jest",
+          "-c",
+          "tools/docs-site/jest.config.cjs"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-docs-site-jest.log",
+        "logSha256": "42bc47dc6134bcf89583f4751b8dfcb61c50bc179e5c5d441e1f69b6f8488635"
+      },
+      {
+        "phase": "supplemental",
+        "name": "ui-playground-build",
+        "command": [
+          "pnpm",
+          "exec",
+          "nx",
+          "build",
+          "ui-playground",
+          "--outputStyle=static"
+        ],
+        "exitCode": 0,
+        "log": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/supplemental-ui-playground-build.log",
+        "logSha256": "56b082e79786017f229dda8c001172fdd535fe1c0a10e652774a04f99f99d53e"
+      }
+    ],
+    "omittedChecks": [
+      {
+        "check": "Packages-wide checks",
+        "reason": "No packages workspace input changed."
+      },
+      {
+        "check": "Docker and live-stack E2E",
+        "reason": "Debug argument change only; the synthetic sentinel regression uses mocked Redis and direct logger spies, so a live-stack run would not establish production logging behavior."
+      }
+    ],
+    "buildDevSummary": {
+      "summary": "Nx successfully ran target build for 48 projects and 27 dependent tasks.",
+      "cacheSummary": "Nx read output from cache for 48 of 75 tasks; the remaining 27 tasks executed.",
+      "source": ".runtime-artifacts/account-rights/gateway-cache-log-redaction/gates/builddev-build-dev.log"
+    },
+    "supplementalCommandCount": 7,
+    "supplementalSummary": {
+      "result": "7/7 passed",
+      "checks": [
+        "Nx project graph",
+        "OpenAPI generation",
+        "Orval generation",
+        "Prettier on nine generated directories",
+        "generated-directory diff",
+        "docs-site Jest",
+        "ui-playground Nx build"
+      ],
+      "generatedCodeDrift": "none",
+      "uiPlaygroundBuildNote": "Passed with a webpack entrypoint-size warning; the local log is retained by SHA-256."
+    }
+  },
+  "verifiedDate": "2026-10-19"
+}
