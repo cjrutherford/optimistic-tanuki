@@ -7,3 +7,5 @@
 The [ownership catalog](ownership-catalog.json) covers 165 tracked entity files and 24 candidate owners at base `6fc407676`. It is source evidence, not an accepted cross-store ownership inventory. Its [readable report](../../findings/DF-007-OWNERSHIP.md) explains unresolved joins and stores.
 
 DF-007 remains a mandatory release prerequisite. There is no complete public export or account-deletion workflow yet. Provider/backup, portable media, all participants, durable orchestration, readback and final UI acceptance remain open. The evidence contains no raw user records, bearer tokens or private keys.
+
+The [Authentication E2E cache-baseline findings](../../findings/AUTHENTICATION-E2E-CACHE.md) and [receipt](e2e-cache-baseline.json) record the target-scoped uncached run against the same approved B5 service images. The default Nx target executed 21/21 tests; the five B5 table counters were zero before and after, and project teardown left zero resources. This is a host-side test-cache correction only; DF-007 and RR-11 remain open.

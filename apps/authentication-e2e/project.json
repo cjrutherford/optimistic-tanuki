@@ -11,6 +11,7 @@
   "targets": {
     "e2e": {
       "executor": "@nx/jest:jest",
+      "cache": false,
       "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
       "options": {
         "jestConfig": "apps/authentication-e2e/jest.config.ts",
