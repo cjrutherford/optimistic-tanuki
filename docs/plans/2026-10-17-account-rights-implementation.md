@@ -206,3 +206,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J6 — Secure Profile snapshots and job integration
 
 [Finding](../release-readiness/findings/DF-007-J6.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j6.json): bounded, leased, session-bound Profile snapshots and captured identity pages now feed verified job staging. Three selected actual TCP cases passed with guarded restart/recapture, fixture readback and resource teardown. Jobs stay incomplete without an artifact. Complete Assets ownership/portable bytes using these identities is next; other owners, Videos, deletion and shared controls remain.
+
+### J7 — Assets identity traversal component
+
+[Finding](../release-readiness/findings/DF-007-J7.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j7.json): nineteen simulated-RPC cases and Assets build/lint locally verify bounded traversal of all J6 captured identity pages. This helper is not wired to a participant. Complete Assets ownership, guardian activity and authenticated portable bytes with real database/storage proof remain next; no account artifact, deletion or shared UI is enabled.

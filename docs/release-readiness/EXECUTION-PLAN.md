@@ -29,6 +29,8 @@
 
 **2026-10-20 J6 checkpoint:** [Secure Profile snapshots and job integration](./findings/DF-007-J6.md) now pass three selected live-service cases, including exact lease/session fencing, 1,006 stable captured identities, guarded restart/recapture and cleanup/readback. Authentication jobs verify both database owners while remaining incomplete with no artifact. Next is complete Assets ownership and portable bytes using the fenced identities, then remaining owners/media/artifact/deletion/shared UI. Item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J7 component:** [Assets snapshot identity consumer](./findings/DF-007-J7.md) passes 19 focused simulated-RPC tests plus Assets production build and lint. It traverses all fenced Profile identity pages without retaining a whole-account ID array. It is not wired to Assets capture; complete table ownership, decrypted media and actual integration evidence remain next. Item 1/DF-007/RR-11 remain open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

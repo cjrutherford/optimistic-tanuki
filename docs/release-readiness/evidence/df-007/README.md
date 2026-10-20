@@ -25,3 +25,5 @@ The [J1 finding](../../findings/DF-007-J1.md) and [receipt](checkpoint-j1.json) 
 [J5 legacy Profile adapters](../../findings/DF-007-J5.md): [receipt](checkpoint-j5.json), [updated field dispositions](profile-owner-fields-j5.json). Same-snapshot goal/project data and Timeline links replace the J4 guard. Eleven enabled PostgreSQL cases passed. Remote snapshot transport, Profile job integration and the remaining account-rights workflow stay open.
 
 [J6 secure Profile snapshots and jobs](../../findings/DF-007-J6.md): [receipt](checkpoint-j6.json). Three selected live-service cases passed, including stable identities, lease/session fences and guarded restart/recapture. Private fixture readback and teardown passed. Assets/media, remaining owners, artifact, deletion and shared UI remain open.
+
+[J7 Assets identity consumer component](../../findings/DF-007-J7.md): [receipt](checkpoint-j7.json). Nineteen simulated-RPC tests and Assets build/lint passed. Module/participant wiring, Assets tables and verified portable media remain open.

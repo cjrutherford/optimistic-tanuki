@@ -37,6 +37,8 @@ The [J3 integration](./findings/DF-007-J3.md) runs the Authentication DB reader 
 
 **2026-10-20 J6 checkpoint:** [Secure Profile snapshots and job integration](./findings/DF-007-J6.md) now pass three selected live-service cases, including exact lease/session fencing, 1,006 stable captured identities, guarded restart/recapture and cleanup/readback. Authentication jobs verify both database owners while remaining incomplete with no artifact. Next is complete Assets ownership and portable bytes using the fenced identities, then remaining owners/media/artifact/deletion/shared UI. Item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J7 component:** [Assets snapshot identity consumer](./findings/DF-007-J7.md) passes 19 focused simulated-RPC tests plus Assets production build and lint. It traverses all fenced Profile identity pages without retaining a whole-account ID array. It is not wired to Assets capture; complete table ownership, decrypted media and actual integration evidence remain next. Item 1/DF-007/RR-11 remain open.
+
 ## Next bounded work
 
 The current next step is complete Assets ownership and portable bytes using J6 fenced Profile identities, followed by remaining owner adapters. J5 now includes the retained legacy goal/project stores and Timeline links in the Profile reader. Authentication staging/job integration is locally verified. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
