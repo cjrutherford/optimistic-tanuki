@@ -7,7 +7,10 @@ import {
   AccountExportOwnerRecord,
 } from '@optimistic-tanuki/models';
 import { AccountExportOwnerEmitter } from '@optimistic-tanuki/storage';
-import { assertNoUncoveredProfileLegacyData } from './account-export-legacy-guard';
+import {
+  PROFILE_ACCOUNT_EXPORT_LEGACY_SOURCES,
+  ProfileAccountExportLegacyReader,
+} from './account-export-legacy-reader';
 import { firstValueFrom, timeout } from 'rxjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { DataSource, QueryRunner } from 'typeorm';
@@ -20,6 +23,7 @@ export const PROFILE_ACCOUNT_EXPORT_SOURCES = [
   'profile',
   'timeline',
   'guardianActivity',
+  ...PROFILE_ACCOUNT_EXPORT_LEGACY_SOURCES,
 ] as const;
 export type ProfileAccountExportSource =
   (typeof PROFILE_ACCOUNT_EXPORT_SOURCES)[number];
@@ -171,16 +175,18 @@ export class ProfileAccountExportOwnerService {
         snapshot?.['snapshotAt'],
         'snapshotAt'
       );
-      await assertNoUncoveredProfileLegacyData(accountId, (sql, parameters) =>
-        this.readQuery(
-          queryRunner,
-          sql,
-          parameters,
-          controller.signal,
-          deadlineAt,
-          timedOut,
-          accountId
-        )
+      const legacy = new ProfileAccountExportLegacyReader(
+        accountId,
+        (sql, parameters) =>
+          this.readQuery(
+            queryRunner,
+            sql,
+            parameters,
+            controller.signal,
+            deadlineAt,
+            timedOut,
+            accountId
+          )
       );
       const captureId = randomUUID();
       const emitter = new AccountExportOwnerEmitter<ProfileAccountExportSource>(
@@ -251,6 +257,10 @@ export class ProfileAccountExportOwnerService {
             deadlineAt,
             () => timedOut
           ),
+        legacyGoalText: () => legacy.legacyGoalTextRows(),
+        legacyGoal: () => legacy.legacyGoalRows(),
+        legacyProjectText: () => legacy.legacyProjectTextRows(),
+        legacyProject: () => legacy.legacyProjectRows(),
       });
       const identityCount = emitter.getSourceRowCount('profileIdentity');
       const profileCount = emitter.getSourceRowCount('profile');
@@ -272,6 +282,11 @@ export class ProfileAccountExportOwnerService {
         profile: 'all-retained-profile-columns',
         timeline: 'all-retained-owned-timeline-rows',
         guardianActivity: 'retained-activity-role-projected-and-verified',
+        legacyGoalText: 'full-legacy-goal-text-inline-or-ordered-field-chunks',
+        legacyGoal: 'all-retained-owned-legacy-goals',
+        legacyProjectText:
+          'full-legacy-project-text-inline-or-ordered-field-chunks',
+        legacyProject: 'all-retained-owned-legacy-projects',
       });
     } catch (error) {
       if (error instanceof ProfileAccountExportOwnerError) throw error;
@@ -602,9 +617,11 @@ export class ProfileAccountExportOwnerService {
           MAX_INLINE_TEXT_CHARS + 1
         }) AS "titlePrefix", char_length(t."title") AS "titleChars", octet_length(t."title") AS "titleBytes", left(t."description", ${
           MAX_INLINE_TEXT_CHARS + 1
-        }) AS "descriptionPrefix", char_length(t."description") AS "descriptionChars", octet_length(t."description") AS "descriptionBytes", t."timeStamp"::text AS "timeStamp", t."eventType", t."relatedProfileId"::text AS "relatedProfileId", owned."id"::text AS "ownedRelatedProfileId"
+        }) AS "descriptionPrefix", char_length(t."description") AS "descriptionChars", octet_length(t."description") AS "descriptionBytes", t."timeStamp"::text AS "timeStamp", t."eventType", t."relatedProfileId"::text AS "relatedProfileId", owned."id"::text AS "ownedRelatedProfileId", (t."relatedGoalId" IS NOT NULL) AS "hasRelatedGoalId", owned_goal."id"::text AS "ownedRelatedGoalId", (t."relatedProjectId" IS NOT NULL) AS "hasRelatedProjectId", owned_project."id"::text AS "ownedRelatedProjectId"
            FROM "timeline" t
            LEFT JOIN "profile" owned ON owned."id" = t."relatedProfileId" AND owned."userId" = $1
+           LEFT JOIN "goal" owned_goal ON owned_goal."id" = t."relatedGoalId" AND owned_goal."userId" = $1
+           LEFT JOIN "project" owned_project ON owned_project."id" = t."relatedProjectId" AND owned_project."userId" = $1
           WHERE t."userId" = $1 AND ($2::uuid IS NULL OR t."id" > $2::uuid)
           ORDER BY t."id" LIMIT $3`,
         [accountId, cursor, PAGE_LIMIT],
@@ -635,6 +652,14 @@ export class ProfileAccountExportOwnerService {
                 : related == null
                 ? { disposition: 'redacted-unowned-profile-reference' }
                 : { disposition: 'owned-profile-reference', id: related },
+            relatedGoalId: this.legacyReference(
+              row['hasRelatedGoalId'],
+              row['ownedRelatedGoalId']
+            ),
+            relatedProjectId: this.legacyReference(
+              row['hasRelatedProjectId'],
+              row['ownedRelatedProjectId']
+            ),
           },
         };
       }
@@ -645,6 +670,20 @@ export class ProfileAccountExportOwnerService {
       );
       if (rows.length <= PAGE_SIZE) break;
     }
+  }
+
+  private legacyReference(hasValue: unknown, ownedId: unknown): Row | null {
+    if (typeof hasValue !== 'boolean')
+      throw new Error('Invalid legacy reference');
+    if (!hasValue) {
+      if (ownedId !== null) throw new Error('Invalid legacy reference');
+      return null;
+    }
+    if (ownedId === null) return { disposition: 'redacted-unowned-reference' };
+    return {
+      disposition: 'owned-reference',
+      id: this.uuid(ownedId, 'legacy reference'),
+    };
   }
 
   private async *timelineTextRows(

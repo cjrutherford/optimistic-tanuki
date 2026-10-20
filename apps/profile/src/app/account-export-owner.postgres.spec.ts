@@ -3,7 +3,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { DataSource } from 'typeorm';
 import { of } from 'rxjs';
 import loadDatabase from './loadDatabase';
-import { ProfileAccountExportOwnerService } from './account-export-owner.service';
+import {
+  PROFILE_ACCOUNT_EXPORT_SOURCES,
+  ProfileAccountExportOwnerService,
+  ProfileAccountExportChunk,
+} from './account-export-owner.service';
+import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
 import { Profile } from '../profiles/entities/profile.entity';
 import { Timeline } from '../timelines/entities/timeline.entity';
 import { GuardianProfileActivity } from '../profiles/entities/guardian-profile-activity.entity';
@@ -12,7 +17,7 @@ jest.mock('uuid', () => ({
   v4: () => require('node:crypto').randomUUID(),
 }));
 
-const DB_NAME = 'profile_owner_j4_fixture';
+const DB_NAME = 'profile_owner_j5_fixture';
 const DB_HOST = '127.0.0.1';
 const DB_PORT = '15549';
 const DB_USER = 'owner_fixture';
@@ -214,6 +219,18 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
 
   afterAll(async () => {
     if (!dataSource?.isInitialized) return;
+    await dataSource.query(
+      'UPDATE "timeline" SET "relatedGoalId"=NULL, "relatedProjectId"=NULL WHERE "userId"=$1',
+      [ACCOUNT_ID]
+    );
+    await dataSource.query(
+      'UPDATE "project" SET "goalsId"=NULL, "timeLineEventsId"=NULL WHERE "userId"=$1',
+      [ACCOUNT_ID]
+    );
+    await dataSource.query(
+      'UPDATE "goal" SET "relatedProjectId"=NULL WHERE "userId"=$1',
+      [ACCOUNT_ID]
+    );
     await dataSource.query(`DELETE FROM "timeline" WHERE "userId" = $1`, [
       ACCOUNT_ID,
     ]);
@@ -413,48 +430,125 @@ describePg('ProfileAccountExportOwnerService PostgreSQL snapshot', () => {
     ).toBe(false);
   }, 60_000);
 
-  it('fails closed for owned legacy goal, project, and timeline links while foreign legacy rows do not block', async () => {
-    const capture = () =>
-      service.captureAccount({
-        accountId: ACCOUNT_ID,
-        sessionToken: 'test-session-token',
-        appId: ACCOUNT_APP,
-        onChunk: async () => undefined,
-      });
-    await expect(capture()).resolves.toMatchObject({ endOfStream: true });
-
+  it('captures owned legacy data and links while redacting foreign references and preserving counterpart rows', async () => {
+    const capture = async () => {
+      const records: CapturedRecord[] = [];
+      let end: ProfileAccountExportChunk | undefined;
+      const handle = await new AccountExportOwnerSpoolService().capture(
+        {
+          participantId: 'profile',
+          accountId: ACCOUNT_ID,
+          sources: PROFILE_ACCOUNT_EXPORT_SOURCES,
+        },
+        (onChunk, signal) =>
+          service.captureAccount({
+            accountId: ACCOUNT_ID,
+            sessionToken: 'test-session-token',
+            appId: ACCOUNT_APP,
+            signal,
+            onChunk: async (chunk) => {
+              records.push(...chunk.records);
+              if (chunk.endOfStream) end = chunk;
+              await onChunk(chunk);
+            },
+          })
+      );
+      try {
+        expect(handle.metadata.sourceRowCounts).toEqual(end?.sourceRowCounts);
+        return { end: end!, records };
+      } finally {
+        await handle.cleanup();
+      }
+    };
+    const empty = await capture();
+    expect(empty.end.sourceRowCounts?.legacyGoal).toBe(0);
+    expect(empty.end.sourceRowCounts?.legacyProject).toBe(0);
+    const longName = `goal-${'😀漢字'.repeat(1000)}`;
+    const longDescription = `project-${'🧭é'.repeat(1600)}`;
     await dataSource.query(
-      `INSERT INTO "goal" ("id", "name", "description", "target", "progress", "userId", "startDate") VALUES ($1, 'owned goal', 'fixture', 1, 0, $2, CURRENT_TIMESTAMP)`,
-      [ownedLegacyGoalId, ACCOUNT_ID]
+      `INSERT INTO "goal" ("id", "name", "description", "target", "progress", "userId", "startDate", "relatedProfileId") VALUES ($1, $4, 'fixture goal', -3, 7, $2, '2024-02-03 04:05:06.123456'::timestamp, $3)`,
+      [ownedLegacyGoalId, ACCOUNT_ID, MIN_PROFILE_ID, longName]
     );
-    await expect(capture()).rejects.toMatchObject({
-      code: 'OWNER_READ_FAILED',
+    await dataSource.query(
+      `INSERT INTO "project" ("id", "name", "description", "userId", "relatedProfileId", "timeLineEventsId", "goalsId") VALUES ($1, 'owned project', $6, $2, $3, $4, $5)`,
+      [
+        ownedLegacyProjectId,
+        ACCOUNT_ID,
+        FOREIGN_PROFILE_ID,
+        ownedTimelineIds[0],
+        ownedLegacyGoalId,
+        longDescription,
+      ]
+    );
+    await dataSource.query(
+      'UPDATE "goal" SET "relatedProjectId"=$1::uuid WHERE "id"=$2::uuid',
+      [ownedLegacyProjectId, ownedLegacyGoalId]
+    );
+    await dataSource.query(
+      'UPDATE "timeline" SET "relatedGoalId"=$1::uuid, "relatedProjectId"=$2::uuid WHERE "id"=$3::uuid',
+      [ownedLegacyGoalId, foreignLegacyProjectId, ownedTimelineIds[0]]
+    );
+    const foreignBefore = await dataSource.query(
+      'SELECT row_to_json(g) AS "row" FROM "goal" g WHERE "id"=$1::uuid',
+      [foreignLegacyGoalId]
+    );
+    const first = await capture();
+    expect(first.end.sourceRowCounts?.legacyGoal).toBe(1);
+    expect(first.end.sourceRowCounts?.legacyProject).toBe(1);
+    const reconstruct = (source: string, field: string) =>
+      first.records
+        .filter((row) => row.source === source && row.data.field === field)
+        .sort((a, b) => Number(a.data.charOffset) - Number(b.data.charOffset))
+        .map((row) => row.data.value)
+        .join('');
+    expect(reconstruct('legacyGoalText', 'name')).toBe(longName);
+    expect(reconstruct('legacyProjectText', 'description')).toBe(
+      longDescription
+    );
+    const goal = first.records.find((row) => row.source === 'legacyGoal')!.data;
+    const project = first.records.find(
+      (row) => row.source === 'legacyProject'
+    )!.data;
+    expect(goal).toMatchObject({
+      id: ownedLegacyGoalId,
+      name: { disposition: 'full-text-in-legacy-text-source' },
+      target: -3,
+      progress: 7,
+      startDate: '2024-02-03 04:05:06.123456',
+      endDate: null,
+      relatedProfileId: { disposition: 'owned-reference', id: MIN_PROFILE_ID },
+      relatedProjectId: {
+        disposition: 'owned-reference',
+        id: ownedLegacyProjectId,
+      },
     });
-    await dataSource.query(`DELETE FROM "goal" WHERE "id" = $1::uuid`, [
-      ownedLegacyGoalId,
-    ]);
-
-    await dataSource.query(
-      `INSERT INTO "project" ("id", "name", "description", "userId") VALUES ($1, 'owned project', 'fixture', $2)`,
-      [ownedLegacyProjectId, ACCOUNT_ID]
-    );
-    await expect(capture()).rejects.toMatchObject({
-      code: 'OWNER_READ_FAILED',
+    expect(project).toMatchObject({
+      id: ownedLegacyProjectId,
+      relatedProfileId: { disposition: 'redacted-unowned-reference' },
+      timeLineEventsId: {
+        disposition: 'owned-reference',
+        id: ownedTimelineIds[0],
+      },
+      goalsId: { disposition: 'owned-reference', id: ownedLegacyGoalId },
     });
-    await dataSource.query(`DELETE FROM "project" WHERE "id" = $1::uuid`, [
-      ownedLegacyProjectId,
-    ]);
-
-    await dataSource.query(
-      `UPDATE "timeline" SET "relatedGoalId" = $1::uuid WHERE "id" = $2::uuid`,
-      [foreignLegacyGoalId, ownedTimelineIds[0]]
-    );
-    await expect(capture()).rejects.toMatchObject({
-      code: 'OWNER_READ_FAILED',
+    const timeline = first.records.find(
+      (row) => row.source === 'timeline' && row.data.id === ownedTimelineIds[0]
+    )!.data;
+    expect(timeline.relatedGoalId).toEqual({
+      disposition: 'owned-reference',
+      id: ownedLegacyGoalId,
     });
-    await dataSource.query(
-      `UPDATE "timeline" SET "relatedGoalId" = NULL WHERE "id" = $1::uuid`,
-      [ownedTimelineIds[0]]
-    );
+    expect(timeline.relatedProjectId).toEqual({
+      disposition: 'redacted-unowned-reference',
+    });
+    expect(JSON.stringify(first.records)).not.toContain(foreignLegacyGoalId);
+    expect(JSON.stringify(first.records)).not.toContain(foreignLegacyProjectId);
+    expect(JSON.stringify(first.records)).not.toContain(FOREIGN_PROFILE_ID);
+    expect(
+      await dataSource.query(
+        'SELECT row_to_json(g) AS "row" FROM "goal" g WHERE "id"=$1::uuid',
+        [foreignLegacyGoalId]
+      )
+    ).toEqual(foreignBefore);
   }, 60_000);
 });

@@ -25,6 +25,8 @@
 
 **2026-10-20 J4 checkpoint:** [J4 Profile capture](./findings/DF-007-J4.md) locally verifies the three current entity tables and same-snapshot identities, full text and inline PNG/JPEG bytes. Ten enabled PostgreSQL cases passed. Migration review also found retained legacy goal/project data and timeline links; unsupported owned legacy data blocks capture until adapters exist. No remote snapshot handle, Profile job integration, artifact or deletion is enabled; item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J5 checkpoint:** [J5 legacy Profile capture](./findings/DF-007-J5.md) replaces the J4 guard with same-snapshot goal/project adapters and ownership-checked Timeline links. Eleven enabled PostgreSQL cases passed, including 1,006 goals and 1,006 projects plus real staging of long legacy text. Remote snapshot transport and Profile job integration remain next; no download or deletion is enabled. Item 1/DF-007/RR-11 remain open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

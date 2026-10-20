@@ -18,8 +18,8 @@ import {
 jest.mock('uuid', () => ({ v4: () => require('node:crypto').randomUUID() }));
 
 const enabled =
-  process.env.PROFILE_OWNER_PG_OPT_IN === 'profile_owner_j4_fixture' &&
-  process.env.PROFILE_OWNER_PG_NAME === 'profile_owner_j4_fixture' &&
+  process.env.PROFILE_OWNER_PG_OPT_IN === 'profile_owner_j5_fixture' &&
+  process.env.PROFILE_OWNER_PG_NAME === 'profile_owner_j5_fixture' &&
   process.env.PROFILE_OWNER_PG_HOST === '127.0.0.1' &&
   process.env.PROFILE_OWNER_PG_PORT === '15549' &&
   process.env.PROFILE_OWNER_PG_USER === 'owner_fixture' &&

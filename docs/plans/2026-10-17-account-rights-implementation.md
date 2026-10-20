@@ -198,3 +198,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J4 — Current Profile entity capture and legacy inventory guard
 
 [Finding](../release-readiness/findings/DF-007-J4.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j4.json): same-snapshot identity/current-entity capture, bounded full text, inline PNG/JPEG bytes and guardian role privacy have local PostgreSQL proof (ten enabled cases). The actual initial migration retains goal/project stores and timeline links absent the entity catalog; owned unsupported legacy data rejects capture. Legacy adapters and remote snapshot transport remain next, followed by other owners/media/artifact/deletion/shared controls. No Profile job route or download/deletion is enabled.
+
+### J5 — Legacy Profile database adapters
+
+[Finding](../release-readiness/findings/DF-007-J5.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j5.json): the read-only Profile capture now includes migration-owned goal/project tables and verified Timeline legacy links. Six focused units and eleven enabled PostgreSQL cases passed, including complete long text and circular/foreign references, counterpart preservation and actual staging. The J4 temporary legacy-data guard is removed; its historical finding remains separate. Authorized remote snapshot transport and Profile job integration remain next. No account download/deletion is enabled.
