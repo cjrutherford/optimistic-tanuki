@@ -5,6 +5,7 @@ import {
   AccountExportOwnerChunk,
   AccountExportOwnerFailureCode,
   AccountExportOwnerRecord,
+  ACCOUNT_EXPORT_COVERAGE_INVENTORY,
   ACCOUNT_EXPORT_OWNER_CONTRACT_VERSION,
   ACCOUNT_EXPORT_OWNER_SCHEMA_VERSION,
 } from '@optimistic-tanuki/models';
@@ -1040,6 +1041,26 @@ export class AuthenticationAccountExportOwnerService {
         throw new Error('invalid coverage summary');
       }
       result.artifactAvailable = summary.artifactAvailable;
+    }
+    if (summary.capturedDatabaseOwners != null) {
+      const owners = summary.capturedDatabaseOwners;
+      const knownOwners = new Set<string>(
+        ACCOUNT_EXPORT_COVERAGE_INVENTORY.participants
+      );
+      if (
+        !Array.isArray(owners) ||
+        owners.length > ACCOUNT_EXPORT_COVERAGE_INVENTORY.participants.length ||
+        !owners.every(
+          (owner) =>
+            typeof owner === 'string' &&
+            owner.length <= 80 &&
+            knownOwners.has(owner)
+        ) ||
+        new Set(owners).size !== owners.length
+      ) {
+        throw new Error('invalid coverage summary');
+      }
+      result.capturedDatabaseOwners = [...owners];
     }
     return result;
   }

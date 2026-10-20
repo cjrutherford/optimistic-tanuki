@@ -17,3 +17,5 @@ The [B6 findings](../../findings/DF-007-B6.md) and [sanitized receipt](checkpoin
 The [J1 finding](../../findings/DF-007-J1.md) and [receipt](checkpoint-j1.json) record the durable internal export-job foundation: two new TCP cases passed, five prior cases intentionally skipped, generated migration and real-PostgreSQL acknowledgement fences. Selected fixture-state preservation and cleanup passed. This adds no portable download or deletion; DF-007 and RR-11 remain open.
 
 [J2 Authentication DB capture](../../findings/DF-007-J2.md): [receipt](checkpoint-j2.json), [field dispositions](authentication-owner-fields.json). Eight retained sources; 15 Models tests and nine Auth tests including one enabled PostgreSQL case passed. No staging/job integration, download or deletion is claimed.
+
+[J3 staging/job integration](../../findings/DF-007-J3.md): [receipt](checkpoint-j3.json), [updated Auth field dispositions](authentication-owner-fields-j3.json). Actual Auth DB capture now runs through internal jobs; two TCP cases and three PostgreSQL fence cases passed. No account download or deletion is enabled.

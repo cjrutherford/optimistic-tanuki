@@ -19,7 +19,9 @@
 
 **2026-10-19 selected delivery sequence:** Continue items 1, 2, 4 and 6 in order using the [local finish sequence](../plans/2026-10-19-release-finish-sequence.md). External flows and production qualification are separately owned. [J1](./findings/DF-007-J1.md) adds a locally verified internal export-job foundation (two new TCP cases passed, five unchanged cases skipped), with generated migration and DB-backed fencing checks. Complete owner adapters, media, deletion and shared UI before closing item 1. DF-007/RR-11 remain open.
 
-**J2 continuation:** The [Authentication DB reader](./findings/DF-007-J2.md) now has local transaction/paging/authorization/redaction proof across eight retained sources. Next: real staging/job integration, stable Profile ownership capture and remaining owners/media/deletion/shared UI. Nine Auth tests (one PostgreSQL case) and 15 Models tests passed. This does not close item 1, DF-007 or RR-11.
+**J2 checkpoint (before J3 integration):** The [Authentication DB reader](./findings/DF-007-J2.md) now has local transaction/paging/authorization/redaction proof across eight retained sources. Next: real staging/job integration, stable Profile ownership capture and remaining owners/media/deletion/shared UI. Nine Auth tests (one PostgreSQL case) and 15 Models tests passed. This does not close item 1, DF-007 or RR-11.
+
+**J3 continuation:** [Authentication capture now runs through internal jobs](./findings/DF-007-J3.md), using verified temporary staging and fenced renewal. Two TCP and three enabled PostgreSQL fence cases passed; staging cleanup and scoped teardown passed. Next is complete Profile identity/data capture and remaining owners/media/artifact/deletion/shared controls. Item 1, DF-007 and RR-11 remain open.
 
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 

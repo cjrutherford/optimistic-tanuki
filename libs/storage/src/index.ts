@@ -11,4 +11,5 @@ export * from './lib/storage-rekey.service';
 export * from './lib/tax-document-classifier.service';
 export * from './lib/zfs-storage.service';
 export * from './lib/verified-media-spool.service';
+export * from './lib/account-export-owner-spool.service';
 export * from './lib/file-mime';

@@ -2025,6 +2025,12 @@ describe('Account export session boundary over TCP', () => {
     expect(JSON.stringify(first)).not.toContain(sessionToken);
     expect(JSON.stringify(first)).not.toContain('owned-a');
     expect(first.coverageSummary.artifactAvailable).toBe(false);
+    expect(first.coverageSummary.capturedDatabaseOwners).toEqual([
+      'authentication',
+    ]);
+    expect(repeated.coverageSummary.capturedDatabaseOwners).toEqual([
+      'authentication',
+    ]);
     const laterKey = randomUUID();
     const laterJob = await firstValueFrom(
       authClient.send(
@@ -2136,6 +2142,12 @@ describe('Account export session boundary over TCP', () => {
         leaseExpiresAt: null,
       });
       expect(row.rows[0].coverageSummary.artifactAvailable).toBe(false);
+      expect(resumed.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+      ]);
+      expect(row.rows[0].coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+      ]);
     } finally {
       await database.end();
     }

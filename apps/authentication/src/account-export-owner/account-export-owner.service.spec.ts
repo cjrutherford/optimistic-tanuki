@@ -22,7 +22,12 @@ function id(value: number): string {
   return `20000000-0000-4000-8000-${String(value).padStart(12, '0')}`;
 }
 
-function createHarness(overrides: { user?: Record<string, unknown> } = {}) {
+function createHarness(
+  overrides: {
+    user?: Record<string, unknown>;
+    coverageSummary?: Record<string, unknown>;
+  } = {}
+) {
   const baseRow = { createdAt: SNAPSHOT, updatedAt: SNAPSHOT };
   const oauthRows = Array.from({ length: 1007 }, (_, index) => ({
     id: id(index + 1),
@@ -80,10 +85,11 @@ function createHarness(overrides: { user?: Record<string, unknown> } = {}) {
         state: 'incomplete',
         coverageVersion: '2026-10-17.v1',
         attempt: 1,
-        coverageSummary: {
+        coverageSummary: overrides.coverageSummary ?? {
           blockers: ['coverage-inventory-unaccepted'],
           participantCount: 1,
           artifactAvailable: false,
+          capturedDatabaseOwners: ['authentication'],
         },
         lastErrorCode: null,
         completedAt: null,
@@ -220,6 +226,38 @@ describe('AuthenticationAccountExportOwnerService', () => {
     expect(emitted.some((chunk) => chunk.complete)).toBe(false);
     expect(queryRunner.release).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    ['unknown owner', ['not-a-known-owner']],
+    ['duplicate owners', ['authentication', 'authentication']],
+    [
+      'oversized owner list',
+      Array.from({ length: 25 }, () => 'authentication'),
+    ],
+  ])(
+    'rejects malformed captured owner metadata: %s',
+    async (_name, capturedDatabaseOwners) => {
+      const { service, emitted } = createHarness({
+        coverageSummary: {
+          blockers: ['coverage-inventory-unaccepted'],
+          participantCount: 1,
+          artifactAvailable: false,
+          capturedDatabaseOwners,
+        },
+      });
+      await expect(
+        service.captureAccount({
+          accountId: ACCOUNT_ID,
+          sessionToken: 'validated-session',
+          appId: APP_ID,
+          onChunk: async (chunk) => {
+            emitted.push(chunk);
+          },
+        })
+      ).rejects.toMatchObject({ code: 'OWNER_READ_FAILED' });
+      expect(emitted.some((chunk) => chunk.complete)).toBe(false);
+    }
+  );
 
   it('rejects malformed guardian pages and foreign hidden owner fields', async () => {
     for (const malformedGuardian of [true, false]) {
@@ -362,6 +400,11 @@ describe('AuthenticationAccountExportOwnerService', () => {
       ownEmail: 'member@example.test',
       dateOfBirth: '2010-02-03',
     });
+    expect(
+      chunks
+        .flatMap((chunk) => chunk.records)
+        .find((record) => record.source === 'exportJob')?.data.coverageSummary
+    ).toMatchObject({ capturedDatabaseOwners: ['authentication'] });
   });
 
   it('rejects an invalid or foreign validated session before opening a database capture', async () => {

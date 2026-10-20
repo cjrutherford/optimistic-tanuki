@@ -16,6 +16,14 @@ import validator from 'validator';
 import { AppService } from '../app/app.service';
 import { AccountExportService } from '../app/account-export.service';
 import { AccountExportJobEntity } from './entities/account-export-job.entity';
+import {
+  AuthenticationAccountExportOwnerService,
+  AUTHENTICATION_ACCOUNT_EXPORT_SOURCES,
+} from '../account-export-owner/account-export-owner.service';
+import {
+  AccountExportOwnerSpoolService,
+  OwnerSpoolHandle,
+} from '@optimistic-tanuki/storage';
 
 const LEASE_MS = 60_000;
 
@@ -27,7 +35,9 @@ export class AccountExportJobService {
     @Inject('AUTHENTICATION_CONNECTION')
     private readonly dataSource: DataSource,
     private readonly auth: AppService,
-    private readonly preview: AccountExportService
+    private readonly preview: AccountExportService,
+    private readonly owner: AuthenticationAccountExportOwnerService,
+    private readonly ownerSpool: AccountExportOwnerSpoolService
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -148,6 +158,8 @@ export class AccountExportJobService {
     let errorCode: string | null = null;
     let previewFailureCode: 'preview-unavailable' | 'preview-invalid' =
       'preview-unavailable';
+    let ownerHandle: OwnerSpoolHandle<string> | undefined;
+    let leaseLost = false;
     try {
       const result = await this.preview.previewAccountExport(
         input.accountId,
@@ -221,8 +233,106 @@ export class AccountExportJobService {
       errorCode = previewFailureCode;
       state = 'failed';
     }
+    if (state === 'incomplete') {
+      try {
+        if (!(await this.renewLease(claimed))) {
+          leaseLost = true;
+          throw new Error('lease lost');
+        }
+        ownerHandle = await this.ownerSpool.capture(
+          {
+            participantId: 'authentication',
+            accountId: input.accountId,
+            sources: AUTHENTICATION_ACCOUNT_EXPORT_SOURCES,
+          },
+          async (onChunk, signal) =>
+            this.owner.captureAccount({
+              accountId: input.accountId,
+              sessionToken: input.token,
+              appId: input.appId,
+              signal,
+              onChunk: async (chunk, ownerSignal) => {
+                if (signal.aborted || ownerSignal?.aborted)
+                  throw new Error('capture aborted');
+                if (!(await this.renewLease(claimed))) {
+                  leaseLost = true;
+                  throw new Error('lease lost');
+                }
+                if (signal.aborted || ownerSignal?.aborted)
+                  throw new Error('capture aborted');
+                await onChunk(chunk);
+              },
+            })
+        );
+        summary = { ...summary, capturedDatabaseOwners: ['authentication'] };
+      } catch {
+        if (!leaseLost) {
+          const blockers = Array.isArray(summary.blockers)
+            ? summary.blockers.filter(
+                (blocker): blocker is string => typeof blocker === 'string'
+              )
+            : [];
+          summary = {
+            ...summary,
+            blockers: [...blockers, 'owner-capture-unavailable'],
+          };
+          errorCode = 'owner-capture-unavailable';
+          state = 'failed';
+        }
+      } finally {
+        if (ownerHandle) {
+          try {
+            await ownerHandle.cleanup();
+          } catch {
+            if (!leaseLost) {
+              const blockers = Array.isArray(summary.blockers)
+                ? summary.blockers.filter(
+                    (blocker): blocker is string => typeof blocker === 'string'
+                  )
+                : [];
+              summary = {
+                ...summary,
+                blockers: [...blockers, 'owner-capture-unavailable'],
+              };
+              delete summary.capturedDatabaseOwners;
+              errorCode = 'owner-capture-unavailable';
+              state = 'failed';
+            }
+          }
+        }
+      }
+    }
+    if (leaseLost) {
+      this.raise(
+        409,
+        'EXPORT_JOB_LEASE_LOST',
+        'Export operation lease is no longer current'
+      );
+    }
     const updated = await this.finish(claimed, state, summary, errorCode);
     return this.status(updated);
+  }
+
+  private async renewLease(claim: AccountExportJobEntity): Promise<boolean> {
+    if (!claim.leaseOwner) return false;
+    const result = await this.jobs
+      .createQueryBuilder()
+      .update()
+      .set({
+        leaseExpiresAt: () =>
+          `clock_timestamp() + INTERVAL '${LEASE_MS} milliseconds'`,
+      })
+      .where(
+        'id = :id AND state = :running AND attempt = :attempt AND leaseOwner = :owner AND leaseExpiresAt > clock_timestamp()',
+        {
+          id: claim.id,
+          running: 'running',
+          attempt: claim.attempt,
+          owner: claim.leaseOwner,
+        }
+      )
+      .execute();
+    return result.affected === 1;
   }
 
   private async claim(id: string): Promise<AccountExportJobEntity | null> {

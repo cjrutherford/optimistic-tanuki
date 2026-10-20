@@ -16,7 +16,9 @@
 
 **2026-10-19 delivery continuation:** [J1](./findings/DF-007-J1.md) locally verifies durable internal export-job status/idempotency/resume and DB-clock fencing; it enables no download or deletion. The [selected finish sequence](../plans/2026-10-19-release-finish-sequence.md) handles account rights, inactivity/log retention, integrated journeys and launch materials in order. External flows and release qualification are separately owned; their required evidence is not waived. DF-007 and RR-11 remain open.
 
-**J2 continuation:** [Authentication DB capture](./findings/DF-007-J2.md) is locally verified across eight retained sources (15 Models tests; nine Auth tests including one real-PostgreSQL case). It is not yet consumed by the job runner. Staging, remaining owners, media, deletion and shared controls remain; item 1/DF-007/RR-11 stay open.
+**J2 checkpoint (before J3 integration):** [Authentication DB capture](./findings/DF-007-J2.md) is locally verified across eight retained sources (15 Models tests; nine Auth tests including one real-PostgreSQL case). It is not yet consumed by the job runner. Staging, remaining owners, media, deletion and shared controls remain; item 1/DF-007/RR-11 stay open.
+
+**J3 continuation:** [Internal job integration](./findings/DF-007-J3.md) now stages actual Authentication DB capture with fenced renewal and cleanup. Local checks passed, including two TCP and three PostgreSQL fence cases; no account artifact or deletion is enabled. Complete Profile and remaining owner/media/deletion/UI work before closing item 1. DF-007/RR-11 remain open.
 
 ## 1. Goal
 

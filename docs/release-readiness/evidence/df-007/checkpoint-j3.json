@@ -1,0 +1,294 @@
+{
+  "checkpoint": "DF-007-J3",
+  "recordedAt": "2026-10-20T08:53:01.662176+00:00",
+  "status": "Local Authentication DB capture integrated into internal jobs; item1/DF007/RR11 open",
+  "baseRevision": "57ad3839ad34041e5aadb9db97e7927df0ff4842",
+  "sourceManifest": {
+    "baseRevision": "57ad3839ad34041e5aadb9db97e7927df0ff4842",
+    "sourceHashes": {
+      "libs/storage/src/lib/account-export-owner-spool.service.ts": "fa068b44b96010b8cd4822dd4a949c65d02539623aefdf15a642ff63a14ee1a2",
+      "libs/storage/src/lib/account-export-owner-spool.service.spec.ts": "8accb6a3d70bb9de076d1c46ec1aa20f5007e5ff86d01a99b8704e77f7d1ffcb",
+      "libs/storage/src/index.ts": "3d7cc46a00d2e34b50fe8ac3d122e6bc02c290aa8ceffae7b1bb7b6640c02665",
+      "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "dc0086ded46dc0ef62d44c985b0905a57b60b9b70436ef2c419c721220547746",
+      "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "582f101c0e355f92c29fa1fc29b92d5e8c2595d6c1bde792f38144cc4cba40de",
+      "apps/authentication/src/account-export-owner/account-export-owner.service.ts": "4e2f0f2f2847d89a453cf94412984ddaa0b111f691ecbe2d17ea38d172dee4f4",
+      "apps/authentication/src/account-export-owner/account-export-owner.service.spec.ts": "b4b951bf63d1b647fbc70184c2c018aa4be0760f04592a00491e6e3181ac9b43",
+      "apps/authentication/src/app/app.module.ts": "562b6ec4261bc033e3b212fae8ca3a465b7449ebeead6dad8c7869ae0687a13f",
+      "apps/authentication-e2e/src/authentication/account-export.spec.ts": "02b58e303ebba8034dcb33030ee74a84165a0551d9b36d9b6f1d4c94088f7a9f"
+    },
+    "protectedFiles": 43
+  },
+  "verification": {
+    "storageFocused": {
+      "command": "pnpm exec nx run storage:test --testFile=account-export-owner-spool.service.spec.ts --runInBand",
+      "suites": 1,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "actualChildSigkillSpoolCleanup": "PASS on Linux"
+    },
+    "ownerFocused": {
+      "suites": 1,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "command": "pnpm exec nx run authentication:test --testFile=account-export-owner.service.spec.ts --runInBand"
+    },
+    "jobFocused": {
+      "suites": 1,
+      "passed": 7,
+      "failed": 0,
+      "skippedOptInDatabaseCases": 3,
+      "command": "pnpm exec nx run authentication:test --testFile=account-export-job.service.spec.ts --runInBand"
+    },
+    "tcp": {
+      "command": "pnpm exec nx run authentication-e2e:e2e:ci --testFile=account-export.spec.ts --testNamePattern=\"stores resumable export job|recovers an expired job lease\"",
+      "passed": 2,
+      "failed": 0,
+      "skippedUnselected": 5,
+      "actualAppModuleAndRealSessionAuthorization": true,
+      "selectedFiveDatabaseFixtureStatePreserved": "PASS in both cases",
+      "cacheReplay": false
+    },
+    "databaseFences": {
+      "command": "pnpm exec nx run authentication:test --testFile=account-export-job.service.spec.ts --testNamePattern=\"real PostgreSQL conditional acknowledgements\" --runInBand",
+      "passed": 3,
+      "failed": 0,
+      "skippedUnselected": 7,
+      "independentJobRowsBeforeAfter": [0, 0]
+    },
+    "build": "authentication PASS",
+    "lint": ["authentication PASS", "storage PASS", "authentication-e2e PASS"],
+    "schema": "No schema change; previous migration governance proof retained, not rerun"
+  },
+  "runtime": {
+    "postflight": {
+      "sourceInputsMatchHostAndImmutableCapture": 9,
+      "protectedFilesMatch": 43,
+      "frozenImageIdsMatch": 7,
+      "tcp": {
+        "result": "PASS",
+        "passed": 2,
+        "skippedUnselectedCases": 5,
+        "failed": 0,
+        "logSha256": "96fd08fbb0b460705a91bd7ce4d1e6374be7faec41348f37c4e3b0c552874c85"
+      },
+      "postgresLeaseFences": {
+        "passed": 3,
+        "skippedUnselected": 7,
+        "failed": 0,
+        "accountExportJobRowsBefore": 0,
+        "accountExportJobRowsAfter": 0,
+        "currentNonceAttemptExpiryRenewalAndAcknowledgement": "PASS"
+      },
+      "liveSpoolDescriptors": {
+        "before": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        },
+        "after": {
+          "applications": [
+            {
+              "pid": 8,
+              "spoolDescriptors": 0
+            }
+          ],
+          "result": "PASS"
+        }
+      },
+      "scopedTeardown": "exit=0 down=0 containers=0 networks=0 volumes=0",
+      "checksNotRun": [
+        "Full7case AuthenticationE2E selection",
+        "Otherowner adapters/media/deletion/UI",
+        "Appprocessrestart/recovery (separatechildSIGKILLspool testpassed)",
+        "Productionreleasequalification"
+      ]
+    },
+    "images": {
+      "authentication": {
+        "tag": "ot-df007-owner-stage/authentication:db203b6dba09",
+        "id": "sha256:1838bb4621481c5eca5dbfd1e032b5e34babf2ac4ed6f68d94959b4f7f4c9c3c",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-owner-stage",
+          "io.optimistic-tanuki.account-rights.source-manifest-sha256": "db203b6dba09a3f137d78c5299e5dbf3af14e7e06c7f229dde5f72f7a34f01c8",
+          "org.opencontainers.image.revision": "57ad3839ad34041e5aadb9db97e7927df0ff4842"
+        }
+      },
+      "db": {
+        "tag": "postgres:15",
+        "id": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "labels": {}
+      },
+      "db_setup": {
+        "tag": "ot-df007-b6-forum/db-setup:reconstructed-389e9fb743af",
+        "id": "sha256:b55e0b7bd7bfdbee8a919679df5e11f194b40ade5dd85c524dadd02a309c9db4",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b6-forum",
+          "org.opencontainers.image.revision": "e34f2f393efe556e47fcc95e73de387308c0eb6f"
+        }
+      },
+      "forum": {
+        "tag": "ot-df007-b6-forum/forum:b6-981665ddc7b4",
+        "id": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.patch-sha256": "981665ddc7b49171e7e716bf58e0a72d10b549a84673fc5bec283f5978166045",
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b6-forum",
+          "io.optimistic-tanuki.account-rights.source-manifest-sha256": "3fa42ca1c1f8257a05105b15e9563b6a853d2dc3464a3c85d05cb91f0f3c55cb",
+          "org.opencontainers.image.revision": "e34f2f393efe556e47fcc95e73de387308c0eb6f"
+        }
+      },
+      "permissions": {
+        "tag": "ot-df007-b5-social-state/permissions:b5-7cdb1d7f1581",
+        "id": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+          "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+          "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+        }
+      },
+      "profile": {
+        "tag": "ot-df007-b5-social-state/profile:b5-7cdb1d7f1581",
+        "id": "sha256:a3bf0cffaf2551643e797da2abf78b10c0733a3cecc3cced85f2c979aee4db81",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+          "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+          "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+        }
+      },
+      "social": {
+        "tag": "ot-df007-b5-social-state/social:b5-7cdb1d7f1581",
+        "id": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be",
+        "labels": {
+          "io.optimistic-tanuki.account-rights.patch-sha256": "7cdb1d7f1581ebf63a5ec3bae1bb766a303af57545c2ea24a07d8a8eb9d26d98",
+          "io.optimistic-tanuki.account-rights.private-project": "ot-df007-b5-social-state",
+          "io.optimistic-tanuki.account-rights.source-manifest-sha256": "60f288acbe32a11528fc58a28c6290451fc1f5a3d3fa8a438d5ad3878db59e83",
+          "org.opencontainers.image.revision": "35142b8e90717dccdff7484fcf81fb8ba59ada1f"
+        }
+      }
+    },
+    "provenance": "New Authentication image from immutable base57ad3839a archive plus9 explicit verification inputs; five runtime source inputs and test overlays. Other6 images retain their prior verified identities. Synthetic captured config/privateDB only; no production qualification.",
+    "authImage": "sha256:1838bb4621481c5eca5dbfd1e032b5e34babf2ac4ed6f68d94959b4f7f4c9c3c"
+  },
+  "fieldDispositions": {
+    "path": "authentication-owner-fields-j3.json",
+    "sha256": "7ee65e2fb3450744289a1d84555730444e0e071f13bfae94fa86ba8ab0b1cd62"
+  },
+  "evidence": {
+    "storage-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/storage-tests.log",
+      "sha256": "37a5955c6d89fe4530c8d565894e0239ed90aa5467bf70557cf2febb32e75188"
+    },
+    "storage-tests-compile-attempt.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/storage-tests-compile-attempt.log",
+      "sha256": "152a6ed34336f8a8ecdf624a0dd1a6f34ece8193210f2a24c418dba14d90824f"
+    },
+    "storage-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/storage-lint.log",
+      "sha256": "66434113b8a49389349cdbd3e87555f8e5e16b28c2b31b5e08378334d15265e7"
+    },
+    "owner-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/owner-tests.log",
+      "sha256": "bc9529db33ac02cc107b12f437a4da9c759320ca1a07e52d752931ea4e36735d"
+    },
+    "job-tests-before-root-fix.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/job-tests-before-root-fix.log",
+      "sha256": "cc61f04ae4fdfe029ee8344a5347cbeb164b84df5a8eba110a2632fe4d07b23d"
+    },
+    "job-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/job-tests.log",
+      "sha256": "7a5475550b9320a7c5f1344c043f1da5f1eb65e25926fa266ad0f0104162acf8"
+    },
+    "lease-renewal-tests.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/lease-renewal-tests.log",
+      "sha256": "21f06f4830f37ba476733a9f08c9dcca63420ab6b1a846ed8bd777fea4f58819"
+    },
+    "auth-build.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/auth-build.log",
+      "sha256": "4dd37774cdfa6e69d65ca2b7c06193294a1abd2e474e0ee0d666a5394bd4b0ae"
+    },
+    "auth-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/auth-lint.log",
+      "sha256": "572094421567b7e2dfdfbc06451640a9b22294be4315a82f4eb34ed65898bc4a"
+    },
+    "e2e-lint.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/e2e-lint.log",
+      "sha256": "f81f111062c092cac1abb1eb951803b77acf40739008b02b6608574e6e384bae"
+    },
+    "source-freeze.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/source-freeze.json",
+      "sha256": "fcfa8f30c6bf4d5fb8b5cb3dde99f0f2348bb904d2df61e7ccd9bd66f804151f"
+    },
+    "runtime/capture.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/capture.json",
+      "sha256": "21688af253c73ea14e86cfa1ae117f11794b0bb6753a198c606f315d55b1195a"
+    },
+    "runtime/image-receipts.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/image-receipts.json",
+      "sha256": "064edbf5486626d91c2b02827450904b50e713ca35736a10fb9f470dd8566e1f"
+    },
+    "runtime/build-authentication.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/build-authentication.log",
+      "sha256": "69e5b9daa5a6d5535273e7c2650c38d3bead155d8e5d7ba63ccfbb74dbb1e1a3"
+    },
+    "runtime/postflight.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/postflight.json",
+      "sha256": "47ac6be4c116fcb1c0bae5b1ee3c58722628b651a30b1a090e7a4ad17fbba4b0"
+    },
+    "runtime/attempt-1/e2e.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/e2e.log",
+      "sha256": "96fd08fbb0b460705a91bd7ce4d1e6374be7faec41348f37c4e3b0c552874c85"
+    },
+    "runtime/attempt-1/result.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/result.json",
+      "sha256": "5c75ec85f22021715e53451e3d07cae6cc6e628a395149cbe24c4c22fc8366a6"
+    },
+    "runtime/attempt-1/db-fences.log": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/db-fences.log",
+      "sha256": "92dcd7acad2895f71d1656f969864408db8a9506c678755c940736a7d50eb761"
+    },
+    "runtime/attempt-1/db-fences-result.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/db-fences-result.json",
+      "sha256": "94f1eacab0b808447e28d519472737048a673f40285764cb84251fe90852d049"
+    },
+    "runtime/attempt-1/spool-fds-before.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/spool-fds-before.json",
+      "sha256": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78"
+    },
+    "runtime/attempt-1/spool-fds-after.json": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/spool-fds-after.json",
+      "sha256": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78"
+    },
+    "runtime/attempt-1/summary.txt": {
+      "privateReference": ".runtime-artifacts/account-rights/finish-sequence/owner-spool/runtime/attempt-1/summary.txt",
+      "sha256": "e47f952af6b895b642ebf98c91c291e49e15f870f9eec1d8bee59fe8c0e9f1e7"
+    }
+  },
+  "protectedWip": {
+    "files": 43,
+    "unchanged": true,
+    "manifestSha256": "577c3fc01a4b514fc5da5025d0f2a60e34d2fffc65f764dc7e9b67c3f693e3e0"
+  },
+  "nonAcceptance": [
+    "Storage parent regression spec first stopped on index-signature syntax before tests; fixed15-test pass is acceptance.",
+    "Job draft initially6pass/1fail/2DBskip: an assertion inside the fake producer expected the wrong temporary directory under Jest TMPDIR. Explicit spoolRoot fixed the fixture; no production validation relaxed.",
+    "Owner unit callback initially returned Array.push number; fixed void callback and11-test pass.",
+    "Unselected tests are not combined into a full AuthenticationE2E or full Auth unit-target pass.",
+    "SIGKILL proof is a separate child holding an unlinked spool; actual Auth process restart/resume was not exercised.",
+    "Per-capture budgets and cancellation do not establish aggregate capacity or hard cancellation of stalled filesystem/DB connection acquisition."
+  ],
+  "remaining": [
+    "Stable complete Profile identity/data capture",
+    "Other DB/non-ORM owners and accepted inventory",
+    "Portable JSON/image/video artifact, authorized expiry/download",
+    "Deletion/revocation/counterpart transforms/readback",
+    "Shared user-facing lifecycle controls",
+    "Selecteditems2,4,6 afteritem1; realexternalflows/releasequalification separatelyowned"
+  ]
+}

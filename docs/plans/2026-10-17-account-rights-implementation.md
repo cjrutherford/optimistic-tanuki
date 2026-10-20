@@ -151,6 +151,10 @@ The focused preimplementation review was GO for this bounded, internal, always-p
 
 [Finding](../release-readiness/findings/DF-007-J2.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j2.json): a separate eight-source, transaction-consistent DB reader is locally verified by 15 Models tests and nine Authentication tests, including one enabled real-PostgreSQL case. Source counts/hash preservation and independent cleanup passed. The job runner still uses previews; staging, owner integration, global inventory, portable files, deletion and shared controls remain. No download or deletion is enabled.
 
+### J3 — Verified owner staging through jobs
+
+[Finding](../release-readiness/findings/DF-007-J3.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j3.json): internal jobs now stage actual Authentication DB capture, renew a fenced lease, record only safe database-owner progress and close staging before acknowledging incomplete status. Fifteen Storage, 11 owner and seven job tests passed; two private TCP cases and three enabled PostgreSQL fence cases passed with their unselected cases recorded separately. No download or deletion is enabled. Complete Profile ownership capture and remaining owners/media/artifact/deletion/shared controls next.
+
 ### Remaining export coverage
 
 - After B2, resolve full guardian attestation/lifecycle fields, unlinked-row ownership and history limitations. Keep counterpart redactions explicit. Session-history coverage remains unresolved because the current token table stores bearer tokens without useful history timestamps.

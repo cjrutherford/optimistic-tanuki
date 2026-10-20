@@ -45,6 +45,7 @@ import { AccountExportJobEntity } from '../account-export-jobs/entities/account-
 import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -96,13 +97,14 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     },
     AppService,
     AccountExportService,
-    AccountExportJobService,
+    AccountExportOwnerSpoolService,
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
         new AuthenticationAccountExportOwnerService(dataSource, auth),
       inject: ['AUTHENTICATION_CONNECTION', AppService],
     },
+    AccountExportJobService,
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

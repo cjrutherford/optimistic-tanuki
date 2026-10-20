@@ -27,11 +27,13 @@ The [J1 job foundation](./findings/DF-007-J1.md) now provides locally verified d
 
 The owner selected local delivery in the order **account rights, inactivity/log retention, integrated journeys, then launch materials**. Real external flows and release qualification will be handled separately, with their evidence still required for release claims. Follow the [finish sequence](../plans/2026-10-19-release-finish-sequence.md).
 
-The [J2 Authentication reader](./findings/DF-007-J2.md) now captures eight retained DB sources transaction-consistently, with 15 Models tests and nine Auth tests (one real-PostgreSQL case). It is not yet consumed by the job runner and enables no artifact or deletion. See the explicit field dispositions and limitations in its receipt.
+The [J2 Authentication reader](./findings/DF-007-J2.md) now captures eight retained DB sources transaction-consistently, with 15 Models tests and nine Auth tests (one real-PostgreSQL case). At J2 it was not yet consumed by the job runner; J3 now stages that capture. Neither checkpoint enables an account artifact or deletion. See the explicit field dispositions and limitations in its receipt.
+
+The [J3 integration](./findings/DF-007-J3.md) runs the Authentication DB reader through verified, pathless temporary staging from internal jobs. Fifteen Storage, 11 owner and seven job tests passed; the private stack passed two TCP cases and three actual PostgreSQL fence cases. The safe database-owner progress marker is not full owner/inventory acceptance.
 
 ## Next bounded work
 
-The current next step is real staging/job integration, then complete Profile identity capture and remaining owner adapters. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
+The current next step is complete Profile identity/data capture and remaining owner adapters. Authentication staging/job integration is locally verified. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
 
 Remaining Social integrity work: after principal-binding review, Activity metadata is a possible bounded extension. The safe candidate is only `{id, profileId, type, createdAt}` for trusted profiles; omit free-form descriptions and resource references. Presence, ProfileView, and Notification semantics are unresolved: Presence writes accept caller-supplied user IDs behind authentication without binding them to the authenticated subject, so do not treat the current row as user-chosen until that normal-write principal boundary is repaired or otherwise established; ProfileView uses caller-supplied viewer IDs with an unresolved account/profile namespace and no viewer index; Notification creation accepts caller-chosen recipients and arbitrary text/URLs. Treat these as source-level integrity/privacy questions, not confirmed exploitation.
 

@@ -1,0 +1,190 @@
+{
+  "participant": "authentication",
+  "scope": "Declared retained Authentication database sources; credentials/counterparty exclusions are explicit. No global/non-ORM inventory acceptance.",
+  "accountWide": true,
+  "sources": {
+    "user": {
+      "entity": "UserEntity",
+      "table": "user_entity",
+      "ownership": "id = authenticated account UUID",
+      "export": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "bio",
+        "emailVerifiedAt",
+        "ageEligibilityStatus",
+        "ageEligibilityEndsAt",
+        "failedLoginCount",
+        "lockedUntil"
+      ],
+      "derived": {
+        "totpSecret": "totpConfigured boolean only; secret excluded",
+        "lockedUntil": "locked boolean at DB capture timestamp"
+      },
+      "exclude": {
+        "password": "Password credential",
+        "keyData": "Forward FK used for verified public-key capture; no relation object",
+        "tokens": "Covered by session source",
+        "oauthProviders": "Covered by oauthProvider source",
+        "authActionTokens": "Covered by authAction source"
+      }
+    },
+    "keyDatum": {
+      "entity": "KeyDatum",
+      "table": "key_datum",
+      "ownership": "User.keyDataId canonical; reverse key_datum.userId must not conflict",
+      "export": ["id", "public"],
+      "transform": {
+        "public": "publicKeyBase64"
+      },
+      "exclude": {
+        "salt": "Password credential support",
+        "User": "Reverse FK checked for conflicts; no other account relation exported"
+      }
+    },
+    "session": {
+      "entity": "TokenEntity",
+      "table": "token",
+      "ownership": "userId = authenticated account UUID",
+      "export": ["id", "revoked"],
+      "contextOnly": ["userId"],
+      "exclude": {
+        "tokenData": "Bearer credential",
+        "profileId": "Profile association is not independently verified by Authentication; omitted",
+        "user": "Identity context only, no relation serialization"
+      }
+    },
+    "oauthProvider": {
+      "entity": "OAuthProviderEntity",
+      "table": "oauth_provider",
+      "ownership": "userId = authenticated account UUID",
+      "export": [
+        "id",
+        "provider",
+        "providerUserId",
+        "providerEmail",
+        "providerDisplayName",
+        "createdAt",
+        "updatedAt"
+      ],
+      "contextOnly": ["userId"],
+      "exclude": {
+        "user": "Identity context only, no relation serialization"
+      }
+    },
+    "authAction": {
+      "entity": "AuthActionTokenEntity",
+      "table": "auth_action_token",
+      "ownership": "userId = authenticated account UUID",
+      "export": [
+        "id",
+        "purpose",
+        "appId",
+        "returnPath",
+        "createdAt",
+        "expiresAt",
+        "consumedAt"
+      ],
+      "contextOnly": ["userId"],
+      "exclude": {
+        "tokenHash": "Credential verifier",
+        "user": "Identity context only, no relation serialization"
+      },
+      "history": "Retained rows only; previously pruned action history does not exist"
+    },
+    "guardianPolicyNotice": {
+      "entity": "GuardianPolicyNoticeEntity",
+      "table": "guardian_policy_notice",
+      "ownership": "guardianUserId = authenticated account UUID",
+      "export": [
+        "id",
+        "policyVersion",
+        "policyUrl",
+        "status",
+        "attempts",
+        "nextAttemptAt",
+        "acceptedAt",
+        "createdAt",
+        "updatedAt"
+      ],
+      "contextOnly": ["guardianUserId"],
+      "exclude": {
+        "leaseUntil": "Internal worker coordination",
+        "lastFailureCode": "Internal delivery failure details"
+      },
+      "acceptedAtMeaning": "Configured provider accepted; not inbox delivery"
+    },
+    "exportJob": {
+      "entity": "AccountExportJobEntity",
+      "table": "account_export_jobs",
+      "ownership": "accountId = authenticated account UUID; all app scopes included in account-wide data export",
+      "export": [
+        "id",
+        "appId",
+        "kind",
+        "state",
+        "coverageVersion",
+        "attempt",
+        "coverageSummary",
+        "lastErrorCode",
+        "completedAt",
+        "createdAt",
+        "updatedAt"
+      ],
+      "contextOnly": ["accountId"],
+      "transform": {
+        "coverageSummary": "Fixed bounded blockers, participantCount, artifactAvailable and capturedDatabaseOwners (unique known participant IDs) only",
+        "lastErrorCode": "Bounded safe code, no raw error"
+      },
+      "exclude": {
+        "idempotencyKey": "Internal retry identity",
+        "leaseOwner": "Lease credential",
+        "leaseExpiresAt": "Internal worker coordination"
+      }
+    },
+    "guardianPermission": {
+      "entity": "GuardianPermissionEntity",
+      "table": "guardian_permission",
+      "ownership": "Exactly one of userId / guardianUserId matches authenticated account; ambiguous current-email unlinked/conflicting rows fail closed",
+      "export": [
+        "id",
+        "status",
+        "appId",
+        "appName",
+        "attestationVersion",
+        "createdAt",
+        "expiresAt",
+        "attestedAt",
+        "deleteAfter",
+        "resumeExpiresAt"
+      ],
+      "roleSpecific": {
+        "applicantEmail": "Own email only for UUID-linked dependent role",
+        "guardianEmail": "Own email only for UUID-linked guardian role",
+        "dateOfBirth": "Own date of birth only for dependent role"
+      },
+      "contextOnly": ["userId", "guardianUserId"],
+      "derived": {
+        "role": "dependent or guardian from UUID linkage"
+      },
+      "exclude": {
+        "guardianTokenHash": "Credential verifier",
+        "resumeTokenHash": "Credential verifier",
+        "withdrawalTokenHash": "Credential verifier",
+        "attestationText": "Consent statement text withheld to protect counterpart",
+        "uiBaseUrl": "Operational mail/UI configuration",
+        "emailFrom": "Operational mail configuration",
+        "replyTo": "Operational mail configuration"
+      }
+    }
+  },
+  "notClaimed": [
+    "Portable artifact",
+    "Deletion",
+    "Other owner coverage",
+    "Pruned or nonexistent event history",
+    "Global atomic cross-database snapshot"
+  ]
+}
