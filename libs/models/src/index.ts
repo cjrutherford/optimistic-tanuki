@@ -4,6 +4,7 @@ export * from './lib/libs/profile';
 export * from './lib/libs/social';
 export * from './lib/libs/account-export/account-export.contract';
 export * from './lib/libs/account-export/account-export-owner.contract';
+export * from './lib/libs/account-export/account-export-snapshot.contract';
 export * from './lib/libs/assets';
 export * from './lib/libs/project-planning';
 export * from './lib/libs/nexus';

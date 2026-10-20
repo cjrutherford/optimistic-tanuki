@@ -23,3 +23,5 @@ The [J1 finding](../../findings/DF-007-J1.md) and [receipt](checkpoint-j1.json) 
 [J4 current Profile entity capture](../../findings/DF-007-J4.md): [receipt](checkpoint-j4.json), [field dispositions and legacy gaps](profile-owner-fields-j4.json). Ten enabled PostgreSQL cases passed, with exact fixture cleanup. Legacy adapters, remote snapshot transport and full Profile job integration remain; no account artifact or deletion is enabled.
 
 [J5 legacy Profile adapters](../../findings/DF-007-J5.md): [receipt](checkpoint-j5.json), [updated field dispositions](profile-owner-fields-j5.json). Same-snapshot goal/project data and Timeline links replace the J4 guard. Eleven enabled PostgreSQL cases passed. Remote snapshot transport, Profile job integration and the remaining account-rights workflow stay open.
+
+[J6 secure Profile snapshots and jobs](../../findings/DF-007-J6.md): [receipt](checkpoint-j6.json). Three selected live-service cases passed, including stable identities, lease/session fences and guarded restart/recapture. Private fixture readback and teardown passed. Assets/media, remaining owners, artifact, deletion and shared UI remain open.

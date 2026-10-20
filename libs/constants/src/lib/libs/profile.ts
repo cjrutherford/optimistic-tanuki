@@ -6,4 +6,5 @@ export {
   ProjectCommands,
   GoalCommands,
   TimelineCommands,
+  PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
 } from '@optimistic-tanuki/profile-contracts';

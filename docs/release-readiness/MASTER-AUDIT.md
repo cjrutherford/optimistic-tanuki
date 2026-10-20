@@ -24,6 +24,8 @@
 
 **2026-10-20 J5 checkpoint:** [J5 legacy Profile capture](./findings/DF-007-J5.md) replaces the J4 guard with same-snapshot goal/project adapters and ownership-checked Timeline links. Eleven enabled PostgreSQL cases passed, including 1,006 goals and 1,006 projects plus real staging of long legacy text. Remote snapshot transport and Profile job integration remain next; no download or deletion is enabled. Item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J6 checkpoint:** [Secure Profile snapshots and job integration](./findings/DF-007-J6.md) now pass three selected live-service cases, including exact lease/session fencing, 1,006 stable captured identities, guarded restart/recapture and cleanup/readback. Authentication jobs verify both database owners while remaining incomplete with no artifact. Next is complete Assets ownership and portable bytes using the fenced identities, then remaining owners/media/artifact/deletion/shared UI. Item 1/DF-007/RR-11 remain open.
+
 ## 1. Goal
 
 Determine whether Optimistic Tanuki (OT) and Towne Square (TS) meet a responsible public-release standard, document every material gap, and provide small, agent-consumable implementation slices to close those gaps.

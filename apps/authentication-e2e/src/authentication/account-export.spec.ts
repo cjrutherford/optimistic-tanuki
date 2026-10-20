@@ -12,11 +12,19 @@ import {
   ForumCommands,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES } from '@optimistic-tanuki/profile-contracts';
 import {
   AccountExportJobRequest,
   AccountExportJobResumeRequest,
   AccountExportJobStatus,
+  AccountExportCaptureGrant,
+  AccountExportSnapshotDescriptor,
+  AccountExportSnapshotReadResult,
+  AccountExportSnapshotIdentityPage,
+  AccountExportOwnerCaptureVerifier,
 } from '@optimistic-tanuki/models';
 
 describe('Account export session boundary over TCP', () => {
@@ -2027,9 +2035,11 @@ describe('Account export session boundary over TCP', () => {
     expect(first.coverageSummary.artifactAvailable).toBe(false);
     expect(first.coverageSummary.capturedDatabaseOwners).toEqual([
       'authentication',
+      'profile',
     ]);
     expect(repeated.coverageSummary.capturedDatabaseOwners).toEqual([
       'authentication',
+      'profile',
     ]);
     const laterKey = randomUUID();
     const laterJob = await firstValueFrom(
@@ -2144,9 +2154,11 @@ describe('Account export session boundary over TCP', () => {
       expect(row.rows[0].coverageSummary.artifactAvailable).toBe(false);
       expect(resumed.coverageSummary.capturedDatabaseOwners).toEqual([
         'authentication',
+        'profile',
       ]);
       expect(row.rows[0].coverageSummary.capturedDatabaseOwners).toEqual([
         'authentication',
+        'profile',
       ]);
     } finally {
       await database.end();
@@ -2168,6 +2180,277 @@ describe('Account export session boundary over TCP', () => {
       appId: 'client-interface',
     });
   });
+
+  it('fences secure snapshots, preserves captured identities, and recaptures when private restart is enabled', async () => {
+    const authDb = new PgClient(getFixtureDatabaseOptions('ot_authentication'));
+    const profileDb = new PgClient(getFixtureDatabaseOptions('ot_profile'));
+    await authDb.connect();
+    await profileDb.connect();
+    const jobId = randomUUID();
+    const nonce = randomUUID();
+    const extraIds = Array.from({ length: 1005 }, () => randomUUID());
+    const lateId = randomUUID();
+    const allExtraIds = [...extraIds, lateId];
+    let descriptor: AccountExportSnapshotDescriptor | undefined;
+    const grant: AccountExportCaptureGrant = {
+      accountId: otherAccountId,
+      token: otherSessionToken,
+      appId: 'client-interface',
+      jobId,
+      attempt: 1,
+      leaseOwner: nonce,
+    };
+    const rpc = <T = unknown>(
+      client: ClientProxy,
+      command: string,
+      input: unknown,
+      ms = 5000
+    ) =>
+      firstValueFrom(
+        client.send<T>({ cmd: command }, input).pipe(timeout({ first: ms }))
+      );
+    const open = () =>
+      rpc<AccountExportSnapshotDescriptor>(
+        profileClient,
+        ProfileCommands.OpenAccountExportCapture,
+        grant,
+        55000
+      );
+    fixtureExportJobIds.push(jobId);
+    try {
+      await authDb.query(
+        `INSERT INTO account_export_jobs (id,"accountId","appId","kind","idempotencyKey","state","attempt","leaseOwner","leaseExpiresAt","coverageSummary") VALUES ($1,$2,$3,'export',$4,'running',1,$5,clock_timestamp()+interval '5 minutes',$6::jsonb)`,
+        [
+          jobId,
+          otherAccountId,
+          grant.appId,
+          randomUUID(),
+          nonce,
+          JSON.stringify({
+            blockers: ['snapshot-fixture'],
+            artifactAvailable: false,
+          }),
+        ]
+      );
+      for (let start = 0; start < extraIds.length; start += 100) {
+        const batch = extraIds.slice(start, start + 100);
+        await profileDb.query(
+          `INSERT INTO profile (id,"userId","appScope","profileName","profilePic","coverPic",bio,location,occupation,interests,skills) SELECT x,$2,'snapshot-'||x::text,'snapshot fixture','','','','','','','' FROM unnest($1::uuid[]) x`,
+          [batch, otherAccountId]
+        );
+      }
+      for (const changed of [
+        { ...grant, accountId, token: sessionToken },
+        { ...grant, appId: 'forgeofwill' },
+        { ...grant, attempt: 2 },
+        { ...grant, leaseOwner: randomUUID() },
+      ])
+        await expect(
+          rpc(profileClient, ProfileCommands.OpenAccountExportCapture, changed)
+        ).rejects.toMatchObject({ code: 'OWNER_AUTHORIZATION_FAILED' });
+      descriptor = await open();
+      expect(descriptor.identityCount).toBe(1006);
+      expect(descriptor.sources).toEqual(
+        PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES
+      );
+      expect(JSON.stringify(descriptor)).not.toContain(otherSessionToken);
+      expect(JSON.stringify(descriptor)).not.toContain(nonce);
+      await profileDb.query(
+        `INSERT INTO profile (id,"userId","appScope","profileName","profilePic","coverPic",bio,location,occupation,interests,skills) VALUES ($1,$2,'snapshot-late','late snapshot fixture','','','','','','','')`,
+        [lateId, otherAccountId]
+      );
+      const expectedIds = [foreignProfileId, ...extraIds].sort();
+      const capturedIds: string[] = [];
+      let offset = 0;
+      while (true) {
+        const page = await rpc<AccountExportSnapshotIdentityPage>(
+          profileClient,
+          ProfileCommands.ReadAccountExportCaptureIdentities,
+          { ...grant, handleId: descriptor.handleId, offset, limit: 100 }
+        );
+        expect(page.captureId).toBe(descriptor.captureId);
+        expect(page.snapshotAt).toBe(descriptor.snapshotAt);
+        expect(page.total).toBe(expectedIds.length);
+        capturedIds.push(...page.profileIds);
+        if (page.nextOffset === null) break;
+        expect(page.nextOffset).toBeGreaterThan(offset);
+        offset = page.nextOffset;
+      }
+      expect(capturedIds).toEqual(expectedIds);
+      expect(capturedIds).not.toContain(lateId);
+      await expect(
+        rpc(profileClient, ProfileCommands.ReleaseAccountExportCapture, {
+          ...grant,
+          leaseOwner: randomUUID(),
+          handleId: descriptor.handleId,
+        })
+      ).rejects.toMatchObject({ code: 'OWNER_SNAPSHOT_NOT_FOUND' });
+      await expect(
+        rpc(profileClient, ProfileCommands.ReadAccountExportCapture, {
+          ...grant,
+          handleId: descriptor.handleId,
+          offset: 0,
+          length: 65537,
+        })
+      ).rejects.toMatchObject({ code: 'OWNER_SNAPSHOT_INVALID_RANGE' });
+      const blocks: Buffer[] = [];
+      offset = 0;
+      while (offset < descriptor.sizeBytes) {
+        const result = await rpc<AccountExportSnapshotReadResult>(
+          profileClient,
+          ProfileCommands.ReadAccountExportCapture,
+          { ...grant, handleId: descriptor.handleId, offset, length: 65536 }
+        );
+        expect(result.captureId).toBe(descriptor.captureId);
+        expect(result.offset).toBe(offset);
+        const bytes = Buffer.from(result.bytesBase64, 'base64');
+        expect(bytes.length).toBe(
+          Math.min(65536, descriptor.sizeBytes - offset)
+        );
+        blocks.push(bytes);
+        offset += bytes.length;
+        expect(result.eof).toBe(offset === descriptor.sizeBytes);
+      }
+      const bytes = Buffer.concat(blocks);
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+        descriptor.sha256
+      );
+      const verifier = new AccountExportOwnerCaptureVerifier(
+        'profile',
+        otherAccountId,
+        PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+        createHash('sha256')
+      );
+      const pages = bytes
+        .toString('utf8')
+        .trimEnd()
+        .split('\n')
+        .map((line) => JSON.parse(line));
+      expect(pages.map((page) => verifier.accept(page)).at(-1)).toBe(true);
+      expect(
+        pages
+          .flatMap((page) => page.records)
+          .filter((row) => row.source === 'profileIdentity')
+          .map((row) => row.data.id)
+      ).toEqual(expectedIds);
+      expect(bytes.toString('utf8')).not.toContain(accountId);
+      await authDb.query(
+        `UPDATE account_export_jobs SET "leaseExpiresAt"=clock_timestamp()-interval '1 second' WHERE id=$1`,
+        [jobId]
+      );
+      await expect(
+        rpc(profileClient, ProfileCommands.ReadAccountExportCapture, {
+          ...grant,
+          handleId: descriptor.handleId,
+          offset: 0,
+          length: 1,
+        })
+      ).rejects.toMatchObject({ code: 'OWNER_AUTHORIZATION_FAILED' });
+      await authDb.query(
+        `UPDATE account_export_jobs SET "leaseExpiresAt"=clock_timestamp()+interval '5 minutes' WHERE id=$1`,
+        [jobId]
+      );
+      const containerId = process.env.ACCOUNT_EXPORT_SNAPSHOT_PROFILE_ID;
+      if (containerId) {
+        if (!/^[a-f0-9]{64}$/.test(containerId))
+          throw Error('Invalid private Profile container');
+        const run = promisify(execFile);
+        const labels = JSON.parse(
+          (
+            await run(
+              'docker',
+              ['inspect', '--format', '{{json .Config.Labels}}', containerId],
+              { timeout: 10000 }
+            )
+          ).stdout
+        );
+        expect(labels['com.docker.compose.project']).toBe('ot-df007-snapshot');
+        expect(labels['com.docker.compose.service']).toBe('profile');
+        expect(
+          labels['io.optimistic-tanuki.account-rights.private-project']
+        ).toBe('ot-df007-snapshot');
+        const old = descriptor;
+        await profileClient.close();
+        await run('docker', ['restart', '--time', '5', containerId], {
+          timeout: 20000,
+        });
+        const host = globalThis.socketConnectionOptions?.host || '127.0.0.1';
+        const until = Date.now() + 20000;
+        while (true) {
+          profileClient = ClientProxyFactory.create({
+            transport: Transport.TCP,
+            options: { host, port: 3002 },
+          });
+          try {
+            await rpc(
+              profileClient,
+              ProfileCommands.ReadAccountExportCapture,
+              {
+                ...grant,
+                handleId: old.handleId,
+                offset: 0,
+                length: 1,
+              },
+              1500
+            );
+            throw Error('Restarted Profile accepted an old snapshot handle');
+          } catch (error) {
+            const failure = error as {
+              code?: string;
+              name?: string;
+              message?: string;
+            };
+            if (failure.code === 'OWNER_SNAPSHOT_NOT_FOUND') break;
+            const transient =
+              failure.name === 'TimeoutError' ||
+              ['ECONNREFUSED', 'ECONNRESET'].includes(failure.code || '') ||
+              failure.message === 'Connection closed';
+            if (!transient || Date.now() >= until) throw error;
+          }
+          await profileClient.close();
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+        descriptor = await open();
+        expect(descriptor.handleId).not.toBe(old.handleId);
+        expect(descriptor.captureId).not.toBe(old.captureId);
+        expect(descriptor.identityCount).toBe(expectedIds.length + 1);
+      }
+      await rpc(authClient, AuthCommands.Logout, { token: otherSessionToken });
+      await expect(
+        rpc(profileClient, ProfileCommands.ReadAccountExportCapture, {
+          ...grant,
+          handleId: descriptor.handleId,
+          offset: 0,
+          length: 1,
+        })
+      ).rejects.toMatchObject({ code: 'OWNER_AUTHORIZATION_FAILED' });
+      await rpc(profileClient, ProfileCommands.ReleaseAccountExportCapture, {
+        ...grant,
+        handleId: descriptor.handleId,
+      });
+      await rpc(profileClient, ProfileCommands.ReleaseAccountExportCapture, {
+        ...grant,
+        handleId: descriptor.handleId,
+      });
+      descriptor = undefined;
+    } finally {
+      if (descriptor)
+        await rpc(profileClient, ProfileCommands.ReleaseAccountExportCapture, {
+          ...grant,
+          handleId: descriptor.handleId,
+        }).catch(() => undefined);
+      await profileDb.query(
+        'DELETE FROM profile WHERE id=ANY($1::uuid[]) AND "userId"=$2',
+        [allExtraIds, otherAccountId]
+      );
+      await authDb.query(
+        'DELETE FROM account_export_jobs WHERE id=$1 AND "accountId"=$2',
+        [jobId, otherAccountId]
+      );
+      await profileDb.end();
+      await authDb.end();
+    }
+  }, 120000);
 
   it('rejects the session after Authentication revokes it', async () => {
     await firstValueFrom(

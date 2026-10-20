@@ -38,6 +38,7 @@ describe('AccountExportJobService authorization boundary', () => {
       auth as never,
       preview as never,
       {} as never,
+      {} as never,
       {} as never
     );
   });
@@ -211,6 +212,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
     ) => Promise<AccountExportJobStatus>;
     finish: jest.Mock;
     renewLease: jest.Mock;
+    profileCapture: jest.Mock;
+    profileCleanup: jest.Mock;
   } {
     const jobs = {};
     const auth = {};
@@ -230,13 +233,19 @@ describe('AccountExportJobService Authentication owner staging', () => {
       }),
     };
     const owner = { captureAccount: ownerCapture };
+    const profileResult = {
+      identities: jest.fn(async () => ({})),
+      cleanup: jest.fn(async () => undefined),
+    };
+    const profileCapture = { capture: jest.fn(async () => profileResult) };
     const service = new AccountExportJobService(
       jobs as never,
       {} as never,
       auth as never,
       preview as never,
       owner as never,
-      spool
+      spool,
+      profileCapture as never
     );
     const state = service as unknown as {
       run: (
@@ -265,6 +274,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       run: (input, claim) => state.run(input, claim),
       finish: state.finish,
       renewLease: state.renewLease,
+      profileCapture: profileCapture.capture,
+      profileCleanup: profileResult.cleanup,
     };
   }
 
@@ -295,7 +306,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     idempotencyKey: IDEMPOTENCY_KEY,
   });
 
-  it('stores only the verified Authentication owner marker and keeps the global job incomplete', async () => {
+  it('stores verified Authentication and Profile owner markers and keeps the global job incomplete', async () => {
     const ownerCapture = jest.fn(
       async ({
         onChunk,
@@ -320,7 +331,7 @@ describe('AccountExportJobService Authentication owner staging', () => {
     expect(result.state).toBe('incomplete');
     expect(result.artifactUrl).toBeNull();
     expect(result.coverageSummary).toMatchObject({
-      capturedDatabaseOwners: ['authentication'],
+      capturedDatabaseOwners: ['authentication', 'profile'],
       artifactAvailable: false,
     });
     expect(test.renewLease).toHaveBeenCalledTimes(
@@ -331,6 +342,48 @@ describe('AccountExportJobService Authentication owner staging', () => {
       /sha256|captureId|sizeBytes|stage/i
     );
   });
+
+  it.each(['capture', 'cleanup', 'lease'])(
+    'fails safely when Profile %s fails after Authentication staging',
+    async (mode) => {
+      const owner = jest.fn(async ({ onChunk }) => {
+        const chunks = createOwnerChunks(ACCOUNT_ID);
+        for (const chunk of chunks) await onChunk(chunk);
+        return chunks[chunks.length - 1];
+      });
+      const test = harness(async () => true, owner);
+      if (mode === 'capture')
+        test.profileCapture.mockRejectedValueOnce(
+          new Error('private remote diagnostic')
+        );
+      if (mode === 'cleanup')
+        test.profileCleanup.mockRejectedValueOnce(
+          new Error('private cleanup diagnostic')
+        );
+      if (mode === 'lease') {
+        test.profileCapture.mockImplementationOnce(async (_grant, renew) => {
+          test.renewLease.mockResolvedValueOnce(false);
+          await renew();
+          throw new Error('private stale lease diagnostic');
+        });
+        await expect(test.run(input(), activeClaim)).rejects.toMatchObject({
+          message: 'Export operation lease is no longer current',
+        });
+        expect(test.finish).not.toHaveBeenCalled();
+        return;
+      }
+      const result = await test.run(input(), activeClaim);
+      expect(result.state).toBe('failed');
+      expect(result.coverageSummary.capturedDatabaseOwners).toEqual([
+        'authentication',
+      ]);
+      expect(result.coverageSummary.blockers).toContain(
+        'profile-capture-unavailable'
+      );
+      expect(JSON.stringify(result)).not.toContain('private');
+      expect(result.artifactUrl).toBeNull();
+    }
+  );
 
   it('discards partial staging and records only a stable failure code when owner capture fails', async () => {
     const ownerCapture = jest.fn(
@@ -406,7 +459,8 @@ describe('AccountExportJobService Authentication owner staging', () => {
       {} as never,
       {} as never,
       {} as never,
-      spool
+      spool,
+      {} as never
     );
     const internals = service as unknown as {
       renewLease(claim: AccountExportJobEntity): Promise<boolean>;
@@ -460,6 +514,7 @@ describe('AccountExportJobService database lease fence', () => {
       service = new AccountExportJobService(
         repository,
         dataSource,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

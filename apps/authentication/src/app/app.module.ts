@@ -41,11 +41,16 @@ import { GuardianPolicyNoticeEntity } from '../guardian-permissions/entities/gua
 import { AccountExportService } from './account-export.service';
 import { AccountExportController } from './account-export.controller';
 import { AccountExportJobService } from '../account-export-jobs/account-export-job.service';
+import { AccountExportCaptureLeaseService } from '../account-export-jobs/account-export-capture-lease.service';
+import { ProfileAccountExportSnapshotClient } from '../account-export-jobs/profile-account-export-snapshot.client';
 import { AccountExportJobEntity } from '../account-export-jobs/entities/account-export-job.entity';
 import { AuthenticationAccountExportOwnerService } from '../account-export-owner/account-export-owner.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
-import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportSnapshotPullService,
+} from '@optimistic-tanuki/storage';
 
 @Module({
   imports: [
@@ -99,12 +104,20 @@ import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
     AccountExportService,
     AccountExportOwnerSpoolService,
     {
+      provide: AccountExportSnapshotPullService,
+      useFactory: (spool: AccountExportOwnerSpoolService) =>
+        new AccountExportSnapshotPullService(spool),
+      inject: [AccountExportOwnerSpoolService],
+    },
+    ProfileAccountExportSnapshotClient,
+    {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
         new AuthenticationAccountExportOwnerService(dataSource, auth),
       inject: ['AUTHENTICATION_CONNECTION', AppService],
     },
     AccountExportJobService,
+    AccountExportCaptureLeaseService,
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

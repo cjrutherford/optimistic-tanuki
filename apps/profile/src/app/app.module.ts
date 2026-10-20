@@ -23,6 +23,8 @@ import loadDatabase from './loadDatabase';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { ProfileAccountExportService } from './account-export.service';
 import { ProfileAccountExportOwnerService } from './account-export-owner.service';
+import { ProfileAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AccountExportOwnerSpoolService } from '@optimistic-tanuki/storage';
 import { AccountExportController } from '../profiles/account-export.controller';
 
 @Module({
@@ -49,10 +51,27 @@ import { AccountExportController } from '../profiles/account-export.controller';
     TimelineService,
     ProfileAccountExportService,
     {
+      provide: AccountExportOwnerSpoolService,
+      useFactory: () => new AccountExportOwnerSpoolService(),
+    },
+    {
       provide: ProfileAccountExportOwnerService,
       useFactory: (dataSource: DataSource, authClient: ClientProxy) =>
         new ProfileAccountExportOwnerService(dataSource, authClient),
       inject: ['PROFILE_CONNECTION', ServiceTokens.AUTHENTICATION_SERVICE],
+    },
+    {
+      provide: ProfileAccountExportSnapshotService,
+      useFactory: (
+        owner: ProfileAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        authClient: ClientProxy
+      ) => new ProfileAccountExportSnapshotService(owner, spool, authClient),
+      inject: [
+        ProfileAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
     },
     {
       provide: getRepositoryToken(Profile),

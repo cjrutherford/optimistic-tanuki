@@ -24,6 +24,10 @@ import {
   AccountExportOwnerSpoolService,
   OwnerSpoolHandle,
 } from '@optimistic-tanuki/storage';
+import {
+  ProfileAccountExportSnapshotClient,
+  ProfileAccountExportCapture,
+} from './profile-account-export-snapshot.client';
 
 const LEASE_MS = 60_000;
 
@@ -37,7 +41,8 @@ export class AccountExportJobService {
     private readonly auth: AppService,
     private readonly preview: AccountExportService,
     private readonly owner: AuthenticationAccountExportOwnerService,
-    private readonly ownerSpool: AccountExportOwnerSpoolService
+    private readonly ownerSpool: AccountExportOwnerSpoolService,
+    private readonly profileCapture: ProfileAccountExportSnapshotClient
   ) {}
 
   async create(request: unknown): Promise<AccountExportJobStatus> {
@@ -297,6 +302,67 @@ export class AccountExportJobService {
               delete summary.capturedDatabaseOwners;
               errorCode = 'owner-capture-unavailable';
               state = 'failed';
+            }
+          }
+        }
+      }
+    }
+    if (state === 'incomplete' && !leaseLost) {
+      let profile: ProfileAccountExportCapture | undefined;
+      try {
+        if (!claimed.leaseOwner) {
+          leaseLost = true;
+          throw new Error('lease lost');
+        }
+        profile = await this.profileCapture.capture(
+          {
+            accountId: input.accountId,
+            token: input.token,
+            appId: input.appId,
+            jobId: claimed.id,
+            attempt: claimed.attempt,
+            leaseOwner: claimed.leaseOwner,
+          },
+          async () => {
+            const renewed = await this.renewLease(claimed);
+            if (!renewed) leaseLost = true;
+            return renewed;
+          }
+        );
+        // Exercise the same-snapshot identity surface before recording progress.
+        await profile.identities(0, 100);
+        summary = {
+          ...summary,
+          capturedDatabaseOwners: ['authentication', 'profile'],
+        };
+      } catch {
+        if (!leaseLost) {
+          summary = {
+            ...summary,
+            blockers: [
+              ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+              'profile-capture-unavailable',
+            ],
+          };
+          state = 'failed';
+          errorCode = 'profile-capture-unavailable';
+        }
+      } finally {
+        if (profile) {
+          try {
+            await profile.cleanup();
+          } catch {
+            if (!leaseLost) {
+              summary = {
+                ...summary,
+                capturedDatabaseOwners: ['authentication'],
+                blockers: [
+                  ...(Array.isArray(summary.blockers) ? summary.blockers : []),
+                  'profile-capture-unavailable',
+                ],
+              };
+              state = 'failed';
+              errorCode = 'profile-capture-unavailable';
             }
           }
         }

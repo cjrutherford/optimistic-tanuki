@@ -14,7 +14,26 @@ export const ProfileCommands = {
   GetBlogRole: 'Get:BlogRole',
   GetAccountExportSnapshot: 'Get:AccountExportSnapshot',
   GetOwnedAccountProfileIdPage: 'Get:OwnedAccountProfileIdPage',
+  OpenAccountExportCapture: 'Open:AccountExportCapture',
+  ReadAccountExportCapture: 'Read:AccountExportCapture',
+  ReadAccountExportCaptureIdentities: 'Read:AccountExportCaptureIdentities',
+  ReleaseAccountExportCapture: 'Release:AccountExportCapture',
 };
+
+/** Ordered retained-database stream schema shared by owner and coordinator. */
+export const PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES = [
+  'profileIdentity',
+  'profileMedia',
+  'profileText',
+  'timelineText',
+  'profile',
+  'timeline',
+  'guardianActivity',
+  'legacyGoalText',
+  'legacyGoal',
+  'legacyProjectText',
+  'legacyProject',
+] as const;
 
 export interface OwnedAccountProfileIdPageRequest {
   accountId: string;

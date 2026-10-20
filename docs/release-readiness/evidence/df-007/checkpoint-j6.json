@@ -1,0 +1,168 @@
+{
+  "checkpoint": "DF-007-J6",
+  "date": "2026-10-20",
+  "baseCommit": "8810052e78799e6b345d622f28cf276af83a34e7",
+  "status": "locally-verified-secure-Profile-snapshot-and-job-integration",
+  "sourceFiles": {
+    "apps/authentication-e2e/src/authentication/account-export.spec.ts": "58445bb294303d52edd2f562b9f6b4a663205f221a879b4e956b26efb7aa8ee9",
+    "apps/authentication/src/account-export-jobs/account-export-capture-lease.service.spec.ts": "8ca4eb82e619b8d207c0dcd6a9c45723b6881220056eac33efe6ccc54c6562a9",
+    "apps/authentication/src/account-export-jobs/account-export-capture-lease.service.ts": "03f693327363659673ed9de351905eb9c7b854e096c4d85f41171543bc6444d1",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.spec.ts": "1870f489ce85e7e5485a364c4e973528622415ba093d1f9c747cd11bf3fec5d2",
+    "apps/authentication/src/account-export-jobs/account-export-job.service.ts": "c99d60c8f7694c69f38f75f8d6a396883a66f898c148a7c910274a6101bc7d6b",
+    "apps/authentication/src/account-export-jobs/profile-account-export-snapshot.client.spec.ts": "4fa652c5869776ded445ac0a1cae5dd7dc75690bde32d2dc220438d27cd5f8d6",
+    "apps/authentication/src/account-export-jobs/profile-account-export-snapshot.client.ts": "4430cc4c409d74a6c7d748698b451c31ceab765ae2665652d0d6f1b31d91bc99",
+    "apps/authentication/src/app/account-export.controller.ts": "231eb8a715d7f77f7f598bd64d0d23f686658a0a79122b64dd63d668862da66f",
+    "apps/authentication/src/app/app.module.ts": "9fcec4a5bc43dd151c7adfe542768b3897e45ebb81149891676171a6a3a414e5",
+    "apps/profile/src/app/account-export-owner.service.ts": "3f988185adec1ed0e4a00104baf3a72ae4d03c9eb297f9411e5a2ea923670130",
+    "apps/profile/src/app/account-export-snapshot.service.spec.ts": "759a4f12bcbd8a403fab5dc5f19cf21484f1fbde27e8c8022d30bf49d3247e3f",
+    "apps/profile/src/app/account-export-snapshot.service.ts": "3d79a12b0dc3d424d6412d274863646d8e236856d6e0e7fa128a35c006deeef1",
+    "apps/profile/src/app/app.module.ts": "fc60bef009ac8f99249b5b4cf6fd5567eaa07799c8e7c5e03593278d73bba9cc",
+    "apps/profile/src/profiles/account-export.controller.ts": "a33fac391e2e8417a952c30ee7664fed7c0d6817103141c479f3e0849805568d",
+    "libs/constants/src/index.ts": "f0fcbdead1bccff33eeb96f18095596929927525b6a6a8d523f08d4c6cf066ba",
+    "libs/constants/src/lib/libs/authentication.ts": "f250a41d9ea08f27ccfc2724f8f348250077da3eea1cebd572326722707cce9c",
+    "libs/constants/src/lib/libs/profile.ts": "c7f9b5ce720135e53d80f0772051985e892dfa5a84a700ae6525cb8667c7454f",
+    "libs/models/src/index.ts": "f1a48f52a37f2eada9b150341c64fdb34e32ea94d5eb364f4f782a8b4814229c",
+    "libs/models/src/lib/libs/account-export/account-export-snapshot.contract.ts": "8820b603c5c95986091c031c88ebb3cd365fb84cc94934fb42e24c0dbc60f734",
+    "libs/profile/contracts/src/lib/profile-commands.ts": "267fa998667168b2f48f154335c01ae6a7eae4d0dd333a99e0d2936765040381",
+    "libs/storage/src/index.ts": "02d3ead4b12206feb2a246d0bcacdd31f11a1e7b31322f42f687f2eeaf8a2fd4",
+    "libs/storage/src/lib/account-export-snapshot-pull.service.spec.ts": "c973d92ca69cde6ef88249c60864d256a47cc9b3155e53bd8a815374ee3eb70c",
+    "libs/storage/src/lib/account-export-snapshot-pull.service.ts": "f385834e7075020c16d2008c14fa3ac9d37efa8626e213639ee12f5ba8e492de"
+  },
+  "sourceManifestSha256": "a89b2ecf0b0d721444b4a8bc695eb7cb785d4ef59d8e0cb04a7f5754d361a7b7",
+  "scope": {
+    "internalProfileSnapshot": true,
+    "sameSnapshotIdentityPaging": true,
+    "liveSessionAndDbClockLeaseChecks": true,
+    "profileJobIntegration": true,
+    "capturedDatabaseOwners": ["authentication", "profile"],
+    "accountJobState": "incomplete",
+    "artifact": false,
+    "download": false,
+    "deletion": false
+  },
+  "limits": {
+    "readBytes": 65536,
+    "lineBytes": 524288,
+    "captureBytes": 268435456,
+    "aggregateBytes": 536870912,
+    "entriesIncludingPending": 2,
+    "identityPageSize": 100,
+    "identityIndexPages": 32768,
+    "ttlMs": 120000
+  },
+  "checks": {
+    "focusedUnits": [
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/lease-unit.log",
+        "passed": 13
+      },
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/profile-unit.log",
+        "passed": 9
+      },
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/profile-client-unit.log",
+        "passed": 13
+      },
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/job-unit.log",
+        "passed": 7
+      },
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/job-profile-failures.log",
+        "passed": 3
+      },
+      {
+        "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/pull-boundary.log",
+        "passed": 1
+      }
+    ],
+    "unitSelectionNotes": "Original job selection had3opt-inDBskips; failureselection had10unselectedtests. Puller one test contains multiple assertions; final parser boundary run supersedes prior puller log. Unit proofs precede final constants-barrel and host-only restart-fixture amendments; final services compile and execute below.",
+    "e2e": {
+      "command": "pnpm exec nx run authentication-e2e:e2e:ci --testFile=account-export.spec.ts --testNamePattern='stores resumable export job|recovers an expired job lease|fences secure snapshots'",
+      "result": {
+        "result": "PASS",
+        "passed": 3,
+        "skippedUnselectedCases": 5,
+        "failed": 0,
+        "logSha256": "c496056367fa683e409f53aac93001ae65799a3328c93a426e72c05125acba3f"
+      },
+      "privateDatabaseMigrations": true,
+      "liveAuthProfileTcp": true,
+      "initialIdentities": 1006,
+      "lateInsertExcludedFromOldCapture": true,
+      "restartOldHandleInvalidatedAndRecaptureIncludesLateInsert": true,
+      "revokedSessionAndExpiredLeaseDenied": true,
+      "fixtureReadback": {
+        "result": "PASS",
+        "counts": {
+          "users": 0,
+          "jobs": 0,
+          "snapshotProfiles": 0
+        }
+      },
+      "authProcessUnchanged": true,
+      "zeroSpoolDescriptorsBeforeAfter": ["authentication", "profile"],
+      "profileRestartTimeChanged": true,
+      "runningImages": {
+        "authentication": "sha256:61fae44f8a3abee7c32ebda303808ade82c8062a6e6eb5e692d19c06a525d968",
+        "db": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "forum": "sha256:127e2fd4b2c38909cc53d03ad2bbef2ce6d598aef1a7b4384b0e4a1ab2123bb4",
+        "permissions": "sha256:c0518f410f3b18dcfc7b85e763f622bd52fa64d9027853164f74e69f10e1bd91",
+        "profile": "sha256:34440d4535ea98cbe7b2da491ba1d381e8880b4cec4f4076204bef5f4da15163",
+        "social": "sha256:01bb87b452b1833c275b79866e3a4937ff3964f7f079e3ba0e544ba0502d04be"
+      },
+      "imageProvenance": {
+        "sourceImages": {
+          "authentication": "ot-df007-snapshot/authentication:49d6da37d203",
+          "profile": "ot-df007-snapshot/profile:49d6da37d203"
+        },
+        "sourceManifest": "49d6da37d20394c04b8b138e739dbf352cde88bef98a54baaa07b094c2763c20",
+        "note": "Only host E2E restart readiness changed; identical image input files. Existing immutable image IDs retained under new capture tags."
+      }
+    },
+    "build": "Authentication and Profile checked-in Dockerfile development builds PASS; immutable images used by E2E",
+    "lint": "Seven affected projects PASS across lint.log/auth-lint-final.log; final parser and constants rechecked in lint-final-boundary.log",
+    "format": "Scoped explicit files only; root tsconfig path sorting disabled",
+    "schemaMigrationAdded": false,
+    "protectedWipFilesUnchanged": 43,
+    "privateTeardown": "exit=0 down=0 containers=0 networks=0 volumes=0"
+  },
+  "failedAttempts": [
+    {
+      "kind": "immutable image compile",
+      "error": "Constants public barrel omitted PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES; repaired before accepted images",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/runtime/authentication-image-missing-export.log",
+      "applicationContainersStarted": false
+    },
+    {
+      "kind": "private E2E attempt1",
+      "passed": 2,
+      "failed": 1,
+      "error": "Host port accepted connection before restarted RPC service readiness; host fixture now waits for real bounded RPC response",
+      "teardown": "exit=1 down=0 containers=0 networks=0 volumes=0",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration/runtime/attempt-1/e2e.log"
+    }
+  ],
+  "limitations": [
+    "Unknown handle after lost open response expires by120sTTL",
+    "Cleanup I/O failure retains registry capacity; restart may be required",
+    "Restart recaptures; no durable artifact checkpoint or exactly-once delivery",
+    "Local limits are not production capacity qualification",
+    "Remaining owners/Assets/Videos/artifact/deletion/sharedUI remain open",
+    "No browser/external-provider/CI-run/production qualification claimed"
+  ],
+  "artifactRoot": ".runtime-artifacts/account-rights/finish-sequence/snapshot-integration",
+  "rawLogHashes": {
+    "pull-boundary.log": "2d0b7a14c388d5a33fd9cd0095cc28924b7ba1ca04570e1404a5ea53a6159525",
+    "runtime/attempt-2/e2e.log": "c496056367fa683e409f53aac93001ae65799a3328c93a426e72c05125acba3f",
+    "runtime/attempt-2/services.log": "07b9b8e6ca32b215fd20e199ab7dc0055b9a82158e2e4d9c2fcb9e9179b21450",
+    "runtime/attempt-2/fixture-readback.json": "94f647074eeebc07aa887d764efe9e5e1e3e06e74804fe0adf97870337ad8213",
+    "runtime/attempt-2/authentication-fds-before.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    "runtime/attempt-2/authentication-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    "runtime/attempt-2/profile-fds-before.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    "runtime/attempt-2/profile-fds-after.json": "478865cf0f8f79f66d733a178a49031599c779e3d8eb92b0f7864d98e8d56f78",
+    "runtime/attempt-2/profile-before.json": "a6d44cf8b2ee5018d7f964470bee4be841782aae9cce59332e44838af55a10b9",
+    "runtime/attempt-2/profile-after.json": "505e7d6835b6e10cc15a53f3aaa8704c15f9cfa0611753890699ce0588985ea0"
+  }
+}

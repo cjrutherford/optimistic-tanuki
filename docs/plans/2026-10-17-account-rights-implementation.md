@@ -202,3 +202,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J5 — Legacy Profile database adapters
 
 [Finding](../release-readiness/findings/DF-007-J5.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j5.json): the read-only Profile capture now includes migration-owned goal/project tables and verified Timeline legacy links. Six focused units and eleven enabled PostgreSQL cases passed, including complete long text and circular/foreign references, counterpart preservation and actual staging. The J4 temporary legacy-data guard is removed; its historical finding remains separate. Authorized remote snapshot transport and Profile job integration remain next. No account download/deletion is enabled.
+
+### J6 — Secure Profile snapshots and job integration
+
+[Finding](../release-readiness/findings/DF-007-J6.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j6.json): bounded, leased, session-bound Profile snapshots and captured identity pages now feed verified job staging. Three selected actual TCP cases passed with guarded restart/recapture, fixture readback and resource teardown. Jobs stay incomplete without an artifact. Complete Assets ownership/portable bytes using these identities is next; other owners, Videos, deletion and shared controls remain.

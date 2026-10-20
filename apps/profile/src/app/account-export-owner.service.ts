@@ -7,24 +7,14 @@ import {
   AccountExportOwnerRecord,
 } from '@optimistic-tanuki/models';
 import { AccountExportOwnerEmitter } from '@optimistic-tanuki/storage';
-import {
-  PROFILE_ACCOUNT_EXPORT_LEGACY_SOURCES,
-  ProfileAccountExportLegacyReader,
-} from './account-export-legacy-reader';
+import { PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES } from '@optimistic-tanuki/profile-contracts';
+import { ProfileAccountExportLegacyReader } from './account-export-legacy-reader';
 import { firstValueFrom, timeout } from 'rxjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { DataSource, QueryRunner } from 'typeorm';
 
-export const PROFILE_ACCOUNT_EXPORT_SOURCES = [
-  'profileIdentity',
-  'profileMedia',
-  'profileText',
-  'timelineText',
-  'profile',
-  'timeline',
-  'guardianActivity',
-  ...PROFILE_ACCOUNT_EXPORT_LEGACY_SOURCES,
-] as const;
+export const PROFILE_ACCOUNT_EXPORT_SOURCES =
+  PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES;
 export type ProfileAccountExportSource =
   (typeof PROFILE_ACCOUNT_EXPORT_SOURCES)[number];
 export type ProfileAccountExportChunk =

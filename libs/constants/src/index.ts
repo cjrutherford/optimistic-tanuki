@@ -2,6 +2,7 @@ export * from './lib/libs/constants.module';
 export { default as AuthCommands } from './lib/libs/authentication';
 export {
   ProfileCommands,
+  PROFILE_ACCOUNT_EXPORT_CAPTURE_SOURCES,
   GoalCommands,
   TimelineCommands,
 } from './lib/libs/profile';
