@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from '@optimistic-tanuki/constants';
 import {
   AccountExportCaptureGrant,
   AccountExportOwnerChunk,
@@ -18,15 +21,8 @@ import { firstValueFrom, timeout } from 'rxjs';
 import { DataSource, QueryRunner } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 
-export const VIDEOS_ACCOUNT_EXPORT_SOURCES = [
-  'channel',
-  'video',
-  'channelSubscription',
-  'videoView',
-  'channelFeed',
-  'programBlock',
-  'liveSession',
-] as const;
+export const VIDEOS_ACCOUNT_EXPORT_SOURCES =
+  VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES;
 export type VideosAccountExportSource =
   (typeof VIDEOS_ACCOUNT_EXPORT_SOURCES)[number];
 export type VideosAccountExportChunk =

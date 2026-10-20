@@ -1,5 +1,12 @@
+import {
+  AccountExportOwnerSpoolService,
+  AccountExportProfileSnapshotClient,
+} from '@optimistic-tanuki/storage';
+import { VideosAccountExportOwnerService } from './account-export-owner.service';
+import { VideosAccountExportSnapshotService } from './account-export-snapshot.service';
+import { AccountExportController } from './account-export.controller';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
@@ -23,7 +30,11 @@ import { BroadcastService } from './services/broadcast.service';
 import { VideoProcessingService } from './services/video-processing.service';
 import { VIDEO_PROCESSING_CONFIG } from './services/video-processing.service';
 import { VideoTranscodeClientService } from './services/video-transcode-client.service';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 @Module({
@@ -38,9 +49,73 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     }),
     LoggerModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AccountExportController],
   providers: [
     AppService,
+    AccountExportOwnerSpoolService,
+    AccountExportProfileSnapshotClient,
+    {
+      provide: ServiceTokens.AUTHENTICATION_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host:
+              process.env['SERVICE_AUTHENTICATION_HOST'] ||
+              config.get<string>('services.authentication.host') ||
+              'authentication',
+            port:
+              Number(process.env['SERVICE_AUTHENTICATION_PORT']) ||
+              config.get<number>('services.authentication.port') ||
+              3001,
+          },
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.PROFILE_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host:
+              process.env['SERVICE_PROFILE_HOST'] ||
+              config.get<string>('services.profile.host') ||
+              'profile',
+            port:
+              Number(process.env['SERVICE_PROFILE_PORT']) ||
+              config.get<number>('services.profile.port') ||
+              3002,
+          },
+        }),
+      inject: [ConfigService],
+    },
+    {
+      provide: VideosAccountExportOwnerService,
+      useFactory: (
+        dataSource: DataSource,
+        identities: AccountExportProfileSnapshotClient,
+        auth: ClientProxy
+      ) => new VideosAccountExportOwnerService(dataSource, identities, auth),
+      inject: [
+        'VIDEOS_CONNECTION',
+        AccountExportProfileSnapshotClient,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
+    {
+      provide: VideosAccountExportSnapshotService,
+      useFactory: (
+        owner: VideosAccountExportOwnerService,
+        spool: AccountExportOwnerSpoolService,
+        auth: ClientProxy
+      ) => new VideosAccountExportSnapshotService(owner, spool, auth),
+      inject: [
+        VideosAccountExportOwnerService,
+        AccountExportOwnerSpoolService,
+        ServiceTokens.AUTHENTICATION_SERVICE,
+      ],
+    },
     ChannelService,
     VideoService,
     SubscriptionService,

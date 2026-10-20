@@ -100,9 +100,16 @@ export interface AssetsAccountExportSnapshotOpenRequest
   extends AccountExportCaptureGrant {
   profileSnapshot: AccountExportSnapshotDescriptor;
 }
-export interface AssetsAccountExportSnapshotDescriptor
+export interface ProfileBoundAccountExportSnapshotDescriptor
   extends AccountExportSnapshotDescriptor {
   profileHandleId: string;
   profileCaptureId: string;
   profileSnapshotAt: string;
 }
+
+export type AssetsAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type VideosAccountExportSnapshotDescriptor =
+  ProfileBoundAccountExportSnapshotDescriptor;
+export type VideosAccountExportSnapshotOpenRequest =
+  AssetsAccountExportSnapshotOpenRequest;

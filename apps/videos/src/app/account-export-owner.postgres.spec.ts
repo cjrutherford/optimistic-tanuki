@@ -1,3 +1,5 @@
+import loadDatabase from './loadDatabase';
+import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { DataSource } from 'typeorm';
 import { randomUUID } from 'node:crypto';
@@ -442,6 +444,51 @@ pgDescribe('Videos owner real PostgreSQL component', () => {
     await resources();
     const h = await capture();
     await h.cleanup();
+    await resources();
+  });
+  it('bounds an occupied pool with the production connection timeout and leaves no capture resources', async () => {
+    const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    let options: ReturnType<typeof loadDatabase>;
+    try {
+      options = loadDatabase({
+        get: () => ({
+          host: '127.0.0.1',
+          port: 15551,
+          username: 'videos_fixture',
+          password: process.env.VIDEOS_OWNER_PG_PASSWORD,
+          database: DB,
+        }),
+      } as unknown as ConfigService);
+    } finally {
+      log.mockRestore();
+    }
+    if (options.type !== 'postgres') throw Error('Expected PostgreSQL options');
+    expect(options.connectTimeoutMS).toBe(3000);
+    const occupied = new DataSource({
+      ...options,
+      synchronize: false,
+      logging: false,
+      extra: { max: 1 },
+    });
+    await occupied.initialize();
+    const held = occupied.createQueryRunner();
+    await held.connect();
+    const previous = owner;
+    owner = new VideosAccountExportOwnerService(
+      occupied,
+      new AccountExportProfileSnapshotClient({ send: profileSend } as any),
+      { send: authSend } as any
+    );
+    const started = Date.now();
+    try {
+      await expect(capture()).rejects.toBeDefined();
+      expect(Date.now() - started).toBeGreaterThanOrEqual(2500);
+      expect(Date.now() - started).toBeLessThan(10000);
+    } finally {
+      owner = previous;
+      await held.release();
+      await occupied.destroy();
+    }
     await resources();
   });
 });

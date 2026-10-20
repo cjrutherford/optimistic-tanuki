@@ -29,6 +29,10 @@ describe('Assets account export real leased service integration', () => {
   it('captures Assets over leased RPC and jobs, fences access, and recaptures after private restart', async () => {
     if (process.env.ASSETS_JOB_E2E_MARKER !== 'private-assets-j9-v1')
       throw Error('Private Assets fixture marker required');
+    const fixtureProject =
+      process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
+        ? 'ot-df007-videos-integration'
+        : 'ot-df007-assets-integration';
     const container = process.env.ASSETS_JOB_E2E_CONTAINER_ID || '';
     if (!/^[a-f0-9]{64}$/.test(container))
       throw Error('Private Assets container required');
@@ -38,7 +42,7 @@ describe('Assets account export real leased service integration', () => {
         .stdout
     )[0];
     expect(inspected.Config.Labels['com.docker.compose.project']).toBe(
-      'ot-df007-assets-integration'
+      fixtureProject
     );
     expect(inspected.Config.Labels['com.docker.compose.service']).toBe(
       'assets'
@@ -47,11 +51,13 @@ describe('Assets account export real leased service integration', () => {
       inspected.Config.Labels[
         'io.optimistic-tanuki.account-rights.private-project'
       ]
-    ).toBe('ot-df007-assets-integration');
+    ).toBe(fixtureProject);
     const dir = await realpath(process.env.ASSETS_JOB_E2E_MEDIA_DIR || '');
     expect(dir).toBe(
       resolve(
-        '.runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/media-fixtures'
+        process.env.VIDEOS_JOB_E2E_MARKER === 'private-videos-j11-v1'
+          ? '.runtime-artifacts/account-rights/finish-sequence/videos-integration/runtime/media-fixtures'
+          : '.runtime-artifacts/account-rights/finish-sequence/assets-integration/runtime/media-fixtures'
       )
     );
     if (
@@ -204,6 +210,7 @@ describe('Assets account export real leased service integration', () => {
         'authentication',
         'profile',
         'assets',
+        'videos',
       ]);
       expect(job.coverageSummary.artifactAvailable).toBe(false);
       expect(JSON.stringify(job)).not.toContain(users[0].token);
@@ -433,6 +440,7 @@ describe('Assets account export real leased service integration', () => {
         'authentication',
         'profile',
         'assets',
+        'videos',
       ]);
       grant = {
         ...grant,

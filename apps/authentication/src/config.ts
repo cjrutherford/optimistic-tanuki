@@ -35,6 +35,7 @@ export declare type AuthConfigType = {
   };
   services?: {
     assets?: { host: string; port: number };
+    videos?: { host: string; port: number };
     profile?: { host: string; port: number };
     permissions?: { host: string; port: number };
     social?: { host: string; port: number };
@@ -185,6 +186,16 @@ const loadConfig = () => {
           Number(process.env.SERVICE_ASSETS_PORT) ||
           configData.services?.assets?.port ||
           3005,
+      },
+      videos: {
+        host:
+          process.env.SERVICE_VIDEOS_HOST ||
+          configData.services?.videos?.host ||
+          'videos',
+        port:
+          Number(process.env.SERVICE_VIDEOS_PORT) ||
+          configData.services?.videos?.port ||
+          3022,
       },
       profile: {
         host:

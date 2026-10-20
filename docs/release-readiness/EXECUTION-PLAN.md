@@ -37,6 +37,8 @@
 
 **2026-10-20 J10 component:** [Videos database ownership](./findings/DF-007-J10.md) passes five enabled private PostgreSQL cases with zero skips and 24 focused unit/regression tests. It captures seven tables through all fenced Profile identities, preserves counterpart rows and verifies cleanup, including actual dirty-connection eviction. Videos transport/jobs and HLS portability remain next, followed by remaining owners and artifacts. Item 1/DF-007/RR-11 remain open.
 
+**2026-10-20 J11 checkpoint:** [Videos snapshots and export jobs](./findings/DF-007-J11.md) pass four selected real-service cases across three suites (six unrelated cases unselected), 64 focused unit/regression cases and a real occupied-pool timeout case. Jobs verify Auth/Profile/Assets/Videos database captures while remaining incomplete without artifacts. Shared registry/client reuse, authorization, failure/retry, both child restarts and independent cleanup pass. HLS portability and remaining owners precede artifacts/downloads; item 1/DF-007/RR-11 remain open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

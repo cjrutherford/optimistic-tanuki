@@ -222,3 +222,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J10 — Videos database owner component
 
 [Finding](../release-readiness/findings/DF-007-J10.md), [receipt](../release-readiness/evidence/df-007/checkpoint-j10.json) and [field dispositions](../release-readiness/evidence/df-007/videos-owner-fields-j10.json): five enabled PostgreSQL cases and 24 focused unit/regression tests passed, with Storage lint and Assets/Videos build/lint. Seven retained tables and all 1,006 captured identities are exercised; counterpart privacy, consistent reads, failures and cleanup pass. RPC dependencies are simulated in this component fixture. Videos snapshot/job integration, HLS portability, remaining owners, artifact/download and deletion/UI remain open.
+
+### J11 — Videos snapshots and jobs
+
+[Finding](../release-readiness/findings/DF-007-J11.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j11.json): four selected real-service cases across three suites passed with six unrelated cases unselected; 64 unit/regression cases and an occupied-pool PostgreSQL case passed. Videos joins verified job staging behind the shared parent-bound registry/client. Processing failures, retry, access fences, restart/recapture and cleanup pass; jobs remain incomplete with no artifact. HLS portability and complete remaining owner captures precede artifact/download integration. DF-007/RR-11 remain open.

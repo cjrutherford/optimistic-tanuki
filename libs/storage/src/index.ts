@@ -16,3 +16,5 @@ export * from './lib/account-export-owner-emitter';
 export * from './lib/file-mime';
 export * from './lib/account-export-snapshot-pull.service';
 export * from './lib/account-export-profile-snapshot.client';
+export * from './lib/account-export-profile-bound-snapshot.service';
+export * from './lib/account-export-profile-bound-snapshot.client';

@@ -8,7 +8,8 @@
     "permissions",
     "social",
     "forum",
-    "assets"
+    "assets",
+    "videos"
   ],
   "targets": {
     "e2e": {
@@ -25,7 +26,8 @@
         "permissions:build",
         "social:build",
         "forum:build",
-        "assets:build"
+        "assets:build",
+        "videos:build"
       ]
     }
   },

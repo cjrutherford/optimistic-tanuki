@@ -28,6 +28,7 @@ export default function loadDatabase(config: ConfigService): DataSourceOptions {
     password: password,
     database: dbName,
     entities,
+    connectTimeoutMS: 3000,
     synchronize: process.env['NODE_ENV'] !== 'production',
     logging: process.env['NODE_ENV'] === 'development',
   };

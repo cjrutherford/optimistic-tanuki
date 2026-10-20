@@ -1,3 +1,4 @@
+import { VideosAccountExportSnapshotClient } from '../account-export-jobs/videos-account-export-snapshot.client';
 import { AssetsAccountExportSnapshotClient } from '../account-export-jobs/assets-account-export-snapshot.client';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -112,6 +113,7 @@ import {
     },
     ProfileAccountExportSnapshotClient,
     AssetsAccountExportSnapshotClient,
+    VideosAccountExportSnapshotClient,
     {
       provide: AuthenticationAccountExportOwnerService,
       useFactory: (dataSource: DataSource, auth: AppService) =>
@@ -120,6 +122,17 @@ import {
     },
     AccountExportJobService,
     AccountExportCaptureLeaseService,
+    {
+      provide: ServiceTokens.VIDEOS_SERVICE,
+      useFactory: (config: ConfigService) =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: config.get<{ host: string; port: number }>(
+            'services.videos'
+          ),
+        }),
+      inject: [ConfigService],
+    },
     {
       provide: ServiceTokens.ASSETS_SERVICE,
       useFactory: (config: ConfigService) =>

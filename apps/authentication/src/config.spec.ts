@@ -10,6 +10,8 @@ describe('authentication config oauth env loading', () => {
     delete process.env.GOOGLE_REDIRECT_URI;
     delete process.env.SERVICE_ASSETS_HOST;
     delete process.env.SERVICE_ASSETS_PORT;
+    delete process.env.SERVICE_VIDEOS_HOST;
+    delete process.env.SERVICE_VIDEOS_PORT;
     delete process.env.SERVICE_PROFILE_HOST;
     delete process.env.SERVICE_PROFILE_PORT;
     delete process.env.SERVICE_PERMISSIONS_HOST;
@@ -217,5 +219,16 @@ describe('authentication config oauth env loading', () => {
       }
       fs.rmSync(configDir, { recursive: true, force: true });
     }
+  });
+  it('defaults and overrides the Videos snapshot RPC endpoint', async () => {
+    const { default: loadConfig } = await import('./config');
+    const initial = loadConfig();
+    expect(initial.services?.videos).toEqual({ host: 'videos', port: 3022 });
+    process.env.SERVICE_VIDEOS_HOST = 'private-videos';
+    process.env.SERVICE_VIDEOS_PORT = '43022';
+    expect(loadConfig().services?.videos).toEqual({
+      host: 'private-videos',
+      port: 43022,
+    });
   });
 });

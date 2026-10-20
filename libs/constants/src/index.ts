@@ -116,7 +116,10 @@ export {
   ForumCommands,
 } from './lib/libs/forum';
 
-export { VideoCommands } from './lib/libs/videos';
+export {
+  VideoCommands,
+  VIDEOS_ACCOUNT_EXPORT_CAPTURE_SOURCES,
+} from './lib/libs/videos';
 
 export { WellnessCommands } from './lib/libs/wellness';
 
