@@ -226,3 +226,5 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J11 — Videos snapshots and jobs
 
 [Finding](../release-readiness/findings/DF-007-J11.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j11.json): four selected real-service cases across three suites passed with six unrelated cases unselected; 64 unit/regression cases and an occupied-pool PostgreSQL case passed. Videos joins verified job staging behind the shared parent-bound registry/client. Processing failures, retry, access fences, restart/recapture and cleanup pass; jobs remain incomplete with no artifact. HLS portability and complete remaining owner captures precede artifact/download integration. DF-007/RR-11 remain open.
+
+J12 locally verifies bounded HLS playlist/segment capture and offline rewriting: nine private PostgreSQL/encrypted-storage cases and 38 focused tests passed, with affected pre-E2E gates and cleanup. See [J12 findings](../release-readiness/findings/DF-007-J12.md). Next: complete Permissions, Social, Forum and remaining owners, then encrypted artifacts/downloads; deletion and shared controls remain required. DF-007/RR-11 stay open.

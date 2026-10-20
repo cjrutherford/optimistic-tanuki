@@ -1139,3 +1139,5 @@ Detailed findings live in `findings/RR-xx.md`; keep their status synchronized wi
 # 11. AGENTS.md integration
 
 Product constraints, ADR exceptions, acceptance discipline, claim dispositions, and local prototype handling are installed in [AGENTS.md](../../AGENTS.md). [AGENTS-SNIPPET.md](./AGENTS-SNIPPET.md) records the same guidance.
+
+**2026-10-20 J12 component:** [HLS media portability](./findings/DF-007-J12.md) passes nine fresh private PostgreSQL/encrypted-storage cases with zero skips and 38 focused tests. Account-owned references are checked before playlist delivery, 201 segments exercise bounded queries, and a verified local-file rewrite decodes offline. Storage lint and Assets production build/lint passed; independent readback and private resource teardown passed. This component does not create account artifacts or downloads. Permissions and remaining owners, artifact delivery, deletion and shared controls remain open; DF-007/RR-11 remain open. See the [receipt](./evidence/df-007/checkpoint-j12.json).

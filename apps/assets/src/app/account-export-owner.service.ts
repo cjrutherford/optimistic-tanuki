@@ -17,6 +17,7 @@ import {
 import {
   AccountExportOwnerEmitter,
   AccountExportOwnerEmitterError,
+  ACCOUNT_EXPORT_HLS_LIMITS,
 } from '@optimistic-tanuki/storage';
 import { firstValueFrom, timeout } from 'rxjs';
 import { DataSource, QueryRunner } from 'typeorm';
@@ -378,12 +379,54 @@ export class AssetsAccountExportOwnerService {
           storagePath: (raw as any).storagePath,
           storageStrategy: (raw as any).storageStrategy,
         });
-        for await (const record of this.media.read(entity, { signal, budget }))
+        for await (const record of this.media.read(entity, {
+          signal,
+          budget,
+          validateHlsReferences: (ids) =>
+            this.validateHlsReferences(r, temp, ids, signal, deadline),
+        }))
           yield record as AccountExportOwnerRecord<AssetsAccountExportSource>;
         profile = row.profileId;
         assetId = row.id;
       }
       if (rows.length <= PAGE) break;
+    }
+  }
+
+  private async validateHlsReferences(
+    r: QueryRunner,
+    temp: string,
+    ids: readonly string[],
+    signal: AbortSignal,
+    deadline: number
+  ): Promise<void> {
+    if (
+      !Array.isArray(ids) ||
+      ids.length < 1 ||
+      ids.length > ACCOUNT_EXPORT_HLS_LIMITS.references ||
+      ids.some((id) => typeof id !== 'string' || !SAFE_UUID.test(id))
+    )
+      throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
+    const normalized = ids.map((id) => id.toLowerCase());
+    if (new Set(normalized).size !== normalized.length)
+      throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
+    for (let offset = 0; offset < normalized.length; offset += PAGE) {
+      this.active(signal, deadline);
+      const batch = normalized.slice(offset, offset + PAGE);
+      const rows = await this.query(
+        r,
+        `SELECT a.id::text AS id FROM asset_entity a JOIN "${temp}" s ON s.id::text=a."profileId" WHERE a.id=ANY($1::uuid[]) AND a.type='video' AND a."lifecycleState"='active' AND a."storageStrategy" IN ('local_block_storage','remote_block_storage')`,
+        [batch],
+        signal,
+        deadline
+      );
+      if (
+        rows.length !== batch.length ||
+        rows.some(
+          (row) => typeof row.id !== 'string' || !batch.includes(row.id)
+        )
+      )
+        throw new AssetsAccountExportOwnerError('OWNER_RELATIONSHIP_AMBIGUOUS');
     }
   }
 

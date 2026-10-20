@@ -231,6 +231,132 @@ describe('AssetsAccountExportMediaReader', () => {
     });
   });
 
+  it('validates HLS references before yielding the original playlist and includes them in its manifest', async () => {
+    const id = '01234567-89ab-4cde-8fab-0123456789ab';
+    const item = asset('21234567-89ab-4cde-8fab-0123456789ab', AssetType.VIDEO);
+    const bytes = Buffer.from(
+      [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:6',
+        '#EXT-X-MEDIA-SEQUENCE:0',
+        '#EXTINF:6.000,',
+        `/api/asset/${id}`,
+        '#EXT-X-ENDLIST',
+        '',
+      ].join('\n')
+    );
+    await put(item, bytes);
+    const seen = [];
+    const records = [];
+    for await (const record of reader.read(item, {
+      signal: new AbortController().signal,
+      budget: { remainingBytes: bytes.length },
+      validateHlsReferences: async (ids) => {
+        seen.push(ids);
+        expect(records).toHaveLength(0);
+      },
+    }))
+      records.push(record);
+    const output = Buffer.concat(
+      records
+        .filter((r) => r.data['kind'] === 'bytes')
+        .map((r) => Buffer.from(r.data['bytesBase64'] as string, 'base64'))
+    );
+    expect(seen).toEqual([[id]]);
+    expect(output).toEqual(bytes);
+    expect(records.at(-1)?.data).toMatchObject({
+      mimeType: 'application/vnd.apple.mpegurl',
+      fileName: `${item.id}.m3u8`,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      hlsReferenceAssetIds: [id],
+    });
+  });
+
+  it('does not yield an HLS playlist when reference validation is missing or fails', async () => {
+    const id = '01234567-89ab-4cde-8fab-0123456789ab';
+    const item = asset('hls-unvalidated', AssetType.VIDEO);
+    const bytes = Buffer.from(
+      [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:1',
+        '#EXT-X-MEDIA-SEQUENCE:0',
+        '#EXTINF:1,',
+        `/api/asset/${id}`,
+        '#EXT-X-ENDLIST',
+        '',
+      ].join('\n')
+    );
+    await put(item, bytes);
+    for (const [extra, expectedCode] of [
+      [{}, 'MEDIA_HLS_VALIDATION_REQUIRED'],
+      [
+        {
+          validateHlsReferences: async () => {
+            throw new Error('private detail');
+          },
+        },
+        'MEDIA_READ_FAILED',
+      ],
+    ] as const) {
+      const iterator = reader
+        .read(item, {
+          signal: new AbortController().signal,
+          budget: { remainingBytes: bytes.length },
+          ...extra,
+        })
+        [Symbol.asyncIterator]();
+      await expect(iterator.next()).rejects.toMatchObject({
+        code: expectedCode,
+      });
+    }
+  });
+
+  it('sniffs real MPEG-TS only after three transport packets and preserves its bytes', async () => {
+    const item = asset('real-ts', AssetType.VIDEO);
+    const fixturePath = join(root, 'fixture.ts');
+    await execFile(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-f',
+        'lavfi',
+        '-i',
+        'color=c=black:s=16x16:d=0.2',
+        '-c:v',
+        'libx264',
+        '-f',
+        'mpegts',
+        '-y',
+        fixturePath,
+      ],
+      { timeout: 10_000, maxBuffer: 1024 * 1024 }
+    );
+    const bytes = await readFile(fixturePath);
+    expect(bytes.length).toBeGreaterThanOrEqual(564);
+    await put(item, bytes);
+    const records = [];
+    for await (const record of reader.read(item, {
+      signal: new AbortController().signal,
+      budget: { remainingBytes: bytes.length },
+    }))
+      records.push(record);
+    const output = Buffer.concat(
+      records
+        .filter((r) => r.data['kind'] === 'bytes')
+        .map((r) => Buffer.from(r.data['bytesBase64'] as string, 'base64'))
+    );
+    expect(output).toEqual(bytes);
+    expect(records.at(-1)?.data).toMatchObject({
+      mimeType: 'video/mp2t',
+      sizeBytes: bytes.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+    });
+  });
+
   it('fails closed for wrong KEK, missing files, and adapters without authenticated streaming', async () => {
     const image = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/xWQAAAAASUVORK5CYII=',

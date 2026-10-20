@@ -4,6 +4,10 @@ import { finished } from 'node:stream/promises';
 
 import { AssetType, StorageStrategy } from '@optimistic-tanuki/models';
 import { AccountExportOwnerRecord } from '@optimistic-tanuki/models';
+import {
+  ACCOUNT_EXPORT_HLS_LIMITS,
+  parseAccountExportHlsPlaylist,
+} from '@optimistic-tanuki/storage';
 
 import AssetEntity from '../entities/asset.entity';
 import { AppService } from './app.service';
@@ -28,7 +32,11 @@ export class AssetsAccountExportMediaReader {
 
   async *read(
     asset: AssetEntity,
-    options: { signal: AbortSignal; budget: { remainingBytes: number } }
+    options: {
+      signal: AbortSignal;
+      budget: { remainingBytes: number };
+      validateHlsReferences?: (ids: readonly string[]) => Promise<void>;
+    }
   ): AsyncIterable<AccountExportOwnerRecord<'assetMedia'>> {
     let spool:
       | Awaited<ReturnType<AppService['openAuthenticatedMedia']>>
@@ -75,6 +83,8 @@ export class AssetsAccountExportMediaReader {
       let offset = 0;
       let mime: MediaMime | undefined;
       let chunk = Buffer.alloc(0);
+      let hlsParts: Buffer[] = [];
+      let hlsSize = 0;
       for await (const piece of stream) {
         checkAbort(options.signal);
         const incomingBytes = Buffer.isBuffer(piece)
@@ -88,22 +98,51 @@ export class AssetsAccountExportMediaReader {
         if (offset + chunk.length + bytes.length > limit)
           throw new AssetsAccountExportMediaError('MEDIA_BUDGET_EXCEEDED');
         hash.update(bytes);
+        if (mime?.extension === '.m3u8') {
+          hlsSize += bytes.length;
+          if (hlsSize > ACCOUNT_EXPORT_HLS_LIMITS.manifestBytes)
+            throw new AssetsAccountExportMediaError('MEDIA_HLS_LIMIT_EXCEEDED');
+          hlsParts.push(bytes);
+          continue;
+        }
         chunk = Buffer.concat([chunk, bytes]);
-        if (!mime && chunk.length >= 64) {
-          mime = detectMime(chunk.subarray(0, 64));
+        if (
+          !mime &&
+          (mimeSniffReady(chunk) || offset + chunk.length === spool.size)
+        ) {
+          mime = detectMime(chunk);
           if (!mime)
             throw new AssetsAccountExportMediaError('MEDIA_FORMAT_UNSUPPORTED');
           if (mime.type !== asset.type)
             throw new AssetsAccountExportMediaError('MEDIA_TYPE_MISMATCH');
+          if (mime.extension === '.m3u8') {
+            hlsSize = chunk.length;
+            if (hlsSize > ACCOUNT_EXPORT_HLS_LIMITS.manifestBytes)
+              throw new AssetsAccountExportMediaError(
+                'MEDIA_HLS_LIMIT_EXCEEDED'
+              );
+            hlsParts = [chunk];
+            chunk = Buffer.alloc(0);
+          }
         }
         if (!mime && offset + chunk.length < spool.size) continue;
         if (!mime) {
-          mime = detectMime(chunk.subarray(0, 64));
+          mime = detectMime(chunk);
           if (!mime)
             throw new AssetsAccountExportMediaError('MEDIA_FORMAT_UNSUPPORTED');
           if (mime.type !== asset.type)
             throw new AssetsAccountExportMediaError('MEDIA_TYPE_MISMATCH');
+          if (mime.extension === '.m3u8') {
+            hlsSize = chunk.length;
+            if (hlsSize > ACCOUNT_EXPORT_HLS_LIMITS.manifestBytes)
+              throw new AssetsAccountExportMediaError(
+                'MEDIA_HLS_LIMIT_EXCEEDED'
+              );
+            hlsParts = [chunk];
+            chunk = Buffer.alloc(0);
+          }
         }
+        if (mime.extension === '.m3u8') continue;
         while (chunk.length >= CHUNK_BYTES) {
           const output = chunk.subarray(0, CHUNK_BYTES);
           const record = mediaChunk(prefix, offset, output);
@@ -117,6 +156,33 @@ export class AssetsAccountExportMediaReader {
       checkAbort(options.signal);
       if (!mime)
         throw new AssetsAccountExportMediaError('MEDIA_FORMAT_UNSUPPORTED');
+      let hlsReferenceAssetIds: readonly string[] | undefined;
+      if (mime.extension === '.m3u8') {
+        if (typeof options.validateHlsReferences !== 'function')
+          throw new AssetsAccountExportMediaError(
+            'MEDIA_HLS_VALIDATION_REQUIRED'
+          );
+        const playlist = Buffer.concat(hlsParts, hlsSize);
+        try {
+          hlsReferenceAssetIds =
+            parseAccountExportHlsPlaylist(playlist).referenceAssetIds;
+        } catch {
+          throw new AssetsAccountExportMediaError('MEDIA_HLS_INVALID');
+        }
+        checkAbort(options.signal);
+        await options.validateHlsReferences(hlsReferenceAssetIds);
+        checkAbort(options.signal);
+        for (let start = 0; start < playlist.length; start += CHUNK_BYTES) {
+          checkAbort(options.signal);
+          const output = playlist.subarray(
+            start,
+            Math.min(start + CHUNK_BYTES, playlist.length)
+          );
+          yield mediaChunk(prefix, offset, output);
+          checkAbort(options.signal);
+          offset += output.length;
+        }
+      }
       if (chunk.length) {
         checkAbort(options.signal);
         yield mediaChunk(prefix, offset, chunk);
@@ -138,7 +204,12 @@ export class AssetsAccountExportMediaReader {
           mimeType: mime.mimeType,
           sizeBytes: offset,
           sha256: hash.digest('hex'),
-          validation: 'signature',
+          validation: hlsReferenceAssetIds
+            ? 'signature-and-owned-hls-references'
+            : 'signature',
+          ...(hlsReferenceAssetIds
+            ? { hlsReferenceAssetIds: [...hlsReferenceAssetIds] }
+            : {}),
         },
       };
       checkAbort(options.signal);
@@ -212,6 +283,14 @@ function detectMime(b: Buffer): MediaMime | undefined {
     return { mimeType: 'image/png', extension: '.png', type: AssetType.IMAGE };
   if (has([0xff, 0xd8, 0xff]))
     return { mimeType: 'image/jpeg', extension: '.jpg', type: AssetType.IMAGE };
+  if (b.toString('ascii', 0, 7) === '#EXTM3U')
+    return {
+      mimeType: 'application/vnd.apple.mpegurl',
+      extension: '.m3u8',
+      type: AssetType.VIDEO,
+    };
+  if (b.length >= 564 && b[0] === 0x47 && b[188] === 0x47 && b[376] === 0x47)
+    return { mimeType: 'video/mp2t', extension: '.ts', type: AssetType.VIDEO };
   if (
     b
       .subarray(0, 6)
@@ -289,4 +368,10 @@ function detectMime(b: Buffer): MediaMime | undefined {
       type: AssetType.DOCUMENT,
     };
   return undefined;
+}
+
+function mimeSniffReady(bytes: Buffer): boolean {
+  if (bytes.toString('ascii', 0, 7) === '#EXTM3U') return true;
+  if (bytes[0] === 0x47) return bytes.length >= 564;
+  return bytes.length >= 64;
 }
