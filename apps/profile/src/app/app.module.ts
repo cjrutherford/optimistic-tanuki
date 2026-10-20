@@ -1,5 +1,9 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import { LoggerModule } from '@optimistic-tanuki/logger';
@@ -18,6 +22,7 @@ import loadConfig, { ProfileConfigType } from '../config';
 import loadDatabase from './loadDatabase';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { ProfileAccountExportService } from './account-export.service';
+import { ProfileAccountExportOwnerService } from './account-export-owner.service';
 import { AccountExportController } from '../profiles/account-export.controller';
 
 @Module({
@@ -43,6 +48,12 @@ import { AccountExportController } from '../profiles/account-export.controller';
     ProfileService,
     TimelineService,
     ProfileAccountExportService,
+    {
+      provide: ProfileAccountExportOwnerService,
+      useFactory: (dataSource: DataSource, authClient: ClientProxy) =>
+        new ProfileAccountExportOwnerService(dataSource, authClient),
+      inject: ['PROFILE_CONNECTION', ServiceTokens.AUTHENTICATION_SERVICE],
+    },
     {
       provide: getRepositoryToken(Profile),
       useFactory: (ds: DataSource) => ds.getRepository(Profile),

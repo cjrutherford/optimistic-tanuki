@@ -31,9 +31,11 @@ The [J2 Authentication reader](./findings/DF-007-J2.md) now captures eight retai
 
 The [J3 integration](./findings/DF-007-J3.md) runs the Authentication DB reader through verified, pathless temporary staging from internal jobs. Fifteen Storage, 11 owner and seven job tests passed; the private stack passed two TCP cases and three actual PostgreSQL fence cases. The safe database-owner progress marker is not full owner/inventory acceptance.
 
+[J4 Profile capture](./findings/DF-007-J4.md) locally verifies the three current entity tables and same-snapshot identities, full text and inline PNG/JPEG bytes. Ten enabled PostgreSQL cases passed. Migration review also found retained legacy goal/project data and timeline links; unsupported owned legacy data blocks capture until adapters exist. No remote snapshot handle, Profile job integration, artifact or deletion is enabled; item 1/DF-007/RR-11 remain open.
+
 ## Next bounded work
 
-The current next step is complete Profile identity/data capture and remaining owner adapters. Authentication staging/job integration is locally verified. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
+The current next step is legacy Profile goal/project adapters, a verified remote Profile snapshot/identity transport, and remaining owner adapters. The J4 reader covers current entity tables conditionally; its legacy guard is a blocker, not an adapter. Authentication staging/job integration is locally verified. Assets/media, deletion and shared UI follow their dependencies. The Social questions below remain required owner work.
 
 Remaining Social integrity work: after principal-binding review, Activity metadata is a possible bounded extension. The safe candidate is only `{id, profileId, type, createdAt}` for trusted profiles; omit free-form descriptions and resource references. Presence, ProfileView, and Notification semantics are unresolved: Presence writes accept caller-supplied user IDs behind authentication without binding them to the authenticated subject, so do not treat the current row as user-chosen until that normal-write principal boundary is repaired or otherwise established; ProfileView uses caller-supplied viewer IDs with an unresolved account/profile namespace and no viewer index; Notification creation accepts caller-chosen recipients and arbitrary text/URLs. Treat these as source-level integrity/privacy questions, not confirmed exploitation.
 

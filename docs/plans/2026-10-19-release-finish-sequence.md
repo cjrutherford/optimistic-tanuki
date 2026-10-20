@@ -16,7 +16,7 @@ Complete these deliverables:
 4. Produce portable JSON and associated image/video bytes with bounded streaming, an artifact manifest, authorized access and expiry. Do not fetch arbitrary user-supplied URLs or call encrypted storage bytes a portable export.
 5. Connect existing shared account/settings UI to real backend status, confirmation, download and retry behavior. Verify both products, authorization, counterpart preservation, injected failures, restart/retry and exact fixture cleanup.
 
-The J1 durable job foundation, J2 Authentication DB-reader component and J3 staging/job integration are locally verified. Stable Profile identity capture, remaining owner coverage, portable files, deletion and shared controls remain. These components do not complete item 1. Deletion and downloads stay unavailable until their required coverage closes.
+The J1 durable job foundation, J2 Authentication DB-reader component, J3 staging/job integration and J4 conditional current-entity Profile reader are locally verified. J4 found unsupported legacy Profile goal/project stores and timeline links and blocks owned legacy data. Legacy adapters, remote same-snapshot identity transport, remaining owner coverage, portable files, deletion and shared controls remain. These components do not complete item 1. Deletion and downloads stay unavailable until their required coverage closes.
 
 External provider, storage retention/versioning, backup and deployment evidence is separately owned. Record locally tested adapter behavior separately from those operational acceptance checks. DF-007 and RR-11 stay open while either implementation or required external evidence is missing.
 

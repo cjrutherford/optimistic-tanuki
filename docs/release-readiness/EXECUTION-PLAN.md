@@ -23,6 +23,8 @@
 
 **J3 continuation:** [Authentication capture now runs through internal jobs](./findings/DF-007-J3.md), using verified temporary staging and fenced renewal. Two TCP and three enabled PostgreSQL fence cases passed; staging cleanup and scoped teardown passed. Next is complete Profile identity/data capture and remaining owners/media/artifact/deletion/shared controls. Item 1, DF-007 and RR-11 remain open.
 
+**2026-10-20 J4 checkpoint:** [J4 Profile capture](./findings/DF-007-J4.md) locally verifies the three current entity tables and same-snapshot identities, full text and inline PNG/JPEG bytes. Ten enabled PostgreSQL cases passed. Migration review also found retained legacy goal/project data and timeline links; unsupported owned legacy data blocks capture until adapters exist. No remote snapshot handle, Profile job integration, artifact or deletion is enabled; item 1/DF-007/RR-11 remain open.
+
 The master audit and individual slice acceptance criteria remain authoritative. This map selects the next work; it does not mark any product behavior accepted. Read the slice before execution, audit current behavior, implement bounded remediation, verify, then report findings before moving on.
 
 ## Working order

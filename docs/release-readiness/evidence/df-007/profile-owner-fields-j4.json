@@ -1,0 +1,67 @@
+{
+  "owner": "profile",
+  "scope": "Three current entity tables plus same-snapshot derived identities, text and media records; conditional on no unsupported owned legacy data/links. Not full global inventory acceptance.",
+  "sources": [
+    "profileIdentity",
+    "profileMedia",
+    "profileText",
+    "timelineText",
+    "profile",
+    "timeline",
+    "guardianActivity"
+  ],
+  "tables": {
+    "profile": {
+      "retained": [
+        "id",
+        "userId",
+        "appScope",
+        "profileName",
+        "profilePic",
+        "coverPic",
+        "bio",
+        "location",
+        "occupation",
+        "interests",
+        "skills",
+        "blogRole",
+        "created_at"
+      ],
+      "fieldEncoding": "SQL-bounded prefixes/length metadata; large strings in ordered code-point chunks; exact SQL timestamp text; inline PNG/JPEG as decoded base64 byte chunks with SHA-256; original headers retained. Unsupported role/media values fail capture.",
+      "relationship": "timeLineEvents represented by account-owned Timeline rows, not eager relations"
+    },
+    "timeline": {
+      "retained": [
+        "id",
+        "userId",
+        "title",
+        "description",
+        "timeStamp",
+        "eventType"
+      ],
+      "relatedProfileId": "Owned reference retained; foreign reference explicitly redacted without UUID",
+      "relatedGoalIdAndRelatedProjectId": "Legacy columns absent current entity metadata; non-null links on owned timelines block capture pending legacy adapters",
+      "timestamp": "Exact SQL timestamp text, including microseconds; no inferred host timezone"
+    },
+    "guardian_profile_activity": {
+      "retained": ["id", "appId", "operation", "createdAt"],
+      "derived": ["accountId", "role"],
+      "dependentOnly": ["profileId", "changedFieldNames"],
+      "omitted": [
+        "actorUserId",
+        "dependentUserId",
+        "guardian-side profileId",
+        "guardian-side changedFieldNames"
+      ],
+      "verification": "Exactly one role and profile owner matches dependent; operation allowlist; dependent array bounded before driver read; all retained rows, no preview row cap"
+    }
+  },
+  "legacyStores": {
+    "goal": "Owned rows block capture; adapter pending",
+    "project": "Owned rows block capture; adapter pending",
+    "foreignLegacyRows": "Do not block solely due foreign ownership",
+    "migration": "apps/profile/migrations/1730836292692-initial.ts"
+  },
+  "media": "Strict canonical base64 and PNG/JPEG signatures, decoded-byte counts/hash. External/asset/opaque references preserved without fetching; no Assets/Videos byte coverage or full image-codec validation claimed.",
+  "ownerAcceptance": false
+}

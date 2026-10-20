@@ -20,6 +20,8 @@
 
 **J3 continuation:** [Internal job integration](./findings/DF-007-J3.md) now stages actual Authentication DB capture with fenced renewal and cleanup. Local checks passed, including two TCP and three PostgreSQL fence cases; no account artifact or deletion is enabled. Complete Profile and remaining owner/media/deletion/UI work before closing item 1. DF-007/RR-11 remain open.
 
+**2026-10-20 J4 checkpoint:** [J4 Profile capture](./findings/DF-007-J4.md) locally verifies the three current entity tables and same-snapshot identities, full text and inline PNG/JPEG bytes. Ten enabled PostgreSQL cases passed. Migration review also found retained legacy goal/project data and timeline links; unsupported owned legacy data blocks capture until adapters exist. No remote snapshot handle, Profile job integration, artifact or deletion is enabled; item 1/DF-007/RR-11 remain open.
+
 ## 1. Goal
 
 Determine whether Optimistic Tanuki (OT) and Towne Square (TS) meet a responsible public-release standard, document every material gap, and provide small, agent-consumable implementation slices to close those gaps.

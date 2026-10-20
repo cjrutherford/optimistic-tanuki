@@ -19,3 +19,5 @@ The [J1 finding](../../findings/DF-007-J1.md) and [receipt](checkpoint-j1.json) 
 [J2 Authentication DB capture](../../findings/DF-007-J2.md): [receipt](checkpoint-j2.json), [field dispositions](authentication-owner-fields.json). Eight retained sources; 15 Models tests and nine Auth tests including one enabled PostgreSQL case passed. No staging/job integration, download or deletion is claimed.
 
 [J3 staging/job integration](../../findings/DF-007-J3.md): [receipt](checkpoint-j3.json), [updated Auth field dispositions](authentication-owner-fields-j3.json). Actual Auth DB capture now runs through internal jobs; two TCP cases and three PostgreSQL fence cases passed. No account download or deletion is enabled.
+
+[J4 current Profile entity capture](../../findings/DF-007-J4.md): [receipt](checkpoint-j4.json), [field dispositions and legacy gaps](profile-owner-fields-j4.json). Ten enabled PostgreSQL cases passed, with exact fixture cleanup. Legacy adapters, remote snapshot transport and full Profile job integration remain; no account artifact or deletion is enabled.

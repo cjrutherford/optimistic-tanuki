@@ -194,3 +194,7 @@ Source of truth: `.github/workflows/ci-cd.yml` (`validate`, `quality`, applicabl
 ## Baseline
 
 At source `6fc407676`, frozen installation, migration governance, migration setup contract, all 39 workflow E2E contracts and Nx project graph pass. Private logs: `.runtime-artifacts/account-rights/pre-e2e-baseline/`. These baseline checks do not validate future implementation.
+
+### J4 — Current Profile entity capture and legacy inventory guard
+
+[Finding](../release-readiness/findings/DF-007-J4.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j4.json): same-snapshot identity/current-entity capture, bounded full text, inline PNG/JPEG bytes and guardian role privacy have local PostgreSQL proof (ten enabled cases). The actual initial migration retains goal/project stores and timeline links absent the entity catalog; owned unsupported legacy data rejects capture. Legacy adapters and remote snapshot transport remain next, followed by other owners/media/artifact/deletion/shared controls. No Profile job route or download/deletion is enabled.
