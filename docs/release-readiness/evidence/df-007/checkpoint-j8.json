@@ -1,0 +1,131 @@
+{
+  "checkpoint": "DF-007-J8",
+  "date": "2026-10-20",
+  "baseCommit": "221b90fc45a29dbc3d984ef21047c8b24cc6460a",
+  "status": "locally-verified-Assets-owner-database-and-decrypted-media-component",
+  "sourceFiles": {
+    "apps/assets/src/app/account-export-media-reader.spec.ts": "5f8256e8cab880079fbd518d567361d6d8b6808bf2ae88d38d4200a28fccebf6",
+    "apps/assets/src/app/account-export-media-reader.ts": "6b20c2a442cdf35d266704726af02f91a3d80ee5baa5cc85bc7735662e7dcd69",
+    "apps/assets/src/app/account-export-owner.postgres.spec.ts": "b7238adaa37986115dd1d54c53b5bef8a25421c9b59675a06d6fbf71d745138f",
+    "apps/assets/src/app/account-export-owner.service.spec.ts": "23f953725ed8f971466a70f526be964d740abbe6f55c486bad1369a297a146fb",
+    "apps/assets/src/app/account-export-owner.service.ts": "49bfe5e7f1c8568835325b4fe0f47b686ccb776628b87d5d86baae73bf04600f"
+  },
+  "scope": {
+    "retainedTables": ["asset_entity", "guardian_asset_activity"],
+    "streamSources": ["asset", "assetMedia", "guardianActivity"],
+    "sameReadOnlyRepeatableReadDatabaseSnapshot": true,
+    "allFencedProfileIdentityPagesTraversed": true,
+    "unreferencedUploadsIncluded": true,
+    "decryptedPortableBytes": true,
+    "moduleRegistered": false,
+    "rpcExposed": false,
+    "authenticationJobIntegrated": false,
+    "accountArtifact": false,
+    "download": false,
+    "deletion": false
+  },
+  "checks": {
+    "unit": [
+      {
+        "command": "pnpm nx run assets:test --testFile=account-export-media-reader.spec.ts --runInBand",
+        "passed": 11,
+        "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/media-storage-strategy-final.log",
+        "sha256": "775728c05a53935dd8b7bc27dce0a2b2a60fce79f56826480204840097d0cb48"
+      },
+      {
+        "command": "pnpm nx run assets:test --testFile=account-export-owner.service.spec.ts --runInBand",
+        "passed": 9,
+        "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/owner-unit-final.log",
+        "sha256": "95b5b9246f69daa6c76d30d2d8e815e66a6efbc5c4cbd374fbb5987535524c5c"
+      }
+    ],
+    "preE2e": {
+      "command": "pnpm nx run-many -t lint build -p assets --parallel=2",
+      "productionBuild": "PASS",
+      "lint": "PASS",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/pre-e2e-accepted.log",
+      "sha256": "f23cd4d11d9166baf68574b5ce466fd3e9d9b8d0a175edab476db9af9457292b"
+    },
+    "postgres": {
+      "command": "pnpm nx run assets:test --testFile=account-export-owner.postgres.spec.ts --runInBand --skipNxCache",
+      "accepted": {
+        "result": "PASS",
+        "testsPassed": 4,
+        "skipped": 0,
+        "failed": 0,
+        "realPostgresAndMigrations": true,
+        "migrationsApplied": 5,
+        "synchronize": false,
+        "identityProfiles": 1006,
+        "ownedAssets": 1006,
+        "ownGuardianActivities": 5,
+        "fixtureReadback": {
+          "assets": 0,
+          "activities": 0,
+          "temporaryRelations": 0
+        },
+        "databaseImageId": "sha256:59eb02d644f8b1279cf0c268f171817a3ba86b8c358821aedc217ac496fefffb",
+        "databaseContainerId": "7eda6181b1a25fc8dfdc9bfcbaa104519bfef0edb889c037debb7f5b6d406de7",
+        "authProfileRpc": "simulated; actual owner, emitter, spool, DB and encrypted local adapter",
+        "pgLogSha256": "f2c214b30e4850a844cab734631f46465e1ddad70ffff0b36fea66ed2cd4a017"
+      },
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/runtime/pg.log"
+    },
+    "independentTeardown": {
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0
+    },
+    "format": "Only explicit owned paths; root tsconfig sorting disabled",
+    "schemaChanges": false,
+    "protectedWipFiles": 43
+  },
+  "failedAttempts": [
+    {
+      "layer": "pre-E2E lint",
+      "error": "unsafe finally throws and control-character regex; repaired",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/pre-e2e.log"
+    },
+    {
+      "layer": "PostgreSQL fixture compilation",
+      "error": "new case appended outside describe callback; scope repaired; no cases ran",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/runtime/pg-fixture-scope-compile.log"
+    },
+    {
+      "layer": "PostgreSQL cancellation harness",
+      "passed": 3,
+      "failed": 1,
+      "error": "generic spool abort returned before cooperative owner finally completed; harness now awaits retained owner promise before resource assertions",
+      "log": ".runtime-artifacts/account-rights/finish-sequence/assets-owner/runtime/pg-cancellation-drain.log"
+    }
+  ],
+  "reviewCorrections": [
+    "UUID/text SQL joins and qualified columns",
+    "minimum UUID included by NULL-start keysets",
+    "exact SQL timestamp text preserved and fresh owner capture UUID",
+    "input callback/signal/grant/descriptor copied and bounded",
+    "generic UUID syntax plus hostile/oversized metadata guards",
+    "WebM binary DocType and MP4 brand checks",
+    "cleanup failure quarantines owner and evicts dirty driver connection",
+    "unsupported database storage rejected before opener"
+  ],
+  "limitations": [
+    "Auth/Profile responses simulated in component fixture; no actual Assets application/RPC/job integration",
+    "Profile owner lookup is current and outside Assets snapshot, not historical provenance",
+    "Existing storage AAD not bound to account/profile/asset ID",
+    "Signature MIME is not full codec/content safety validation; unsupported formats fail",
+    "Media authenticated at read time, no transactional object-version snapshot",
+    "Generic spool prompt abort does not await owner producer; integration must retain/drain cooperative owner promise before acknowledgement",
+    "SQL statement timeout10s/lock2s and capture45s, no hard DB cancellation claim",
+    "Cleanup eviction uses installed TypeORM PostgresQueryRunner releasePostgresConnection(error); review on upgrade",
+    "No browser/CI-run/external-provider/production qualification"
+  ],
+  "artifactRoot": ".runtime-artifacts/account-rights/finish-sequence/assets-owner",
+  "migrations": {
+    "apps/assets/migrations/1792070262860-GuardianAssetLifecycleAndActivity.ts": "4185628b73cffc2383019e36f9a84e0902b43ab14e4547ab847236b401a5feba",
+    "apps/assets/migrations/1791404042845-AddAssetAudienceRestrictions.ts": "18a66d736b53ef5f5ec335db27c8700c05eb327800e79cf1c5bd5e9a838912df",
+    "apps/assets/migrations/1791388918098-AddAssetAudience.ts": "b4dd75ce9036d0a019218d0280955f087a3711733053e36a312c0e4612fbb131",
+    "apps/assets/migrations/1792114070986-GuardianMediaStageProvenance.ts": "8bdc3221d4c3ad72e3a6008c8b7eeab4f3c8505e892faa753abc09fc7624418c",
+    "apps/assets/migrations/1750254462767-initial.ts": "3612ed16c0af768b21609904ef1d412317f8909be20bc41de765f150542b5191"
+  }
+}

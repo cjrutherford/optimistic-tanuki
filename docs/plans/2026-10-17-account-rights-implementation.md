@@ -210,3 +210,7 @@ At source `6fc407676`, frozen installation, migration governance, migration setu
 ### J7 — Assets identity traversal component
 
 [Finding](../release-readiness/findings/DF-007-J7.md) and [receipt](../release-readiness/evidence/df-007/checkpoint-j7.json): nineteen simulated-RPC cases and Assets build/lint locally verify bounded traversal of all J6 captured identity pages. This helper is not wired to a participant. Complete Assets ownership, guardian activity and authenticated portable bytes with real database/storage proof remain next; no account artifact, deletion or shared UI is enabled.
+
+### J8 — Assets database and media component
+
+[Finding](../release-readiness/findings/DF-007-J8.md), [receipt](../release-readiness/evidence/df-007/checkpoint-j8.json) and [field dispositions](../release-readiness/evidence/df-007/assets-owner-fields-j8.json): four enabled private PostgreSQL/encrypted-storage cases and twenty focused units pass with Assets production build/lint. The fixture verifies 1,006 owned uploads, plaintext PNG/MP4, guardian roles, snapshot behavior, failures and cleanup. Auth/Profile RPC remains simulated. Next add provider registration, leased Assets snapshot transport and verified job staging, retaining the owner promise through cancellation cleanup. Full Assets/account artifact/deletion/UI acceptance remains open.

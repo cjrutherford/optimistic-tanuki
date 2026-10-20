@@ -1,0 +1,58 @@
+{
+  "checkpoint": "DF-007-J8",
+  "tables": {
+    "asset_entity": {
+      "ownerPredicate": "profileId text matches an ID from the leased Profile snapshot, traversed in full",
+      "fields": {
+        "id": "export",
+        "name": "bounded safe filename metadata; hostile/oversized values fail",
+        "type": "validated enum and MIME class",
+        "profileId": "verified captured owned ID",
+        "storageStrategy": "validated for configured authenticated API; operational metadata omitted; database_storage fails",
+        "storagePath": "bounded private opener input, never serialized",
+        "originKind": "export classification",
+        "originProfileId": "export only verified guardian-staged self-reference; ordinary must null",
+        "originAppId": "export only valid guardian-staged app; ordinary must null",
+        "audienceCommunityIds": "private ACL, omitted",
+        "audienceRestrictions": "private ACL, omitted",
+        "lifecycleState": "must active, otherwise capture fails; operational field omitted",
+        "lifecycleLeaseUntil": "operational lifecycle field omitted",
+        "lifecycleRetryAfter": "operational lifecycle field omitted"
+      }
+    },
+    "guardian_asset_activity": {
+      "ownerPredicate": "actorUserId=account OR dependentUserId=account; no app filter",
+      "fields": {
+        "id": "export",
+        "actorUserId": "account/counterpart role, raw counterpart ID redacted",
+        "dependentUserId": "account/counterpart role, raw counterpart ID redacted",
+        "profileId": "export only captured owned profile; counterpart ID redacted",
+        "assetId": "owned opaque reference retained including deleted-history references; list wildcard retained; counterpart reference redacted",
+        "appId": "bounded app identifier exported",
+        "operation": "validated upload/list/read/delete",
+        "changedFieldNames": "bounded allowlisted names; unknown/malformed names fail",
+        "createdAt": "export UTC text preserving microseconds"
+      }
+    }
+  },
+  "media": {
+    "format": "ordered plaintext base64 byte records followed by signature MIME/size/SHA256 manifest",
+    "privateInputsExcluded": [
+      "storagePath",
+      "envelope",
+      "credentials",
+      "configuration",
+      "audience ACL internals"
+    ],
+    "maximumFilePlaintextBytes": 67108864,
+    "maximumCapturePlaintextBytes": 134217728,
+    "maximumEmittedChunkBytes": 49152,
+    "validation": "authenticated full envelope plus signature MIME; not full codec/content validation",
+    "objectSnapshot": "authenticated at read time, no object-version or global snapshot proof"
+  },
+  "ownershipLimitations": [
+    "DB profile attribution and current Profile owner checks; no cryptographic account/profile/asset binding in existing envelope AAD",
+    "Current Profile owner lookup does not establish historical provenance",
+    "Public/internal normal Profile content updates preserve userId; direct operator DB mutation is not covered by this fixture"
+  ]
+}
